@@ -168,4 +168,10 @@ public interface ErrorCodeConstants {
     // ========== 站内信发送 1-002-028-000 ==========
     ErrorCode NOTIFY_SEND_TEMPLATE_PARAM_MISS = new ErrorCode(1_002_028_000, "模板参数({})缺失");
 
+    // ========== 分类权限与分类类型 1-002-029-000 / 1-002-032-000 ==========
+    ErrorCode CATEGORY_ACCESS_DENIED = new ErrorCode(1_002_029_005, "没有访问该分类的权限");
+    ErrorCode CATEGORY_TYPE_NOT_EXISTS = new ErrorCode(1_002_032_000, "分类类型不存在");
+    ErrorCode CATEGORY_TYPE_CODE_EXISTS = new ErrorCode(1_002_032_001, "分类类型编码已存在");
+    ErrorCode CATEGORY_TYPE_CANNOT_DELETE = new ErrorCode(1_002_032_002, "该分类类型下有分类数据，无法删除");
+
 }

@@ -55,7 +55,7 @@ CREATE TABLE infra_api_access_log (
   create_time timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updater varchar(64) NULL DEFAULT '',
   update_time timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  deleted int2 NOT NULL DEFAULT 0,
+  deleted BOOLEAN NOT NULL DEFAULT FALSE,
   tenant_id int8 NOT NULL DEFAULT 0
 );
 

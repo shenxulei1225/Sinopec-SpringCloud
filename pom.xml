@@ -25,8 +25,16 @@
         <module>yudao-module-crm</module>
         <module>yudao-module-erp</module>
         <module>yudao-module-iot</module>
+        <module>yudao-module-alarm</module>
         <module>yudao-module-mes</module>
         <module>yudao-module-ai</module>
+        <module>yudao-module-sinopec-device</module>
+        <module>yudao-module-facility-management</module>
+        <module>yudao-module-scene-platform</module>
+        <module>yudao-module-inspection-task</module>
+        <!-- 实时状态流 Runtime -->
+        <module>yudao-module-nats</module>
+        <module>yudao-module-twin</module>
     </modules>
 
     <name>${project.artifactId}</name>
@@ -65,7 +73,7 @@
         <pluginManagement>
             <plugins>
                 <!-- maven-surefire-plugin 插件，用于运行单元测试。 -->
-                <!-- 注意，需要使用 3.0.X+，因为要支持 Junit 5 版本 -->
+                <!-- 注意，需要使用 3.0.X+，因为要支持 JUnit 5 版本 -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
@@ -91,7 +99,7 @@
                             </path>
                             <path>
                                 <!-- 确保 Lombok 生成的 getter/setter 方法能被 MapStruct 正确识别，
-                                     避免出现 No property named “xxx" exists 的编译错误 -->
+                                     避免出现 No property named "xxx" exists 的编译错误 -->
                                 <groupId>org.projectlombok</groupId>
                                 <artifactId>lombok-mapstruct-binding</artifactId>
                                 <version>0.2.0</version>

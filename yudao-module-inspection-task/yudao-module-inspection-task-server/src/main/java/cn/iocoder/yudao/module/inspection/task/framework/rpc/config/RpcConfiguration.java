@@ -1,0 +1,22 @@
+package cn.iocoder.yudao.module.inspection.task.framework.rpc.config;
+
+import cn.iocoder.yudao.module.system.api.user.AdminUserApi;
+import cn.iocoder.yudao.module.infra.api.file.FileApi;
+import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.context.annotation.Configuration;
+
+/**
+ * Inspection 模块 RPC 配置类
+ *
+ * <p>配置 Inspection 模块需要调用的远程服务接口。</p>
+ */
+@Configuration(value = "inspectionTaskRpcConfiguration", proxyBeanMethods = false)
+@EnableFeignClients(
+        clients = {
+                AdminUserApi.class,          // 用户服务API
+                FileApi.class                 // 文件服务API
+        },
+        basePackages = {} // 明确指定空包，避免自动扫描
+)
+public class RpcConfiguration {
+}

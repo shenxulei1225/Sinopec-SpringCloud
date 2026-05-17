@@ -158,6 +158,7 @@ public class AuthRequestFactory {
      * @param source {@link AuthSource}
      * @return {@link AuthRequest}
      */
+    @SuppressWarnings("deprecation") // JustAuth 当前版本仍暴露这些平台枚举，先保持兼容，等待上游替换方案稳定后再切换
     private AuthRequest getDefaultRequest(String source) {
         AuthDefaultSource authDefaultSource;
 

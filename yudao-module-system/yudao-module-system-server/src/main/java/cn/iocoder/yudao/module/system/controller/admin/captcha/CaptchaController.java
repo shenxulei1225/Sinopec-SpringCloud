@@ -3,9 +3,7 @@ package cn.iocoder.yudao.module.system.controller.admin.captcha;
 import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.util.servlet.ServletUtils;
 import cn.iocoder.yudao.framework.tenant.core.aop.TenantIgnore;
-import com.anji.captcha.model.common.ResponseModel;
-import com.anji.captcha.model.vo.CaptchaVO;
-import com.anji.captcha.service.CaptchaService;
+import cn.iocoder.yudao.module.system.service.auth.ArithmeticCaptchaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -16,31 +14,31 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @Tag(name = "管理后台 - 验证码")
 @RestController("adminCaptchaController")
 @RequestMapping("/system/captcha")
 public class CaptchaController {
 
     @Resource
-    private CaptchaService captchaService;
+    private ArithmeticCaptchaService arithmeticCaptchaService;
 
     @PostMapping({"/get"})
     @Operation(summary = "获得验证码")
     @PermitAll
     @TenantIgnore
-    public ResponseModel get(@RequestBody CaptchaVO data, HttpServletRequest request) {
-        assert request.getRemoteHost() != null;
-        data.setBrowserInfo(getRemoteId(request));
-        return captchaService.get(data);
+    public ArithmeticCaptchaService.CaptchaResponse get(@RequestBody(required = false) Map<String, Object> data) {
+        return arithmeticCaptchaService.createArithmeticCaptcha();
     }
 
     @PostMapping("/check")
     @Operation(summary = "校验验证码")
     @PermitAll
     @TenantIgnore
-    public ResponseModel check(@RequestBody CaptchaVO data, HttpServletRequest request) {
-        data.setBrowserInfo(getRemoteId(request));
-        return captchaService.check(data);
+    public boolean check(@RequestBody Map<String, Object> data) {
+        String captchaVerification = data == null ? null : (String) data.get("captchaVerification");
+        return arithmeticCaptchaService.validateCaptchaVerification(captchaVerification, true);
     }
 
     public static String getRemoteId(HttpServletRequest request) {

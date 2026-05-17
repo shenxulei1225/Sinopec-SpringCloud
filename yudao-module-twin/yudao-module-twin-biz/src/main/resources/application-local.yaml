@@ -1,0 +1,120 @@
+spring:
+  cloud:
+    nacos:
+      server-addr: 127.0.0.1:8848
+      username: nacos
+      password: nacos
+      discovery:
+        namespace: dev
+        group: DEFAULT_GROUP
+        ip: 127.0.0.1
+        metadata:
+          version: 1.0.0
+      config:
+        namespace: dev
+        group: DEFAULT_GROUP
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    table: flyway_schema_history_twin
+    schemas: twin
+    default-schema: twin
+  autoconfigure:
+    exclude:
+  datasource:
+    druid:
+      web-stat-filter:
+        enabled: true
+      stat-view-servlet:
+        enabled: true
+        allow:
+        url-pattern: /druid/*
+        login-username:
+        login-password:
+      filter:
+        stat:
+          enabled: true
+          log-slow-sql: true
+          slow-sql-millis: 100
+          merge-sql: true
+        wall:
+          config:
+            multi-statement-allow: true
+    dynamic:
+      druid:
+        initial-size: 1
+        min-idle: 1
+        max-active: 20
+        max-wait: 60000
+        time-between-eviction-runs-millis: 60000
+        min-evictable-idle-time-millis: 600000
+        max-evictable-idle-time-millis: 1800000
+        validation-query: SELECT 1
+        driver-class-name: org.postgresql.Driver
+        test-while-idle: true
+        test-on-borrow: false
+        test-on-return: false
+        pool-prepared-statements: true
+        max-pool-prepared-statement-per-connection-size: 20
+      primary: master
+      datasource:
+        master:
+          url: jdbc:postgresql://127.0.0.1:5432/sinopec?currentSchema=twin
+          username: postgres
+          password: Coolhomer
+        slave:
+          lazy: true
+          url: jdbc:postgresql://127.0.0.1:5432/sinopec?currentSchema=twin
+          username: postgres
+          password: Coolhomer
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      database: 0
+      password: 123456
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    username: guest
+    password: guest
+  kafka:
+    bootstrap-servers: 127.0.0.1:9092
+  boot:
+    admin:
+      client:
+        instance:
+          service-host-type: IP
+        username: admin
+        password: admin
+
+rocketmq:
+  name-server: 127.0.0.1:9876
+
+xxl:
+  job:
+    enabled: false
+    admin:
+      addresses: http://127.0.0.1:9090/xxl-job-admin
+
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: '*'
+
+logging:
+  level:
+    cn.iocoder.yudao.module.twin.dal.mysql: debug
+
+yudao:
+  env:
+    tag: ${HOSTNAME}
+  captcha:
+    enable: false
+  security:
+    mock-enable: true
+  access-log:
+    enable: true

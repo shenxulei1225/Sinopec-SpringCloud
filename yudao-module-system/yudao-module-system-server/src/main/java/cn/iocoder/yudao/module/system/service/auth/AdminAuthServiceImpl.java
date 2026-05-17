@@ -27,7 +27,6 @@ import cn.iocoder.yudao.module.system.service.oauth2.OAuth2TokenService;
 import cn.iocoder.yudao.module.system.service.social.SocialUserService;
 import cn.iocoder.yudao.module.system.service.user.AdminUserService;
 import com.anji.captcha.model.common.ResponseModel;
-import com.anji.captcha.model.vo.CaptchaVO;
 import com.anji.captcha.service.CaptchaService;
 import com.google.common.annotations.VisibleForTesting;
 import jakarta.annotation.Resource;
@@ -67,6 +66,8 @@ public class AdminAuthServiceImpl implements AdminAuthService {
     private Validator validator;
     @Resource
     private CaptchaService captchaService;
+    @Resource
+    private ArithmeticCaptchaService arithmeticCaptchaService;
     @Resource
     private SmsCodeApi smsCodeApi;
 
@@ -204,9 +205,8 @@ public class AdminAuthServiceImpl implements AdminAuthService {
             return ResponseModel.success();
         }
         ValidationUtils.validate(validator, reqVO, CaptchaVerificationReqVO.CodeEnableGroup.class);
-        CaptchaVO captchaVO = new CaptchaVO();
-        captchaVO.setCaptchaVerification(reqVO.getCaptchaVerification());
-        return captchaService.verification(captchaVO);
+        boolean success = arithmeticCaptchaService.validateCaptchaVerification(reqVO.getCaptchaVerification(), true);
+        return success ? ResponseModel.success() : ResponseModel.errorMsg("验证码错误或已过期");
     }
 
     private AuthLoginRespVO createTokenAfterLoginSuccess(Long userId, String username, LoginLogTypeEnum logType) {

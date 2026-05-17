@@ -1,0 +1,18 @@
+package cn.iocoder.yudao.module.scene.platform.service.component;
+
+import cn.iocoder.yudao.module.scene.platform.dal.dataobject.component.SkeletalMeshComponentDO;
+
+import java.util.List;
+
+public interface SkeletalMeshComponentService {
+
+    List<SkeletalMeshComponentDO> getSkeletalMeshComponentList();
+
+    SkeletalMeshComponentDO getSkeletalMeshComponent(Long id);
+
+    void updateSkeletalMeshComponent(Long id, SkeletalMeshComponentDO skeletalMeshComponentDO);
+
+    void updateSkeletalMeshComponentDefaults(Long id, SkeletalMeshComponentDO skeletalMeshComponentDO);
+
+    void updateSkeletalMeshComponentSchema(Long id, SkeletalMeshComponentDO skeletalMeshComponentDO);
+}

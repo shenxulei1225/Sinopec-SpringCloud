@@ -29,6 +29,7 @@ import jakarta.annotation.Resource;
 import jakarta.annotation.security.PermitAll;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -219,8 +220,7 @@ public class OAuth2OpenController {
                                               @RequestParam("redirect_uri") String redirectUri,
                                               @RequestParam(value = "auto_approve") Boolean autoApprove,
                                               @RequestParam(value = "state", required = false) String state) {
-        @SuppressWarnings("unchecked")
-        Map<String, Boolean> scopes = JsonUtils.parseObject(scope, Map.class);
+        Map<String, Boolean> scopes = JsonUtils.parseObject(scope, new TypeReference<Map<String, Boolean>>() {});
         scopes = ObjectUtil.defaultIfNull(scopes, Collections.emptyMap());
         // 0. 校验用户已经登录。通过 Spring Security 实现
 
@@ -269,9 +269,10 @@ public class OAuth2OpenController {
         OAuth2AccessTokenDO accessTokenDO = oauth2GrantService.grantImplicit(userId, getUserType(), client.getClientId(), scopes);
         Assert.notNull(accessTokenDO, "访问令牌不能为空"); // 防御性检查
         // 2. 拼接重定向的 URL
-        // noinspection unchecked
+        Map<String, Object> additionalInformation = JsonUtils.parseObject(client.getAdditionalInformation(),
+                new TypeReference<Map<String, Object>>() {});
         return OAuth2Utils.buildImplicitRedirectUri(redirectUri, accessTokenDO.getAccessToken(), state, accessTokenDO.getExpiresTime(),
-                scopes, JsonUtils.parseObject(client.getAdditionalInformation(), Map.class));
+                scopes, additionalInformation);
     }
 
     private String getAuthorizationCodeRedirect(Long userId, OAuth2ClientDO client,

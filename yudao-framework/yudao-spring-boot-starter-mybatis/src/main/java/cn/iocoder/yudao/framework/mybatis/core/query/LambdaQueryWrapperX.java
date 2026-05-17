@@ -115,8 +115,26 @@ public class LambdaQueryWrapperX<T> extends LambdaQueryWrapper<T> {
     }
 
     @Override
+    public LambdaQueryWrapperX<T> orderByAsc(SFunction<T, ?> column) {
+        super.orderByAsc(true, column);
+        return this;
+    }
+
+    @Override
+    public LambdaQueryWrapperX<T> orderByAsc(boolean condition, SFunction<T, ?> column) {
+        super.orderByAsc(condition, column);
+        return this;
+    }
+
+    @Override
     public LambdaQueryWrapperX<T> orderByDesc(SFunction<T, ?> column) {
         super.orderByDesc(true, column);
+        return this;
+    }
+
+    @Override
+    public LambdaQueryWrapperX<T> orderByDesc(boolean condition, SFunction<T, ?> column) {
+        super.orderByDesc(condition, column);
         return this;
     }
 

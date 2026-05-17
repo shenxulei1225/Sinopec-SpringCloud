@@ -8,9 +8,9 @@ import lombok.Data;
 @Data
 public class CaptchaVerificationReqVO {
 
-    // ========== 图片验证码相关 ==========
-    @Schema(description = "验证码，验证码开启时，需要传递", requiredMode = Schema.RequiredMode.REQUIRED,
-            example = "PfcH6mgr8tpXuMWFjvW6YVaqrswIuwmWI5dsVZSg7sGpWtDCUbHuDEXl3cFB1+VvCC/rAkSwK8Fad52FSuncVg==")
+    // ========== 算术验证码相关 ==========
+    @Schema(description = "验证码校验串，格式为 captchaKey@captchaCode", requiredMode = Schema.RequiredMode.REQUIRED,
+            example = "4f1d8f66-67cf-4df4-b2b3-d74c4f3724f0@8")
     @NotEmpty(message = "验证码不能为空", groups = CodeEnableGroup.class)
     private String captchaVerification;
 
