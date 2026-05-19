@@ -114,7 +114,7 @@ public class InspectionTaskTemplateQueryServiceImpl implements InspectionTaskTem
         if (policyIds == null || policyIds.isEmpty()) {
             return Map.of();
         }
-        return inspectionTaskSchedulePolicyMapper.selectBatchIds(policyIds).stream()
+        return inspectionTaskSchedulePolicyMapper.selectByIds(policyIds).stream()
                 .collect(Collectors.toMap(InspectionTaskSchedulePolicyDO::getId, Function.identity(), (a, b) -> a));
     }
 }

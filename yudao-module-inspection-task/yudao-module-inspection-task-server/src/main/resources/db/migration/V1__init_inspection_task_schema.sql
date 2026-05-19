@@ -1,1 +1,330 @@
--- ============================================================================-- Inspection Task Module Schema Initialization-- ============================================================================-- inspection_task tableCREATE TABLE inspection_task (    id                          BIGINT      NOT NULL PRIMARY KEY,    parent_id                   BIGINT      DEFAULT NULL,    category_id                 BIGINT      DEFAULT NULL,    task_code                   VARCHAR(64) NOT NULL,    task_name                   VARCHAR(255) NOT NULL,    status                      SMALLINT    NOT NULL DEFAULT 1,    enabled                     BOOLEAN     NOT NULL DEFAULT TRUE,    remark                      TEXT        DEFAULT NULL,    inherit_parent_schedule     BOOLEAN     NOT NULL DEFAULT FALSE,    inherit_parent_resource_policy BOOLEAN  NOT NULL DEFAULT FALSE,    inspection_content          TEXT        DEFAULT NULL,    schedule_requirement_id     BIGINT      DEFAULT NULL,    schedule_policy_id          BIGINT      DEFAULT NULL,    resource_policy             TEXT        DEFAULT NULL,    active_plan_id              BIGINT      DEFAULT NULL,    plan_ids                    TEXT        DEFAULT NULL,    creator                     VARCHAR(64) DEFAULT '',    create_time                 TIMESTAMP    DEFAULT NULL,    updater                     VARCHAR(64) DEFAULT '',    update_time                 TIMESTAMP    DEFAULT NULL,    deleted                     BOOLEAN     NOT NULL DEFAULT FALSE,    tenant_id                   BIGINT      NOT NULL DEFAULT 100,    CONSTRAINT uk_inspection_task_code UNIQUE (task_code, tenant_id));COMMENT ON TABLE inspection_task IS 'Inspection task table';COMMENT ON COLUMN inspection_task.status IS 'Status: 1-draft, 2-published, 3-stopped';COMMENT ON COLUMN inspection_task.inspection_content IS 'Inspection content (JSON)';COMMENT ON COLUMN inspection_task.resource_policy IS 'Resource policy (JSON)';COMMENT ON COLUMN inspection_task.plan_ids IS 'Historical plan ID list (JSON)';-- inspection_task_template tableCREATE TABLE inspection_task_template (    id                  BIGINT      NOT NULL PRIMARY KEY,    template_code       VARCHAR(64) NOT NULL,    template_name       VARCHAR(255) NOT NULL,    template_type       SMALLINT    NOT NULL DEFAULT 1,    content_template    TEXT        DEFAULT NULL,    schedule_template   TEXT        DEFAULT NULL,    resource_template   TEXT        DEFAULT NULL,    status              SMALLINT    NOT NULL DEFAULT 1,    remark              TEXT        DEFAULT NULL,    creator             VARCHAR(64) DEFAULT '',    create_time         TIMESTAMP    DEFAULT NULL,    updater             VARCHAR(64) DEFAULT '',    update_time         TIMESTAMP    DEFAULT NULL,    deleted             BOOLEAN     NOT NULL DEFAULT FALSE,    tenant_id           BIGINT      NOT NULL DEFAULT 100,    CONSTRAINT uk_inspection_task_template_code UNIQUE (template_code, tenant_id));COMMENT ON TABLE inspection_task_template IS 'Inspection task template table';COMMENT ON COLUMN inspection_task_template.template_type IS 'Template type: 1-inspection, 2-maintenance';-- inspection_task_schedule_requirement tableCREATE TABLE inspection_task_schedule_requirement (    id                    BIGINT      NOT NULL PRIMARY KEY,    requirement_code       VARCHAR(64) NOT NULL,    requirement_name      VARCHAR(255) NOT NULL,    task_id               BIGINT      NOT NULL,    requirement_type      SMALLINT    NOT NULL,    schedule_config       TEXT        DEFAULT NULL,    horizon_days          INTEGER     NOT NULL DEFAULT 30,    enabled               BOOLEAN     NOT NULL DEFAULT TRUE,    remark                TEXT        DEFAULT NULL,    creator               VARCHAR(64) DEFAULT '',    create_time           TIMESTAMP    DEFAULT NULL,    updater               VARCHAR(64) DEFAULT '',    update_time           TIMESTAMP    DEFAULT NULL,    deleted               BOOLEAN     NOT NULL DEFAULT FALSE,    tenant_id             BIGINT      NOT NULL DEFAULT 100,    CONSTRAINT uk_inspection_task_schedule_requirement_code UNIQUE (requirement_code, tenant_id));COMMENT ON TABLE inspection_task_schedule_requirement IS 'Inspection task schedule requirement table';COMMENT ON COLUMN inspection_task_schedule_requirement.requirement_type IS 'Requirement type: 1-cycle, 2-event, 3-manual';COMMENT ON COLUMN inspection_task_schedule_requirement.schedule_config IS 'Schedule config (JSON)';COMMENT ON COLUMN inspection_task_schedule_requirement.horizon_days IS 'Scheduling horizon days';-- inspection_task_schedule_policy tableCREATE TABLE inspection_task_schedule_policy (    id                  BIGINT      NOT NULL PRIMARY KEY,    policy_code         VARCHAR(64) NOT NULL,    policy_name         VARCHAR(255) NOT NULL,    policy_type         SMALLINT    NOT NULL,    cron_expression     VARCHAR(128) DEFAULT NULL,    cycle_description   VARCHAR(255) DEFAULT NULL,    trigger_time       VARCHAR(32) DEFAULT NULL,    enabled             BOOLEAN     NOT NULL DEFAULT TRUE,    remark              TEXT        DEFAULT NULL,    creator             VARCHAR(64) DEFAULT '',    create_time         TIMESTAMP    DEFAULT NULL,    updater             VARCHAR(64) DEFAULT '',    update_time         TIMESTAMP    DEFAULT NULL,    deleted             BOOLEAN     NOT NULL DEFAULT FALSE,    tenant_id           BIGINT      NOT NULL DEFAULT 100,    CONSTRAINT uk_inspection_task_schedule_policy_code UNIQUE (policy_code, tenant_id));COMMENT ON TABLE inspection_task_schedule_policy IS 'Inspection task schedule policy table';COMMENT ON COLUMN inspection_task_schedule_policy.policy_type IS 'Policy type: 1-cycle, 2-event, 3-manual';COMMENT ON COLUMN inspection_task_schedule_policy.trigger_time IS 'Trigger time in HH:mm format';-- inspection_task_schedule_resource tableCREATE TABLE inspection_task_schedule_resource (    id               BIGINT      NOT NULL PRIMARY KEY,    task_id          BIGINT      NOT NULL,    schedule_id      BIGINT      DEFAULT NULL,    resource_type    SMALLINT    NOT NULL,    resource_id      BIGINT      NOT NULL,    resource_name    VARCHAR(255) NOT NULL,    resource_config  TEXT        DEFAULT NULL,    sort_no          INTEGER     NOT NULL DEFAULT 0,    creator          VARCHAR(64) DEFAULT '',    create_time      TIMESTAMP    DEFAULT NULL,    updater          VARCHAR(64) DEFAULT '',    update_time      TIMESTAMP    DEFAULT NULL,    deleted          BOOLEAN     NOT NULL DEFAULT FALSE,    tenant_id        BIGINT      NOT NULL DEFAULT 100);COMMENT ON TABLE inspection_task_schedule_resource IS 'Inspection task schedule resource table';COMMENT ON COLUMN inspection_task_schedule_resource.resource_type IS 'Resource type: 1-person, 2-device, 3-vehicle';COMMENT ON COLUMN inspection_task_schedule_resource.resource_config IS 'Resource config (JSON)';-- inspection_task_schedule_plan tableCREATE TABLE inspection_task_schedule_plan (    id                       BIGINT      NOT NULL PRIMARY KEY,    plan_code                VARCHAR(64) NOT NULL,    task_id                  BIGINT      NOT NULL,    schedule_requirement_id  BIGINT      NOT NULL,    horizon_start_date       DATE        NOT NULL,    horizon_end_date         DATE        NOT NULL,    schedule_count           INTEGER     NOT NULL DEFAULT 0,    plan_status              SMALLINT    NOT NULL DEFAULT 1,    trigger_type             SMALLINT    NOT NULL DEFAULT 1,    trigger_by               VARCHAR(255) DEFAULT NULL,    activated_by             BIGINT      DEFAULT NULL,    activated_at             TIMESTAMP    DEFAULT NULL,    remark                   TEXT        DEFAULT NULL,    creator                  VARCHAR(64) DEFAULT '',    create_time              TIMESTAMP    DEFAULT NULL,    updater                  VARCHAR(64) DEFAULT '',    update_time              TIMESTAMP    DEFAULT NULL,    deleted                  BOOLEAN     NOT NULL DEFAULT FALSE,    tenant_id                BIGINT      NOT NULL DEFAULT 100,    CONSTRAINT uk_inspection_task_schedule_plan_code UNIQUE (plan_code, tenant_id));COMMENT ON TABLE inspection_task_schedule_plan IS 'Inspection task schedule plan table';COMMENT ON COLUMN inspection_task_schedule_plan.plan_status IS 'Plan status: 1-pending, 2-activated, 3-stopped';COMMENT ON COLUMN inspection_task_schedule_plan.trigger_type IS 'Trigger type: 1-manual, 2-scheduled, 3-fault-recovery';-- inspection_task_schedule tableCREATE TABLE inspection_task_schedule (    id               BIGINT      NOT NULL PRIMARY KEY,    plan_id          BIGINT      NOT NULL,    task_id          BIGINT      NOT NULL,    task_name        VARCHAR(255) DEFAULT NULL,    scheduled_time   TIMESTAMP    NOT NULL,    start_time       TIMESTAMP    DEFAULT NULL,    end_time         TIMESTAMP    DEFAULT NULL,    status           SMALLINT    NOT NULL DEFAULT 1,    executor_id      BIGINT      DEFAULT NULL,    executor_name   VARCHAR(255) DEFAULT NULL,    result_summary   TEXT        DEFAULT NULL,    remark           TEXT        DEFAULT NULL,    creator          VARCHAR(64) DEFAULT '',    create_time      TIMESTAMP    DEFAULT NULL,    updater          VARCHAR(64) DEFAULT '',    update_time      TIMESTAMP    DEFAULT NULL,    deleted          BOOLEAN     NOT NULL DEFAULT FALSE,    tenant_id        BIGINT      NOT NULL DEFAULT 100);COMMENT ON TABLE inspection_task_schedule IS 'Inspection task schedule table';COMMENT ON COLUMN inspection_task_schedule.status IS 'Schedule status: 1-pending, 2-in-progress, 3-completed, 4-timeout, 5-cancelled';COMMENT ON COLUMN inspection_task_schedule.result_summary IS 'Inspection result summary (JSON)';-- inspection_task_execution tableCREATE TABLE inspection_task_execution (    id               BIGINT      NOT NULL PRIMARY KEY,    schedule_id      BIGINT      NOT NULL,    task_id          BIGINT      NOT NULL,    execution_no     VARCHAR(64) NOT NULL,    status           SMALLINT    NOT NULL DEFAULT 1,    executor_id      BIGINT      DEFAULT NULL,    executor_name   VARCHAR(255) DEFAULT NULL,    start_time       TIMESTAMP    DEFAULT NULL,    end_time         TIMESTAMP    DEFAULT NULL,    actual_duration  INTEGER     DEFAULT NULL,    result_data      TEXT        DEFAULT NULL,    remark           TEXT        DEFAULT NULL,    creator          VARCHAR(64) DEFAULT '',    create_time      TIMESTAMP    DEFAULT NULL,    updater          VARCHAR(64) DEFAULT '',    update_time      TIMESTAMP    DEFAULT NULL,    deleted          BOOLEAN     NOT NULL DEFAULT FALSE,    tenant_id        BIGINT      NOT NULL DEFAULT 100,    CONSTRAINT uk_inspection_task_execution_no UNIQUE (execution_no, tenant_id));COMMENT ON TABLE inspection_task_execution IS 'Inspection task execution table';COMMENT ON COLUMN inspection_task_execution.status IS 'Execution status: 1-pending, 2-in-progress, 3-completed, 4-timeout, 5-cancelled';COMMENT ON COLUMN inspection_task_execution.actual_duration IS 'Actual execution duration (seconds)';COMMENT ON COLUMN inspection_task_execution.result_data IS 'Execution result data (JSON)';-- inspection_object_collection tableCREATE TABLE inspection_object_collection (    id               BIGINT      NOT NULL PRIMARY KEY,    object_id        BIGINT      NOT NULL,    collection_type  SMALLINT    NOT NULL,    collection_url   VARCHAR(1024) NOT NULL,    collection_time  TIMESTAMP    NOT NULL,    thumbnail_url   VARCHAR(1024) DEFAULT NULL,    file_size       BIGINT      DEFAULT NULL,    duration        INTEGER      DEFAULT NULL,    remark           TEXT        DEFAULT NULL,    creator          VARCHAR(64) DEFAULT '',    create_time      TIMESTAMP    DEFAULT NULL,    updater          VARCHAR(64) DEFAULT '',    update_time      TIMESTAMP    DEFAULT NULL,    deleted          BOOLEAN     NOT NULL DEFAULT FALSE,    tenant_id        BIGINT      NOT NULL DEFAULT 100);COMMENT ON TABLE inspection_object_collection IS 'Inspection object collection table';COMMENT ON COLUMN inspection_object_collection.collection_type IS 'Collection type: 1-image, 2-video, 3-file';COMMENT ON COLUMN inspection_object_collection.duration IS 'Video duration (seconds)';-- inspection_object_source tableCREATE TABLE inspection_object_source (    id               BIGINT      NOT NULL PRIMARY KEY,    object_id        BIGINT      NOT NULL,    source_type      SMALLINT    NOT NULL,    source_system   VARCHAR(128) DEFAULT NULL,    source_device   VARCHAR(128) DEFAULT NULL,    upload_time      TIMESTAMP    NOT NULL,    upload_by       VARCHAR(255) DEFAULT NULL,    remark           TEXT        DEFAULT NULL,    creator          VARCHAR(64) DEFAULT '',    create_time      TIMESTAMP    DEFAULT NULL,    updater          VARCHAR(64) DEFAULT '',    update_time      TIMESTAMP    DEFAULT NULL,    deleted          BOOLEAN     NOT NULL DEFAULT FALSE,    tenant_id        BIGINT      NOT NULL DEFAULT 100);COMMENT ON TABLE inspection_object_source IS 'Inspection object source table';COMMENT ON COLUMN inspection_object_source.source_type IS 'Source type: 1-manual, 2-device, 3-system';-- ============================================================================-- Indexes-- ============================================================================CREATE INDEX idx_inspection_task_category ON inspection_task (category_id);CREATE INDEX idx_inspection_task_status ON inspection_task (status);CREATE INDEX idx_inspection_task_enabled ON inspection_task (enabled);CREATE INDEX idx_inspection_task_schedule_req ON inspection_task (schedule_requirement_id);CREATE INDEX idx_inspection_task_active_plan ON inspection_task (active_plan_id);CREATE INDEX idx_requirement_task ON inspection_task_schedule_requirement (task_id);CREATE INDEX idx_requirement_type ON inspection_task_schedule_requirement (requirement_type);CREATE INDEX idx_policy_type ON inspection_task_schedule_policy (policy_type);CREATE INDEX idx_policy_enabled ON inspection_task_schedule_policy (enabled);CREATE INDEX idx_resource_task ON inspection_task_schedule_resource (task_id);CREATE INDEX idx_resource_schedule ON inspection_task_schedule_resource (schedule_id);CREATE INDEX idx_resource_type ON inspection_task_schedule_resource (resource_type);CREATE INDEX idx_plan_task ON inspection_task_schedule_plan (task_id);CREATE INDEX idx_plan_requirement ON inspection_task_schedule_plan (schedule_requirement_id);CREATE INDEX idx_plan_status ON inspection_task_schedule_plan (plan_status);CREATE INDEX idx_plan_dates ON inspection_task_schedule_plan (horizon_start_date, horizon_end_date);CREATE INDEX idx_schedule_plan ON inspection_task_schedule (plan_id);CREATE INDEX idx_schedule_task ON inspection_task_schedule (task_id);CREATE INDEX idx_schedule_status ON inspection_task_schedule (status);CREATE INDEX idx_schedule_executor ON inspection_task_schedule (executor_id);CREATE INDEX idx_schedule_time ON inspection_task_schedule (scheduled_time);CREATE INDEX idx_execution_schedule ON inspection_task_execution (schedule_id);CREATE INDEX idx_execution_task ON inspection_task_execution (task_id);CREATE INDEX idx_execution_status ON inspection_task_execution (status);CREATE INDEX idx_execution_executor ON inspection_task_execution (executor_id);CREATE INDEX idx_collection_object ON inspection_object_collection (object_id);CREATE INDEX idx_collection_type ON inspection_object_collection (collection_type);CREATE INDEX idx_collection_time ON inspection_object_collection (collection_time);CREATE INDEX idx_source_object ON inspection_object_source (object_id);CREATE INDEX idx_source_type ON inspection_object_source (source_type);
+-- ============================================================================
+-- Inspection Task Module Schema Initialization
+-- ============================================================================
+
+-- inspection_task table
+CREATE TABLE inspection_task (
+    id                                BIGINT      NOT NULL PRIMARY KEY,
+    parent_id                         BIGINT      DEFAULT NULL,
+    category_id                       BIGINT      DEFAULT NULL,
+    task_code                         VARCHAR(64) NOT NULL,
+    task_name                         VARCHAR(255) NOT NULL,
+    status                            SMALLINT    NOT NULL DEFAULT 1,
+    enabled                           BOOLEAN     NOT NULL DEFAULT TRUE,
+    remark                            TEXT        DEFAULT NULL,
+    inherit_parent_schedule           BOOLEAN     NOT NULL DEFAULT FALSE,
+    inherit_parent_resource_policy    BOOLEAN     NOT NULL DEFAULT FALSE,
+    inspection_content                TEXT        DEFAULT NULL,
+    schedule_requirement_id           BIGINT      DEFAULT NULL,
+    schedule_policy_id                BIGINT      DEFAULT NULL,
+    resource_policy                   TEXT        DEFAULT NULL,
+    active_plan_id                    BIGINT      DEFAULT NULL,
+    plan_ids                          TEXT        DEFAULT NULL,
+    creator                           VARCHAR(64) DEFAULT '',
+    create_time                       TIMESTAMP    DEFAULT NULL,
+    updater                           VARCHAR(64) DEFAULT '',
+    update_time                       TIMESTAMP    DEFAULT NULL,
+    deleted                           BOOLEAN     NOT NULL DEFAULT FALSE,
+    tenant_id                         BIGINT      NOT NULL DEFAULT 100,
+    CONSTRAINT uk_inspection_task_code UNIQUE (task_code, tenant_id)
+);
+
+COMMENT ON TABLE inspection_task IS 'Inspection task table';
+COMMENT ON COLUMN inspection_task.status IS 'Status: 1-draft, 2-published, 3-stopped';
+COMMENT ON COLUMN inspection_task.inspection_content IS 'Inspection content (JSON)';
+COMMENT ON COLUMN inspection_task.resource_policy IS 'Resource policy (JSON)';
+COMMENT ON COLUMN inspection_task.plan_ids IS 'Historical plan ID list (JSON)';
+
+-- inspection_task_template table
+CREATE TABLE inspection_task_template (
+    id                  BIGINT      NOT NULL PRIMARY KEY,
+    template_code       VARCHAR(64) NOT NULL,
+    template_name       VARCHAR(255) NOT NULL,
+    template_type       SMALLINT    NOT NULL DEFAULT 1,
+    content_template    TEXT        DEFAULT NULL,
+    schedule_template   TEXT        DEFAULT NULL,
+    resource_template   TEXT        DEFAULT NULL,
+    status              SMALLINT    NOT NULL DEFAULT 1,
+    remark              TEXT        DEFAULT NULL,
+    creator             VARCHAR(64) DEFAULT '',
+    create_time         TIMESTAMP    DEFAULT NULL,
+    updater             VARCHAR(64) DEFAULT '',
+    update_time         TIMESTAMP    DEFAULT NULL,
+    deleted             BOOLEAN     NOT NULL DEFAULT FALSE,
+    tenant_id           BIGINT      NOT NULL DEFAULT 100,
+    CONSTRAINT uk_inspection_task_template_code UNIQUE (template_code, tenant_id)
+);
+
+COMMENT ON TABLE inspection_task_template IS 'Inspection task template table';
+COMMENT ON COLUMN inspection_task_template.template_type IS 'Template type: 1-inspection, 2-maintenance';
+
+-- inspection_task_schedule_requirement table
+CREATE TABLE inspection_task_schedule_requirement (
+    id                    BIGINT      NOT NULL PRIMARY KEY,
+    requirement_code      VARCHAR(64) NOT NULL,
+    requirement_name      VARCHAR(255) NOT NULL,
+    task_id              BIGINT      NOT NULL,
+    schedule_policy_id    BIGINT      DEFAULT NULL,
+    schedule_mode         SMALLINT    NOT NULL,
+    repeat_mode           SMALLINT    NOT NULL,
+    time_points           TEXT        DEFAULT NULL,
+    task_cycle_minutes    INTEGER     DEFAULT NULL,
+    task_gap_minutes      INTEGER     DEFAULT NULL,
+    window_start_time     VARCHAR(32) DEFAULT NULL,
+    window_end_time       VARCHAR(32) DEFAULT NULL,
+    anchor_time           VARCHAR(32) DEFAULT NULL,
+    daily_execution_count INTEGER     DEFAULT NULL,
+    min_executions_per_day   INTEGER     DEFAULT NULL,
+    max_executions_per_day   INTEGER     DEFAULT NULL,
+    min_executions_per_week  INTEGER     DEFAULT NULL,
+    max_executions_per_week  INTEGER     DEFAULT NULL,
+    min_executions_per_month INTEGER     DEFAULT NULL,
+    max_executions_per_month INTEGER     DEFAULT NULL,
+    specific_dates        TEXT        DEFAULT NULL,
+    start_date            DATE        NOT NULL,
+    end_date              DATE        DEFAULT NULL,
+    week_days             TEXT        DEFAULT NULL,
+    month_days            TEXT        DEFAULT NULL,
+    description           TEXT        DEFAULT NULL,
+    is_template           BOOLEAN     NOT NULL DEFAULT FALSE,
+    horizon_days          INTEGER     NOT NULL DEFAULT 30,
+    enabled               BOOLEAN     NOT NULL DEFAULT TRUE,
+    remark                TEXT        DEFAULT NULL,
+    creator               VARCHAR(64) DEFAULT '',
+    create_time           TIMESTAMP    DEFAULT NULL,
+    updater               VARCHAR(64) DEFAULT '',
+    update_time           TIMESTAMP    DEFAULT NULL,
+    deleted               BOOLEAN     NOT NULL DEFAULT FALSE,
+    tenant_id             BIGINT      NOT NULL DEFAULT 100,
+    CONSTRAINT uk_inspection_task_schedule_requirement_code UNIQUE (requirement_code, tenant_id)
+);
+
+COMMENT ON TABLE inspection_task_schedule_requirement IS 'Inspection task schedule requirement table';
+COMMENT ON COLUMN inspection_task_schedule_requirement.schedule_mode IS 'Schedule mode: 1-fixed time points, 2-interval execution, 3-auto scheduling';
+COMMENT ON COLUMN inspection_task_schedule_requirement.repeat_mode IS 'Repeat mode: 1-once, 2-daily, 3-weekly, 4-monthly, 5-specific dates';
+COMMENT ON COLUMN inspection_task_schedule_requirement.time_points IS 'Fixed time points (JSON array of HH:mm)';
+COMMENT ON COLUMN inspection_task_schedule_requirement.task_cycle_minutes IS 'Task cycle interval (minutes)';
+COMMENT ON COLUMN inspection_task_schedule_requirement.task_gap_minutes IS 'Task gap interval (minutes, after task completion)';
+COMMENT ON COLUMN inspection_task_schedule_requirement.window_start_time IS 'Daily execution window start time (HH:mm)';
+COMMENT ON COLUMN inspection_task_schedule_requirement.window_end_time IS 'Daily execution window end time (HH:mm)';
+COMMENT ON COLUMN inspection_task_schedule_requirement.anchor_time IS 'Anchor time for interval execution (HH:mm)';
+COMMENT ON COLUMN inspection_task_schedule_requirement.daily_execution_count IS 'Daily execution count for auto scheduling';
+COMMENT ON COLUMN inspection_task_schedule_requirement.specific_dates IS 'Specific dates for repeat mode 5 (JSON array of YYYY-MM-DD)';
+COMMENT ON COLUMN inspection_task_schedule_requirement.week_days IS 'Week days for repeat mode 3 (JSON array of 1-7)';
+COMMENT ON COLUMN inspection_task_schedule_requirement.month_days IS 'Month days for repeat mode 4 (JSON array of 1-31)';
+COMMENT ON COLUMN inspection_task_schedule_requirement.remark IS '智能排期字段: windowStartTime/windowEndTime-时间窗口, min/maxExecutionsPerDay/Week/Month-执行次数约束';
+
+-- inspection_task_schedule_policy table
+CREATE TABLE inspection_task_schedule_policy (
+    id                  BIGINT      NOT NULL PRIMARY KEY,
+    policy_code         VARCHAR(64) NOT NULL,
+    policy_name         VARCHAR(255) NOT NULL,
+    policy_type         SMALLINT    NOT NULL,
+    cron_expression     VARCHAR(128) DEFAULT NULL,
+    cycle_description   VARCHAR(255) DEFAULT NULL,
+    trigger_time       VARCHAR(32) DEFAULT NULL,
+    enabled             BOOLEAN     NOT NULL DEFAULT TRUE,
+    remark              TEXT        DEFAULT NULL,
+    creator             VARCHAR(64) DEFAULT '',
+    create_time         TIMESTAMP    DEFAULT NULL,
+    updater             VARCHAR(64) DEFAULT '',
+    update_time         TIMESTAMP    DEFAULT NULL,
+    deleted             BOOLEAN     NOT NULL DEFAULT FALSE,
+    tenant_id           BIGINT      NOT NULL DEFAULT 100,
+    CONSTRAINT uk_inspection_task_schedule_policy_code UNIQUE (policy_code, tenant_id)
+);
+
+COMMENT ON TABLE inspection_task_schedule_policy IS 'Inspection task schedule policy table';
+COMMENT ON COLUMN inspection_task_schedule_policy.policy_type IS 'Policy type: 1-cycle, 2-event, 3-manual';
+COMMENT ON COLUMN inspection_task_schedule_policy.trigger_time IS 'Trigger time in HH:mm format';
+
+-- inspection_task_schedule_resource table
+CREATE TABLE inspection_task_schedule_resource (
+    id               BIGINT      NOT NULL PRIMARY KEY,
+    task_id          BIGINT      NOT NULL,
+    schedule_id      BIGINT      DEFAULT NULL,
+    resource_type    SMALLINT    NOT NULL,
+    resource_id      BIGINT      NOT NULL,
+    resource_name    VARCHAR(255) NOT NULL,
+    resource_config  TEXT        DEFAULT NULL,
+    sort_no          INTEGER     NOT NULL DEFAULT 0,
+    creator          VARCHAR(64) DEFAULT '',
+    create_time      TIMESTAMP    DEFAULT NULL,
+    updater          VARCHAR(64) DEFAULT '',
+    update_time      TIMESTAMP    DEFAULT NULL,
+    deleted          BOOLEAN     NOT NULL DEFAULT FALSE,
+    tenant_id        BIGINT      NOT NULL DEFAULT 100
+);
+
+COMMENT ON TABLE inspection_task_schedule_resource IS 'Inspection task schedule resource table';
+COMMENT ON COLUMN inspection_task_schedule_resource.resource_type IS 'Resource type: 1-person, 2-device, 3-vehicle';
+COMMENT ON COLUMN inspection_task_schedule_resource.resource_config IS 'Resource config (JSON)';
+
+-- inspection_task_schedule_plan table
+CREATE TABLE inspection_task_schedule_plan (
+    id                       BIGINT      NOT NULL PRIMARY KEY,
+    plan_code                VARCHAR(64) NOT NULL,
+    task_id                  BIGINT      NOT NULL,
+    schedule_requirement_id  BIGINT      NOT NULL,
+    horizon_start_date       DATE        NOT NULL,
+    horizon_end_date         DATE        NOT NULL,
+    schedule_count           INTEGER     NOT NULL DEFAULT 0,
+    plan_status              SMALLINT    NOT NULL DEFAULT 1,
+    trigger_type             SMALLINT    NOT NULL DEFAULT 1,
+    trigger_by               VARCHAR(255) DEFAULT NULL,
+    activated_by             BIGINT      DEFAULT NULL,
+    activated_at             TIMESTAMP    DEFAULT NULL,
+    remark                   TEXT        DEFAULT NULL,
+    creator                  VARCHAR(64) DEFAULT '',
+    create_time              TIMESTAMP    DEFAULT NULL,
+    updater                  VARCHAR(64) DEFAULT '',
+    update_time              TIMESTAMP    DEFAULT NULL,
+    deleted                  BOOLEAN     NOT NULL DEFAULT FALSE,
+    tenant_id                BIGINT      NOT NULL DEFAULT 100,
+    CONSTRAINT uk_inspection_task_schedule_plan_code UNIQUE (plan_code, tenant_id)
+);
+
+COMMENT ON TABLE inspection_task_schedule_plan IS 'Inspection task schedule plan table';
+COMMENT ON COLUMN inspection_task_schedule_plan.plan_status IS 'Plan status: 1-pending, 2-activated, 3-stopped';
+COMMENT ON COLUMN inspection_task_schedule_plan.trigger_type IS 'Trigger type: 1-manual, 2-scheduled, 3-fault-recovery';
+
+-- inspection_task_schedule table
+CREATE TABLE inspection_task_schedule (
+    id               BIGINT      NOT NULL PRIMARY KEY,
+    plan_id          BIGINT      NOT NULL,
+    task_id          BIGINT      NOT NULL,
+    task_name        VARCHAR(255) DEFAULT NULL,
+    scheduled_time   TIMESTAMP    NOT NULL,
+    start_time       TIMESTAMP    DEFAULT NULL,
+    end_time         TIMESTAMP    DEFAULT NULL,
+    status           SMALLINT    NOT NULL DEFAULT 1,
+    executor_id      BIGINT      DEFAULT NULL,
+    executor_name    VARCHAR(255) DEFAULT NULL,
+    result_summary   TEXT        DEFAULT NULL,
+    remark           TEXT        DEFAULT NULL,
+    creator          VARCHAR(64) DEFAULT '',
+    create_time      TIMESTAMP    DEFAULT NULL,
+    updater          VARCHAR(64) DEFAULT '',
+    update_time      TIMESTAMP    DEFAULT NULL,
+    deleted          BOOLEAN     NOT NULL DEFAULT FALSE,
+    tenant_id        BIGINT      NOT NULL DEFAULT 100
+);
+
+COMMENT ON TABLE inspection_task_schedule IS 'Inspection task schedule table';
+COMMENT ON COLUMN inspection_task_schedule.status IS 'Schedule status: 1-pending, 2-in-progress, 3-completed, 4-timeout, 5-cancelled';
+COMMENT ON COLUMN inspection_task_schedule.result_summary IS 'Inspection result summary (JSON)';
+
+-- inspection_task_execution table
+CREATE TABLE inspection_task_execution (
+    id               BIGINT      NOT NULL PRIMARY KEY,
+    schedule_id      BIGINT      NOT NULL,
+    task_id          BIGINT      NOT NULL,
+    execution_no     VARCHAR(64) NOT NULL,
+    status           SMALLINT    NOT NULL DEFAULT 1,
+    executor_id      BIGINT      DEFAULT NULL,
+    executor_name    VARCHAR(255) DEFAULT NULL,
+    start_time       TIMESTAMP    DEFAULT NULL,
+    end_time         TIMESTAMP    DEFAULT NULL,
+    actual_duration  INTEGER      DEFAULT NULL,
+    result_data      TEXT        DEFAULT NULL,
+    remark           TEXT        DEFAULT NULL,
+    creator          VARCHAR(64) DEFAULT '',
+    create_time      TIMESTAMP    DEFAULT NULL,
+    updater          VARCHAR(64) DEFAULT '',
+    update_time      TIMESTAMP    DEFAULT NULL,
+    deleted          BOOLEAN     NOT NULL DEFAULT FALSE,
+    tenant_id        BIGINT      NOT NULL DEFAULT 100,
+    CONSTRAINT uk_inspection_task_execution_no UNIQUE (execution_no, tenant_id)
+);
+
+COMMENT ON TABLE inspection_task_execution IS 'Inspection task execution table';
+COMMENT ON COLUMN inspection_task_execution.status IS 'Execution status: 1-pending, 2-in-progress, 3-completed, 4-timeout, 5-cancelled';
+COMMENT ON COLUMN inspection_task_execution.actual_duration IS 'Actual execution duration (seconds)';
+COMMENT ON COLUMN inspection_task_execution.result_data IS 'Execution result data (JSON)';
+
+-- inspection_object_collection table
+CREATE TABLE inspection_object_collection (
+    id               BIGINT      NOT NULL PRIMARY KEY,
+    object_id        BIGINT      NOT NULL,
+    collection_type  SMALLINT    NOT NULL,
+    collection_url   VARCHAR(1024) NOT NULL,
+    collection_time  TIMESTAMP    NOT NULL,
+    thumbnail_url    VARCHAR(1024) DEFAULT NULL,
+    file_size        BIGINT      DEFAULT NULL,
+    duration         INTEGER      DEFAULT NULL,
+    remark           TEXT        DEFAULT NULL,
+    creator          VARCHAR(64) DEFAULT '',
+    create_time      TIMESTAMP    DEFAULT NULL,
+    updater          VARCHAR(64) DEFAULT '',
+    update_time      TIMESTAMP    DEFAULT NULL,
+    deleted          BOOLEAN     NOT NULL DEFAULT FALSE,
+    tenant_id        BIGINT      NOT NULL DEFAULT 100
+);
+
+COMMENT ON TABLE inspection_object_collection IS 'Inspection object collection table';
+COMMENT ON COLUMN inspection_object_collection.collection_type IS 'Collection type: 1-image, 2-video, 3-file';
+COMMENT ON COLUMN inspection_object_collection.duration IS 'Video duration (seconds)';
+
+-- inspection_object_source table
+CREATE TABLE inspection_object_source (
+    id               BIGINT      NOT NULL PRIMARY KEY,
+    object_id        BIGINT      NOT NULL,
+    source_type      SMALLINT    NOT NULL,
+    source_system    VARCHAR(128) DEFAULT NULL,
+    source_device    VARCHAR(128) DEFAULT NULL,
+    upload_time      TIMESTAMP    NOT NULL,
+    upload_by        VARCHAR(255) DEFAULT NULL,
+    remark           TEXT        DEFAULT NULL,
+    creator          VARCHAR(64) DEFAULT '',
+    create_time      TIMESTAMP    DEFAULT NULL,
+    updater          VARCHAR(64) DEFAULT '',
+    update_time      TIMESTAMP    DEFAULT NULL,
+    deleted          BOOLEAN     NOT NULL DEFAULT FALSE,
+    tenant_id        BIGINT      NOT NULL DEFAULT 100
+);
+
+COMMENT ON TABLE inspection_object_source IS 'Inspection object source table';
+COMMENT ON COLUMN inspection_object_source.source_type IS 'Source type: 1-manual, 2-device, 3-system';
+
+-- ============================================================================
+-- Indexes
+-- ============================================================================
+
+CREATE INDEX idx_inspection_task_category ON inspection_task (category_id);
+CREATE INDEX idx_inspection_task_status ON inspection_task (status);
+CREATE INDEX idx_inspection_task_enabled ON inspection_task (enabled);
+CREATE INDEX idx_inspection_task_schedule_req ON inspection_task (schedule_requirement_id);
+CREATE INDEX idx_inspection_task_active_plan ON inspection_task (active_plan_id);
+
+CREATE INDEX idx_requirement_task ON inspection_task_schedule_requirement (task_id);
+CREATE INDEX idx_requirement_type ON inspection_task_schedule_requirement (requirement_type);
+
+CREATE INDEX idx_policy_type ON inspection_task_schedule_policy (policy_type);
+CREATE INDEX idx_policy_enabled ON inspection_task_schedule_policy (enabled);
+
+CREATE INDEX idx_resource_task ON inspection_task_schedule_resource (task_id);
+CREATE INDEX idx_resource_schedule ON inspection_task_schedule_resource (schedule_id);
+CREATE INDEX idx_resource_type ON inspection_task_schedule_resource (resource_type);
+
+CREATE INDEX idx_plan_task ON inspection_task_schedule_plan (task_id);
+CREATE INDEX idx_plan_requirement ON inspection_task_schedule_plan (schedule_requirement_id);
+CREATE INDEX idx_plan_status ON inspection_task_schedule_plan (plan_status);
+CREATE INDEX idx_plan_dates ON inspection_task_schedule_plan (horizon_start_date, horizon_end_date);
+
+CREATE INDEX idx_schedule_plan ON inspection_task_schedule (plan_id);
+CREATE INDEX idx_schedule_task ON inspection_task_schedule (task_id);
+CREATE INDEX idx_schedule_status ON inspection_task_schedule (status);
+CREATE INDEX idx_schedule_executor ON inspection_task_schedule (executor_id);
+CREATE INDEX idx_schedule_time ON inspection_task_schedule (scheduled_time);
+
+CREATE INDEX idx_execution_schedule ON inspection_task_execution (schedule_id);
+CREATE INDEX idx_execution_task ON inspection_task_execution (task_id);
+CREATE INDEX idx_execution_status ON inspection_task_execution (status);
+CREATE INDEX idx_execution_executor ON inspection_task_execution (executor_id);
+
+CREATE INDEX idx_collection_object ON inspection_object_collection (object_id);
+CREATE INDEX idx_collection_type ON inspection_object_collection (collection_type);
+CREATE INDEX idx_collection_time ON inspection_object_collection (collection_time);
+
+CREATE INDEX idx_source_object ON inspection_object_source (object_id);
+CREATE INDEX idx_source_type ON inspection_object_source (source_type);

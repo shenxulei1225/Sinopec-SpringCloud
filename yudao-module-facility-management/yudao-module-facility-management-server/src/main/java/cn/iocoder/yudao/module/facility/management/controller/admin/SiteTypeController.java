@@ -23,7 +23,7 @@ import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
  */
 @Tag(name = "管理后台 - 站场类型管理")
 @RestController
-@RequestMapping("/facility/site-type")
+@RequestMapping("/site-type")
 public class SiteTypeController {
 
     @Resource

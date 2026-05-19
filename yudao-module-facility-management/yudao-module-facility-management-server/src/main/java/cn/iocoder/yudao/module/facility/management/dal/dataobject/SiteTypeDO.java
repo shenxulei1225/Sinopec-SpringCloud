@@ -1,20 +1,23 @@
 package cn.iocoder.yudao.module.facility.management.dal.dataobject;
 
 import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 站场类型 DO
  *
  * <p>用于定义站场的类型，如：加油站、炼油厂、化工厂、管道站等。</p>
  */
-@TableName("sys_site_type")
-@KeySequence("sys_site_type_seq")
+@TableName("fac_site_type")
+@KeySequence("fac_site_type_seq")
 @Data
-public class SiteTypeDO extends BaseDO {
+@EqualsAndHashCode(callSuper = true)
+public class SiteTypeDO extends TenantBaseDO {
 
     /**
      * 类型ID

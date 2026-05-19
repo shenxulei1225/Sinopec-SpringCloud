@@ -1,10 +1,12 @@
 package cn.iocoder.yudao.module.facility.management.dal.dataobject;
 
 import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 
 /**
@@ -12,10 +14,11 @@ import lombok.Data;
  *
  * <p>用于记录设施的基本信息，包括设备、仪表、建筑物等。</p>
  */
-@TableName("facility")
-@KeySequence("facility_seq")
+@TableName("fac_facility")
+@KeySequence("fac_facility_seq")
 @Data
-public class FacilityDO extends BaseDO {
+@EqualsAndHashCode(callSuper = true)
+public class FacilityDO extends TenantBaseDO {
 
     /**
      * 主键ID

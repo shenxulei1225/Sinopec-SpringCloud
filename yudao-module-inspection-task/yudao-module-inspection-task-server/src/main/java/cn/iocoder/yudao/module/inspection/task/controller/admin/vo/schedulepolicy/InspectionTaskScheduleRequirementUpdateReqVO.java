@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.util.List;
+
 /**
  * 管理后台 - 排期需求更新 Request VO
  */
@@ -13,7 +15,10 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class InspectionTaskScheduleRequirementUpdateReqVO extends InspectionTaskScheduleRequirementBaseVO {
 
-    @Schema(description = "需求 ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
-    @NotNull(message = "需求 ID 不能为空")
+    @Schema(description = "排期需求ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @NotNull(message = "排期需求ID不能为空")
     private Long id;
+
+    @Schema(description = "模板组合配置列表")
+    private List<ScheduleTemplateConfigVO> scheduleTemplates;
 }

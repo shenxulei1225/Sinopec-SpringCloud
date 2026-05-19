@@ -27,6 +27,19 @@ public interface CategoryMapper extends FrameworkCategoryMapper<CategoryDO> {
                 .eq(CategoryDO::getDeleted, false));
     }
 
+    default CategoryDO selectBySortAndParent(Integer sort, Long parentId, String categoryTypeCode) {
+        LambdaQueryWrapperX<CategoryDO> wrapper = new LambdaQueryWrapperX<CategoryDO>()
+                .eq(CategoryDO::getSort, sort)
+                .eq(CategoryDO::getCategoryTypeCode, categoryTypeCode)
+                .eq(CategoryDO::getDeleted, false);
+        if (parentId == null) {
+            wrapper.isNull(CategoryDO::getParentId);
+        } else {
+            wrapper.eq(CategoryDO::getParentId, parentId);
+        }
+        return selectOne(wrapper);
+    }
+
     default List<CategoryDO> selectByCategoryTypeCode(String categoryTypeCode) {
         return selectList(new LambdaQueryWrapperX<CategoryDO>()
                 .eq(CategoryDO::getCategoryTypeCode, categoryTypeCode)

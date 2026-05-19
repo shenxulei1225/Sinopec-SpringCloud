@@ -1,18 +1,23 @@
 package cn.iocoder.yudao.module.facility.management.service.facility.impl;
 
+import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.iocoder.yudao.framework.common.biz.system.category.CategoryCommonApi;
+import cn.iocoder.yudao.module.facility.management.controller.admin.vo.facility.FacilityCreateReqVO;
 import cn.iocoder.yudao.module.facility.management.controller.admin.vo.facility.FacilitySpatialSaveReqVO;
+import cn.iocoder.yudao.module.facility.management.controller.admin.vo.facility.FacilityUpdateReqVO;
 import cn.iocoder.yudao.module.facility.management.dal.dataobject.FacilityDO;
 import cn.iocoder.yudao.module.facility.management.dal.mysql.FacilityMapper;
 import cn.iocoder.yudao.module.facility.management.service.facility.FacilityService;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.iocoder.yudao.module.facility.management.enums.ErrorCodeConstants.FACILITY_NOT_EXISTS;
+import static cn.iocoder.yudao.module.facility.management.enums.ErrorCodeConstants.*;
 
 /**
  * 设施服务实现
@@ -23,8 +28,109 @@ public class FacilityServiceImpl implements FacilityService {
 
     @Resource
     private FacilityMapper facilityMapper;
+
     @Resource
     private ObjectMapper objectMapper;
+
+    @Resource
+    @Lazy
+    private CategoryCommonApi categoryCommonApi;
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long createFacility(FacilityCreateReqVO reqVO) {
+        // 校验编码唯一性
+        FacilityDO existingByCode = facilityMapper.selectByCode(reqVO.getFacilityCode());
+        if (existingByCode != null) {
+            throw exception(FACILITY_CODE_DUPLICATE);
+        }
+
+        // 获取分类名称
+        String categoryName = reqVO.getCategoryName();
+        if (categoryName == null && reqVO.getCategoryId() != null) {
+            try {
+                CommonResult<java.util.Map<String, Object>> categoryResult = categoryCommonApi.getCategory(reqVO.getCategoryId(), "facility");
+                if (categoryResult.isSuccess() && categoryResult.getData() != null) {
+                    Object name = categoryResult.getData().get("name");
+                    categoryName = name != null ? name.toString() : null;
+                }
+            } catch (Exception e) {
+                log.warn("获取分类名称失败, categoryId={}", reqVO.getCategoryId(), e);
+            }
+        }
+
+        // 创建设施
+        FacilityDO facility = BeanUtils.toBean(reqVO, FacilityDO.class);
+        facility.setCategoryName(categoryName);
+        facility.setStatus(reqVO.getStatus() != null ? reqVO.getStatus() : 0);
+        facility.setSortNo(reqVO.getSortNo() != null ? reqVO.getSortNo() : 0);
+        facilityMapper.insert(facility);
+
+        log.info("创建设施成功: id={}, code={}", facility.getId(), facility.getFacilityCode());
+        return facility.getId();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateFacility(FacilityUpdateReqVO reqVO) {
+        // 校验设施存在
+        FacilityDO existing = facilityMapper.selectById(reqVO.getId());
+        if (existing == null) {
+            throw exception(FACILITY_NOT_EXISTS);
+        }
+
+        // 校验编码唯一性（排除自身）
+        FacilityDO existingByCode = facilityMapper.selectByCode(reqVO.getFacilityCode());
+        if (existingByCode != null && !existingByCode.getId().equals(reqVO.getId())) {
+            throw exception(FACILITY_CODE_DUPLICATE);
+        }
+
+        // 获取分类名称
+        String categoryName = reqVO.getCategoryName();
+        if (categoryName == null && reqVO.getCategoryId() != null) {
+            try {
+                CommonResult<java.util.Map<String, Object>> categoryResult = categoryCommonApi.getCategory(reqVO.getCategoryId(), "facility");
+                if (categoryResult.isSuccess() && categoryResult.getData() != null) {
+                    Object name = categoryResult.getData().get("name");
+                    categoryName = name != null ? name.toString() : null;
+                }
+            } catch (Exception e) {
+                log.warn("获取分类名称失败, categoryId={}", reqVO.getCategoryId(), e);
+            }
+        }
+
+        // 更新设施
+        FacilityDO facility = BeanUtils.toBean(reqVO, FacilityDO.class);
+        facility.setCategoryName(categoryName);
+        facilityMapper.updateById(facility);
+
+        log.info("更新设施成功: id={}, code={}", facility.getId(), facility.getFacilityCode());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteFacility(Long id) {
+        // 校验设施存在
+        FacilityDO existing = facilityMapper.selectById(id);
+        if (existing == null) {
+            throw exception(FACILITY_NOT_EXISTS);
+        }
+
+        // 删除设施
+        facilityMapper.deleteById(id);
+
+        log.info("删除设施成功: id={}, code={}", id, existing.getFacilityCode());
+    }
+
+    @Override
+    public FacilityDO getFacility(Long id) {
+        return facilityMapper.selectById(id);
+    }
+
+    @Override
+    public FacilityDO getFacilityByCode(String facilityCode) {
+        return facilityMapper.selectByCode(facilityCode);
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)

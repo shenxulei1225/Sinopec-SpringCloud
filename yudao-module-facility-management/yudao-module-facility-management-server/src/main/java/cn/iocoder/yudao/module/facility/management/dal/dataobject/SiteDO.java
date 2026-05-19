@@ -1,10 +1,13 @@
 package cn.iocoder.yudao.module.facility.management.dal.dataobject;
 
 import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.KeySequence;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -14,10 +17,11 @@ import java.util.List;
  *
  * <p>站场是指实际的生产运营场所，如加油站、化工站场、炼油厂等。</p>
  */
-@TableName("sys_site")
-@KeySequence("sys_site_seq")
+@TableName("fac_site")
+@KeySequence("fac_site_seq")
 @Data
-public class SiteDO extends BaseDO {
+@EqualsAndHashCode(callSuper = true)
+public class SiteDO extends TenantBaseDO {
 
     /**
      * 站场ID

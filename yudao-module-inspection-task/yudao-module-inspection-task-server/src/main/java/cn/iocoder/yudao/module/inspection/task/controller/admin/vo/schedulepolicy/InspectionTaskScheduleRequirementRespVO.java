@@ -3,9 +3,7 @@ package cn.iocoder.yudao.module.inspection.task.controller.admin.vo.schedulepoli
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 
 /**
@@ -15,49 +13,34 @@ import java.util.List;
 @Data
 public class InspectionTaskScheduleRequirementRespVO {
 
+    // ==================== 基础信息 ====================
     @Schema(description = "需求 ID", example = "1")
     private Long id;
 
-    @Schema(description = "关联排期策略 ID")
-    private Long policyId;
+    @Schema(description = "需求编码")
+    private String requirementCode;
 
-    @Schema(description = "关联排期策略名称")
-    private String policyName;
+    @Schema(description = "需求名称")
+    private String requirementName;
 
-    @Schema(description = "是否为模板")
-    private Boolean isTemplate;
+    @Schema(description = "关联的任务 ID")
+    private Long taskId;
 
-    @Schema(description = "模板名称")
-    private String templateName;
+    @Schema(description = "关联的排期策略 ID")
+    private Long schedulePolicyId;
 
-    // ==================== 日期范围 ====================
+    @Schema(description = "关联的排期策略名称")
+    private String schedulePolicyName;
 
-    @Schema(description = "开始日期")
-    private LocalDate startDate;
+    // ==================== 模板组合配置 ====================
+    @Schema(description = "模板组合配置列表（一个排期需求可包含多个模板）")
+    private List<ScheduleTemplateConfigVO> scheduleTemplates;
 
-    @Schema(description = "结束日期")
-    private LocalDate endDate;
-
-    // ==================== 重复模式 ====================
-
-    @Schema(description = "重复模式：1-一次性 2-每日 3-每周 4-每月")
-    private Integer repeatMode;
-
-    @Schema(description = "周期步长")
-    private Integer cycleStep;
-
-    @Schema(description = "每周重复日")
-    private List<Integer> weekDays;
-
-    @Schema(description = "每月重复日")
-    private List<Integer> monthDays;
-
-    @Schema(description = "固定执行时间点")
-    private List<LocalTime> timePoints;
-
+    // ==================== 扩展字段 ====================
     @Schema(description = "需求说明")
     private String description;
 
+    // ==================== 时间信息 ====================
     @Schema(description = "创建时间")
     private LocalDateTime createTime;
 

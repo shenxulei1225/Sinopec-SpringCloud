@@ -24,7 +24,7 @@ import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
  */
 @Tag(name = "管理后台 - 站场管理")
 @RestController
-@RequestMapping("/facility/site")
+@RequestMapping("/site")
 public class SiteController {
 
     @Resource
@@ -52,6 +52,13 @@ public class SiteController {
     @GetMapping("/get")
     @Operation(summary = "获取站场详情")
     public CommonResult<SiteRespVO> getSite(@Parameter(description = "站场ID", required = true) @RequestParam("id") Long id) {
+        SiteView view = siteQueryService.getSiteView(id);
+        return success(toRespVO(view));
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "获取站场详情")
+    public CommonResult<SiteRespVO> getSiteById(@PathVariable("id") Long id) {
         SiteView view = siteQueryService.getSiteView(id);
         return success(toRespVO(view));
     }
