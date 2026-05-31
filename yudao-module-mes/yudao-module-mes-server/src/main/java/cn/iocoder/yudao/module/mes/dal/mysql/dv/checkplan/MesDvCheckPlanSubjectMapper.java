@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * MES 点检保养方案项目 Mapper
  *
- * @author 芋道源码
+ * 
  */
 @Mapper
 public interface MesDvCheckPlanSubjectMapper extends BaseMapperX<MesDvCheckPlanSubjectDO> {

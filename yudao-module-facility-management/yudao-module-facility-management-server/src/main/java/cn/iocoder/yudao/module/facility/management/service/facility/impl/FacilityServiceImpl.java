@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.facility.management.service.facility.impl;
 
+import cn.cheers.x.module.dynamicbusiness.api.category.CategoryApi;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
-import cn.iocoder.yudao.framework.common.biz.system.category.CategoryCommonApi;
 import cn.iocoder.yudao.module.facility.management.controller.admin.vo.facility.FacilityCreateReqVO;
 import cn.iocoder.yudao.module.facility.management.controller.admin.vo.facility.FacilitySpatialSaveReqVO;
 import cn.iocoder.yudao.module.facility.management.controller.admin.vo.facility.FacilityUpdateReqVO;
@@ -34,7 +34,7 @@ public class FacilityServiceImpl implements FacilityService {
 
     @Resource
     @Lazy
-    private CategoryCommonApi categoryCommonApi;
+    private CategoryApi categoryApi;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -49,7 +49,7 @@ public class FacilityServiceImpl implements FacilityService {
         String categoryName = reqVO.getCategoryName();
         if (categoryName == null && reqVO.getCategoryId() != null) {
             try {
-                CommonResult<java.util.Map<String, Object>> categoryResult = categoryCommonApi.getCategory(reqVO.getCategoryId(), "facility");
+                CommonResult<java.util.Map<String, Object>> categoryResult = categoryApi.getCategory(reqVO.getCategoryId(), "facility");
                 if (categoryResult.isSuccess() && categoryResult.getData() != null) {
                     Object name = categoryResult.getData().get("name");
                     categoryName = name != null ? name.toString() : null;
@@ -89,7 +89,7 @@ public class FacilityServiceImpl implements FacilityService {
         String categoryName = reqVO.getCategoryName();
         if (categoryName == null && reqVO.getCategoryId() != null) {
             try {
-                CommonResult<java.util.Map<String, Object>> categoryResult = categoryCommonApi.getCategory(reqVO.getCategoryId(), "facility");
+                CommonResult<java.util.Map<String, Object>> categoryResult = categoryApi.getCategory(reqVO.getCategoryId(), "facility");
                 if (categoryResult.isSuccess() && categoryResult.getData() != null) {
                     Object name = categoryResult.getData().get("name");
                     categoryName = name != null ? name.toString() : null;

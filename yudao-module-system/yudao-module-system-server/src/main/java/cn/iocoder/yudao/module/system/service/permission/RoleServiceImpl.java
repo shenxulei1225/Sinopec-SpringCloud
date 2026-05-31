@@ -39,7 +39,7 @@ import static cn.iocoder.yudao.module.system.enums.LogRecordConstants.*;
 /**
  * 角色 Service 实现类
  *
- * @author 芋道源码
+ * 
  */
 @Service
 @Slf4j
@@ -223,6 +223,11 @@ public class RoleServiceImpl implements RoleService {
         // 这里采用 for 循环从缓存中获取，主要考虑 Spring CacheManager 无法批量操作的问题
         RoleServiceImpl self = getSelf();
         return CollectionUtils.convertList(ids, self::getRoleFromCache);
+    }
+
+    @Override
+    public List<Long> getRoleIdListByUserId(Long userId) {
+        return Collections.emptyList();
     }
 
     @Override

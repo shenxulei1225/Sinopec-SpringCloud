@@ -35,7 +35,7 @@ import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.
 /**
  * MES 装箱明细 Controller
  *
- * @author 芋道源码
+ * 
  */
 @Tag(name = "管理后台 - MES 装箱明细")
 @RestController

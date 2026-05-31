@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 /**
  * IoT Modbus 点位配置 Response DTO
  *
- * @author 芋道源码
+ * 
  */
 @Data
 public class IotModbusPointRespDTO {

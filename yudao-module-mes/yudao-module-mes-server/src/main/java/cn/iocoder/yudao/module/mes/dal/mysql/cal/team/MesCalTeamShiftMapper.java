@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * MES 班组排班 Mapper
  *
- * @author 芋道源码
+ * 
  */
 @Mapper
 public interface MesCalTeamShiftMapper extends BaseMapperX<MesCalTeamShiftDO> {

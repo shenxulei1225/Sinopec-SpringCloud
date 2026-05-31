@@ -12,7 +12,7 @@ import static cn.iocoder.yudao.framework.common.enums.WebFilterOrderEnum.TENANT_
 /**
  * 数据权限针对 RPC 的自动配置类
  *
- * @author 芋道源码
+ * 
  */
 @AutoConfiguration
 @ConditionalOnClass(name = "feign.RequestInterceptor")

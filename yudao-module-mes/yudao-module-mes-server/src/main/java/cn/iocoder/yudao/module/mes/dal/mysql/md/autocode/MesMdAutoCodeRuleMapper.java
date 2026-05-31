@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * MES 编码规则 Mapper
  *
- * @author 芋道源码
+ * 
  */
 @Mapper
 public interface MesMdAutoCodeRuleMapper extends BaseMapperX<MesMdAutoCodeRuleDO> {

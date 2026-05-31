@@ -20,7 +20,7 @@ import static cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeC
  *
  * 在功能上，和 yudao-spring-boot-starter-web 的 GlobalExceptionHandler 类是一致的
  *
- * @author 芋道源码
+ * 
  */
 @Component
 @Order(-1) // 保证优先级高于默认的 Spring Cloud Gateway 的 ErrorWebExceptionHandler 实现

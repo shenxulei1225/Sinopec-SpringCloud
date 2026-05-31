@@ -230,6 +230,11 @@ public class AlarmTestConfiguration {
             }
 
             @Override
+            public CommonResult<List<AdminUserRespDTO>> getUserListByNickname(String nickname) {
+                return CommonResult.success(List.of(mockUser(1L)));
+            }
+
+            @Override
             public CommonResult<Boolean> validateUserList(Collection<Long> ids) {
                 return CommonResult.success(true);
             }

@@ -57,8 +57,7 @@ public interface FacilityMapper extends BaseMapperX<FacilityDO> {
      */
     default FacilityDO selectByCode(String facilityCode) {
         return selectOne(new LambdaQueryWrapperX<FacilityDO>()
-                .eq(FacilityDO::getFacilityCode, facilityCode)
-                .eq(FacilityDO::getDeleted, false));
+                .eq(FacilityDO::getFacilityCode, facilityCode));
     }
 
     /**
@@ -66,7 +65,6 @@ public interface FacilityMapper extends BaseMapperX<FacilityDO> {
      */
     default List<FacilityDO> selectSimpleList(Long siteId, Long categoryId, String keyword) {
         LambdaQueryWrapperX<FacilityDO> wrapper = new LambdaQueryWrapperX<FacilityDO>()
-                .eq(FacilityDO::getDeleted, false)
                 .eqIfPresent(FacilityDO::getStatus, 0);
         if (siteId != null) {
             wrapper.eq(FacilityDO::getSiteId, siteId);

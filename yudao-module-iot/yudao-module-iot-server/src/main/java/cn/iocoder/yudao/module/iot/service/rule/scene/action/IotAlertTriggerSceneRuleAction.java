@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * IoT 告警触发的 {@link IotSceneRuleAction} 实现类
  *
- * @author 芋道源码
+ * 
  */
 @Component
 public class IotAlertTriggerSceneRuleAction implements IotSceneRuleAction {

@@ -39,7 +39,7 @@ import static cn.iocoder.yudao.framework.common.util.json.JsonUtils.toJsonString
 /**
  * 权限 Service 实现类
  *
- * @author 芋道源码
+ * 
  */
 @Service
 @Slf4j
@@ -175,7 +175,7 @@ public class PermissionServiceImpl implements PermissionService {
     }
 
     @Override
-    @CacheEvict(value = RedisKeyConstants.MENU_ROLE_ID_LIST, key = "#menuId")
+    @CacheEvict(value = RedisKeyConstants.MENU_ROLE_ID_LIST, key = "#p0")
     public void processMenuDeleted(Long menuId) {
         roleMenuMapper.deleteListByMenuId(menuId);
     }
@@ -195,7 +195,7 @@ public class PermissionServiceImpl implements PermissionService {
     }
 
     @Override
-    @Cacheable(value = RedisKeyConstants.MENU_ROLE_ID_LIST, key = "#menuId")
+    @Cacheable(value = RedisKeyConstants.MENU_ROLE_ID_LIST, key = "#p0")
     public Set<Long> getMenuRoleIdListByMenuIdFromCache(Long menuId) {
         return convertSet(roleMenuMapper.selectListByMenuId(menuId), RoleMenuDO::getRoleId);
     }
@@ -204,7 +204,7 @@ public class PermissionServiceImpl implements PermissionService {
 
     @Override
     @DSTransactional // 多数据源，使用 @DSTransactional 保证本地事务，以及数据源的切换
-    @CacheEvict(value = RedisKeyConstants.USER_ROLE_ID_LIST, key = "#userId")
+    @CacheEvict(value = RedisKeyConstants.USER_ROLE_ID_LIST, key = "#p0")
     public void assignUserRole(Long userId, Set<Long> roleIds) {
         // 获得角色拥有角色编号
         Set<Long> dbRoleIds = convertSet(userRoleMapper.selectListByUserId(userId),
@@ -228,7 +228,7 @@ public class PermissionServiceImpl implements PermissionService {
     }
 
     @Override
-    @CacheEvict(value = RedisKeyConstants.USER_ROLE_ID_LIST, key = "#userId")
+    @CacheEvict(value = RedisKeyConstants.USER_ROLE_ID_LIST, key = "#p0")
     public void processUserDeleted(Long userId) {
         userRoleMapper.deleteListByUserId(userId);
     }
@@ -239,7 +239,7 @@ public class PermissionServiceImpl implements PermissionService {
     }
 
     @Override
-    @Cacheable(value = RedisKeyConstants.USER_ROLE_ID_LIST, key = "#userId")
+    @Cacheable(value = RedisKeyConstants.USER_ROLE_ID_LIST, key = "#p0")
     public Set<Long> getUserRoleIdListByUserIdFromCache(Long userId) {
         return getUserRoleIdListByUserId(userId);
     }

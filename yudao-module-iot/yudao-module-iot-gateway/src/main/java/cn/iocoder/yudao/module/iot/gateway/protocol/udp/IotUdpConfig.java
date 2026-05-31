@@ -7,7 +7,7 @@ import lombok.Data;
 /**
  * IoT UDP 协议配置
  *
- * @author 芋道源码
+ * 
  */
 @Data
 public class IotUdpConfig {

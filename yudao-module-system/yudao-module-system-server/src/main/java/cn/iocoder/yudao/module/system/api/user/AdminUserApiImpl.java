@@ -88,9 +88,14 @@ public class AdminUserApiImpl implements AdminUserApi {
     }
 
     @Override
+    public CommonResult<List<AdminUserRespDTO>> getUserListByNickname(String nickname) {
+        List<AdminUserDO> users = userService.getUserListByNickname(nickname);
+        return success(BeanUtils.toBean(users, AdminUserRespDTO.class));
+    }
+    @Override
     public CommonResult<Boolean> validateUserList(Collection<Long> ids) {
         userService.validateUserList(ids);
         return success(true);
     }
-
+    
 }

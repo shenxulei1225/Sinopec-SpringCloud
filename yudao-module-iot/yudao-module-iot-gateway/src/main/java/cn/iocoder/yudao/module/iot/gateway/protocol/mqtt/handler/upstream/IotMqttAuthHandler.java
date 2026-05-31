@@ -24,7 +24,7 @@ import static cn.iocoder.yudao.module.iot.gateway.enums.ErrorCodeConstants.DEVIC
  * <p>
  * 处理 MQTT CONNECT 事件，完成设备认证、连接注册、上线通知
  *
- * @author 芋道源码
+ * 
  */
 @Slf4j
 public class IotMqttAuthHandler extends IotMqttAbstractHandler {

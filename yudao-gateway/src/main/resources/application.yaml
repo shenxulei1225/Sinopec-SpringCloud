@@ -222,6 +222,20 @@ spring:
                 - Path=/admin-api/scene-platform/**
               filters:
                 - RewritePath=/admin-api/scene-platform/v3/api-docs, /v3/api-docs # 配置，保证转发到 /v3/api-docs
+            ## dynamicbusiness-server 服务
+            - id: dynamicbusiness-admin-api # 路由的编号
+              uri: grayLb://dynamicbusiness-server
+              predicates: # 断言，作为路由的匹配条件，对应 RouteDefinition 数组
+                - Path=/admin-api/dynamicbusiness/**
+              filters:
+                - RewritePath=/admin-api/dynamicbusiness/v3/api-docs, /v3/api-docs # 配置，保证转发到 /v3/api-docs
+            ## platformresource-server 服务
+            - id: platformresource-admin-api
+              uri: grayLb://platformresource-server
+              predicates:
+                - Path=/admin-api/platformresource/**
+              filters:
+                - RewritePath=/admin-api/platformresource/v3/api-docs, /v3/api-docs
             ## twin-server 服务
             - id: twin-admin-api # 路由的编号
               uri: grayLb://twin-server
@@ -235,7 +249,7 @@ spring:
             - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin # 采用 https://github.com/spring-cloud/spring-cloud-gateway/pull/866 解决响应头重复问题
 
 server:
-  port: 48080
+  port: 58080
 
 logging:
   file:
@@ -297,6 +311,12 @@ knife4j:
       - name: scene-platform-server
         service-name: scene-platform-server
         url: /admin-api/scene-platform/v3/api-docs
+      - name: dynamicbusiness-server
+        service-name: dynamicbusiness-server
+        url: /admin-api/dynamicbusiness/v3/api-docs
+      - name: platformresource-server
+        service-name: platformresource-server
+        url: /admin-api/platformresource/v3/api-docs
       - name: twin-server
         service-name: twin-server
         url: /admin-api/twin/v3/api-docs

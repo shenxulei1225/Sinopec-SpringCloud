@@ -1,12 +1,14 @@
 package cn.iocoder.yudao.module.system.api.permission;
 
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.iocoder.yudao.module.system.api.permission.dto.RoleRespDTO;
 import cn.iocoder.yudao.module.system.service.permission.RoleService;
+import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.annotation.Resource;
 import java.util.Collection;
+import java.util.List;
 
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
 
@@ -21,5 +23,20 @@ public class RoleApiImpl implements RoleApi {
     public CommonResult<Boolean> validRoleList(Collection<Long> ids) {
         roleService.validateRoleList(ids);
         return success(true);
+    }
+
+    @Override
+    public CommonResult<RoleRespDTO> getRole(Long id) {
+        return success(null);
+    }
+
+    @Override
+    public CommonResult<List<RoleRespDTO>> getRoleList(Collection<Long> ids) {
+        return success(List.of());
+    }
+
+    @Override
+    public CommonResult<Collection<Long>> getUserRoleIdListByUserId(Long userId) {
+        return success(roleService.getRoleIdListByUserId(userId));
     }
 }

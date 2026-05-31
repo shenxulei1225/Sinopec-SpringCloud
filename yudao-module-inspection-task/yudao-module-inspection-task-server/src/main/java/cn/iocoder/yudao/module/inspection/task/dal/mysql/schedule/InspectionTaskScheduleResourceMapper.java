@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * 巡检任务计划点资源分配 Mapper。
  *
- * @author 芋道源码
+ * 
  */
 @Mapper
 public interface InspectionTaskScheduleResourceMapper extends BaseMapperX<InspectionTaskScheduleResourceDO> {

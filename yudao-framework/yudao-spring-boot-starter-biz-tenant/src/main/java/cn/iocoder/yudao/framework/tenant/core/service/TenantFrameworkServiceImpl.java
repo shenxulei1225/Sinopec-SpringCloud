@@ -15,7 +15,7 @@ import static cn.iocoder.yudao.framework.common.util.cache.CacheUtils.buildAsync
 /**
  * Tenant 框架 Service 实现类
  *
- * @author 芋道源码
+ * 
  */
 @RequiredArgsConstructor
 public class TenantFrameworkServiceImpl implements TenantFrameworkService {

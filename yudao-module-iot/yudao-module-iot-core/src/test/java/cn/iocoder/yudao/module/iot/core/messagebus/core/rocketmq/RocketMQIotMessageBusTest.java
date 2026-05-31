@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * {@link IotRocketMQMessageBus} 集成测试
  *
- * @author 芋道源码
+ * 
  */
 @SpringBootTest(classes = RocketMQIotMessageBusTest.class)
 @Import({RocketMQAutoConfiguration.class, IotMessageBusAutoConfiguration.class})

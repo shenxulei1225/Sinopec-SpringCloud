@@ -10,10 +10,13 @@ import java.util.Set;
 @Data
 public class AdminUserRespDTO implements VO {
 
-    @Schema(description = "用户 ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "1024")
+    @Schema(description = "用户编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     private Long id;
 
-    @Schema(description = "用户昵称", requiredMode = Schema.RequiredMode.REQUIRED, example = "小王")
+    @Schema(description = "用户账号", requiredMode = Schema.RequiredMode.REQUIRED, example = "admin")
+    private String username;
+
+    @Schema(description = "用户昵称", requiredMode = Schema.RequiredMode.REQUIRED, example = "管理员")
     private String nickname;
 
     @Schema(description = "帐号状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
@@ -25,6 +28,9 @@ public class AdminUserRespDTO implements VO {
     @Schema(description = "岗位编号数组", requiredMode = Schema.RequiredMode.REQUIRED, example = "[1, 3]")
     private Set<Long> postIds;
 
+    @Schema(description = "邮箱", requiredMode = Schema.RequiredMode.REQUIRED, example = "admin@iocoder.cn")
+    private String email;
+
     @Schema(description = "手机号码", requiredMode = Schema.RequiredMode.REQUIRED, example = "15601691300")
     private String mobile;
 
@@ -32,3 +38,4 @@ public class AdminUserRespDTO implements VO {
     private String avatar;
 
 }
+

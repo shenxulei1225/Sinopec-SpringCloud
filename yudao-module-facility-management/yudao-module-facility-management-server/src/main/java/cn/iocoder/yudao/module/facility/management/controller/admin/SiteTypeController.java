@@ -81,8 +81,6 @@ public class SiteTypeController {
         respVO.setSortNo(siteType.getSortNo());
         respVO.setStatus(siteType.getStatus());
         respVO.setRemark(siteType.getRemark());
-        respVO.setCreateTime(siteType.getCreateTime());
-        respVO.setUpdateTime(siteType.getUpdateTime());
         return respVO;
     }
 

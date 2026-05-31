@@ -32,7 +32,7 @@ import static org.mockito.Mockito.verify;
 /**
  * {@link MesQcRqcServiceImpl} 的单元测试类
  *
- * @author 芋道源码
+ * 
  */
 @Import(MesQcRqcServiceImpl.class)
 public class MesQcRqcServiceImplTest extends BaseDbUnitTest {

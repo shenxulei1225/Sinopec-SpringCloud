@@ -1,13 +1,9 @@
 package cn.iocoder.yudao.module.system.api.user;
 
-import cn.hutool.core.convert.Convert;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.util.collection.CollectionUtils;
 import cn.iocoder.yudao.module.system.api.user.dto.AdminUserRespDTO;
 import cn.iocoder.yudao.module.system.enums.ApiConstants;
-import com.fhs.core.trans.anno.AutoTrans;
-import com.fhs.trans.service.AutoTransable;
-import feign.FeignIgnore;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,12 +16,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static cn.iocoder.yudao.module.system.api.user.AdminUserApi.PREFIX;
 
-@FeignClient(name = ApiConstants.NAME) // TODO 芋艿：fallbackFactory =
+@FeignClient(name = ApiConstants.NAME)
 @Tag(name = "RPC 服务 - 管理员用户")
-@AutoTrans(namespace = PREFIX, fields = {"nickname"})
-public interface AdminUserApi extends AutoTransable<AdminUserRespDTO> {
+public interface AdminUserApi {
 
     String PREFIX = ApiConstants.PREFIX + "/user";
 
@@ -43,7 +37,7 @@ public interface AdminUserApi extends AutoTransable<AdminUserRespDTO> {
     @Operation(summary = "通过用户 ID 查询用户们")
     @Parameter(name = "ids", description = "部门编号数组", example = "1,2", required = true)
     CommonResult<List<AdminUserRespDTO>> getUserList(@RequestParam("ids") Collection<Long> ids);
-
+    
     @GetMapping(PREFIX + "/list-by-dept-id")
     @Operation(summary = "获得指定部门的用户数组")
     @Parameter(name = "deptIds", description = "部门编号数组", example = "1,2", required = true)
@@ -53,9 +47,12 @@ public interface AdminUserApi extends AutoTransable<AdminUserRespDTO> {
     @Operation(summary = "获得指定岗位的用户数组")
     @Parameter(name = "postIds", description = "岗位编号数组", example = "2,3", required = true)
     CommonResult<List<AdminUserRespDTO>> getUserListByPostIds(@RequestParam("postIds") Collection<Long> postIds);
+    @GetMapping(PREFIX + "/list-by-nickname")
+    @Operation(summary = "根据昵称获取后台用户列表")
+    CommonResult<List<AdminUserRespDTO>> getUserListByNickname(@RequestParam("nickname") String nickname);
 
     /**
-     * 获得用户 Map
+     * 获得指定编号的用户 Map
      *
      * @param ids 用户编号数组
      * @return 用户 Map
@@ -80,17 +77,5 @@ public interface AdminUserApi extends AutoTransable<AdminUserRespDTO> {
     @Operation(summary = "校验用户们是否有效")
     @Parameter(name = "ids", description = "用户编号数组", example = "3,5", required = true)
     CommonResult<Boolean> validateUserList(@RequestParam("ids") Collection<Long> ids);
-
-    @Override
-    @FeignIgnore
-    default List<AdminUserRespDTO> selectByIds(List<?> ids) {
-        return getUserList(Convert.toList(Long.class, ids)).getCheckedData();
-    }
-
-    @Override
-    @FeignIgnore
-    default AdminUserRespDTO selectById(Object id) {
-        return getUser(Convert.toLong(id)).getCheckedData();
-    }
 
 }

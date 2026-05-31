@@ -27,7 +27,7 @@ import java.util.List;
  * </ul>
  * </p>
  *
- * @author 芋道源码
+ * 
  */
 public interface AlarmTypeService {
 

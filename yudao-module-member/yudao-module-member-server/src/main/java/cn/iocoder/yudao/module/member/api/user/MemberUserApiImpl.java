@@ -19,7 +19,7 @@ import static cn.iocoder.yudao.module.member.enums.ErrorCodeConstants.USER_MOBIL
 /**
  * 会员用户的 API 实现类
  *
- * @author 芋道源码
+ * 
  */
 @RestController // 提供 RESTful API 接口，给 Feign 调用
 @Validated

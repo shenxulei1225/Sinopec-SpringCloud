@@ -17,7 +17,7 @@ import java.util.List;
  * 
  * <p>负责联动规则和联动执行记录相关的 DO 和 VO 之间的转换</p>
  *
- * @author 芋道源码
+ * 
  */
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface LinkageRuleConvert {

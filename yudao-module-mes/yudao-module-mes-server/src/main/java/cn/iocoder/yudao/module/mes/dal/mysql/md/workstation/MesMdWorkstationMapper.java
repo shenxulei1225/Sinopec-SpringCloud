@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * MES 工作站 Mapper
  *
- * @author 芋道源码
+ * 
  */
 @Mapper
 public interface MesMdWorkstationMapper extends BaseMapperX<MesMdWorkstationDO> {

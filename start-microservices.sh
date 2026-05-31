@@ -182,6 +182,9 @@ get_service_path() {
         facility) echo "yudao-module-facility-management/yudao-module-facility-management-server" ;;
         scene) echo "yudao-module-scene-platform/yudao-module-scene-platform-server" ;;
         twin) echo "yudao-module-twin/yudao-module-twin-biz" ;;
+        inspection) echo "yudao-module-inspection-task/yudao-module-inspection-task-server" ;;
+        dynamic) echo "cheers-module-dynamicbusiness/cheers-module-dynamicbusiness-server" ;;
+        platform|resource) echo "cheers-module-platform-resource/cheers-module-platform-resource-server" ;;
         *) echo "" ;;
     esac
 }
@@ -189,26 +192,29 @@ get_service_path() {
 # 获取服务端口
 get_service_port() {
     case "$1" in
-        gateway) echo "48080" ;;
-        system) echo "48081" ;;
-        infra) echo "48082" ;;
-        member) echo "48087" ;;
-        bpm) echo "48083" ;;
-        pay) echo "48085" ;;
-        report) echo "48084" ;;
-        mp) echo "48086" ;;
-        product) echo "48100" ;;
-        promotion) echo "48101" ;;
-        trade) echo "48102" ;;
-        statistics) echo "48103" ;;
-        crm) echo "48089" ;;
-        erp) echo "48088" ;;
-        ai) echo "48090" ;;
-        iot) echo "48091" ;;
-        alarm) echo "48097" ;;
-        facility) echo "48092" ;;
-        scene) echo "48093" ;;
-        twin) echo "48094" ;;
+        gateway) echo "58080" ;;
+        system) echo "58081" ;;
+        infra) echo "58082" ;;
+        member) echo "58087" ;;
+        bpm) echo "58083" ;;
+        pay) echo "58085" ;;
+        report) echo "58084" ;;
+        mp) echo "58086" ;;
+        product) echo "58100" ;;
+        promotion) echo "58101" ;;
+        trade) echo "58102" ;;
+        statistics) echo "58103" ;;
+        crm) echo "58089" ;;
+        erp) echo "58088" ;;
+        ai) echo "58090" ;;
+        iot) echo "58091" ;;
+        alarm) echo "58097" ;;
+        facility) echo "58092" ;;
+        scene) echo "58093" ;;
+        twin) echo "58094" ;;
+        inspection) echo "58095" ;;
+        dynamic) echo "58096" ;;
+        platform|resource) echo "58098" ;;
         *) echo "" ;;
     esac
 }
@@ -440,7 +446,7 @@ show_status() {
     printf "%-15s %-10s %-10s %-20s %-40s\n" "服务名" "端口" "状态" "PID" "访问链接"
     echo "----------------------------------------------------------------------------------------------------"
 
-    for svc in gateway system infra member bpm pay report mp product promotion trade statistics crm erp ai iot alarm facility scene twin; do
+    for svc in gateway system infra member bpm pay report mp product promotion trade statistics crm erp ai iot alarm dynamic platform facility scene twin inspection; do
         local port=$(get_service_port "$svc")
         if [ -n "$port" ]; then
             if is_service_running "$svc"; then
@@ -474,15 +480,15 @@ show_status() {
 
     echo ""
     echo -e "${BLUE}🔗 快捷访问链接:${NC}"
-    echo -e "   ${YELLOW}网关入口:${NC} ${BLUE}http://localhost:48080${NC}"
-    echo -e "   ${YELLOW}系统管理:${NC} ${BLUE}http://localhost:48080/admin-ui/${NC}"
+    echo -e "   ${YELLOW}网关入口:${NC} ${BLUE}http://localhost:58080${NC}"
+    echo -e "   ${YELLOW}系统管理:${NC} ${BLUE}http://localhost:58080/admin-ui/${NC}"
     echo -e "   ${YELLOW}Nacos控制台:${NC} ${BLUE}http://localhost:8848/nacos${NC}"
     echo ""
     echo -e "${BLUE}📚 API 文档链接:${NC}"
 
     # 显示运行中服务的 Swagger 链接
     local has_running_services=false
-    for svc in gateway system infra member bpm pay report mp product promotion trade statistics crm erp ai iot alarm facility scene; do
+    for svc in gateway system infra member bpm pay report mp product promotion trade statistics crm erp ai iot alarm dynamic platform facility scene twin inspection; do
         if is_service_running "$svc"; then
             local port=$(get_service_port "$svc")
             if [ -n "$port" ]; then
@@ -506,7 +512,7 @@ show_services() {
     echo ""
     printf "%-15s %-50s %-10s\n" "服务名" "模块路径" "端口"
     echo "----------------------------------------------------------------------------------------"
-    for svc in gateway system infra member bpm pay report mp product promotion trade statistics crm erp ai iot alarm facility scene; do
+    for svc in gateway system infra member bpm pay report mp product promotion trade statistics crm erp ai iot alarm dynamic platform facility scene twin inspection; do
         local path=$(get_service_path "$svc")
         local port=$(get_service_port "$svc")
         if [ -n "$path" ]; then
@@ -538,6 +544,8 @@ show_services() {
     echo "  3. gateway   - 网关服务（必需）"
     echo "  4. bpm       - 工作流服务（必需）"
     echo "  5. alarm     - 告警管理服务（必需）"
+    echo "  6. dynamic    - 动态业务服务（facility 等模块依赖）"
+    echo "  7. platform   - 平台资源库（组件/视图/页面，别名 resource，端口 58098）"
     echo ""
     echo -e "${BLUE}业务服务（按需启动）:${NC}"
     echo "  - member     - 会员服务"
@@ -561,7 +569,7 @@ start_all_core() {
     
     # 按顺序启动核心服务
     # 注意：infra 必须在 system 之前启动,因为 system 启动时会调用 infra 的日志服务
-    local services=("infra" "system" "gateway" "bpm" "alarm" "facility" "scene" "twin")
+    local services=("infra" "system" "gateway" "bpm" "alarm" "dynamic" "platform" "facility" "scene" "twin" "inspection")
     local failed_services=()
     
     for svc in "${services[@]}"; do
@@ -602,7 +610,7 @@ start_all_services() {
     echo ""
     
     # 按顺序启动所有服务：先核心服务,再业务服务
-    local services=("system" "infra" "gateway" "member" "bpm" "pay" "report" "mp" "product" "promotion" "trade" "statistics" "crm" "erp" "ai" "iot" "alarm" "facility" "scene" "twin")
+    local services=("system" "infra" "gateway" "member" "bpm" "pay" "report" "mp" "product" "promotion" "trade" "statistics" "crm" "erp" "ai" "iot" "alarm" "dynamic" "platform" "facility" "scene" "twin" "inspection")
     local failed_services=()
     
     for svc in "${services[@]}"; do
@@ -641,7 +649,7 @@ show_logs() {
         echo ""
         
         local running_services=()
-        for svc in gateway system infra member bpm pay report mp product promotion trade statistics crm erp ai iot alarm facility scene; do
+        for svc in gateway system infra member bpm pay report mp product promotion trade statistics crm erp ai iot alarm dynamic platform facility scene twin inspection; do
             if is_service_running "$svc"; then
                 running_services+=("$svc")
             fi
@@ -711,7 +719,7 @@ stop_all_services() {
     echo -e "${BLUE}🛑 停止所有服务...${NC}"
     echo ""
     
-    local services=("gateway" "infra" "system" "member" "bpm" "pay" "report" "mp" "product" "promotion" "trade" "statistics" "crm" "erp" "ai" "iot" "alarm" "facility" "scene")
+    local services=("gateway" "infra" "system" "member" "bpm" "pay" "report" "mp" "product" "promotion" "trade" "statistics" "crm" "erp" "ai" "iot" "alarm" "dynamic" "platform" "facility" "scene" "twin" "inspection")
     local stopped_count=0
     
     for svc in "${services[@]}"; do
@@ -778,3 +786,4 @@ main() {
 }
 
 main "$@"
+

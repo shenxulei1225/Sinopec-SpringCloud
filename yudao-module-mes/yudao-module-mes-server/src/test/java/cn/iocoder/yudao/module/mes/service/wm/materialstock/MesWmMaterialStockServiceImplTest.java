@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 /**
  * {@link MesWmMaterialStockServiceImpl} 的单元测试
  *
- * @author 芋道源码
+ * 
  */
 @Import(MesWmMaterialStockServiceImpl.class)
 public class MesWmMaterialStockServiceImplTest extends BaseDbUnitTest {

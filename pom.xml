@@ -35,6 +35,8 @@
         <!-- 实时状态流 Runtime -->
         <module>yudao-module-nats</module>
         <module>yudao-module-twin</module>
+        <module>cheers-module-dynamicbusiness</module>
+        <module>cheers-module-platform-resource</module>
     </modules>
 
     <name>${project.artifactId}</name>

@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * IoT 设备 Modbus 点位配置 Mapper
  *
- * @author 芋道源码
+ * 
  */
 @Mapper
 public interface IotDeviceModbusPointMapper extends BaseMapperX<IotDeviceModbusPointDO> {

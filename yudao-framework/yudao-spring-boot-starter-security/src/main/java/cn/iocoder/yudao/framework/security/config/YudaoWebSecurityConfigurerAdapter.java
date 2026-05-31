@@ -10,10 +10,12 @@ import jakarta.annotation.security.PermitAll;
 import jakarta.servlet.DispatcherType;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureOrder;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -41,10 +43,11 @@ import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.
 /**
  * 自定义的 Spring Security 配置适配器实现
  *
- * @author 芋道源码
+ * 
  */
 @AutoConfiguration
 @AutoConfigureOrder(-1) // 目的：先于 Spring Security 自动配置，避免一键改包后，org.* 基础包无法生效
+@EnableConfigurationProperties({SecurityProperties.class, WebProperties.class})
 @EnableMethodSecurity(securedEnabled = true)
 public class YudaoWebSecurityConfigurerAdapter {
 
@@ -74,8 +77,8 @@ public class YudaoWebSecurityConfigurerAdapter {
      *
      * @see #filterChain(HttpSecurity)
      */
-    @Resource
-    private List<AuthorizeRequestsCustomizer> authorizeRequestsCustomizers;
+    @Autowired(required = false)
+    private List<AuthorizeRequestsCustomizer> authorizeRequestsCustomizers = List.of();
 
     @Resource
     private ApplicationContext applicationContext;

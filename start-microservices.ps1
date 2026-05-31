@@ -39,36 +39,74 @@ if (-not (Test-Path $LogDir)) {
 
 # 服务配置映射
 $ServiceConfig = @{
-    "gateway"    = @{ Path = "yudao-gateway"; Port = 48080 }
-    "system"     = @{ Path = "yudao-module-system\yudao-module-system-server"; Port = 48081 }
-    "infra"      = @{ Path = "yudao-module-infra\yudao-module-infra-server"; Port = 48082 }
-    "member"     = @{ Path = "yudao-module-member\yudao-module-member-server"; Port = 48087 }
-    "bpm"        = @{ Path = "yudao-module-bpm\yudao-module-bpm-server"; Port = 48083 }
-    "pay"        = @{ Path = "yudao-module-pay\yudao-module-pay-server"; Port = 48085 }
-    "report"     = @{ Path = "yudao-module-report\yudao-module-report-server"; Port = 48084 }
-    "mp"         = @{ Path = "yudao-module-mp\yudao-module-mp-server"; Port = 48086 }
-    "product"    = @{ Path = "yudao-module-mall\yudao-module-product-server"; Port = 48100 }
-    "promotion"  = @{ Path = "yudao-module-mall\yudao-module-promotion-server"; Port = 48101 }
-    "trade"      = @{ Path = "yudao-module-mall\yudao-module-trade-server"; Port = 48102 }
-    "statistics" = @{ Path = "yudao-module-mall\yudao-module-statistics-server"; Port = 48103 }
-    "crm"        = @{ Path = "yudao-module-crm\yudao-module-crm-server"; Port = 48089 }
-    "erp"        = @{ Path = "yudao-module-erp\yudao-module-erp-server"; Port = 48088 }
-    "ai"         = @{ Path = "yudao-module-ai\yudao-module-ai-server"; Port = 48090 }
-    "iot"        = @{ Path = "yudao-module-iot\yudao-module-iot-server"; Port = 48091 }
-    "alarm"      = @{ Path = "yudao-module-alarm\yudao-module-alarm-biz"; Port = 48097 }
-    "facility"   = @{ Path = "yudao-module-facility-management\yudao-module-facility-management-server"; Port = 48092 }
-    "scene"      = @{ Path = "yudao-module-scene-platform\yudao-module-scene-platform-server"; Port = 48093 }
-    "twin"       = @{ Path = "yudao-module-twin\yudao-module-twin-biz"; Port = 48094 }
-    "inspection" = @{ Path = "yudao-module-inspection-task\yudao-module-inspection-task-server"; Port = 48095 }
+    "gateway"    = @{ Path = "yudao-gateway"; Port = 58080 }
+    "system"     = @{ Path = "yudao-module-system\yudao-module-system-server"; Port = 58081 }
+    "infra"      = @{ Path = "yudao-module-infra\yudao-module-infra-server"; Port = 58082 }
+    "member"     = @{ Path = "yudao-module-member\yudao-module-member-server"; Port = 58087 }
+    "bpm"        = @{ Path = "yudao-module-bpm\yudao-module-bpm-server"; Port = 58083 }
+    "pay"        = @{ Path = "yudao-module-pay\yudao-module-pay-server"; Port = 58085 }
+    "report"     = @{ Path = "yudao-module-report\yudao-module-report-server"; Port = 58084 }
+    "mp"         = @{ Path = "yudao-module-mp\yudao-module-mp-server"; Port = 58086 }
+    "product"    = @{ Path = "yudao-module-mall\yudao-module-product-server"; Port = 58100 }
+    "promotion"  = @{ Path = "yudao-module-mall\yudao-module-promotion-server"; Port = 58101 }
+    "trade"      = @{ Path = "yudao-module-mall\yudao-module-trade-server"; Port = 58102 }
+    "statistics" = @{ Path = "yudao-module-mall\yudao-module-statistics-server"; Port = 58103 }
+    "crm"        = @{ Path = "yudao-module-crm\yudao-module-crm-server"; Port = 58089 }
+    "erp"        = @{ Path = "yudao-module-erp\yudao-module-erp-server"; Port = 58088 }
+    "ai"         = @{ Path = "yudao-module-ai\yudao-module-ai-server"; Port = 58090 }
+    "iot"        = @{ Path = "yudao-module-iot\yudao-module-iot-server"; Port = 58091 }
+    "alarm"      = @{ Path = "yudao-module-alarm\yudao-module-alarm-biz"; Port = 58097 }
+    "facility"   = @{ Path = "yudao-module-facility-management\yudao-module-facility-management-server"; Port = 58092 }
+    "scene"      = @{ Path = "yudao-module-scene-platform\yudao-module-scene-platform-server"; Port = 58093 }
+    "twin"       = @{ Path = "yudao-module-twin\yudao-module-twin-biz"; Port = 58094 }
+    "inspection" = @{ Path = "yudao-module-inspection-task\yudao-module-inspection-task-server"; Port = 58095 }
+    "dynamic"    = @{ Path = "cheers-module-dynamicbusiness\cheers-module-dynamicbusiness-server"; Port = 58096 }
+    "platform"   = @{ Path = "cheers-module-platform-resource\cheers-module-platform-resource-server"; Port = 58098 }
+    "resource"   = @{ Path = "cheers-module-platform-resource\cheers-module-platform-resource-server"; Port = 58098 }  # platform 别名
 }
 
 
 # 核心服务列表（按启动顺序）
-$CoreServices = @("infra", "system", "gateway", "bpm", "alarm", "facility", "scene", "twin", "inspection")
+$CoreServices = @(
+    "infra",
+    "system",
+    "gateway",
+    "bpm",
+    "alarm",
+    "dynamic",
+    "platform",
+    "facility",
+    "scene",
+    "twin",
+    "inspection"
+)
 
 # 所有服务列表
-$AllServices = @("infra", "system", "gateway", "member", "bpm", "pay", "report", "mp", 
-                 "product", "promotion", "trade", "statistics", "crm", "erp", "ai", "iot", "alarm", "facility", "scene", "twin", "inspection")
+$AllServices = @(
+    "infra",
+    "system",
+    "gateway",
+    "member",
+    "bpm",
+    "pay",
+    "report",
+    "mp",
+    "product",
+    "promotion",
+    "trade",
+    "statistics",
+    "crm",
+    "erp",
+    "ai",
+    "iot",
+    "alarm",
+    "dynamic",
+    "platform",
+    "facility",
+    "scene",
+    "twin",
+    "inspection"
+)
 
 # 颜色输出函数
 function Write-ColorOutput {
@@ -200,7 +238,7 @@ function Start-Nacos {
         }
         
         if ($waited % 10 -eq 0) {
-            Write-Info "已等待 $waited 秒..."
+            Write-Info ("已等待 {0} 秒..." -f $waited)
         }
     }
     
@@ -498,9 +536,9 @@ function Stop-SingleService {
     # 5) 超时仍占用：打印当前占用 PID 便于排查（可能是 PID 复用或端口被其他进程占用）
     $currentPid = Get-PortProcess -Port $port
     if ($currentPid) {
-        Write-Error "服务 $ServiceName 停止失败（端口 $port 仍被 PID $currentPid 占用）"
+        Write-Error ("服务 {0} 停止失败（端口 {1} 仍被 PID {2} 占用）" -f $ServiceName, $port, $currentPid)
     } else {
-        Write-Error "服务 $ServiceName 停止失败（端口 $port 仍被占用）"
+        Write-Error ("服务 {0} 停止失败（端口 {1} 仍被占用）" -f $ServiceName, $port)
     }
 
     return $false
@@ -554,9 +592,9 @@ function Show-Status {
     
     Write-ColorOutput "" "White"
     Write-ColorOutput "🔗 快捷访问链接:" "Cyan"
-    Write-ColorOutput "   网关入口: http://localhost:48080" "Yellow"
-    Write-ColorOutput "   系统管理: http://localhost:48080/admin-ui/" "Yellow"
-    Write-ColorOutput "   应急管理: http://localhost:48080/emergency-admin/" "Yellow"
+    Write-ColorOutput "   网关入口: http://localhost:58080" "Yellow"
+    Write-ColorOutput "   系统管理: http://localhost:58080/admin-ui/" "Yellow"
+    Write-ColorOutput "   应急管理: http://localhost:58080/emergency-admin/" "Yellow"
     Write-ColorOutput "   Nacos控制台: http://localhost:8848/nacos" "Yellow"
     
     Write-ColorOutput "" "White"
@@ -612,6 +650,9 @@ function Show-Services {
     Write-ColorOutput "  4. bpm       - 工作流服务（必需）" "White"
     Write-ColorOutput "  5. emergency - 应急管理服务（必需）" "White"
     Write-ColorOutput "  6. alarm     - 告警管理服务（必需）" "White"
+    Write-ColorOutput "  7. dynamic   - 动态业务服务（facility 等模块依赖）" "White"
+    Write-ColorOutput "  8. platform  - 平台资源库（组件/视图/页面，端口 58098）" "White"
+    Write-ColorOutput "     (别名 resource) 网关: /admin-api/platformresource/**" "Gray"
     
     Write-ColorOutput "" "White"
     Write-ColorOutput "业务服务（按需启动）:" "Cyan"
@@ -893,3 +934,4 @@ switch ($Command.ToLower()) {
         }
     }
 }
+

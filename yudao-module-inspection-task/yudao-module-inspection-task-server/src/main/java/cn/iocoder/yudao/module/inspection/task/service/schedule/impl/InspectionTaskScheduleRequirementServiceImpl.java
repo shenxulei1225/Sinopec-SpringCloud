@@ -6,8 +6,10 @@ import cn.iocoder.yudao.module.inspection.task.controller.admin.vo.schedulepolic
 import cn.iocoder.yudao.module.inspection.task.controller.admin.vo.schedulepolicy.InspectionTaskScheduleRequirementRespVO;
 import cn.iocoder.yudao.module.inspection.task.controller.admin.vo.schedulepolicy.InspectionTaskScheduleRequirementUpdateReqVO;
 import cn.iocoder.yudao.module.inspection.task.controller.admin.vo.schedulepolicy.ScheduleTemplateConfigVO;
+import cn.iocoder.yudao.module.inspection.task.dal.dataobject.schedule.InspectionTaskSchedulePolicyDO;
 import cn.iocoder.yudao.module.inspection.task.dal.dataobject.schedule.InspectionTaskScheduleRequirementDO;
 import cn.iocoder.yudao.module.inspection.task.dal.dataobject.schedule.InspectionTaskScheduleRequirementDO.ScheduleTemplateConfig;
+import cn.iocoder.yudao.module.inspection.task.dal.mysql.schedule.InspectionTaskSchedulePolicyMapper;
 import cn.iocoder.yudao.module.inspection.task.dal.mysql.schedule.InspectionTaskScheduleRequirementMapper;
 import cn.iocoder.yudao.module.inspection.task.service.schedule.InspectionTaskScheduleRequirementService;
 import lombok.RequiredArgsConstructor;
@@ -17,10 +19,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants.BAD_REQUEST;
 import static cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants.NOT_FOUND;
 
 /**
@@ -34,6 +36,7 @@ import static cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeC
 public class InspectionTaskScheduleRequirementServiceImpl implements InspectionTaskScheduleRequirementService {
 
     private final InspectionTaskScheduleRequirementMapper scheduleRequirementMapper;
+    private final InspectionTaskSchedulePolicyMapper schedulePolicyMapper;
 
     // ==================== 基础操作 ====================
 
@@ -123,7 +126,7 @@ public class InspectionTaskScheduleRequirementServiceImpl implements InspectionT
         boolean exists = requirementDO.getScheduleTemplates().stream()
                 .anyMatch(c -> c.getTemplateId().equals(templateConfig.getTemplateId()));
         if (exists) {
-            throw ServiceExceptionUtil.exception(409, "模板ID {} 已存在", templateConfig.getTemplateId());
+            throw ServiceExceptionUtil.exception(BAD_REQUEST, "模板ID {} 已存在", templateConfig.getTemplateId());
         }
         
         requirementDO.getScheduleTemplates().add(templateConfig);
@@ -246,8 +249,40 @@ public class InspectionTaskScheduleRequirementServiceImpl implements InspectionT
      */
     private InspectionTaskScheduleRequirementRespVO convertToRespVO(InspectionTaskScheduleRequirementDO requirementDO) {
         InspectionTaskScheduleRequirementRespVO respVO = BeanUtils.toBean(requirementDO, InspectionTaskScheduleRequirementRespVO.class);
-        // TODO: 补充 schedulePolicyName 等关联字段的查询
+        respVO.setScheduleTemplates(convertToVOConfigs(requirementDO.getScheduleTemplates()));
+        enrichSchedulePolicyName(respVO);
         return respVO;
+    }
+
+    private void enrichSchedulePolicyName(InspectionTaskScheduleRequirementRespVO respVO) {
+        Long schedulePolicyId = respVO.getSchedulePolicyId();
+        if (schedulePolicyId == null) {
+            return;
+        }
+        InspectionTaskSchedulePolicyDO policy = schedulePolicyMapper.selectById(schedulePolicyId);
+        if (policy != null) {
+            respVO.setSchedulePolicyName(policy.getPolicyName());
+        }
+    }
+
+    /**
+     * 将 DO 的模板组合配置转换为 VO
+     */
+    private List<ScheduleTemplateConfigVO> convertToVOConfigs(List<ScheduleTemplateConfig> configList) {
+        if (configList == null) {
+            return new ArrayList<>();
+        }
+        return configList.stream()
+                .map(config -> {
+                    ScheduleTemplateConfigVO vo = new ScheduleTemplateConfigVO();
+                    vo.setTemplateId(config.getTemplateId());
+                    vo.setTemplateName(config.getTemplateName());
+                    vo.setOriginalConfig(config.getOriginalConfig());
+                    vo.setChangedFields(config.getChangedFields());
+                    vo.setEnabled(config.getEnabled());
+                    return vo;
+                })
+                .collect(Collectors.toList());
     }
 
     /**

@@ -7,7 +7,7 @@ import lombok.Data;
 /**
  * IoT WebSocket 协议配置
  *
- * @author 芋道源码
+ * 
  */
 @Data
 public class IotWebSocketConfig {

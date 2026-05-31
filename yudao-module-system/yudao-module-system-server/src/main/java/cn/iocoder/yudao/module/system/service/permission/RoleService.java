@@ -13,7 +13,7 @@ import java.util.Set;
 /**
  * 角色 Service 接口
  *
- * @author 芋道源码
+ * 
  */
 public interface RoleService {
 
@@ -118,6 +118,14 @@ public interface RoleService {
      * @return 是否有管理员
      */
     boolean hasAnySuperAdmin(Collection<Long> ids);
+
+    /**
+     * 获得用户拥有的角色编号列表
+     *
+     * @param userId 用户编号
+     * @return 角色编号列表
+     */
+    List<Long> getRoleIdListByUserId(Long userId);
 
     /**
      * 校验角色们是否有效。如下情况，视为无效：

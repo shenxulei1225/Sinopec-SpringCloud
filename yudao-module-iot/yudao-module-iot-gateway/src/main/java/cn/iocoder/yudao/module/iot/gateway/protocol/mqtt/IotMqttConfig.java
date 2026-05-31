@@ -7,7 +7,7 @@ import lombok.Data;
 /**
  * IoT 网关 MQTT 协议配置
  *
- * @author 芋道源码
+ * 
  */
 @Data
 public class IotMqttConfig {

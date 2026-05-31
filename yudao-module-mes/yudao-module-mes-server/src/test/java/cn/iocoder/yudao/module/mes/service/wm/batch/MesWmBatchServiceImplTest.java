@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * {@link MesWmBatchServiceImpl} 的单元测试
  *
- * @author 芋道源码
+ * 
  */
 @Import(MesWmBatchServiceImpl.class)
 public class MesWmBatchServiceImplTest extends BaseDbUnitTest {

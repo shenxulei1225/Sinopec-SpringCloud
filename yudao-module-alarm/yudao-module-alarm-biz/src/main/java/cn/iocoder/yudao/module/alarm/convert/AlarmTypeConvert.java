@@ -17,7 +17,7 @@ import java.util.List;
  * <p>注意：由于告警类型复用 metadata 模块的三层模型，实际的数据转换需要在 Service 层
  * 从 metadata 表查询数据后手动构建 VO 对象，此 Convert 主要用于辅助转换</p>
  *
- * @author 芋道源码
+ * 
  */
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface AlarmTypeConvert {

@@ -16,7 +16,7 @@ import static cn.iocoder.yudao.module.mes.enums.ErrorCodeConstants.MD_ITEM_NOT_E
 /**
  * MES 物料批次属性配置 Service 实现类
  *
- * @author 芋道源码
+ * 
  */
 @Service
 @Validated

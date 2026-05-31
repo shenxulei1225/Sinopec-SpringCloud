@@ -28,7 +28,7 @@ import static org.mockito.Mockito.*;
 /**
  * {@link MesCalTeamShiftServiceImpl} 的单元测试
  *
- * @author 芋道源码
+ * 
  */
 @Import(MesCalTeamShiftServiceImpl.class)
 public class MesCalTeamShiftServiceImplTest extends BaseDbUnitTest {

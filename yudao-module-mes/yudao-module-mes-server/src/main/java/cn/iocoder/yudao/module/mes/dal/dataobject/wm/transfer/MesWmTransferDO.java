@@ -14,7 +14,7 @@ import cn.iocoder.yudao.module.mes.enums.DictTypeConstants;
 /**
  * MES 转移单 DO
  *
- * @author 芋道源码
+ * 
  */
 @TableName("mes_wm_transfer")
 @KeySequence("mes_wm_transfer_seq")

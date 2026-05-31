@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * MES 计量单位 Mapper
  *
- * @author 芋道源码
+ * 
  */
 @Mapper
 public interface MesMdUnitMeasureMapper extends BaseMapperX<MesMdUnitMeasureDO> {

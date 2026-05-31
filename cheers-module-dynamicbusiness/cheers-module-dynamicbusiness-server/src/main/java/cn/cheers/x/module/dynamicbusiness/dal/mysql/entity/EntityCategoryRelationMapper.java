@@ -1,0 +1,528 @@
+package cn.cheers.x.module.dynamicbusiness.dal.mysql.entity;
+
+import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
+import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityCategoryRelationDO;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 业务实体与分类关联 Mapper
+ */
+@Mapper
+public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategoryRelationDO> {
+
+    /**
+     * 根据实体ID和分类ID查询关联
+     */
+    default EntityCategoryRelationDO selectByEntityAndCategory(Long entityId, Long categoryId) {
+        return selectOne(new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .eq(EntityCategoryRelationDO::getEntityId, entityId)
+                .eq(EntityCategoryRelationDO::getCategoryId, categoryId)
+                .eq(EntityCategoryRelationDO::getDeleted, false));
+    }
+
+    /**
+     * 根据实体ID和分类ID查询关联（按业务类型过滤）。
+     */
+    default EntityCategoryRelationDO selectByEntityAndCategory(Long entityId, Long categoryId, String businessTypeCode) {
+        LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .eq(EntityCategoryRelationDO::getEntityId, entityId)
+                .eq(EntityCategoryRelationDO::getCategoryId, categoryId)
+                .eq(EntityCategoryRelationDO::getDeleted, false);
+        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        }
+        return selectOne(query);
+    }
+
+    /**
+     * 根据实体ID查询所有关联
+     */
+    default List<EntityCategoryRelationDO> selectByEntityId(Long entityId) {
+        return selectList(new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .eq(EntityCategoryRelationDO::getEntityId, entityId)
+                .eq(EntityCategoryRelationDO::getDeleted, false));
+    }
+
+    /**
+     * 查询实体在指定分类集合上的关联（包含 deleted=true 记录）。
+     */
+    @Select("""
+            <script>
+            SELECT *
+            FROM dynamic_entity_category_relation
+            WHERE entity_id = #{entityId}
+                AND business_type_code = #{businessTypeCode}
+                AND category_id IN
+                <foreach collection='categoryIds' item='id' open='(' separator=',' close=')'>
+                    #{id}
+                </foreach>
+                AND deleted = TRUE
+            </script>
+            """)
+    List<EntityCategoryRelationDO> selectByEntityAndCategoryIdsIncludingDeleted(@Param("entityId") Long entityId,
+                                                                                    @Param("categoryIds") List<Long> categoryIds,
+                                                                                    @Param("businessTypeCode") String businessTypeCode);
+
+    /**
+     * 根据分类ID查询所有关联（分类内按 sort,id 排序）。
+     */
+    default List<EntityCategoryRelationDO> selectByCategoryId(Long categoryId) {
+        return selectList(new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .eq(EntityCategoryRelationDO::getCategoryId, categoryId)
+                .eq(EntityCategoryRelationDO::getDeleted, false)
+                // 分类上下文实体列表：优先按 relation.sort，其次按 relation.id 稳定兜底
+                .orderByAsc(EntityCategoryRelationDO::getSort)
+                .orderByAsc(EntityCategoryRelationDO::getId));
+    }
+
+    /**
+     * 根据分类ID + 业务类型查询所有关联（分类内按 sort,id 排序）。
+     *
+     * <p>适用于“单分类”场景，保证分类内排序语义，同时按业务类型过滤。</p>
+     */
+    default List<EntityCategoryRelationDO> selectByCategoryIdAndBusinessType(Long categoryId, String businessTypeCode) {
+        LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>();
+        query.eq(EntityCategoryRelationDO::getCategoryId, categoryId);
+        query.eq(EntityCategoryRelationDO::getDeleted, false);
+        query.orderByAsc(EntityCategoryRelationDO::getSort);
+        query.orderByAsc(EntityCategoryRelationDO::getId);
+        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        }
+        return selectList(query);
+    }
+
+    /**
+     * 删除实体与分类的关联（不区分业务类型）。
+     */
+    default void deleteByEntityAndCategory(Long entityId, Long categoryId) {
+        delete(new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .eq(EntityCategoryRelationDO::getEntityId, entityId)
+                .eq(EntityCategoryRelationDO::getCategoryId, categoryId));
+    }
+
+    /**
+     * 删除实体与分类的关联（按业务类型过滤）。
+     */
+    default void deleteByEntityAndCategory(Long entityId, Long categoryId, String businessTypeCode) {
+        LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .eq(EntityCategoryRelationDO::getEntityId, entityId)
+                .eq(EntityCategoryRelationDO::getCategoryId, categoryId);
+        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        }
+        delete(query);
+    }
+
+    /**
+     * 删除实体的所有关联
+     */
+    default void deleteByEntityId(Long entityId) {
+        delete(new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .eq(EntityCategoryRelationDO::getEntityId, entityId));
+    }
+
+    /**
+     * 按实体ID + 分类ID列表删除关联。
+     */
+    default void deleteByEntityAndCategoryIds(Long entityId, List<Long> categoryIds) {
+        if (entityId == null || categoryIds == null || categoryIds.isEmpty()) {
+            return;
+        }
+        delete(new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .eq(EntityCategoryRelationDO::getEntityId, entityId)
+                .in(EntityCategoryRelationDO::getCategoryId, categoryIds));
+    }
+
+    /**
+     * 删除分类的所有关联（全业务）。
+     */
+    default void deleteByCategoryId(Long categoryId) {
+        delete(new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .eq(EntityCategoryRelationDO::getCategoryId, categoryId));
+    }
+
+    /**
+     * 按业务类型删除分类的所有关联（按业务类型隔离）。
+     */
+    default void deleteByCategoryId(Long categoryId, String businessTypeCode) {
+        LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .eq(EntityCategoryRelationDO::getCategoryId, categoryId);
+        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        }
+        delete(query);
+    }
+
+    /**
+     * 批量创建实体-分类关联
+     */
+    default void insertBatchRelations(List<EntityCategoryRelationDO> relations) {
+        if (relations == null || relations.isEmpty()) {
+            return;
+        }
+        insertBatch(relations);
+    }
+
+    /**
+     * 批量删除指定实体的所有分类关联
+     */
+    default void deleteByEntityIds(List<Long> entityIds) {
+        if (entityIds == null || entityIds.isEmpty()) {
+            return;
+        }
+        delete(new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .in(EntityCategoryRelationDO::getEntityId, entityIds));
+    }
+
+    /**
+     * 批量删除指定分类的所有实体关联（全业务）。
+     */
+    default void deleteByCategoryIds(List<Long> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return;
+        }
+        delete(new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .in(EntityCategoryRelationDO::getCategoryId, categoryIds));
+    }
+
+    /**
+     * 批量删除指定分类的所有实体关联（按业务类型隔离）。
+     */
+    default void deleteByCategoryIds(List<Long> categoryIds, String businessTypeCode) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return;
+        }
+        LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .in(EntityCategoryRelationDO::getCategoryId, categoryIds);
+        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        }
+        delete(query);
+    }
+
+    /**
+     * 恢复软删除的实体-分类关联（deleted=true -> false）。
+     */
+    @Update("""
+            UPDATE dynamic_entity_category_relation
+            SET deleted = FALSE,
+                sort = #{sort},
+                business_type_code = #{businessTypeCode}
+            WHERE entity_id = #{entityId}
+                AND category_id = #{categoryId}
+                AND deleted = TRUE
+            """)
+    int restoreDeletedRelation(@Param("entityId") Long entityId,
+                                @Param("categoryId") Long categoryId,
+                                @Param("businessTypeCode") String businessTypeCode,
+                                @Param("sort") Integer sort);
+
+    /**
+     * 批量恢复软删除的实体-分类关联（deleted=true -> false）。
+     */
+    @Update("""
+            <script>
+            UPDATE dynamic_entity_category_relation
+            SET deleted = FALSE,
+                business_type_code = #{businessTypeCode}
+            WHERE entity_id = #{entityId}
+                AND business_type_code = #{businessTypeCode}
+                AND category_id IN
+                <foreach collection='categoryIds' item='id' open='(' separator=',' close=')'>
+                    #{id}
+                </foreach>
+                AND deleted = TRUE
+            </script>
+            """)
+    int restoreDeletedRelationsBatch(@Param("entityId") Long entityId,
+                                        @Param("categoryIds") List<Long> categoryIds,
+                                        @Param("businessTypeCode") String businessTypeCode);
+
+    /**
+     * 更新实体-分类关联的排序值。
+     */
+    default int updateSortByEntityAndCategory(Long entityId, Long categoryId, Integer sort, String businessTypeCode) {
+        LambdaUpdateWrapper<EntityCategoryRelationDO> update = new LambdaUpdateWrapper<EntityCategoryRelationDO>()
+                .set(EntityCategoryRelationDO::getSort, sort)
+                .eq(EntityCategoryRelationDO::getEntityId, entityId)
+                .eq(EntityCategoryRelationDO::getCategoryId, categoryId)
+                .eq(EntityCategoryRelationDO::getDeleted, false);
+        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
+            update.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        }
+        return update(update);
+    }
+
+    /**
+     * 批量查询实体-分类关联（用于优化批量关联时的 N+1 查询问题）。
+     *
+     * <p>说明：本方法用于“关系存在性校验”场景，不用于排序输出场景。</p>
+     *
+     * @param entityIds 实体ID列表
+     * @param categoryIds 分类ID列表
+     * @return 关联列表
+     */
+    default List<EntityCategoryRelationDO> selectByEntityIdsAndCategoryIds(List<Long> entityIds, List<Long> categoryIds) {
+        if (entityIds == null || entityIds.isEmpty() || categoryIds == null || categoryIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return selectList(new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .in(EntityCategoryRelationDO::getEntityId, entityIds)
+                .in(EntityCategoryRelationDO::getCategoryId, categoryIds)
+                .eq(EntityCategoryRelationDO::getDeleted, false));
+    }
+
+    /**
+     * 根据分类ID列表查询实体ID列表（去重）。
+     *
+     * <p>注意：本方法不保证按 categoryIds 输入顺序排序，不能用于多分类有序输出场景。</p>
+     */
+    @Deprecated
+    default List<Long> selectEntityIdsByCategoryIds(List<Long> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<EntityCategoryRelationDO> relations = selectList(new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .select(EntityCategoryRelationDO::getEntityId)
+                .in(EntityCategoryRelationDO::getCategoryId, categoryIds)
+                .eq(EntityCategoryRelationDO::getDeleted, false));
+        return relations.stream()
+                .map(EntityCategoryRelationDO::getEntityId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+    }
+
+    /**
+     * 批量查询分类的 max(sort)（用于批量分配 sort）。
+     */
+    @Select("""
+            <script>
+            SELECT category_id AS categoryId, COALESCE(MAX(sort), 0) AS maxSort
+            FROM dynamic_entity_category_relation
+            WHERE deleted = FALSE
+            AND category_id IN
+            <foreach collection='categoryIds' item='id' open='(' separator=',' close=')'>
+                #{id}
+            </foreach>
+            GROUP BY category_id
+            </script>
+            """)
+    List<java.util.Map<String, Object>> selectMaxSortByCategoryIds(@Param("categoryIds") List<Long> categoryIds);
+
+    /**
+     * 根据分类ID列表查询关联（包含排序字段）。
+     * 废弃原因：不能保证“先 categoryIds 输入顺序，再分类内 sort”语义。
+     * <p>注意：当前仅保证“全局 sort,id”排序，不能保证“先 categoryIds 输入顺序，再分类内 sort”语义。</p>
+     * <p>多分类稳定有序输出应在 Service 层按 categoryIds 顺序二次编排。</p>
+     */
+    @Deprecated
+    default List<EntityCategoryRelationDO> selectRelationsByCategoryIds(List<Long> categoryIds, String businessTypeCode) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<>();
+        query.in(EntityCategoryRelationDO::getCategoryId, categoryIds);
+        query.eq(EntityCategoryRelationDO::getDeleted, false);
+        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        }
+        // 分类上下文排序优先，其次按ID兜底
+        query.orderByAsc(EntityCategoryRelationDO::getSort);
+        query.orderByAsc(EntityCategoryRelationDO::getId);
+        return selectList(query);
+    }
+
+    /**
+     * 查询多分类原始关系记录（用于 Service 层按 categoryIds 顺序二次编排）。
+     */
+    default List<EntityCategoryRelationDO> selectRelationsByCategoryIdsForOrdering(List<Long> categoryIds, String businessTypeCode) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<>();
+        query.in(EntityCategoryRelationDO::getCategoryId, categoryIds);
+        query.eq(EntityCategoryRelationDO::getDeleted, false);
+        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        }
+        // 这里仅提供稳定基础顺序，最终顺序由 Service 层按输入 categoryIds 决定
+        query.orderByAsc(EntityCategoryRelationDO::getSort);
+        query.orderByAsc(EntityCategoryRelationDO::getId);
+        return selectList(query);
+    }
+
+    /**
+     * 按分类范围和业务类型分页查询实体ID（MyBatis-Plus Wrapper 版）。
+     *
+     * <p>注意：本方法分页结果不保证按 categoryIds 输入顺序排序，
+     * 仅用于非稳定排序场景。</p>
+     */
+    @Deprecated
+    default List<Long> selectEntityIdsByCategoryIdsPaged(List<Long> categoryIds, String businessTypeCode,
+                                                        int offset, int limit) {
+        if (categoryIds == null || categoryIds.isEmpty() || limit <= 0) {
+            return new ArrayList<>();
+        }
+        int current = offset / limit + 1;
+        Page<EntityCategoryRelationDO> page = new Page<>(current, limit, false);
+        LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<>();
+        query.select(EntityCategoryRelationDO::getEntityId);
+        query.in(EntityCategoryRelationDO::getCategoryId, categoryIds);
+        query.eq(EntityCategoryRelationDO::getDeleted, false);
+        query.orderByAsc(EntityCategoryRelationDO::getId);
+        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        }
+        Page<EntityCategoryRelationDO> result = selectPage(page, query);
+        return result.getRecords().stream()
+                .map(EntityCategoryRelationDO::getEntityId)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
+    /**
+     * DB 前置分页（单分类）：按分类内 sort,id 排序后返回当前页 entityId。
+     */
+    @Select("""
+            <script>
+            WITH dedup AS (
+                SELECT r.entity_id,
+                        row_number() OVER (
+                            PARTITION BY r.entity_id
+                            ORDER BY r.sort ASC NULLS LAST, r.id ASC
+                        ) AS rn,
+                        MIN(r.sort) OVER (PARTITION BY r.entity_id) AS min_sort,
+                        MIN(r.id) OVER (PARTITION BY r.entity_id) AS min_id
+                FROM dynamic_entity_category_relation r
+                WHERE r.deleted = FALSE
+                    AND r.category_id = #{categoryId}
+                <if test='businessTypeCode != null and businessTypeCode != ""'>
+                    AND r.business_type_code = #{businessTypeCode}
+                </if>
+            )
+            SELECT entity_id
+            FROM dedup
+            WHERE rn = 1
+            ORDER BY min_sort ASC NULLS LAST, min_id ASC
+            LIMIT #{limit} OFFSET #{offset}
+            </script>
+            """)
+    List<Long> selectEntityIdsBySingleCategoryPaged(@Param("categoryId") Long categoryId,
+                                                        @Param("businessTypeCode") String businessTypeCode,
+                                                        @Param("offset") int offset,
+                                                        @Param("limit") int limit);
+
+    /**
+     * DB 前置分页（单分类）：统计去重后的总实体数量。
+     */
+    @Select("""
+            <script>
+            SELECT COUNT(DISTINCT r.entity_id)
+            FROM dynamic_entity_category_relation r
+            WHERE r.deleted = FALSE
+                AND r.category_id = #{categoryId}
+            <if test='businessTypeCode != null and businessTypeCode != ""'>
+                AND r.business_type_code = #{businessTypeCode}
+            </if>
+            </script>
+            """)
+    long countEntityIdsBySingleCategory(@Param("categoryId") Long categoryId,
+                                        @Param("businessTypeCode") String businessTypeCode);
+
+    /**
+     * DB 前置分页（多分类）：按 categoryIds 输入顺序(rank) + 分类内 sort,id 生成稳定顺序，
+     * 去重后返回当前页 entityId。
+     *
+     * <p>注意：本 SQL 使用参数绑定，不拼接用户输入，避免注入风险。</p>
+     */
+    @Select("""
+            <script>
+            WITH input_categories AS (
+                SELECT cid AS category_id, ordinality AS rank
+                FROM unnest(
+                    <foreach collection='categoryIds' item='cid' open='ARRAY[' separator=',' close=']::bigint[]'>
+                        #{cid}
+                    </foreach>
+                ) WITH ORDINALITY AS t(cid, ordinality)
+            ),
+            relations AS (
+                SELECT r.entity_id, r.category_id, r.sort, r.id, ic.rank
+                FROM dynamic_entity_category_relation r
+                JOIN input_categories ic ON ic.category_id = r.category_id
+                WHERE r.deleted = FALSE
+                <if test='businessTypeCode != null and businessTypeCode != ""'>
+                    AND r.business_type_code = #{businessTypeCode}
+                </if>
+            ),
+            dedup AS (
+                SELECT entity_id, rank, sort, id,
+                        row_number() OVER (
+                            PARTITION BY entity_id
+                            ORDER BY rank ASC, sort ASC NULLS LAST, id ASC
+                        ) AS rn
+                FROM relations
+            )
+            SELECT entity_id
+            FROM dedup
+            WHERE rn = 1
+            ORDER BY rank ASC, sort ASC NULLS LAST, id ASC
+            LIMIT #{limit} OFFSET #{offset}
+            </script>
+            """)
+    List<Long> selectEntityIdsByCategoryIdsRankPaged(@Param("categoryIds") List<Long> categoryIds,
+                                                        @Param("businessTypeCode") String businessTypeCode,
+                                                        @Param("offset") int offset,
+                                                        @Param("limit") int limit);
+
+    /**
+     * DB 前置分页：统计去重后的总实体数量（与 rank 排序规则一致）。
+     */
+    @Select("""
+            <script>
+            WITH input_categories AS (
+                SELECT cid AS category_id
+                FROM unnest(
+                    <foreach collection='categoryIds' item='cid' open='ARRAY[' separator=',' close=']::bigint[]'>
+                        #{cid}
+                    </foreach>
+                ) AS t(cid)
+            )
+            SELECT COUNT(DISTINCT r.entity_id)
+            FROM dynamic_entity_category_relation r
+            JOIN input_categories ic ON ic.category_id = r.category_id
+            WHERE r.deleted = FALSE
+            <if test='businessTypeCode != null and businessTypeCode != ""'>
+                AND r.business_type_code = #{businessTypeCode}
+            </if>
+            </script>
+            """)
+    long countEntityIdsByCategoryIdsRank(@Param("categoryIds") List<Long> categoryIds,
+                                            @Param("businessTypeCode") String businessTypeCode);
+
+    /**
+     * 按分类范围和业务类型统计实体关联数量（MyBatis-Plus Wrapper 版）
+     */
+    default long countEntityIdsByCategoryIds(List<Long> categoryIds, String businessTypeCode) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return 0L;
+        }
+        LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<>();
+        query.in(EntityCategoryRelationDO::getCategoryId, categoryIds);
+        query.eq(EntityCategoryRelationDO::getDeleted, false);
+        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        }
+        return selectCount(query);
+    }
+}

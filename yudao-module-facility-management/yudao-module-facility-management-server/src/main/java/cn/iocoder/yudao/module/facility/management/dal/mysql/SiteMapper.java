@@ -19,7 +19,6 @@ public interface SiteMapper extends BaseMapperX<SiteDO> {
     default List<SiteDO> selectByParentId(Long parentId) {
         return selectList(new LambdaQueryWrapperX<SiteDO>()
                 .eq(SiteDO::getParentId, parentId)
-                .eq(SiteDO::getDeleted, false)
                 .orderByAsc(SiteDO::getLevel)
                 .orderByAsc(SiteDO::getSortNo)
                 .orderByAsc(SiteDO::getSiteId));
@@ -30,8 +29,7 @@ public interface SiteMapper extends BaseMapperX<SiteDO> {
      */
     default SiteDO selectByCode(String siteCode) {
         return selectOne(new LambdaQueryWrapperX<SiteDO>()
-                .eq(SiteDO::getSiteCode, siteCode)
-                .eq(SiteDO::getDeleted, false));
+                .eq(SiteDO::getSiteCode, siteCode));
     }
 
     /**
@@ -40,7 +38,6 @@ public interface SiteMapper extends BaseMapperX<SiteDO> {
     default List<SiteDO> selectTopLevelSites() {
         return selectList(new LambdaQueryWrapperX<SiteDO>()
                 .eq(SiteDO::getParentId, 0)
-                .eq(SiteDO::getDeleted, false)
                 .orderByAsc(SiteDO::getLevel)
                 .orderByAsc(SiteDO::getSortNo)
                 .orderByAsc(SiteDO::getSiteId));
@@ -51,8 +48,7 @@ public interface SiteMapper extends BaseMapperX<SiteDO> {
      */
     default SiteDO selectByName(String siteName) {
         return selectOne(new LambdaQueryWrapperX<SiteDO>()
-                .eq(SiteDO::getSiteName, siteName)
-                .eq(SiteDO::getDeleted, false));
+                .eq(SiteDO::getSiteName, siteName));
     }
 
     /**
@@ -61,8 +57,7 @@ public interface SiteMapper extends BaseMapperX<SiteDO> {
     default SiteDO selectByNameAndParentId(String siteName, Long parentId) {
         return selectOne(new LambdaQueryWrapperX<SiteDO>()
                 .eq(SiteDO::getSiteName, siteName)
-                .eqIfPresent(SiteDO::getParentId, parentId)
-                .eq(SiteDO::getDeleted, false));
+                .eqIfPresent(SiteDO::getParentId, parentId));
     }
 
 }

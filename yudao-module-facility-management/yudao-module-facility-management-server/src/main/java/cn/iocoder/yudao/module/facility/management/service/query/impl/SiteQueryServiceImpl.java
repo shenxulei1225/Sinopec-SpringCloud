@@ -57,7 +57,6 @@ public class SiteQueryServiceImpl implements SiteQueryService {
                 .eqIfPresent(SiteDO::getParentId, parentId)
                 .eqIfPresent(SiteDO::getNodeType, nodeType)
                 .eqIfPresent(SiteDO::getStatus, status)
-                .eq(SiteDO::getDeleted, false)
                 .orderByAsc(SiteDO::getLevel)
                 .orderByAsc(SiteDO::getSortNo)
                 .orderByAsc(SiteDO::getSiteId))
@@ -181,8 +180,6 @@ public class SiteQueryServiceImpl implements SiteQueryService {
         view.setLatitude(site.getLatitude());
         view.setOwnerUserId(site.getOwnerUserId());
         view.setRemark(site.getRemark());
-        view.setCreateTime(site.getCreateTime());
-        view.setUpdateTime(site.getUpdateTime());
         return view;
     }
 

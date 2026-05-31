@@ -18,8 +18,7 @@ public interface SiteTypeMapper extends BaseMapperX<SiteTypeDO> {
      */
     default SiteTypeDO selectByTypeCode(String typeCode) {
         return selectOne(new LambdaQueryWrapperX<SiteTypeDO>()
-                .eq(SiteTypeDO::getTypeCode, typeCode)
-                .eq(SiteTypeDO::getDeleted, false));
+                .eq(SiteTypeDO::getTypeCode, typeCode));
     }
 
     /**
@@ -28,7 +27,6 @@ public interface SiteTypeMapper extends BaseMapperX<SiteTypeDO> {
     default List<SiteTypeDO> selectNormalList() {
         return selectList(new LambdaQueryWrapperX<SiteTypeDO>()
                 .eq(SiteTypeDO::getStatus, 0)
-                .eq(SiteTypeDO::getDeleted, false)
                 .orderByAsc(SiteTypeDO::getSortNo)
                 .orderByAsc(SiteTypeDO::getId));
     }
