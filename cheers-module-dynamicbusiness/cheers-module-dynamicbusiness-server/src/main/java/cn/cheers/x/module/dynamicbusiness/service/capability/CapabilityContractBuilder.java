@@ -42,6 +42,7 @@ final class CapabilityContractBuilder {
         contract.put("filters", entityFilters);
         contract.put("displayFields", buildEntityDisplayFields(fields));
         contract.put("actions", entityActions());
+        contract.put("asyncChecks", SystemVoAsyncCheckScanner.scanEntityAsyncChecks(instanceKey, fields));
         return contract;
     }
 
@@ -85,14 +86,17 @@ final class CapabilityContractBuilder {
             String businessTypeCode, Long modelId, List<ModelFieldAssignmentRespVO> fieldAssignments) {
         Map<String, Object> defaultParams = new LinkedHashMap<>();
         defaultParams.put("businessTypeCode", businessTypeCode);
-        defaultParams.put("modelId", modelId);
+        defaultParams.put("modelIds", List.of(modelId));
         defaultParams.put("scene", "PATTERN_B_ENTITIES_BY_MODEL");
         defaultParams.put("resultShape", "PAGE");
         defaultParams.put("resultDetail", "FULL");
         defaultParams.put("pageNo", 1);
         defaultParams.put("pageSize", 10);
 
-        Map<String, Object> treeParams = new LinkedHashMap<>(defaultParams);
+        Map<String, Object> treeParams = new LinkedHashMap<>();
+        treeParams.put("businessTypeCode", businessTypeCode);
+        treeParams.put("modelIds", List.of(modelId));
+        treeParams.put("scene", "PATTERN_B_ENTITIES_BY_MODEL");
         treeParams.put("resultShape", "TREE");
         treeParams.put("resultDetail", "BASIC");
 
@@ -114,25 +118,33 @@ final class CapabilityContractBuilder {
                         "field-filter-body", "pageMode", pageParams, "list", "total"),
                 entityEndpoint("entity-tree", "tree", "/dynamicbusiness/business/entities/query-by-scene",
                         "field-filter-body", "treeMode", treeParams, "tree", null)));
-        addEntityWriteEndpoints(endpoints, fieldAssignments);
+        addEntityWriteEndpoints(endpoints, fieldAssignments, "dynamic-entity:" + businessTypeCode + ":" + modelId);
         ds.put("endpoints", endpoints);
         return ds;
     }
 
     private static void addEntityWriteEndpoints(
-            List<Map<String, Object>> endpoints, List<ModelFieldAssignmentRespVO> fieldAssignments) {
+            List<Map<String, Object>> endpoints,
+            List<ModelFieldAssignmentRespVO> fieldAssignments,
+            String instanceKey) {
         String base = "/dynamicbusiness/business/entities";
         endpoints.add(entityWriteEndpoint("write-create", "create", base + "/save", "POST", "json-body",
-                InteractionSchemaBuilder.requestBody(
-                        InteractionSchemaBuilder.buildEntityWriteFieldsFromAssignments(
-                                fieldAssignments, "create", CapabilityContractBuilder::resolveRefInstanceKey))));
+                entityRequestBody(fieldAssignments, "create", instanceKey)));
         endpoints.add(entityWriteEndpoint("write-update", "update", base + "/save", "PUT", "json-body",
-                InteractionSchemaBuilder.requestBody(
-                        InteractionSchemaBuilder.buildEntityWriteFieldsFromAssignments(
-                                fieldAssignments, "update", CapabilityContractBuilder::resolveRefInstanceKey))));
+                entityRequestBody(fieldAssignments, "update", instanceKey)));
         endpoints.add(entityWriteEndpoint("write-delete", "delete", base + "/delete", "DELETE", "query-param",
                 InteractionSchemaBuilder.requestBody(List.of(
                         InteractionSchemaBuilder.field("id", "编号", "input", true, false, null, null)))));
+    }
+
+    private static Map<String, Object> entityRequestBody(
+            List<ModelFieldAssignmentRespVO> fieldAssignments, String purpose, String instanceKey) {
+        List<Map<String, Object>> fields = InteractionSchemaBuilder.buildEntityWriteFieldsFromAssignments(
+                fieldAssignments, purpose, CapabilityContractBuilder::resolveRefInstanceKey);
+        List<Map<String, Object>> asyncChecks =
+                SystemVoAsyncCheckScanner.scanEntityAsyncChecks(instanceKey, fieldAssignments);
+        SystemVoAsyncCheckScanner.attachAsyncCheckIds(fields, asyncChecks);
+        return InteractionSchemaBuilder.requestBody(fields);
     }
 
     private static Map<String, Object> entityWriteEndpoint(

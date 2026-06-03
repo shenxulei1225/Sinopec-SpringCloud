@@ -129,6 +129,9 @@ logging:
 --- #################### 芋道相关配置 ####################
 
 yudao:
+  # 本地前端已传 isEncrypt=false；关闭全局 API 加解密，避免与 X-Api-Encrypt 行为混淆
+  api-encrypt:
+    enable: false
   tenant:
     enable: true
     ignore-urls:
@@ -145,5 +148,6 @@ yudao:
     enable: false
   security:
     mock-enable: true
+  # 直连微服务时 Feign 写访问日志易因 classpath 不完整失败；本地关闭
   access-log:
-    enable: true
+    enable: false

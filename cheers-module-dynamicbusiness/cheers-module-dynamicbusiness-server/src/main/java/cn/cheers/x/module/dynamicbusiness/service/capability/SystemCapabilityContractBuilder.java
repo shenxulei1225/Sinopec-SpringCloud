@@ -31,6 +31,8 @@ final class SystemCapabilityContractBuilder {
         contract.put("filters", buildFilters(def));
         contract.put("displayFields", buildDisplayFields(def));
         contract.put("actions", buildActions(def));
+        List<Map<String, Object>> asyncChecks = SystemVoAsyncCheckScanner.scanSystemAsyncChecks(def);
+        contract.put("asyncChecks", asyncChecks);
         return contract;
     }
 
@@ -145,6 +147,9 @@ final class SystemCapabilityContractBuilder {
     }
 
     private static void addSystemWriteEndpoints(List<Map<String, Object>> endpoints, SystemCapabilityResourceDef def) {
+        if (!SystemVoSchemaRegistry.supportsWrite(def.resourceCode())) {
+            return;
+        }
         String base = resolveCrudBasePath(def.listUrl());
         if (base == null) {
             return;
@@ -155,16 +160,16 @@ final class SystemCapabilityContractBuilder {
                 base + "/create",
                 "POST",
                 "json-body",
-                InteractionSchemaBuilder.requestBody(
-                        InteractionSchemaBuilder.buildSystemWriteFields(def, "create"))));
+                requestBodyWithAsyncChecks(
+                        InteractionSchemaBuilder.buildSystemWriteFields(def, "create"), def)));
         endpoints.add(writeEndpoint(
                 "write-update",
                 "update",
                 base + "/update",
                 "PUT",
                 "json-body",
-                InteractionSchemaBuilder.requestBody(
-                        InteractionSchemaBuilder.buildSystemWriteFields(def, "update"))));
+                requestBodyWithAsyncChecks(
+                        InteractionSchemaBuilder.buildSystemWriteFields(def, "update"), def)));
         endpoints.add(writeEndpoint(
                 "write-delete",
                 "delete",
@@ -173,6 +178,13 @@ final class SystemCapabilityContractBuilder {
                 "query-param",
                 InteractionSchemaBuilder.requestBody(
                         InteractionSchemaBuilder.buildSystemWriteFields(def, "delete"))));
+    }
+
+    private static Map<String, Object> requestBodyWithAsyncChecks(
+            List<Map<String, Object>> fields, SystemCapabilityResourceDef def) {
+        List<Map<String, Object>> asyncChecks = SystemVoAsyncCheckScanner.scanSystemAsyncChecks(def);
+        SystemVoAsyncCheckScanner.attachAsyncCheckIds(fields, asyncChecks);
+        return InteractionSchemaBuilder.requestBody(fields);
     }
 
     private static Map<String, Object> writeEndpoint(
@@ -213,6 +225,9 @@ final class SystemCapabilityContractBuilder {
     private static List<Map<String, Object>> buildActions(SystemCapabilityResourceDef def) {
         String code = def.resourceCode();
         String permPrefix = "system:" + code;
+        if (!SystemVoSchemaRegistry.supportsWrite(code)) {
+            return List.of(action("query", "查询", "detail", null, permPrefix + ":query"));
+        }
         List<Map<String, Object>> actions = new ArrayList<>();
         actions.add(action("create", "新建", "create", "write-create", permPrefix + ":create"));
         actions.add(action("update", "编辑", "update", "write-update", permPrefix + ":update"));

@@ -11,6 +11,7 @@ import cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstant
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.date.DateUtils;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.iocoder.yudao.framework.security.config.SecurityProperties;
 import cn.iocoder.yudao.framework.security.core.LoginUser;
 import cn.iocoder.yudao.framework.tenant.core.context.TenantContextHolder;
 import cn.iocoder.yudao.framework.tenant.core.util.TenantUtils;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +46,9 @@ import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.
 @Service
 public class OAuth2TokenServiceImpl implements OAuth2TokenService {
 
+    /** override=0 时写入的 expiresTime，配合校验侧跳过过期判断 */
+    private static final LocalDateTime ACCESS_TOKEN_NEVER_EXPIRE_AT = LocalDateTime.of(2099, 12, 31, 23, 59, 59);
+
     @Resource
     private OAuth2AccessTokenMapper oauth2AccessTokenMapper;
     @Resource
@@ -54,6 +59,8 @@ public class OAuth2TokenServiceImpl implements OAuth2TokenService {
 
     @Resource
     private OAuth2ClientService oauth2ClientService;
+    @Resource
+    private SecurityProperties securityProperties;
     @Resource
     @Lazy // 懒加载，避免循环依赖
     private AdminUserService adminUserService;
@@ -115,13 +122,13 @@ public class OAuth2TokenServiceImpl implements OAuth2TokenService {
             // 例如说，积木报表只允许传递 token，不允许传递 refresh_token，导致无法刷新访问令牌
             // 再例如说，前端 WebSocket 的 token 直接跟在 url 上，无法传递 refresh_token
             OAuth2RefreshTokenDO refreshTokenDO = oauth2RefreshTokenMapper.selectByRefreshToken(accessToken);
-            if (refreshTokenDO != null && !DateUtils.isExpired(refreshTokenDO.getExpiresTime())) {
+            if (refreshTokenDO != null && (isAccessTokenNeverExpire() || !DateUtils.isExpired(refreshTokenDO.getExpiresTime()))) {
                 accessTokenDO = convertToAccessToken(refreshTokenDO);
             }
         }
 
         // 如果在 MySQL 存在，则往 Redis 中写入
-        if (accessTokenDO != null && !DateUtils.isExpired(accessTokenDO.getExpiresTime())) {
+        if (accessTokenDO != null && (isAccessTokenNeverExpire() || !DateUtils.isExpired(accessTokenDO.getExpiresTime()))) {
             oauth2AccessTokenRedisDAO.set(accessTokenDO);
         }
         return accessTokenDO;
@@ -133,7 +140,7 @@ public class OAuth2TokenServiceImpl implements OAuth2TokenService {
         if (accessTokenDO == null) {
             throw exception0(GlobalErrorCodeConstants.UNAUTHORIZED.getCode(), "访问令牌不存在");
         }
-        if (DateUtils.isExpired(accessTokenDO.getExpiresTime())) {
+        if (!isAccessTokenNeverExpire() && DateUtils.isExpired(accessTokenDO.getExpiresTime())) {
             throw exception0(GlobalErrorCodeConstants.UNAUTHORIZED.getCode(), "访问令牌已过期");
         }
         return accessTokenDO;
@@ -180,7 +187,7 @@ public class OAuth2TokenServiceImpl implements OAuth2TokenService {
                 .setUserInfo(buildUserInfo(refreshTokenDO.getUserId(), refreshTokenDO.getUserType()))
                 .setClientId(clientDO.getClientId()).setScopes(refreshTokenDO.getScopes())
                 .setRefreshToken(refreshTokenDO.getRefreshToken())
-                .setExpiresTime(LocalDateTime.now().plusSeconds(clientDO.getAccessTokenValiditySeconds()));
+                .setExpiresTime(resolveAccessTokenExpiresTime(clientDO));
         // 优先从 refreshToken 获取租户编号，避免 ThreadLocal 被污染时导致 tenantId 为 null
         // 可能关联的 issue：https://t.zsxq.com/JIi5G
         Long tenantId = refreshTokenDO.getTenantId();
@@ -231,6 +238,25 @@ public class OAuth2TokenServiceImpl implements OAuth2TokenService {
             return Collections.emptyMap();
         }
         throw new IllegalArgumentException("未知用户类型：" + userType);
+    }
+
+    private boolean isAccessTokenNeverExpire() {
+        return securityProperties.isAccessTokenNeverExpire();
+    }
+
+    private LocalDateTime resolveAccessTokenExpiresTime(OAuth2ClientDO clientDO) {
+        if (isAccessTokenNeverExpire()) {
+            return ACCESS_TOKEN_NEVER_EXPIRE_AT;
+        }
+        return LocalDateTime.now().plusSeconds(resolveAccessTokenValiditySeconds(clientDO));
+    }
+
+    private int resolveAccessTokenValiditySeconds(OAuth2ClientDO clientDO) {
+        Integer override = securityProperties.getAccessTokenValiditySecondsOverride();
+        if (override != null && override > 0) {
+            return override;
+        }
+        return clientDO.getAccessTokenValiditySeconds();
     }
 
     private static String generateAccessToken() {

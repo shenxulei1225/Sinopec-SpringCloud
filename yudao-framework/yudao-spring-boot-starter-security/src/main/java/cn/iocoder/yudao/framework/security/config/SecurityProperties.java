@@ -48,4 +48,22 @@ public class SecurityProperties {
      * PasswordEncoder 加密复杂度，越高开销越大
      */
     private Integer passwordEncoderLength = 4;
+
+    /**
+     * 访问令牌有效期覆盖（秒）。
+     * <ul>
+     *   <li>未配置（null）：使用 OAuth2 客户端（数据库）配置</li>
+     *   <li>0：访问令牌永不过期（本地开发常用）</li>
+     *   <li>&gt; 0：以此秒数为准，如 1800 = 30 分钟</li>
+     * </ul>
+     */
+    private Integer accessTokenValiditySecondsOverride;
+
+    /**
+     * 访问令牌是否永不过期（yaml 显式配置 override = 0）。
+     */
+    public boolean isAccessTokenNeverExpire() {
+        return accessTokenValiditySecondsOverride != null && accessTokenValiditySecondsOverride == 0;
+    }
+
 }

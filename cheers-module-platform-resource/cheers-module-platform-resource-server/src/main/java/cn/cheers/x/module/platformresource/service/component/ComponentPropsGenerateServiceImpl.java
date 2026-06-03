@@ -9,6 +9,7 @@ import cn.cheers.x.module.platformresource.dal.dataobject.component.ComponentDO;
 import cn.cheers.x.module.platformresource.dal.dataobject.component.ComponentPropsDO;
 import cn.cheers.x.module.platformresource.dal.mysql.component.ComponentMapper;
 import cn.cheers.x.module.platformresource.dal.mysql.component.ComponentPropsMapper;
+import cn.cheers.x.module.platformresource.service.component.contract.ComponentCapabilityViewPropsGenerator;
 import cn.cheers.x.module.platformresource.service.component.contract.QueryContractPropsGenerator;
 import cn.cheers.x.module.platformresource.service.component.contract.QueryContractPropsGenerator.ListGenerateOptions;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,8 +39,8 @@ public class ComponentPropsGenerateServiceImpl implements ComponentPropsGenerate
 
     @Override
     public Map<String, Object> previewPropsFromContract(ComponentPropsGenerateFromContractReqVO reqVO) {
-        Map<String, Object> contract = fetchContract(reqVO);
-        return buildPropsJson(contract, reqVO);
+        Map<String, Object> view = fetchComponentView(reqVO);
+        return buildPropsJsonFromView(view, reqVO);
     }
 
     @Override
@@ -48,8 +49,8 @@ public class ComponentPropsGenerateServiceImpl implements ComponentPropsGenerate
         if (Boolean.TRUE.equals(reqVO.getPreviewOnly())) {
             throw exception(COMPONENT_PROPS_GENERATE_PREVIEW_ONLY);
         }
-        Map<String, Object> contract = fetchContract(reqVO);
-        Map<String, Object> propsJson = buildPropsJson(contract, reqVO);
+        Map<String, Object> view = fetchComponentView(reqVO);
+        Map<String, Object> propsJson = buildPropsJsonFromView(view, reqVO);
         return upsertTemplate(reqVO, propsJson);
     }
 
@@ -83,9 +84,13 @@ public class ComponentPropsGenerateServiceImpl implements ComponentPropsGenerate
             }
             String label = StrUtil.blankToDefault(row.getLabel(), key);
             count += seedOne(key, "list", "list@1", null, label + " · 列表", "full");
-            Map<String, Object> contract = fetchContract(key, true);
-            if (QueryContractPropsGenerator.contractSupportsTreeView(contract)) {
-                count += seedOne(key, "tree", "tree@1", null, label + " · 树", "full");
+            try {
+                Map<String, Object> treeView = fetchComponentView(key, "tree", true);
+                if (ComponentCapabilityViewPropsGenerator.viewSupportsTree(treeView)) {
+                    count += seedOne(key, "tree", "tree@1", null, label + " · 树", "full");
+                }
+            } catch (Exception ex) {
+                log.debug("[seedAllDynamicPropsTemplates] skip tree for {}: {}", key, ex.getMessage());
             }
         }
         log.info("[seedAllDynamicPropsTemplates] upserted {} templates", count);
@@ -115,9 +120,20 @@ public class ComponentPropsGenerateServiceImpl implements ComponentPropsGenerate
         return 1;
     }
 
-    private Map<String, Object> fetchContract(ComponentPropsGenerateFromContractReqVO reqVO) {
-        return fetchContract(reqVO.resolveDataSourceKey(), reqVO.getRebuildIfMissing() == null
-                || Boolean.TRUE.equals(reqVO.getRebuildIfMissing()));
+    private Map<String, Object> fetchComponentView(ComponentPropsGenerateFromContractReqVO reqVO) {
+        return fetchComponentView(
+                reqVO.resolveDataSourceKey(),
+                reqVO.getComponentCode(),
+                reqVO.getRebuildIfMissing() == null || Boolean.TRUE.equals(reqVO.getRebuildIfMissing()));
+    }
+
+    private Map<String, Object> fetchComponentView(String instanceKey, String componentCode, boolean rebuildIfMissing) {
+        CommonResult<Map<String, Object>> result =
+                capabilityContractApi.getComponentView(instanceKey, componentCode, rebuildIfMissing);
+        if (result == null || result.getData() == null) {
+            throw exception(COMPONENT_PROPS_CONTRACT_NOT_FOUND);
+        }
+        return result.getData();
     }
 
     private void rebuildCapabilitiesBeforeSeed() {
@@ -125,28 +141,22 @@ public class ComponentPropsGenerateServiceImpl implements ComponentPropsGenerate
         log.info("[seed] rebuilt all system capability contracts");
     }
 
-    private Map<String, Object> fetchContract(String instanceKey, boolean rebuildIfMissing) {
-        CommonResult<Map<String, Object>> result =
-                capabilityContractApi.getContract(instanceKey, rebuildIfMissing);
-        if (result == null || result.getData() == null) {
-            throw exception(COMPONENT_PROPS_CONTRACT_NOT_FOUND);
-        }
-        return result.getData();
-    }
-
-    private Map<String, Object> buildPropsJson(Map<String, Object> contract, ComponentPropsGenerateFromContractReqVO reqVO) {
+    private Map<String, Object> buildPropsJsonFromView(
+            Map<String, Object> view, ComponentPropsGenerateFromContractReqVO reqVO) {
         String dataSourceKey = reqVO.resolveDataSourceKey();
         String componentCode = reqVO.getComponentCode();
-        if ("tree".equals(componentCode)) {
-            return QueryContractPropsGenerator.generateTreeProps(contract, dataSourceKey);
-        }
-        if ("list".equals(componentCode)) {
-            ListGenerateOptions options = "minimal".equalsIgnoreCase(reqVO.getVariant())
-                    ? ListGenerateOptions.minimal()
-                    : ListGenerateOptions.defaults();
-            return QueryContractPropsGenerator.generateListProps(contract, dataSourceKey, options);
-        }
-        throw exception(COMPONENT_PROPS_UNSUPPORTED_COMPONENT);
+        return switch (componentCode) {
+            case "tree" -> ComponentCapabilityViewPropsGenerator.generateTreeProps(view, dataSourceKey);
+            case "list" -> {
+                ListGenerateOptions options = "minimal".equalsIgnoreCase(reqVO.getVariant())
+                        ? ListGenerateOptions.minimal()
+                        : ListGenerateOptions.defaults();
+                yield ComponentCapabilityViewPropsGenerator.generateListProps(view, dataSourceKey, options);
+            }
+            case "table" -> ComponentCapabilityViewPropsGenerator.generateTableProps(view, dataSourceKey);
+            case "card" -> ComponentCapabilityViewPropsGenerator.generateCardProps(view, dataSourceKey);
+            default -> throw exception(COMPONENT_PROPS_UNSUPPORTED_COMPONENT);
+        };
     }
 
     private Long upsertTemplate(ComponentPropsGenerateFromContractReqVO reqVO, Map<String, Object> propsJson) {

@@ -166,6 +166,7 @@ yudao:
     enable: false
   security:
     mock-enable: true
+    access-token-validity-seconds-override: 0 # 0 = 永不过期；>0 为秒数（如 1800 = 30 分钟）；省略则走数据库 OAuth2 客户端配置
   pay:
     order-notify-url: http://yunai.natapp1.cc/admin-api/pay/notify/order
     refund-notify-url: http://yunai.natapp1.cc/admin-api/pay/notify/refund

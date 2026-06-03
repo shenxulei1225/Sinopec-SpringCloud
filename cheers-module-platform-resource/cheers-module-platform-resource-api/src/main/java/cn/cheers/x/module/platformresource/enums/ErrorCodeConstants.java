@@ -20,4 +20,11 @@ public interface ErrorCodeConstants {
     ErrorCode COMPONENT_PROPS_UNSUPPORTED_COMPONENT = new ErrorCode(1_004_050_010, "不支持的组件类型");
     ErrorCode COMPONENT_PROPS_GENERATE_PREVIEW_ONLY = new ErrorCode(1_004_050_011, "预览模式不可落库");
 
+    // ─── 视图配置（1_004_050_020 段） ──────────────────────────────────────────
+    ErrorCode VIEW_CONFIG_NOT_EXISTS            = new ErrorCode(1_004_050_020, "视图配置不存在");
+    ErrorCode VIEW_CONFIG_NOT_TEMPLATE         = new ErrorCode(1_004_050_021, "viewId 必须指向视图模板");
+    ErrorCode VIEW_CONFIG_SAVE_JSON_REQUIRED   = new ErrorCode(1_004_050_022, "模板保存需提供 configJson");
+    ErrorCode VIEW_CONFIG_SAVE_OVERRIDE_REQUIRED = new ErrorCode(1_004_050_023, "实例保存需提供 configOverride");
+    ErrorCode VIEW_CONFIG_TEMPLATE_HAS_INSTANCES = new ErrorCode(1_004_050_024, "视图模板仍有关联实例，无法删除");
+
 }

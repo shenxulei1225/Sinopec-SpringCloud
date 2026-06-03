@@ -19,12 +19,17 @@ spring:
     enabled: true
     baseline-on-migrate: true
     baseline-version: 0
-    locations: classpath:db/migration
+    locations: classpath:db/migration/dynamicbusiness
     table: flyway_schema_history_dynamicbusiness
     schemas: dynamicbusiness
     default-schema: dynamicbusiness
     create-schemas: true
     repair-on-migrate: true
+    placeholders:
+      zhglHost: 127.0.0.1
+      zhglDb: zhgl
+      zhglUser: postgres
+      zhglPassword: Coolhomer
   autoconfigure:
     exclude:
   datasource:
@@ -129,6 +134,8 @@ logging:
 --- #################### 芋道相关配置 ####################
 
 yudao:
+  api-encrypt:
+    enable: false
   tenant:
     enable: true
     ignore-urls:
@@ -146,4 +153,4 @@ yudao:
   security:
     mock-enable: true
   access-log:
-    enable: true
+    enable: false

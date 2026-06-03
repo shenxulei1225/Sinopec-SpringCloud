@@ -16,7 +16,7 @@ public class ComponentPropsGenerateFromContractReqVO {
     private String queryContractKey;
 
     @NotBlank(message = "componentCode 不能为空")
-    @Schema(description = "组件编码：list | tree", example = "list")
+    @Schema(description = "组件编码：list | tree | table | card", example = "list")
     private String componentCode;
 
     @Schema(description = "保存为模板时的名称；预览时可空")

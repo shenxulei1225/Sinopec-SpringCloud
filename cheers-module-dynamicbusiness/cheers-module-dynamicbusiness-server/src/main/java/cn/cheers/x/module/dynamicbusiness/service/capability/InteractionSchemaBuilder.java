@@ -98,81 +98,10 @@ public final class InteractionSchemaBuilder {
         }
     }
 
-    /** System 资源：由 filters + displays 推导写表单（delete 仅 id） */
+    /** System 资源：优先从 SaveReqVO 扫描写表单字段 */
     public static List<Map<String, Object>> buildSystemWriteFields(
             SystemCapabilityResourceDef def, String purpose) {
-        if ("delete".equals(purpose)) {
-            return List.of(field("id", "编号", "input", true, false, null, null));
-        }
-        List<Map<String, Object>> fields = new ArrayList<>();
-        if ("update".equals(purpose)) {
-            fields.add(field("id", "编号", "input", true, true, null, null));
-        }
-        List<String> seen = new ArrayList<>();
-        for (SystemCapabilityResourceDef.FilterSpec spec : def.filters()) {
-            if (seen.contains(spec.fieldKey())) {
-                continue;
-            }
-            seen.add(spec.fieldKey());
-            fields.add(field(
-                    spec.fieldKey(),
-                    spec.label(),
-                    spec.control(),
-                    false,
-                    false,
-                    spec.dictType(),
-                    spec.refTargetKey()));
-        }
-        for (SystemCapabilityResourceDef.DisplaySpec spec : def.displayFields()) {
-            if (seen.contains(spec.fieldKey())) {
-                continue;
-            }
-            if ("id".equals(spec.fieldKey())) {
-                continue;
-            }
-            seen.add(spec.fieldKey());
-            String control = "dict".equals(spec.renderAs()) ? "dict" : "input";
-            fields.add(field(spec.fieldKey(), spec.label(), control, false, false,
-                    "dict".equals(spec.renderAs()) ? "common_status" : null, null));
-        }
-        appendSystemWriteExtras(def, purpose, fields, seen);
-        return fields;
-    }
-
-    private static void appendSystemWriteExtras(
-            SystemCapabilityResourceDef def, String purpose, List<Map<String, Object>> fields, List<String> seen) {
-        if ("delete".equals(purpose)) {
-            return;
-        }
-        switch (def.resourceCode()) {
-            case "dept" -> {
-                addIfAbsent(fields, seen, field("parentId", "上级部门", "ref-picker", false, false, null, "system:dept"));
-                addIfAbsent(fields, seen, field("sort", "显示顺序", "input", true, false, null, null));
-                addIfAbsent(fields, seen, field("leaderUserId", "负责人", "ref-picker", false, false, null, "system:user"));
-                addIfAbsent(fields, seen, field("phone", "联系电话", "input", false, false, null, null));
-                addIfAbsent(fields, seen, field("email", "邮箱", "input", false, false, null, null));
-            }
-            case "user" -> {
-                addIfAbsent(fields, seen, field("nickname", "昵称", "input", false, false, null, null));
-                addIfAbsent(fields, seen, field("password", "密码", "input", "create".equals(purpose), false, null, null));
-            }
-            case "menu" -> {
-                addIfAbsent(fields, seen, field("parentId", "上级菜单", "ref-picker", false, false, null, "system:menu"));
-                addIfAbsent(fields, seen, field("sort", "显示顺序", "input", true, false, null, null));
-            }
-            default -> {
-                // 无额外字段
-            }
-        }
-    }
-
-    private static void addIfAbsent(
-            List<Map<String, Object>> fields, List<String> seen, Map<String, Object> field) {
-        String key = String.valueOf(field.get("fieldKey"));
-        if (!seen.contains(key)) {
-            seen.add(key);
-            fields.add(field);
-        }
+        return SystemVoSchemaScanner.scanWriteFields(def, purpose);
     }
 
     /**

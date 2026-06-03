@@ -8,6 +8,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeMap
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.capability.InstanceCapabilityRegistryMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelFieldAssignmentService;
+import cn.iocoder.yudao.framework.common.exception.ServiceException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
@@ -94,11 +95,16 @@ public class CapabilityRegistryRebuildServiceImpl implements CapabilityRegistryR
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void rebuildSystemCapability(String resourceCode) {
-        SystemCapabilityCatalog.find(resourceCode).ifPresent(def -> {
-            Map<String, Object> contract = SystemCapabilityContractBuilder.build(def);
-            upsertContract(contract, "system", null, null, def.resourceCode(), String.valueOf(contract.get("label")));
-            log.info("[rebuildSystemCapability] resourceCode={}", resourceCode);
-        });
+        String code = resourceCode != null ? resourceCode.trim() : "";
+        if (code.isBlank()) {
+            throw new ServiceException(400, "System 资源编码不能为空");
+        }
+        SystemCapabilityResourceDef def = SystemCapabilityCatalog.find(code)
+                .orElseThrow(() -> new ServiceException(400, "未注册的 System 资源: " + code
+                        + "（instanceKey 应为 system:" + code + "）"));
+        Map<String, Object> contract = SystemCapabilityContractBuilder.build(def);
+        upsertContract(contract, "system", null, null, def.resourceCode(), String.valueOf(contract.get("label")));
+        log.info("[rebuildSystemCapability] resourceCode={}", code);
     }
 
     @Override

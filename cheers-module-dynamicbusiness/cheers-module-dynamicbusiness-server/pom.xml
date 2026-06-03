@@ -41,6 +41,23 @@
             <artifactId>yudao-module-system-api</artifactId>
             <version>${revision}</version>
         </dependency>
+        <!-- System SaveReqVO 反射扫描（rebuild/system 写表单 schema） -->
+        <dependency>
+            <groupId>cn.iocoder.cloud</groupId>
+            <artifactId>yudao-module-system-server</artifactId>
+            <version>${revision}</version>
+            <exclusions>
+                <!-- 仅需要 VO 类，不引入 system-server 的微信/社交 Starter（避免 wx appid 未配置导致启动失败） -->
+                <exclusion>
+                    <groupId>com.github.binarywang</groupId>
+                    <artifactId>wx-java-mp-spring-boot-starter</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.github.binarywang</groupId>
+                    <artifactId>wx-java-miniapp-spring-boot-starter</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <!-- 业务组件 -->
         <dependency>
             <groupId>cn.iocoder.cloud</groupId>
@@ -176,7 +193,18 @@
                     <url>${flyway.url}</url>
                     <user>${flyway.user}</user>
                     <password>${flyway.password}</password>
-                    <locations>filesystem:${project.basedir}/src/main/resources/db/migration</locations>
+                    <locations>filesystem:${project.basedir}/src/main/resources/db/migration/dynamicbusiness</locations>
+                    <schemas>dynamicbusiness</schemas>
+                    <defaultSchema>dynamicbusiness</defaultSchema>
+                    <table>flyway_schema_history_dynamicbusiness</table>
+                    <baselineOnMigrate>true</baselineOnMigrate>
+                    <baselineVersion>0</baselineVersion>
+                    <placeholders>
+                        <zhglHost>${zhgl.db.host}</zhglHost>
+                        <zhglDb>${zhgl.db.name}</zhglDb>
+                        <zhglUser>${zhgl.db.user}</zhglUser>
+                        <zhglPassword>${zhgl.db.password}</zhglPassword>
+                    </placeholders>
                 </configuration>
             </plugin>
 
@@ -199,6 +227,10 @@
         <flyway.url>jdbc:postgresql://127.0.0.1:5432/sinopec</flyway.url>
         <flyway.user>postgres</flyway.user>
         <flyway.password>Coolhomer</flyway.password>
+        <zhgl.db.host>127.0.0.1</zhgl.db.host>
+        <zhgl.db.name>zhgl</zhgl.db.name>
+        <zhgl.db.user>postgres</zhgl.db.user>
+        <zhgl.db.password>Coolhomer</zhgl.db.password>
     </properties>
 
 </project>

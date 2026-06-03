@@ -36,6 +36,13 @@ public interface CapabilityContractApi {
             @RequestParam("instanceKey") String instanceKey,
             @RequestParam(value = "rebuildIfMissing", defaultValue = "true") boolean rebuildIfMissing);
 
+    @GetMapping(PREFIX + "/instances/for-component")
+    @Operation(summary = "按组件类型获取投影后的能力视图")
+    CommonResult<Map<String, Object>> getComponentView(
+            @RequestParam("instanceKey") String instanceKey,
+            @RequestParam("componentCode") String componentCode,
+            @RequestParam(value = "rebuildIfMissing", defaultValue = "true") boolean rebuildIfMissing);
+
     @PostMapping(PREFIX + "/internal/rebuild/system")
     @Operation(summary = "重建全部 System 固定资源能力契约")
     CommonResult<Boolean> rebuildAllSystemCapabilities();
