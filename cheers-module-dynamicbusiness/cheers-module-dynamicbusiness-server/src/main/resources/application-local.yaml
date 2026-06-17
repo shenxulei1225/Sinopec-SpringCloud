@@ -25,6 +25,7 @@ spring:
     default-schema: dynamicbusiness
     create-schemas: true
     repair-on-migrate: true
+    ignore-migration-patterns: "*:missing"
     placeholders:
       zhglHost: 127.0.0.1
       zhglDb: zhgl

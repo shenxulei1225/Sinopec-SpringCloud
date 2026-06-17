@@ -46,7 +46,7 @@ public class ComponentPropsController {
     }
 
     @PutMapping("/{propsId}")
-    @Operation(summary = "保存 Props（模板写 propsJson，实例写 propsOverride）")
+    @Operation(summary = "保存组件配置（模板写 props，实例写 propsOverride）")
     public CommonResult<Boolean> saveProps(
             @PathVariable("propsId") Long propsId,
             @Valid @RequestBody ComponentPropsSaveReqVO reqVO) {

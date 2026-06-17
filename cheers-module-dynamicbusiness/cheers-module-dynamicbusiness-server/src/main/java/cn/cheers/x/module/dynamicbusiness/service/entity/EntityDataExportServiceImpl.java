@@ -18,7 +18,6 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -44,6 +43,8 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
     private ModelFieldAssignmentMapper modelFieldAssignmentMapper;
     @Resource
     private FieldMapper fieldMapper;
+    @Resource
+    private EntityBusinessHelper entityBusinessHelper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -226,22 +227,21 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
 
         // 校验自定义字段格式
         if (StrUtil.isNotBlank(importVO.getCustomFields())) {
+            Map<String, Object> customFields;
             try {
-                JSON.parseObject(importVO.getCustomFields());
+                customFields = entityBusinessHelper.parseCustomFieldsFromJson(importVO.getCustomFields());
             } catch (Exception e) {
                 throw new ServiceException(400, String.format("第%d行：自定义字段JSON格式错误", rowNum));
             }
-
-            // 校验自定义字段值
-            validateCustomFields(importVO.getModelId(), importVO.getCustomFields(), rowNum);
+            validateCustomFields(importVO.getModelId(), customFields, rowNum);
         }
     }
 
     /**
      * 校验自定义字段值
      */
-    private void validateCustomFields(Long modelId, String customFieldsJson, int rowNum) {
-        if (StrUtil.isBlank(customFieldsJson)) {
+    private void validateCustomFields(Long modelId, Map<String, Object> customFields, int rowNum) {
+        if (customFields == null || customFields.isEmpty()) {
             return;
         }
 
@@ -250,8 +250,6 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
             return;
         }
 
-        JSONObject jsonObj = JSON.parseObject(customFieldsJson);
-
         for (ModelFieldAssignmentDO assignment : assignments) {
             FieldDO field = fieldMapper.selectById(assignment.getFieldId());
             if (field == null) {
@@ -259,12 +257,14 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
             }
 
             String idKey = String.valueOf(field.getId());
-            Object val = jsonObj.get(idKey);
+            Object val = customFields.get(idKey);
+            if (val == null && field.getCode() != null) {
+                val = customFields.get(field.getCode());
+            }
 
-            // 必填校验
             if (Boolean.TRUE.equals(assignment.getRequired())) {
                 if (val == null || (val instanceof String && ((String) val).isEmpty())) {
-                    throw new ServiceException(400, 
+                    throw new ServiceException(400,
                         String.format("第%d行：字段[%s]为必填项", rowNum, field.getName()));
                 }
             }
@@ -295,7 +295,7 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
                 .name(importVO.getName())
                 .businessTypeCode(importVO.getBusinessTypeCode())
                 .modelId(importVO.getModelId())
-                .customFields(importVO.getCustomFields())
+                .customFields(entityBusinessHelper.parseCustomFieldsFromJson(importVO.getCustomFields()))
                 .status(importVO.getStatus())
                 .build();
         entity.setTenantId(getTenantId());
@@ -310,7 +310,7 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
         EntityDO update = new EntityDO();
         update.setId(existEntity.getId());
         update.setBusinessTypeCode(existEntity.getBusinessTypeCode()); // 必须设置 businessTypeCode 用于表名路由
-        update.setCustomFields(importVO.getCustomFields());
+        update.setCustomFields(entityBusinessHelper.parseCustomFieldsFromJson(importVO.getCustomFields()));
         update.setStatus(importVO.getStatus());
         // 通过 Repository 层更新（自动处理动态表名）
         entityRepository.update(update);
@@ -349,7 +349,7 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
                 .businessTypeCode(entity.getBusinessTypeCode())
                 .modelId(entity.getModelId())
                 .modelName(modelNameMap.get(entity.getModelId()))
-                .customFields(entity.getCustomFields())
+                .customFields(entity.getCustomFields() != null ? JSON.toJSONString(entity.getCustomFields()) : null)
                 .status(entity.getStatus())
                 .createTime(entity.getCreateTime())
                 .updateTime(entity.getUpdateTime())

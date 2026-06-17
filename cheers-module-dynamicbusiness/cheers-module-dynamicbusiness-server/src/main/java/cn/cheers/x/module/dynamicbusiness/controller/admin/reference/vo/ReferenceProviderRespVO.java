@@ -24,8 +24,8 @@ public class ReferenceProviderRespVO {
     @Schema(description = "语义类型", example = "USER")
     private String semanticType;
 
-    @Schema(description = "能力声明(JSON)")
-    private String capabilityFlags;
+    @Schema(description = "功能声明(JSON)")
+    private String featureFlags;
 
     @Schema(description = "配置(JSON)")
     private String configJson;

@@ -18,8 +18,6 @@ import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationSer
 import cn.cheers.x.module.dynamicbusiness.service.entity.validation.exception.CircularReferenceException;
 import cn.cheers.x.module.dynamicbusiness.service.entity.validation.exception.InvalidEntityRefException;
 import cn.cheers.x.module.dynamicbusiness.service.entity.validation.exception.InvalidParentRefException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -53,11 +51,10 @@ public class EntityValidationServiceImpl implements EntityValidationService {
     @Resource
     private ModelRelationMapper modelRelationMapper;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     @Override
     public void validateEntity(EntityDO entity, ModelDO model) {
-        Map<String, Object> customFields = parseCustomFieldsToMap(entity.getCustomFields());
+        Map<String, Object> customFields = entity.getCustomFields() != null
+                ? entity.getCustomFields() : Collections.emptyMap();
         validateEntity(entity, model, customFields, model.getBusinessTypeCode());
     }
 
@@ -253,18 +250,6 @@ public class EntityValidationServiceImpl implements EntityValidationService {
         }
 
         return null;
-    }
-
-    private Map<String, Object> parseCustomFieldsToMap(String customFields) {
-        if (customFields == null || customFields.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        try {
-            return objectMapper.readValue(customFields, new TypeReference<Map<String, Object>>() {});
-        } catch (Exception e) {
-            log.warn("解析扩展字段失败: {}", e.getMessage());
-            return Collections.emptyMap();
-        }
     }
 
     private void validateEntityRefFields(EntityDO entity, ModelDO model, Map<String, Object> customFields) {

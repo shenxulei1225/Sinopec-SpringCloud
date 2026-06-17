@@ -45,7 +45,6 @@ import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.service.businesstype.BusinessTypeBaseFieldService;
 import cn.cheers.x.module.dynamicbusiness.service.businesstype.BusinessTypeRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.field.SmartSearchableService;
-import cn.cheers.x.module.dynamicbusiness.service.capability.CapabilityRegistryRebuildService;
 import cn.cheers.x.module.dynamicbusiness.service.relation.RelationFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.relation.RelationFieldLibraryService;
 import jakarta.annotation.Resource;
@@ -94,9 +93,6 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
     private BusinessTypeRelationService businessTypeRelationService;
     @Resource
     private ModelFieldGroupService modelFieldGroupService;
-    @Resource
-    @Lazy
-    private CapabilityRegistryRebuildService capabilityRegistryRebuildService;
 
     @Override
     public void assignFieldToModel(Long modelId, Long fieldId, Boolean required, Boolean isSearchable, Boolean isFilterable, Boolean isSortable, String defaultValue, String validationRules) {
@@ -162,7 +158,6 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 modelFieldAssignmentMapper.insert(assignment);
             }
         }
-        triggerCapabilityRebuild(modelId);
     }
 
     @Override
@@ -254,7 +249,6 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 }
             }
         }
-        triggerCapabilityRebuild(reqVO.getModelId());
         return affectedCount;
     }
 
@@ -290,7 +284,6 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         if (assignment != null) {
             modelFieldAssignmentMapper.deleteById(assignment.getId());
         }
-        triggerCapabilityRebuild(modelId);
     }
 
     @Override
@@ -339,19 +332,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 new LambdaQueryWrapperX<ModelFieldAssignmentDO>()
                         .eq(ModelFieldAssignmentDO::getModelId, modelId)
                         .in(ModelFieldAssignmentDO::getFieldId, fieldIds));
-        triggerCapabilityRebuild(modelId);
         return deleted;
-    }
-
-    private void triggerCapabilityRebuild(Long modelId) {
-        if (modelId == null) {
-            return;
-        }
-        try {
-            capabilityRegistryRebuildService.rebuildAfterModelFieldChange(modelId);
-        } catch (Exception ex) {
-            log.warn("[triggerCapabilityRebuild][modelId={}] {}", modelId, ex.getMessage());
-        }
     }
 
     @Override

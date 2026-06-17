@@ -5,7 +5,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespV
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelRespVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
-import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityConvert;
+import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityDoVoHelper;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
 import cn.cheers.x.module.dynamicbusiness.service.model.relation.ModelCategoryRelationService;
@@ -70,7 +70,7 @@ public class CategoryModelEntityQueryServiceImpl implements CategoryModelEntityQ
         long t3 = System.currentTimeMillis();
         // 3. 转换为 RespVO
         List<EntityRespVO> allEntities = entityDOs.stream()
-                .map(this::convertToRespVO)
+                .map(entity -> EntityDoVoHelper.toRespVO(entity, customFieldValidationService))
                 .collect(Collectors.toList());
 
         // 4. O(n) 构建树（避免流式递归 O(n²)）
@@ -113,7 +113,7 @@ public class CategoryModelEntityQueryServiceImpl implements CategoryModelEntityQ
         );
 
         List<EntityRespVO> list = pageResult.getList().stream()
-                .map(this::convertToRespVO)
+                .map(entity -> EntityDoVoHelper.toRespVO(entity, customFieldValidationService))
                 .toList();
         return new PageResult<>(list, pageResult.getTotal());
     }
@@ -163,18 +163,6 @@ public class CategoryModelEntityQueryServiceImpl implements CategoryModelEntityQ
                 sortChildrenRecursively(n.getChildren(), cmp);
             }
         }
-    }
-
-    private EntityRespVO convertToRespVO(EntityDO entity) {
-        if (entity == null) {
-            return null;
-        }
-        EntityRespVO respVO = EntityConvert.INSTANCE.convert(entity);
-        if (respVO.getCustomFields() != null) {
-            respVO.setCustomFields(customFieldValidationService.decryptCustomFields(
-                    respVO.getCustomFields(), entity.getModelId()));
-        }
-        return respVO;
     }
 }
 

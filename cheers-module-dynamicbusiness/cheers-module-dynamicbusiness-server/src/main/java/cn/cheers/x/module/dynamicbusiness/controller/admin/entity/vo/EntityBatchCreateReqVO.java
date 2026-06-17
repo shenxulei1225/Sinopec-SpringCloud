@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 批量创建实体请求 VO（模板 + 明细）。
@@ -80,11 +81,11 @@ public class EntityBatchCreateReqVO {
         @Schema(description = "父实体ID（可选，优先级高于 scope.parentEntityId）", example = "1000")
         private Long parentId;
 
-        @Schema(description = "固定列字段JSON（可选，优先级高于 base.baseFields）")
-        private String baseFields;
+        @Schema(description = "固定列字段（可选，优先级高于 base.baseFields）")
+        private Map<String, Object> baseFields;
 
-        @Schema(description = "自定义字段JSON（可选，优先级高于 base.customFields）")
-        private String customFields;
+        @Schema(description = "自定义字段（可选，优先级高于 base.customFields）")
+        private Map<String, Object> customFields;
 
         @Schema(description = "状态（可选，优先级高于 base.status）", example = "1")
         private Integer status;

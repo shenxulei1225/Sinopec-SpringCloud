@@ -348,7 +348,7 @@ public class CategoryServiceImpl implements CategoryService {
 
         // 4. 同步关联关系
         // 使用已查询的 model 变量，无需再次查询
-        Map<String, Object> customFieldsMap = entityBusinessHelper.parseCustomFieldsToMap(entityReqVO.getCustomFields());
+        Map<String, Object> customFieldsMap = entityBusinessHelper.emptyIfNull(entityReqVO.getCustomFields());
         entityRelationSyncService.syncRelationsOnCreate(data, model, customFieldsMap);
 
         // 5. 清除缓存
@@ -506,12 +506,12 @@ public class CategoryServiceImpl implements CategoryService {
             throw new ServiceException(404, "实体不存在");
         }
         String oldName = db.getName();
-        Map<String, Object> oldCustomFields = entityBusinessHelper.parseCustomFieldsToMap(db.getCustomFields());
+        Map<String, Object> oldCustomFields = entityBusinessHelper.emptyIfNull(db.getCustomFields());
 
         EntityDO update = entityBusinessHelper.prepareUpdateEntity(entityUpdateReqVO, db);
         entityCoreService.update(update);
 
-        Map<String, Object> newCustomFields = entityBusinessHelper.parseCustomFieldsToMap(entityUpdateReqVO.getCustomFields());
+        Map<String, Object> newCustomFields = entityBusinessHelper.emptyIfNull(entityUpdateReqVO.getCustomFields());
         entityRelationSyncService.syncRelationsOnUpdate(update, model, newCustomFields, oldCustomFields);
 
         entityCacheEvictionService.evictEntityCaches(model.getId(), model.getBusinessTypeCode());

@@ -6,8 +6,6 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityRelationDO
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.event.EntityNameChangedEvent;
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -15,10 +13,11 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 实体名称变更监听器
@@ -169,40 +168,28 @@ public class EntityNameChangedListener {
         }
 
         // 解析 customFields
-        String customFieldsJson = sourceEntity.getCustomFields();
-        if (!StringUtils.hasText(customFieldsJson)) {
+        Map<String, Object> customFields = sourceEntity.getCustomFields();
+        if (customFields == null || customFields.isEmpty()) {
             log.debug("[updateSourceEntityName][源实体 customFields 为空，跳过更新]");
             return false;
         }
 
-        JSONObject customFields;
-        try {
-            customFields = JSON.parseObject(customFieldsJson);
-        } catch (Exception e) {
-            log.warn("[updateSourceEntityName][解析 customFields 失败: sourceEntityId={}]", sourceEntityId, e);
-            return false;
-        }
+        Map<String, Object> mutableFields = new HashMap<>(customFields);
 
-        if (customFields == null) {
-            return false;
-        }
-
-        // 根据关联类型更新名称字段
         boolean updated;
         if (RELATION_TYPE_ENTITY_REF_MULTI.equals(relationType)) {
-            updated = updateMultiRefName(customFields, fieldCode, targetEntityId, newName);
+            updated = updateMultiRefName(mutableFields, fieldCode, targetEntityId, newName);
         } else {
-            updated = updateSingleRefName(customFields, fieldCode, newName);
+            updated = updateSingleRefName(mutableFields, fieldCode, newName);
         }
 
         if (!updated) {
             return false;
         }
 
-        // 保存更新后的 customFields
         EntityDO update = new EntityDO();
         update.setId(sourceEntityId);
-        update.setCustomFields(customFields.toJSONString());
+        update.setCustomFields(mutableFields);
         entityMapper.updateById(update);
 
         log.debug("[updateSourceEntityName][更新源实体名称成功: sourceEntityId={}, fieldCode={}]",
@@ -220,7 +207,7 @@ public class EntityNameChangedListener {
      * @param newName 新名称
      * @return 是否更新成功
      */
-    private boolean updateSingleRefName(JSONObject customFields, String fieldCode, String newName) {
+    private boolean updateSingleRefName(Map<String, Object> customFields, String fieldCode, String newName) {
         String nameFieldCode = fieldCode + "_name";
         
         // 检查名称字段是否存在
@@ -245,7 +232,7 @@ public class EntityNameChangedListener {
      * @param newName 新名称
      * @return 是否更新成功
      */
-    private boolean updateMultiRefName(JSONObject customFields, String fieldCode, 
+    private boolean updateMultiRefName(Map<String, Object> customFields, String fieldCode,
                                        Long targetEntityId, String newName) {
         String idsFieldCode = fieldCode;
         String namesFieldCode = fieldCode + "_names";

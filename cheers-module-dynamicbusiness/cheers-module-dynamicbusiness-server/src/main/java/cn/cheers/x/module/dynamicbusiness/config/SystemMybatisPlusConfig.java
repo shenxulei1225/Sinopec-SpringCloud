@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerIntercept
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 /**
  * dynamicbusiness 模块的 MyBatis-Plus 配置
@@ -17,8 +18,8 @@ import org.springframework.context.annotation.Configuration;
  * <p>显式定义 {@link MybatisPlusInterceptor} Bean，并在其中注册 Entity 动态表名拦截器。</p>
  *
  * <p>通过使用相同的 Bean 名称 "mybatisPlusInterceptor" 并配合框架层的
- * {@code @ConditionalOnMissingBean(MybatisPlusInterceptor.class)}，确保本模块的动态表名拦截器
- * 一定会被真正生效的 {@link MybatisPlusInterceptor} 使用。</p>
+ * <p>通过 {@link Primary} 覆盖框架 {@code YudaoMybatisAutoConfiguration} 中的同名 Bean，
+ * 确保 Entity 动态表名拦截器（DEDICATED → biz_{code}）一定生效。</p>
  */
 @Configuration
 @Slf4j
@@ -29,6 +30,7 @@ public class SystemMybatisPlusConfig {
      * 避免在 SqlSessionFactory 构建阶段触发 Mapper 相关 Bean 的初始化，造成循环依赖。
      */
     @Bean("mybatisPlusInterceptor")
+    @Primary
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
 

@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity;
 
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import cn.cheers.x.module.dynamicbusiness.framework.mybatis.JsonbMapTypeHandler;
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.KeySequence;
@@ -8,6 +8,8 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
+
+import java.util.Map;
 
 /**
  * 实体 DO
@@ -67,9 +69,8 @@ public class EntityDO extends TenantBaseDO {
     private Integer status;
 
     /**
-     * 自定义字段（JSON格式,存储在 PostgreSQL JSONB 列中）
-     * 使用 StringJsonbTypeHandler 处理 JSONB ↔ String 的转换
+     * 自定义字段（键为字段编码或字段 ID，持久化在 PostgreSQL JSONB 列）。
      */
-    @TableField(typeHandler = JacksonTypeHandler.class)
-    private String customFields;
+    @TableField(typeHandler = JsonbMapTypeHandler.class)
+    private Map<String, Object> customFields;
 }

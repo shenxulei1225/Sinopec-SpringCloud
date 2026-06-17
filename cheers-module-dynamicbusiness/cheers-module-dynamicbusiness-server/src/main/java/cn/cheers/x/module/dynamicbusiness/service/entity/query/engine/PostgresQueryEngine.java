@@ -5,6 +5,7 @@ import cn.iocoder.yudao.framework.tenant.core.context.TenantContextHolder;
 import cn.iocoder.yudao.framework.common.pojo.PageParam;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
+import cn.cheers.x.module.dynamicbusiness.framework.mybatis.JsonbMapTypeHandler;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityFieldIndexMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
@@ -1044,7 +1045,7 @@ public class PostgresQueryEngine implements QueryEngine {
             entity.setModelId(rs.getLong(prefix + "model_id"));
             entity.setParentId(rs.getLong(prefix + "parent_id"));
             entity.setName(rs.getString(prefix + "name"));
-            entity.setCustomFields(rs.getString(prefix + "custom_fields"));
+            entity.setCustomFields(JsonbMapTypeHandler.parse(rs.getString(prefix + "custom_fields")));
             entity.setStatus(rs.getInt(prefix + "status"));
             return entity;
         }

@@ -9,8 +9,8 @@ import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityConvert;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
+import cn.cheers.x.module.dynamicbusiness.framework.mybatis.JsonbMapTypeHandler;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
-import com.alibaba.fastjson2.JSON;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -18,11 +18,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 /**
- * 实体写路径辅助：模型校验、请求→DO、customFields 解析与加密等。
- *
- * <p>DO/VO 展示转换请使用 {@link cn.cheers.x.module.dynamicbusiness.convert.entity.EntityDoVoHelper}；
- * Redis 缓存失效请使用 {@link EntityCacheEvictionService}；
- * 写后事件请使用 {@link EntityLifecycleEventPublisher}。</p>
+ * 实体写路径辅助：模型校验、请求→DO、customFields 加密等。
  */
 @Component
 @RequiredArgsConstructor
@@ -47,18 +43,18 @@ public class EntityBusinessHelper {
         }
     }
 
-    public void validateCustomFields(Long modelId, String customFieldsJson) {
-        if (customFieldsJson != null && !customFieldsJson.isEmpty()) {
-            customFieldValidationService.validateCustomFields(modelId, customFieldsJson);
+    public void validateCustomFields(Long modelId, Map<String, Object> customFields) {
+        if (customFields != null && !customFields.isEmpty()) {
+            customFieldValidationService.validateCustomFields(modelId, customFields);
         }
     }
 
-    public void validateBaseFields(String businessTypeCode, String customFieldsJson) {
+    public void validateBaseFields(String businessTypeCode, Map<String, Object> customFields) {
         // TODO: 与 BaseFieldValidationService 对齐后在此实现固定列校验
     }
 
     public void validateEntityReferences(EntityDO entity, ModelDO model,
-            String customFieldsJson, String businessTypeCode) {
+            Map<String, Object> customFields, String businessTypeCode) {
         // TODO: 与 EntityValidationService 对齐后在此实现引用校验
     }
 
@@ -101,21 +97,28 @@ public class EntityBusinessHelper {
         return update;
     }
 
-    public Map<String, Object> parseCustomFieldsToMap(String customFieldsJson) {
+    /**
+     * Excel 导入等文本边界：将 JSON 字符串解析为 Map。
+     */
+    public Map<String, Object> parseCustomFieldsFromJson(String customFieldsJson) {
         if (customFieldsJson == null || customFieldsJson.isEmpty()) {
             return new HashMap<>();
         }
         try {
-            return JSON.parseObject(customFieldsJson);
+            Map<String, Object> parsed = JsonbMapTypeHandler.parse(customFieldsJson);
+            return parsed != null ? parsed : new HashMap<>();
         } catch (Exception e) {
-            log.warn("[parseCustomFieldsToMap] 解析失败: {}", customFieldsJson, e);
+            log.warn("[parseCustomFieldsFromJson] 解析失败: {}", customFieldsJson, e);
             return new HashMap<>();
         }
     }
 
-    public List<String> extractFieldCodes(String customFieldsJson) {
-        Map<String, Object> customFields = parseCustomFieldsToMap(customFieldsJson);
-        return new ArrayList<>(customFields.keySet());
+    public Map<String, Object> emptyIfNull(Map<String, Object> customFields) {
+        return customFields != null ? customFields : Collections.emptyMap();
+    }
+
+    public List<String> extractFieldCodes(Map<String, Object> customFields) {
+        return new ArrayList<>(emptyIfNull(customFields).keySet());
     }
 
     public Long getTenantId() {

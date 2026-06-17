@@ -36,10 +36,10 @@ public class ComponentController {
         return success(componentService.getComponentList());
     }
 
-    @GetMapping("/{key}")
+    @GetMapping("/{componentCode}")
     @Operation(summary = "获取组件定义详情")
-    public CommonResult<ComponentRespVO> getComponent(@PathVariable("key") String key) {
-        return success(componentService.getComponent(key));
+    public CommonResult<ComponentRespVO> getComponent(@PathVariable("componentCode") String componentCode) {
+        return success(componentService.getComponent(componentCode));
     }
 
     @PostMapping
@@ -48,19 +48,19 @@ public class ComponentController {
         return success(componentService.createComponent(reqVO));
     }
 
-    @PutMapping("/{key}")
+    @PutMapping("/{componentCode}")
     @Operation(summary = "更新组件定义")
     public CommonResult<Boolean> updateComponent(
-            @PathVariable("key") String key,
+            @PathVariable("componentCode") String componentCode,
             @Valid @RequestBody ComponentUpdateReqVO reqVO) {
-        componentService.updateComponent(key, reqVO);
+        componentService.updateComponent(componentCode, reqVO);
         return success(true);
     }
 
-    @DeleteMapping("/{key}")
+    @DeleteMapping("/{componentCode}")
     @Operation(summary = "删除组件定义")
-    public CommonResult<Boolean> deleteComponent(@PathVariable("key") String key) {
-        componentService.deleteComponent(key);
+    public CommonResult<Boolean> deleteComponent(@PathVariable("componentCode") String componentCode) {
+        componentService.deleteComponent(componentCode);
         return success(true);
     }
 }

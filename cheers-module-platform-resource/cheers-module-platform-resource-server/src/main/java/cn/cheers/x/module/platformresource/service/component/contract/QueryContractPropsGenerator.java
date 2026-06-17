@@ -1,6 +1,7 @@
 package cn.cheers.x.module.platformresource.service.component.contract;
 
 import cn.hutool.core.util.StrUtil;
+import cn.cheers.x.module.platformresource.controller.admin.component.vo.ComponentDataSourceVO;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -31,7 +32,7 @@ public final class QueryContractPropsGenerator {
 
     @SuppressWarnings("unchecked")
     public static Map<String, Object> generateListProps(
-            Map<String, Object> contract, String dataSourceKey, ListGenerateOptions options) {
+            Map<String, Object> contract, ComponentDataSourceVO dataSource, ListGenerateOptions options) {
         ListGenerateOptions opts = options != null ? options : ListGenerateOptions.defaults();
         String label = StrUtil.blankToDefault((String) contract.get("label"), "列表");
         String title = label.replaceFirst("^系统\\s*-\\s*", "");
@@ -49,15 +50,12 @@ public final class QueryContractPropsGenerator {
         String crudBase = resolveCrudBasePath(listUrl);
 
         Map<String, Object> props = new LinkedHashMap<>();
-        if (StrUtil.isNotBlank(dataSourceKey)) {
-            props.put("dataSourceKey", dataSourceKey.trim());
-        }
         props.put("title", Map.of("title", title, "showTitle", true));
 
-        Map<String, Object> dataSource = new LinkedHashMap<>();
-        dataSource.put("dataSourceEndpoint", Map.of("url", listUrl, "method", method));
-        mergeWriteEndpoints(dataSource, contract, crudBase);
-        props.put("dataSource", dataSource);
+        Map<String, Object> dataSourceProps = new LinkedHashMap<>();
+        dataSourceProps.put("dataSourceEndpoint", Map.of("url", listUrl, "method", method));
+        mergeWriteEndpoints(dataSourceProps, contract, crudBase);
+        props.put("dataSource", dataSourceProps);
         props.put("selectMode", "single");
 
         String searchPlaceholder = buildSearchPlaceholder(contract);
@@ -75,15 +73,13 @@ public final class QueryContractPropsGenerator {
     }
 
     @SuppressWarnings("unchecked")
-    public static Map<String, Object> generateTreeProps(Map<String, Object> contract, String dataSourceKey) {
+    public static Map<String, Object> generateTreeProps(
+            Map<String, Object> contract, ComponentDataSourceVO dataSource) {
         Map<String, Object> endpoint = resolveTreeEndpoint(contract);
         String listUrl = String.valueOf(endpoint.get("url"));
         String method = String.valueOf(endpoint.getOrDefault("method", "GET"));
 
         Map<String, Object> props = new LinkedHashMap<>();
-        if (StrUtil.isNotBlank(dataSourceKey)) {
-            props.put("dataSourceKey", dataSourceKey.trim());
-        }
         props.put("selectMode", "single");
         props.put("defaultExpandAll", true);
         props.put("showSearch", true);

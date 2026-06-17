@@ -14,6 +14,7 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 import jakarta.annotation.Resource;
@@ -24,6 +25,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,18 +58,16 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
     private EntityCoreService entityCoreService;
 
     @Override
-    public void validateCustomFields(Long modelId, String customFieldsJson) {
-        if (customFieldsJson == null || customFieldsJson.isEmpty()) {
+    public void validateCustomFields(Long modelId, Map<String, Object> customFields) {
+        if (customFields == null || customFields.isEmpty()) {
             return;
         }
 
-        // 获取字段配置
         List<FieldValidationConfig> configs = getFieldConfigs(modelId);
         if (configs.isEmpty()) {
             return;
         }
 
-        // 构建映射
         Map<Long, FieldDO> fieldMap = new HashMap<>();
         Map<Long, ModelFieldAssignmentDO> assignmentMap = new HashMap<>();
         for (FieldValidationConfig config : configs) {
@@ -75,36 +75,27 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
             assignmentMap.put(config.getField().getId(), config.getAssignment());
         }
 
-        validateCustomFields(fieldMap, assignmentMap, customFieldsJson);
+        validateCustomFields(fieldMap, assignmentMap, customFields);
     }
 
     @Override
     public void validateCustomFields(Map<Long, FieldDO> fieldMap,
                                      Map<Long, ModelFieldAssignmentDO> assignmentMap,
-                                     String customFieldsJson) {
-        if (customFieldsJson == null || customFieldsJson.isEmpty()) {
+                                     Map<String, Object> customFields) {
+        if (customFields == null || customFields.isEmpty()) {
             return;
         }
 
-        JSONObject jsonObj;
-        try {
-            jsonObj = JSON.parseObject(customFieldsJson);
-        } catch (Exception e) {
-            throw new ServiceException(400, "自定义字段数据格式错误，必须是有效的JSON格式");
-        }
-
-        // 验证每个已分配的字段
         for (Map.Entry<Long, FieldDO> entry : fieldMap.entrySet()) {
             Long fieldId = entry.getKey();
             FieldDO field = entry.getValue();
             ModelFieldAssignmentDO assignment = assignmentMap.get(fieldId);
 
-            // 支持字段ID或字段编码作为key
             String idKey = String.valueOf(fieldId);
             String codeKey = field.getCode();
-            Object value = jsonObj.get(idKey);
+            Object value = customFields.get(idKey);
             if (value == null && codeKey != null) {
-                value = jsonObj.get(codeKey);
+                value = customFields.get(codeKey);
             }
 
             validateFieldValue(field, assignment, value);
@@ -164,67 +155,141 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
     }
 
     @Override
-    public String normalizeAndEncryptCustomFields(String customFieldsJson, Long modelId) {
-        if (customFieldsJson == null || customFieldsJson.isEmpty()) {
-            return customFieldsJson;
+    public Map<String, Object> normalizeAndEncryptCustomFields(Map<String, Object> customFields, Long modelId) {
+        if (customFields == null || customFields.isEmpty()) {
+            return customFields;
         }
 
         try {
-            JSONObject jsonObj = JSON.parseObject(customFieldsJson);
+            Map<String, Object> result = new HashMap<>(customFields);
             List<FieldValidationConfig> configs = getFieldConfigs(modelId);
 
             boolean modified = false;
             for (FieldValidationConfig config : configs) {
                 FieldDO field = config.getField();
 
-                // 检查字段是否标记为敏感
                 if (isSensitiveField(field)) {
                     String idKey = String.valueOf(field.getId());
-                    Object val = jsonObj.get(idKey);
+                    Object val = result.get(idKey);
+                    if (val == null && field.getCode() != null) {
+                        idKey = field.getCode();
+                        val = result.get(idKey);
+                    }
                     if (val instanceof String) {
-                        String encrypted = SensitiveDataEncryptor.encrypt((String) val);
-                        jsonObj.put(idKey, encrypted);
+                        result.put(idKey, SensitiveDataEncryptor.encrypt((String) val));
                         modified = true;
                     }
                 }
             }
 
-            return modified ? jsonObj.toJSONString() : customFieldsJson;
+            return modified ? result : customFields;
         } catch (Exception e) {
-            return customFieldsJson;
+            return customFields;
         }
     }
 
     @Override
-    public String decryptCustomFields(String customFieldsJson, Long modelId) {
-        if (customFieldsJson == null || customFieldsJson.isEmpty()) {
-            return customFieldsJson;
+    public Map<String, Object> decryptCustomFields(Map<String, Object> customFields, Long modelId) {
+        if (customFields == null || customFields.isEmpty()) {
+            return customFields;
         }
 
         try {
-            JSONObject jsonObj = JSON.parseObject(customFieldsJson);
+            Map<String, Object> result = new HashMap<>(customFields);
             List<FieldValidationConfig> configs = getFieldConfigs(modelId);
 
             boolean modified = false;
             for (FieldValidationConfig config : configs) {
                 FieldDO field = config.getField();
 
-                // 检查字段是否标记为敏感
                 if (isSensitiveField(field)) {
                     String idKey = String.valueOf(field.getId());
-                    Object val = jsonObj.get(idKey);
+                    Object val = result.get(idKey);
+                    if (val == null && field.getCode() != null) {
+                        idKey = field.getCode();
+                        val = result.get(idKey);
+                    }
                     if (val instanceof String) {
-                        String decrypted = SensitiveDataEncryptor.decrypt((String) val);
-                        jsonObj.put(idKey, decrypted);
+                        result.put(idKey, SensitiveDataEncryptor.decrypt((String) val));
                         modified = true;
                     }
                 }
             }
 
-            return modified ? jsonObj.toJSONString() : customFieldsJson;
+            return modified ? result : customFields;
         } catch (Exception e) {
-            return customFieldsJson;
+            return customFields;
         }
+    }
+
+    @Override
+    public Map<String, Object> presentCustomFieldsForApi(Map<String, Object> customFields, Long modelId) {
+        if (customFields == null || customFields.isEmpty()) {
+            return customFields;
+        }
+
+        Map<String, Object> presented = new LinkedHashMap<>();
+        Set<String> mappedKeys = new HashSet<>();
+
+        if (modelId != null) {
+            List<FieldValidationConfig> configs = getFieldConfigs(modelId);
+            for (FieldValidationConfig config : configs) {
+                FieldDO field = config.getField();
+                if (field == null || !StringUtils.hasText(field.getCode())) {
+                    continue;
+                }
+                String idKey = String.valueOf(field.getId());
+                String codeKey = field.getCode();
+                Object value = customFields.get(idKey);
+                if (value == null) {
+                    value = customFields.get(codeKey);
+                }
+                if (value != null) {
+                    presented.put(codeKey, value);
+                    mappedKeys.add(idKey);
+                    mappedKeys.add(codeKey);
+                }
+            }
+        }
+
+        for (Map.Entry<String, Object> entry : customFields.entrySet()) {
+            if (mappedKeys.contains(entry.getKey())) {
+                continue;
+            }
+            String storageKey = entry.getKey();
+            String codeKey = resolveFieldCodeByStorageKey(storageKey);
+            if (StringUtils.hasText(codeKey)) {
+                presented.putIfAbsent(codeKey, entry.getValue());
+                mappedKeys.add(storageKey);
+            } else {
+                presented.putIfAbsent(storageKey, entry.getValue());
+            }
+        }
+
+        return presented;
+    }
+
+    /**
+     * 将 customFields 存储键（字段 id 或历史 code）解析为对外 fieldCode。
+     */
+    private String resolveFieldCodeByStorageKey(String storageKey) {
+        if (!StringUtils.hasText(storageKey)) {
+            return null;
+        }
+        String trimmed = storageKey.trim();
+        if (trimmed.startsWith("F-")) {
+            return trimmed;
+        }
+        try {
+            long fieldId = Long.parseLong(trimmed);
+            FieldDO field = fieldMapper.selectById(fieldId);
+            if (field != null && StringUtils.hasText(field.getCode())) {
+                return field.getCode();
+            }
+        } catch (NumberFormatException ignored) {
+            // 非数字键保持原样
+        }
+        return null;
     }
 
     /**

@@ -3,6 +3,8 @@ package cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.util.Map;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -26,11 +28,11 @@ public class EntityBaseVO {
     @Size(max = 200, message = "名称长度不能超过200")
     private String name;
 
-    @Schema(description = "固定列字段JSON（BaseField），key 使用字段编码 fieldCode（下划线列名）。例如：{\"area_id\":1,\"manufacturer\":\"ACME\"}", example = "{\"area_id\":1,\"manufacturer\":\"ACME\"}")
-    private String baseFields;
+    @Schema(description = "固定列字段（BaseField），key 使用字段编码 fieldCode。例如：{\"area_id\":1,\"manufacturer\":\"ACME\"}")
+    private Map<String, Object> baseFields;
 
-    @Schema(description = "自定义字段JSON（CustomField），key 使用字段编码 fieldCode（下划线）。例如：{\"equipment_no\":\"EQ-001\",\"power_kw\":100}", example = "{\"equipment_no\":\"EQ-001\",\"power_kw\":100}")
-    private String customFields;
+    @Schema(description = "自定义字段（CustomField），key 使用字段编码 fieldCode。例如：{\"equipment_no\":\"EQ-001\",\"power_kw\":100}")
+    private Map<String, Object> customFields;
 
     @Schema(description = "状态", example = "1")
     @NotNull(message = "状态不能为空")

@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.util.Map;
+
 /**
  * 自定义字段验证请求 VO
  * 
@@ -26,7 +28,7 @@ import lombok.Data;
  *   <li><b>长度校验</b>：检查文本字段是否超过最大长度限制</li>
  * </ul>
  * 
- * <h3>customFieldsJson 格式</h3>
+ * <h3>customFields 格式</h3>
  * <pre>
  * {
  *   "fieldId1": "文本值",
@@ -50,9 +52,9 @@ public class CustomFieldValidationReqVO {
     @NotNull(message = "模型ID不能为空")
     private Long modelId;
 
-    @Schema(description = "自定义字段数据（JSON格式，键为字段ID，值为字段值）", 
-            requiredMode = Schema.RequiredMode.REQUIRED, 
-            example = "{\"1\": \"value1\", \"2\": 100}")
+    @Schema(description = "自定义字段数据（键为字段ID或字段编码，值为字段值）",
+            requiredMode = Schema.RequiredMode.REQUIRED,
+            example = "{\"equipment_no\": \"EQ-001\", \"power_kw\": 100}")
     @NotNull(message = "自定义字段数据不能为空")
-    private String customFieldsJson;
+    private Map<String, Object> customFields;
 }

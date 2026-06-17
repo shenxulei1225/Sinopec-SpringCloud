@@ -8,7 +8,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 组件 Props 模板 / 实例
+ * 组件配置：模板 / 实例。props 仅存用户 UI 偏好，不含接口契约。
+ * 数据来源见持久化字段 data_source（JSON 结构体）。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -18,18 +19,20 @@ public class ComponentPropsDO extends BaseDO {
     @TableId
     private Long id;
 
-    /** true=模板（props_json 全量）；false=实例（props_override 差异） */
+    /** true=模板（props 全量）；false=实例（props_override 差异） */
     private Boolean isTemplate;
 
-    /** 关联 system_component.id */
+    /** 关联 pr_component.id */
     private Long componentId;
 
-    /** 语义化组件编码，与 system_component.key 一致 */
+    /** 语义化组件编码，与 pr_component.component_code 一致 */
     private String componentCode;
 
-    /** 数据来源能力键（与 props_json.dataSourceKey 同步） */
-    @TableField("data_source_key")
-    private String dataSourceKey;
+    /**
+     * 数据来源 JSON：{ businessCategory, businessTypeCode, dataKind }。
+     * system 分类保存时 dataKind 强制为 entity。
+     */
+    private String dataSource;
 
     /** 实例引用的模板 propsId */
     private Long templateId;
@@ -37,10 +40,11 @@ public class ComponentPropsDO extends BaseDO {
     /** Props Schema 版本 */
     private String schemaVersion;
 
-    /** 模板：完整 props JSON 文本 */
-    private String propsJson;
+    /** 模板：完整用户偏好 props JSON */
+    @TableField("props")
+    private String props;
 
-    /** 实例：相对模板的差异 JSON 文本 */
+    /** 实例：相对模板的差异 JSON */
     private String propsOverride;
 
     private String name;

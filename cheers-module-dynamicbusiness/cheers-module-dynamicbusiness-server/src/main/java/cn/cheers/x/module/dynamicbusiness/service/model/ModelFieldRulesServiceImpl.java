@@ -6,7 +6,6 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
-import cn.cheers.x.module.dynamicbusiness.service.capability.CapabilityRegistryRebuildService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -31,9 +30,6 @@ public class ModelFieldRulesServiceImpl implements ModelFieldRulesService {
 
     @Resource
     private ModelMapper modelMapper;
-    @Resource
-    @Lazy
-    private CapabilityRegistryRebuildService capabilityRegistryRebuildService;
 
     @Override
     public void updateFieldRules(Long modelId, Long fieldId, FieldRulesUpdateReqVO reqVO) {
@@ -67,11 +63,6 @@ public class ModelFieldRulesServiceImpl implements ModelFieldRulesService {
         }
 
         modelFieldAssignmentMapper.updateById(assignment);
-        try {
-            capabilityRegistryRebuildService.rebuildAfterModelFieldChange(modelId);
-        } catch (Exception ex) {
-            log.warn("[updateFieldRules][rebuild failed modelId={}] {}", modelId, ex.getMessage());
-        }
     }
 
     @Override

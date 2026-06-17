@@ -21,8 +21,8 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Nacos 配置
-NACOS_HOME="$HOME/nacos"
+# Nacos 配置（Mac 默认 ~/nacos，可通过 NACOS_HOME 环境变量覆盖）
+NACOS_HOME="${NACOS_HOME:-$HOME/nacos}"
 NACOS_BIN="$NACOS_HOME/bin"
 NACOS_PORT="8848"
 NACOS_STARTUP_SCRIPT="$NACOS_BIN/startup.sh"

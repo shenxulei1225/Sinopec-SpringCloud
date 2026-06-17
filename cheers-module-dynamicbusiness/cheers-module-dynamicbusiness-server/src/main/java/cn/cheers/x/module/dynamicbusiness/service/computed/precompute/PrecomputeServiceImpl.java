@@ -709,17 +709,9 @@ public class PrecomputeServiceImpl implements PrecomputeService {
         }
 
         // 从 customFields JSON 中获取
-        String customFieldsJson = entity.getCustomFields();
-        if (customFieldsJson != null && !customFieldsJson.isEmpty()) {
-            try {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> customFields = (Map<String, Object>) JSON.parseObject(customFieldsJson, Map.class);
-                if (customFields != null) {
-                    return customFields.get(fieldCode);
-                }
-            } catch (Exception e) {
-                log.debug("[getFieldValueFromEntity][解析 customFields 失败，entityId={}]", entity.getId());
-            }
+        Map<String, Object> customFields = entity.getCustomFields();
+        if (customFields != null && !customFields.isEmpty()) {
+            return customFields.get(fieldCode);
         }
 
         return null;

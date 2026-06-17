@@ -35,8 +35,8 @@ public class ReferenceProviderDO extends TenantBaseDO {
     /** 语义类型：USER/DEPT/ROLE/MATERIAL... */
     private String semanticType;
 
-    /** 能力声明（JSON） */
-    private String capabilityFlags;
+    /** 功能声明（JSON） */
+    private String featureFlags;
 
     /** 配置（JSON） */
     private String configJson;

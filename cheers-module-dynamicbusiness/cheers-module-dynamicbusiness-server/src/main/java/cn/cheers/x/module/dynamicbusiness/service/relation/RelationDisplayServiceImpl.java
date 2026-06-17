@@ -203,26 +203,12 @@ public class RelationDisplayServiceImpl implements RelationDisplayService {
      * @return 字段值
      */
     private String getCustomFieldValue(EntityRespVO entity, String fieldCode) {
-        String customFieldsJson = entity.getCustomFields();
-        if (customFieldsJson == null || customFieldsJson.isEmpty()) {
+        Map<String, Object> customFields = entity.getCustomFields();
+        if (customFields == null || customFields.isEmpty()) {
             return null;
         }
 
-        try {
-            // 解析 customFields JSON 字符串
-            Map<String, Object> customFields = objectMapper.readValue(
-                    customFieldsJson,
-                    new TypeReference<Map<String, Object>>() {});
-
-            Object value = customFields.get(fieldCode);
-            if (value != null) {
-                return String.valueOf(value);
-            }
-        } catch (Exception e) {
-            log.warn("[getCustomFieldValue][解析 customFields 失败，entityId={}, fieldCode={}]",
-                    entity.getId(), fieldCode, e);
-        }
-
-        return null;
+        Object value = customFields.get(fieldCode);
+        return value != null ? String.valueOf(value) : null;
     }
 }

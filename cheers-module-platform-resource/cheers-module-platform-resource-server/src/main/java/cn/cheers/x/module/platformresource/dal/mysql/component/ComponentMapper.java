@@ -10,9 +10,9 @@ import java.util.List;
 @Mapper
 public interface ComponentMapper extends BaseMapperX<ComponentDO> {
 
-    default ComponentDO selectByKey(String key) {
+    default ComponentDO selectByComponentCode(String componentCode) {
         return selectOne(new LambdaQueryWrapperX<ComponentDO>()
-                .eq(ComponentDO::getKey, key));
+                .eq(ComponentDO::getComponentCode, componentCode));
     }
 
     default List<ComponentDO> selectEnabledList() {
@@ -26,8 +26,8 @@ public interface ComponentMapper extends BaseMapperX<ComponentDO> {
                 .orderByAsc(ComponentDO::getSort));
     }
 
-    default boolean existsByKey(String key) {
+    default boolean existsByComponentCode(String componentCode) {
         return selectCount(new LambdaQueryWrapperX<ComponentDO>()
-                .eq(ComponentDO::getKey, key)) > 0;
+                .eq(ComponentDO::getComponentCode, componentCode)) > 0;
     }
 }

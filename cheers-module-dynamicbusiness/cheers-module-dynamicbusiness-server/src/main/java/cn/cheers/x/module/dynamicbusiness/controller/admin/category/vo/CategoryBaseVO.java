@@ -8,6 +8,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.util.Map;
+
 @Data
 @Accessors(chain = false)
 public class CategoryBaseVO {
@@ -48,7 +50,7 @@ public class CategoryBaseVO {
     @Schema(description = "关联的 Model ID，定义该分类节点的字段结构（模式C）", example = "1")
     private Long entityModelId;
 
-    @Schema(description = "自定义字段JSON（模式C），当 isEntity=true 时使用，格式：{\"fieldId\":\"value\"}", example = "{\"1\":\"value1\"}")
-    private String customFields;
+    @Schema(description = "自定义字段（模式C），当 isEntity=true 时使用，格式：{\"field_code\":\"value\"}")
+    private Map<String, Object> customFields;
 }
 

@@ -194,51 +194,39 @@ public class RelatedEntityQueryServiceImpl implements RelatedEntityQueryService 
      * @return 是否关联
      */
     private boolean isRelatedToTarget(EntityRespVO entity, String fieldCode, Long targetEntityId) {
-        String customFields = entity.getCustomFields();
+        Map<String, Object> customFields = entity.getCustomFields();
         if (customFields == null || customFields.isEmpty()) {
             return false;
         }
 
-        try {
-            JSONObject json = JSON.parseObject(customFields);
-            Object fieldValue = json.get(fieldCode);
-            
-            if (fieldValue == null) {
-                return false;
-            }
-
-            // 支持List类型（ENTITY_REF_MULTI）：检查数组中是否包含目标ID
-            if (fieldValue instanceof List) {
-                List<?> list = (List<?>) fieldValue;
-                for (Object item : list) {
-                    Long id = parseEntityId(item);
-                    if (id != null && id.equals(targetEntityId)) {
-                        return true;
-                    }
-                }
-                return false;
-            }
-            
-            // 支持数组类型（JSON数组）
-            if (fieldValue.getClass().isArray()) {
-                Object[] array = (Object[]) fieldValue;
-                for (Object item : array) {
-                    Long id = parseEntityId(item);
-                    if (id != null && id.equals(targetEntityId)) {
-                        return true;
-                    }
-                }
-                return false;
-            }
-
-            // 支持单个值（ENTITY_REF）：直接比较
-            Long id = parseEntityId(fieldValue);
-            return id != null && id.equals(targetEntityId);
-        } catch (Exception e) {
-            log.warn("解析 customFields 失败: entityId={}, error={}", entity.getId(), e.getMessage());
+        Object fieldValue = customFields.get(fieldCode);
+        if (fieldValue == null) {
+            return false;
         }
 
-        return false;
+        if (fieldValue instanceof List<?> list) {
+            for (Object item : list) {
+                Long id = parseEntityId(item);
+                if (id != null && id.equals(targetEntityId)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if (fieldValue.getClass().isArray()) {
+            Object[] array = (Object[]) fieldValue;
+            for (Object item : array) {
+                Long id = parseEntityId(item);
+                if (id != null && id.equals(targetEntityId)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        Long id = parseEntityId(fieldValue);
+        return id != null && id.equals(targetEntityId);
     }
 
     /**
@@ -281,15 +269,7 @@ public class RelatedEntityQueryServiceImpl implements RelatedEntityQueryService 
         respVO.setCreateTime(entity.getCreateTime());
         respVO.setUpdateTime(entity.getUpdateTime());
 
-        // 解析 customFields
-        if (entity.getCustomFields() != null && !entity.getCustomFields().isEmpty()) {
-            try {
-                respVO.setCustomFields(JSON.parseObject(entity.getCustomFields()));
-            } catch (Exception e) {
-                log.warn("解析 customFields 失败: entityId={}", entity.getId());
-            }
-        }
-
+        respVO.setCustomFields(entity.getCustomFields());
         return respVO;
     }
 }

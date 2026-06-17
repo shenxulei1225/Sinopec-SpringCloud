@@ -144,7 +144,7 @@ public class EntityServiceImpl implements EntityService {
 
         // 2) 关系同步：把 customFields 中的 ref/multi-ref 同步到关系表，保证关联查询可用
         ModelDO model = modelMapper.selectById(reqVO.getModelId());
-        Map<String, Object> customFieldsMap = entityBusinessHelper.parseCustomFieldsToMap(reqVO.getCustomFields());
+        Map<String, Object> customFieldsMap = entityBusinessHelper.emptyIfNull(reqVO.getCustomFields());
         entityRelationSyncService.syncRelationsOnCreate(data, model, customFieldsMap);
 
         // 3) 缓存失效：写后清理树/列表缓存，避免读到旧数据
@@ -176,8 +176,8 @@ public class EntityServiceImpl implements EntityService {
 
         // 3) 关系差异同步：根据新旧 customFields 计算并更新关系表
         ModelDO model = modelMapper.selectById(modelId);
-        Map<String, Object> customFieldsMap = entityBusinessHelper.parseCustomFieldsToMap(reqVO.getCustomFields());
-        Map<String, Object> oldCustomFieldsMap = entityBusinessHelper.parseCustomFieldsToMap(oldEntity.getCustomFields());
+        Map<String, Object> customFieldsMap = entityBusinessHelper.emptyIfNull(reqVO.getCustomFields());
+        Map<String, Object> oldCustomFieldsMap = entityBusinessHelper.emptyIfNull(oldEntity.getCustomFields());
         entityRelationSyncService.syncRelationsOnUpdate(data, model, customFieldsMap, oldCustomFieldsMap);
 
         // 4) 缓存失效 + 事件通知：确保读取一致性并通知下游链路
@@ -1380,18 +1380,13 @@ public class EntityServiceImpl implements EntityService {
     }
 
     /**
-     * 从 JSON 文本中读取字段值。
+     * 从字段 Map 中读取字段值。
      */
-    private Object resolveJsonFieldValue(String json, String fieldCode) {
-        if (json == null || json.isBlank()) {
+    private Object resolveJsonFieldValue(Map<String, Object> fields, String fieldCode) {
+        if (fields == null || fields.isEmpty() || fieldCode == null || fieldCode.isBlank()) {
             return null;
         }
-        try {
-            JSONObject jsonObject = JSON.parseObject(json);
-            return jsonObject == null ? null : jsonObject.get(fieldCode);
-        } catch (Exception ignored) {
-            return null;
-        }
+        return fields.get(fieldCode);
     }
 
     private boolean isTextType(String fieldType) {
@@ -1808,7 +1803,7 @@ public class EntityServiceImpl implements EntityService {
                     updateReq.setParentId(reqVO.getParentId());
                 }
                 if (reqVO.getCustomFields() != null) {
-                    updateReq.setCustomFields(JSON.toJSONString(reqVO.getCustomFields()));
+                    updateReq.setCustomFields(reqVO.getCustomFields());
                 }
                 update(updateReq);
                 successCount++;

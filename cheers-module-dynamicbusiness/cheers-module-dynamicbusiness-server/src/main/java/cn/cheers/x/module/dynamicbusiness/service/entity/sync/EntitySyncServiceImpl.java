@@ -176,7 +176,8 @@ public class EntitySyncServiceImpl implements EntitySyncService {
             }
 
             // 2. 解析 Entity 的 customFields
-            Map<String, Object> customFieldsMap = parseCustomFieldsToMap(entity.getCustomFields());
+            Map<String, Object> customFieldsMap = entity.getCustomFields() != null
+                    ? entity.getCustomFields() : Map.of();
 
             // 3. 删除旧的索引数据
             entityFieldIndexMapper.deleteByEntityId(entityId);
@@ -411,22 +412,6 @@ public class EntitySyncServiceImpl implements EntitySyncService {
                     return Boolean.TRUE.equals(isSearchable);
                 })
                 .collect(Collectors.toList());
-    }
-
-    /**
-     * 解析 customFields JSON
-     */
-    private Map<String, Object> parseCustomFieldsToMap(String customFieldsJson) {
-        if (customFieldsJson == null || customFieldsJson.isEmpty()) {
-            return Map.of();
-        }
-        try {
-            JSONObject jsonObject = JSON.parseObject(customFieldsJson);
-            return jsonObject == null ? Map.of() : jsonObject;
-        } catch (Exception e) {
-            log.warn("解析 customFields 失败: {}", e.getMessage());
-            return Map.of();
-        }
     }
 
     /**

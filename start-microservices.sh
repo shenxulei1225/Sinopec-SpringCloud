@@ -10,6 +10,9 @@
 #   ./start-microservices.sh status             # 查看服务状态
 #   ./start-microservices.sh stop <服务名>       # 停止服务
 #   ./start-microservices.sh stop-all           # 停止所有服务
+#   ./start-microservices.sh nacos              # 启动 Nacos
+#   ./start-microservices.sh nacos status       # 查看 Nacos 状态
+#   ./start-microservices.sh nacos stop         # 停止 Nacos
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -27,125 +30,66 @@ if [ -f "setup-java17.sh" ]; then
     source setup-java17.sh 2>/dev/null
 fi
 
-# 检查 Nacos 是否运行
+# Nacos 配置（Mac 默认 ~/nacos，可通过 NACOS_HOME 环境变量覆盖）
+NACOS_HOME="${NACOS_HOME:-$HOME/nacos}"
+NACOS_PORT="8848"
+
+# 检查 Nacos 是否运行，未运行则自动启动
 check_nacos() {
-    if ! curl -s http://localhost:8848/nacos/ > /dev/null 2>&1; then
-        echo -e "${YELLOW}⚠️  警告: Nacos 未运行${NC}"
-        echo -e "${BLUE}   正在尝试启动 Nacos...${NC}"
-        
-        # 尝试多个可能的路径
-        local nacos_script=""
-        if [ -f "nacos/bin/startup-java17.sh" ]; then
-            nacos_script="nacos/bin/startup-java17.sh"
-        elif [ -f "$SCRIPT_DIR/nacos/bin/startup-java17.sh" ]; then
-            nacos_script="$SCRIPT_DIR/nacos/bin/startup-java17.sh"
-        fi
-        
-        if [ -n "$nacos_script" ] && [ -f "$nacos_script" ]; then
-            local nacos_dir=$(dirname "$nacos_script")
-            local nacos_base_dir=$(cd "$nacos_dir/.." && pwd)
-            local nacos_jar="$nacos_base_dir/target/nacos-server.jar"
-            local nacos_log="$SCRIPT_DIR/logs/nacos-startup.log"
-            mkdir -p "$SCRIPT_DIR/logs"
-            
-            echo -e "${BLUE}   找到 Nacos 脚本: $nacos_script${NC}"
-            echo -e "${BLUE}   Nacos 目录: $nacos_base_dir${NC}"
-            
-            # 检查 Nacos JAR 文件是否存在
-            if [ ! -f "$nacos_jar" ]; then
-                echo -e "${RED}❌ Nacos JAR 文件不存在: $nacos_jar${NC}"
-                echo -e "${YELLOW}   需要先编译或下载 Nacos${NC}"
-                echo ""
-                echo -e "${BLUE}   解决方案 1：下载 Nacos 预编译版本${NC}"
-                echo -e "   1. 访问 https://github.com/alibaba/nacos/releases"
-                echo -e "   2. 下载最新版本的 nacos-server-*.tar.gz"
-                echo -e "   3. 解压到 $nacos_base_dir 目录"
-                echo -e "   4. 确保 $nacos_jar 文件存在"
-                echo ""
-                echo -e "${BLUE}   解决方案 2：编译 Nacos（如果这是源码版本）${NC}"
-                echo -e "   cd $nacos_base_dir && mvn clean package -DskipTests"
-                echo ""
-                echo -e "${YELLOW}   或者手动启动 Nacos（如果已安装在其他位置）${NC}"
-                exit 1
-            fi
-            
-            echo -e "${BLUE}   找到 Nacos JAR: $nacos_jar${NC}"
-            echo -e "${BLUE}   启动日志: $nacos_log${NC}"
-            
-            cd "$nacos_dir"
-            # 使用 bash 而不是 sh,并保存日志以便调试
-            nohup bash startup-java17.sh -m standalone > "$nacos_log" 2>&1 &
-            cd "$SCRIPT_DIR"
-            
-            echo -e "${BLUE}   等待 Nacos 启动（最多 60 秒）...${NC}"
-            
-            # 增加等待时间,并逐步检查
-            local max_wait=60
-            local waited=0
-            local check_interval=3
-            
-            while [ $waited -lt $max_wait ]; do
-                # 检查 Nacos 是否可访问（这是最可靠的方式）
-                if curl -s http://localhost:8848/nacos/ > /dev/null 2>&1; then
-                    echo -e "${GREEN}✅ Nacos 启动成功（耗时 ${waited} 秒）${NC}"
-                    return 0
-                fi
-                
-                # 检查 Java 进程是否在运行（检测包含 nacos-server.jar 的 Java 进程）
-                local java_pid=$(ps aux | grep "[n]acos-server.jar" | grep -v grep | awk '{print $2}' | head -1)
-                if [ -z "$java_pid" ] && [ $waited -gt 10 ]; then
-                    # 等待至少 10 秒后再检查,因为启动需要时间
-                    echo -e "${YELLOW}⚠️  未找到 Nacos Java 进程,检查启动日志...${NC}"
-                    echo -e "${BLUE}   查看启动日志: tail -50 $nacos_log${NC}"
-                    echo ""
-                    echo -e "${BLUE}   最后 30 行日志:${NC}"
-                    echo "----------------------------------------------------------------"
-                    tail -30 "$nacos_log" 2>/dev/null || echo "   日志文件不存在或为空"
-                    echo "----------------------------------------------------------------"
-                    # 不立即退出,继续等待,因为可能还在启动中
-                fi
-                
-                sleep $check_interval
-                waited=$((waited + check_interval))
-                
-                # 每 10 秒显示一次进度
-                if [ $((waited % 10)) -eq 0 ]; then
-                    echo -e "${BLUE}   已等待 ${waited} 秒...${NC}"
-                fi
-            done
-            
-            # 超时检查
-            if curl -s http://localhost:8848/nacos/ > /dev/null 2>&1; then
-                echo -e "${GREEN}✅ Nacos 启动成功${NC}"
-                return 0
-            else
-                echo -e "${RED}❌ Nacos 启动超时（已等待 ${max_wait} 秒）${NC}"
-                echo -e "${BLUE}   查看启动日志: tail -50 $nacos_log${NC}"
-                echo ""
-                echo -e "${BLUE}   最后 30 行日志:${NC}"
-                echo "----------------------------------------------------------------"
-                tail -30 "$nacos_log" 2>/dev/null || echo "   日志文件不存在或为空"
-                echo "----------------------------------------------------------------"
-                echo ""
-                echo -e "${YELLOW}   提示: 如果 Nacos 仍在启动中,可以稍后手动检查${NC}"
-                echo -e "   curl http://localhost:8848/nacos/"
-                exit 1
-            fi
-        else
-            echo -e "${RED}❌ 未找到 Nacos 启动脚本${NC}"
-            echo -e "${BLUE}   尝试的路径:${NC}"
-            echo -e "   - ZHGL/nacos/bin/startup-java17.sh"
-            echo -e "   - nacos/bin/startup-java17.sh"
-            echo -e "   - $SCRIPT_DIR/nacos/bin/startup-java17.sh"
-            echo -e "   - $SCRIPT_DIR/ZHGL/nacos/bin/startup-java17.sh"
-            echo ""
-            echo -e "${YELLOW}   请手动启动 Nacos:${NC}"
-            echo -e "   cd ZHGL/nacos/bin && bash startup-java17.sh -m standalone"
-            exit 1
-        fi
-    else
-        echo -e "${GREEN}✅ Nacos 运行正常${NC}"
+    if curl -s "http://localhost:${NACOS_PORT}/nacos/" > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ Nacos 运行正常${NC} (${BLUE}${NACOS_HOME}${NC})"
+        return 0
     fi
+
+    echo -e "${YELLOW}⚠️  警告: Nacos 未运行${NC}"
+    echo -e "${BLUE}   Nacos 路径: ${NACOS_HOME}${NC}"
+    echo -e "${BLUE}   正在尝试启动 Nacos...${NC}"
+
+    if [ -f "$SCRIPT_DIR/start-nacos.sh" ]; then
+        bash "$SCRIPT_DIR/start-nacos.sh" || exit 1
+        return 0
+    fi
+
+    local nacos_startup="$NACOS_HOME/bin/startup.sh"
+    if [ ! -f "$nacos_startup" ] && [ -f "$NACOS_HOME/bin/startup-java17.sh" ]; then
+        nacos_startup="$NACOS_HOME/bin/startup-java17.sh"
+    fi
+
+    if [ ! -f "$nacos_startup" ]; then
+        echo -e "${RED}❌ 未找到 Nacos 启动脚本${NC}"
+        echo -e "${BLUE}   期望路径: ${NACOS_HOME}/bin/startup.sh${NC}"
+        echo -e "${BLUE}   可通过 NACOS_HOME 指定安装目录，或运行: ./start-nacos.sh${NC}"
+        echo ""
+        echo -e "${BLUE}   安装步骤:${NC}"
+        echo "   1. 访问 https://github.com/alibaba/nacos/releases"
+        echo "   2. 下载 nacos-server-*.tar.gz 并解压到 ~/nacos"
+        exit 1
+    fi
+
+    local nacos_log="$SCRIPT_DIR/logs/nacos-startup.log"
+    mkdir -p "$SCRIPT_DIR/logs"
+    cd "$NACOS_HOME/bin"
+    nohup bash "$(basename "$nacos_startup")" -m standalone > "$nacos_log" 2>&1 &
+    cd "$SCRIPT_DIR"
+
+    echo -e "${BLUE}   启动脚本: ${nacos_startup}${NC}"
+    echo -e "${BLUE}   等待 Nacos 启动（最多 60 秒）...${NC}"
+
+    local max_wait=60
+    local waited=0
+    local check_interval=3
+    while [ $waited -lt $max_wait ]; do
+        if curl -s "http://localhost:${NACOS_PORT}/nacos/" > /dev/null 2>&1; then
+            echo -e "${GREEN}✅ Nacos 启动成功（耗时 ${waited} 秒）${NC}"
+            return 0
+        fi
+        sleep $check_interval
+        waited=$((waited + check_interval))
+    done
+
+    echo -e "${RED}❌ Nacos 启动超时（已等待 ${max_wait} 秒）${NC}"
+    echo -e "${BLUE}   查看启动日志: tail -50 ${nacos_log}${NC}"
+    exit 1
 }
 
 # 检查 Redis 是否运行（可选）
@@ -280,11 +224,6 @@ start_service() {
     local port=$(get_service_port "$service_name")
     local working_dir="$service_path"
     local maven_cmd="mvn spring-boot:run -Dspring-boot.run.profiles=local"
-
-    if [ "$service_name" = "alarm" ]; then
-        working_dir="$SCRIPT_DIR"
-        maven_cmd="mvn -pl yudao-module-alarm/yudao-module-alarm-biz -am spring-boot:run -Dspring-boot.run.profiles=local"
-    fi
 
     cd "$working_dir"
     
@@ -463,10 +402,10 @@ show_status() {
     echo -e "${BLUE}📋 基础设施状态:${NC}"
 
     # 检查 Nacos
-    if curl -s http://localhost:8848/nacos/ > /dev/null 2>&1; then
-        echo -e "   Nacos (8848): ${GREEN}运行中${NC} - ${BLUE}http://localhost:8848/nacos${NC}"
+    if curl -s "http://localhost:${NACOS_PORT}/nacos/" > /dev/null 2>&1; then
+        echo -e "   Nacos (8848): ${GREEN}运行中${NC} - ${BLUE}http://localhost:${NACOS_PORT}/nacos${NC} (${NACOS_HOME})"
     else
-        echo -e "   Nacos (8848): ${RED}未运行${NC}"
+        echo -e "   Nacos (8848): ${RED}未运行${NC} - 路径: ${NACOS_HOME}"
     fi
 
     # 检查 Redis
@@ -533,8 +472,12 @@ show_services() {
     echo "  ./start-microservices.sh logs <服务名>       # 实时查看指定服务的日志"
     echo "  ./start-microservices.sh stop <服务名>       # 停止服务"
     echo "  ./start-microservices.sh stop-all           # 停止所有服务"
+    echo "  ./start-microservices.sh nacos                # 启动 Nacos"
+    echo "  ./start-microservices.sh nacos status         # 查看 Nacos 状态"
+    echo "  ./start-microservices.sh nacos stop           # 停止 Nacos"
     echo ""
     echo -e "${BLUE}说明:${NC}"
+    echo "  - Nacos 默认路径: $NACOS_HOME（可通过 NACOS_HOME 环境变量覆盖）"
     echo "  - 默认后台运行,日志保存到 logs/ 目录"
     echo "  - 使用 -f 参数可以实时查看启动日志"
     echo ""
@@ -775,6 +718,13 @@ main() {
             ;;
         "stop-all")
             stop_all_services
+            ;;
+        "nacos")
+            if [ -f "$SCRIPT_DIR/start-nacos.sh" ]; then
+                bash "$SCRIPT_DIR/start-nacos.sh" "${2:-}"
+            else
+                check_nacos
+            fi
             ;;
         *)
             check_nacos

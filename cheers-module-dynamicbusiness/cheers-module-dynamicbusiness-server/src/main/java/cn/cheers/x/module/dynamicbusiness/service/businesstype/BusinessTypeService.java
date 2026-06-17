@@ -146,11 +146,11 @@ public interface BusinessTypeService {
 
     List<ModelFieldAssignmentRespVO> getModelFields(Long modelId);
 
-    void validateCustomFields(Long modelId, String customFieldsJson);
+    void validateCustomFields(Long modelId, Map<String, Object> customFields);
 
-    String normalizeAndEncryptCustomFields(String customFieldsJson, Long modelId);
+    Map<String, Object> normalizeAndEncryptCustomFields(Map<String, Object> customFields, Long modelId);
 
-    String decryptCustomFields(String customFieldsJson, Long modelId);
+    Map<String, Object> decryptCustomFields(Map<String, Object> customFields, Long modelId);
 
     Map<String, Object> getBusinessTypeStatistics(String businessTypeCode);
 

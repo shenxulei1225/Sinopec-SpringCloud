@@ -1,56 +1,67 @@
 package cn.cheers.x.module.dynamicbusiness.config;
 
+import cn.hutool.extra.spring.SpringUtil;
 import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityTableNameHandler;
+import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.handler.TableNameHandler;
+import com.baomidou.mybatisplus.extension.plugins.inner.DynamicTableNameInnerInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.inner.InnerInterceptor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
- * Entity 动态表名配置（兼容保留）
+ * 兜底：框架 {@code YudaoMybatisAutoConfiguration} 在 bean 覆盖后仅注册分页插件，
+ * 导致 DEDICATED 业务（如 equipment → biz_equipment）仍查 dynamic_entity。
  *
- * <p>早期通过 {@link BeanPostProcessor} 在 {@link MybatisPlusInterceptor} 初始化后
- * 动态插入 {@link DynamicTableNameInnerInterceptor}。为避免与全局 MyBatis 配置产生
- * 多实例冲突，当前系统模块改为在 {@link SystemMybatisPlusConfig} 中显式定义
- * {@link MybatisPlusInterceptor} Bean，并在其中注册动态表名拦截器。</p>
- *
- * <p>本类仅保留为空实现，防止旧代码引用报错，不再实际向拦截器列表中添加内容。</p>
- *
- * @author 基础服务模块
- * @see EntityTableNameHandler
- * @see SystemMybatisPlusConfig
+ * <p>主定义见 {@link SystemMybatisPlusConfig}；本类在最终 Bean 初始化后重建拦截器链并置于最前。</p>
  */
+@Configuration
+@Slf4j
 public class EntityDynamicTableConfig {
 
-    // 该类作为历史兼容占位，避免旧代码引用报错。
-    // 实际的 MybatisPlus 拦截器配置已经迁移至 SystemMybatisPlusConfig。
+    @Bean
+    public static BeanPostProcessor entityDynamicTableNameInjector() {
+        return new BeanPostProcessor() {
+            @Override
+            public Object postProcessAfterInitialization(Object bean, String beanName) {
+                if (!"mybatisPlusInterceptor".equals(beanName) || !(bean instanceof MybatisPlusInterceptor interceptor)) {
+                    return bean;
+                }
+                if (interceptor.getInterceptors().stream().anyMatch(DynamicTableNameInnerInterceptor.class::isInstance)) {
+                    return bean;
+                }
+                MybatisPlusInterceptor rebuilt = new MybatisPlusInterceptor();
+                DynamicTableNameInnerInterceptor dynamic = new DynamicTableNameInnerInterceptor();
+                dynamic.setTableNameHandler(new DelegatingEntityTableNameHandler());
+                rebuilt.addInnerInterceptor(dynamic);
+                for (InnerInterceptor inner : interceptor.getInterceptors()) {
+                    rebuilt.addInnerInterceptor(inner);
+                }
+                log.warn("[EntityDynamicTableConfig] mybatisPlusInterceptor 缺少动态表名插件，已重建拦截器链（DEDICATED 表路由）");
+                return rebuilt;
+            }
+        };
+    }
 
+    private static class DelegatingEntityTableNameHandler implements TableNameHandler {
+        private volatile EntityTableNameHandler delegate;
+
+        private EntityTableNameHandler getDelegate() {
+            if (delegate == null) {
+                synchronized (this) {
+                    if (delegate == null) {
+                        delegate = SpringUtil.getBean(EntityTableNameHandler.class);
+                    }
+                }
+            }
+            return delegate;
+        }
+
+        @Override
+        public String dynamicTableName(String sql, String tableName) {
+            return getDelegate().dynamicTableName(sql, tableName);
+        }
+    }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

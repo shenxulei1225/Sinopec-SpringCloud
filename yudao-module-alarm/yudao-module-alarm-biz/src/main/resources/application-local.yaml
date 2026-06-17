@@ -77,11 +77,13 @@ spring:
           url: jdbc:postgresql://127.0.0.1:5432/sinopec
           username: postgres
           password: Coolhomer
+          driver-class-name: org.postgresql.Driver
         slave: # 模拟从库，可根据自己需要修改
           lazy: true # 开启懒加载，保证启动速度
           url: jdbc:postgresql://127.0.0.1:5432/sinopec
           username: postgres
           password: Coolhomer
+          driver-class-name: org.postgresql.Driver
 
   # Redis 配置
   data:

@@ -6,13 +6,13 @@ import cn.cheers.x.module.platformresource.dal.dataobject.component.ComponentDO;
 import cn.cheers.x.module.platformresource.dal.dataobject.component.ComponentPropsDO;
 import cn.cheers.x.module.platformresource.dal.mysql.component.ComponentMapper;
 import cn.cheers.x.module.platformresource.dal.mysql.component.ComponentPropsMapper;
+import cn.cheers.x.module.platformresource.service.component.ComponentDataSource.Normalized;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,17 +35,17 @@ public class ComponentPropsServiceImpl implements ComponentPropsService {
 
     @Override
     public ComponentPropsRespVO getProps(Long propsId) {
-        ComponentPropsDO row = requireProps(propsId);
-        return convertToRespVO(row);
+        return convertToRespVO(requireProps(propsId));
     }
 
     @Override
     public List<ComponentPropsRespVO> getPropsList(ComponentPropsListReqVO reqVO) {
         Boolean onlyEnabled = reqVO.getOnlyEnabled() != null ? reqVO.getOnlyEnabled() : Boolean.TRUE;
+        Normalized filter = reqVO.resolveDataSourceFilter();
         List<ComponentPropsDO> rows = componentPropsMapper.selectList(
                 reqVO.getComponentCode(),
                 reqVO.getIsTemplate(),
-                reqVO.resolveDataSourceKeyFilter(),
+                filter.isPresent() ? filter : null,
                 onlyEnabled);
         return rows.stream().map(this::convertToRespVO).collect(Collectors.toList());
     }
@@ -53,12 +53,11 @@ public class ComponentPropsServiceImpl implements ComponentPropsService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createTemplate(ComponentPropsCreateTemplateReqVO reqVO) {
-        String dataSourceKey = requireDataSourceKey(reqVO.resolveDataSourceKey(), reqVO.getPropsJson());
         ComponentDO component = requireComponentByCode(reqVO.getComponentCode());
         ComponentPropsDO row = new ComponentPropsDO();
         row.setIsTemplate(true);
         row.setComponentId(component.getId());
-        row.setComponentCode(component.getKey());
+        row.setComponentCode(component.getComponentCode());
         row.setTemplateId(null);
         row.setSchemaVersion(reqVO.getSchemaVersion());
         row.setPropsOverride(null);
@@ -66,7 +65,8 @@ public class ComponentPropsServiceImpl implements ComponentPropsService {
         row.setStatus(reqVO.getStatus() != null ? reqVO.getStatus() : 1);
         row.setSort(reqVO.getSort() != null ? reqVO.getSort() : 0);
         row.setDescription(reqVO.getDescription());
-        ComponentPropsJsonSync.applyToRow(row, dataSourceKey, reqVO.getPropsJson());
+        row.setProps(toJson(stripCapabilityFields(reqVO.getProps())));
+        applyDataSourceFromRequest(row, reqVO.getDataSource());
         componentPropsMapper.insert(row);
         return row.getId();
     }
@@ -75,22 +75,24 @@ public class ComponentPropsServiceImpl implements ComponentPropsService {
     @Transactional(rollbackFor = Exception.class)
     public Long createInstance(ComponentPropsCreateInstanceReqVO reqVO) {
         ComponentPropsDO template = requireTemplate(reqVO.getTemplateId());
-        String dataSourceKey = StrUtil.isNotBlank(reqVO.resolveDataSourceKey())
-                ? reqVO.resolveDataSourceKey()
-                : template.getDataSourceKey();
         ComponentPropsDO row = new ComponentPropsDO();
         row.setIsTemplate(false);
         row.setComponentId(template.getComponentId());
         row.setComponentCode(template.getComponentCode());
-        row.setDataSourceKey(dataSourceKey);
         row.setTemplateId(template.getId());
         row.setSchemaVersion(template.getSchemaVersion());
-        row.setPropsJson("{}");
+        row.setProps("{}");
         row.setPropsOverride("{}");
         row.setName(StrUtil.isNotBlank(reqVO.getName()) ? reqVO.getName() : template.getName());
         row.setStatus(1);
         row.setSort(0);
         row.setDescription(reqVO.getDescription());
+        Normalized binding = ComponentDataSource.fromVo(reqVO.getDataSource());
+        if (binding.isPresent()) {
+            ComponentDataSource.applyToRow(row, binding);
+        } else {
+            row.setDataSource(template.getDataSource());
+        }
         componentPropsMapper.insert(row);
         return row.getId();
     }
@@ -101,22 +103,13 @@ public class ComponentPropsServiceImpl implements ComponentPropsService {
         ComponentPropsDO row = requireProps(propsId);
         applyMetadata(row, reqVO);
         if (Boolean.TRUE.equals(row.getIsTemplate())) {
-            Map<String, Object> propsPatch = reqVO.getPropsJson();
-            String dataSourceKey = ComponentPropsJsonSync.resolveDataSourceKey(
-                    reqVO.resolveDataSourceKey(), propsPatch);
-            if (propsPatch != null) {
-                Map<String, Object> merged = ComponentPropsJsonSync.mergeJsonWithKey(
-                        row.getPropsJson(), propsPatch, dataSourceKey);
-                dataSourceKey = requireDataSourceKey(dataSourceKey, merged);
-                row.setPropsJson(toJson(merged));
-                row.setDataSourceKey(dataSourceKey);
-            } else if (StrUtil.isNotBlank(dataSourceKey)) {
-                Map<String, Object> merged = ComponentPropsJsonSync.mergeJsonWithKey(
-                        row.getPropsJson(), null, dataSourceKey);
-                row.setPropsJson(toJson(merged));
-                row.setDataSourceKey(dataSourceKey);
-            } else if (!hasMetadataPatch(reqVO)) {
-                throw exception(COMPONENT_PROPS_SAVE_JSON_REQUIRED);
+            if (reqVO.getProps() != null) {
+                row.setProps(toJson(stripCapabilityFields(reqVO.getProps())));
+            } else if (!hasMetadataPatch(reqVO) && !hasDataSourcePatch(reqVO)) {
+                throw exception(COMPONENT_PROPS_SAVE_PROPS_REQUIRED);
+            }
+            if (hasDataSourcePatch(reqVO)) {
+                applyDataSourceFromRequest(row, reqVO.getDataSource());
             }
             if (StrUtil.isNotBlank(reqVO.getSchemaVersion())) {
                 row.setSchemaVersion(reqVO.getSchemaVersion());
@@ -127,12 +120,12 @@ public class ComponentPropsServiceImpl implements ComponentPropsService {
         if (row.getTemplateId() == null) {
             throw exception(COMPONENT_PROPS_INSTANCE_MISSING_TEMPLATE);
         }
-        if (StrUtil.isNotBlank(reqVO.resolveDataSourceKey())) {
-            row.setDataSourceKey(reqVO.resolveDataSourceKey());
+        if (hasDataSourcePatch(reqVO)) {
+            applyDataSourceFromRequest(row, reqVO.getDataSource());
         }
         if (reqVO.getPropsOverride() != null) {
-            row.setPropsOverride(toJson(reqVO.getPropsOverride()));
-        } else if (!hasMetadataPatch(reqVO) && StrUtil.isBlank(reqVO.resolveDataSourceKey())) {
+            row.setPropsOverride(toJson(stripCapabilityFields(reqVO.getPropsOverride())));
+        } else if (!hasMetadataPatch(reqVO) && !hasDataSourcePatch(reqVO)) {
             throw exception(COMPONENT_PROPS_SAVE_OVERRIDE_REQUIRED);
         }
         componentPropsMapper.updateById(row);
@@ -149,12 +142,15 @@ public class ComponentPropsServiceImpl implements ComponentPropsService {
         componentPropsMapper.deleteById(propsId);
     }
 
-    private String requireDataSourceKey(String explicitKey, Map<String, Object> propsJson) {
-        String key = ComponentPropsJsonSync.resolveDataSourceKey(explicitKey, propsJson);
-        if (StrUtil.isBlank(key)) {
-            throw exception(COMPONENT_PROPS_DATA_SOURCE_KEY_REQUIRED);
+    private boolean hasDataSourcePatch(ComponentPropsSaveReqVO reqVO) {
+        return reqVO.getDataSource() != null;
+    }
+
+    private void applyDataSourceFromRequest(ComponentPropsDO row, ComponentDataSourceVO vo) {
+        Normalized binding = ComponentDataSource.fromVo(vo);
+        if (binding.isPresent()) {
+            ComponentDataSource.applyToRow(row, binding);
         }
-        return key;
     }
 
     private boolean hasMetadataPatch(ComponentPropsSaveReqVO reqVO) {
@@ -163,7 +159,7 @@ public class ComponentPropsServiceImpl implements ComponentPropsService {
                 || reqVO.getSort() != null
                 || reqVO.getDescription() != null
                 || StrUtil.isNotBlank(reqVO.getSchemaVersion())
-                || StrUtil.isNotBlank(reqVO.resolveDataSourceKey());
+                || hasDataSourcePatch(reqVO);
     }
 
     private void applyMetadata(ComponentPropsDO row, ComponentPropsSaveReqVO reqVO) {
@@ -198,7 +194,7 @@ public class ComponentPropsServiceImpl implements ComponentPropsService {
     }
 
     private ComponentDO requireComponentByCode(String componentCode) {
-        ComponentDO component = componentMapper.selectByKey(componentCode);
+        ComponentDO component = componentMapper.selectByComponentCode(componentCode);
         if (component == null) {
             throw exception(COMPONENT_NOT_EXISTS);
         }
@@ -211,17 +207,35 @@ public class ComponentPropsServiceImpl implements ComponentPropsService {
         vo.setIsTemplate(row.getIsTemplate());
         vo.setComponentId(row.getComponentId());
         vo.setComponentCode(row.getComponentCode());
-        vo.setDataSourceKey(row.getDataSourceKey());
+        vo.setDataSource(ComponentDataSource.toVo(ComponentDataSource.fromRow(row)));
         vo.setTemplateId(row.getTemplateId());
         vo.setSchemaVersion(row.getSchemaVersion());
-        vo.setPropsJson(parseJsonMap(row.getPropsJson()));
+        vo.setProps(parseJsonMap(row.getProps()));
         vo.setPropsOverride(parseJsonMap(row.getPropsOverride()));
         vo.setName(row.getName());
         vo.setStatus(row.getStatus());
         vo.setSort(row.getSort());
         vo.setDescription(row.getDescription());
-        ComponentPropsJsonSync.enrichRespVO(vo);
         return vo;
+    }
+
+    private Map<String, Object> stripCapabilityFields(Map<String, Object> props) {
+        if (props == null || props.isEmpty()) {
+            return new LinkedHashMap<>();
+        }
+        Map<String, Object> out = new LinkedHashMap<>(props);
+        out.remove("dataSource");
+        Object filter = out.get("filter");
+        if (filter instanceof Map<?, ?> filterMap) {
+            Map<String, Object> nextFilter = new LinkedHashMap<>();
+            filterMap.forEach((k, v) -> {
+                if (!"resolvedFilters".equals(String.valueOf(k))) {
+                    nextFilter.put(String.valueOf(k), v);
+                }
+            });
+            out.put("filter", nextFilter);
+        }
+        return out;
     }
 
     private Map<String, Object> parseJsonMap(String json) {

@@ -11,13 +11,13 @@ public interface ComponentService {
 
     Map<String, ComponentRespVO> getEnabledComponents();
 
-    ComponentRespVO getComponent(String key);
+    ComponentRespVO getComponent(String componentCode);
 
     List<ComponentRespVO> getComponentList();
 
     Long createComponent(ComponentCreateReqVO reqVO);
 
-    void updateComponent(String key, ComponentUpdateReqVO reqVO);
+    void updateComponent(String componentCode, ComponentUpdateReqVO reqVO);
 
-    void deleteComponent(String key);
+    void deleteComponent(String componentCode);
 }

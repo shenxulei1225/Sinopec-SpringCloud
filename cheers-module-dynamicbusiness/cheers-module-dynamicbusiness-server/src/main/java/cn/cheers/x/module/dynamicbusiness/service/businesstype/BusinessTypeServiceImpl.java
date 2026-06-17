@@ -548,32 +548,18 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      * - 导入数据前预校验。
      */
     @Override
-    public void validateCustomFields(Long modelId, String customFieldsJson) {
-        customFieldValidationService.validateCustomFields(modelId, customFieldsJson);
+    public void validateCustomFields(Long modelId, Map<String, Object> customFields) {
+        customFieldValidationService.validateCustomFields(modelId, customFields);
     }
 
-    /**
-     * 规范化并加密自定义字段 JSON。
-     *
-     * 适用场景：
-     * - 入库前统一数据格式与敏感数据处理；
-     * - 保持字段序列化一致性。
-     */
     @Override
-    public String normalizeAndEncryptCustomFields(String customFieldsJson, Long modelId) {
-        return customFieldValidationService.normalizeAndEncryptCustomFields(customFieldsJson, modelId);
+    public Map<String, Object> normalizeAndEncryptCustomFields(Map<String, Object> customFields, Long modelId) {
+        return customFieldValidationService.normalizeAndEncryptCustomFields(customFields, modelId);
     }
 
-    /**
-     * 解密自定义字段 JSON。
-     *
-     * 适用场景：
-     * - 出参回显；
-     * - 导出前展示可读字段值。
-     */
     @Override
-    public String decryptCustomFields(String customFieldsJson, Long modelId) {
-        return customFieldValidationService.decryptCustomFields(customFieldsJson, modelId);
+    public Map<String, Object> decryptCustomFields(Map<String, Object> customFields, Long modelId) {
+        return customFieldValidationService.decryptCustomFields(customFields, modelId);
     }
 
     /**

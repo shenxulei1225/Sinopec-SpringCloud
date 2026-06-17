@@ -6,6 +6,7 @@ import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationSer
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 实体 DO/VO 转换辅助工具。
@@ -20,9 +21,11 @@ public final class EntityDoVoHelper {
             return null;
         }
         EntityRespVO respVO = EntityConvert.INSTANCE.convert(entity);
-        if (respVO != null && respVO.getCustomFields() != null) {
-            respVO.setCustomFields(customFieldValidationService.decryptCustomFields(
-                    respVO.getCustomFields(), entity.getModelId()));
+        if (respVO != null && respVO.getCustomFields() != null && entity.getModelId() != null) {
+            Map<String, Object> decrypted = customFieldValidationService.decryptCustomFields(
+                    respVO.getCustomFields(), entity.getModelId());
+            respVO.setCustomFields(customFieldValidationService.presentCustomFieldsForApi(
+                    decrypted, entity.getModelId()));
         }
         return respVO;
     }

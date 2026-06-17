@@ -1,15 +1,17 @@
 SET search_path TO platformresource;
 
--- 组件 Props：模板（完整 props_json）与实例（template_id + props_override）
+-- 组件配置：模板（完整 props）与实例（template_id + props_override）
+-- props 仅存用户 UI 偏好；接口契约由业务能力模块 component_interface 提供，运行时合并
+-- data_source JSON：{ businessCategory, businessTypeCode, dataKind }
 CREATE TABLE pr_component_props (
     id                  BIGSERIAL PRIMARY KEY,
     is_template         BOOLEAN      NOT NULL DEFAULT TRUE,
     component_id        BIGINT       NOT NULL,
     component_code      VARCHAR(64)  NOT NULL,
-    data_source_key     VARCHAR(128),
+    data_source         TEXT,
     template_id         BIGINT,
     schema_version      VARCHAR(32)  NOT NULL DEFAULT '1',
-    props_json          TEXT         NOT NULL DEFAULT '{}',
+    props               TEXT         NOT NULL DEFAULT '{}',
     props_override      TEXT,
     name                VARCHAR(100),
     status              SMALLINT     DEFAULT 1,
@@ -27,15 +29,10 @@ CREATE TABLE pr_component_props (
         FOREIGN KEY (template_id) REFERENCES pr_component_props (id)
 );
 
-COMMENT ON TABLE pr_component_props IS '组件 Props 模板与实例';
+COMMENT ON TABLE pr_component_props IS '组件配置：模板与实例（用户偏好 props）';
 COMMENT ON COLUMN pr_component_props.id IS 'propsId，模板/实例主键';
-COMMENT ON COLUMN pr_component_props.is_template IS 'true=模板（props_json 全量）；false=实例（props_override 差异）';
-COMMENT ON COLUMN pr_component_props.component_id IS '关联 pr_component.id';
-COMMENT ON COLUMN pr_component_props.component_code IS '语义化组件编码，与 pr_component.key 一致';
-COMMENT ON COLUMN pr_component_props.data_source_key IS '数据来源能力键（与 props_json.dataSourceKey 同步）';
-COMMENT ON COLUMN pr_component_props.template_id IS '实例引用的模板 propsId';
-COMMENT ON COLUMN pr_component_props.props_json IS '模板：完整 props；实例：通常为空对象';
-COMMENT ON COLUMN pr_component_props.props_override IS '实例相对模板的差异 JSON';
+COMMENT ON COLUMN pr_component_props.data_source IS '数据来源 JSON：businessCategory + businessTypeCode + dataKind';
+COMMENT ON COLUMN pr_component_props.props IS '模板：完整用户偏好 props；实例：通常为空对象';
 
 CREATE INDEX idx_pr_component_props_code_template
     ON pr_component_props (component_code, is_template)
@@ -48,7 +45,3 @@ CREATE INDEX idx_pr_component_props_component_id
 CREATE INDEX idx_pr_component_props_template_id
     ON pr_component_props (template_id)
     WHERE deleted = FALSE AND is_template = FALSE;
-
-CREATE INDEX idx_pr_component_props_data_source_key
-    ON pr_component_props (data_source_key)
-    WHERE deleted = FALSE AND data_source_key IS NOT NULL;

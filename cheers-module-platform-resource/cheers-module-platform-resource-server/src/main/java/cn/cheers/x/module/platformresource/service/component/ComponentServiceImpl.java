@@ -1,14 +1,11 @@
 package cn.cheers.x.module.platformresource.service.component;
 
-import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.cheers.x.module.platformresource.controller.admin.component.vo.ComponentCreateReqVO;
 import cn.cheers.x.module.platformresource.controller.admin.component.vo.ComponentRespVO;
 import cn.cheers.x.module.platformresource.controller.admin.component.vo.ComponentUpdateReqVO;
 import cn.cheers.x.module.platformresource.dal.dataobject.component.ComponentDO;
 import cn.cheers.x.module.platformresource.dal.mysql.component.ComponentMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,22 +24,19 @@ public class ComponentServiceImpl implements ComponentService {
     @Resource
     private ComponentMapper componentMapper;
 
-    @Resource
-    private ObjectMapper objectMapper;
-
     @Override
     public Map<String, ComponentRespVO> getEnabledComponents() {
         List<ComponentDO> list = componentMapper.selectEnabledList();
         Map<String, ComponentRespVO> result = new LinkedHashMap<>();
         for (ComponentDO row : list) {
-            result.put(row.getKey(), convertToRespVO(row));
+            result.put(row.getComponentCode(), convertToRespVO(row));
         }
         return result;
     }
 
     @Override
-    public ComponentRespVO getComponent(String key) {
-        ComponentDO row = componentMapper.selectByKey(key);
+    public ComponentRespVO getComponent(String componentCode) {
+        ComponentDO row = componentMapper.selectByComponentCode(componentCode);
         return row == null ? null : convertToRespVO(row);
     }
 
@@ -56,18 +50,14 @@ public class ComponentServiceImpl implements ComponentService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createComponent(ComponentCreateReqVO reqVO) {
-        if (componentMapper.existsByKey(reqVO.getKey())) {
-            throw exception(COMPONENT_KEY_DUPLICATE);
+        if (componentMapper.existsByComponentCode(reqVO.getComponentCode())) {
+            throw exception(COMPONENT_CODE_DUPLICATE);
         }
         ComponentDO row = new ComponentDO();
-        row.setKey(reqVO.getKey());
+        row.setComponentCode(reqVO.getComponentCode());
         row.setType(reqVO.getType());
         row.setName(reqVO.getName());
         row.setIcon(reqVO.getIcon());
-        row.setProps(toJson(reqVO.getProps()));
-        row.setDataConfig(toJson(reqVO.getDataConfig()));
-        row.setApiConfig(toJson(reqVO.getApiConfig()));
-        row.setUiConfig(toJson(reqVO.getUiConfig()));
         row.setStatus(reqVO.getStatus() != null ? reqVO.getStatus() : 1);
         row.setSort(reqVO.getSort() != null ? reqVO.getSort() : 0);
         row.setDescription(reqVO.getDescription());
@@ -77,8 +67,8 @@ public class ComponentServiceImpl implements ComponentService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateComponent(String key, ComponentUpdateReqVO reqVO) {
-        ComponentDO row = componentMapper.selectByKey(key);
+    public void updateComponent(String componentCode, ComponentUpdateReqVO reqVO) {
+        ComponentDO row = componentMapper.selectByComponentCode(componentCode);
         if (row == null) {
             throw exception(COMPONENT_NOT_EXISTS);
         }
@@ -90,18 +80,6 @@ public class ComponentServiceImpl implements ComponentService {
         }
         if (reqVO.getIcon() != null) {
             row.setIcon(reqVO.getIcon());
-        }
-        if (reqVO.getProps() != null) {
-            row.setProps(toJson(reqVO.getProps()));
-        }
-        if (reqVO.getDataConfig() != null) {
-            row.setDataConfig(toJson(reqVO.getDataConfig()));
-        }
-        if (reqVO.getApiConfig() != null) {
-            row.setApiConfig(toJson(reqVO.getApiConfig()));
-        }
-        if (reqVO.getUiConfig() != null) {
-            row.setUiConfig(toJson(reqVO.getUiConfig()));
         }
         if (reqVO.getStatus() != null) {
             row.setStatus(reqVO.getStatus());
@@ -117,8 +95,8 @@ public class ComponentServiceImpl implements ComponentService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteComponent(String key) {
-        ComponentDO row = componentMapper.selectByKey(key);
+    public void deleteComponent(String componentCode) {
+        ComponentDO row = componentMapper.selectByComponentCode(componentCode);
         if (row == null) {
             throw exception(COMPONENT_NOT_EXISTS);
         }
@@ -128,43 +106,8 @@ public class ComponentServiceImpl implements ComponentService {
     private ComponentRespVO convertToRespVO(ComponentDO row) {
         ComponentRespVO vo = BeanUtils.toBean(row, ComponentRespVO.class);
         vo.setId(row.getId());
-        vo.setComponentCode(row.getKey());
-        vo.setKey(row.getKey());
+        vo.setComponentCode(row.getComponentCode());
         vo.setName(row.getName());
-        vo.setProps(parseJson(row.getProps(), Object.class));
-        vo.setDataConfig(parseJson(row.getDataConfig(), ComponentRespVO.EndpointConfig.class));
-        vo.setUiConfig(parseJson(row.getUiConfig(), new TypeReference<Map<String, Object>>() {}));
-        vo.setApiConfig(parseJson(row.getApiConfig(),
-                new TypeReference<Map<String, ComponentRespVO.EndpointConfig>>() {}));
         return vo;
-    }
-
-    private String toJson(Object obj) {
-        if (obj == null) {
-            return null;
-        }
-        try {
-            return objectMapper.writeValueAsString(obj);
-        } catch (Exception e) {
-            throw new RuntimeException("JSON 序列化失败", e);
-        }
-    }
-
-    private <T> T parseJson(String json, Class<T> clazz) {
-        if (StrUtil.isEmpty(json)) return null;
-        try {
-            return objectMapper.readValue(json, clazz);
-        } catch (Exception e) {
-            throw new RuntimeException("JSON 反序列化失败", e);
-        }
-    }
-
-    private <T> T parseJson(String json, TypeReference<T> typeRef) {
-        if (StrUtil.isEmpty(json)) return null;
-        try {
-            return objectMapper.readValue(json, typeRef);
-        } catch (Exception e) {
-            throw new RuntimeException("JSON 反序列化失败", e);
-        }
     }
 }
