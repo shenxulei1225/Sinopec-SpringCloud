@@ -232,6 +232,38 @@ public class EntityCoreServiceImpl implements EntityCoreService {
     }
 
     @Override
+    public List<EntityDO> listEntitiesByParentId(String businessTypeCode, Long parentId) {
+        if (businessTypeCode == null || businessTypeCode.isEmpty()) {
+            throw new ServiceException(400, "businessTypeCode 不能为空");
+        }
+        EntityRepository.EntityQuery.EntityQueryBuilder builder = EntityRepository.EntityQuery.builder()
+                .businessTypeCode(businessTypeCode);
+        if (parentId == null) {
+            builder.rootOnly(true);
+        } else {
+            builder.parentId(parentId);
+        }
+        return entityRepository.findAll(builder.build());
+    }
+
+    @Override
+    public PageResult<EntityDO> pageEntitiesByParentId(String businessTypeCode, Long parentId, Integer pageNo, Integer pageSize) {
+        if (businessTypeCode == null || businessTypeCode.isEmpty()) {
+            throw new ServiceException(400, "businessTypeCode 不能为空");
+        }
+        EntityRepository.EntityQuery.EntityQueryBuilder builder = EntityRepository.EntityQuery.builder()
+                .businessTypeCode(businessTypeCode)
+                .pageNo(pageNo == null || pageNo < 1 ? 1 : pageNo)
+                .pageSize(pageSize == null || pageSize < 1 ? 200 : Math.min(pageSize, 500));
+        if (parentId == null) {
+            builder.rootOnly(true);
+        } else {
+            builder.parentId(parentId);
+        }
+        return entityRepository.findPage(builder.build());
+    }
+
+    @Override
     public List<String> getEntityPath(Long entityId, String businessTypeCode) {
         if (businessTypeCode == null || businessTypeCode.isEmpty()) {
             throw new ServiceException(400, "businessTypeCode 不能为空");

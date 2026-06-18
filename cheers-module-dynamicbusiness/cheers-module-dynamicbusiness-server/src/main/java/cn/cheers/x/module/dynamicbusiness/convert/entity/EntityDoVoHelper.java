@@ -30,6 +30,34 @@ public final class EntityDoVoHelper {
         return respVO;
     }
 
+    public static EntityRespVO toLightRespVO(EntityDO entity) {
+        if (entity == null) {
+            return null;
+        }
+        EntityRespVO light = new EntityRespVO();
+        light.setId(entity.getId());
+        light.setName(entity.getName());
+        light.setParentId(entity.getParentId());
+        light.setModelId(entity.getModelId());
+        light.setBusinessTypeCode(entity.getBusinessTypeCode());
+        light.setSort(entity.getSort());
+        return light;
+    }
+
+    public static List<EntityRespVO> toLightRespVOList(List<EntityDO> entities) {
+        if (entities == null || entities.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<EntityRespVO> result = new ArrayList<>(entities.size());
+        for (EntityDO entity : entities) {
+            EntityRespVO respVO = toLightRespVO(entity);
+            if (respVO != null) {
+                result.add(respVO);
+            }
+        }
+        return result;
+    }
+
     public static List<EntityRespVO> toRespVOList(List<EntityDO> entities, CustomFieldValidationService customFieldValidationService) {
         if (entities == null || entities.isEmpty()) {
             return new ArrayList<>();

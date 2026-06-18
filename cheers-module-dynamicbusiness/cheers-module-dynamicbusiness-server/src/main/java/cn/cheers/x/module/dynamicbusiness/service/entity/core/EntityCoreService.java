@@ -159,6 +159,16 @@ public interface EntityCoreService {
     List<EntityDO> listTreeEntities(String businessTypeCode, Long modelId);
 
     /**
+     * 按父节点查询直接子实体；parentId 为 null 时仅返回根节点（parent_id IS NULL）。
+     */
+    List<EntityDO> listEntitiesByParentId(String businessTypeCode, Long parentId);
+
+    /**
+     * 按父节点分页查询直接子实体；parentId 为 null 时仅返回根节点（parent_id IS NULL）。
+     */
+    PageResult<EntityDO> pageEntitiesByParentId(String businessTypeCode, Long parentId, Integer pageNo, Integer pageSize);
+
+    /**
      * 获取实体路径（从根到当前实体的名称路径）。
      * 前提是实体有数型结构的情况下使用  （todo:这个待分析是否要优化）
      *

@@ -381,6 +381,13 @@ public class EntityServiceImpl implements EntityService {
             }
 
             case PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE: {
+                if (shape == EntityQueryResultShape.TREE) {
+                    List<EntityRespVO> treeRoots = buildEntityHierarchySubtree(
+                            businessTypeCode, null, keyword, filters, detail,
+                            effectivePageNo, resolveTreeRootPageSize(pageSize));
+                    return EntitySceneQueryRespVO.tree(
+                            applyResultDetail(treeRoots, detail), detail.getCode());
+                }
                 List<Long> allEntityIds = collectAllEntityIdsByBusinessType(businessTypeCode);
                 PageResult<EntityRespVO> result = queryEntitiesByOrderedCandidateIds(
                         allEntityIds, businessTypeCode, keyword, filters,
@@ -390,11 +397,6 @@ public class EntityServiceImpl implements EntityService {
                     return EntitySceneQueryRespVO.page(applyResultDetail(result, detail), detail.getCode());
                 }
                 List<EntityRespVO> entities = result.getList();
-                if (shape == EntityQueryResultShape.TREE) {
-                    return EntitySceneQueryRespVO.tree(
-                            applyResultDetail(EntityTreeBuilder.buildTree(entities, EntityTreeBuilder.SortMode.LOCAL_SIBLING_SORT), detail),
-                            detail.getCode());
-                }
                 return EntitySceneQueryRespVO.list(applyResultDetail(entities, detail), detail.getCode());
             }
 
@@ -432,6 +434,28 @@ public class EntityServiceImpl implements EntityService {
                             Collections.singletonList(shapedOne), detail.getCode());
                 }
                 return EntitySceneQueryRespVO.list(Collections.singletonList(shapedOne), detail.getCode());
+            }
+
+            case ROOT_ENTITY_SUBTREE: {
+                if (businessTypeCode == null || businessTypeCode.isBlank()) {
+                    throw new ServiceException(400, "ROOT_ENTITY_SUBTREE 场景下 businessTypeCode 不能为空");
+                }
+                List<EntityRespVO> subtreeRoots = buildEntityHierarchySubtree(
+                        businessTypeCode, rootEntityId, keyword, filters, detail,
+                        rootEntityId == null ? effectivePageNo : null,
+                        rootEntityId == null ? resolveTreeRootPageSize(pageSize) : null);
+                if (shape == EntityQueryResultShape.PAGE) {
+                    PageResult<EntityRespVO> paged = buildEntityRespPageResult(
+                            flattenEntityTree(subtreeRoots),
+                            effectivePageNo, effectivePageSize);
+                    return EntitySceneQueryRespVO.page(applyResultDetail(paged, detail), detail.getCode());
+                }
+                if (shape == EntityQueryResultShape.TREE) {
+                    return EntitySceneQueryRespVO.tree(
+                            applyResultDetail(subtreeRoots, detail), detail.getCode());
+                }
+                return EntitySceneQueryRespVO.list(
+                        applyResultDetail(flattenEntityTree(subtreeRoots), detail), detail.getCode());
             }
             default:
                 throw new ServiceException(400, "不支持的查询场景: " + scene.getCode());
@@ -2094,6 +2118,89 @@ public class EntityServiceImpl implements EntityService {
     }
 
 
+
+    /**
+     * 实体层级树子树：rootEntityId 为空时返回根节点（供 Tree 首屏懒加载）；否则返回该节点的直接子节点。
+     */
+    private List<EntityRespVO> buildEntityHierarchySubtree(String businessTypeCode, Long rootEntityId,
+            String keyword, List<FieldFilterReqVO> filters, EntityQueryResultDetail detail,
+            Integer pageNo, Integer pageSize) {
+        List<EntityDO> rawEntities;
+        if (rootEntityId == null) {
+            int resolvedPageNo = pageNo == null || pageNo < 1 ? 1 : pageNo;
+            int resolvedPageSize = resolveTreeRootPageSize(pageSize);
+            rawEntities = entityCoreService.pageEntitiesByParentId(
+                    businessTypeCode, null, resolvedPageNo, resolvedPageSize).getList();
+        } else {
+            rawEntities = entityCoreService.listEntitiesByParentId(businessTypeCode, rootEntityId);
+        }
+        if (rawEntities == null || rawEntities.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<EntityRespVO> entities = detail == EntityQueryResultDetail.LIGHT
+                ? EntityDoVoHelper.toLightRespVOList(rawEntities)
+                : EntityDoVoHelper.toRespVOList(rawEntities, customFieldValidationService);
+        entities = filterEntityRespList(entities, businessTypeCode, keyword, filters);
+
+        Comparator<EntityRespVO> comparator = Comparator
+                .comparing((EntityRespVO v) -> v.getSort() == null ? Integer.MAX_VALUE : v.getSort())
+                .thenComparing(v -> v.getId() == null ? Long.MAX_VALUE : v.getId());
+        entities = entities.stream().sorted(comparator).toList();
+        for (EntityRespVO entity : entities) {
+            entity.setChildren(null);
+        }
+        return entities;
+    }
+
+    /** Tree 首屏根节点默认分页，避免万级实体一次性拉全量导致超时/500。 */
+    private static int resolveTreeRootPageSize(Integer pageSize) {
+        if (pageSize == null || pageSize < 1) {
+            return 200;
+        }
+        return Math.min(pageSize, 500);
+    }
+
+    private List<EntityRespVO> filterEntityRespList(List<EntityRespVO> entities, String businessTypeCode,
+            String keyword, List<FieldFilterReqVO> filters) {
+        if (entities == null || entities.isEmpty()) {
+            return new ArrayList<>();
+        }
+        boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
+        boolean hasFilters = filters != null && !filters.isEmpty();
+        if (!hasKeyword && !hasFilters) {
+            return entities;
+        }
+        List<Long> orderedIds = entities.stream()
+                .map(EntityRespVO::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        List<Long> filteredIds = filterCandidateEntityIds(orderedIds, businessTypeCode, filters, keyword);
+        if (filteredIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        Set<Long> allowed = new HashSet<>(filteredIds);
+        return entities.stream()
+                .filter(entity -> entity.getId() != null && allowed.contains(entity.getId()))
+                .toList();
+    }
+
+    private List<EntityRespVO> flattenEntityTree(List<EntityRespVO> treeRoots) {
+        if (treeRoots == null || treeRoots.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<EntityRespVO> flat = new ArrayList<>();
+        Deque<EntityRespVO> stack = new ArrayDeque<>(treeRoots);
+        while (!stack.isEmpty()) {
+            EntityRespVO current = stack.pop();
+            flat.add(current);
+            if (current.getChildren() != null && !current.getChildren().isEmpty()) {
+                for (int i = current.getChildren().size() - 1; i >= 0; i--) {
+                    stack.push(current.getChildren().get(i));
+                }
+            }
+        }
+        return flat;
+    }
 
     /**
      * 按模型获取实体树（同层按 sort 排序）。

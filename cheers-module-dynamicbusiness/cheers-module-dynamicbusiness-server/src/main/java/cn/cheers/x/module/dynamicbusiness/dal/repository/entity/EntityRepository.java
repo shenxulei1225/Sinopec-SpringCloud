@@ -201,6 +201,8 @@ public interface EntityRepository {
         private Long modelId;
         /** 父实体ID */
         private Long parentId;
+        /** 为 true 时仅查询 parent_id IS NULL 的根节点（与 parentId 互斥） */
+        private Boolean rootOnly;
         /** 状态 */
         private Integer status;
         /** 关键词搜索 */

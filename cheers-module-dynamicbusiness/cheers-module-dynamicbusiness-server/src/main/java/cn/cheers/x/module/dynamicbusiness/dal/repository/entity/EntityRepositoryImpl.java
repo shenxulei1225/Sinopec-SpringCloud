@@ -302,7 +302,11 @@ public class EntityRepositoryImpl implements EntityRepository {
         wrapper.likeIfPresent(EntityDO::getName, query.getKeyword());
         wrapper.eq(EntityDO::getDeleted, false);
         wrapper.orderByAsc(EntityDO::getSort);
-        wrapper.eqIfPresent(EntityDO::getParentId, query.getParentId());
+        if (Boolean.TRUE.equals(query.getRootOnly())) {
+            wrapper.isNull(EntityDO::getParentId);
+        } else {
+            wrapper.eqIfPresent(EntityDO::getParentId, query.getParentId());
+        }
         return wrapper;
     }
 }
