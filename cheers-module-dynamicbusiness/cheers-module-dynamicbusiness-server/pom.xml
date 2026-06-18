@@ -199,12 +199,6 @@
                     <table>flyway_schema_history_dynamicbusiness</table>
                     <baselineOnMigrate>true</baselineOnMigrate>
                     <baselineVersion>0</baselineVersion>
-                    <placeholders>
-                        <zhglHost>${zhgl.db.host}</zhglHost>
-                        <zhglDb>${zhgl.db.name}</zhglDb>
-                        <zhglUser>${zhgl.db.user}</zhglUser>
-                        <zhglPassword>${zhgl.db.password}</zhglPassword>
-                    </placeholders>
                 </configuration>
             </plugin>
 
@@ -227,10 +221,6 @@
         <flyway.url>jdbc:postgresql://127.0.0.1:5432/sinopec</flyway.url>
         <flyway.user>postgres</flyway.user>
         <flyway.password>Coolhomer</flyway.password>
-        <zhgl.db.host>127.0.0.1</zhgl.db.host>
-        <zhgl.db.name>zhgl</zhgl.db.name>
-        <zhgl.db.user>postgres</zhgl.db.user>
-        <zhgl.db.password>Coolhomer</zhgl.db.password>
     </properties>
 
 </project>
