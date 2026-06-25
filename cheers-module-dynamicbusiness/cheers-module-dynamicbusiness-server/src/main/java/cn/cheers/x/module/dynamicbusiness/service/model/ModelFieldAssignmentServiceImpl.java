@@ -44,6 +44,7 @@ import cn.cheers.x.module.dynamicbusiness.enums.businesstype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.service.businesstype.BusinessTypeBaseFieldService;
 import cn.cheers.x.module.dynamicbusiness.service.businesstype.BusinessTypeRelationService;
+import cn.cheers.x.module.dynamicbusiness.service.capability.BusinessCapabilityService;
 import cn.cheers.x.module.dynamicbusiness.service.field.SmartSearchableService;
 import cn.cheers.x.module.dynamicbusiness.service.relation.RelationFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.relation.RelationFieldLibraryService;
@@ -93,8 +94,19 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
     private BusinessTypeRelationService businessTypeRelationService;
     @Resource
     private ModelFieldGroupService modelFieldGroupService;
+    @Resource
+    @Lazy
+    private BusinessCapabilityService businessCapabilityService;
+
+    private void notifyModelFieldDefinitionChanged(Long modelId) {
+        if (modelId == null) {
+            return;
+        }
+        businessCapabilityService.refreshModelCrudFormDefinition(modelId);
+    }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void assignFieldToModel(Long modelId, Long fieldId, Boolean required, Boolean isSearchable, Boolean isFilterable, Boolean isSortable, String defaultValue, String validationRules) {
         // 校验模型存在
         ModelDO model = modelMapper.selectById(modelId);
@@ -158,6 +170,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 modelFieldAssignmentMapper.insert(assignment);
             }
         }
+        notifyModelFieldDefinitionChanged(modelId);
     }
 
     @Override
@@ -249,10 +262,14 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 }
             }
         }
+        if (affectedCount > 0) {
+            notifyModelFieldDefinitionChanged(reqVO.getModelId());
+        }
         return affectedCount;
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void unassignFieldFromModel(Long modelId, Long fieldId) {
         // 校验模型存在
         ModelDO model = modelMapper.selectById(modelId);
@@ -283,6 +300,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         ModelFieldAssignmentDO assignment = modelFieldAssignmentMapper.selectByModelIdAndFieldId(modelId, fieldId);
         if (assignment != null) {
             modelFieldAssignmentMapper.deleteById(assignment.getId());
+            notifyModelFieldDefinitionChanged(modelId);
         }
     }
 
@@ -332,6 +350,9 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 new LambdaQueryWrapperX<ModelFieldAssignmentDO>()
                         .eq(ModelFieldAssignmentDO::getModelId, modelId)
                         .in(ModelFieldAssignmentDO::getFieldId, fieldIds));
+        if (deleted > 0) {
+            notifyModelFieldDefinitionChanged(modelId);
+        }
         return deleted;
     }
 
@@ -675,6 +696,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         log.info("[createCustomRelationField][为模型 {} 创建自定义关联字段 {},字段ID={},modelRelationId={}]",
                 reqVO.getModelId(), reqVO.getFieldName(), field.getId(), reqVO.getModelRelationId());
 
+        notifyModelFieldDefinitionChanged(reqVO.getModelId());
         return assignment.getId();
     }
 
@@ -795,6 +817,10 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
             log.info("[deleteByModelRelationId][未找到需要删除的字段分配记录,modelRelationId={}]", modelRelationId);
             return 0;
         }
+        Set<Long> affectedModelIds = assignments.stream()
+                .map(ModelFieldAssignmentDO::getModelId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
         
         // 2. 删除关联的字段定义（Field）
         for (ModelFieldAssignmentDO assignment : assignments) {
@@ -807,6 +833,9 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         // 3. 删除字段分配记录
         int count = modelFieldAssignmentMapper.deleteByModelRelationId(modelRelationId);
         log.info("[deleteByModelRelationId][删除字段分配记录,modelRelationId={},删除数量={}]", modelRelationId, count);
+        for (Long affectedModelId : affectedModelIds) {
+            notifyModelFieldDefinitionChanged(affectedModelId);
+        }
         
         return count;
     }
@@ -868,6 +897,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         log.info("[createAssignmentForExistingField][为已存在的字段创建分配记录: modelId={}, fieldId={}, assignmentId={}, modelRelationId={}]",
                 modelId, fieldId, assignment.getId(), modelRelationId);
         
+        notifyModelFieldDefinitionChanged(modelId);
         return assignment.getId();
     }
 
@@ -886,6 +916,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         modelFieldAssignmentMapper.updateById(assignment);
         
         log.info("[updateAssignmentRelationInfo][更新字段分配关联信息: assignmentId={}, modelRelationId={}]", assignmentId, modelRelationId);
+        notifyModelFieldDefinitionChanged(assignment.getModelId());
     }
 
     // ========== 批量查询接口（性能优化）==========
@@ -1054,6 +1085,11 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                         "totalModelCount={}, assignedCount={}, successCount={}]",
                 fieldId, targetBusinessTypeCode, modelIds.size(), needAssignModelIds.size(), successCount);
 
+        if (successCount > 0) {
+            for (Long modelId : needAssignModelIds) {
+                notifyModelFieldDefinitionChanged(modelId);
+            }
+        }
         return successCount;
     }
 

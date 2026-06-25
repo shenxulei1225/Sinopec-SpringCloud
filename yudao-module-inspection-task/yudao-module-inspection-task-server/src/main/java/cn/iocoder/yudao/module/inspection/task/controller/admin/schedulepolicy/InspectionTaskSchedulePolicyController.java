@@ -30,7 +30,7 @@ public class InspectionTaskSchedulePolicyController {
     private InspectionTaskSchedulePolicyMapper schedulePolicyMapper;
 
     @GetMapping("/simple-list")
-    @Operation(summary = "获取启用的排期策略简易列表")
+    @Operation(summary = "获取启用的排期策略简单列表")
     public CommonResult<List<InspectionTaskSchedulePolicyRespVO>> getSchedulePolicySimpleList() {
         List<InspectionTaskSchedulePolicyDO> policies = schedulePolicyMapper.selectByEnabled(true);
         return success(BeanUtils.toBean(policies, InspectionTaskSchedulePolicyRespVO.class));

@@ -185,6 +185,11 @@ public interface EntityRepository {
      */
     boolean existsByParentId(Long parentId, String businessTypeCode);
 
+    /**
+     * 同模型下是否存在同名实体（精确匹配，用于 CRUD 异步校验）。
+     */
+    boolean existsByExactName(String businessTypeCode, Long modelId, String name, Long excludeId);
+
     // ==================== 查询条件类 ====================
 
     /**

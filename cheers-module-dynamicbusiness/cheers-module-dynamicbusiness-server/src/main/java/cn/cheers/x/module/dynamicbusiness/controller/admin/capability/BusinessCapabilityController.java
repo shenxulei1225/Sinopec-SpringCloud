@@ -14,6 +14,7 @@ import jakarta.annotation.Resource;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -75,13 +76,24 @@ public class BusinessCapabilityController {
     }
 
     @GetMapping("/model-crud-form")
-    @Operation(summary = "读取模型 CRUD 表单定义")
+    @Operation(summary = "读取模型 CRUD 表单定义（查询参数）")
     @Parameter(name = "businessTypeCode", description = "业务类型编码", required = true, example = "equipment")
     @Parameter(name = "modelId", description = "模型编号", required = true, example = "1001")
     @PreAuthorize("@ss.hasPermission('system:business-type:query')")
     public CommonResult<ModelCrudFormDefinitionRespVO> getModelCrudForm(
             @RequestParam("businessTypeCode") String businessTypeCode,
             @RequestParam("modelId") Long modelId) {
+        return success(businessCapabilityService.getModelCrudFormDefinition(businessTypeCode, modelId));
+    }
+
+    @GetMapping("/{businessTypeCode}/model/{modelId}/crud-form")
+    @Operation(summary = "读取模型 CRUD 表单定义（路径参数，与能力定稿 URL 一致）")
+    @Parameter(name = "businessTypeCode", description = "业务类型编码", required = true, example = "equipment")
+    @Parameter(name = "modelId", description = "模型编号", required = true, example = "1001")
+    @PreAuthorize("@ss.hasPermission('system:business-type:query')")
+    public CommonResult<ModelCrudFormDefinitionRespVO> getModelCrudFormByPath(
+            @PathVariable("businessTypeCode") String businessTypeCode,
+            @PathVariable("modelId") Long modelId) {
         return success(businessCapabilityService.getModelCrudFormDefinition(businessTypeCode, modelId));
     }
 

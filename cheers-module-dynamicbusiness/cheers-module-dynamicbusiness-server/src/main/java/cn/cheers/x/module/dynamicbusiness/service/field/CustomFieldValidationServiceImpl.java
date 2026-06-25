@@ -8,7 +8,6 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignm
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
-import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
 import cn.cheers.x.module.dynamicbusiness.util.SensitiveDataEncryptor;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
@@ -53,9 +52,6 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
 
     @Resource
     private FieldMapper fieldMapper;
-
-    @Resource
-    private EntityCoreService entityCoreService;
 
     @Override
     public void validateCustomFields(Long modelId, Map<String, Object> customFields) {

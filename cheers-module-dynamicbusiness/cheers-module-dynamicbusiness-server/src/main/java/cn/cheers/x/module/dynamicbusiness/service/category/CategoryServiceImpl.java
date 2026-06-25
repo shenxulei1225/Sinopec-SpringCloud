@@ -13,6 +13,8 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryD
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdateReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityWriteReqMaps;
+import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityFieldMapsSupport;
 import cn.cheers.x.module.dynamicbusiness.convert.category.CategoryConvert;
 import cn.cheers.x.module.dynamicbusiness.convert.model.ModelConvert;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelRespVO;
@@ -329,12 +331,14 @@ public class CategoryServiceImpl implements CategoryService {
     private Long createEntityForCategory(CategoryCreateReqVO reqVO) {
         ModelDO model = modelMapper.selectById(reqVO.getEntityModelId());
         
-        EntityCreateReqVO entityReqVO = new EntityCreateReqVO();
-        entityReqVO.setBusinessTypeCode(model.getBusinessTypeCode());
-        entityReqVO.setModelId(reqVO.getEntityModelId());
-        entityReqVO.setName(reqVO.getName());  // 使用分类名称作为实体名称
-        entityReqVO.setCustomFields(reqVO.getCustomFields());
-        entityReqVO.setStatus(reqVO.getStatus());
+        EntityCreateReqVO entityReqVO = EntityWriteReqMaps.createReq(
+                model.getBusinessTypeCode(),
+                reqVO.getEntityModelId(),
+                reqVO.getName(),
+                reqVO.getStatus(),
+                null,
+                null,
+                reqVO.getCustomFields());
         
         // 1. 使用 Helper 准备实体数据（验证、转换、加密）
         EntityDO data = entityBusinessHelper.prepareCreateEntity(entityReqVO);
@@ -352,10 +356,16 @@ public class CategoryServiceImpl implements CategoryService {
         entityRelationSyncService.syncRelationsOnCreate(data, model, customFieldsMap);
 
         // 5. 清除缓存
-        entityCacheEvictionService.evictEntityCaches(entityReqVO.getModelId(), entityReqVO.getBusinessTypeCode());
+        entityCacheEvictionService.evictEntityCaches(
+                EntityFieldMapsSupport.getRequiredModelId(entityReqVO.getBaseFields()),
+                EntityFieldMapsSupport.getRequiredBusinessTypeCode(entityReqVO.getBaseFields()));
 
         // 6. 发布事件
-        entityLifecycleEventPublisher.publishEntityCreatedEvent(entityReqVO.getModelId(), entityId, entityReqVO.getBusinessTypeCode(), data);
+        entityLifecycleEventPublisher.publishEntityCreatedEvent(
+                EntityFieldMapsSupport.getRequiredModelId(entityReqVO.getBaseFields()),
+                entityId,
+                EntityFieldMapsSupport.getRequiredBusinessTypeCode(entityReqVO.getBaseFields()),
+                data);
 
         return entityId;
     }
@@ -474,34 +484,28 @@ public class CategoryServiceImpl implements CategoryService {
         if (link == null || link.getEntityId() == null) {
             return;
         }
-        
-        EntityUpdateReqVO entityUpdateReqVO = new EntityUpdateReqVO();
-        entityUpdateReqVO.setId(link.getEntityId());
-        entityUpdateReqVO.setCustomFields(reqVO.getCustomFields());
-        if (reqVO.getName() != null) {
-            entityUpdateReqVO.setName(reqVO.getName());
-        }
-        if (reqVO.getStatus() != null) {
-            entityUpdateReqVO.setStatus(reqVO.getStatus());
-        }
         ModelDO model = modelMapper.selectById(link.getEntityModelId());
         if (model == null) {
             return;
         }
         EntityDO entityDO = entityCoreService.get(link.getEntityId(), model.getBusinessTypeCode());
         EntityRespVO existingEntity = entityDO != null ? EntityDoVoHelper.toRespVO(entityDO, customFieldValidationService) : null;
-        if (existingEntity != null) {
-            entityUpdateReqVO.setBusinessTypeCode(existingEntity.getBusinessTypeCode());
-            entityUpdateReqVO.setModelId(existingEntity.getModelId());
-            if (entityUpdateReqVO.getName() == null) {
-                entityUpdateReqVO.setName(existingEntity.getName());
-            }
-            if (entityUpdateReqVO.getStatus() == null) {
-                entityUpdateReqVO.setStatus(existingEntity.getStatus());
-            }
+        if (existingEntity == null) {
+            return;
         }
+
+        EntityUpdateReqVO entityUpdateReqVO = EntityWriteReqMaps.updateReq(
+                link.getEntityId(),
+                existingEntity.getBusinessTypeCode(),
+                existingEntity.getModelId(),
+                reqVO.getName() != null ? reqVO.getName() : existingEntity.getName(),
+                reqVO.getStatus() != null ? reqVO.getStatus() : existingEntity.getStatus(),
+                existingEntity.getParentId(),
+                null,
+                reqVO.getCustomFields());
+
         // Replicate the update logic from EntityServiceImpl
-        EntityDO db = entityCoreService.get(entityUpdateReqVO.getId(), entityUpdateReqVO.getBusinessTypeCode());
+        EntityDO db = entityCoreService.get(entityUpdateReqVO.getId(), existingEntity.getBusinessTypeCode());
         if (db == null) {
             throw new ServiceException(404, "实体不存在");
         }
@@ -517,11 +521,14 @@ public class CategoryServiceImpl implements CategoryService {
         entityCacheEvictionService.evictEntityCaches(model.getId(), model.getBusinessTypeCode());
         entityCacheEvictionService.evictEntity(entityUpdateReqVO.getId());
 
-        List<String> changedFields = entityBusinessHelper.extractFieldCodes(entityUpdateReqVO.getCustomFields());
+        List<String> changedFields = entityBusinessHelper.extractFieldCodes(
+                entityUpdateReqVO.getBaseFields(), entityUpdateReqVO.getCustomFields());
         entityLifecycleEventPublisher.publishEntityUpdatedEvent(model.getId(), entityUpdateReqVO.getId(), model.getBusinessTypeCode(), changedFields, update);
 
-        if (entityUpdateReqVO.getName() != null && !entityUpdateReqVO.getName().equals(oldName)) {
-            entityLifecycleEventPublisher.publishEntityNameChangedEvent(entityUpdateReqVO.getId(), oldName, entityUpdateReqVO.getName(),
+        String newName = EntityFieldMapsSupport.asStringFromMap(entityUpdateReqVO.getBaseFields(), "name");
+        if (newName != null && !newName.equals(oldName)) {
+            entityLifecycleEventPublisher.publishEntityNameChangedEvent(
+                    entityUpdateReqVO.getId(), oldName, newName,
                     model.getBusinessTypeCode(), model.getCode(), db.getTenantId());
         }
     }

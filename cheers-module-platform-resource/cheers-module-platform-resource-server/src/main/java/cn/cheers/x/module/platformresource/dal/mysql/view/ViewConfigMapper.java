@@ -10,10 +10,11 @@ import java.util.List;
 @Mapper
 public interface ViewConfigMapper extends BaseMapperX<ViewConfigDO> {
 
-    default List<ViewConfigDO> selectList(String viewType, Boolean isTemplate, Boolean onlyEnabled) {
+    default List<ViewConfigDO> selectList(String viewType, Boolean isTemplate, Long categoryId, Boolean onlyEnabled) {
         LambdaQueryWrapperX<ViewConfigDO> wrapper = new LambdaQueryWrapperX<ViewConfigDO>()
                 .eqIfPresent(ViewConfigDO::getViewType, viewType)
-                .eqIfPresent(ViewConfigDO::getIsTemplate, isTemplate);
+                .eqIfPresent(ViewConfigDO::getIsTemplate, isTemplate)
+                .eqIfPresent(ViewConfigDO::getCategoryId, categoryId);
         if (!Boolean.FALSE.equals(onlyEnabled)) {
             wrapper.eq(ViewConfigDO::getStatus, 1);
         }

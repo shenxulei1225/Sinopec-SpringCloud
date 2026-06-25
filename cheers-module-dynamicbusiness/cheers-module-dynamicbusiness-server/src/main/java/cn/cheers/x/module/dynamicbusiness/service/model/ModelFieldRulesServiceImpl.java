@@ -6,9 +6,11 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
+import cn.cheers.x.module.dynamicbusiness.service.capability.BusinessCapabilityService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import jakarta.annotation.Resource;
@@ -31,7 +33,12 @@ public class ModelFieldRulesServiceImpl implements ModelFieldRulesService {
     @Resource
     private ModelMapper modelMapper;
 
+    @Resource
+    @Lazy
+    private BusinessCapabilityService businessCapabilityService;
+
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateFieldRules(Long modelId, Long fieldId, FieldRulesUpdateReqVO reqVO) {
         // 校验模型存在
         ModelDO model = modelMapper.selectById(modelId);
@@ -63,6 +70,7 @@ public class ModelFieldRulesServiceImpl implements ModelFieldRulesService {
         }
 
         modelFieldAssignmentMapper.updateById(assignment);
+        businessCapabilityService.refreshModelCrudFormDefinition(modelId);
     }
 
     @Override

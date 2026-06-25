@@ -14,6 +14,8 @@ public class ViewConfigRespVO {
     private String viewCode;
     private String name;
     private String description;
+    /** 视图分类节点 id（categoryTypeCode=view） */
+    private Long categoryId;
     /** 模板完整配置（slots + relations），反序列化为 Map */
     private Map<String, Object> configJson;
     /** 实例差量配置，反序列化为 Map */

@@ -47,7 +47,7 @@ public class ViewConfigServiceImpl implements ViewConfigService {
     public List<ViewConfigRespVO> getViewConfigList(ViewConfigListReqVO reqVO) {
         Boolean onlyEnabled = reqVO.getOnlyEnabled() != null ? reqVO.getOnlyEnabled() : Boolean.TRUE;
         return viewConfigMapper
-                .selectList(reqVO.getViewType(), reqVO.getIsTemplate(), onlyEnabled)
+                .selectList(reqVO.getViewType(), reqVO.getIsTemplate(), reqVO.getCategoryId(), onlyEnabled)
                 .stream()
                 .map(this::convertToRespVO)
                 .collect(Collectors.toList());
@@ -65,6 +65,7 @@ public class ViewConfigServiceImpl implements ViewConfigService {
         row.setViewCode(StrUtil.blankToDefault(reqVO.getViewCode(), null));
         row.setName(reqVO.getName());
         row.setDescription(reqVO.getDescription());
+        row.setCategoryId(reqVO.getCategoryId());
         row.setConfigJson(toJson(reqVO.getConfigJson()));
         row.setConfigOverride(null);
         row.setStatus(reqVO.getStatus() != null ? reqVO.getStatus() : 1);
@@ -178,6 +179,7 @@ public class ViewConfigServiceImpl implements ViewConfigService {
         vo.setViewCode(row.getViewCode());
         vo.setName(row.getName());
         vo.setDescription(row.getDescription());
+        vo.setCategoryId(row.getCategoryId());
         vo.setConfigJson(parseJsonMap(row.getConfigJson()));
         vo.setConfigOverride(parseJsonMap(row.getConfigOverride()));
         vo.setResolvedConfig(resolveConfig(row));
@@ -206,13 +208,18 @@ public class ViewConfigServiceImpl implements ViewConfigService {
         if (reqVO.getName() != null) row.setName(reqVO.getName());
         if (reqVO.getDescription() != null) row.setDescription(reqVO.getDescription());
         if (reqVO.getViewCode() != null) row.setViewCode(StrUtil.blankToDefault(reqVO.getViewCode(), null));
+        if (reqVO.getCategoryId() != null || Boolean.TRUE.equals(reqVO.getClearCategoryId())) {
+            row.setCategoryId(Boolean.TRUE.equals(reqVO.getClearCategoryId()) ? null : reqVO.getCategoryId());
+        }
         if (reqVO.getStatus() != null) row.setStatus(reqVO.getStatus());
         if (reqVO.getSort() != null) row.setSort(reqVO.getSort());
     }
 
     private boolean hasMetadataPatch(ViewConfigSaveReqVO reqVO) {
         return reqVO.getName() != null || reqVO.getDescription() != null
-                || reqVO.getViewCode() != null || reqVO.getStatus() != null || reqVO.getSort() != null;
+                || reqVO.getViewCode() != null || reqVO.getCategoryId() != null
+                || Boolean.TRUE.equals(reqVO.getClearCategoryId())
+                || reqVO.getStatus() != null || reqVO.getSort() != null;
     }
 
     private Map<String, Object> parseJsonMap(String json) {

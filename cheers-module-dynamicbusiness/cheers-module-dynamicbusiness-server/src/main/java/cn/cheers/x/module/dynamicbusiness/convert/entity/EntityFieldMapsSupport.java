@@ -1,0 +1,187 @@
+package cn.cheers.x.module.dynamicbusiness.convert.entity;
+
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
+import cn.iocoder.yudao.framework.common.exception.ServiceException;
+
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * 实体 Write/Read 与 DO 之间的 baseFields / customFields 分桶转换。
+ *
+ * <p>固定列（含 businessTypeCode、modelId、name、status、parentId）在 API 层进入 {@code baseFields}；
+ * DO 表列存核心固定列，其余 base 扩展键暂合并进 customFields JSONB 持久化。</p>
+ */
+public final class EntityFieldMapsSupport {
+
+    private static final Set<String> CORE_BASE_KEYS = Set.of(
+            "businesstypecode", "business_type_code",
+            "modelid", "model_id",
+            "name", "status", "parentid", "parent_id");
+
+    private EntityFieldMapsSupport() {
+    }
+
+    public static Map<String, Object> normalizeMap(Map<String, Object> source) {
+        return source == null ? new LinkedHashMap<>() : new LinkedHashMap<>(source);
+    }
+
+    public static boolean isCoreBaseFieldKey(String fieldCode) {
+        if (fieldCode == null || fieldCode.isBlank()) {
+            return false;
+        }
+        return CORE_BASE_KEYS.contains(fieldCode.trim().toLowerCase());
+    }
+
+    public static String getBusinessTypeCode(Map<String, Object> baseFields) {
+        return asString(firstPresent(baseFields, "businessTypeCode", "business_type_code"));
+    }
+
+    public static Long getModelId(Map<String, Object> baseFields) {
+        return asLong(firstPresent(baseFields, "modelId", "model_id"));
+    }
+
+    public static Long getRequiredModelId(Map<String, Object> baseFields) {
+        Long modelId = getModelId(baseFields);
+        if (modelId == null) {
+            throw new ServiceException(400, "baseFields.modelId 不能为空");
+        }
+        return modelId;
+    }
+
+    public static String getRequiredBusinessTypeCode(Map<String, Object> baseFields) {
+        String code = getBusinessTypeCode(baseFields);
+        if (code == null || code.isBlank()) {
+            throw new ServiceException(400, "baseFields.businessTypeCode 不能为空");
+        }
+        return code.trim();
+    }
+
+    /**
+     * Write Req → DO：核心列落表，非核心 base 键并入 customFields。
+     */
+    public static void applyWriteMapsToEntityDO(EntityDO entity, Map<String, Object> baseFields, Map<String, Object> customFields) {
+        Map<String, Object> base = normalizeMap(baseFields);
+        Map<String, Object> custom = normalizeMap(customFields);
+
+        entity.setBusinessTypeCode(getBusinessTypeCode(base));
+        entity.setModelId(getModelId(base));
+        entity.setName(asString(firstPresent(base, "name")));
+        entity.setStatus(asInteger(firstPresent(base, "status")));
+        entity.setParentId(asLong(firstPresent(base, "parentId", "parent_id")));
+
+        Map<String, Object> mergedCustom = new LinkedHashMap<>(custom);
+        for (Map.Entry<String, Object> entry : base.entrySet()) {
+            if (!isCoreBaseFieldKey(entry.getKey())) {
+                mergedCustom.put(entry.getKey(), entry.getValue());
+            }
+        }
+        entity.setCustomFields(mergedCustom.isEmpty() ? null : mergedCustom);
+    }
+
+    /**
+     * DO → Read Resp：核心列组装 baseFields；customFields 原样（含扩展 base 键，decode 时由 form defs 分桶）。
+     */
+    public static Map<String, Object> buildBaseFieldsFromEntityDO(EntityDO entity) {
+        Map<String, Object> base = new LinkedHashMap<>();
+        if (entity == null) {
+            return base;
+        }
+        putIfNotNull(base, "businessTypeCode", entity.getBusinessTypeCode());
+        putIfNotNull(base, "modelId", entity.getModelId());
+        putIfNotNull(base, "name", entity.getName());
+        putIfNotNull(base, "status", entity.getStatus());
+        putIfNotNull(base, "parentId", entity.getParentId());
+        return base;
+    }
+
+    private static Object firstPresent(Map<String, Object> map, String... keys) {
+        if (map == null || map.isEmpty()) {
+            return null;
+        }
+        for (String key : keys) {
+            if (map.containsKey(key)) {
+                return map.get(key);
+            }
+        }
+        return null;
+    }
+
+    private static void putIfNotNull(Map<String, Object> target, String key, Object value) {
+        if (value != null) {
+            target.put(key, value);
+        }
+    }
+
+    private static String asString(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String text = String.valueOf(value).trim();
+        return text.isEmpty() ? null : text;
+    }
+
+    private static Long asLong(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        try {
+            return Long.parseLong(String.valueOf(value).trim());
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private static Long asLong(Object primary, Object secondary) {
+        Long value = asLong(primary);
+        return value != null ? value : asLong(secondary);
+    }
+
+    private static Integer asInteger(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        try {
+            return Integer.parseInt(String.valueOf(value).trim());
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    /** 供校验/日志提取变更字段编码。 */
+    public static Set<String> extractFieldCodes(Map<String, Object> baseFields, Map<String, Object> customFields) {
+        Set<String> codes = new LinkedHashSet<>();
+        codes.addAll(normalizeMap(baseFields).keySet());
+        codes.addAll(normalizeMap(customFields).keySet());
+        return codes;
+    }
+
+    public static String asStringFromMap(Map<String, Object> map, String key) {
+        if (map == null || key == null) {
+            return null;
+        }
+        return asString(map.get(key));
+    }
+
+    public static Long asLongFromMap(Map<String, Object> map, String key) {
+        if (map == null || key == null) {
+            return null;
+        }
+        return asLong(map.get(key));
+    }
+
+    public static Integer asIntegerFromMap(Map<String, Object> map, String key) {
+        if (map == null || key == null) {
+            return null;
+        }
+        return asInteger(map.get(key));
+    }
+}

@@ -70,4 +70,14 @@ public interface BusinessCapabilityService {
      * 按模型触发重建（先解析模型所属 businessTypeCode，再重建该业务类型）。
      */
     void rebuildByModelId(Long modelId);
+
+    /**
+     * 模型字段分配或规则变更后，重建该模型的 CRUD 表单定义（写路径触发）。
+     */
+    void refreshModelCrudFormDefinition(Long modelId);
+
+    /**
+     * 业务类型基础字段变更后，重建该业务类型能力（全集、投影、全部模型 CRUD 表单）。
+     */
+    void refreshAfterBusinessTypeFieldDefinitionChanged(String businessTypeCode);
 }

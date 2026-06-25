@@ -24,10 +24,12 @@ public final class CapabilityBlockProjectionBuilder {
     private static final String ENTITY_SCENE_DEFAULT = "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE";
     /** 实体层级树首屏 scene（非 ROOT_ENTITY_SUBTREE；子树由 Tree 运行时动作调用） */
     private static final String ENTITY_TREE_SCENE = "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE";
-    private static final String ENTITY_DETAIL_URL = "/dynamicbusiness/business/entities/get-by-id";
+    private static final String ENTITY_DETAIL_URL = "/dynamicbusiness/business/entities/detail";
     private static final String ENTITY_CREATE_URL = "/dynamicbusiness/business/entities/create";
     private static final String ENTITY_UPDATE_URL = "/dynamicbusiness/business/entities/update";
     private static final String ENTITY_DELETE_URL = "/dynamicbusiness/business/entities/delete";
+    private static final String ENTITY_CHECK_FIELD_UNIQUE_URL =
+            "/dynamicbusiness/business/entities/check-field-unique";
 
     private CapabilityBlockProjectionBuilder() {
     }
@@ -185,7 +187,7 @@ public final class CapabilityBlockProjectionBuilder {
         }
         appendPagination(projection);
         appendCrudBlocks(projection);
-        projection.put("asyncChecks", List.of());
+        appendEntityAsyncChecks(projection);
         projection.put("externalInputs", List.of(
                 externalInput("category", "categoryIds", "readBody", true),
                 externalInput("modelIds", "modelIds", "readBody", true)));
@@ -204,7 +206,7 @@ public final class CapabilityBlockProjectionBuilder {
         appendSearch(projection, searchableFieldKeys);
         appendFilter(projection, filterFields);
         appendCrudBlocks(projection);
-        projection.put("asyncChecks", List.of());
+        appendEntityAsyncChecks(projection);
         projection.put("externalInputs", List.of(
                 externalInput("rootId", "rootEntityId", "readQuery", true)));
     }
@@ -432,8 +434,10 @@ public final class CapabilityBlockProjectionBuilder {
             item.put("fieldKey", fieldCode);
             item.put("id", source.getOrDefault("id", fieldCode));
             item.put("label", source.get("label"));
-            item.put("control", source.getOrDefault("control", "input"));
-            item.put("fieldType", source.getOrDefault("control", "input"));
+            Object renderAsRaw = source.getOrDefault("renderAs", source.get("control"));
+            String renderAs = String.valueOf(renderAsRaw != null ? renderAsRaw : "input");
+            item.put("renderAs", renderAs);
+            item.put("fieldType", renderAs);
             item.put("sortOrder", source.getOrDefault("sortOrder", 0));
             item.put("bindTo", source.getOrDefault("bindTo", "field-filter"));
             item.put("operators", List.of("eq"));
@@ -467,6 +471,22 @@ public final class CapabilityBlockProjectionBuilder {
         projection.put("create", writeBlock(ENTITY_CREATE_URL, "POST"));
         projection.put("update", writeBlock(ENTITY_UPDATE_URL, "PUT"));
         projection.put("delete", writeBlock(ENTITY_DELETE_URL, "DELETE"));
+    }
+
+    /** 动态实体 CRUD 弹窗异步校验（与前端 AsyncFieldCheck 契约对齐）。 */
+    private static void appendEntityAsyncChecks(Map<String, Object> projection) {
+        List<Map<String, Object>> checks = new ArrayList<>(1);
+        Map<String, Object> nameUnique = new LinkedHashMap<>();
+        nameUnique.put("id", "check-entity-name-unique");
+        nameUnique.put("fieldKey", "name");
+        nameUnique.put("trigger", "blur");
+        nameUnique.put("appliesTo", List.of("create", "update"));
+        nameUnique.put("message", "名称已存在");
+        nameUnique.put("endpoint", Map.of(
+                "url", ENTITY_CHECK_FIELD_UNIQUE_URL,
+                "method", "GET"));
+        checks.add(nameUnique);
+        projection.put("asyncChecks", checks);
     }
 
     private static Map<String, Object> writeBlock(String url, String method) {

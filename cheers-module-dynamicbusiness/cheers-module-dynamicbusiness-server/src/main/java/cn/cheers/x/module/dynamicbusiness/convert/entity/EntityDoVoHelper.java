@@ -36,11 +36,8 @@ public final class EntityDoVoHelper {
         }
         EntityRespVO light = new EntityRespVO();
         light.setId(entity.getId());
-        light.setName(entity.getName());
-        light.setParentId(entity.getParentId());
-        light.setModelId(entity.getModelId());
-        light.setBusinessTypeCode(entity.getBusinessTypeCode());
         light.setSort(entity.getSort());
+        light.setBaseFields(EntityFieldMapsSupport.buildBaseFieldsFromEntityDO(entity));
         return light;
     }
 

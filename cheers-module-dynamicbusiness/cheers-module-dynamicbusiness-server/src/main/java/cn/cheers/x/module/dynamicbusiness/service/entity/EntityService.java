@@ -18,6 +18,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityScene
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.AssociationCategoryViewReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityDeleteReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityFieldAvailabilityRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.FieldFilterReqVO;
 
 import cn.cheers.x.module.dynamicbusiness.enums.entity.EntityQueryScene;
@@ -86,6 +87,16 @@ public interface EntityService {
      * @param forceDelete 是否强制删除（可为 null，默认 false）
      */
     void delete(EntityDeleteReqVO reqVO);
+
+    /**
+     * CRUD 弹窗字段异步校验：当前支持实体 name 在同 model 下唯一。
+     */
+    EntityFieldAvailabilityRespVO checkFieldUnique(
+            String businessTypeCode,
+            Long modelId,
+            String fieldKey,
+            String value,
+            Long excludeId);
 
 
     // ==================== 查询实体 操作 ====================

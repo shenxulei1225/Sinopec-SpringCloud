@@ -5,8 +5,11 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldAs
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
+import cn.cheers.x.module.dynamicbusiness.service.capability.BusinessCapabilityService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import jakarta.annotation.Resource;
@@ -38,7 +41,19 @@ public class ModelFieldGroupAssignmentServiceImpl implements ModelFieldGroupAssi
     @Resource
     private ModelFieldAssignmentService modelFieldAssignmentService;
 
+    @Resource
+    @Lazy
+    private BusinessCapabilityService businessCapabilityService;
+
+    private void notifyModelFieldDefinitionChanged(Long modelId) {
+        if (modelId == null) {
+            return;
+        }
+        businessCapabilityService.refreshModelCrudFormDefinition(modelId);
+    }
+
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void assignFieldToGroup(Long modelId, Long fieldId, Long groupId) {
         // 校验模型存在
         ModelDO model = modelMapper.selectById(modelId);
@@ -55,10 +70,11 @@ public class ModelFieldGroupAssignmentServiceImpl implements ModelFieldGroupAssi
 
         // 1) 更新 JSON 配置中的分组字段列表（基础字段也允许分组，即使没有 assignment 记录）
         modelFieldGroupService.assignFieldToGroup(modelId, fieldId, groupId);
-
+        notifyModelFieldDefinitionChanged(modelId);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void unassignFieldFromGroup(Long modelId, Long fieldId) {
         // 校验模型存在
         ModelDO model = modelMapper.selectById(modelId);
@@ -68,7 +84,7 @@ public class ModelFieldGroupAssignmentServiceImpl implements ModelFieldGroupAssi
 
         // 1) 从 JSON 配置中移除分组关联（基础字段也允许从分组移除，即使没有 assignment 记录）
         modelFieldGroupService.unassignFieldFromGroup(modelId, fieldId);
-
+        notifyModelFieldDefinitionChanged(modelId);
     }
 
     @Override
@@ -118,6 +134,7 @@ public class ModelFieldGroupAssignmentServiceImpl implements ModelFieldGroupAssi
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void reorderGroupFields(Long modelId, Long groupId, List<Long> orderedFieldIds) {
         // 校验模型存在
         ModelDO model = modelMapper.selectById(modelId);
@@ -137,5 +154,6 @@ public class ModelFieldGroupAssignmentServiceImpl implements ModelFieldGroupAssi
         // - 排序信息完全由 Model.fieldGroupsConfig 中的字段引用列表维护
         // - assignment 表中暂不维护 sort
         modelFieldGroupService.reorderFieldsInGroup(modelId, groupId, orderedFieldIds);
+        notifyModelFieldDefinitionChanged(modelId);
     }
 }
