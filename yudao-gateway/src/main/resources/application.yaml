@@ -236,6 +236,48 @@ spring:
                 - Path=/admin-api/platformresource/**
               filters:
                 - RewritePath=/admin-api/platformresource/v3/api-docs, /v3/api-docs
+            ## platformorchestration-server 排程入口（优先于 runtime 通配）
+            - id: platformorchestration-schedule-api
+              uri: grayLb://platformorchestration-server
+              predicates:
+                - Path=/admin-api/platform/runtime/schedule/**
+              filters:
+                - RewritePath=/admin-api/platform/runtime/schedule/v3/api-docs, /v3/api-docs
+            ## platformpolicy-server 服务
+            - id: platformpolicy-admin-api
+              uri: grayLb://platformpolicy-server
+              predicates:
+                - Path=/admin-api/platform/policy/**
+              filters:
+                - RewritePath=/admin-api/platform/policy/v3/api-docs, /v3/api-docs
+            ## platformcapability-server 服务
+            - id: platformcapability-admin-api
+              uri: grayLb://platformcapability-server
+              predicates:
+                - Path=/admin-api/platform/capability-packs/**,/admin-api/platform/registry/**
+              filters:
+                - RewritePath=/admin-api/platform/capability-packs/v3/api-docs, /v3/api-docs
+            ## platformruntime-server 服务
+            - id: platformruntime-admin-api
+              uri: grayLb://platformruntime-server
+              predicates:
+                - Path=/admin-api/platform/runtime/**
+              filters:
+                - RewritePath=/admin-api/platform/runtime/v3/api-docs, /v3/api-docs
+            ## platformtopology-server 服务
+            - id: platformtopology-admin-api
+              uri: grayLb://platformtopology-server
+              predicates:
+                - Path=/admin-api/platform/topology/**
+              filters:
+                - RewritePath=/admin-api/platform/topology/v3/api-docs, /v3/api-docs
+            ## platformrouting-server 服务
+            - id: platformrouting-admin-api
+              uri: grayLb://platformrouting-server
+              predicates:
+                - Path=/admin-api/platform/routing/**
+              filters:
+                - RewritePath=/admin-api/platform/routing/v3/api-docs, /v3/api-docs
             ## twin-server 服务
             - id: twin-admin-api # 路由的编号
               uri: grayLb://twin-server
@@ -317,6 +359,18 @@ knife4j:
       - name: platformresource-server
         service-name: platformresource-server
         url: /admin-api/platformresource/v3/api-docs
+      - name: platformruntime-server
+        service-name: platformruntime-server
+        url: /admin-api/platform/runtime/v3/api-docs
+      - name: platformorchestration-server
+        service-name: platformorchestration-server
+        url: /admin-api/platform/runtime/schedule/v3/api-docs
+      - name: platformpolicy-server
+        service-name: platformpolicy-server
+        url: /admin-api/platform/policy/v3/api-docs
+      - name: platformcapability-server
+        service-name: platformcapability-server
+        url: /admin-api/platform/capability-packs/v3/api-docs
       - name: twin-server
         service-name: twin-server
         url: /admin-api/twin/v3/api-docs

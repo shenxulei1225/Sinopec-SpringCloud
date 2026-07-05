@@ -128,7 +128,13 @@ get_service_path() {
         twin) echo "yudao-module-twin/yudao-module-twin-biz" ;;
         inspection) echo "yudao-module-inspection-task/yudao-module-inspection-task-server" ;;
         dynamic) echo "cheers-module-dynamicbusiness/cheers-module-dynamicbusiness-server" ;;
-        platform|resource) echo "cheers-module-platform-resource/cheers-module-platform-resource-server" ;;
+        platform|resource) echo "cheers-module-platform/cheers-module-platform-resource-server" ;;
+        platform-runtime|runtime-l4) echo "cheers-module-platform/cheers-module-platform-runtime-server" ;;
+        platform-orchestration|orchestration) echo "cheers-module-platform/cheers-module-platform-orchestration-server" ;;
+        platform-policy|policy) echo "cheers-module-platform/cheers-module-platform-policy-server" ;;
+        platform-capability|capability) echo "cheers-module-platform/cheers-module-platform-capability-server" ;;
+        platform-topology|topology) echo "cheers-module-platform/cheers-module-platform-topology-server" ;;
+        platform-routing|routing) echo "cheers-module-platform/cheers-module-platform-routing-server" ;;
         *) echo "" ;;
     esac
 }
@@ -159,9 +165,40 @@ get_service_port() {
         inspection) echo "58095" ;;
         dynamic) echo "58096" ;;
         platform|resource) echo "58098" ;;
+        platform-runtime|runtime-l4) echo "58099" ;;
+        platform-orchestration|orchestration) echo "58104" ;;
+        platform-policy|policy) echo "58105" ;;
+        platform-capability|capability) echo "58106" ;;
+        platform-topology|topology) echo "58107" ;;
+        platform-routing|routing) echo "58108" ;;
         *) echo "" ;;
     esac
 }
+
+# 服务列表（platform 三件套：resource 58098 → runtime 58099 → orchestration 58104）
+KNOWN_SERVICES=(
+    gateway system infra member bpm pay report mp product promotion trade statistics
+    crm erp ai iot alarm dynamic
+    platform platform-runtime platform-orchestration platform-policy platform-capability
+    facility scene twin inspection
+)
+CORE_START_SERVICES=(
+    infra system gateway bpm alarm dynamic
+    platform platform-runtime platform-orchestration platform-policy platform-capability
+    facility scene twin inspection
+)
+ALL_START_SERVICES=(
+    system infra gateway member bpm pay report mp product promotion trade statistics
+    crm erp ai iot alarm dynamic
+    platform platform-runtime platform-orchestration platform-policy platform-capability
+    facility scene twin inspection
+)
+STOP_SERVICES=(
+    gateway infra system member bpm pay report mp product promotion trade statistics
+    crm erp ai iot alarm dynamic
+    platform-orchestration platform-runtime platform-policy platform-capability platform
+    facility scene twin inspection
+)
 
 # 检查服务是否运行
 is_service_running() {
@@ -382,18 +419,18 @@ stop_service() {
 show_status() {
     echo -e "${BLUE}📊 服务状态:${NC}"
     echo ""
-    printf "%-15s %-10s %-10s %-20s %-40s\n" "服务名" "端口" "状态" "PID" "访问链接"
+    printf "%-22s %-10s %-10s %-20s %-40s\n" "服务名" "端口" "状态" "PID" "访问链接"
     echo "----------------------------------------------------------------------------------------------------"
 
-    for svc in gateway system infra member bpm pay report mp product promotion trade statistics crm erp ai iot alarm dynamic platform facility scene twin inspection; do
+    for svc in "${KNOWN_SERVICES[@]}"; do
         local port=$(get_service_port "$svc")
         if [ -n "$port" ]; then
             if is_service_running "$svc"; then
                 local pid=$(lsof -ti:$port 2>/dev/null | head -1)
                 local url="http://localhost:$port"
-                printf "%-15s %-10s ${GREEN}%-10s${NC} %-20s ${BLUE}%-40s${NC}\n" "$svc" "$port" "运行中" "$pid" "$url"
+                printf "%-22s %-10s ${GREEN}%-10s${NC} %-20s ${BLUE}%-40s${NC}\n" "$svc" "$port" "运行中" "$pid" "$url"
             else
-                printf "%-15s %-10s ${RED}%-10s${NC} %-20s %-40s\n" "$svc" "$port" "未运行" "-" "-"
+                printf "%-22s %-10s ${RED}%-10s${NC} %-20s %-40s\n" "$svc" "$port" "未运行" "-" "-"
             fi
         fi
     done
@@ -427,7 +464,7 @@ show_status() {
 
     # 显示运行中服务的 Swagger 链接
     local has_running_services=false
-    for svc in gateway system infra member bpm pay report mp product promotion trade statistics crm erp ai iot alarm dynamic platform facility scene twin inspection; do
+    for svc in "${KNOWN_SERVICES[@]}"; do
         if is_service_running "$svc"; then
             local port=$(get_service_port "$svc")
             if [ -n "$port" ]; then
@@ -449,13 +486,13 @@ show_status() {
 show_services() {
     echo -e "${BLUE}📋 可用微服务列表:${NC}"
     echo ""
-    printf "%-15s %-50s %-10s\n" "服务名" "模块路径" "端口"
+    printf "%-22s %-50s %-10s\n" "服务名" "模块路径" "端口"
     echo "----------------------------------------------------------------------------------------"
-    for svc in gateway system infra member bpm pay report mp product promotion trade statistics crm erp ai iot alarm dynamic platform facility scene twin inspection; do
+    for svc in "${KNOWN_SERVICES[@]}"; do
         local path=$(get_service_path "$svc")
         local port=$(get_service_port "$svc")
         if [ -n "$path" ]; then
-            printf "%-15s %-50s %-10s\n" "$svc" "$path" "$port"
+            printf "%-22s %-50s %-10s\n" "$svc" "$path" "$port"
         fi
     done
     echo ""
@@ -467,6 +504,7 @@ show_services() {
     echo "  ./start-microservices.sh all-services -f    # 启动所有服务包括业务服务（显示日志）"
     echo "  ./start-microservices.sh <服务名>            # 启动单个服务（后台运行）"
     echo "  ./start-microservices.sh <服务名> -f         # 启动单个服务（显示日志）"
+    echo "  ./start-microservices.sh platform-all           # 仅启动 platform 五件套（58098/58105/58106/58099/58104）"
     echo "  ./start-microservices.sh status             # 查看服务状态"
     echo "  ./start-microservices.sh logs               # 查看所有运行中服务的日志"
     echo "  ./start-microservices.sh logs <服务名>       # 实时查看指定服务的日志"
@@ -488,7 +526,10 @@ show_services() {
     echo "  4. bpm       - 工作流服务（必需）"
     echo "  5. alarm     - 告警管理服务（必需）"
     echo "  6. dynamic    - 动态业务服务（facility 等模块依赖）"
-    echo "  7. platform   - 平台资源库（组件/视图/页面，别名 resource，端口 58098）"
+    echo "  7. platform   - 平台资源库（组件/视图，别名 resource，58098）"
+    echo "  8. platform-runtime - 平台 L4 运行时（58099）"
+    echo "  9. platform-orchestration - 平台编排/排程 run（58104，依赖 runtime）"
+    echo "     （./start-microservices.sh all 已按 7→8→9 顺序启动上述三项）"
     echo ""
     echo -e "${BLUE}业务服务（按需启动）:${NC}"
     echo "  - member     - 会员服务"
@@ -512,10 +553,9 @@ start_all_core() {
     
     # 按顺序启动核心服务
     # 注意：infra 必须在 system 之前启动,因为 system 启动时会调用 infra 的日志服务
-    local services=("infra" "system" "gateway" "bpm" "alarm" "dynamic" "platform" "facility" "scene" "twin" "inspection")
     local failed_services=()
     
-    for svc in "${services[@]}"; do
+    for svc in "${CORE_START_SERVICES[@]}"; do
         if ! start_service "$svc" "$show_logs"; then
             failed_services+=("$svc")
         fi
@@ -553,10 +593,9 @@ start_all_services() {
     echo ""
     
     # 按顺序启动所有服务：先核心服务,再业务服务
-    local services=("system" "infra" "gateway" "member" "bpm" "pay" "report" "mp" "product" "promotion" "trade" "statistics" "crm" "erp" "ai" "iot" "alarm" "dynamic" "platform" "facility" "scene" "twin" "inspection")
     local failed_services=()
     
-    for svc in "${services[@]}"; do
+    for svc in "${ALL_START_SERVICES[@]}"; do
         if ! start_service "$svc" "$show_logs"; then
             failed_services+=("$svc")
         fi
@@ -592,7 +631,7 @@ show_logs() {
         echo ""
         
         local running_services=()
-        for svc in gateway system infra member bpm pay report mp product promotion trade statistics crm erp ai iot alarm dynamic platform facility scene twin inspection; do
+        for svc in "${KNOWN_SERVICES[@]}"; do
             if is_service_running "$svc"; then
                 running_services+=("$svc")
             fi
@@ -662,10 +701,9 @@ stop_all_services() {
     echo -e "${BLUE}🛑 停止所有服务...${NC}"
     echo ""
     
-    local services=("gateway" "infra" "system" "member" "bpm" "pay" "report" "mp" "product" "promotion" "trade" "statistics" "crm" "erp" "ai" "iot" "alarm" "dynamic" "platform" "facility" "scene" "twin" "inspection")
     local stopped_count=0
     
-    for svc in "${services[@]}"; do
+    for svc in "${STOP_SERVICES[@]}"; do
         if is_service_running "$svc"; then
             if stop_service "$svc"; then
                 stopped_count=$((stopped_count + 1))
@@ -701,6 +739,17 @@ main() {
             ;;
         "all-services")
             start_all_services "$show_logs"
+            ;;
+        "platform-all")
+            check_nacos
+            check_redis
+            echo ""
+            for svc in platform platform-policy platform-capability platform-runtime platform-orchestration; do
+                start_service "$svc" "$show_logs" || true
+                if [ "$show_logs" != "true" ]; then
+                    sleep 3
+                fi
+            done
             ;;
         "status")
             show_status

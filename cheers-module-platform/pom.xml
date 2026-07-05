@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>cn.iocoder.cloud</groupId>
+        <artifactId>yudao</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <modules>
+        <module>cheers-module-platform-contract-api</module>
+        <module>cheers-module-platform-runtime-api</module>
+        <module>cheers-module-platform-runtime-server</module>
+        <module>cheers-module-platform-scheduling-api</module>
+        <module>cheers-module-platform-scheduling-server</module>
+        <module>cheers-module-platform-orchestration-api</module>
+        <module>cheers-module-platform-orchestration-server</module>
+        <module>cheers-module-platform-resource-api</module>
+        <module>cheers-module-platform-resource-server</module>
+        <module>cheers-module-platform-policy-api</module>
+        <module>cheers-module-platform-policy-server</module>
+        <module>cheers-module-platform-capability-api</module>
+        <module>cheers-module-platform-capability-server</module>
+        <module>cheers-module-platform-topology-api</module>
+        <module>cheers-module-platform-topology-server</module>
+        <module>cheers-module-platform-routing-server</module>
+    </modules>
+    <artifactId>cheers-module-platform</artifactId>
+    <packaging>pom</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        平台能力父模块：标准契约、L4 运行时、L3 引擎（后续）、资源库等。
+    </description>
+
+</project>

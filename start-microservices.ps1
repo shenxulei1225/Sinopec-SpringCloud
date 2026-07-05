@@ -1,4 +1,4 @@
-﻿# ============================================================================
+# ============================================================================
 # ZHGL 微服务启动脚本 (Windows PowerShell 版本)
 # ============================================================================
 # 使用方法:
@@ -61,8 +61,8 @@ $ServiceConfig = @{
     "twin"       = @{ Path = "yudao-module-twin\yudao-module-twin-biz"; Port = 58094 }
     "inspection" = @{ Path = "yudao-module-inspection-task\yudao-module-inspection-task-server"; Port = 58095 }
     "dynamic"    = @{ Path = "cheers-module-dynamicbusiness\cheers-module-dynamicbusiness-server"; Port = 58096 }
-    "platform"   = @{ Path = "cheers-module-platform-resource\cheers-module-platform-resource-server"; Port = 58098 }
-    "resource"   = @{ Path = "cheers-module-platform-resource\cheers-module-platform-resource-server"; Port = 58098 }  # platform 别名
+    "platform"   = @{ Path = "cheers-module-platform\cheers-module-platform-resource-server"; Port = 58098 }
+    "resource"   = @{ Path = "cheers-module-platform\cheers-module-platform-resource-server"; Port = 58098 }  # platform 别名
 }
 
 
