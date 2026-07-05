@@ -1,16 +1,12 @@
 -- ============================================================================
--- L0 / Flyway V1: 只建表（纯 DDL，可直接 psql -f）
--- Generated: 2026-07-05 (normalized by scripts/normalize-v1-schema.py)
+-- 系统共用 · 01 建表（dynamicbusiness 全表 DDL）
+-- Generated: 2026-07-05 by scripts/export-platform-import.py
 --
--- L0 职责: CREATE SCHEMA / SEQUENCE / TABLE / INDEX — 空表结构，无业务含义
--- L0 不含: INSERT、函数、ALTER TABLE 补丁、运行时 f_f_* 物理列
---
--- 下一步 L1（基础业务 seed）见 V2 / platform-import/system/01_field_library.sql：
---   业务类型、类型配置、基础字段、字段库等业务定义，不在本文件。
--- 再后 L2 模型库、L3 分类、L4 实体实例见 platform-import/ 各产品包。
+-- 约定：不写 surrogate id；幂等键为 code / field_code / page_code。
+-- 与 Flyway V1__init_dynamicbusiness_schema.sql 同源
+-- 新平台第一步：先执行本文件
 -- ============================================================================
 
-CREATE SCHEMA IF NOT EXISTS dynamicbusiness;
 SET search_path TO dynamicbusiness;
 
 -- SEQUENCES
