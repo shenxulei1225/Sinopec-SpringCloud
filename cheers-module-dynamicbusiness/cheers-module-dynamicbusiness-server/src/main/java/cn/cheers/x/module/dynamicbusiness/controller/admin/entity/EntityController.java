@@ -116,7 +116,7 @@ public class EntityController {
         return success(true);
     }
 
-    @GetMapping("/get-by-id")
+    @GetMapping({"/detail", "/get-by-id"})
     @Operation(
         summary = "获取实体详情",
         description = """
@@ -164,6 +164,29 @@ public class EntityController {
     public CommonResult<Boolean> exists(@RequestParam("id") Long id,
                                         @RequestParam("businessTypeCode") String businessTypeCode) {
         return success(entityService.get(id, businessTypeCode) != null);
+    }
+
+    @GetMapping("/check-field-unique")
+    @Operation(
+        summary = "校验实体字段值是否可用",
+        description = """
+            CRUD 弹窗异步校验。当前支持 fieldKey=name：同 businessTypeCode + modelId 下名称唯一。
+            excludeId 用于编辑时排除自身。
+            """
+    )
+    @Parameter(name = "businessTypeCode", required = true, example = "equipment")
+    @Parameter(name = "modelId", required = true, example = "157")
+    @Parameter(name = "fieldKey", required = true, example = "name")
+    @Parameter(name = "value", required = true, example = "测试设备")
+    @Parameter(name = "excludeId", description = "编辑时排除的实体 id")
+    @PreAuthorize("@ss.hasPermission('system:entity:query')")
+    public CommonResult<EntityFieldAvailabilityRespVO> checkFieldUnique(
+            @RequestParam("businessTypeCode") String businessTypeCode,
+            @RequestParam("modelId") Long modelId,
+            @RequestParam("fieldKey") String fieldKey,
+            @RequestParam("value") String value,
+            @RequestParam(value = "excludeId", required = false) Long excludeId) {
+        return success(entityService.checkFieldUnique(businessTypeCode, modelId, fieldKey, value, excludeId));
     }
 
     @GetMapping("/page-by-filters")

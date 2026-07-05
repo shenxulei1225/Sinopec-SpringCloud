@@ -19,6 +19,8 @@ public class ViewConfigCreateTemplateReqVO {
 
     private String description;
 
+    private Long categoryId;
+
     @NotNull(message = "configJson 不能为空")
     private Map<String, Object> configJson;
 

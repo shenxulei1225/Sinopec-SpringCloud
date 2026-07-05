@@ -16,6 +16,9 @@ public class ViewConfigSaveReqVO {
     private String name;
     private String description;
     private String viewCode;
+    private Long categoryId;
+    /** 为 true 时清空 categoryId（与 categoryId 互斥使用） */
+    private Boolean clearCategoryId;
     private Integer status;
     private Integer sort;
 }

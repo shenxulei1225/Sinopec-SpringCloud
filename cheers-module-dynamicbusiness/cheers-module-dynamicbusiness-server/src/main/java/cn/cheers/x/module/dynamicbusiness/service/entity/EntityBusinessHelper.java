@@ -6,6 +6,7 @@ import cn.iocoder.yudao.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityConvert;
+import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityFieldMapsSupport;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
@@ -49,8 +50,18 @@ public class EntityBusinessHelper {
         }
     }
 
-    public void validateBaseFields(String businessTypeCode, Map<String, Object> customFields) {
-        // TODO: 与 BaseFieldValidationService 对齐后在此实现固定列校验
+    public void validateBaseFields(String businessTypeCode, Map<String, Object> baseFields) {
+        EntityFieldMapsSupport.getRequiredBusinessTypeCode(baseFields);
+        Map<String, Object> base = EntityFieldMapsSupport.normalizeMap(baseFields);
+        Object entityName = base.get("name");
+        if (entityName == null || String.valueOf(entityName).isBlank()) {
+            throw new ServiceException(400, "baseFields.name 不能为空");
+        }
+        if (base.get("status") == null) {
+            throw new ServiceException(400, "baseFields.status 不能为空");
+        }
+        EntityFieldMapsSupport.getRequiredModelId(baseFields);
+        // TODO: 与 BaseFieldValidationService 对齐后在此实现业务基础列校验
     }
 
     public void validateEntityReferences(EntityDO entity, ModelDO model,
@@ -59,35 +70,51 @@ public class EntityBusinessHelper {
     }
 
     public EntityDO prepareCreateEntity(EntityCreateReqVO reqVO) {
-        ModelDO model = validateModelExists(reqVO.getModelId());
-        validateModelBusinessType(reqVO.getModelId(), reqVO.getBusinessTypeCode());
-        validateCustomFields(reqVO.getModelId(), reqVO.getCustomFields());
-        validateBaseFields(reqVO.getBusinessTypeCode(), reqVO.getCustomFields());
+        Map<String, Object> baseFields = EntityFieldMapsSupport.normalizeMap(reqVO.getBaseFields());
+        Long modelId = EntityFieldMapsSupport.getRequiredModelId(baseFields);
+        String businessTypeCode = EntityFieldMapsSupport.getRequiredBusinessTypeCode(baseFields);
+
+        ModelDO model = validateModelExists(modelId);
+        validateModelBusinessType(modelId, businessTypeCode);
+        validateBaseFields(businessTypeCode, baseFields);
+        validateCustomFields(modelId, reqVO.getCustomFields());
 
         EntityDO data = EntityConvert.INSTANCE.convert(reqVO);
         data.setTenantId(getTenantId());
 
-        validateEntityReferences(data, model, reqVO.getCustomFields(), reqVO.getBusinessTypeCode());
+        validateEntityReferences(data, model, data.getCustomFields(), businessTypeCode);
 
         if (data.getCustomFields() != null) {
             data.setCustomFields(customFieldValidationService.normalizeAndEncryptCustomFields(
-                    data.getCustomFields(), reqVO.getModelId()));
+                    data.getCustomFields(), modelId));
         }
 
         return data;
     }
 
     public EntityDO prepareUpdateEntity(EntityUpdateReqVO reqVO, EntityDO dbEntity) {
-        Long modelId = reqVO.getModelId() != null ? reqVO.getModelId() : dbEntity.getModelId();
-        ModelDO model = validateModelExists(modelId);
-        validateModelBusinessType(modelId, reqVO.getBusinessTypeCode());
-        validateCustomFields(modelId, reqVO.getCustomFields());
-        validateBaseFields(reqVO.getBusinessTypeCode(), reqVO.getCustomFields());
+        Map<String, Object> baseFields = EntityFieldMapsSupport.normalizeMap(reqVO.getBaseFields());
+        Long modelId = EntityFieldMapsSupport.getModelId(baseFields);
+        if (modelId == null) {
+            modelId = dbEntity.getModelId();
+            baseFields.put("modelId", modelId);
+        }
+        String businessTypeCode = EntityFieldMapsSupport.getBusinessTypeCode(baseFields);
+        if (businessTypeCode == null || businessTypeCode.isBlank()) {
+            businessTypeCode = dbEntity.getBusinessTypeCode();
+            baseFields.put("businessTypeCode", businessTypeCode);
+        }
 
+        ModelDO model = validateModelExists(modelId);
+        validateModelBusinessType(modelId, businessTypeCode);
+        validateBaseFields(businessTypeCode, baseFields);
+        validateCustomFields(modelId, reqVO.getCustomFields());
+
+        reqVO.setBaseFields(baseFields);
         EntityDO update = EntityConvert.INSTANCE.convert(reqVO);
         update.setTenantId(dbEntity.getTenantId());
 
-        validateEntityReferences(update, model, reqVO.getCustomFields(), reqVO.getBusinessTypeCode());
+        validateEntityReferences(update, model, update.getCustomFields(), businessTypeCode);
 
         if (update.getCustomFields() != null) {
             update.setCustomFields(customFieldValidationService.normalizeAndEncryptCustomFields(
@@ -117,8 +144,8 @@ public class EntityBusinessHelper {
         return customFields != null ? customFields : Collections.emptyMap();
     }
 
-    public List<String> extractFieldCodes(Map<String, Object> customFields) {
-        return new ArrayList<>(emptyIfNull(customFields).keySet());
+    public List<String> extractFieldCodes(Map<String, Object> baseFields, Map<String, Object> customFields) {
+        return new ArrayList<>(EntityFieldMapsSupport.extractFieldCodes(baseFields, customFields));
     }
 
     public Long getTenantId() {

@@ -26,6 +26,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
 
@@ -279,14 +280,22 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
     private void resolveMetadata(ModelFieldAssignmentDO assignment, EntityRefFieldInfo info) {
         if (assignment.getRefLibraryId() != null) {
             RelationFieldLibraryDO lib = relationFieldLibraryMapper.selectById(assignment.getRefLibraryId());
-            if (lib != null) {
-                info.setRefBusinessType(lib.getRefBusinessType());
+            if (lib != null && StringUtils.hasText(lib.getRefBusinessType())) {
+                info.setRefBusinessType(lib.getRefBusinessType().trim());
             }
         } else if (assignment.getModelRelationId() != null) {
             ModelRelationDO rel = modelRelationMapper.selectById(assignment.getModelRelationId());
             if (rel != null) {
                 info.setTargetModelCode(rel.getTargetModelCode());
+                if (StringUtils.hasText(rel.getTargetModelCode())) {
+                    ModelDO targetModel = modelMapper.selectByCode(rel.getTargetModelCode().trim());
+                    if (targetModel != null && StringUtils.hasText(targetModel.getBusinessTypeCode())) {
+                        info.setRefBusinessType(targetModel.getBusinessTypeCode().trim());
+                    }
+                }
             }
+        } else if (StringUtils.hasText(assignment.getTargetBusinessType())) {
+            info.setRefBusinessType(assignment.getTargetBusinessType().trim());
         }
     }
 
@@ -302,7 +311,7 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
                                 boolean isMultiRef) {
         Long targetEntityId = targetRef.getId();
         String targetModelCode = fieldInfo.getTargetModelCode();
-        String refBusinessTypeCode = targetRef.getBizCode();
+        String refBusinessTypeCode = targetRef.getBusinessTypeCode();
 
         if ((refBusinessTypeCode == null || refBusinessTypeCode.isBlank()) && fieldInfo.getRefBusinessType() != null) {
             refBusinessTypeCode = fieldInfo.getRefBusinessType();
@@ -320,7 +329,9 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
             throw new ServiceException(400, "ASSOC_PARAM_INVALID: 关联参数缺失");
         }
         if (!businessTypeRelationService.existsRelation(model.getBusinessTypeCode(), refBusinessTypeCode)) {
-            throw new ServiceException(400, "ASSOC_GATE_DENIED: 当前业务不允许关联目标业务");
+            throw new ServiceException(400, String.format(
+                    "ASSOC_GATE_DENIED: 当前业务 %s 不允许关联目标业务 %s，请在「业务类型关联」中配置",
+                    model.getBusinessTypeCode(), refBusinessTypeCode));
         }
 
         // 2) 去重校验：同 source + fieldCode + target 的有效关联不重复写入
@@ -359,18 +370,32 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
         if (value == null) return null;
         if (value instanceof Map<?, ?> map) {
             Object idObj = map.get("id");
-            Object bizObj = map.get("bizCode");
+            Object typeObj = firstNonBlankMapValue(map, "businessTypeCode", "bizCode");
             Long id = parseLong(idObj);
-            String bizCode = bizObj == null ? null : String.valueOf(bizObj);
-            if (id == null || bizCode == null || bizCode.isBlank()) {
-                throw new ServiceException(400, "ASSOC_PARAM_INVALID: Ref 必须包含 bizCode 与 id");
+            String businessTypeCode = typeObj == null ? null : String.valueOf(typeObj).trim();
+            if (id == null || businessTypeCode == null || businessTypeCode.isBlank()) {
+                throw new ServiceException(400, "ASSOC_PARAM_INVALID: Ref 必须包含 businessTypeCode 与 id");
             }
             EntityRefValue ref = new EntityRefValue();
             ref.setId(id);
-            ref.setBizCode(bizCode);
+            ref.setBusinessTypeCode(businessTypeCode);
             return ref;
         }
-        throw new ServiceException(400, "ASSOC_PARAM_INVALID: Ref 字段格式错误，必须为 {bizCode,id}");
+        throw new ServiceException(400, "ASSOC_PARAM_INVALID: Ref 字段格式错误，必须为 {businessTypeCode,id}");
+    }
+
+    private Object firstNonBlankMapValue(Map<?, ?> map, String... keys) {
+        for (String key : keys) {
+            Object value = map.get(key);
+            if (value == null) {
+                continue;
+            }
+            if (value instanceof String text && text.isBlank()) {
+                continue;
+            }
+            return value;
+        }
+        return null;
     }
 
     private Long parseLong(Object value) {
@@ -415,16 +440,18 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
             }
             return refs;
         }
-        throw new ServiceException(400, "ASSOC_PARAM_INVALID: RefMulti 字段格式错误，必须为 [{bizCode,id},...]");
+        throw new ServiceException(400, "ASSOC_PARAM_INVALID: RefMulti 字段格式错误，必须为 [{businessTypeCode,id},...]");
     }
 
     private boolean validateTargetEntityExists(EntityRefValue ref, EntityRefFieldInfo fieldInfo) {
-        if (ref == null || ref.getId() == null || ref.getBizCode() == null || ref.getBizCode().isBlank()) return false;
+        if (ref == null || ref.getId() == null || ref.getBusinessTypeCode() == null || ref.getBusinessTypeCode().isBlank()) {
+            return false;
+        }
         if (fieldInfo.getRefBusinessType() != null && !fieldInfo.getRefBusinessType().isBlank()
-                && !fieldInfo.getRefBusinessType().equals(ref.getBizCode())) {
+                && !fieldInfo.getRefBusinessType().equals(ref.getBusinessTypeCode())) {
             throw new ServiceException(400, "ASSOC_PARAM_INVALID: 关联业务类型与字段配置不一致");
         }
-        return entityCoreService.existsById(ref.getId(), ref.getBizCode());
+        return entityCoreService.existsById(ref.getId(), ref.getBusinessTypeCode());
     }
 
     private List<EntityRefValue> validateTargetEntitiesExist(List<EntityRefValue> refs, EntityRefFieldInfo fieldInfo) {
@@ -441,6 +468,6 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
     @lombok.Data
     private static class EntityRefValue {
         private Long id;
-        private String bizCode;
+        private String businessTypeCode;
     }
 }

@@ -12,30 +12,44 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.capability.ModelCrudFor
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelRelationDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.relation.RelationFieldLibraryDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.capability.BusinessCapabilityMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.capability.CapabilityComponentProjectionMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.capability.ModelCrudFormDefinitionMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelRelationMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.relation.RelationFieldLibraryMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeBaseFieldDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeBaseFieldMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeMapper;
+import cn.cheers.x.module.dynamicbusiness.enums.businesstype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.service.businesstype.BusinessTypeService;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldGroupRespVO;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelFieldGroupService;
+import cn.cheers.x.module.dynamicbusiness.service.capability.form.ModelCrudFormFieldAssembler;
 import cn.cheers.x.module.dynamicbusiness.service.capability.projection.CapabilityBlockProjectionBuilder;
 import cn.cheers.x.module.dynamicbusiness.service.capability.system.SystemCapabilityCatalog;
 import cn.cheers.x.module.dynamicbusiness.service.capability.system.SystemCapabilityDefinition;
 import cn.cheers.x.module.dynamicbusiness.service.capability.system.SystemCapabilityProjectionBuilder;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -74,6 +88,10 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     @Resource
     private ModelMapper modelMapper;
     @Resource
+    private ModelRelationMapper modelRelationMapper;
+    @Resource
+    private RelationFieldLibraryMapper relationFieldLibraryMapper;
+    @Resource
     private ModelFieldAssignmentMapper modelFieldAssignmentMapper;
     @Resource
     private FieldMapper fieldMapper;
@@ -83,6 +101,8 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     private ModelFieldGroupService modelFieldGroupService;
     @Resource
     private BusinessTypeBaseFieldMapper businessTypeBaseFieldMapper;
+    @Resource
+    private BusinessTypeMapper businessTypeMapper;
     @Resource
     private ObjectMapper objectMapper;
 
@@ -162,6 +182,11 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                     code, comp, kind);
             triggerRebuild(code);
             data = capabilityComponentProjectionMapper.selectByBusinessTypeComponentAndDataKind(code, comp, kind);
+        } else if (isBrokenDynamicTreeProjection(data.getComponentInterface(), comp, kind)) {
+            log.info("[getProjection][动态树读 URL 异常，触发重建][businessTypeCode={}][componentCode={}][dataKind={}]",
+                    code, comp, kind);
+            triggerRebuild(code);
+            data = capabilityComponentProjectionMapper.selectByBusinessTypeComponentAndDataKind(code, comp, kind);
         }
         if (data == null) {
             throw new ServiceException(404,
@@ -177,12 +202,19 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public ModelCrudFormDefinitionRespVO getModelCrudFormDefinition(String businessTypeCode, Long modelId) {
         String code = requireBusinessTypeCode(businessTypeCode);
         if (modelId == null) {
             throw new ServiceException(400, "modelId 不能为空");
         }
         ModelCrudFormDefinitionDO data = modelCrudFormDefinitionMapper.selectByBusinessTypeAndModel(code, modelId);
+        if (data == null) {
+            log.info("[getModelCrudFormDefinition][表单定义缺失，首次生成][businessTypeCode={}][modelId={}]",
+                    code, modelId);
+            refreshSingleModelCrudForm(code, modelId);
+            data = modelCrudFormDefinitionMapper.selectByBusinessTypeAndModel(code, modelId);
+        }
         if (data == null) {
             throw new ServiceException(404, "未找到模型 CRUD 表单定义，businessTypeCode=" + code + ", modelId=" + modelId);
         }
@@ -272,6 +304,25 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         rebuildByBusinessTypeCode(model.getBusinessTypeCode());
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void refreshModelCrudFormDefinition(Long modelId) {
+        if (modelId == null) {
+            throw new ServiceException(400, "modelId 不能为空");
+        }
+        ModelDO model = modelMapper.selectById(modelId);
+        if (model == null || !StringUtils.hasText(model.getBusinessTypeCode())) {
+            throw new ServiceException(404, "未找到模型或模型缺少 businessTypeCode，modelId=" + modelId);
+        }
+        refreshSingleModelCrudForm(model.getBusinessTypeCode().trim(), modelId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void refreshAfterBusinessTypeFieldDefinitionChanged(String businessTypeCode) {
+        rebuildByBusinessTypeCode(requireBusinessTypeCode(businessTypeCode));
+    }
+
     /**
      * 构建能力全集 JSON。
      */
@@ -354,6 +405,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             item.put("renderAs", "text");
             item.put("sortOrder", meta.get("sortOrder") != null ? meta.get("sortOrder") : order++);
             item.put("defaultVisible", true);
+            item.put("baseField", true);
             item.put("applicableViews", List.of(componentCode));
             displayFields.add(item);
         }
@@ -365,7 +417,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         statusFilter.put("id", "status");
         statusFilter.put("fieldKey", "status");
         statusFilter.put("label", "状态");
-        statusFilter.put("control", "select");
+        statusFilter.put("renderAs", "select");
         statusFilter.put("sortOrder", 0);
         statusFilter.put("bindTo", "field-filter");
         statusFilter.put("searchable", false);
@@ -401,6 +453,9 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         int order = 0;
         for (Map<String, Object> meta : byFieldKey.values()) {
             String fieldKey = String.valueOf(meta.get("fieldKey"));
+            if (!isBaseDisplayField(meta, fieldKey)) {
+                continue;
+            }
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("id", fieldKey);
             item.put("fieldKey", fieldKey);
@@ -408,6 +463,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             item.put("renderAs", mapDisplayRenderAs(String.valueOf(meta.get("fieldType"))));
             item.put("sortOrder", meta.get("sortOrder") != null ? meta.get("sortOrder") : order++);
             item.put("defaultVisible", isBaseDisplayField(meta, fieldKey));
+            item.put("baseField", isBaseDisplayField(meta, fieldKey));
             item.put("applicableViews", List.of(componentCode));
             if (meta.get("groupId") != null) {
                 item.put("groupId", meta.get("groupId"));
@@ -460,7 +516,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             filter.put("id", fieldKey);
             filter.put("fieldKey", fieldKey);
             filter.put("label", meta.get("label"));
-            filter.put("control", mapFilterControl(String.valueOf(meta.get("fieldType"))));
+            filter.put("renderAs", mapFilterControl(String.valueOf(meta.get("fieldType"))));
             filter.put("sortOrder", meta.get("sortOrder") != null ? meta.get("sortOrder") : order++);
             filter.put("bindTo", "field-filter");
             filter.put("searchable", Boolean.TRUE.equals(meta.get("searchable")));
@@ -633,27 +689,118 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
      * 构建模型 CRUD 表单定义 JSON。
      */
     private String buildModelCrudFormJson(Long modelId, String businessTypeCode) {
+        CrudFormFieldContext context = loadCrudFormFieldContext(modelId, businessTypeCode);
+        Map<String, Object> root = ModelCrudFormFieldAssembler.buildFormRoot(
+                modelId,
+                businessTypeCode,
+                context.includeBaseFields(),
+                context.assigns(),
+                context.fieldById(),
+                context.baseFieldByCode(),
+                context.groups(),
+                context.refResolveContext());
+        return toJson(root);
+    }
+
+    private CrudFormFieldContext loadCrudFormFieldContext(Long modelId, String businessTypeCode) {
         List<ModelFieldAssignmentDO> assigns = modelFieldAssignmentMapper.selectByModelId(modelId);
-        List<Map<String, Object>> fields = new ArrayList<>(assigns.size());
+        Map<Long, FieldDO> fieldById = new HashMap<>(Math.max(assigns.size(), 1));
         for (ModelFieldAssignmentDO assign : assigns) {
             FieldDO field = fieldMapper.selectById(assign.getFieldId());
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("fieldId", assign.getFieldId());
-            item.put("fieldCode", field != null ? field.getCode() : null);
-            item.put("fieldName", field != null ? field.getName() : null);
-            item.put("fieldType", field != null ? field.getType() : null);
-            item.put("required", assign.getRequired());
-            item.put("filterable", assign.getIsFilterable());
-            item.put("searchable", assign.getIsSearchable());
-            item.put("sortable", assign.getIsSortable());
-            item.put("sort", assign.getSort());
-            fields.add(item);
+            if (field != null) {
+                fieldById.put(field.getId(), field);
+            }
         }
-        Map<String, Object> root = new LinkedHashMap<>();
-        root.put("businessTypeCode", businessTypeCode);
-        root.put("modelId", modelId);
-        root.put("fields", fields);
-        return toJson(root);
+        boolean includeBaseFields = shouldIncludeBaseFields(businessTypeCode);
+        Map<String, BusinessTypeBaseFieldDO> baseFieldByCode = new LinkedHashMap<>();
+        if (includeBaseFields) {
+            List<BusinessTypeBaseFieldDO> baseFields = businessTypeBaseFieldMapper.selectByBusinessTypeCode(businessTypeCode);
+            if (baseFields != null) {
+                for (BusinessTypeBaseFieldDO baseField : baseFields) {
+                    if (baseField != null && StringUtils.hasText(baseField.getFieldCode())) {
+                        baseFieldByCode.put(baseField.getFieldCode().trim(), baseField);
+                    }
+                }
+            }
+        }
+        List<ModelFieldGroupRespVO> groups;
+        try {
+            groups = modelFieldGroupService.listModelFieldGroupsByModelId(modelId);
+        } catch (Exception ex) {
+            log.debug("skip model field groups for modelId={}: {}", modelId, ex.getMessage());
+            groups = List.of();
+        }
+        return new CrudFormFieldContext(
+                includeBaseFields,
+                assigns,
+                fieldById,
+                baseFieldByCode,
+                groups,
+                loadRefResolveContext(assigns));
+    }
+
+    private ModelCrudFormFieldAssembler.RefResolveContext loadRefResolveContext(
+            List<ModelFieldAssignmentDO> assigns) {
+        if (assigns == null || assigns.isEmpty()) {
+            return ModelCrudFormFieldAssembler.RefResolveContext.empty();
+        }
+        Set<Long> refLibraryIds = new HashSet<>();
+        Set<Long> modelRelationIds = new HashSet<>();
+        for (ModelFieldAssignmentDO assign : assigns) {
+            if (assign.getRefLibraryId() != null) {
+                refLibraryIds.add(assign.getRefLibraryId());
+            }
+            if (assign.getModelRelationId() != null) {
+                modelRelationIds.add(assign.getModelRelationId());
+            }
+        }
+        Map<Long, RelationFieldLibraryDO> refLibraryById = new HashMap<>();
+        for (Long id : refLibraryIds) {
+            RelationFieldLibraryDO lib = relationFieldLibraryMapper.selectById(id);
+            if (lib != null) {
+                refLibraryById.put(id, lib);
+            }
+        }
+        Map<Long, ModelRelationDO> modelRelationById = new HashMap<>();
+        Map<String, String> modelCodeToBusinessTypeCode = new HashMap<>();
+        for (Long id : modelRelationIds) {
+            ModelRelationDO rel = modelRelationMapper.selectById(id);
+            if (rel == null) {
+                continue;
+            }
+            modelRelationById.put(id, rel);
+            if (!StringUtils.hasText(rel.getTargetModelCode())) {
+                continue;
+            }
+            String modelCode = rel.getTargetModelCode().trim();
+            if (modelCodeToBusinessTypeCode.containsKey(modelCode)) {
+                continue;
+            }
+            ModelDO targetModel = modelMapper.selectByCode(modelCode);
+            if (targetModel != null && StringUtils.hasText(targetModel.getBusinessTypeCode())) {
+                modelCodeToBusinessTypeCode.put(modelCode, targetModel.getBusinessTypeCode().trim());
+            }
+        }
+        return new ModelCrudFormFieldAssembler.RefResolveContext(
+                refLibraryById, modelRelationById, modelCodeToBusinessTypeCode);
+    }
+
+    private boolean shouldIncludeBaseFields(String businessTypeCode) {
+        BusinessTypeDO businessType = businessTypeMapper.selectByCode(businessTypeCode);
+        if (businessType == null || !StringUtils.hasText(businessType.getStorageType())) {
+            return false;
+        }
+        StorageTypeEnum storageType = StorageTypeEnum.getByCode(businessType.getStorageType());
+        return storageType != null && storageType.isDedicated();
+    }
+
+    private record CrudFormFieldContext(
+            boolean includeBaseFields,
+            List<ModelFieldAssignmentDO> assigns,
+            Map<Long, FieldDO> fieldById,
+            Map<String, BusinessTypeBaseFieldDO> baseFieldByCode,
+            List<ModelFieldGroupRespVO> groups,
+            ModelCrudFormFieldAssembler.RefResolveContext refResolveContext) {
     }
 
     /**
@@ -671,6 +818,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         data.setCapabilityFull(fullJson);
         data.setVersion(version);
         if (existing == null) {
+            fillInsertAuditFields(data);
             businessCapabilityMapper.insert(data);
         } else {
             businessCapabilityMapper.updateById(data);
@@ -695,6 +843,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         data.setComponentInterface(projectionJson);
         data.setVersion(version);
         if (existing == null) {
+            fillInsertAuditFields(data);
             capabilityComponentProjectionMapper.insert(data);
         } else {
             capabilityComponentProjectionMapper.updateById(data);
@@ -713,10 +862,43 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         data.setCrudFormFields(formJson);
         data.setVersion(version);
         if (existing == null) {
+            fillInsertAuditFields(data);
             modelCrudFormDefinitionMapper.insert(data);
         } else {
             modelCrudFormDefinitionMapper.updateById(data);
         }
+    }
+
+    /** 无登录上下文时 MyBatis 自动填充不会写入 creator，插入前显式补齐审计字段。 */
+    private void fillInsertAuditFields(BaseDO data) {
+        LocalDateTime now = LocalDateTime.now();
+        if (data.getCreateTime() == null) {
+            data.setCreateTime(now);
+        }
+        if (data.getUpdateTime() == null) {
+            data.setUpdateTime(now);
+        }
+        if (!StringUtils.hasText(data.getCreator())) {
+            Long userId = SecurityFrameworkUtils.getLoginUserId();
+            data.setCreator(userId != null ? userId.toString() : "0");
+        }
+        if (!StringUtils.hasText(data.getUpdater())) {
+            Long userId = SecurityFrameworkUtils.getLoginUserId();
+            data.setUpdater(userId != null ? userId.toString() : "0");
+        }
+    }
+
+    /** 仅刷新单个模型的 CRUD 表单定义（避免全量能力重建）。 */
+    private void refreshSingleModelCrudForm(String businessTypeCode, Long modelId) {
+        ModelDO model = modelMapper.selectById(modelId);
+        if (model == null || !businessTypeCode.equals(model.getBusinessTypeCode())) {
+            triggerRebuild(businessTypeCode);
+            return;
+        }
+        BusinessCapabilityDO existing = businessCapabilityMapper.selectByBusinessTypeCode(businessTypeCode);
+        long version = existing != null && existing.getVersion() != null ? existing.getVersion() : 1L;
+        String formJson = buildModelCrudFormJson(modelId, businessTypeCode);
+        upsertModelCrudForm(businessTypeCode, modelId, formJson, version);
     }
 
     private String requireBusinessTypeCode(String businessTypeCode) {
@@ -760,6 +942,34 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         }
         String json = componentInterface.trim();
         return json.contains("\"read\"") && !json.contains("\"getList\"");
+    }
+
+    /**
+     * dynamic model/entity 树投影误用分类树读 URL 或缺少读端点（历史 POC 数据）。
+     * 分类域树（system/category）不在此判定，其 category/tree 为正确端点。
+     */
+    private boolean isBrokenDynamicTreeProjection(String componentInterface, String componentCode, String dataKind) {
+        if (!"tree".equals(componentCode)) {
+            return false;
+        }
+        if (!BusinessCategoryConstants.KIND_MODEL.equals(dataKind)
+                && !BusinessCategoryConstants.KIND_ENTITY.equals(dataKind)) {
+            return false;
+        }
+        if (!StringUtils.hasText(componentInterface)) {
+            return true;
+        }
+        String json = componentInterface.trim();
+        if (json.contains("/dynamicbusiness/category/tree") || json.contains("/system/category/tree")) {
+            return true;
+        }
+        if (BusinessCategoryConstants.KIND_ENTITY.equals(dataKind) && !json.contains("query-by-scene")) {
+            return true;
+        }
+        if (BusinessCategoryConstants.KIND_MODEL.equals(dataKind) && !json.contains("page-models")) {
+            return true;
+        }
+        return false;
     }
 
     private String toJson(Object value) {

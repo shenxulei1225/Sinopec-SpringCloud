@@ -8,7 +8,9 @@ import cn.cheers.x.module.dynamicbusiness.convert.businesstype.BusinessTypeBaseF
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeBaseFieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeBaseFieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeMapper;
+import cn.cheers.x.module.dynamicbusiness.service.capability.BusinessCapabilityService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -28,6 +30,17 @@ public class BusinessTypeBaseFieldServiceImpl implements BusinessTypeBaseFieldSe
     @Resource
     private BusinessTypeMapper businessTypeMapper;
 
+    @Resource
+    @Lazy
+    private BusinessCapabilityService businessCapabilityService;
+
+    private void notifyBusinessTypeFieldDefinitionChanged(String businessTypeCode) {
+        if (businessTypeCode == null || businessTypeCode.isBlank()) {
+            return;
+        }
+        businessCapabilityService.refreshAfterBusinessTypeFieldDefinitionChanged(businessTypeCode.trim());
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createBaseField(BusinessTypeBaseFieldSaveReqVO reqVO) {
@@ -45,6 +58,7 @@ public class BusinessTypeBaseFieldServiceImpl implements BusinessTypeBaseFieldSe
             field.setSortOrder(baseFieldMapper.selectMaxSortOrder(reqVO.getBusinessTypeCode()) + 1);
         }
         baseFieldMapper.insert(field);
+        notifyBusinessTypeFieldDefinitionChanged(reqVO.getBusinessTypeCode());
         return field.getId();
     }
 
@@ -64,6 +78,7 @@ public class BusinessTypeBaseFieldServiceImpl implements BusinessTypeBaseFieldSe
         }
         BusinessTypeBaseFieldConvert.INSTANCE.update(field, reqVO);
         baseFieldMapper.updateById(field);
+        notifyBusinessTypeFieldDefinitionChanged(reqVO.getBusinessTypeCode());
     }
 
     @Override
@@ -73,7 +88,9 @@ public class BusinessTypeBaseFieldServiceImpl implements BusinessTypeBaseFieldSe
         if (field == null) {
             return;
         }
+        String businessTypeCode = field.getBusinessTypeCode();
         baseFieldMapper.deleteById(id);
+        notifyBusinessTypeFieldDefinitionChanged(businessTypeCode);
     }
 
     @Override
@@ -112,6 +129,7 @@ public class BusinessTypeBaseFieldServiceImpl implements BusinessTypeBaseFieldSe
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateBaseFieldStatus(Long id, Integer status) {
         BusinessTypeBaseFieldDO field = baseFieldMapper.selectById(id);
         if (field == null) {
@@ -119,6 +137,7 @@ public class BusinessTypeBaseFieldServiceImpl implements BusinessTypeBaseFieldSe
         }
         field.setStatus(status);
         baseFieldMapper.updateById(field);
+        notifyBusinessTypeFieldDefinitionChanged(field.getBusinessTypeCode());
     }
 
     @Override

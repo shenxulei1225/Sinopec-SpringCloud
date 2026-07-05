@@ -277,6 +277,23 @@ public class EntityRepositoryImpl implements EntityRepository {
         );
     }
 
+    @Override
+    public boolean existsByExactName(String businessTypeCode, Long modelId, String name, Long excludeId) {
+        if (!org.springframework.util.StringUtils.hasText(businessTypeCode)
+                || modelId == null
+                || !org.springframework.util.StringUtils.hasText(name)) {
+            return false;
+        }
+        return withTableName(businessTypeCode, () ->
+                entityMapper.selectOne(new LambdaQueryWrapperX<EntityDO>()
+                        .eq(EntityDO::getModelId, modelId)
+                        .eq(EntityDO::getName, name.trim())
+                        .neIfPresent(EntityDO::getId, excludeId)
+                        .eq(EntityDO::getDeleted, false)
+                        .last("LIMIT 1")) != null
+        );
+    }
+
     // ==================== 私有方法 ====================
 
     /**
@@ -302,7 +319,11 @@ public class EntityRepositoryImpl implements EntityRepository {
         wrapper.likeIfPresent(EntityDO::getName, query.getKeyword());
         wrapper.eq(EntityDO::getDeleted, false);
         wrapper.orderByAsc(EntityDO::getSort);
-        wrapper.eqIfPresent(EntityDO::getParentId, query.getParentId());
+        if (Boolean.TRUE.equals(query.getRootOnly())) {
+            wrapper.isNull(EntityDO::getParentId);
+        } else {
+            wrapper.eqIfPresent(EntityDO::getParentId, query.getParentId());
+        }
         return wrapper;
     }
 }

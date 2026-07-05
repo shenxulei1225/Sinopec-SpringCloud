@@ -4,6 +4,7 @@ import cn.iocoder.yudao.framework.common.exception.ServiceException;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.*;
 import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityDoVoHelper;
+import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityFieldMapsSupport;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryEntityLinkDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityRelationDO;
@@ -143,15 +144,21 @@ public class EntityServiceImpl implements EntityService {
         Long entityId = entityCoreService.create(data);
 
         // 2) 关系同步：把 customFields 中的 ref/multi-ref 同步到关系表，保证关联查询可用
-        ModelDO model = modelMapper.selectById(reqVO.getModelId());
+        ModelDO model = modelMapper.selectById(EntityFieldMapsSupport.getRequiredModelId(reqVO.getBaseFields()));
         Map<String, Object> customFieldsMap = entityBusinessHelper.emptyIfNull(reqVO.getCustomFields());
         entityRelationSyncService.syncRelationsOnCreate(data, model, customFieldsMap);
 
         // 3) 缓存失效：写后清理树/列表缓存，避免读到旧数据
-        entityCacheEvictionService.evictEntityCaches(reqVO.getModelId(), reqVO.getBusinessTypeCode());
+        entityCacheEvictionService.evictEntityCaches(
+                EntityFieldMapsSupport.getRequiredModelId(reqVO.getBaseFields()),
+                EntityFieldMapsSupport.getRequiredBusinessTypeCode(reqVO.getBaseFields()));
 
         // 4) 事件发布：通知预计算/同步链路，作为跨模块副作用入口
-        entityLifecycleEventPublisher.publishEntityCreatedEvent(reqVO.getModelId(), entityId, reqVO.getBusinessTypeCode(), data);
+        entityLifecycleEventPublisher.publishEntityCreatedEvent(
+                EntityFieldMapsSupport.getRequiredModelId(reqVO.getBaseFields()),
+                entityId,
+                EntityFieldMapsSupport.getRequiredBusinessTypeCode(reqVO.getBaseFields()),
+                data);
 
         return entityId;
     }
@@ -163,12 +170,15 @@ public class EntityServiceImpl implements EntityService {
     @Transactional(rollbackFor = Exception.class)
     public void update(EntityUpdateReqVO reqVO) {
         // 1) 读取旧值：用于不存在校验与关系差异计算
-        EntityDO oldEntity = entityCoreService.get(reqVO.getId(), reqVO.getBusinessTypeCode());
+        EntityDO oldEntity = entityCoreService.get(reqVO.getId(), EntityFieldMapsSupport.getRequiredBusinessTypeCode(reqVO.getBaseFields()));
         if (oldEntity == null) {
             throw new ServiceException(404, ENTITY_NOT_EXISTS);
         }
 
-        Long modelId = reqVO.getModelId() != null ? reqVO.getModelId() : oldEntity.getModelId();
+        Long modelId = EntityFieldMapsSupport.getModelId(reqVO.getBaseFields());
+        if (modelId == null) {
+            modelId = oldEntity.getModelId();
+        }
 
         // 2) 本体更新：仅更新实体表
         EntityDO data = entityBusinessHelper.prepareUpdateEntity(reqVO, oldEntity);
@@ -181,12 +191,12 @@ public class EntityServiceImpl implements EntityService {
         entityRelationSyncService.syncRelationsOnUpdate(data, model, customFieldsMap, oldCustomFieldsMap);
 
         // 4) 缓存失效 + 事件通知：确保读取一致性并通知下游链路
-        entityCacheEvictionService.evictEntityCaches(modelId, reqVO.getBusinessTypeCode());
-        List<String> changedFields = entityBusinessHelper.extractFieldCodes(reqVO.getCustomFields());
+        entityCacheEvictionService.evictEntityCaches(modelId, EntityFieldMapsSupport.getRequiredBusinessTypeCode(reqVO.getBaseFields()));
+        List<String> changedFields = entityBusinessHelper.extractFieldCodes(reqVO.getBaseFields(), reqVO.getCustomFields());
         entityLifecycleEventPublisher.publishEntityUpdatedEvent(
                 modelId,
                 reqVO.getId(),
-                reqVO.getBusinessTypeCode(),
+                EntityFieldMapsSupport.getRequiredBusinessTypeCode(reqVO.getBaseFields()),
                 changedFields,
                 data);
     }
@@ -216,6 +226,34 @@ public class EntityServiceImpl implements EntityService {
         // 3) 写后副作用：缓存失效 + 删除事件
         entityCacheEvictionService.evictEntityCaches(existingEntity.getModelId(), reqVO.getBusinessTypeCode());
         entityLifecycleEventPublisher.publishEntityDeletedEvent(existingEntity.getModelId(), reqVO.getId(), reqVO.getBusinessTypeCode());
+    }
+
+    @Override
+    public EntityFieldAvailabilityRespVO checkFieldUnique(
+            String businessTypeCode,
+            Long modelId,
+            String fieldKey,
+            String value,
+            Long excludeId) {
+        if (!org.springframework.util.StringUtils.hasText(businessTypeCode)
+                || !org.springframework.util.StringUtils.hasText(fieldKey)
+                || !org.springframework.util.StringUtils.hasText(value)) {
+            return new EntityFieldAvailabilityRespVO(true, null);
+        }
+        String code = businessTypeCode.trim();
+        String key = fieldKey.trim();
+        String trimmedValue = value.trim();
+        if (!"name".equals(key)) {
+            return new EntityFieldAvailabilityRespVO(true, null);
+        }
+        if (modelId == null) {
+            return new EntityFieldAvailabilityRespVO(false, "缺少 modelId，无法校验名称唯一性");
+        }
+        boolean exists = entityRepository.existsByExactName(code, modelId, trimmedValue, excludeId);
+        if (exists) {
+            return new EntityFieldAvailabilityRespVO(false, "名称已存在");
+        }
+        return new EntityFieldAvailabilityRespVO(true, null);
     }
 
 
@@ -381,6 +419,13 @@ public class EntityServiceImpl implements EntityService {
             }
 
             case PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE: {
+                if (shape == EntityQueryResultShape.TREE) {
+                    List<EntityRespVO> treeRoots = buildEntityHierarchySubtree(
+                            businessTypeCode, null, keyword, filters, detail,
+                            effectivePageNo, resolveTreeRootPageSize(pageSize));
+                    return EntitySceneQueryRespVO.tree(
+                            applyResultDetail(treeRoots, detail), detail.getCode());
+                }
                 List<Long> allEntityIds = collectAllEntityIdsByBusinessType(businessTypeCode);
                 PageResult<EntityRespVO> result = queryEntitiesByOrderedCandidateIds(
                         allEntityIds, businessTypeCode, keyword, filters,
@@ -390,11 +435,6 @@ public class EntityServiceImpl implements EntityService {
                     return EntitySceneQueryRespVO.page(applyResultDetail(result, detail), detail.getCode());
                 }
                 List<EntityRespVO> entities = result.getList();
-                if (shape == EntityQueryResultShape.TREE) {
-                    return EntitySceneQueryRespVO.tree(
-                            applyResultDetail(EntityTreeBuilder.buildTree(entities, EntityTreeBuilder.SortMode.LOCAL_SIBLING_SORT), detail),
-                            detail.getCode());
-                }
                 return EntitySceneQueryRespVO.list(applyResultDetail(entities, detail), detail.getCode());
             }
 
@@ -432,6 +472,28 @@ public class EntityServiceImpl implements EntityService {
                             Collections.singletonList(shapedOne), detail.getCode());
                 }
                 return EntitySceneQueryRespVO.list(Collections.singletonList(shapedOne), detail.getCode());
+            }
+
+            case ROOT_ENTITY_SUBTREE: {
+                if (businessTypeCode == null || businessTypeCode.isBlank()) {
+                    throw new ServiceException(400, "ROOT_ENTITY_SUBTREE 场景下 businessTypeCode 不能为空");
+                }
+                List<EntityRespVO> subtreeRoots = buildEntityHierarchySubtree(
+                        businessTypeCode, rootEntityId, keyword, filters, detail,
+                        rootEntityId == null ? effectivePageNo : null,
+                        rootEntityId == null ? resolveTreeRootPageSize(pageSize) : null);
+                if (shape == EntityQueryResultShape.PAGE) {
+                    PageResult<EntityRespVO> paged = buildEntityRespPageResult(
+                            flattenEntityTree(subtreeRoots),
+                            effectivePageNo, effectivePageSize);
+                    return EntitySceneQueryRespVO.page(applyResultDetail(paged, detail), detail.getCode());
+                }
+                if (shape == EntityQueryResultShape.TREE) {
+                    return EntitySceneQueryRespVO.tree(
+                            applyResultDetail(subtreeRoots, detail), detail.getCode());
+                }
+                return EntitySceneQueryRespVO.list(
+                        applyResultDetail(flattenEntityTree(subtreeRoots), detail), detail.getCode());
             }
             default:
                 throw new ServiceException(400, "不支持的查询场景: " + scene.getCode());
@@ -1727,13 +1789,9 @@ public class EntityServiceImpl implements EntityService {
 
         for (int i = 0; i < reqVO.getItems().size(); i++) {
             EntityBatchCreateReqVO.Item item = reqVO.getItems().get(i);
-            EntityCreateReqVO createReq = new EntityCreateReqVO();
-            createReq.setBusinessTypeCode(base.getBusinessTypeCode());
-            createReq.setModelId(base.getModelId());
-
             String name = item.getName();
             if (name == null || name.isBlank()) {
-                name = base.getName();
+                name = EntityFieldMapsSupport.asStringFromMap(base.getBaseFields(), "name");
                 if (sequenceEnabled && name != null && !name.isBlank()) {
                     int currentNo = startNo + i * step;
                     String seq = padLength > 0
@@ -1742,21 +1800,33 @@ public class EntityServiceImpl implements EntityService {
                     name = name + separator + seq;
                 }
             }
-            createReq.setName(name);
 
             Long parentId = item.getParentId() != null
                     ? item.getParentId()
-                    : (scope != null ? scope.getParentEntityId() : base.getParentId());
-            createReq.setParentId(parentId);
-            createReq.setBaseFields(item.getBaseFields() != null ? item.getBaseFields() : base.getBaseFields());
-            createReq.setCustomFields(item.getCustomFields() != null ? item.getCustomFields() : base.getCustomFields());
-            createReq.setStatus(item.getStatus() != null ? item.getStatus() : base.getStatus());
+                    : (scope != null ? scope.getParentEntityId()
+                            : EntityFieldMapsSupport.asLongFromMap(base.getBaseFields(), "parentId"));
+            Integer status = item.getStatus() != null
+                    ? item.getStatus()
+                    : EntityFieldMapsSupport.asIntegerFromMap(base.getBaseFields(), "status");
+
+            Map<String, Object> baseOverlay = EntityWriteReqMaps.mergeBase(base.getBaseFields(), item.getBaseFields());
+            EntityCreateReqVO createReq = EntityWriteReqMaps.createReq(
+                    EntityFieldMapsSupport.getRequiredBusinessTypeCode(base.getBaseFields()),
+                    EntityFieldMapsSupport.getRequiredModelId(base.getBaseFields()),
+                    name,
+                    status,
+                    parentId,
+                    baseOverlay,
+                    item.getCustomFields() != null ? item.getCustomFields() : base.getCustomFields());
 
             Long id = create(createReq);
             ids.add(id);
 
             if (scope != null && scope.getCategoryId() != null) {
-                entityCategoryRelationService.associate(id, scope.getCategoryId(), base.getBusinessTypeCode());
+                entityCategoryRelationService.associate(
+                        id,
+                        scope.getCategoryId(),
+                        EntityFieldMapsSupport.getRequiredBusinessTypeCode(base.getBaseFields()));
             }
 
             // TODO 后续完善：补充批量创建+分类关联失败时的审计与补偿策略。
@@ -1787,24 +1857,15 @@ public class EntityServiceImpl implements EntityService {
 
         for (Long id : reqVO.getIds()) {
             try {
-                EntityUpdateReqVO updateReq = new EntityUpdateReqVO();
-                updateReq.setId(id);
-                updateReq.setBusinessTypeCode(reqVO.getBusinessTypeCode());
-                if (reqVO.getStatus() != null) {
-                    updateReq.setStatus(reqVO.getStatus());
-                }
-                if (reqVO.getName() != null) {
-                    updateReq.setName(reqVO.getName());
-                }
-                if (reqVO.getModelId() != null) {
-                    updateReq.setModelId(reqVO.getModelId());
-                }
-                if (reqVO.getParentId() != null) {
-                    updateReq.setParentId(reqVO.getParentId());
-                }
-                if (reqVO.getCustomFields() != null) {
-                    updateReq.setCustomFields(reqVO.getCustomFields());
-                }
+                EntityUpdateReqVO updateReq = EntityWriteReqMaps.updateReq(
+                        id,
+                        reqVO.getBusinessTypeCode(),
+                        reqVO.getModelId(),
+                        reqVO.getName(),
+                        reqVO.getStatus(),
+                        reqVO.getParentId(),
+                        null,
+                        reqVO.getCustomFields());
                 update(updateReq);
                 successCount++;
             } catch (Exception e) {
@@ -2096,6 +2157,89 @@ public class EntityServiceImpl implements EntityService {
 
 
     /**
+     * 实体层级树子树：rootEntityId 为空时返回根节点（供 Tree 首屏懒加载）；否则返回该节点的直接子节点。
+     */
+    private List<EntityRespVO> buildEntityHierarchySubtree(String businessTypeCode, Long rootEntityId,
+            String keyword, List<FieldFilterReqVO> filters, EntityQueryResultDetail detail,
+            Integer pageNo, Integer pageSize) {
+        List<EntityDO> rawEntities;
+        if (rootEntityId == null) {
+            int resolvedPageNo = pageNo == null || pageNo < 1 ? 1 : pageNo;
+            int resolvedPageSize = resolveTreeRootPageSize(pageSize);
+            rawEntities = entityCoreService.pageEntitiesByParentId(
+                    businessTypeCode, null, resolvedPageNo, resolvedPageSize).getList();
+        } else {
+            rawEntities = entityCoreService.listEntitiesByParentId(businessTypeCode, rootEntityId);
+        }
+        if (rawEntities == null || rawEntities.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<EntityRespVO> entities = detail == EntityQueryResultDetail.LIGHT
+                ? EntityDoVoHelper.toLightRespVOList(rawEntities)
+                : EntityDoVoHelper.toRespVOList(rawEntities, customFieldValidationService);
+        entities = filterEntityRespList(entities, businessTypeCode, keyword, filters);
+
+        Comparator<EntityRespVO> comparator = Comparator
+                .comparing((EntityRespVO v) -> v.getSort() == null ? Integer.MAX_VALUE : v.getSort())
+                .thenComparing(v -> v.getId() == null ? Long.MAX_VALUE : v.getId());
+        entities = entities.stream().sorted(comparator).toList();
+        for (EntityRespVO entity : entities) {
+            entity.setChildren(null);
+        }
+        return entities;
+    }
+
+    /** Tree 首屏根节点默认分页，避免万级实体一次性拉全量导致超时/500。 */
+    private static int resolveTreeRootPageSize(Integer pageSize) {
+        if (pageSize == null || pageSize < 1) {
+            return 200;
+        }
+        return Math.min(pageSize, 500);
+    }
+
+    private List<EntityRespVO> filterEntityRespList(List<EntityRespVO> entities, String businessTypeCode,
+            String keyword, List<FieldFilterReqVO> filters) {
+        if (entities == null || entities.isEmpty()) {
+            return new ArrayList<>();
+        }
+        boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
+        boolean hasFilters = filters != null && !filters.isEmpty();
+        if (!hasKeyword && !hasFilters) {
+            return entities;
+        }
+        List<Long> orderedIds = entities.stream()
+                .map(EntityRespVO::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        List<Long> filteredIds = filterCandidateEntityIds(orderedIds, businessTypeCode, filters, keyword);
+        if (filteredIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        Set<Long> allowed = new HashSet<>(filteredIds);
+        return entities.stream()
+                .filter(entity -> entity.getId() != null && allowed.contains(entity.getId()))
+                .toList();
+    }
+
+    private List<EntityRespVO> flattenEntityTree(List<EntityRespVO> treeRoots) {
+        if (treeRoots == null || treeRoots.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<EntityRespVO> flat = new ArrayList<>();
+        Deque<EntityRespVO> stack = new ArrayDeque<>(treeRoots);
+        while (!stack.isEmpty()) {
+            EntityRespVO current = stack.pop();
+            flat.add(current);
+            if (current.getChildren() != null && !current.getChildren().isEmpty()) {
+                for (int i = current.getChildren().size() - 1; i >= 0; i--) {
+                    stack.push(current.getChildren().get(i));
+                }
+            }
+        }
+        return flat;
+    }
+
+    /**
      * 按模型获取实体树（同层按 sort 排序）。
      * 前提是实体有数型结构的情况下使用，如果实体不支持树形结构，使用实体列表的查询接口
      */
@@ -2144,12 +2288,26 @@ public class EntityServiceImpl implements EntityService {
         }
         EntityRespVO light = new EntityRespVO();
         light.setId(source.getId());
-        light.setName(source.getName());
-        light.setParentId(source.getParentId());
-        light.setModelId(source.getModelId());
-        light.setBusinessTypeCode(source.getBusinessTypeCode());
+        light.setSort(source.getSort());
+        if (source.getBaseFields() != null) {
+            light.setBaseFields(new LinkedHashMap<>(source.getBaseFields()));
+        } else {
+            Map<String, Object> base = new LinkedHashMap<>();
+            putIfNotNull(base, "businessTypeCode", source.getBusinessTypeCode());
+            putIfNotNull(base, "modelId", source.getModelId());
+            putIfNotNull(base, "name", source.getName());
+            putIfNotNull(base, "status", source.getStatus());
+            putIfNotNull(base, "parentId", source.getParentId());
+            light.setBaseFields(base);
+        }
         light.setChildren(applyResultDetail(source.getChildren(), EntityQueryResultDetail.LIGHT));
         return light;
+    }
+
+    private static void putIfNotNull(Map<String, Object> target, String key, Object value) {
+        if (value != null) {
+            target.put(key, value);
+        }
     }
 
 }

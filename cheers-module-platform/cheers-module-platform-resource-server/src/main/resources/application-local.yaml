@@ -25,6 +25,7 @@ spring:
     default-schema: platformresource
     create-schemas: true
     repair-on-migrate: true
+    placeholder-replacement: false
   autoconfigure:
     exclude:
   datasource:

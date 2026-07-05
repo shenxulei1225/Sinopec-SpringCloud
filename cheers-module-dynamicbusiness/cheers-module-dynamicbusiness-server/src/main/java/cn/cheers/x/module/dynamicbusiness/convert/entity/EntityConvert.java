@@ -24,14 +24,8 @@ public final class EntityConvert {
         if (bean == null) {
             return null;
         }
-        EntityDO entity = EntityDO.builder()
-                .businessTypeCode(bean.getBusinessTypeCode())
-                .modelId(bean.getModelId())
-                .name(bean.getName())
-                .parentId(bean.getParentId())
-                .status(bean.getStatus())
-                .customFields(copyMap(bean.getCustomFields()))
-                .build();
+        EntityDO entity = new EntityDO();
+        EntityFieldMapsSupport.applyWriteMapsToEntityDO(entity, bean.getBaseFields(), bean.getCustomFields());
         return entity;
     }
 
@@ -39,15 +33,9 @@ public final class EntityConvert {
         if (bean == null) {
             return null;
         }
-        EntityDO entity = EntityDO.builder()
-                .id(bean.getId())
-                .businessTypeCode(bean.getBusinessTypeCode())
-                .modelId(bean.getModelId())
-                .name(bean.getName())
-                .parentId(bean.getParentId())
-                .status(bean.getStatus())
-                .customFields(copyMap(bean.getCustomFields()))
-                .build();
+        EntityDO entity = new EntityDO();
+        entity.setId(bean.getId());
+        EntityFieldMapsSupport.applyWriteMapsToEntityDO(entity, bean.getBaseFields(), bean.getCustomFields());
         return entity;
     }
 
@@ -57,12 +45,8 @@ public final class EntityConvert {
         }
         EntityRespVO respVO = new EntityRespVO();
         respVO.setId(bean.getId());
-        respVO.setBusinessTypeCode(bean.getBusinessTypeCode());
-        respVO.setModelId(bean.getModelId());
-        respVO.setName(bean.getName());
-        respVO.setParentId(bean.getParentId());
         respVO.setSort(bean.getSort());
-        respVO.setStatus(bean.getStatus());
+        respVO.setBaseFields(EntityFieldMapsSupport.buildBaseFieldsFromEntityDO(bean));
         respVO.setCustomFields(copyMap(bean.getCustomFields()));
         respVO.setCreateTime(bean.getCreateTime());
         respVO.setUpdateTime(bean.getUpdateTime());

@@ -76,6 +76,11 @@ public class ViewConfigDO extends BaseDO {
     private String description;
 
     /**
+     * 视图分类节点 id（Category.categoryTypeCode = view）。
+     */
+    private Long categoryId;
+
+    /**
      * 模板：完整视图配置 JSON（slots + relations），详见类注释。
      * 实例此字段为 null 或 "{}"，以 config_override 替代。
      */

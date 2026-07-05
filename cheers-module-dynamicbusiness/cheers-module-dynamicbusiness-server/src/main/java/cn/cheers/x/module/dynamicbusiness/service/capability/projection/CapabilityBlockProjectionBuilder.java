@@ -22,11 +22,14 @@ public final class CapabilityBlockProjectionBuilder {
     private static final String ENTITY_SCENE_QUERY_URL = "/dynamicbusiness/business/entities/query-by-scene";
     private static final String MODEL_PAGE_URL = "/dynamicbusiness/business/models/page-models";
     private static final String ENTITY_SCENE_DEFAULT = "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE";
-    private static final String ENTITY_DETAIL_URL = "/dynamicbusiness/business/entities/get-by-id";
+    /** 实体层级树首屏 scene（非 ROOT_ENTITY_SUBTREE；子树由 Tree 运行时动作调用） */
+    private static final String ENTITY_TREE_SCENE = "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE";
+    private static final String ENTITY_DETAIL_URL = "/dynamicbusiness/business/entities/detail";
     private static final String ENTITY_CREATE_URL = "/dynamicbusiness/business/entities/create";
     private static final String ENTITY_UPDATE_URL = "/dynamicbusiness/business/entities/update";
     private static final String ENTITY_DELETE_URL = "/dynamicbusiness/business/entities/delete";
-    private static final String CATEGORY_TREE_URL = "/dynamicbusiness/category/tree";
+    private static final String ENTITY_CHECK_FIELD_UNIQUE_URL =
+            "/dynamicbusiness/business/entities/check-field-unique";
 
     private CapabilityBlockProjectionBuilder() {
     }
@@ -184,9 +187,9 @@ public final class CapabilityBlockProjectionBuilder {
         }
         appendPagination(projection);
         appendCrudBlocks(projection);
-        projection.put("asyncChecks", List.of());
+        appendEntityAsyncChecks(projection);
         projection.put("externalInputs", List.of(
-                externalInput("category", "categoryId", "readBody", true),
+                externalInput("category", "categoryIds", "readBody", true),
                 externalInput("modelIds", "modelIds", "readBody", true)));
     }
 
@@ -196,19 +199,53 @@ public final class CapabilityBlockProjectionBuilder {
             List<Map<String, Object>> displayFields,
             List<Map<String, Object>> filterFields,
             List<String> searchableFieldKeys) {
-        Map<String, Object> endpoint = new LinkedHashMap<>();
-        endpoint.put("url", CATEGORY_TREE_URL);
-        endpoint.put("method", "GET");
-        endpoint.put("defaultParams", Map.of("businessTypeCode", businessTypeCode));
-        endpoint.put("responseMapping", treeResponseMapping());
-        projection.put("getTree", readBlock(endpoint, displayFields));
+        projection.put("treeReadKind", "ENTITY_HIERARCHY");
+        projection.put("selectionOutput", entityHierarchySelectionOutput());
+        projection.put("getTree", readBlock(entityTreeEndpoint(businessTypeCode), displayFields));
         projection.put("getDetail", detailBlock(businessTypeCode));
         appendSearch(projection, searchableFieldKeys);
         appendFilter(projection, filterFields);
         appendCrudBlocks(projection);
-        projection.put("asyncChecks", List.of());
+        appendEntityAsyncChecks(projection);
+        projection.put("externalInputs", List.of(
+                externalInput("rootId", "rootEntityId", "readQuery", true)));
+    }
+
+    private static Map<String, Object> categoryPlainSelectionOutput() {
+        Map<String, Object> output = new LinkedHashMap<>();
+        output.put("profile", "CATEGORY_NODE");
+        output.put("ports", Map.of("primary", "selection.state"));
+        output.put("listDriveSourceDefault", "active");
+        output.put("listLinkageProfileDefault", "PATTERN_A");
+        return output;
+    }
+
+    /**
+     * 分类域树投影（domain=category，与 businessTypeCode 解耦）。
+     * categoryTypeCode 由页面/用户增量 params 提供。
+     */
+    public static Map<String, Object> buildCategoryPlainTree(
+            String categoryTypeCode,
+            String componentCode,
+            long version,
+            List<Map<String, Object>> displayFields) {
+        Map<String, Object> projection = new LinkedHashMap<>();
+        projection.put("domain", "category");
+        projection.put("categoryTypeCode", categoryTypeCode);
+        projection.put("componentCode", componentCode);
+        projection.put("version", version);
+        projection.put("treeReadKind", "CATEGORY_PLAIN");
+        projection.put("selectionOutput", categoryPlainSelectionOutput());
+
+        Map<String, Object> endpoint = new LinkedHashMap<>();
+        endpoint.put("url", "/dynamicbusiness/category/tree");
+        endpoint.put("method", "GET");
+        endpoint.put("defaultParams", Map.of("categoryTypeCode", categoryTypeCode));
+        endpoint.put("responseMapping", treeResponseMapping());
+        projection.put("getTree", readBlock(endpoint, displayFields));
         projection.put("externalInputs", List.of(
                 externalInput("rootId", "parentId", "readQuery", true)));
+        return projection;
     }
 
     private static void appendModelListLikeBlocks(
@@ -238,17 +275,64 @@ public final class CapabilityBlockProjectionBuilder {
             List<Map<String, Object>> displayFields,
             List<Map<String, Object>> filterFields,
             List<String> searchableFieldKeys) {
-        Map<String, Object> endpoint = new LinkedHashMap<>();
-        endpoint.put("url", CATEGORY_TREE_URL);
-        endpoint.put("method", "GET");
-        endpoint.put("defaultParams", Map.of("businessTypeCode", businessTypeCode));
-        endpoint.put("responseMapping", treeResponseMapping());
-        projection.put("getTree", readBlock(endpoint, displayFields));
+        projection.put("treeReadKind", "MODEL_CATALOG");
+        projection.put("selectionOutput", modelCatalogSelectionOutput());
+        projection.put("getTree", readBlock(modelTreeEndpoint(businessTypeCode), displayFields));
         appendSearch(projection, searchableFieldKeys);
         appendFilter(projection, filterFields);
         projection.put("asyncChecks", List.of());
         projection.put("externalInputs", List.of(
                 externalInput("rootId", "parentId", "readQuery", true)));
+    }
+
+    private static Map<String, Object> entityTreeEndpoint(String businessTypeCode) {
+        Map<String, Object> endpoint = new LinkedHashMap<>();
+        endpoint.put("url", ENTITY_SCENE_QUERY_URL);
+        endpoint.put("method", "GET");
+        endpoint.put("paramStyle", "entity-scene");
+        Map<String, Object> defaultParams = new LinkedHashMap<>();
+        defaultParams.put("businessTypeCode", businessTypeCode);
+        defaultParams.put("scene", ENTITY_TREE_SCENE);
+        defaultParams.put("resultShape", "TREE");
+        defaultParams.put("resultDetail", "LIGHT");
+        defaultParams.put("pageNo", 1);
+        defaultParams.put("pageSize", 200);
+        endpoint.put("defaultParams", defaultParams);
+        endpoint.put("responseMapping", entityTreeResponseMapping());
+        return endpoint;
+    }
+
+    private static Map<String, Object> entityHierarchySelectionOutput() {
+        Map<String, Object> output = new LinkedHashMap<>();
+        output.put("profile", "ENTITY_NODE");
+        output.put("ports", Map.of("primary", "selection.state"));
+        output.put("listDriveSourceDefault", "active");
+        output.put("listLinkageProfileDefault", "PATTERN_B");
+        return output;
+    }
+
+    private static Map<String, Object> modelCatalogSelectionOutput() {
+        Map<String, Object> output = new LinkedHashMap<>();
+        output.put("profile", "MODEL_OR_CATEGORY");
+        output.put("ports", Map.of("primary", "selection.state"));
+        output.put("listDriveSourceDefault", "active");
+        output.put("listLinkageProfileDefault", "PATTERN_B");
+        return output;
+    }
+
+    private static Map<String, Object> modelTreeEndpoint(String businessTypeCode) {
+        Map<String, Object> endpoint = new LinkedHashMap<>();
+        endpoint.put("url", MODEL_PAGE_URL);
+        endpoint.put("method", "GET");
+        Map<String, Object> defaultParams = new LinkedHashMap<>();
+        defaultParams.put("pageNo", 1);
+        defaultParams.put("pageSize", 100);
+        defaultParams.put("businessTypeCode", businessTypeCode);
+        endpoint.put("defaultParams", defaultParams);
+        Map<String, Object> mapping = treeResponseMapping();
+        mapping.put("listPath", "list");
+        endpoint.put("responseMapping", mapping);
+        return endpoint;
     }
 
     private static Map<String, Object> modelListEndpoint(String businessTypeCode) {
@@ -350,8 +434,10 @@ public final class CapabilityBlockProjectionBuilder {
             item.put("fieldKey", fieldCode);
             item.put("id", source.getOrDefault("id", fieldCode));
             item.put("label", source.get("label"));
-            item.put("control", source.getOrDefault("control", "input"));
-            item.put("fieldType", source.getOrDefault("control", "input"));
+            Object renderAsRaw = source.getOrDefault("renderAs", source.get("control"));
+            String renderAs = String.valueOf(renderAsRaw != null ? renderAsRaw : "input");
+            item.put("renderAs", renderAs);
+            item.put("fieldType", renderAs);
             item.put("sortOrder", source.getOrDefault("sortOrder", 0));
             item.put("bindTo", source.getOrDefault("bindTo", "field-filter"));
             item.put("operators", List.of("eq"));
@@ -385,6 +471,22 @@ public final class CapabilityBlockProjectionBuilder {
         projection.put("create", writeBlock(ENTITY_CREATE_URL, "POST"));
         projection.put("update", writeBlock(ENTITY_UPDATE_URL, "PUT"));
         projection.put("delete", writeBlock(ENTITY_DELETE_URL, "DELETE"));
+    }
+
+    /** 动态实体 CRUD 弹窗异步校验（与前端 AsyncFieldCheck 契约对齐）。 */
+    private static void appendEntityAsyncChecks(Map<String, Object> projection) {
+        List<Map<String, Object>> checks = new ArrayList<>(1);
+        Map<String, Object> nameUnique = new LinkedHashMap<>();
+        nameUnique.put("id", "check-entity-name-unique");
+        nameUnique.put("fieldKey", "name");
+        nameUnique.put("trigger", "blur");
+        nameUnique.put("appliesTo", List.of("create", "update"));
+        nameUnique.put("message", "名称已存在");
+        nameUnique.put("endpoint", Map.of(
+                "url", ENTITY_CHECK_FIELD_UNIQUE_URL,
+                "method", "GET"));
+        checks.add(nameUnique);
+        projection.put("asyncChecks", checks);
     }
 
     private static Map<String, Object> writeBlock(String url, String method) {
@@ -425,6 +527,13 @@ public final class CapabilityBlockProjectionBuilder {
         mapping.put("idField", "id");
         mapping.put("labelField", "name");
         mapping.put("childrenField", "children");
+        return mapping;
+    }
+
+    /** query-by-scene + resultShape=TREE：数据在 EntitySceneQueryRespVO.tree */
+    private static Map<String, Object> entityTreeResponseMapping() {
+        Map<String, Object> mapping = treeResponseMapping();
+        mapping.put("listPath", "tree");
         return mapping;
     }
 }
