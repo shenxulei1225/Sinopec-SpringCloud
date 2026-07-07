@@ -18,7 +18,10 @@ run() {
 run "${SCRIPT_DIR}/01_schema.sql"
 run "${SCRIPT_DIR}/02_business_types.sql"
 run "${SCRIPT_DIR}/03_fields.sql"
+run "${SCRIPT_DIR}/04_field_groups.sql"
 run "${SCRIPT_DIR}/05_models.sql"
 run "${SCRIPT_DIR}/06_categories.sql"
+run "${SCRIPT_DIR}/07_business_portal.sql"
+run "${SCRIPT_DIR}/08_capabilities.sql"
 
 echo "done: 系统共用包"

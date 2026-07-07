@@ -5,10 +5,10 @@ SET search_path TO dynamicbusiness;
 DELETE FROM capability_component_projection
 WHERE component_code = 'tree'
   AND data_kind IN ('model', 'entity')
-  AND deleted = 0
+  AND deleted = false
   AND (
     component_interface IS NULL
-    OR btrim(component_interface) = ''
-    OR component_interface LIKE '%/dynamicbusiness/category/tree%'
-    OR component_interface LIKE '%/system/category/tree%'
+    OR btrim(component_interface::text) IN ('', '""', '{}', 'null')
+    OR component_interface::text LIKE '%/dynamicbusiness/category/tree%'
+    OR component_interface::text LIKE '%/system/category/tree%'
   );

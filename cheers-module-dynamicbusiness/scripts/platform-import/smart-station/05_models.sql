@@ -12,7 +12,7 @@ SET search_path TO dynamicbusiness;
 -- dynamic_model: 2 row(s), upsert by code
 
 INSERT INTO dynamic_model (
-  code, name, business_type_code, description, status, sort, field_groups_config, tenant_id, creator
+  code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
   'MODEL-REGION-SITE', '库区/站场', 'region',
   '油库站场业务边界（site）；与 fac_site 组织信息分离，同表异 type', 1,
@@ -30,7 +30,7 @@ DO UPDATE SET
   update_time = CURRENT_TIMESTAMP;
 
 INSERT INTO dynamic_model (
-  code, name, business_type_code, description, status, sort, field_groups_config, tenant_id, creator
+  code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
   'MODEL-REGION-TANK-GROUP', '罐组', 'region',
   '罐组分区（tank_group）；parent_id 指向库区 site', 1,

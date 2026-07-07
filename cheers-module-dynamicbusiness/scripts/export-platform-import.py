@@ -12,10 +12,16 @@ import psycopg2
 
 from seed_codegen import (
     TENANT_ID,
+    compose_business_portal,
     compose_business_types,
+    compose_capabilities,
+    compose_field_groups,
     compose_fields,
+    compose_industry_field_library,
     compose_model_categories,
     compose_model_library,
+    render_base_fields,
+    render_field_library,
 )
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -102,11 +108,11 @@ def write_schema(path: Path):
     )
 
 
-def fetch_all_business_type_codes(cur) -> list[str]:
+def fetch_all_entity_type_codes(cur) -> list[str]:
     rows = fetch_rows(
         cur,
         """
-        SELECT code FROM dynamic_business_type
+        SELECT code FROM dynamic_entity_type
         WHERE deleted = false AND tenant_id = %s
         ORDER BY code
         """,
@@ -119,7 +125,7 @@ def fetch_business_types(cur, codes: list[str]) -> list[dict]:
     return fetch_rows(
         cur,
         """
-        SELECT * FROM dynamic_business_type
+        SELECT * FROM dynamic_entity_type
         WHERE deleted = false AND tenant_id = %s AND code = ANY(%s)
         ORDER BY code
         """,
@@ -131,9 +137,9 @@ def fetch_business_type_configs(cur, codes: list[str]) -> list[dict]:
     return fetch_rows(
         cur,
         """
-        SELECT * FROM dynamic_business_type_config
-        WHERE deleted = false AND tenant_id = %s AND business_type_code = ANY(%s)
-        ORDER BY business_type_code
+        SELECT * FROM dynamic_entity_type_config
+        WHERE deleted = false AND tenant_id = %s AND entity_type_code = ANY(%s)
+        ORDER BY entity_type_code
         """,
         (TENANT_ID, codes),
     )
@@ -143,11 +149,11 @@ def fetch_business_type_relations(cur, codes: list[str]) -> list[dict]:
     return fetch_rows(
         cur,
         """
-        SELECT * FROM dynamic_business_type_relation
+        SELECT * FROM dynamic_entity_type_relation
         WHERE deleted = false AND tenant_id = %s
-          AND source_business_type_code = ANY(%s)
-          AND target_business_type_code = ANY(%s)
-        ORDER BY source_business_type_code, target_business_type_code
+          AND source_entity_type_code = ANY(%s)
+          AND target_entity_type_code = ANY(%s)
+        ORDER BY source_entity_type_code, target_entity_type_code
         """,
         (TENANT_ID, codes, codes),
     )
@@ -157,9 +163,9 @@ def fetch_base_fields(cur, codes: list[str]) -> list[dict]:
     return fetch_rows(
         cur,
         """
-        SELECT * FROM dynamic_business_type_base_field
-        WHERE deleted = false AND tenant_id = %s AND business_type_code = ANY(%s)
-        ORDER BY business_type_code, field_code
+        SELECT * FROM dynamic_entity_type_base_field
+        WHERE deleted = false AND tenant_id = %s AND entity_type_code = ANY(%s)
+        ORDER BY entity_type_code, field_code
         """,
         (TENANT_ID, codes),
     )
@@ -169,9 +175,9 @@ def fetch_all_base_fields(cur) -> list[dict]:
     return fetch_rows(
         cur,
         """
-        SELECT * FROM dynamic_business_type_base_field
+        SELECT * FROM dynamic_entity_type_base_field
         WHERE deleted = false AND tenant_id = %s
-        ORDER BY business_type_code, field_code
+        ORDER BY entity_type_code, field_code
         """,
         (TENANT_ID,),
     )
@@ -190,13 +196,99 @@ def fetch_all_field_library(cur) -> list[dict]:
     )
 
 
+def fetch_field_groups(cur) -> list[dict]:
+    return fetch_rows(
+        cur,
+        """
+        SELECT * FROM dynamic_group
+        WHERE deleted = false AND tenant_id = %s AND group_type = 'FIELD'
+        ORDER BY sort, code
+        """,
+        (TENANT_ID,),
+    )
+
+
+def fetch_field_group_relations(cur) -> list[dict]:
+    return fetch_rows(
+        cur,
+        """
+        SELECT g.code AS group_code, f.code AS field_code, gr.sort
+        FROM dynamic_group_relation gr
+        JOIN dynamic_group g ON g.id = gr.group_id AND g.deleted = false
+        JOIN dynamic_field f ON f.id = gr.target_id AND f.deleted = false
+        WHERE gr.deleted = false AND gr.tenant_id = %s AND gr.group_type = 'FIELD'
+        ORDER BY g.sort, gr.sort, f.code
+        """,
+        (TENANT_ID,),
+    )
+
+
+def fetch_dynamic_business(cur) -> list[dict]:
+    return fetch_rows(
+        cur,
+        """
+        SELECT * FROM dynamic_business
+        WHERE deleted = false AND tenant_id = %s
+        ORDER BY sort, code
+        """,
+        (TENANT_ID,),
+    )
+
+
+def fetch_dynamic_business_entries(cur) -> list[dict]:
+    biz_id_code = {
+        int(r["id"]): r["code"]
+        for r in fetch_rows(
+            cur,
+            "SELECT id, code FROM dynamic_business WHERE deleted = false AND tenant_id = %s",
+            (TENANT_ID,),
+        )
+    }
+    rows = fetch_rows(
+        cur,
+        """
+        SELECT * FROM dynamic_business_entry
+        WHERE deleted = false AND tenant_id = %s
+        ORDER BY business_id, sort, code
+        """,
+        (TENANT_ID,),
+    )
+    for row in rows:
+        row["business_code"] = biz_id_code.get(int(row["business_id"]), "")
+    return [r for r in rows if r.get("business_code")]
+
+
+def fetch_business_capabilities(cur) -> list[dict]:
+    return fetch_rows(
+        cur,
+        """
+        SELECT * FROM business_capability
+        WHERE deleted = false AND tenant_id = %s
+        ORDER BY entity_type_code
+        """,
+        (TENANT_ID,),
+    )
+
+
+def fetch_all_models(cur, exclude_ids: tuple = ()) -> list[dict]:
+    return fetch_rows(
+        cur,
+        """
+        SELECT * FROM dynamic_model
+        WHERE deleted = false AND tenant_id = %s AND id <> ALL(%s)
+        ORDER BY code
+        """,
+        (TENANT_ID, list(exclude_ids) or [-1]),
+    )
+
+
 def fetch_models(cur, business_codes: list[str], exclude_ids: tuple = ()) -> list[dict]:
     return fetch_rows(
         cur,
         """
         SELECT * FROM dynamic_model
         WHERE deleted = false AND tenant_id = %s
-          AND business_type_code = ANY(%s)
+          AND entity_type_code = ANY(%s)
           AND id <> ALL(%s)
         ORDER BY code
         """,
@@ -209,8 +301,8 @@ def normalize_shared_device_models(rows: list[dict]) -> list[dict]:
     out: list[dict] = []
     for row in rows:
         item = dict(row)
-        if item.get("business_type_code") in LEGACY_DEVICE_BUSINESS:
-            item["business_type_code"] = EQUIPMENT_BUSINESS
+        if item.get("entity_type_code") in LEGACY_DEVICE_BUSINESS:
+            item["entity_type_code"] = EQUIPMENT_BUSINESS
         out.append(item)
     return out
 
@@ -221,7 +313,7 @@ def fetch_shared_device_models(cur) -> list[dict]:
         """
         SELECT * FROM dynamic_model
         WHERE deleted = false AND tenant_id = %s
-          AND business_type_code = ANY(%s)
+          AND entity_type_code = ANY(%s)
         ORDER BY code
         """,
         (TENANT_ID, list(SHARED_DEVICE_BUSINESS)),
@@ -500,6 +592,9 @@ def export_system_package(cur, all_codes: list[str]) -> dict[str, str]:
     equipment_cat_codes = sorted(
         {c["category_type_code"] for c in equipment_categories if c.get("category_type_code")}
     )
+    fields = fetch_all_field_library(cur)
+    groups = fetch_field_groups(cur)
+    group_relations = fetch_field_group_relations(cur)
 
     return {
         "02_business_types.sql": compose_business_types(
@@ -509,8 +604,9 @@ def export_system_package(cur, all_codes: list[str]) -> dict[str, str]:
         ),
         "03_fields.sql": compose_fields(
             fetch_all_base_fields(cur),
-            fetch_all_field_library(cur),
+            fields,
         ),
+        "04_field_groups.sql": compose_field_groups(groups, group_relations),
         "05_models.sql": build_model_sql(cur, device_models, internal_relations_only=True),
         "06_categories.sql": build_category_sql(
             cur,
@@ -519,30 +615,49 @@ def export_system_package(cur, all_codes: list[str]) -> dict[str, str]:
             fetch_category_types(cur, equipment_cat_codes),
             [],
         ),
+        "07_business_portal.sql": compose_business_portal(
+            fetch_dynamic_business(cur),
+            fetch_dynamic_business_entries(cur),
+        ),
+        "08_capabilities.sql": compose_capabilities(fetch_business_capabilities(cur)),
+        "_field_library": compose_industry_field_library(fields, groups, group_relations),
+        "_base_fields_only": render_base_fields(fetch_all_base_fields(cur)),
+        "_field_library_only": render_field_library(fields),
     }
 
 
 def export_corridor_package(cur) -> dict[str, str]:
-    codes = sorted(CORRIDOR_BUSINESS)
-    models = fetch_models(cur, codes, exclude_ids=STATION_MODEL_IDS)
-    mids = [m["id"] for m in models]
+    station_models = fetch_models_by_codes(cur, list(STATION_MODEL_CODES))
+    station_ids = tuple(m["id"] for m in station_models)
+    all_models = fetch_all_models(cur, exclude_ids=station_ids)
+    corridor_models = [
+        m
+        for m in all_models
+        if m.get("entity_type_code") not in SHARED_DEVICE_BUSINESS
+    ]
     categories = fetch_categories(cur, exclude_ids=STATION_CATEGORY_IDS)
+    # 分类类型：除站场顶部分类外全部导出
+    category_type_codes = sorted(
+        {c["category_type_code"] for c in categories if c.get("category_type_code")}
+    )
     return {
-        "05_models.sql": build_model_sql(cur, models),
+        "05_models.sql": build_model_sql(cur, corridor_models),
         "06_categories.sql": build_category_sql(
             cur,
             categories,
-            models,
-            fetch_corridor_category_types(cur),
+            corridor_models,
+            fetch_category_types(cur, category_type_codes)
+            if category_type_codes
+            else fetch_corridor_category_types(cur),
             fetch_page_configs(cur, exclude_page_codes=("PAGE-REGION-OIL-DEPOT",)),
         ),
     }
 
 
-def export_station_package(cur) -> dict[str, str]:
+def export_station_package(cur) -> dict[str, str] | None:
     models = fetch_models_by_codes(cur, list(STATION_MODEL_CODES))
     if not models:
-        raise RuntimeError("station models not found in DB")
+        return None
     mids = [m["id"] for m in models]
     categories = fetch_station_categories(cur)
     cids = [c["id"] for c in categories]
@@ -597,12 +712,16 @@ def write_import_script(path: Path, title: str, files: list[str]):
 
 def write_dev_all_script():
     content = """#!/usr/bin/env bash
-# 开发联调：system + corridor + station
+# 开发联调：system + corridor + station（站场包不存在时跳过）
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 bash "${SCRIPT_DIR}/system/import.sh"
 bash "${SCRIPT_DIR}/smart-corridor/import.sh"
-bash "${SCRIPT_DIR}/smart-station/import.sh"
+if [[ -f "${SCRIPT_DIR}/smart-station/import.sh" ]]; then
+  bash "${SCRIPT_DIR}/smart-station/import.sh"
+else
+  echo "skip: smart-station/import.sh not found"
+fi
 echo "done: dev all"
 """
     path = IMPORT_ROOT / "import-dev-all.sh"
@@ -645,7 +764,7 @@ def main():
         station_entities = preserve_entities(IMPORT_ROOT / "smart-station/05_entities.sql")
 
     try:
-        all_codes = fetch_all_business_type_codes(cur)
+        all_codes = fetch_all_entity_type_codes(cur)
 
         write_schema(IMPORT_ROOT / "system/01_schema.sql")
 
@@ -664,10 +783,17 @@ def main():
             system["03_fields.sql"],
         )
         write_sql(
+            IMPORT_ROOT / "system/04_field_groups.sql",
+            "系统共用 · 04 字段分组（dynamic_group FIELD + dynamic_group_relation）",
+            "-- 依赖：system/03_fields.sql\n"
+            "-- 幂等 upsert；与字段库一一/多对多关联，按 group_code + field_code 解析",
+            system["04_field_groups.sql"],
+        )
+        write_sql(
             IMPORT_ROOT / "system/05_models.sql",
             "系统共用 · 05 模型（通用设备模型库：equipment + 历史设备模型，仅库内关联）",
             "-- 依赖：system/03_fields.sql\n"
-            "-- 含 data_collection/custom_6128 等历史设备模型，统一 business_type_code=equipment\n"
+            "-- 含 data_collection/custom_6128 等历史设备模型，统一 entity_type_code=equipment\n"
             "-- 不含 region→equipment 等跨业务关联（见 smart-corridor/05_models.sql）",
             system["05_models.sql"],
         )
@@ -677,11 +803,23 @@ def main():
             "-- 依赖：system/05_models.sql",
             system["06_categories.sql"],
         )
+        write_sql(
+            IMPORT_ROOT / "system/07_business_portal.sql",
+            "系统共用 · 07 业务门户（dynamic_business + dynamic_business_entry）",
+            "-- 依赖：system/02_business_types.sql\n-- 按 business code 解析 parent 与 entry 归属",
+            system["07_business_portal.sql"],
+        )
+        write_sql(
+            IMPORT_ROOT / "system/08_capabilities.sql",
+            "系统共用 · 08 能力投影（business_capability）",
+            "-- 依赖：system/02_business_types.sql\n-- 按 entity_type_code 幂等 upsert",
+            system["08_capabilities.sql"],
+        )
 
         flyway_v2 = file_header(
             "V2: 系统共用 seed（Flyway 自动执行）",
             "-- 依赖：V1__init_dynamicbusiness_schema.sql\n"
-            "-- 内容：system/02 + 03 + 05（不含分类；产品包见 platform-import/）",
+            "-- 内容：system/02 + 03 + 05（不含分类/门户；字段分组见 V27）",
         ) + (
             system["02_business_types.sql"]
             + "\n\n"
@@ -690,6 +828,51 @@ def main():
             + system["05_models.sql"]
         )
         (FLYWAY_DIR / "V2__seed_system_base.sql").write_text(flyway_v2, encoding="utf-8")
+
+        flyway_v26 = file_header(
+            "V26: 业务门户与能力投影 seed",
+            "-- 依赖：V17 create dynamic business tables / V2 entity types\n"
+            "-- 内容：system/07 + 08",
+        ) + system["07_business_portal.sql"] + "\n\n" + system["08_capabilities.sql"]
+        (FLYWAY_DIR / "V26__seed_business_portal_and_capabilities.sql").write_text(
+            flyway_v26, encoding="utf-8"
+        )
+
+        flyway_v27 = file_header(
+            "V27: 行业字段库分组 seed",
+            "-- 依赖：V2 字段库\n"
+            "-- 内容：dynamic_group(FIELD) + dynamic_group_relation（幂等 upsert）\n"
+            "-- 字段定义已在 V2/platform-import 03；本迁移补分组与关联",
+        ) + system["04_field_groups.sql"]
+        (FLYWAY_DIR / "V27__init_industry_field_library.sql").write_text(
+            flyway_v27, encoding="utf-8"
+        )
+
+        field_count = len(fetch_all_field_library(cur))
+        group_count = len(fetch_field_groups(cur))
+        rel_count = len(fetch_field_group_relations(cur))
+        assign_count = fetch_rows(
+            cur,
+            "SELECT count(*) AS c FROM dynamic_model_field_assignment WHERE deleted=false AND tenant_id=%s",
+            (TENANT_ID,),
+        )[0]["c"]
+        model_count = fetch_rows(
+            cur,
+            "SELECT count(*) AS c FROM dynamic_model WHERE deleted=false AND tenant_id=%s",
+            (TENANT_ID,),
+        )[0]["c"]
+        print(
+            f"exported: fields={field_count}, field_groups={group_count}, "
+            f"group_relations={rel_count}, models={model_count}, "
+            f"model_field_assignments={assign_count}, "
+            f"businesses={len(fetch_dynamic_business(cur))}, "
+            f"capabilities={len(fetch_business_capabilities(cur))}"
+        )
+        if assign_count == 0:
+            print(
+                "warn: dynamic_model_field_assignment is empty — "
+                "models export without field bindings; re-link in model config UI"
+            )
 
         corridor = export_corridor_package(cur)
         for name, body in corridor.items():
@@ -709,20 +892,23 @@ def main():
             )
 
         station = export_station_package(cur)
-        for name, body in station.items():
-            write_sql(
-                IMPORT_ROOT / f"smart-station/{name}",
-                f"智慧站场 · {name}",
-                "-- 依赖：先导入 system/ 全包（字段库已在 system/03_fields.sql）\n-- 本包仅含站场 Region 模型与分类",
-                body,
-            )
-        if station_entities:
-            write_sql(
-                IMPORT_ROOT / "smart-station/07_entities.sql",
-                "智慧站场 · 07 示例实例（可选）",
-                "-- 依赖：smart-station/06_categories.sql",
-                station_entities,
-            )
+        if station:
+            for name, body in station.items():
+                write_sql(
+                    IMPORT_ROOT / f"smart-station/{name}",
+                    f"智慧站场 · {name}",
+                    "-- 依赖：先导入 system/ 全包（字段库已在 system/03_fields.sql）\n-- 本包仅含站场 Region 模型与分类",
+                    body,
+                )
+            if station_entities:
+                write_sql(
+                    IMPORT_ROOT / "smart-station/07_entities.sql",
+                    "智慧站场 · 07 示例实例（可选）",
+                    "-- 依赖：smart-station/06_categories.sql",
+                    station_entities,
+                )
+        else:
+            print("skip: smart-station (MODEL-REGION-SITE / MODEL-REGION-TANK-GROUP not in DB)")
 
         write_import_script(
             IMPORT_ROOT / "system/import.sh",
@@ -731,8 +917,11 @@ def main():
                 "01_schema.sql",
                 "02_business_types.sql",
                 "03_fields.sql",
+                "04_field_groups.sql",
                 "05_models.sql",
                 "06_categories.sql",
+                "07_business_portal.sql",
+                "08_capabilities.sql",
             ],
         )
         corridor_files = ["05_models.sql", "06_categories.sql"]
@@ -746,11 +935,12 @@ def main():
         station_files = ["05_models.sql", "06_categories.sql"]
         if (IMPORT_ROOT / "smart-station/07_entities.sql").exists():
             station_files.append("07_entities.sql")
-        write_import_script(
-            IMPORT_ROOT / "smart-station/import.sh",
-            "智慧站场产品包（需先导入 system/）",
-            station_files,
-        )
+        if (IMPORT_ROOT / "smart-station/05_models.sql").exists():
+            write_import_script(
+                IMPORT_ROOT / "smart-station/import.sh",
+                "智慧站场产品包（需先导入 system/）",
+                station_files,
+            )
         write_dev_all_script()
 
         remove_legacy_files()

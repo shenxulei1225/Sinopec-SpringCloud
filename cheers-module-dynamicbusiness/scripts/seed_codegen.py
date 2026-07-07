@@ -32,8 +32,8 @@ def parent_code(parent_id: int | None, id_code: dict[int, str]) -> str | None:
 
 def render_business_types(rows: list[dict]) -> str:
     if not rows:
-        return "-- dynamic_business_type: (empty)\n"
-    lines = [f"-- dynamic_business_type: {len(rows)} row(s), upsert by code\n"]
+        return "-- dynamic_entity_type: (empty)\n"
+    lines = [f"-- dynamic_entity_type: {len(rows)} row(s), upsert by code\n"]
     cols = [
         "code",
         "name",
@@ -55,7 +55,7 @@ def render_business_types(rows: list[dict]) -> str:
     for row in rows:
         vals = ", ".join(sql_literal(row.get(c)) for c in cols)
         lines.append(
-            f"""INSERT INTO dynamic_business_type ({", ".join(cols)})
+            f"""INSERT INTO dynamic_entity_type ({", ".join(cols)})
 VALUES ({vals})
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
@@ -78,21 +78,21 @@ DO UPDATE SET
 
 def render_business_type_configs(rows: list[dict]) -> str:
     if not rows:
-        return "-- dynamic_business_type_config: (empty)\n"
-    lines = [f"-- dynamic_business_type_config: {len(rows)} row(s), upsert by business_type_code\n"]
+        return "-- dynamic_entity_type_config: (empty)\n"
+    lines = [f"-- dynamic_entity_type_config: {len(rows)} row(s), upsert by entity_type_code\n"]
     for row in rows:
         lines.append(
-            f"""INSERT INTO dynamic_business_type_config (
-  business_type_code, name, storage_type, dedicated_table_name, strategy_bean_name,
+            f"""INSERT INTO dynamic_entity_type_config (
+  entity_type_code, name, storage_type, dedicated_table_name, strategy_bean_name,
   enable_rule_engine, description, status, physical_column_mapping, tenant_id, creator
 ) VALUES (
-  {sql_literal(row["business_type_code"])}, {sql_literal(row["name"])},
+  {sql_literal(row["entity_type_code"])}, {sql_literal(row["name"])},
   {sql_literal(row["storage_type"])}, {sql_literal(row["dedicated_table_name"])},
   {sql_literal(row.get("strategy_bean_name"))}, {sql_literal(row.get("enable_rule_engine", True))},
   {sql_literal(row.get("description"))}, {sql_literal(row.get("status", 1))},
   {sql_literal(row.get("physical_column_mapping"))}, {TENANT_ID}, 'seed'
 )
-ON CONFLICT (business_type_code, tenant_id) WHERE deleted = false
+ON CONFLICT (entity_type_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   storage_type = EXCLUDED.storage_type,
   dedicated_table_name = EXCLUDED.dedicated_table_name,
@@ -106,22 +106,22 @@ DO UPDATE SET
 
 def render_base_fields(rows: list[dict]) -> str:
     if not rows:
-        return "-- dynamic_business_type_base_field: (empty)\n"
-    lines = [f"-- dynamic_business_type_base_field: {len(rows)} row(s), upsert by (business_type_code, field_code)\n"]
+        return "-- dynamic_entity_type_base_field: (empty)\n"
+    lines = [f"-- dynamic_entity_type_base_field: {len(rows)} row(s), upsert by (entity_type_code, field_code)\n"]
     for row in rows:
         lines.append(
-            f"""INSERT INTO dynamic_business_type_base_field (
-  business_type_code, field_code, field_name, data_type, required, default_value,
+            f"""INSERT INTO dynamic_entity_type_base_field (
+  entity_type_code, field_code, field_name, data_type, required, default_value,
   description, type_config, sort_order, status, tenant_id, creator
 ) VALUES (
-  {sql_literal(row["business_type_code"])}, {sql_literal(row["field_code"])},
+  {sql_literal(row["entity_type_code"])}, {sql_literal(row["field_code"])},
   {sql_literal(row["field_name"])}, {sql_literal(row["data_type"])},
   {sql_literal(row.get("required", False))}, {sql_literal(row.get("default_value"))},
   {sql_literal(row.get("description"))}, {sql_literal(row.get("type_config"))},
   {sql_literal(row.get("sort_order", 0))}, {sql_literal(row.get("status", 1))},
   {TENANT_ID}, 'seed'
 )
-ON CONFLICT (business_type_code, field_code, tenant_id) WHERE deleted = false
+ON CONFLICT (entity_type_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   field_name = EXCLUDED.field_name,
   data_type = EXCLUDED.data_type,
@@ -189,9 +189,9 @@ def render_models(rows: list[dict]) -> str:
     for row in rows:
         lines.append(
             f"""INSERT INTO dynamic_model (
-  code, name, business_type_code, description, status, sort, field_groups_config, tenant_id, creator
+  code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  {sql_literal(row["code"])}, {sql_literal(row["name"])}, {sql_literal(row["business_type_code"])},
+  {sql_literal(row["code"])}, {sql_literal(row["name"])}, {sql_literal(row["entity_type_code"])},
   {sql_literal(row.get("description"))}, {sql_literal(row.get("status", 1))},
   {sql_literal(row.get("sort", 0))}, {sql_literal(row.get("field_groups_config"))},
   {TENANT_ID}, 'seed'
@@ -217,11 +217,11 @@ def render_model_relations(rows: list[dict]) -> str:
     for row in rows:
         lines.append(
             f"""INSERT INTO dynamic_model_relation (
-  business_type_relation_id, source_model_id, source_model_code,
+  entity_type_relation_id, source_model_id, source_model_code,
   target_model_id, target_model_code, relation_name, field_code, auto_generated, tenant_id, creator
 )
 SELECT
-  {sql_literal(row.get("business_type_relation_id"))},
+  {sql_literal(row.get("entity_type_relation_id"))},
   sm.id, {sql_literal(row["source_model_code"])},
   tm.id, {sql_literal(row["target_model_code"])},
   {sql_literal(row.get("relation_name"))}, {sql_literal(row.get("field_code"))},
@@ -246,17 +246,17 @@ WHERE sm.deleted = false AND sm.tenant_id = {TENANT_ID}
 def render_model_relation_declarations(rows: list[dict], model_id_to_code: dict[int, str]) -> str:
     if not rows:
         return "-- dynamic_model_relation_declaration: (empty)\n"
-    lines = [f"-- dynamic_model_relation_declaration: {len(rows)} row(s), upsert by (model_code, target_business_type)\n"]
+    lines = [f"-- dynamic_model_relation_declaration: {len(rows)} row(s), upsert by (model_code, target_entity_type)\n"]
     for row in rows:
         model_code = model_id_to_code.get(int(row["model_id"]))
         if not model_code:
             continue
         lines.append(
-            f"""INSERT INTO dynamic_model_relation_declaration (model_id, target_business_type, tenant_id, creator)
-SELECT m.id, {sql_literal(row["target_business_type"])}, {TENANT_ID}, 'seed'
+            f"""INSERT INTO dynamic_model_relation_declaration (model_id, target_entity_type, tenant_id, creator)
+SELECT m.id, {sql_literal(row["target_entity_type"])}, {TENANT_ID}, 'seed'
 FROM dynamic_model m
 WHERE m.deleted = false AND m.tenant_id = {TENANT_ID} AND m.code = {sql_literal(model_code)}
-ON CONFLICT (model_id, target_business_type, tenant_id) WHERE deleted = false
+ON CONFLICT (model_id, target_entity_type, tenant_id) WHERE deleted = false
 DO NOTHING;
 """
         )
@@ -305,7 +305,7 @@ def render_model_field_assignments(
             f"""INSERT INTO dynamic_model_field_assignment (
   model_id, field_id, required, is_searchable, is_filterable, is_sortable,
   default_value, validation_rules, sort, field_group_id, field_source,
-  ref_library_id, model_relation_id, target_business_type, tenant_id, creator
+  ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
   m.id, f.id,
@@ -314,7 +314,7 @@ SELECT
   {sql_literal(row.get("default_value"))}, {sql_literal(row.get("validation_rules"))},
   {sql_literal(row.get("sort", 0))}, {sql_literal(row.get("field_group_id"))},
   {sql_literal(row.get("field_source"))}, {sql_literal(row.get("ref_library_id"))},
-  {rel_sql}, {sql_literal(row.get("target_business_type"))}, {TENANT_ID}, 'seed'
+  {rel_sql}, {sql_literal(row.get("target_entity_type"))}, {TENANT_ID}, 'seed'
 FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = {TENANT_ID}
 WHERE m.deleted = false AND m.tenant_id = {TENANT_ID}
@@ -331,7 +331,7 @@ DO UPDATE SET
   sort = EXCLUDED.sort,
   field_source = EXCLUDED.field_source,
   model_relation_id = EXCLUDED.model_relation_id,
-  target_business_type = EXCLUDED.target_business_type,
+  target_entity_type = EXCLUDED.target_entity_type,
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 """
@@ -453,9 +453,9 @@ def render_model_category_relations(
             continue
         lines.append(
             f"""INSERT INTO dynamic_model_category_relation (
-  model_id, category_id, business_type_code, sort, tenant_id, creator
+  model_id, category_id, entity_type_code, sort, tenant_id, creator
 )
-SELECT m.id, c.id, {sql_literal(row.get("business_type_code"))}, {sql_literal(row.get("sort", 0))}, {TENANT_ID}, 'seed'
+SELECT m.id, c.id, {sql_literal(row.get("entity_type_code"))}, {sql_literal(row.get("sort", 0))}, {TENANT_ID}, 'seed'
 FROM dynamic_model m
 JOIN dynamic_category c ON c.deleted = false AND c.tenant_id = {TENANT_ID}
 WHERE m.deleted = false AND m.tenant_id = {TENANT_ID}
@@ -496,21 +496,21 @@ DO UPDATE SET
 
 def render_business_type_relations(rows: list[dict]) -> str:
     if not rows:
-        return "-- dynamic_business_type_relation: (empty)\n"
+        return "-- dynamic_entity_type_relation: (empty)\n"
     lines = [
-        f"-- dynamic_business_type_relation: {len(rows)} row(s), upsert by (source, target, tenant_id)\n"
+        f"-- dynamic_entity_type_relation: {len(rows)} row(s), upsert by (source, target, tenant_id)\n"
     ]
     for row in rows:
         lines.append(
-            f"""INSERT INTO dynamic_business_type_relation (
-  source_business_type_code, target_business_type_code, relation_name,
+            f"""INSERT INTO dynamic_entity_type_relation (
+  source_entity_type_code, target_entity_type_code, relation_name,
   auto_create_field, default_field_name, tenant_id, creator
 ) VALUES (
-  {sql_literal(row["source_business_type_code"])}, {sql_literal(row["target_business_type_code"])},
+  {sql_literal(row["source_entity_type_code"])}, {sql_literal(row["target_entity_type_code"])},
   {sql_literal(row.get("relation_name"))}, {sql_literal(row.get("auto_create_field", True))},
   {sql_literal(row.get("default_field_name"))}, {TENANT_ID}, 'seed'
 )
-ON CONFLICT (source_business_type_code, target_business_type_code, tenant_id) WHERE deleted = false
+ON CONFLICT (source_entity_type_code, target_entity_type_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   relation_name = EXCLUDED.relation_name,
   auto_create_field = EXCLUDED.auto_create_field,
@@ -536,8 +536,97 @@ def compose_business_types(
     return "\n\n".join(parts)
 
 
+def render_field_groups(rows: list[dict], group_id_to_code: dict[int, str] | None = None) -> str:
+    """字段池分组 -> dynamic_group (group_type=FIELD)，幂等键 code。"""
+    if not rows:
+        return "-- dynamic_group(FIELD): (empty)\n"
+    id_code = group_id_to_code or id_to_code_map(rows)
+    lines = [f"-- dynamic_group(FIELD): {len(rows)} row(s), upsert by (group_type, code)\n"]
+    for row in rows:
+        pcode = parent_code(row.get("parent_id"), id_code)
+        parent_sql = "NULL"
+        if pcode:
+            parent_sql = f"""(
+  SELECT pg.id FROM dynamic_group pg
+  WHERE pg.deleted = false AND pg.tenant_id = {TENANT_ID}
+    AND pg.group_type = 'FIELD' AND pg.code = {sql_literal(pcode)}
+  LIMIT 1
+)"""
+        lines.append(
+            f"""INSERT INTO dynamic_group (
+  group_type, code, name, description, parent_id, path, level, sort, status, tenant_id, creator
+)
+SELECT
+  'FIELD', {sql_literal(row["code"])}, {sql_literal(row["name"])},
+  {sql_literal(row.get("description"))}, {parent_sql},
+  {sql_literal(row.get("path"))}, {sql_literal(row.get("level", 1))},
+  {sql_literal(row.get("sort", 0))}, {sql_literal(row.get("status", 1))},
+  {TENANT_ID}, 'zhgl-seed'
+WHERE NOT EXISTS (
+  SELECT 1 FROM dynamic_group g
+  WHERE g.deleted = false AND g.tenant_id = {TENANT_ID}
+    AND g.group_type = 'FIELD' AND g.code = {sql_literal(row["code"])}
+);
+
+UPDATE dynamic_group g SET
+  name = {sql_literal(row["name"])},
+  description = {sql_literal(row.get("description"))},
+  sort = {sql_literal(row.get("sort", 0))},
+  status = {sql_literal(row.get("status", 1))},
+  updater = 'zhgl-seed',
+  update_time = CURRENT_TIMESTAMP
+WHERE g.deleted = false AND g.tenant_id = {TENANT_ID}
+  AND g.group_type = 'FIELD' AND g.code = {sql_literal(row["code"])};
+"""
+        )
+    return "\n".join(lines)
+
+
+def render_field_group_relations(rows: list[dict]) -> str:
+    """字段-分组关联 -> dynamic_group_relation，按 group_code + field_code 解析 id。"""
+    if not rows:
+        return "-- dynamic_group_relation(FIELD): (empty)\n"
+    lines = [
+        f"-- dynamic_group_relation(FIELD): {len(rows)} row(s), resolve by group_code + field_code\n"
+    ]
+    for row in rows:
+        lines.append(
+            f"""INSERT INTO dynamic_group_relation (
+  group_type, group_id, target_id, sort, tenant_id, creator
+)
+SELECT
+  'FIELD', g.id, f.id, {sql_literal(row.get("sort", 0))}, {TENANT_ID}, 'zhgl-seed'
+FROM dynamic_group g
+JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = {TENANT_ID}
+WHERE g.deleted = false AND g.tenant_id = {TENANT_ID} AND g.group_type = 'FIELD'
+  AND g.code = {sql_literal(row["group_code"])}
+  AND f.code = {sql_literal(row["field_code"])}
+  AND NOT EXISTS (
+    SELECT 1 FROM dynamic_group_relation gr
+    WHERE gr.deleted = false AND gr.tenant_id = {TENANT_ID}
+      AND gr.group_type = 'FIELD' AND gr.group_id = g.id AND gr.target_id = f.id
+  );
+"""
+        )
+    return "\n".join(lines)
+
+
 def compose_fields(base_fields: list[dict], fields: list[dict]) -> str:
     return "\n\n".join([render_base_fields(base_fields), render_field_library(fields)])
+
+
+def compose_zhgl_field_pool(
+    fields: list[dict],
+    groups: list[dict],
+    group_relations: list[dict],
+) -> str:
+    group_id_to_code = id_to_code_map(groups)
+    parts = [
+        render_field_library(fields),
+        render_field_groups(groups, group_id_to_code),
+        render_field_group_relations(group_relations),
+    ]
+    return "\n\n".join(parts)
 
 
 def compose_field_library(
@@ -599,3 +688,153 @@ def compose_model_categories(
         render_page_configs(page_configs),
     ]
     return "\n\n".join(parts)
+
+
+def _sort_business_tree(rows: list[dict]) -> list[dict]:
+    """Parent rows before children for dynamic_business inserts."""
+    by_id = {int(r["id"]): r for r in rows if r.get("id") is not None}
+    depth_cache: dict[int, int] = {}
+
+    def depth(row_id: int) -> int:
+        if row_id in depth_cache:
+            return depth_cache[row_id]
+        row = by_id.get(row_id)
+        pid = row.get("parent_id") if row else None
+        if pid in (None, 0) or int(pid) not in by_id:
+            depth_cache[row_id] = 0
+        else:
+            depth_cache[row_id] = depth(int(pid)) + 1
+        return depth_cache[row_id]
+
+    return sorted(rows, key=lambda r: (depth(int(r["id"])), r.get("sort") or 0, r.get("code") or ""))
+
+
+def render_dynamic_business(rows: list[dict]) -> str:
+    if not rows:
+        return "-- dynamic_business: (empty)\n"
+    id_code = id_to_code_map(rows)
+    lines = [f"-- dynamic_business: {len(rows)} row(s), upsert by code\n"]
+    for row in _sort_business_tree(rows):
+        pcode = parent_code(row.get("parent_id"), id_code)
+        parent_sql = "NULL"
+        if pcode:
+            parent_sql = f"""(
+  SELECT pb.id FROM dynamic_business pb
+  WHERE pb.deleted = false AND pb.tenant_id = {TENANT_ID} AND pb.code = {sql_literal(pcode)}
+  LIMIT 1
+)"""
+        lines.append(
+            f"""INSERT INTO dynamic_business (
+  code, name, parent_id, node_kind, description, icon, alias, sort, status, tenant_id, creator
+) VALUES (
+  {sql_literal(row["code"])}, {sql_literal(row["name"])}, {parent_sql},
+  {sql_literal(row.get("node_kind"))}, {sql_literal(row.get("description"))},
+  {sql_literal(row.get("icon"))}, {sql_literal(row.get("alias"))},
+  {sql_literal(row.get("sort", 0))}, {sql_literal(row.get("status", "1"))},
+  {TENANT_ID}, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  name = EXCLUDED.name,
+  parent_id = EXCLUDED.parent_id,
+  node_kind = EXCLUDED.node_kind,
+  description = EXCLUDED.description,
+  icon = EXCLUDED.icon,
+  alias = EXCLUDED.alias,
+  sort = EXCLUDED.sort,
+  status = EXCLUDED.status,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+"""
+        )
+    return "\n".join(lines)
+
+
+def render_dynamic_business_entries(rows: list[dict]) -> str:
+    if not rows:
+        return "-- dynamic_business_entry: (empty)\n"
+    lines = [f"-- dynamic_business_entry: {len(rows)} row(s), upsert by (business code, entry code)\n"]
+    for row in rows:
+        lines.append(
+            f"""INSERT INTO dynamic_business_entry (
+  business_id, code, name, entry_type, entity_type_code, scope_config, page_config_id,
+  sort, status, tenant_id, creator
+)
+SELECT
+  b.id, {sql_literal(row["code"])}, {sql_literal(row["name"])},
+  {sql_literal(row.get("entry_type"))}, {sql_literal(row.get("entity_type_code"))},
+  {sql_literal(row.get("scope_config"))}, {sql_literal(row.get("page_config_id"))},
+  {sql_literal(row.get("sort", 0))}, {sql_literal(row.get("status", "1"))},
+  {TENANT_ID}, 'seed'
+FROM dynamic_business b
+WHERE b.deleted = false AND b.tenant_id = {TENANT_ID}
+  AND b.code = {sql_literal(row["business_code"])}
+ON CONFLICT (business_id, code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  name = EXCLUDED.name,
+  entry_type = EXCLUDED.entry_type,
+  entity_type_code = EXCLUDED.entity_type_code,
+  scope_config = EXCLUDED.scope_config,
+  page_config_id = EXCLUDED.page_config_id,
+  sort = EXCLUDED.sort,
+  status = EXCLUDED.status,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+"""
+        )
+    return "\n".join(lines)
+
+
+def render_business_capabilities(rows: list[dict]) -> str:
+    if not rows:
+        return "-- business_capability: (empty)\n"
+    lines = [f"-- business_capability: {len(rows)} row(s), upsert by entity_type_code\n"]
+    for row in rows:
+        lines.append(
+            f"""INSERT INTO business_capability (
+  entity_type_code, capability_full, version, business_category, tenant_id, creator
+) VALUES (
+  {sql_literal(row["entity_type_code"])}, {sql_literal(row.get("capability_full"))},
+  {sql_literal(row.get("version"))}, {sql_literal(row.get("business_category"))},
+  {TENANT_ID}, 'seed'
+)
+ON CONFLICT (entity_type_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  capability_full = EXCLUDED.capability_full,
+  version = EXCLUDED.version,
+  business_category = EXCLUDED.business_category,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+"""
+        )
+    return "\n".join(lines)
+
+
+def compose_field_groups(groups: list[dict], group_relations: list[dict]) -> str:
+    group_id_to_code = id_to_code_map(groups)
+    return "\n\n".join(
+        [
+            render_field_groups(groups, group_id_to_code),
+            render_field_group_relations(group_relations),
+        ]
+    )
+
+
+def compose_business_portal(
+    businesses: list[dict],
+    entries: list[dict],
+) -> str:
+    return "\n\n".join([render_dynamic_business(businesses), render_dynamic_business_entries(entries)])
+
+
+def compose_capabilities(rows: list[dict]) -> str:
+    return render_business_capabilities(rows)
+
+
+def compose_industry_field_library(
+    fields: list[dict],
+    groups: list[dict],
+    group_relations: list[dict],
+) -> str:
+    """Full field pool + FIELD groups for Flyway V27 / platform-import 04."""
+    return compose_zhgl_field_pool(fields, groups, group_relations)
