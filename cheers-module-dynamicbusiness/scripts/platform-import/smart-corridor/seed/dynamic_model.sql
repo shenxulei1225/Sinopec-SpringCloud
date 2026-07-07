@@ -1,10 +1,9 @@
 -- ============================================================================
--- 智慧管廊 · 05_models.sql
+-- 管廊 · dynamic_model
 -- Generated: 2026-07-08 by scripts/export-platform-import.py
 --
 -- 约定：不写 surrogate id；幂等键为 code / field_code / page_code。
--- 依赖：先导入 system/ 全包（设备模型库已在 system/05_models.sql）
--- 含 region→equipment 等跨业务模型关联
+-- 幂等 upsert；关联字段按 code 解析 id，不写 surrogate id
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;
@@ -1270,12 +1269,3 @@ DO UPDATE SET
   field_groups_config = EXCLUDED.field_groups_config,
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
-
-
--- dynamic_model_relation: (empty)
-
-
--- dynamic_model_relation_declaration: (empty)
-
-
--- dynamic_model_field_assignment: (empty)

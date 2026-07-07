@@ -14,26 +14,26 @@ V1 = (
 SCHEMA_COPY = ROOT / "scripts/platform-import/00_schema.sql"
 
 SEQ_RENAME = {
-    "biz_dian_wei_id_seq": "biz_inspection_point_id_seq",
-    "biz_ke_hu_id_seq": "biz_customer_id_seq",
-    "biz_lu_xian_guan_li_id_seq": "biz_route_id_seq",
-    "biz_shou_fei_id_seq": "biz_billing_id_seq",
-    "biz_ying_ji_dui_wu_id_seq": "biz_emergency_team_id_seq",
-    "biz_ying_ji_zi_yuan_id_seq": "biz_emergency_resource_id_seq",
-    "biz_jian_cha_nei_rong_id_seq": "biz_inspection_item_id_seq",
-    "biz_inspection_management_id_seq": "biz_patrol_id_seq",
-    "biz_task_model_6bfa9a8c9be648cebc21737115690e21_id_seq": "biz_task_id_seq",
+    "ent_dian_wei_id_seq": "ent_inspection_point_id_seq",
+    "ent_ke_hu_id_seq": "ent_customer_id_seq",
+    "ent_lu_xian_guan_li_id_seq": "ent_route_id_seq",
+    "ent_shou_fei_id_seq": "ent_billing_id_seq",
+    "ent_ying_ji_dui_wu_id_seq": "ent_emergency_team_id_seq",
+    "ent_ying_ji_zi_yuan_id_seq": "ent_emergency_resource_id_seq",
+    "ent_jian_cha_nei_rong_id_seq": "ent_inspection_item_id_seq",
+    "ent_inspection_management_id_seq": "ent_patrol_id_seq",
+    "ent_task_model_6bfa9a8c9be648cebc21737115690e21_id_seq": "ent_task_id_seq",
     "business_capability_seq": "business_capability_id_seq",
     "capability_component_projection_seq": "capability_component_projection_id_seq",
     "model_crud_form_definition_seq": "model_crud_form_definition_id_seq",
 }
 
 INDEX_PREFIX_RENAME = (
-    ("idx_biz_jian_cha_nei_rong_", "idx_biz_inspection_item_"),
-    ("idx_biz_inspection_management_", "idx_biz_patrol_"),
+    ("idx_ent_jian_cha_nei_rong_", "idx_ent_inspection_item_"),
+    ("idx_ent_inspection_management_", "idx_ent_patrol_"),
     (
-        "idx_biz_task_model_6bfa9a8c9be648cebc21737115690e21_",
-        "idx_biz_task_",
+        "idx_ent_task_model_6bfa9a8c9be648cebc21737115690e21_",
+        "idx_ent_task_",
     ),
 )
 

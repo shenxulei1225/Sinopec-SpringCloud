@@ -41,7 +41,7 @@ def map_filter_control(field_type: str) -> str:
     return "input"
 
 
-def collect_field_meta(cur, business_type_code: str) -> OrderedDict[str, dict]:
+def collect_field_meta(cur, entity_type_code: str) -> OrderedDict[str, dict]:
     cur.execute(
         """
         SELECT f.code, f.name, f.type,
@@ -51,9 +51,9 @@ def collect_field_meta(cur, business_type_code: str) -> OrderedDict[str, dict]:
           ON mfa.model_id = m.id AND mfa.deleted = FALSE
         JOIN dynamic_field f
           ON f.id = mfa.field_id AND f.deleted = FALSE
-        WHERE m.business_type_code = %s AND m.deleted = FALSE
+        WHERE m.entity_type_code = %s AND m.deleted = FALSE
         """,
-        (business_type_code,),
+        (entity_type_code,),
     )
     by_key: OrderedDict[str, dict] = OrderedDict()
     for row in cur.fetchall():
@@ -92,7 +92,7 @@ def collect_field_meta(cur, business_type_code: str) -> OrderedDict[str, dict]:
     return by_key
 
 
-def build_projection(business_type_code: str, component_code: str, version: int, meta: OrderedDict[str, dict]) -> dict:
+def build_projection(entity_type_code: str, component_code: str, version: int, meta: OrderedDict[str, dict]) -> dict:
     display_fields = []
     for order, item in enumerate(meta.values()):
         display_fields.append(
@@ -128,7 +128,7 @@ def build_projection(business_type_code: str, component_code: str, version: int,
         filter_order += 1
 
     projection = {
-        "businessTypeCode": business_type_code,
+        "entityTypeCode": entity_type_code,
         "componentCode": component_code,
         "version": version,
         "read": {
@@ -161,12 +161,12 @@ def main() -> int:
 
     only = sys.argv[1:] or None
     cur.execute(
-        "SELECT business_type_code, version, tenant_id FROM business_capability WHERE deleted = FALSE"
+        "SELECT entity_type_code, version, tenant_id FROM business_capability WHERE deleted = FALSE"
     )
     rows = cur.fetchall()
     upserted = 0
     for row in rows:
-        code = row["business_type_code"]
+        code = row["entity_type_code"]
         if only and code not in only:
             continue
         version = int(row["version"] or 1)
@@ -177,7 +177,7 @@ def main() -> int:
             cur.execute(
                 """
                 INSERT INTO capability_component_projection (
-                    business_type_code, component_code, component_interface, version,
+                    entity_type_code, component_code, component_interface, version,
                     creator, create_time, updater, update_time, deleted, tenant_id
                 ) VALUES (%s, %s, %s::jsonb, %s, 'script', NOW(), 'script', NOW(), FALSE, %s)
                 ON CONFLICT DO NOTHING
@@ -191,7 +191,7 @@ def main() -> int:
                     version = %s,
                     updater = 'script',
                     update_time = NOW()
-                WHERE business_type_code = %s
+                WHERE entity_type_code = %s
                   AND component_code = %s
                   AND tenant_id = %s
                   AND deleted = FALSE

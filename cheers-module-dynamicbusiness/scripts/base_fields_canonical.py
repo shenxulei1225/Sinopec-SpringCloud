@@ -4,7 +4,7 @@ Principles:
 - Entity universal: name (名称), code (唯一业务编码), status, guid, model_id, parent_id — NOT base fields.
 - No *_name or *_code prefixed duplicates in base fields (e.g. no equipment_code, region_name).
 - Base fields = all-model-shared slots (including universal REF); define once on business type.
-- Real-time / derived values live in linked modules; REF slot in base fields, not biz_* columns.
+- Real-time / derived values live in linked modules; REF slot in base fields, not ent_* columns.
 
 apply-base-fields.py upserts only by default; use --prune only after explicit confirmation.
 """
@@ -44,6 +44,10 @@ REL_SPARE_PART = {
     "supportLabels": True,
     "allowCustomLabels": True,
 }
+REL_FACILITY_REGION = {"refField": "F-spatial-facility-ref-region"}
+REL_ZONE_FACILITY = {"refField": "F-spatial-zone-ref-facility"}
+REL_EQUIPMENT_FACILITY = {"refField": "F-spatial-equipment-ref-facility"}
+REL_EQUIPMENT_ZONE = {"refField": "F-spatial-equipment-ref-zone"}
 
 
 def _f(
@@ -88,9 +92,15 @@ CANONICAL_BASE_FIELDS: dict[str, list[dict[str, Any]]] = {
         _f("place_of_origin", "产地", "TEXT", sort_order=34),
         # 位置与空间（静态台账位置，非实时轨迹）
         _f("install_location", "安装位置", "TEXT", sort_order=40),
+        _f("REF_FACILITY", "所属设施", "REF", required=True, sort_order=42,
+           type_config=REL_EQUIPMENT_FACILITY,
+           description="设备归属设施点；区划通过设施间接得知"),
+        _f("REF_ZONE", "所属分区", "REF", sort_order=43,
+           type_config=REL_EQUIPMENT_ZONE,
+           description="可选站内精细定位"),
         _f("REF_REGION", "所属区域", "REF_Multi", sort_order=44,
            type_config=REL_REGION,
-           description="全设备共有；关联存关联表，列表批量补区域名"),
+           description="历史兼容；新数据以 REF_FACILITY 为主归属"),
         _f("coordinate_3d", "三维坐标", "TEXT", sort_order=41),
         _f("coordinate_gis", "GIS坐标", "TEXT", sort_order=42),
         _f("model_3d", "三维模型", "TEXT", sort_order=43,
@@ -114,7 +124,7 @@ CANONICAL_BASE_FIELDS: dict[str, list[dict[str, Any]]] = {
         # 其他
         _f("cost_center", "成本中心", "TEXT", sort_order=90),
         _f("remark", "备注", "TEXT", sort_order=91),
-        # 共有 REF 槽位（值来自关联/外部服务，不在 biz_equipment 冗余列）
+        # 共有 REF 槽位（值来自关联/外部服务，不在 ent_equipment 冗余列）
         _f("REF_OPERATION_STATUS", "运行状态", "REF", sort_order=901,
            description="运行态/SCADA；全设备列表展示"),
         _f("REF_HEALTH_SCORE", "健康度", "REF", sort_order=902,
@@ -126,28 +136,54 @@ CANONICAL_BASE_FIELDS: dict[str, list[dict[str, Any]]] = {
         _f("REF_LAST_INSPECTION", "上次检验时间", "REF", sort_order=905),
         _f("REF_NEXT_INSPECTION", "下次检验时间", "REF", sort_order=906),
     ],
-    # region — 定稿（2026-07-05）
+    # region — 定稿（2026-07-07）：行政区划
     "region": [
-        _f("region_type", "区域类型", "NUMBER", required=True, sort_order=20,
-           description="region 分类维度；编码/名称见实体 code、name"),
+        _f("region_level", "区划级别", "ENUM", required=True, sort_order=15,
+           description="country/province/city/district；与 model 对齐"),
+        _f("admin_code", "区划代码", "TEXT", sort_order=16,
+           description="国标行政区划码"),
+        _f("region_type", "区域类型", "NUMBER", required=False, sort_order=20,
+           description="历史字段；迁移后由 region_level 取代"),
         _f("description", "区域说明", "TEXT", sort_order=21),
         _f("boundary_geojson", "边界几何", "JSON", sort_order=40,
            description="地图多边形顶点集合（GeoJSON）"),
         _f("boundary_crs", "坐标系", "TEXT", sort_order=41),
         _f("boundary_status", "边界状态", "ENUM", sort_order=42),
-        _f("min_height_m", "最小高度(m)", "NUMBER", sort_order=43),
-        _f("max_height_m", "最大高度(m)", "NUMBER", sort_order=44),
         _f("centroid_lng", "质心经度", "NUMBER", sort_order=45,
            description="区域中心点，与边界一并保存"),
         _f("centroid_lat", "质心纬度", "NUMBER", sort_order=46),
-        _f("responsible_person", "负责人", "TEXT", sort_order=50),
-        _f("belong_department", "管理部门", "TEXT", sort_order=51),
-        _f("establish_date", "设立日期", "DATE", sort_order=60,
-           description="区域划定/启用，不单独设启用日期"),
-        _f("safety_level", "安全等级", "ENUM", sort_order=80),
         _f("remark", "备注", "TEXT", sort_order=91),
     ],
-    # biz_pipeline — 无 status 物理列（status 为实体通用字段）
+    # facility — 定稿（2026-07-07）：站场/厂区等设施点
+    "facility": [
+        _f("REF_REGION", "所属区划", "REF", required=True, sort_order=10,
+           type_config=REL_FACILITY_REGION,
+           description="设施挂在哪一级行政区划下"),
+        _f("address", "地址", "TEXT", sort_order=20),
+        _f("longitude", "经度", "NUMBER", sort_order=21),
+        _f("latitude", "纬度", "NUMBER", sort_order=22),
+        _f("facility_type", "设施类型", "ENUM", required=True, sort_order=25,
+           description="与 model 或分类对齐"),
+        _f("remark", "备注", "TEXT", sort_order=91),
+    ],
+    # zone — 定稿（2026-07-07）：站内空间分区
+    "zone": [
+        _f("REF_FACILITY", "所属设施", "REF", required=True, sort_order=10,
+           type_config=REL_ZONE_FACILITY,
+           description="分区归属设施点"),
+        _f("zone_type", "分区类型", "ENUM", required=True, sort_order=20,
+           description="与 model 对齐"),
+        _f("description", "分区说明", "TEXT", sort_order=21),
+        _f("boundary_geojson", "边界几何", "JSON", sort_order=40),
+        _f("boundary_crs", "坐标系", "TEXT", sort_order=41),
+        _f("boundary_status", "边界状态", "ENUM", sort_order=42),
+        _f("min_height_m", "最小高度(m)", "NUMBER", sort_order=43),
+        _f("max_height_m", "最大高度(m)", "NUMBER", sort_order=44),
+        _f("centroid_lng", "质心经度", "NUMBER", sort_order=45),
+        _f("centroid_lat", "质心纬度", "NUMBER", sort_order=46),
+        _f("remark", "备注", "TEXT", sort_order=91),
+    ],
+    # ent_pipeline — 无 status 物理列（status 为实体通用字段）
     "pipeline": [
         _f("pipeline_code", "管线编号", "TEXT", required=True, sort_order=1),
         _f("pipeline_name", "管线名称", "TEXT", required=True, sort_order=2),
@@ -155,7 +191,7 @@ CANONICAL_BASE_FIELDS: dict[str, list[dict[str, Any]]] = {
         _f("manufacturer", "生产厂家", "TEXT", sort_order=4),
         _f("pipeline_model", "管线型号", "TEXT", sort_order=5),
     ],
-    # biz_fault — 分析稿；fault_no 改用实体 code
+    # ent_fault — 分析稿；fault_no 改用实体 code
     "fault": [
         _f("fault_type", "故障类型", "ENUM", required=True, sort_order=2),
         _f("fault_level", "故障等级", "ENUM", required=True, sort_order=3),
@@ -225,7 +261,7 @@ CANONICAL_BASE_FIELDS: dict[str, list[dict[str, Any]]] = {
         _f("estimated_cost", "预估费用", "NUMBER", sort_order=60),
         _f("remark", "备注", "TEXT", sort_order=91),
     ],
-    # biz_spare_part
+    # ent_spare_part
     "spare_parts": [
         _f("spare_part_code", "备件编号", "TEXT", required=True, sort_order=1),
         _f("spare_part_name", "备件名称", "TEXT", required=True, sort_order=2),
@@ -234,23 +270,23 @@ CANONICAL_BASE_FIELDS: dict[str, list[dict[str, Any]]] = {
         _f("min_stock", "最低库存", "NUMBER", sort_order=5),
         _f("REL_EQUIPMENT", "关联设备", "REF_Multi", sort_order=900, type_config=REL_EQUIPMENT),
     ],
-    # biz_customer — 业务字段在 attrs
+    # ent_customer — 业务字段在 attrs
     "customer": [
         _f("lian_xi_dian_hua", "联系电话", "TEXT", required=True, sort_order=1),
         _f("REL_EQUIPMENT", "关联设备", "REF_Multi", sort_order=900, type_config=REL_EQUIPMENT),
     ],
-    # biz_billing — 业务字段在 attrs
+    # ent_billing — 业务字段在 attrs
     "billing": [
         _f("shi_fou_han_shui", "是否含税", "ENUM", required=True, sort_order=1),
         _f("shou_fei_zhuang_tai", "收费状态", "ENUM", required=True, sort_order=2),
         _f("shou_fei_shi_jian", "收费时间", "DATETIME", sort_order=3),
     ],
-    # biz_emergency_resource
+    # ent_emergency_resource
     "emergency_resource": [
         _f("zong_shu_liang", "总数量", "NUMBER", required=True, sort_order=1),
         _f("ke_yong_shu_liang", "可用数量", "NUMBER", required=True, sort_order=2),
     ],
-    # biz_inspection_point — rel_region 物理列
+    # ent_inspection_point — rel_region 物理列
     "inspection_point": [
         _f("REL_REGION", "所属区域", "REF_Multi", sort_order=900, type_config=REL_REGION),
     ],

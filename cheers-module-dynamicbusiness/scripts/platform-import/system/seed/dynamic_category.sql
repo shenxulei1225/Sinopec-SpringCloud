@@ -1,15 +1,12 @@
 -- ============================================================================
--- 系统共用 · 06 分类（equipment 常用分类）
+-- 系统 · dynamic_category
 -- Generated: 2026-07-08 by scripts/export-platform-import.py
 --
 -- 约定：不写 surrogate id；幂等键为 code / field_code / page_code。
--- 依赖：system/05_models.sql
+-- 幂等 upsert；关联字段按 code 解析 id，不写 surrogate id
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;
-
--- dynamic_category_type: (empty)
-
 
 -- dynamic_category: (empty)
 
@@ -38,9 +35,3 @@ SET
   update_time = CURRENT_TIMESTAMP
 FROM cat_tree ct
 WHERE c.id = ct.id;
-
-
--- dynamic_model_category_relation: (empty)
-
-
--- dynamic_page_config: (empty)

@@ -213,15 +213,19 @@ DO UPDATE SET
 def render_model_relations(rows: list[dict]) -> str:
     if not rows:
         return "-- dynamic_model_relation: (empty)\n"
-    lines = [f"-- dynamic_model_relation: {len(rows)} row(s), resolve model id by code\n"]
+    lines = [f"-- dynamic_model_relation: {len(rows)} row(s), resolve ids by code\n"]
     for row in rows:
+        etr_sql = _entity_type_relation_lookup_sql(
+            row.get("etr_source_code") or row.get("source_entity_type_code"),
+            row.get("etr_target_code") or row.get("target_entity_type_code"),
+        )
         lines.append(
             f"""INSERT INTO dynamic_model_relation (
   entity_type_relation_id, source_model_id, source_model_code,
   target_model_id, target_model_code, relation_name, field_code, auto_generated, tenant_id, creator
 )
 SELECT
-  {sql_literal(row.get("entity_type_relation_id"))},
+  {etr_sql},
   sm.id, {sql_literal(row["source_model_code"])},
   tm.id, {sql_literal(row["target_model_code"])},
   {sql_literal(row.get("relation_name"))}, {sql_literal(row.get("field_code"))},
@@ -280,6 +284,60 @@ def _relation_lookup_sql(
 )"""
 
 
+def _entity_type_relation_lookup_sql(
+    source_entity_type_code: str | None,
+    target_entity_type_code: str | None,
+) -> str:
+    if not source_entity_type_code or not target_entity_type_code:
+        return "NULL"
+    return f"""(
+  SELECT etr.id FROM dynamic_entity_type_relation etr
+  WHERE etr.deleted = false AND etr.tenant_id = {TENANT_ID}
+    AND etr.source_entity_type_code = {sql_literal(source_entity_type_code)}
+    AND etr.target_entity_type_code = {sql_literal(target_entity_type_code)}
+  LIMIT 1
+)"""
+
+
+def _field_group_lookup_sql(group_code: str | None, group_type: str = "FIELD") -> str:
+    if not group_code:
+        return "NULL"
+    return f"""(
+  SELECT g.id FROM dynamic_group g
+  WHERE g.deleted = false AND g.tenant_id = {TENANT_ID}
+    AND g.group_type = {sql_literal(group_type)} AND g.code = {sql_literal(group_code)}
+  LIMIT 1
+)"""
+
+
+def _page_config_lookup_sql(page_code: str | None) -> str:
+    if not page_code:
+        return "NULL"
+    return f"""(
+  SELECT pc.id FROM dynamic_page_config pc
+  WHERE pc.deleted = false AND pc.tenant_id = {TENANT_ID}
+    AND pc.page_code = {sql_literal(page_code)}
+  LIMIT 1
+)"""
+
+
+def _ref_library_lookup_sql(
+    entity_type_code: str | None,
+    ref_target_type: str | None,
+    constraint_type: str | None,
+) -> str:
+    if not entity_type_code or not ref_target_type or not constraint_type:
+        return "NULL"
+    return f"""(
+  SELECT rl.id FROM dynamic_ref_constraint_library rl
+  WHERE rl.deleted = false AND rl.tenant_id = {TENANT_ID}
+    AND rl.entity_type_code = {sql_literal(entity_type_code)}
+    AND rl.ref_target_type = {sql_literal(ref_target_type)}
+    AND rl.constraint_type = {sql_literal(constraint_type)}
+  LIMIT 1
+)"""
+
+
 def render_model_field_assignments(
     rows: list[dict],
     model_id_to_code: dict[int, str],
@@ -301,6 +359,15 @@ def render_model_field_assignments(
         if rel_id and int(rel_id) in relation_id_to_key:
             src, tgt, fcode = relation_id_to_key[int(rel_id)]
             rel_sql = _relation_lookup_sql(src, tgt, fcode)
+        fg_sql = _field_group_lookup_sql(
+            row.get("field_group_code"),
+            row.get("field_group_type") or "FIELD",
+        )
+        ref_sql = _ref_library_lookup_sql(
+            row.get("ref_library_entity_type_code"),
+            row.get("ref_library_ref_target_type"),
+            row.get("ref_library_constraint_type"),
+        )
         lines.append(
             f"""INSERT INTO dynamic_model_field_assignment (
   model_id, field_id, required, is_searchable, is_filterable, is_sortable,
@@ -312,8 +379,8 @@ SELECT
   {sql_literal(row.get("required", False))}, {sql_literal(row.get("is_searchable", False))},
   {sql_literal(row.get("is_filterable", False))}, {sql_literal(row.get("is_sortable", False))},
   {sql_literal(row.get("default_value"))}, {sql_literal(row.get("validation_rules"))},
-  {sql_literal(row.get("sort", 0))}, {sql_literal(row.get("field_group_id"))},
-  {sql_literal(row.get("field_source"))}, {sql_literal(row.get("ref_library_id"))},
+  {sql_literal(row.get("sort", 0))}, {fg_sql},
+  {sql_literal(row.get("field_source"))}, {ref_sql},
   {rel_sql}, {sql_literal(row.get("target_entity_type"))}, {TENANT_ID}, 'seed'
 FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = {TENANT_ID}
@@ -329,7 +396,9 @@ DO UPDATE SET
   default_value = EXCLUDED.default_value,
   validation_rules = EXCLUDED.validation_rules,
   sort = EXCLUDED.sort,
+  field_group_id = EXCLUDED.field_group_id,
   field_source = EXCLUDED.field_source,
+  ref_library_id = EXCLUDED.ref_library_id,
   model_relation_id = EXCLUDED.model_relation_id,
   target_entity_type = EXCLUDED.target_entity_type,
   updater = 'seed',
@@ -755,6 +824,7 @@ def render_dynamic_business_entries(rows: list[dict]) -> str:
         return "-- dynamic_business_entry: (empty)\n"
     lines = [f"-- dynamic_business_entry: {len(rows)} row(s), upsert by (business code, entry code)\n"]
     for row in rows:
+        page_sql = _page_config_lookup_sql(row.get("page_config_code"))
         lines.append(
             f"""INSERT INTO dynamic_business_entry (
   business_id, code, name, entry_type, entity_type_code, scope_config, page_config_id,
@@ -763,7 +833,7 @@ def render_dynamic_business_entries(rows: list[dict]) -> str:
 SELECT
   b.id, {sql_literal(row["code"])}, {sql_literal(row["name"])},
   {sql_literal(row.get("entry_type"))}, {sql_literal(row.get("entity_type_code"))},
-  {sql_literal(row.get("scope_config"))}, {sql_literal(row.get("page_config_id"))},
+  {sql_literal(row.get("scope_config"))}, {page_sql},
   {sql_literal(row.get("sort", 0))}, {sql_literal(row.get("status", "1"))},
   {TENANT_ID}, 'seed'
 FROM dynamic_business b

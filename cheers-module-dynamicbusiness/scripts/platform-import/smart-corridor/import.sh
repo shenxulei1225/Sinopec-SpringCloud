@@ -15,8 +15,9 @@ run() {
   psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -v ON_ERROR_STOP=1 -f "$1"
 }
 
-run "${SCRIPT_DIR}/05_models.sql"
-run "${SCRIPT_DIR}/06_categories.sql"
-run "${SCRIPT_DIR}/07_entities.sql"
+run "${SCRIPT_DIR}/seed/dynamic_model.sql"
+run "${SCRIPT_DIR}/seed/dynamic_category_type.sql"
+run "${SCRIPT_DIR}/seed/dynamic_category.sql"
+run "${SCRIPT_DIR}/seed/entities_optional.sql"
 
 echo "done: 智慧管廊产品包（需先导入 system/）"

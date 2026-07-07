@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 系统共用包
+# 系统共用包（V1 建表 + 按表 seed）
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,12 +16,17 @@ run() {
 }
 
 run "${SCRIPT_DIR}/01_schema.sql"
-run "${SCRIPT_DIR}/02_business_types.sql"
-run "${SCRIPT_DIR}/03_fields.sql"
-run "${SCRIPT_DIR}/04_field_groups.sql"
-run "${SCRIPT_DIR}/05_models.sql"
-run "${SCRIPT_DIR}/06_categories.sql"
-run "${SCRIPT_DIR}/07_business_portal.sql"
-run "${SCRIPT_DIR}/08_capabilities.sql"
+run "${SCRIPT_DIR}/seed/dynamic_entity_type.sql"
+run "${SCRIPT_DIR}/seed/dynamic_entity_type_config.sql"
+run "${SCRIPT_DIR}/seed/dynamic_entity_type_relation.sql"
+run "${SCRIPT_DIR}/seed/dynamic_entity_type_base_field.sql"
+run "${SCRIPT_DIR}/seed/dynamic_field.sql"
+run "${SCRIPT_DIR}/seed/dynamic_group.sql"
+run "${SCRIPT_DIR}/seed/dynamic_group_relation.sql"
+run "${SCRIPT_DIR}/seed/dynamic_model.sql"
+run "${SCRIPT_DIR}/seed/dynamic_category.sql"
+run "${SCRIPT_DIR}/seed/dynamic_business.sql"
+run "${SCRIPT_DIR}/seed/dynamic_business_entry.sql"
+run "${SCRIPT_DIR}/seed/business_capability.sql"
 
-echo "done: 系统共用包"
+echo "done: 系统共用包（V1 建表 + 按表 seed）"

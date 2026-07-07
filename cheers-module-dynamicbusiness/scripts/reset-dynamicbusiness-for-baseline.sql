@@ -1,5 +1,5 @@
 -- Windows / 半成品库：删掉 dynamicbusiness schema，让 Flyway 重新执行新版 V1 + V2
--- 会清空该 schema 下全部业务数据（含 biz_*、模型、能力投影等）。
+-- 会清空该 schema 下全部业务数据（含 ent_*、模型、能力投影等）。
 --
 -- 用法：
 --   psql -h 127.0.0.1 -U postgres -d sinopec -f scripts/reset-dynamicbusiness-for-baseline.sql

@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 DROP_BY_TABLE: dict[str, set[str]] = {
-    "biz_equipment": {
+    "ent_equipment": {
         "_deprecated_status",
         "_deprecated_manufacturer",
         "_deprecated_modelnumber",
@@ -41,14 +41,14 @@ DROP_BY_TABLE: dict[str, set[str]] = {
         "rel_ke_hu",
         "rel_spare_part",
     },
-    "biz_maintenance": {
+    "ent_maintenance": {
         "_deprecated_order_no",
         "_deprecated_maintenance_type",
         "_deprecated_plan_time",
         "_deprecated_executor",
         "_deprecated_order_status",
     },
-    "biz_region": {
+    "ent_region": {
         "_deprecated_region_code",
         "_deprecated_region_name",
         "_deprecated_region_type",

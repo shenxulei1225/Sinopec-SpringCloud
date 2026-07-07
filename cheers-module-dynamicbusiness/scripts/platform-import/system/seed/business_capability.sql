@@ -1,10 +1,9 @@
 -- ============================================================================
--- 系统共用 · 08 能力投影（business_capability）
+-- 系统 · business_capability
 -- Generated: 2026-07-08 by scripts/export-platform-import.py
 --
 -- 约定：不写 surrogate id；幂等键为 code / field_code / page_code。
--- 依赖：system/02_business_types.sql
--- 按 entity_type_code 幂等 upsert
+-- 幂等 upsert；关联字段按 code 解析 id，不写 surrogate id
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;

@@ -1,11 +1,9 @@
 -- ============================================================================
--- 系统共用 · 05 模型（通用设备模型库：equipment + 历史设备模型，仅库内关联）
+-- 系统 · dynamic_model
 -- Generated: 2026-07-08 by scripts/export-platform-import.py
 --
 -- 约定：不写 surrogate id；幂等键为 code / field_code / page_code。
--- 依赖：system/03_fields.sql
--- 含 data_collection/custom_6128 等历史设备模型，统一 entity_type_code=equipment
--- 不含 region→equipment 等跨业务关联（见 smart-corridor/05_models.sql）
+-- 幂等 upsert；关联字段按 code 解析 id，不写 surrogate id
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;
@@ -875,12 +873,3 @@ DO UPDATE SET
   field_groups_config = EXCLUDED.field_groups_config,
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
-
-
--- dynamic_model_relation: (empty)
-
-
--- dynamic_model_relation_declaration: (empty)
-
-
--- dynamic_model_field_assignment: (empty)
