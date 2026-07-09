@@ -7,11 +7,11 @@
 
 -- 人员业务：角色 + 部门
 INSERT INTO system_ref_constraint_library
-(business_type_code, ref_target_type, constraint_type, constraint_name, status, sort, tenant_id)
+(entity_type_code, ref_target_type, constraint_type, constraint_name, status, sort, tenant_id)
 SELECT 'personnel', 'personnel', 'ROLE_DEPT', '角色+部门', 0, 0, 0
 WHERE NOT EXISTS (
     SELECT 1 FROM system_ref_constraint_library
-    WHERE business_type_code = 'personnel'
+    WHERE entity_type_code = 'personnel'
       AND ref_target_type = 'personnel'
       AND constraint_type = 'ROLE_DEPT'
       AND deleted = FALSE
@@ -19,11 +19,11 @@ WHERE NOT EXISTS (
 
 -- 设备业务：设备类型（Category）
 INSERT INTO system_ref_constraint_library
-(business_type_code, ref_target_type, constraint_type, constraint_name, status, sort, tenant_id)
+(entity_type_code, ref_target_type, constraint_type, constraint_name, status, sort, tenant_id)
 SELECT 'equipment', 'equipment', 'EQUIPMENT_CATEGORY', '设备类型', 0, 0, 0
 WHERE NOT EXISTS (
     SELECT 1 FROM system_ref_constraint_library
-    WHERE business_type_code = 'equipment'
+    WHERE entity_type_code = 'equipment'
       AND ref_target_type = 'equipment'
       AND constraint_type = 'EQUIPMENT_CATEGORY'
       AND deleted = FALSE
@@ -31,11 +31,11 @@ WHERE NOT EXISTS (
 
 -- 组织业务：无约束器（NONE）
 INSERT INTO system_ref_constraint_library
-(business_type_code, ref_target_type, constraint_type, constraint_name, status, sort, tenant_id)
+(entity_type_code, ref_target_type, constraint_type, constraint_name, status, sort, tenant_id)
 SELECT 'dept', 'dept', 'NONE', '无', 0, 0, 0
 WHERE NOT EXISTS (
     SELECT 1 FROM system_ref_constraint_library
-    WHERE business_type_code = 'dept'
+    WHERE entity_type_code = 'dept'
       AND ref_target_type = 'dept'
       AND constraint_type = 'NONE'
       AND deleted = FALSE

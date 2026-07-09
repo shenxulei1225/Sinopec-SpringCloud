@@ -42,17 +42,17 @@ public class CategoryModelEntityQueryServiceImpl implements CategoryModelEntityQ
     private CustomFieldValidationService customFieldValidationService;
 
     @Override
-    public List<EntityRespVO> getEntityTreeByCategory(Long categoryId, String businessTypeCode) {
+    public List<EntityRespVO> getEntityTreeByCategory(Long categoryId, String entityTypeCode) {
         final long start = System.currentTimeMillis();
         final long warnThresholdMs = 1000L;
 
-        if (categoryId == null || businessTypeCode == null || businessTypeCode.isEmpty()) {
+        if (categoryId == null || entityTypeCode == null || entityTypeCode.isEmpty()) {
             return new ArrayList<>();
         }
 
         long t1 = System.currentTimeMillis();
         // 1. 获取该分类下的所有模型（包含子分类），再按业务类型过滤
-        List<Long> categoryModelIds = modelCategoryRelationService.listModelIdsByCategoryIdWithDescendants(categoryId, businessTypeCode);
+        List<Long> categoryModelIds = modelCategoryRelationService.listModelIdsByCategoryIdWithDescendants(categoryId, entityTypeCode);
         List<ModelRespVO> models = categoryModelIds.isEmpty() ? new ArrayList<>() : modelService.getModelsByIds(categoryModelIds);
 
         if (models.isEmpty()) {
@@ -62,7 +62,7 @@ public class CategoryModelEntityQueryServiceImpl implements CategoryModelEntityQ
         long t2 = System.currentTimeMillis();
         // 2. 批量查询这些模型下的实体（一次 IN 查询）
         List<Long> modelIds = models.stream().map(ModelRespVO::getId).collect(Collectors.toList());
-        List<EntityDO> entityDOs = entityRepository.findByModelIds(modelIds, businessTypeCode);
+        List<EntityDO> entityDOs = entityRepository.findByModelIds(modelIds, entityTypeCode);
         if (entityDOs.isEmpty()) {
             return new ArrayList<>();
         }
@@ -84,7 +84,7 @@ public class CategoryModelEntityQueryServiceImpl implements CategoryModelEntityQ
 
         if (total >= warnThresholdMs) {
             log.warn("[SLOW_QUERY][PatternBCategory] categoryId={}, businessType={}, total={}ms, modelQuery={}ms, entityQuery={}ms, convertAndBuild={}ms, modelCount={}, entityCount={}, rootCount={}",
-                    categoryId, businessTypeCode, total, modelQueryCost, entityQueryCost, convertAndBuildCost,
+                    categoryId, entityTypeCode, total, modelQueryCost, entityQueryCost, convertAndBuildCost,
                     modelIds.size(), allEntities.size(), tree.size());
         }
 
@@ -92,19 +92,19 @@ public class CategoryModelEntityQueryServiceImpl implements CategoryModelEntityQ
     }
 
     @Override
-    public PageResult<EntityRespVO> pageEntityByCategory(Long categoryId, String businessTypeCode,
+    public PageResult<EntityRespVO> pageEntityByCategory(Long categoryId, String entityTypeCode,
                                                             String keyword, Integer pageNo, Integer pageSize) {
-        if (categoryId == null || businessTypeCode == null || businessTypeCode.isBlank()) {
+        if (categoryId == null || entityTypeCode == null || entityTypeCode.isBlank()) {
             return new PageResult<>(new ArrayList<>(), 0L);
         }
 
-        List<Long> modelIds = modelCategoryRelationService.listModelIdsByCategoryIdWithDescendants(categoryId, businessTypeCode);
+        List<Long> modelIds = modelCategoryRelationService.listModelIdsByCategoryIdWithDescendants(categoryId, entityTypeCode);
         if (modelIds == null || modelIds.isEmpty()) {
             return new PageResult<>(new ArrayList<>(), 0L);
         }
 
         PageResult<EntityDO> pageResult = entityCoreService.pageEntitiesByModelIds(
-                businessTypeCode,
+                entityTypeCode,
                 modelIds,
                 null,
                 keyword,

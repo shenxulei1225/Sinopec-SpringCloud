@@ -81,15 +81,15 @@ public interface EntitySyncService {
     void batchSyncEntities(List<EntityDO> entities);
 
     /**
-     * 按 Entity ID 补同步（需要提供 businessTypeCode）
+     * 按 Entity ID 补同步（需要提供 entityTypeCode）
      * 
-     * <p>通过 businessTypeCode 路由到正确的存储策略，支持通用表和动态表。</p>
+     * <p>通过 entityTypeCode 路由到正确的存储策略，支持通用表和动态表。</p>
      * 
      * @param entityId Entity ID
-     * @param businessTypeCode 业务类型编码（必填，用于路由到正确的存储策略）
+     * @param entityTypeCode 业务类型编码（必填，用于路由到正确的存储策略）
      * @return 是否同步成功
      */
-    boolean resyncByEntityId(Long entityId, String businessTypeCode);
+    boolean resyncByEntityId(Long entityId, String entityTypeCode);
 
     /**
      * 按时间范围补同步失败的记录
@@ -126,19 +126,19 @@ public interface EntitySyncService {
     /**
      * 获取待处理的失败日志列表（按业务类型过滤）
      * 
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @param limit 最大数量
      * @return 失败日志列表
      */
-    List<EntitySyncFailLogDO> getPendingFailLogsByBusinessTypeCode(String businessTypeCode, int limit);
+    List<EntitySyncFailLogDO> getPendingFailLogsByEntityTypeCode(String entityTypeCode, int limit);
 
     /**
      * 统计待处理的失败日志数量（按业务类型过滤）
      * 
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 待处理数量
      */
-    long countPendingFailLogsByBusinessTypeCode(String businessTypeCode);
+    long countPendingFailLogsByEntityTypeCode(String entityTypeCode);
 
     /**
      * 统计指定 Entity 的连续失败次数

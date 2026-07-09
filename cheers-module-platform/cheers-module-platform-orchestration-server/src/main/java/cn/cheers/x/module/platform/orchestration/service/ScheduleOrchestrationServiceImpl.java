@@ -74,7 +74,7 @@ public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationSe
         RuntimeJobDTO job = RuntimeJobDTO.builder()
                 .contractVersion(ContractVersions.MVP)
                 .runtimeJobId(runtimeJobId)
-                .businessTypeCode(request.getBusinessTypeCode())
+                .entityTypeCode(request.getEntityTypeCode())
                 .triggerAction("schedule.run")
                 .status(RuntimeJobStatus.SCHEDULED)
                 .sourceWorkIds(expanded.stream().map(WorkItemDTO::getWorkId).collect(Collectors.toList()))
@@ -114,7 +114,7 @@ public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationSe
         if (!CollectionUtils.isEmpty(request.getWorkItems())) {
             return request.getWorkItems();
         }
-        ProcessCapabilityBindingRespDTO binding = getPublishedBindingQuietly(request.getBusinessTypeCode());
+        ProcessCapabilityBindingRespDTO binding = getPublishedBindingQuietly(request.getEntityTypeCode());
         String mappingProfileId = firstMappingProfileId(binding);
         if (!StringUtils.hasText(mappingProfileId)) {
             throw exception(SCHEDULE_RUN_MAPPING_PROFILE_REQUIRED);
@@ -123,7 +123,7 @@ public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationSe
                 .map(this::toSourceInstanceInput)
                 .collect(Collectors.toList());
         return mappingProfileApi.resolveWorkItems(mappingProfileId, ResolveWorkItemsReqDTO.builder()
-                .businessTypeCode(request.getBusinessTypeCode())
+                .entityTypeCode(request.getEntityTypeCode())
                 .instances(instances)
                 .build()).getCheckedData();
     }
@@ -143,7 +143,7 @@ public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationSe
     }
 
     private RunContext resolveRunContext(ScheduleRunRequest request) {
-        ProcessCapabilityBindingRespDTO binding = getPublishedBindingQuietly(request.getBusinessTypeCode());
+        ProcessCapabilityBindingRespDTO binding = getPublishedBindingQuietly(request.getEntityTypeCode());
 
         String orchestrationRef = request.getOrchestrationRef();
         if (!StringUtils.hasText(orchestrationRef) && binding != null) {
@@ -168,7 +168,7 @@ public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationSe
         } else if (schedulingSpec == null && StringUtils.hasText(policySetId)) {
             PolicyRunContextDTO runContext = policyResolveApi.resolveForRun(PolicyResolveForRunReqDTO.builder()
                     .policySetId(policySetId)
-                    .businessTypeCode(request.getBusinessTypeCode())
+                    .entityTypeCode(request.getEntityTypeCode())
                     .build()).getCheckedData();
             schedulingSpec = runContext.getSchedulingSpec();
             policySnapshotId = runContext.getPolicySnapshotId();
@@ -180,13 +180,13 @@ public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationSe
         return new RunContext(orchestrationRef, schedulingSpec, policySnapshotId);
     }
 
-    private ProcessCapabilityBindingRespDTO getPublishedBindingQuietly(String businessTypeCode) {
-        if (!StringUtils.hasText(businessTypeCode)) {
+    private ProcessCapabilityBindingRespDTO getPublishedBindingQuietly(String entityTypeCode) {
+        if (!StringUtils.hasText(entityTypeCode)) {
             return null;
         }
         try {
             CommonResult<ProcessCapabilityBindingRespDTO> result =
-                    processCapabilityBindingApi.getPublishedBinding(businessTypeCode);
+                    processCapabilityBindingApi.getPublishedBinding(entityTypeCode);
             if (result == null || !result.isSuccess() || result.getData() == null) {
                 return null;
             }

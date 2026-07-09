@@ -54,7 +54,7 @@ public class ModelFieldBatchAssignReqVO {
         private Long refLibraryId;
 
         @Schema(description = "关联目标业务类型编码（ENTITY_REF/BATCH_ENTITY_REF 专用）", example = "dian_wei")
-        private String targetBusinessType;
+        private String targetEntityType;
 
         @Schema(description = "关联目标 Model 编码（ENTITY_REF/BATCH_ENTITY_REF 专用）", example = "MODEL-bc167ec7fa82422cb036804214c0c3ac")
         private String targetModelCode;

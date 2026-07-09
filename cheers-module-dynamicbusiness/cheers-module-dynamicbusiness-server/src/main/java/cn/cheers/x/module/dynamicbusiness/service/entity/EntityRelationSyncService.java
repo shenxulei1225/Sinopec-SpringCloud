@@ -93,9 +93,9 @@ public interface EntityRelationSyncService {
      * </ul>
      *
      * @param entityId Entity ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      */
-    void syncRelationsOnDelete(Long entityId, String businessTypeCode);
+    void syncRelationsOnDelete(Long entityId, String entityTypeCode);
 
     /**
      * 批量同步 Entity 的关联关系（用于数据迁移）

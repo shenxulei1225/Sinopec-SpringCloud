@@ -35,7 +35,7 @@ public interface EntityPermissionService {
     /**
      * 获取实体访问权限
      * 
-     * @deprecated 使用 {@link #getAccessPermission(Long, String)} 代替，需要传递 businessTypeCode 以支持动态表路由
+     * @deprecated 使用 {@link #getAccessPermission(Long, String)} 代替，需要传递 entityTypeCode 以支持动态表路由
      */
     @Deprecated
     EntityAccessPermissionRespVO getAccessPermission(Long id);
@@ -47,10 +47,10 @@ public interface EntityPermissionService {
      * 推荐使用此方法，避免先查 dynamic_entity 表。</p>
      * 
      * @param id 权限ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 访问权限详情
      */
-    EntityAccessPermissionRespVO getAccessPermission(Long id, String businessTypeCode);
+    EntityAccessPermissionRespVO getAccessPermission(Long id, String entityTypeCode);
 
     /**
      * 获取角色的实体访问权限列表
@@ -60,7 +60,7 @@ public interface EntityPermissionService {
     /**
      * 获取实体的访问权限列表
      * 
-     * @deprecated 使用 {@link #getAccessPermissionsByEntityId(Long, String)} 代替，需要传递 businessTypeCode 以支持动态表路由
+     * @deprecated 使用 {@link #getAccessPermissionsByEntityId(Long, String)} 代替，需要传递 entityTypeCode 以支持动态表路由
      */
     @Deprecated
     List<EntityAccessPermissionRespVO> getAccessPermissionsByEntityId(Long entityId);
@@ -72,10 +72,10 @@ public interface EntityPermissionService {
      * 推荐使用此方法，避免先查 dynamic_entity 表。</p>
      * 
      * @param entityId 实体ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 访问权限列表
      */
-    List<EntityAccessPermissionRespVO> getAccessPermissionsByEntityId(Long entityId, String businessTypeCode);
+    List<EntityAccessPermissionRespVO> getAccessPermissionsByEntityId(Long entityId, String entityTypeCode);
 
     /**
      * 检查用户是否可以访问实体
@@ -114,7 +114,7 @@ public interface EntityPermissionService {
     /**
      * 获取实体操作权限
      *
-     * @deprecated 使用 {@link #getOperationPermission(Long, String)} 代替，需要传递 businessTypeCode 以支持动态表路由
+     * @deprecated 使用 {@link #getOperationPermission(Long, String)} 代替，需要传递 entityTypeCode 以支持动态表路由
      */
     @Deprecated
     EntityOperationPermissionRespVO getOperationPermission(Long id);
@@ -126,10 +126,10 @@ public interface EntityPermissionService {
      * 推荐使用此方法，避免先查 dynamic_entity 表。</p>
      *
      * @param id 权限ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 操作权限详情
      */
-    EntityOperationPermissionRespVO getOperationPermission(Long id, String businessTypeCode);
+    EntityOperationPermissionRespVO getOperationPermission(Long id, String entityTypeCode);
 
     /**
      * 获取角色的实体操作权限列表
@@ -148,7 +148,7 @@ public interface EntityPermissionService {
     /**
      * 检查用户是否可以更新实体
      *
-     * @deprecated 使用 {@link #canUpdateEntity(Long, Long, String)} 代替，需要传递 businessTypeCode 以支持动态表路由
+     * @deprecated 使用 {@link #canUpdateEntity(Long, Long, String)} 代替，需要传递 entityTypeCode 以支持动态表路由
      * @param userId 用户ID
      * @param entityId 实体ID
      * @return 是否可更新
@@ -164,15 +164,15 @@ public interface EntityPermissionService {
      *
      * @param userId 用户ID
      * @param entityId 实体ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 是否可更新
      */
-    boolean canUpdateEntity(Long userId, Long entityId, String businessTypeCode);
+    boolean canUpdateEntity(Long userId, Long entityId, String entityTypeCode);
 
     /**
      * 检查用户是否可以删除实体
      *
-     * @deprecated 使用 {@link #canDeleteEntity(Long, Long, String)} 代替，需要传递 businessTypeCode 以支持动态表路由
+     * @deprecated 使用 {@link #canDeleteEntity(Long, Long, String)} 代替，需要传递 entityTypeCode 以支持动态表路由
      * @param userId 用户ID
      * @param entityId 实体ID
      * @return 是否可删除
@@ -188,10 +188,10 @@ public interface EntityPermissionService {
      *
      * @param userId 用户ID
      * @param entityId 实体ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 是否可删除
      */
-    boolean canDeleteEntity(Long userId, Long entityId, String businessTypeCode);
+    boolean canDeleteEntity(Long userId, Long entityId, String entityTypeCode);
 
     // ========== 字段级权限 ==========
 
@@ -314,7 +314,7 @@ public interface EntityPermissionService {
     /**
      * 获取用户对实体的完整权限信息
      *
-     * @deprecated 使用 {@link #checkEntityPermission(Long, Long, String)} 代替，需要传递 businessTypeCode 以支持动态表路由
+     * @deprecated 使用 {@link #checkEntityPermission(Long, Long, String)} 代替，需要传递 entityTypeCode 以支持动态表路由
      * @param userId 用户ID
      * @param entityId 实体ID
      * @return 权限检查结果
@@ -330,10 +330,10 @@ public interface EntityPermissionService {
      *
      * @param userId 用户ID
      * @param entityId 实体ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 权限检查结果
      */
-    EntityPermissionCheckRespVO checkEntityPermission(Long userId, Long entityId, String businessTypeCode);
+    EntityPermissionCheckRespVO checkEntityPermission(Long userId, Long entityId, String entityTypeCode);
 
     /**
      * 获取用户对模型的完整权限信息

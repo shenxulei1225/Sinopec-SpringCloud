@@ -26,7 +26,7 @@ public interface ModelRelationDeclarationConvert {
     /**
      * DO 转响应 VO
      * 
-     * 注意：targetBusinessTypeName 需要在 Service 层设置
+     * 注意：targetEntityTypeName 需要在 Service 层设置
      */
     default ModelRelationDeclarationRespVO convert(ModelRelationDeclarationDO declaration) {
         if (declaration == null) {
@@ -35,9 +35,9 @@ public interface ModelRelationDeclarationConvert {
         ModelRelationDeclarationRespVO vo = new ModelRelationDeclarationRespVO();
         vo.setId(declaration.getId());
         vo.setModelId(declaration.getModelId());
-        vo.setTargetBusinessType(declaration.getTargetBusinessType());
+        vo.setTargetEntityType(declaration.getTargetEntityType());
         vo.setCreateTime(declaration.getCreateTime());
-        // targetBusinessTypeName 需要在 Service 层设置
+        // targetEntityTypeName 需要在 Service 层设置
         return vo;
     }
 

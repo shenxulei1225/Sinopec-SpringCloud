@@ -15,7 +15,7 @@ WITH RECURSIVE category_tree AS (
     -- 根分类（region类型的根分类,不检查deleted字段）
     SELECT id, parent_id, 1 as level
     FROM system_category
-    WHERE business_type_code = 'region' 
+    WHERE entity_type_code = 'region' 
     AND tenant_id = 1
     
     UNION ALL
@@ -24,7 +24,7 @@ WITH RECURSIVE category_tree AS (
     SELECT c.id, c.parent_id, ct.level + 1
     FROM system_category c
     INNER JOIN category_tree ct ON c.parent_id = ct.id
-    WHERE c.business_type_code = 'region' 
+    WHERE c.entity_type_code = 'region' 
     AND c.tenant_id = 1
 )
 SELECT id FROM category_tree;
@@ -66,13 +66,13 @@ BEGIN
         WHERE id IN (
             SELECT c.id
             FROM system_category c
-            WHERE c.business_type_code = 'region'
+            WHERE c.entity_type_code = 'region'
             AND c.tenant_id = 1
             AND NOT EXISTS (
                 SELECT 1 
                 FROM system_category child
                 WHERE child.parent_id = c.id
-                AND child.business_type_code = 'region'
+                AND child.entity_type_code = 'region'
                 AND child.tenant_id = 1
             )
         );
@@ -92,7 +92,7 @@ END $$;
 -- 步骤6：强制删除所有剩余的region类型分类（防止有循环引用等情况）
 -- 直接删除所有region类型的分类,不管是否有子分类
 DELETE FROM system_category
-WHERE business_type_code = 'region' 
+WHERE entity_type_code = 'region' 
 AND tenant_id = 1;
 
 -- 清理临时表
@@ -101,6 +101,6 @@ DROP TABLE IF EXISTS temp_region_category_ids;
 -- 验证：查询剩余region类型的分类数量（应该为0）
 -- SELECT COUNT(*) as remaining_count 
 -- FROM system_category 
--- WHERE business_type_code = 'region' 
+-- WHERE entity_type_code = 'region' 
 -- AND tenant_id = 1;
 

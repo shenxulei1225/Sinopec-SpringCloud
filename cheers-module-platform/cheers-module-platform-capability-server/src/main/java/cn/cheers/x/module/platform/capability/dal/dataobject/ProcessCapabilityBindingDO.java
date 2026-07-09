@@ -25,7 +25,7 @@ public class ProcessCapabilityBindingDO extends TenantBaseDO {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     private String capabilityPackId;
 

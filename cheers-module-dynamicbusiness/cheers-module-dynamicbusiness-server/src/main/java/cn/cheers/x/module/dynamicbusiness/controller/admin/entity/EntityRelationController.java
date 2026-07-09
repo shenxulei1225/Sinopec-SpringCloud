@@ -67,18 +67,18 @@ public class EntityRelationController {
     @Operation(
         summary = "删除实体关联关系",
         description = "删除指定的关联关系。\n" +
-            "- sourceBusinessTypeCode 和 targetBusinessTypeCode 是必填参数，用于路由到正确的存储策略"
+            "- sourceEntityTypeCode 和 targetEntityTypeCode 是必填参数，用于路由到正确的存储策略"
     )
     @Parameter(name = "id", description = "关联关系ID", required = true, example = "1")
-    @Parameter(name = "sourceBusinessTypeCode", description = "源实体业务类型编码（必填）", required = true, example = "equipment")
-    @Parameter(name = "targetBusinessTypeCode", description = "目标实体业务类型编码（必填）", required = true, example = "task")
+    @Parameter(name = "sourceEntityTypeCode", description = "源实体业务类型编码（必填）", required = true, example = "equipment")
+    @Parameter(name = "targetEntityTypeCode", description = "目标实体业务类型编码（必填）", required = true, example = "task")
     @ApiAccessLog(operateType = DELETE)
     @PreAuthorize("@ss.hasPermission('system:entity-relation:delete')")
     public CommonResult<Boolean> deleteRelation(
             @RequestParam("id") Long id,
-            @RequestParam("sourceBusinessTypeCode") String sourceBusinessTypeCode,
-            @RequestParam("targetBusinessTypeCode") String targetBusinessTypeCode) {
-        entityRelationService.deleteRelation(id, sourceBusinessTypeCode, targetBusinessTypeCode);
+            @RequestParam("sourceEntityTypeCode") String sourceEntityTypeCode,
+            @RequestParam("targetEntityTypeCode") String targetEntityTypeCode) {
+        entityRelationService.deleteRelation(id, sourceEntityTypeCode, targetEntityTypeCode);
         return success(true);
     }
 
@@ -86,62 +86,62 @@ public class EntityRelationController {
     @Operation(
         summary = "获取关联关系详情",
         description = "根据关联关系ID获取详细信息。\n" +
-            "- sourceBusinessTypeCode 和 targetBusinessTypeCode 是必填参数，用于路由到正确的存储策略"
+            "- sourceEntityTypeCode 和 targetEntityTypeCode 是必填参数，用于路由到正确的存储策略"
     )
     @Parameter(name = "id", description = "关联关系ID", required = true, example = "1")
-    @Parameter(name = "sourceBusinessTypeCode", description = "源实体业务类型编码（必填）", required = true, example = "equipment")
-    @Parameter(name = "targetBusinessTypeCode", description = "目标实体业务类型编码（必填）", required = true, example = "task")
+    @Parameter(name = "sourceEntityTypeCode", description = "源实体业务类型编码（必填）", required = true, example = "equipment")
+    @Parameter(name = "targetEntityTypeCode", description = "目标实体业务类型编码（必填）", required = true, example = "task")
     @PreAuthorize("@ss.hasPermission('system:entity-relation:query')")
     public CommonResult<EntityRelationRespVO> getRelation(
             @RequestParam("id") Long id,
-            @RequestParam("sourceBusinessTypeCode") String sourceBusinessTypeCode,
-            @RequestParam("targetBusinessTypeCode") String targetBusinessTypeCode) {
-        return success(entityRelationService.getRelation(id, sourceBusinessTypeCode, targetBusinessTypeCode));
+            @RequestParam("sourceEntityTypeCode") String sourceEntityTypeCode,
+            @RequestParam("targetEntityTypeCode") String targetEntityTypeCode) {
+        return success(entityRelationService.getRelation(id, sourceEntityTypeCode, targetEntityTypeCode));
     }
 
     @GetMapping("/list-by-source-entity")
     @Operation(
         summary = "获取源实体的关联关系列表",
         description = "获取指定实体作为源实体的所有关联关系。\n" +
-            "- businessTypeCode 是必填参数，用于路由到正确的存储策略"
+            "- entityTypeCode 是必填参数，用于路由到正确的存储策略"
     )
     @Parameter(name = "sourceEntityId", description = "源实体ID", required = true, example = "1")
-    @Parameter(name = "businessTypeCode", description = "源实体业务类型编码（必填）", required = true, example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "源实体业务类型编码（必填）", required = true, example = "equipment")
     @PreAuthorize("@ss.hasPermission('system:entity-relation:query')")
     public CommonResult<List<EntityRelationRespVO>> listBySourceEntity(
             @RequestParam("sourceEntityId") Long sourceEntityId,
-            @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(entityRelationService.getRelationsBySourceEntity(sourceEntityId, businessTypeCode));
+            @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(entityRelationService.getRelationsBySourceEntity(sourceEntityId, entityTypeCode));
     }
 
     @GetMapping("/list-by-target-entity")
     @Operation(
         summary = "获取目标实体的关联关系列表",
         description = "获取指定实体作为目标实体的所有关联关系。\n" +
-            "- businessTypeCode 是必填参数，用于路由到正确的存储策略"
+            "- entityTypeCode 是必填参数，用于路由到正确的存储策略"
     )
     @Parameter(name = "targetEntityId", description = "目标实体ID", required = true, example = "1")
-    @Parameter(name = "businessTypeCode", description = "目标实体业务类型编码（必填）", required = true, example = "task")
+    @Parameter(name = "entityTypeCode", description = "目标实体业务类型编码（必填）", required = true, example = "task")
     @PreAuthorize("@ss.hasPermission('system:entity-relation:query')")
     public CommonResult<List<EntityRelationRespVO>> listByTargetEntity(
             @RequestParam("targetEntityId") Long targetEntityId,
-            @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(entityRelationService.getRelationsByTargetEntity(targetEntityId, businessTypeCode));
+            @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(entityRelationService.getRelationsByTargetEntity(targetEntityId, entityTypeCode));
     }
 
     @GetMapping("/list-by-entity")
     @Operation(
         summary = "获取实体的所有关联关系",
         description = "获取指定实体的所有关联关系（作为源或目标）。\n" +
-            "- businessTypeCode 是必填参数，用于路由到正确的存储策略"
+            "- entityTypeCode 是必填参数，用于路由到正确的存储策略"
     )
     @Parameter(name = "entityId", description = "实体ID", required = true, example = "1")
-    @Parameter(name = "businessTypeCode", description = "实体业务类型编码（必填）", required = true, example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "实体业务类型编码（必填）", required = true, example = "equipment")
     @PreAuthorize("@ss.hasPermission('system:entity-relation:query')")
     public CommonResult<List<EntityRelationRespVO>> listByEntity(
             @RequestParam("entityId") Long entityId,
-            @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(entityRelationService.getAllRelationsByEntity(entityId, businessTypeCode));
+            @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(entityRelationService.getAllRelationsByEntity(entityId, entityTypeCode));
     }
 
     @GetMapping("/list-related-by-source-or-target")
@@ -150,90 +150,90 @@ public class EntityRelationController {
         description = """
             获取与指定实体关联的所有实体，可按关联类型过滤。
             支持两种查询方式：
-            1. 通过源实体查询：传入 sourceEntityId 和 sourceBusinessTypeCode
-            2. 通过目标实体查询：传入 targetEntityId 和 targetBusinessTypeCode
+            1. 通过源实体查询：传入 sourceEntityId 和 sourceEntityTypeCode
+            2. 通过目标实体查询：传入 targetEntityId 和 targetEntityTypeCode
             """
     )
-    @Parameter(name = "sourceEntityId", description = "源实体ID（与sourceBusinessTypeCode一起使用）", required = false, example = "1")
-    @Parameter(name = "sourceBusinessTypeCode", description = "源实体业务类型编码（与sourceEntityId一起使用）", required = false, example = "equipment")
-    @Parameter(name = "targetEntityId", description = "目标实体ID（与targetBusinessTypeCode一起使用）", required = false, example = "2")
-    @Parameter(name = "targetBusinessTypeCode", description = "目标实体业务类型编码（与targetEntityId一起使用）", required = false, example = "task")
+    @Parameter(name = "sourceEntityId", description = "源实体ID（与sourceEntityTypeCode一起使用）", required = false, example = "1")
+    @Parameter(name = "sourceEntityTypeCode", description = "源实体业务类型编码（与sourceEntityId一起使用）", required = false, example = "equipment")
+    @Parameter(name = "targetEntityId", description = "目标实体ID（与targetEntityTypeCode一起使用）", required = false, example = "2")
+    @Parameter(name = "targetEntityTypeCode", description = "目标实体业务类型编码（与targetEntityId一起使用）", required = false, example = "task")
     @Parameter(name = "relationType", description = "关联类型（可选，ONE_TO_ONE/ONE_TO_MANY/MANY_TO_MANY）", example = "ONE_TO_MANY")
     @PreAuthorize("@ss.hasPermission('system:entity-relation:query')")
     public CommonResult<List<EntityRelationRespVO>> getRelatedEntities(
             @RequestParam(value = "sourceEntityId", required = false) Long sourceEntityId,
-            @RequestParam(value = "sourceBusinessTypeCode", required = false) String sourceBusinessTypeCode,
+            @RequestParam(value = "sourceEntityTypeCode", required = false) String sourceEntityTypeCode,
             @RequestParam(value = "targetEntityId", required = false) Long targetEntityId,
-            @RequestParam(value = "targetBusinessTypeCode", required = false) String targetBusinessTypeCode,
+            @RequestParam(value = "targetEntityTypeCode", required = false) String targetEntityTypeCode,
             @RequestParam(value = "relationType", required = false) String relationType) {
-        return success(entityRelationService.getRelatedEntities(sourceEntityId, sourceBusinessTypeCode, 
-                targetEntityId, targetBusinessTypeCode, relationType));
+        return success(entityRelationService.getRelatedEntities(sourceEntityId, sourceEntityTypeCode, 
+                targetEntityId, targetEntityTypeCode, relationType));
     }
 
     @GetMapping("/exists-relations-by-entity")
     @Operation(
         summary = "检查实体是否存在关联关系",
         description = "检查指定实体是否存在任何关联关系。\n" +
-            "- businessTypeCode 是必填参数，用于路由到正确的存储策略"
+            "- entityTypeCode 是必填参数，用于路由到正确的存储策略"
     )
     @Parameter(name = "entityId", description = "实体ID", required = true, example = "1")
-    @Parameter(name = "businessTypeCode", description = "实体业务类型编码（必填）", required = true, example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "实体业务类型编码（必填）", required = true, example = "equipment")
     @PreAuthorize("@ss.hasPermission('system:entity-relation:query')")
     public CommonResult<Boolean> hasRelations(
             @RequestParam("entityId") Long entityId,
-            @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(entityRelationService.hasRelations(entityId, businessTypeCode));
+            @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(entityRelationService.hasRelations(entityId, entityTypeCode));
     }
 
     @GetMapping("/count-by-entity")
     @Operation(
         summary = "统计实体的关联关系数量",
         description = "统计指定实体的关联关系总数。\n" +
-            "- businessTypeCode 是必填参数，用于路由到正确的存储策略"
+            "- entityTypeCode 是必填参数，用于路由到正确的存储策略"
     )
     @Parameter(name = "entityId", description = "实体ID", required = true, example = "1")
-    @Parameter(name = "businessTypeCode", description = "实体业务类型编码（必填）", required = true, example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "实体业务类型编码（必填）", required = true, example = "equipment")
     @PreAuthorize("@ss.hasPermission('system:entity-relation:query')")
     public CommonResult<Long> countRelations(
             @RequestParam("entityId") Long entityId,
-            @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(entityRelationService.countRelations(entityId, businessTypeCode));
+            @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(entityRelationService.countRelations(entityId, entityTypeCode));
     }
 
     @DeleteMapping("/delete-relations-by-entity")
     @Operation(
         summary = "批量删除实体的所有关联关系",
         description = "删除指定实体的所有关联关系（作为源或目标）。\n" +
-            "- businessTypeCode 是必填参数，用于路由到正确的存储策略"
+            "- entityTypeCode 是必填参数，用于路由到正确的存储策略"
     )
     @Parameter(name = "entityId", description = "实体ID", required = true, example = "1")
-    @Parameter(name = "businessTypeCode", description = "实体业务类型编码（必填）", required = true, example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "实体业务类型编码（必填）", required = true, example = "equipment")
     @ApiAccessLog(operateType = DELETE)
     @PreAuthorize("@ss.hasPermission('system:entity-relation:delete')")
     public CommonResult<Integer> deleteAllByEntity(
             @RequestParam("entityId") Long entityId,
-            @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(entityRelationService.deleteAllRelationsByEntity(entityId, businessTypeCode));
+            @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(entityRelationService.deleteAllRelationsByEntity(entityId, entityTypeCode));
     }
 
     @GetMapping("/exists-by-source-and-target")
     @Operation(
         summary = "检查两个实体之间是否存在关联关系",
         description = "检查源实体和目标实体之间是否已建立关联关系。\n" +
-            "- sourceBusinessTypeCode 和 targetBusinessTypeCode 是必填参数，用于路由到正确的存储策略"
+            "- sourceEntityTypeCode 和 targetEntityTypeCode 是必填参数，用于路由到正确的存储策略"
     )
     @Parameter(name = "sourceEntityId", description = "源实体ID", required = true, example = "1")
-    @Parameter(name = "sourceBusinessTypeCode", description = "源实体业务类型编码（必填）", required = true, example = "equipment")
+    @Parameter(name = "sourceEntityTypeCode", description = "源实体业务类型编码（必填）", required = true, example = "equipment")
     @Parameter(name = "targetEntityId", description = "目标实体ID", required = true, example = "2")
-    @Parameter(name = "targetBusinessTypeCode", description = "目标实体业务类型编码（必填）", required = true, example = "task")
+    @Parameter(name = "targetEntityTypeCode", description = "目标实体业务类型编码（必填）", required = true, example = "task")
     @PreAuthorize("@ss.hasPermission('system:entity-relation:query')")
     public CommonResult<Boolean> existsRelation(
             @RequestParam("sourceEntityId") Long sourceEntityId,
-            @RequestParam("sourceBusinessTypeCode") String sourceBusinessTypeCode,
+            @RequestParam("sourceEntityTypeCode") String sourceEntityTypeCode,
             @RequestParam("targetEntityId") Long targetEntityId,
-            @RequestParam("targetBusinessTypeCode") String targetBusinessTypeCode) {
-        return success(entityRelationService.existsRelation(sourceEntityId, sourceBusinessTypeCode, 
-                targetEntityId, targetBusinessTypeCode));
+            @RequestParam("targetEntityTypeCode") String targetEntityTypeCode) {
+        return success(entityRelationService.existsRelation(sourceEntityId, sourceEntityTypeCode, 
+                targetEntityId, targetEntityTypeCode));
     }
 
     @GetMapping("/list-by-target-with-source-model")
@@ -241,19 +241,19 @@ public class EntityRelationController {
         summary = "按目标实体和源模型编码查询关联关系",
         description = """
             适用场景：在目标实体详情页中，仅查看来自某一类源模型的关联关系（例如“只看来自巡检任务模型的关联”）。
-            业务范围：指定业务（必须传 businessTypeCode）。
+            业务范围：指定业务（必须传 entityTypeCode）。
             说明：sourceModelCode 用于进一步收敛查询范围，避免同业务下多模型混查。
             """
     )
     @Parameter(name = "targetEntityId", description = "目标实体ID", required = true, example = "1")
-    @Parameter(name = "businessTypeCode", description = "目标实体业务类型编码（必填）", required = true, example = "task")
+    @Parameter(name = "entityTypeCode", description = "目标实体业务类型编码（必填）", required = true, example = "task")
     @Parameter(name = "sourceModelCode", description = "源模型编码（必填）", required = true, example = "inspect_task_model")
     @PreAuthorize("@ss.hasPermission('system:entity-relation:query')")
     public CommonResult<List<EntityRelationRespVO>> listByTargetEntityAndSourceModelCode(
             @RequestParam("targetEntityId") Long targetEntityId,
-            @RequestParam("businessTypeCode") String businessTypeCode,
+            @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam("sourceModelCode") String sourceModelCode) {
-        return success(entityRelationService.getRelationsByTargetEntity(targetEntityId, businessTypeCode, sourceModelCode));
+        return success(entityRelationService.getRelationsByTargetEntity(targetEntityId, entityTypeCode, sourceModelCode));
     }
 
     @GetMapping("/count-by-target")
@@ -261,17 +261,17 @@ public class EntityRelationController {
         summary = "统计目标实体被关联次数",
         description = """
             适用场景：在目标实体列表或详情中展示“被引用次数/被关联次数”。
-            业务范围：指定业务（必须传 businessTypeCode）。
+            业务范围：指定业务（必须传 entityTypeCode）。
             说明：只统计目标实体维度，不区分具体源实体。
             """
     )
     @Parameter(name = "targetEntityId", description = "目标实体ID", required = true, example = "1")
-    @Parameter(name = "businessTypeCode", description = "目标实体业务类型编码（必填）", required = true, example = "task")
+    @Parameter(name = "entityTypeCode", description = "目标实体业务类型编码（必填）", required = true, example = "task")
     @PreAuthorize("@ss.hasPermission('system:entity-relation:query')")
     public CommonResult<Long> countRelationsByTargetEntity(
             @RequestParam("targetEntityId") Long targetEntityId,
-            @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(entityRelationService.countRelationsByTargetEntity(targetEntityId, businessTypeCode));
+            @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(entityRelationService.countRelationsByTargetEntity(targetEntityId, entityTypeCode));
     }
 
     @GetMapping("/list-by-field-code")
@@ -279,19 +279,19 @@ public class EntityRelationController {
         summary = "按关联字段编码查询实体关联关系",
         description = """
             适用场景：当页面按某个 REF/REF_MULTI 字段做关联追踪时，按字段编码反查关联记录。
-            业务范围：指定业务（必须传 businessTypeCode）。
+            业务范围：指定业务（必须传 entityTypeCode）。
             说明：fieldCode 必须是当前业务模型下有效的关联字段编码。
             """
     )
     @Parameter(name = "entityId", description = "实体ID", required = true, example = "1")
-    @Parameter(name = "businessTypeCode", description = "实体业务类型编码（必填）", required = true, example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "实体业务类型编码（必填）", required = true, example = "equipment")
     @Parameter(name = "fieldCode", description = "关联字段编码（必填）", required = true, example = "ref_task")
     @PreAuthorize("@ss.hasPermission('system:entity-relation:query')")
     public CommonResult<List<EntityRelationRespVO>> listRelationsByFieldCode(
             @RequestParam("entityId") Long entityId,
-            @RequestParam("businessTypeCode") String businessTypeCode,
+            @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam("fieldCode") String fieldCode) {
-        return success(entityRelationService.getRelationsByFieldCode(entityId, businessTypeCode, fieldCode));
+        return success(entityRelationService.getRelationsByFieldCode(entityId, entityTypeCode, fieldCode));
     }
 
     @PostMapping("/entity-ids-by-relation-field-and-related-ids")

@@ -67,6 +67,7 @@ public class GroupServiceImpl implements GroupService {
                 .sort(finalSort)
                 .status(finalStatus)
                 .build();
+        syncGroupParentCode(group);
         group.setTenantId(getTenantId());
         groupMapper.insert(group);
         GroupCacheHelper.cacheGroup(stringRedisTemplate, groupType, group);
@@ -95,6 +96,7 @@ public class GroupServiceImpl implements GroupService {
                 .sort(sort)
                 .status(status)
                 .build();
+        syncGroupParentCode(update);
         groupMapper.updateById(update);
         GroupCacheHelper.evictGroup(stringRedisTemplate, groupType, id);
         GroupCacheHelper.evictTree(stringRedisTemplate, groupType, getTenantId());
@@ -173,6 +175,7 @@ public class GroupServiceImpl implements GroupService {
                 .targetId(targetId)
                 .groupId(groupId)
                 .build();
+        syncGroupRelationIdentity(groupType, groupId, targetId, relation);
         relation.setTenantId(getTenantId());
         groupRelationMapper.insert(relation);
     }
@@ -400,5 +403,39 @@ public class GroupServiceImpl implements GroupService {
                     return node;
                 })
                 .collect(Collectors.toList());
+    }
+
+    private void syncGroupParentCode(GroupDO group) {
+        if (group == null) {
+            return;
+        }
+        Long parentId = group.getParentId();
+        if (parentId == null || parentId <= 0) {
+            group.setParentCode(null);
+            return;
+        }
+        GroupDO parent = groupMapper.selectById(parentId);
+        if (parent != null) {
+            group.setParentCode(parent.getCode());
+        }
+    }
+
+    /** 写入分组关联时同步 group_code + target_code（迁移以 code 为幂等键）。 */
+    private void syncGroupRelationIdentity(String groupType, Long groupId, Long targetId, GroupRelationDO relation) {
+        if (relation == null) {
+            return;
+        }
+        GroupDO group = groupMapper.selectById(groupId);
+        if (group != null) {
+            relation.setGroupId(group.getId());
+            relation.setGroupCode(group.getCode());
+        }
+        if ("FIELD".equals(groupType)) {
+            FieldDO field = fieldMapper.selectById(targetId);
+            if (field != null) {
+                relation.setTargetId(field.getId());
+                relation.setTargetCode(field.getCode());
+            }
+        }
     }
 }

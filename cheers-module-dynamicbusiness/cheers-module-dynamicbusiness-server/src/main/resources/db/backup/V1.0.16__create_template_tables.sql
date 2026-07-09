@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS dynamic_template (
     id BIGSERIAL PRIMARY KEY,
     code VARCHAR(64) NOT NULL,
     name VARCHAR(200) NOT NULL,
-    business_type_code VARCHAR(64) NOT NULL,
+    entity_type_code VARCHAR(64) NOT NULL,
     description VARCHAR(500),
     status SMALLINT NOT NULL DEFAULT 1,
     is_system BOOLEAN NOT NULL DEFAULT FALSE,
@@ -30,7 +30,7 @@ COMMENT ON TABLE dynamic_template IS '字段模板表';
 COMMENT ON COLUMN dynamic_template.id IS '模板ID';
 COMMENT ON COLUMN dynamic_template.code IS '模板编码（全局唯一,系统自动生成）';
 COMMENT ON COLUMN dynamic_template.name IS '模板名称';
-COMMENT ON COLUMN dynamic_template.business_type_code IS '业务类型编码';
+COMMENT ON COLUMN dynamic_template.entity_type_code IS '业务类型编码';
 COMMENT ON COLUMN dynamic_template.description IS '模板描述';
 COMMENT ON COLUMN dynamic_template.status IS '模板状态（1-启用,0-禁用）';
 COMMENT ON COLUMN dynamic_template.is_system IS '是否为系统预设模板';
@@ -43,7 +43,7 @@ COMMENT ON COLUMN dynamic_template.tenant_id IS '租户ID';
 
 -- 创建索引
 CREATE UNIQUE INDEX IF NOT EXISTS idx_template_code ON dynamic_template(code) WHERE deleted = FALSE;
-CREATE INDEX IF NOT EXISTS idx_template_business_type ON dynamic_template(business_type_code);
+CREATE INDEX IF NOT EXISTS idx_template_business_type ON dynamic_template(entity_type_code);
 CREATE INDEX IF NOT EXISTS idx_template_status ON dynamic_template(status);
 CREATE INDEX IF NOT EXISTS idx_template_tenant ON dynamic_template(tenant_id, deleted);
 

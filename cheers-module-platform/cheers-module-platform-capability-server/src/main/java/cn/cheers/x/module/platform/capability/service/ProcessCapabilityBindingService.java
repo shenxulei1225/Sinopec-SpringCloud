@@ -5,11 +5,11 @@ import cn.cheers.x.module.platform.capability.api.dto.ProcessCapabilityBindingSa
 
 public interface ProcessCapabilityBindingService {
 
-    ProcessCapabilityBindingRespDTO saveBinding(String businessTypeCode, ProcessCapabilityBindingSaveReqDTO request);
+    ProcessCapabilityBindingRespDTO saveBinding(String entityTypeCode, ProcessCapabilityBindingSaveReqDTO request);
 
-    ProcessCapabilityBindingRespDTO getBinding(String businessTypeCode);
+    ProcessCapabilityBindingRespDTO getBinding(String entityTypeCode);
 
-    ProcessCapabilityBindingRespDTO publishBinding(String businessTypeCode);
+    ProcessCapabilityBindingRespDTO publishBinding(String entityTypeCode);
 
-    ProcessCapabilityBindingRespDTO getPublishedBinding(String businessTypeCode);
+    ProcessCapabilityBindingRespDTO getPublishedBinding(String entityTypeCode);
 }

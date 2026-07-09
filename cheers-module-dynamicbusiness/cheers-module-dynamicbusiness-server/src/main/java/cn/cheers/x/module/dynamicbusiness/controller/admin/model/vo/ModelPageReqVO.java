@@ -18,7 +18,7 @@ import lombok.ToString;
 public class ModelPageReqVO extends PageParam {
 
     @Schema(description = "业务类型编码", example = "equipment")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "是否包含子业务类型（true 时按业务树汇总查询）", example = "true")
     private Boolean includeChildren;

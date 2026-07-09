@@ -106,7 +106,7 @@ public class EntityPermissionServiceImpl implements EntityPermissionService {
         }
         // 填充实体名称（通过 EntityService 支持多存储策略）
         // 注意：此方法已废弃，无法正确处理动态表存储的实体
-        log.warn("[getAccessPermission][使用了已废弃的方法，permissionId={}，建议使用 getAccessPermission(id, businessTypeCode)]", id);
+        log.warn("[getAccessPermission][使用了已废弃的方法，permissionId={}，建议使用 getAccessPermission(id, entityTypeCode)]", id);
         try {
             EntityRespVO entity = entityService.get(permission.getEntityId(), null);
             if (entity != null) {
@@ -119,27 +119,27 @@ public class EntityPermissionServiceImpl implements EntityPermissionService {
     }
 
     @Override
-    public EntityAccessPermissionRespVO getAccessPermission(Long id, String businessTypeCode) {
+    public EntityAccessPermissionRespVO getAccessPermission(Long id, String entityTypeCode) {
         EntityAccessPermissionDO permission = accessPermissionMapper.selectById(id);
         if (permission == null) {
             throw new ServiceException(404, "访问权限不存在");
         }
         EntityAccessPermissionRespVO respVO = BeanUtils.toBean(permission, EntityAccessPermissionRespVO.class);
-        // 填充 businessTypeCode
-        respVO.setBusinessTypeCode(businessTypeCode);
+        // 填充 entityTypeCode
+        respVO.setEntityTypeCode(entityTypeCode);
         // 填充角色名称
         RoleRespDTO role = getRole(permission.getRoleId());
         if (role != null) {
             respVO.setRoleName(role.getName());
         }
-        // 填充实体名称（通过 EntityService 支持多存储策略，使用 businessTypeCode 路由）
+        // 填充实体名称（通过 EntityService 支持多存储策略，使用 entityTypeCode 路由）
         try {
-            EntityRespVO entity = entityService.get(permission.getEntityId(), businessTypeCode);
+            EntityRespVO entity = entityService.get(permission.getEntityId(), entityTypeCode);
             if (entity != null) {
                 respVO.setEntityName(entity.getName());
             }
         } catch (Exception e) {
-            log.debug("获取实体名称失败: entityId={}, businessTypeCode={}", permission.getEntityId(), businessTypeCode);
+            log.debug("获取实体名称失败: entityId={}, entityTypeCode={}", permission.getEntityId(), entityTypeCode);
         }
         return respVO;
     }
@@ -153,15 +153,15 @@ public class EntityPermissionServiceImpl implements EntityPermissionService {
     @Override
     @Deprecated
     public List<EntityAccessPermissionRespVO> getAccessPermissionsByEntityId(Long entityId) {
-        log.warn("[getAccessPermissionsByEntityId][使用了已废弃的方法，entityId={}，建议使用 getAccessPermissionsByEntityId(entityId, businessTypeCode)]", entityId);
+        log.warn("[getAccessPermissionsByEntityId][使用了已废弃的方法，entityId={}，建议使用 getAccessPermissionsByEntityId(entityId, entityTypeCode)]", entityId);
         List<EntityAccessPermissionDO> permissions = accessPermissionMapper.selectByEntityId(entityId);
         return convertAccessPermissionList(permissions);
     }
 
     @Override
-    public List<EntityAccessPermissionRespVO> getAccessPermissionsByEntityId(Long entityId, String businessTypeCode) {
+    public List<EntityAccessPermissionRespVO> getAccessPermissionsByEntityId(Long entityId, String entityTypeCode) {
         List<EntityAccessPermissionDO> permissions = accessPermissionMapper.selectByEntityId(entityId);
-        return convertAccessPermissionList(permissions, businessTypeCode);
+        return convertAccessPermissionList(permissions, entityTypeCode);
     }
 
     @Override
@@ -230,14 +230,14 @@ public class EntityPermissionServiceImpl implements EntityPermissionService {
     }
 
     @Override
-    public EntityOperationPermissionRespVO getOperationPermission(Long id, String businessTypeCode) {
+    public EntityOperationPermissionRespVO getOperationPermission(Long id, String entityTypeCode) {
         EntityOperationPermissionDO permission = operationPermissionMapper.selectById(id);
         if (permission == null) {
             throw new ServiceException(404, "操作权限不存在");
         }
         EntityOperationPermissionRespVO respVO = BeanUtils.toBean(permission, EntityOperationPermissionRespVO.class);
-        // 填充 businessTypeCode
-        respVO.setBusinessTypeCode(businessTypeCode);
+        // 填充 entityTypeCode
+        respVO.setEntityTypeCode(entityTypeCode);
         return respVO;
     }
 
@@ -260,23 +260,23 @@ public class EntityPermissionServiceImpl implements EntityPermissionService {
     @Override
     @Deprecated
     public boolean canUpdateEntity(Long userId, Long entityId) {
-        // 此方法已废弃，建议使用 canUpdateEntity(Long userId, Long entityId, String businessTypeCode)
-        log.warn("使用了已废弃的 canUpdateEntity(userId, entityId) 方法，建议使用带 businessTypeCode 的版本");
+        // 此方法已废弃，建议使用 canUpdateEntity(Long userId, Long entityId, String entityTypeCode)
+        log.warn("使用了已废弃的 canUpdateEntity(userId, entityId) 方法，建议使用带 entityTypeCode 的版本");
         return false;
     }
 
     @Override
-    public boolean canUpdateEntity(Long userId, Long entityId, String businessTypeCode) {
+    public boolean canUpdateEntity(Long userId, Long entityId, String entityTypeCode) {
         Set<Long> roleIds = getUserRoleIds(userId);
         if (roleIds.isEmpty()) {
             return false;
         }
-        // 通过 EntityService 获取实体（支持多存储策略，使用 businessTypeCode 路由）
+        // 通过 EntityService 获取实体（支持多存储策略，使用 entityTypeCode 路由）
         EntityRespVO entity;
         try {
-            entity = entityService.get(entityId, businessTypeCode);
+            entity = entityService.get(entityId, entityTypeCode);
         } catch (Exception e) {
-            log.debug("获取实体失败: entityId={}, businessTypeCode={}", entityId, businessTypeCode);
+            log.debug("获取实体失败: entityId={}, entityTypeCode={}", entityId, entityTypeCode);
             return false;
         }
         if (entity == null) {
@@ -295,23 +295,23 @@ public class EntityPermissionServiceImpl implements EntityPermissionService {
     @Override
     @Deprecated
     public boolean canDeleteEntity(Long userId, Long entityId) {
-        // 此方法已废弃，建议使用 canDeleteEntity(Long userId, Long entityId, String businessTypeCode)
-        log.warn("使用了已废弃的 canDeleteEntity(userId, entityId) 方法，建议使用带 businessTypeCode 的版本");
+        // 此方法已废弃，建议使用 canDeleteEntity(Long userId, Long entityId, String entityTypeCode)
+        log.warn("使用了已废弃的 canDeleteEntity(userId, entityId) 方法，建议使用带 entityTypeCode 的版本");
         return false;
     }
 
     @Override
-    public boolean canDeleteEntity(Long userId, Long entityId, String businessTypeCode) {
+    public boolean canDeleteEntity(Long userId, Long entityId, String entityTypeCode) {
         Set<Long> roleIds = getUserRoleIds(userId);
         if (roleIds.isEmpty()) {
             return false;
         }
-        // 通过 EntityService 获取实体（支持多存储策略，使用 businessTypeCode 路由）
+        // 通过 EntityService 获取实体（支持多存储策略，使用 entityTypeCode 路由）
         EntityRespVO entity;
         try {
-            entity = entityService.get(entityId, businessTypeCode);
+            entity = entityService.get(entityId, entityTypeCode);
         } catch (Exception e) {
-            log.debug("获取实体失败: entityId={}, businessTypeCode={}", entityId, businessTypeCode);
+            log.debug("获取实体失败: entityId={}, entityTypeCode={}", entityId, entityTypeCode);
             return false;
         }
         if (entity == null) {
@@ -498,19 +498,19 @@ public class EntityPermissionServiceImpl implements EntityPermissionService {
     @Override
     @Deprecated
     public EntityPermissionCheckRespVO checkEntityPermission(Long userId, Long entityId) {
-        // 此方法已废弃，建议使用 checkEntityPermission(Long userId, Long entityId, String businessTypeCode)
-        log.warn("使用了已废弃的 checkEntityPermission(userId, entityId) 方法，建议使用带 businessTypeCode 的版本");
-        throw new ServiceException(400, "请使用带 businessTypeCode 的方法");
+        // 此方法已废弃，建议使用 checkEntityPermission(Long userId, Long entityId, String entityTypeCode)
+        log.warn("使用了已废弃的 checkEntityPermission(userId, entityId) 方法，建议使用带 entityTypeCode 的版本");
+        throw new ServiceException(400, "请使用带 entityTypeCode 的方法");
     }
 
     @Override
-    public EntityPermissionCheckRespVO checkEntityPermission(Long userId, Long entityId, String businessTypeCode) {
-        // 通过 EntityService 获取实体（支持多存储策略，使用 businessTypeCode 路由）
+    public EntityPermissionCheckRespVO checkEntityPermission(Long userId, Long entityId, String entityTypeCode) {
+        // 通过 EntityService 获取实体（支持多存储策略，使用 entityTypeCode 路由）
         EntityRespVO entity;
         try {
-            entity = entityService.get(entityId, businessTypeCode);
+            entity = entityService.get(entityId, entityTypeCode);
         } catch (Exception e) {
-            log.warn("获取实体失败: entityId={}, businessTypeCode={}, error={}", entityId, businessTypeCode, e.getMessage());
+            log.warn("获取实体失败: entityId={}, entityTypeCode={}, error={}", entityId, entityTypeCode, e.getMessage());
             throw new ServiceException(404, "实体不存在");
         }
         if (entity == null) {
@@ -520,8 +520,8 @@ public class EntityPermissionServiceImpl implements EntityPermissionService {
         EntityPermissionCheckRespVO respVO = EntityPermissionCheckRespVO.builder()
                 .canAccess(canAccessEntity(userId, entityId))
                 .canCreate(canCreateEntity(userId, entity.getModelId()))
-                .canUpdate(canUpdateEntity(userId, entityId, businessTypeCode))
-                .canDelete(canDeleteEntity(userId, entityId, businessTypeCode))
+                .canUpdate(canUpdateEntity(userId, entityId, entityTypeCode))
+                .canDelete(canDeleteEntity(userId, entityId, entityTypeCode))
                 .viewableFieldIds(getViewableFieldIds(userId, entity.getModelId()))
                 .editableFieldIds(getEditableFieldIds(userId, entity.getModelId()))
                 .build();
@@ -715,7 +715,7 @@ public class EntityPermissionServiceImpl implements EntityPermissionService {
     /**
      * 转换访问权限列表
      * 
-     * @deprecated 此方法无法正确处理动态表存储的实体，建议使用 convertAccessPermissionList(permissions, businessTypeCode)
+     * @deprecated 此方法无法正确处理动态表存储的实体，建议使用 convertAccessPermissionList(permissions, entityTypeCode)
      */
     @Deprecated
     private List<EntityAccessPermissionRespVO> convertAccessPermissionList(List<EntityAccessPermissionDO> permissions) {
@@ -729,22 +729,22 @@ public class EntityPermissionServiceImpl implements EntityPermissionService {
                 .collect(Collectors.toMap(RoleRespDTO::getId, r -> r));
 
         // 注意：此方法无法正确处理动态表存储的实体
-        // 建议在调用方传入 businessTypeCode 或从权限记录中获取
+        // 建议在调用方传入 entityTypeCode 或从权限记录中获取
         return permissions.stream().map(permission -> {
             EntityAccessPermissionRespVO respVO = BeanUtils.toBean(permission, EntityAccessPermissionRespVO.class);
             RoleRespDTO role = roleMap.get(permission.getRoleId());
             if (role != null) {
                 respVO.setRoleName(role.getName());
             }
-            // 实体名称无法获取，因为没有 businessTypeCode
+            // 实体名称无法获取，因为没有 entityTypeCode
             return respVO;
         }).collect(Collectors.toList());
     }
 
     /**
-     * 转换访问权限列表（带 businessTypeCode）
+     * 转换访问权限列表（带 entityTypeCode）
      */
-    private List<EntityAccessPermissionRespVO> convertAccessPermissionList(List<EntityAccessPermissionDO> permissions, String businessTypeCode) {
+    private List<EntityAccessPermissionRespVO> convertAccessPermissionList(List<EntityAccessPermissionDO> permissions, String entityTypeCode) {
         if (permissions.isEmpty()) {
             return Collections.emptyList();
         }
@@ -754,23 +754,23 @@ public class EntityPermissionServiceImpl implements EntityPermissionService {
         Map<Long, RoleRespDTO> roleMap = getRoleList(roleIds).stream()
                 .collect(Collectors.toMap(RoleRespDTO::getId, r -> r));
 
-        // 批量查询实体信息（通过 EntityService 支持多存储策略，使用 businessTypeCode 路由）
+        // 批量查询实体信息（通过 EntityService 支持多存储策略，使用 entityTypeCode 路由）
         Set<Long> entityIds = permissions.stream().map(EntityAccessPermissionDO::getEntityId).collect(Collectors.toSet());
         Map<Long, EntityRespVO> entityMap = new HashMap<>();
         for (Long entityId : entityIds) {
             try {
-                EntityRespVO entity = entityService.get(entityId, businessTypeCode);
+                EntityRespVO entity = entityService.get(entityId, entityTypeCode);
                 if (entity != null) {
                     entityMap.put(entityId, entity);
                 }
             } catch (Exception e) {
-                log.debug("获取实体失败: entityId={}, businessTypeCode={}", entityId, businessTypeCode);
+                log.debug("获取实体失败: entityId={}, entityTypeCode={}", entityId, entityTypeCode);
             }
         }
 
         return permissions.stream().map(permission -> {
             EntityAccessPermissionRespVO respVO = BeanUtils.toBean(permission, EntityAccessPermissionRespVO.class);
-            respVO.setBusinessTypeCode(businessTypeCode);
+            respVO.setEntityTypeCode(entityTypeCode);
             RoleRespDTO role = roleMap.get(permission.getRoleId());
             if (role != null) {
                 respVO.setRoleName(role.getName());

@@ -49,7 +49,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-0d966e1eedda42c5b3c7193571f3c2b3', '温度记录', 'jian_cha_nei_rong',
+  'MODEL-0d966e1eedda42c5b3c7193571f3c2b3', '温度记录', 'inspection_item',
   '', 1,
   0, NULL,
   1, 'seed'
@@ -67,7 +67,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-12fa59cf4469493a8b0a481575f5ea7e', '外观是否完好', 'jian_cha_nei_rong',
+  'MODEL-12fa59cf4469493a8b0a481575f5ea7e', '外观是否完好', 'inspection_item',
   '', 1,
   0, NULL,
   1, 'seed'
@@ -139,7 +139,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-1e1d4c6cfd724c99ab1ff9f1a9e73e98', '是否能云台控制、变焦', 'jian_cha_nei_rong',
+  'MODEL-1e1d4c6cfd724c99ab1ff9f1a9e73e98', '是否能云台控制、变焦', 'inspection_item',
   '', 1,
   0, NULL,
   1, 'seed'
@@ -157,7 +157,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-25035f3924054db1a5763651feef6c1c', '部署安装费', 'shou_fei',
+  'MODEL-25035f3924054db1a5763651feef6c1c', '部署安装费', 'billing',
   '', 1,
   0, NULL,
   1, 'seed'
@@ -193,7 +193,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-2fe725af947441cd93c590df6275e551', '接线是否松动', 'jian_cha_nei_rong',
+  'MODEL-2fe725af947441cd93c590df6275e551', '接线是否松动', 'inspection_item',
   '', 1,
   0, NULL,
   1, 'seed'
@@ -247,7 +247,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-3c262bb09fed4db6bd04a13bc5ce1309', '安防人员是否在位', 'jian_cha_nei_rong',
+  'MODEL-3c262bb09fed4db6bd04a13bc5ce1309', '安防人员是否在位', 'inspection_item',
   '', 1,
   0, NULL,
   1, 'seed'
@@ -265,7 +265,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-3ca13297c904476db91aac9880088975', '泵体及基础是否牢固', 'jian_cha_nei_rong',
+  'MODEL-3ca13297c904476db91aac9880088975', '泵体及基础是否牢固', 'inspection_item',
   '', 1,
   0, NULL,
   1, 'seed'
@@ -283,7 +283,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-3f3d3918c11148b6b67d1470ac6e8fdc', '通用模型', 'ying_ji_zi_yuan',
+  'MODEL-3f3d3918c11148b6b67d1470ac6e8fdc', '通用模型', 'emergency_resource',
   '', 1,
   0, NULL,
   1, 'seed'
@@ -301,7 +301,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-4304a9f0d8fc49c9af7acb5baa74b0f0', '个人客户', 'ke_hu',
+  'MODEL-4304a9f0d8fc49c9af7acb5baa74b0f0', '个人客户', 'customer',
   '', 1,
   0, NULL,
   1, 'seed'
@@ -337,7 +337,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-556a2a0bd63944a79f97a936f3ffeaaa', '门窗是否关闭', 'jian_cha_nei_rong',
+  'MODEL-556a2a0bd63944a79f97a936f3ffeaaa', '门窗是否关闭', 'inspection_item',
   '', 1,
   0, NULL,
   1, 'seed'
@@ -373,7 +373,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-58ca87771dfe4156b75aeac50211117f', '房间卫生是否达标', 'jian_cha_nei_rong',
+  'MODEL-58ca87771dfe4156b75aeac50211117f', '房间卫生是否达标', 'inspection_item',
   '', 1,
   0, NULL,
   1, 'seed'
@@ -499,7 +499,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-6b12a00d513b4840973d647926fa422d', '业务咨询费', 'shou_fei',
+  'MODEL-6b12a00d513b4840973d647926fa422d', '业务咨询费', 'billing',
   '', 1,
   0, NULL,
   1, 'seed'
@@ -697,7 +697,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-93d60dad3e834d518ec19cafe1bc301d', '常规点位', 'dian_wei',
+  'MODEL-93d60dad3e834d518ec19cafe1bc301d', '常规点位', 'inspection_point',
   '', 1,
   0, NULL,
   1, 'seed'
@@ -715,7 +715,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-947e1415c0514a9d9001eba2d58fb22c', '企业客户', 'ke_hu',
+  'MODEL-947e1415c0514a9d9001eba2d58fb22c', '企业客户', 'customer',
   '', 1,
   0, NULL,
   1, 'seed'
@@ -751,7 +751,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-9e6a1e6e4a5d4b378a9ec7abfd0a0fd9', '湿度记录', 'jian_cha_nei_rong',
+  'MODEL-9e6a1e6e4a5d4b378a9ec7abfd0a0fd9', '湿度记录', 'inspection_item',
   '', 1,
   0, NULL,
   1, 'seed'
@@ -805,7 +805,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-b34597144e524aeb9b969b4b8357f6cd', '驻场维护费', 'shou_fei',
+  'MODEL-b34597144e524aeb9b969b4b8357f6cd', '驻场维护费', 'billing',
   '', 1,
   0, '{"groups":[{"id":"group-1770041732814","name":"人员","color":"#409eff","sort":1,"fields":[]}]}',
   1, 'seed'
@@ -841,7 +841,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-bc167ec7fa82422cb036804214c0c3ac', '路线通用模型', 'lu_xian_guan_li',
+  'MODEL-bc167ec7fa82422cb036804214c0c3ac', '路线通用模型', 'route',
   '', 1,
   0, NULL,
   1, 'seed'
@@ -859,7 +859,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-c3470e3a96e9493880a401f79e3f98f3', '通用队伍模型', 'ying_ji_dui_wu',
+  'MODEL-c3470e3a96e9493880a401f79e3f98f3', '通用队伍模型', 'emergency_team',
   '', 1,
   0, NULL,
   1, 'seed'
@@ -949,7 +949,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-eeb6defc531844b2ad96ca2afe48b29e', '备件', 'spare_part',
+  'MODEL-eeb6defc531844b2ad96ca2afe48b29e', '备件', 'spare_parts',
   '备件模型', 1,
   0, NULL,
   1, 'seed'
@@ -1093,7 +1093,7 @@ DO UPDATE SET
 INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, field_groups_config, tenant_id, creator
 ) VALUES (
-  'MODEL-fb102aef77624c2d975a545e421ad534', '日常巡检', 'xun_jian',
+  'MODEL-fb102aef77624c2d975a545e421ad534', '日常巡检', 'patrol',
   '', 1,
   0, NULL,
   1, 'seed'

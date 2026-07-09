@@ -14,7 +14,7 @@ import java.util.Map;
 @Component
 public class WorkItemMappingResolver {
 
-    WorkItemDTO resolve(MappingProfileDO profile, String businessTypeCode,
+    WorkItemDTO resolve(MappingProfileDO profile, String entityTypeCode,
                         ResolveWorkItemsReqDTO.SourceInstanceInputDTO instance) {
         Map<String, String> fieldMappings = parseStringMap(profile.getFieldMappings());
         Map<String, Object> customFields = instance.getCustomFields() != null
@@ -31,7 +31,7 @@ public class WorkItemMappingResolver {
         return WorkItemDTO.builder()
                 .contractVersion(ContractVersions.MVP)
                 .workId(sourceInstanceId)
-                .businessTypeCode(businessTypeCode)
+                .entityTypeCode(entityTypeCode)
                 .sourceModelCode(profile.getSourceModelCode())
                 .sourceInstanceId(sourceInstanceId)
                 .durationEstimateMinutes(Math.max(duration, 1))

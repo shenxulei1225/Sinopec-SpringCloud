@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS dynamic_ref_constraint_library (
     id BIGSERIAL PRIMARY KEY,
 
     -- 业务维度
-    business_type_code VARCHAR(64) NOT NULL,
+    entity_type_code VARCHAR(64) NOT NULL,
     ref_target_type VARCHAR(64) NOT NULL,
 
     -- 约束器信息
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS dynamic_ref_constraint_library (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_ref_constraint_unique
-    ON dynamic_ref_constraint_library(business_type_code, ref_target_type, constraint_type, tenant_id)
+    ON dynamic_ref_constraint_library(entity_type_code, ref_target_type, constraint_type, tenant_id)
     WHERE deleted = FALSE;
 
 CREATE INDEX IF NOT EXISTS idx_ref_constraint_tenant
@@ -38,7 +38,7 @@ CREATE INDEX IF NOT EXISTS idx_ref_constraint_tenant
     WHERE deleted = FALSE;
 
 COMMENT ON TABLE dynamic_ref_constraint_library IS 'Ref 约束器库表';
-COMMENT ON COLUMN dynamic_ref_constraint_library.business_type_code IS '业务类型编码';
+COMMENT ON COLUMN dynamic_ref_constraint_library.entity_type_code IS '业务类型编码';
 COMMENT ON COLUMN dynamic_ref_constraint_library.ref_target_type IS 'Ref 目标类型';
 COMMENT ON COLUMN dynamic_ref_constraint_library.constraint_type IS '约束器类型';
 COMMENT ON COLUMN dynamic_ref_constraint_library.constraint_name IS '约束器名称';

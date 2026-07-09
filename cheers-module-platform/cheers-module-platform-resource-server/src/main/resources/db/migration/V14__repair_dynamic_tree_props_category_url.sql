@@ -5,38 +5,38 @@ SET search_path TO platformresource;
 UPDATE pr_component_props
 SET
     props = jsonb_set(
-        props,
+        props::jsonb,
         '{dataSource,dataSourceEndpoint,url}',
         '""'::jsonb,
         true
-    ),
+    )::text,
     updater = 'repair',
     update_time = CURRENT_TIMESTAMP
 WHERE component_code = 'tree'
   AND deleted = FALSE
-  AND COALESCE(data_source->>'businessCategory', '') = 'dynamic'
-  AND COALESCE(data_source->>'dataKind', '') IN ('model', 'entity')
+  AND COALESCE(data_source::jsonb->>'businessCategory', '') = 'dynamic'
+  AND COALESCE(data_source::jsonb->>'dataKind', '') IN ('model', 'entity')
   AND (
-    props->'dataSource'->'dataSourceEndpoint'->>'url' LIKE '%/dynamicbusiness/category/tree%'
-    OR props->'dataSource'->'dataSourceEndpoint'->>'url' LIKE '%/system/category/tree%'
+    props::jsonb->'dataSource'->'dataSourceEndpoint'->>'url' LIKE '%/dynamicbusiness/category/tree%'
+    OR props::jsonb->'dataSource'->'dataSourceEndpoint'->>'url' LIKE '%/system/category/tree%'
   );
 
 -- 同步清理 apiConfig.dataEndpoint 中同类误存（历史保存形态）
 UPDATE pr_component_props
 SET
     props = jsonb_set(
-        props,
+        props::jsonb,
         '{apiConfig,dataEndpoint,url}',
         '""'::jsonb,
         true
-    ),
+    )::text,
     updater = 'repair',
     update_time = CURRENT_TIMESTAMP
 WHERE component_code = 'tree'
   AND deleted = FALSE
-  AND COALESCE(data_source->>'businessCategory', '') = 'dynamic'
-  AND COALESCE(data_source->>'dataKind', '') IN ('model', 'entity')
+  AND COALESCE(data_source::jsonb->>'businessCategory', '') = 'dynamic'
+  AND COALESCE(data_source::jsonb->>'dataKind', '') IN ('model', 'entity')
   AND (
-    props->'apiConfig'->'dataEndpoint'->>'url' LIKE '%/dynamicbusiness/category/tree%'
-    OR props->'apiConfig'->'dataEndpoint'->>'url' LIKE '%/system/category/tree%'
+    props::jsonb->'apiConfig'->'dataEndpoint'->>'url' LIKE '%/dynamicbusiness/category/tree%'
+    OR props::jsonb->'apiConfig'->'dataEndpoint'->>'url' LIKE '%/system/category/tree%'
   );

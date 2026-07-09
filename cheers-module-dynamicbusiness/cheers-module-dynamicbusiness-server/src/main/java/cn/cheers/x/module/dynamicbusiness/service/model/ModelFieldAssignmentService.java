@@ -163,10 +163,10 @@ public interface ModelFieldAssignmentService {
      * 
      * @param modelIds Model ID列表
      * @param fieldId 关联字段ID
-     * @param targetBusinessTypeCode 目标业务类型编码（用于日志记录）
+     * @param targetEntityTypeCode 目标业务类型编码（用于日志记录）
      * @return 成功分配的Model数量
      */
-    int batchAssignAssociationFieldToModels(List<Long> modelIds, Long fieldId, String targetBusinessTypeCode);
+    int batchAssignAssociationFieldToModels(List<Long> modelIds, Long fieldId, String targetEntityTypeCode);
 
     /**
      * 智能分配关联字段到Model（根据Model数量选择处理方式）
@@ -177,9 +177,9 @@ public interface ModelFieldAssignmentService {
      * 
      * @param modelIds Model ID列表
      * @param fieldId 关联字段ID
-     * @param targetBusinessTypeCode 目标业务类型编码
+     * @param targetEntityTypeCode 目标业务类型编码
      * @return 成功分配的Model数量
      */
-    int smartAssignAssociationFieldToModels(List<Long> modelIds, Long fieldId, String targetBusinessTypeCode);
+    int smartAssignAssociationFieldToModels(List<Long> modelIds, Long fieldId, String targetEntityTypeCode);
 }
 

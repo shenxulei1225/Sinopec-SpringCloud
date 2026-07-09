@@ -53,7 +53,7 @@ public class TemplateDO extends TenantBaseDO {
      * 业务类型编码（用于区分不同业务领域）
      * 例如：equipment（设备管理）、task（任务管理）
      */
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     /**
      * 模板描述

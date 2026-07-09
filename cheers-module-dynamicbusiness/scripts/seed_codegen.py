@@ -256,11 +256,11 @@ def render_model_relation_declarations(rows: list[dict], model_id_to_code: dict[
         if not model_code:
             continue
         lines.append(
-            f"""INSERT INTO dynamic_model_relation_declaration (model_id, target_entity_type, tenant_id, creator)
-SELECT m.id, {sql_literal(row["target_entity_type"])}, {TENANT_ID}, 'seed'
+            f"""INSERT INTO dynamic_model_relation_declaration (model_code, model_id, target_entity_type, tenant_id, creator)
+SELECT {sql_literal(model_code)}, m.id, {sql_literal(row["target_entity_type"])}, {TENANT_ID}, 'seed'
 FROM dynamic_model m
 WHERE m.deleted = false AND m.tenant_id = {TENANT_ID} AND m.code = {sql_literal(model_code)}
-ON CONFLICT (model_id, target_entity_type, tenant_id) WHERE deleted = false
+ON CONFLICT (model_code, target_entity_type, tenant_id) WHERE deleted = false
 DO NOTHING;
 """
         )
@@ -347,7 +347,7 @@ def render_model_field_assignments(
     if not rows:
         return "-- dynamic_model_field_assignment: (empty)\n"
     lines = [
-        f"-- dynamic_model_field_assignment: {len(rows)} row(s), resolve model_id/field_id by code\n"
+        f"-- dynamic_model_field_assignment: {len(rows)} row(s), upsert by model_code + field_code\n"
     ]
     for row in rows:
         model_code = model_id_to_code.get(int(row["model_id"]))
@@ -370,12 +370,12 @@ def render_model_field_assignments(
         )
         lines.append(
             f"""INSERT INTO dynamic_model_field_assignment (
-  model_id, field_id, required, is_searchable, is_filterable, is_sortable,
+  model_code, field_code, model_id, field_id, required, is_searchable, is_filterable, is_sortable,
   default_value, validation_rules, sort, field_group_id, field_source,
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  m.id, f.id,
+  {sql_literal(model_code)}, {sql_literal(field_code)}, m.id, f.id,
   {sql_literal(row.get("required", False))}, {sql_literal(row.get("is_searchable", False))},
   {sql_literal(row.get("is_filterable", False))}, {sql_literal(row.get("is_sortable", False))},
   {sql_literal(row.get("default_value"))}, {sql_literal(row.get("validation_rules"))},
@@ -387,8 +387,10 @@ JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = {TENANT_ID}
 WHERE m.deleted = false AND m.tenant_id = {TENANT_ID}
   AND m.code = {sql_literal(model_code)}
   AND f.code = {sql_literal(field_code)}
-ON CONFLICT (model_id, field_id, tenant_id) WHERE deleted = false
+ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
+  model_id = EXCLUDED.model_id,
+  field_id = EXCLUDED.field_id,
   required = EXCLUDED.required,
   is_searchable = EXCLUDED.is_searchable,
   is_filterable = EXCLUDED.is_filterable,
@@ -406,6 +408,53 @@ DO UPDATE SET
 """
         )
     return "\n".join(lines)
+
+
+def assign_model_field_sql(
+    model_code: str,
+    field_code: str,
+    *,
+    required: bool = False,
+    is_searchable: bool = False,
+    is_filterable: bool = False,
+    is_sortable: bool = False,
+    sort: int = 0,
+    field_source: str = "USER_ADDED",
+    target_entity_type: str | None = None,
+) -> str:
+    """单条 model↔field 分配 SQL；幂等键 model_code + field_code（需已执行 V2 迁移）。"""
+    return f"""INSERT INTO dynamic_model_field_assignment (
+  model_code, field_code, model_id, field_id, required, is_searchable, is_filterable, is_sortable,
+  default_value, validation_rules, sort, field_group_id, field_source,
+  ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
+)
+SELECT
+  {sql_literal(model_code)}, {sql_literal(field_code)}, m.id, f.id,
+  {sql_literal(required)}, {sql_literal(is_searchable)},
+  {sql_literal(is_filterable)}, {sql_literal(is_sortable)},
+  NULL, NULL,
+  {sql_literal(sort)}, NULL,
+  {sql_literal(field_source)}, NULL,
+  NULL, {sql_literal(target_entity_type)}, {TENANT_ID}, 'seed'
+FROM dynamic_model m
+JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = {TENANT_ID}
+WHERE m.deleted = false AND m.tenant_id = {TENANT_ID}
+  AND m.code = {sql_literal(model_code)}
+  AND f.code = {sql_literal(field_code)}
+ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  model_id = EXCLUDED.model_id,
+  field_id = EXCLUDED.field_id,
+  required = EXCLUDED.required,
+  is_searchable = EXCLUDED.is_searchable,
+  is_filterable = EXCLUDED.is_filterable,
+  is_sortable = EXCLUDED.is_sortable,
+  sort = EXCLUDED.sort,
+  field_source = EXCLUDED.field_source,
+  target_entity_type = EXCLUDED.target_entity_type,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+"""
 
 
 def render_category_types(rows: list[dict], category_id_to_code: dict[int, str]) -> str:
@@ -458,15 +507,16 @@ def render_categories(rows: list[dict], category_id_to_code: dict[int, str]) -> 
             parent_sql = f"(SELECT p.id FROM dynamic_category p WHERE p.deleted = false AND p.tenant_id = {TENANT_ID} AND p.code = {sql_literal(pcode)} LIMIT 1)"
         lines.append(
             f"""INSERT INTO dynamic_category (
-  parent_id, name, code, category_type_code, sort, status, description, tenant_id, creator
+  parent_id, parent_code, name, code, category_type_code, sort, status, description, tenant_id, creator
 ) VALUES (
-  {parent_sql}, {sql_literal(row["name"])}, {sql_literal(row["code"])},
+  {parent_sql}, {sql_literal(pcode) if pcode else "NULL"}, {sql_literal(row["name"])}, {sql_literal(row["code"])},
   {sql_literal(row["category_type_code"])}, {sql_literal(row.get("sort", 0))},
   {sql_literal(row.get("status", 1))}, {sql_literal(row.get("description"))}, {TENANT_ID}, 'seed'
 )
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   parent_id = EXCLUDED.parent_id,
+  parent_code = EXCLUDED.parent_code,
   name = EXCLUDED.name,
   category_type_code = EXCLUDED.category_type_code,
   sort = EXCLUDED.sort,
@@ -522,19 +572,22 @@ def render_model_category_relations(
             continue
         lines.append(
             f"""INSERT INTO dynamic_model_category_relation (
-  model_id, category_id, entity_type_code, sort, tenant_id, creator
+  model_code, category_code, model_id, category_id, entity_type_code, sort, tenant_id, creator
 )
-SELECT m.id, c.id, {sql_literal(row.get("entity_type_code"))}, {sql_literal(row.get("sort", 0))}, {TENANT_ID}, 'seed'
+SELECT {sql_literal(mcode)}, {sql_literal(ccode)}, m.id, c.id,
+  {sql_literal(row.get("entity_type_code"))}, {sql_literal(row.get("sort", 0))}, {TENANT_ID}, 'seed'
 FROM dynamic_model m
 JOIN dynamic_category c ON c.deleted = false AND c.tenant_id = {TENANT_ID}
 WHERE m.deleted = false AND m.tenant_id = {TENANT_ID}
   AND m.code = {sql_literal(mcode)}
   AND c.code = {sql_literal(ccode)}
-  AND NOT EXISTS (
-    SELECT 1 FROM dynamic_model_category_relation r
-    WHERE r.deleted = false AND r.tenant_id = {TENANT_ID}
-      AND r.model_id = m.id AND r.category_id = c.id
-  );
+ON CONFLICT (model_code, category_code, entity_type_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  model_id = EXCLUDED.model_id,
+  category_id = EXCLUDED.category_id,
+  sort = EXCLUDED.sort,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
 """
         )
     return "\n".join(lines)
@@ -623,11 +676,11 @@ def render_field_groups(rows: list[dict], group_id_to_code: dict[int, str] | Non
 )"""
         lines.append(
             f"""INSERT INTO dynamic_group (
-  group_type, code, name, description, parent_id, path, level, sort, status, tenant_id, creator
+  group_type, code, name, description, parent_id, parent_code, path, level, sort, status, tenant_id, creator
 )
 SELECT
   'FIELD', {sql_literal(row["code"])}, {sql_literal(row["name"])},
-  {sql_literal(row.get("description"))}, {parent_sql},
+  {sql_literal(row.get("description"))}, {parent_sql}, {sql_literal(pcode) if pcode else "NULL"},
   {sql_literal(row.get("path"))}, {sql_literal(row.get("level", 1))},
   {sql_literal(row.get("sort", 0))}, {sql_literal(row.get("status", 1))},
   {TENANT_ID}, 'zhgl-seed'
@@ -640,6 +693,8 @@ WHERE NOT EXISTS (
 UPDATE dynamic_group g SET
   name = {sql_literal(row["name"])},
   description = {sql_literal(row.get("description"))},
+  parent_id = {parent_sql},
+  parent_code = {sql_literal(pcode) if pcode else "NULL"},
   sort = {sql_literal(row.get("sort", 0))},
   status = {sql_literal(row.get("status", 1))},
   updater = 'zhgl-seed',
@@ -661,20 +716,22 @@ def render_field_group_relations(rows: list[dict]) -> str:
     for row in rows:
         lines.append(
             f"""INSERT INTO dynamic_group_relation (
-  group_type, group_id, target_id, sort, tenant_id, creator
+  group_type, group_code, target_code, group_id, target_id, sort, tenant_id, creator
 )
 SELECT
-  'FIELD', g.id, f.id, {sql_literal(row.get("sort", 0))}, {TENANT_ID}, 'zhgl-seed'
+  'FIELD', g.code, f.code, g.id, f.id, {sql_literal(row.get("sort", 0))}, {TENANT_ID}, 'zhgl-seed'
 FROM dynamic_group g
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = {TENANT_ID}
 WHERE g.deleted = false AND g.tenant_id = {TENANT_ID} AND g.group_type = 'FIELD'
   AND g.code = {sql_literal(row["group_code"])}
   AND f.code = {sql_literal(row["field_code"])}
-  AND NOT EXISTS (
-    SELECT 1 FROM dynamic_group_relation gr
-    WHERE gr.deleted = false AND gr.tenant_id = {TENANT_ID}
-      AND gr.group_type = 'FIELD' AND gr.group_id = g.id AND gr.target_id = f.id
-  );
+ON CONFLICT (group_type, group_code, target_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  group_id = EXCLUDED.group_id,
+  target_id = EXCLUDED.target_id,
+  sort = EXCLUDED.sort,
+  updater = 'zhgl-seed',
+  update_time = CURRENT_TIMESTAMP;
 """
         )
     return "\n".join(lines)
@@ -906,5 +963,5 @@ def compose_industry_field_library(
     groups: list[dict],
     group_relations: list[dict],
 ) -> str:
-    """Full field pool + FIELD groups for Flyway V27 / platform-import 04."""
+    """Full field pool + FIELD groups for platform-import seed / smart-station 04."""
     return compose_zhgl_field_pool(fields, groups, group_relations)

@@ -63,11 +63,11 @@ public interface ModelRelationMapper extends BaseMapperX<ModelRelationDO> {
     }
 
     /**
-     * 根据 BusinessType 关联 ID 查询所有 Model 关联
+     * 根据 EntityType 关联 ID 查询所有 Model 关联
      */
-    default List<ModelRelationDO> selectByBusinessTypeRelationId(Long businessTypeRelationId) {
+    default List<ModelRelationDO> selectByEntityTypeRelationId(Long entityTypeRelationId) {
         return selectList(new LambdaQueryWrapperX<ModelRelationDO>()
-                .eq(ModelRelationDO::getBusinessTypeRelationId, businessTypeRelationId)
+                .eq(ModelRelationDO::getEntityTypeRelationId, entityTypeRelationId)
                 .orderByDesc(ModelRelationDO::getCreateTime));
     }
 
@@ -99,12 +99,12 @@ public interface ModelRelationMapper extends BaseMapperX<ModelRelationDO> {
     }
 
     /**
-     * 根据 BusinessType 关联 ID 删除所有自动生成的 Model 关联
+     * 根据 EntityType 关联 ID 删除所有自动生成的 Model 关联
      * 
      * 注意：使用物理删除，因为这些关联是系统自动生成的
      */
-    @Delete("DELETE FROM dynamic_model_relation WHERE business_type_relation_id = #{businessTypeRelationId} AND auto_generated = true")
-    int deleteByBusinessTypeRelationId(@Param("businessTypeRelationId") Long businessTypeRelationId);
+    @Delete("DELETE FROM dynamic_model_relation WHERE entity_type_relation_id = #{entityTypeRelationId} AND auto_generated = true")
+    int deleteByEntityTypeRelationId(@Param("entityTypeRelationId") Long entityTypeRelationId);
 
     /**
      * 根据 Model ID 删除所有相关关联（源或目标）

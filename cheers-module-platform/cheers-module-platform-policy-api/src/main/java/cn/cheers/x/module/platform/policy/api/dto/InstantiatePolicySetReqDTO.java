@@ -17,8 +17,8 @@ public class InstantiatePolicySetReqDTO {
     @NotBlank(message = "templateId 不能为空")
     private String templateId;
 
-    @NotBlank(message = "businessTypeCode 不能为空")
-    private String businessTypeCode;
+    @NotBlank(message = "entityTypeCode 不能为空")
+    private String entityTypeCode;
 
     private Map<String, Object> params;
 }

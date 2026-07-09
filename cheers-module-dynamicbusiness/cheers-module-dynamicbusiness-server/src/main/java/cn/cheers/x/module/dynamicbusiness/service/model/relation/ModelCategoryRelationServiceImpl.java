@@ -9,6 +9,7 @@ import static cn.cheers.x.module.dynamicbusiness.enums.ErrorCodeConstants.ASSOCI
 import static cn.cheers.x.module.dynamicbusiness.enums.ErrorCodeConstants.ENTITY_NOT_EXISTS;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelCategoryRelationDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelCategoryRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryService;
@@ -32,9 +33,9 @@ import java.util.stream.Collectors;
  *
  * <p>实现约定：</p>
  * <ul>
- *   <li>所有关联写操作均显式使用 businessTypeCode 进行业务隔离与索引命中；</li>
+ *   <li>所有关联写操作均显式使用 entityTypeCode 进行业务隔离与索引命中；</li>
  *   <li>查询类方法仅返回 modelId / categoryId 序列，不返回详情对象；</li>
- *   <li>批量方法在“同批次同 businessTypeCode”前提下执行，跨业务类型需拆批调用。</li>
+ *   <li>批量方法在“同批次同 entityTypeCode”前提下执行，跨业务类型需拆批调用。</li>
  * </ul>
  *
  * @author 基础服务模块
@@ -69,7 +70,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
      *
      * <p>处理步骤：</p>
      * <ol>
-     *   <li>校验参数（modelId/categoryId/businessTypeCode）与主数据存在性；</li>
+     *   <li>校验参数（modelId/categoryId/entityTypeCode）与主数据存在性；</li>
      *   <li>优先恢复软删除关联（避免唯一约束冲突）；</li>
      *   <li>若有效关联已存在则直接返回成功；</li>
      *   <li>否则创建新关联并分配分类内排序（sort）。</li>
@@ -77,25 +78,25 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ModelCategoryAssociationRespVO associate(Long modelId, Long categoryId, String businessTypeCode) {
+    public ModelCategoryAssociationRespVO associate(Long modelId, Long categoryId, String entityTypeCode) {
         long startTime = System.currentTimeMillis();
         /** 校验参数 */
         validateModelIdNotNull(modelId);
         validateCategoryIdNotNull(categoryId);
-        validateBusinessTypeCodeNotBlank(businessTypeCode);
-        validateModelExists(modelId, businessTypeCode);
+        validateEntityTypeCodeNotBlank(entityTypeCode);
+        validateModelExists(modelId, entityTypeCode);
         validateCategoryExists(categoryId);
 
         // 如果存在软删除的关联，优先恢复软删除关联，避免唯一键冲突
         int restored = relationMapper.restoreDeletedRelation(
                 modelId,
                 categoryId,
-                businessTypeCode,
+                entityTypeCode,
                 // 排序策略：增量关联不全量重排；恢复/新增均置于当前分类末尾。
                 nextRelationSort(categoryId));
         if (restored > 0) {
-            log.info("重新启用已删除的实体-分类关联并更新排序: modelId={}, categoryId={}, businessTypeCode={}",
-                    modelId, categoryId, businessTypeCode);
+            log.info("重新启用已删除的实体-分类关联并更新排序: modelId={}, categoryId={}, entityTypeCode={}",
+                    modelId, categoryId, entityTypeCode);
             return ModelCategoryAssociationRespVO.builder()
                     .operationType("ASSOCIATE")
                     .modelId(modelId)
@@ -110,8 +111,8 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         }
 
         // 检查有效关联是否已存在
-        if (existsRelation(modelId, categoryId, businessTypeCode)) {
-            log.debug("关联已存在: modelId={}, categoryId={}, businessTypeCode={}", modelId, categoryId, businessTypeCode);
+        if (existsRelation(modelId, categoryId, entityTypeCode)) {
+            log.debug("关联已存在: modelId={}, categoryId={}, entityTypeCode={}", modelId, categoryId, entityTypeCode);
             return ModelCategoryAssociationRespVO.builder()
                     .operationType("ASSOCIATE")
                     .modelId(modelId)
@@ -129,21 +130,22 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         ModelCategoryRelationDO relation = ModelCategoryRelationDO.builder()
                 .modelId(modelId)
                 .categoryId(categoryId)
-                .businessTypeCode(businessTypeCode)
+                .entityTypeCode(entityTypeCode)
                 .sort(nextRelationSort(categoryId))
                 .build();
+        syncRelationIdentity(relation);
         try {
             relationMapper.insert(relation);
         } catch (org.springframework.dao.DuplicateKeyException ex) {
             // 并发/重复请求兜底：唯一键冲突按幂等成功处理
-            if (!existsRelation(modelId, categoryId, businessTypeCode)) {
+            if (!existsRelation(modelId, categoryId, entityTypeCode)) {
                 throw ex;
             }
-            log.info("关联并发冲突已按幂等成功处理: modelId={}, categoryId={}, businessTypeCode={}",
-                    modelId, categoryId, businessTypeCode);
+            log.info("关联并发冲突已按幂等成功处理: modelId={}, categoryId={}, entityTypeCode={}",
+                    modelId, categoryId, entityTypeCode);
         }
 
-        log.info("创建实体-分类关联: modelId={}, categoryId={}, businessTypeCode={}", modelId, categoryId, businessTypeCode);
+        log.info("创建实体-分类关联: modelId={}, categoryId={}, entityTypeCode={}", modelId, categoryId, entityTypeCode);
         return ModelCategoryAssociationRespVO.builder()
                 .operationType("ASSOCIATE")
                 .modelId(modelId)
@@ -163,14 +165,14 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
      * <p>处理步骤：</p>
      * <ol>
      *   <li>参数空值校验；</li>
-     *   <li>校验 businessTypeCode；</li>
-     *   <li>按 modelId + categoryId + businessTypeCode 删除关联；</li>
+     *   <li>校验 entityTypeCode；</li>
+     *   <li>按 modelId + categoryId + entityTypeCode 删除关联；</li>
      *   <li>返回统一响应结构（含统计与耗时）。</li>
      * </ol>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ModelCategoryAssociationRespVO disassociate(Long modelId, Long categoryId, String businessTypeCode) {
+    public ModelCategoryAssociationRespVO disassociate(Long modelId, Long categoryId, String entityTypeCode) {
         long startTime = System.currentTimeMillis();
         if (modelId == null || categoryId == null) {
             return ModelCategoryAssociationRespVO.builder()
@@ -189,9 +191,9 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
                     .executionTime(System.currentTimeMillis() - startTime)
                     .build();
         }
-        validateBusinessTypeCodeNotBlank(businessTypeCode);
-        relationMapper.deleteByModelAndCategory(modelId, categoryId, businessTypeCode);
-        log.info("删除实体-分类关联: modelId={}, categoryId={}, businessTypeCode={}", modelId, categoryId, businessTypeCode);
+        validateEntityTypeCodeNotBlank(entityTypeCode);
+        relationMapper.deleteByModelAndCategory(modelId, categoryId, entityTypeCode);
+        log.info("删除实体-分类关联: modelId={}, categoryId={}, entityTypeCode={}", modelId, categoryId, entityTypeCode);
         return ModelCategoryAssociationRespVO.builder()
                 .operationType("DISASSOCIATE")
                 .modelId(modelId)
@@ -209,12 +211,12 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
      * 判断实体与分类关联是否存在。
      */
     @Override
-    public boolean existsRelation(Long modelId, Long categoryId, String businessTypeCode) {
+    public boolean existsRelation(Long modelId, Long categoryId, String entityTypeCode) {
         if (modelId == null || categoryId == null) {
             return false;
         }
-        validateBusinessTypeCodeNotBlank(businessTypeCode);
-        return relationMapper.selectByModelAndCategory(modelId, categoryId, businessTypeCode) != null;
+        validateEntityTypeCodeNotBlank(entityTypeCode);
+        return relationMapper.selectByModelAndCategory(modelId, categoryId, entityTypeCode) != null;
     }
 
     // ==================== 单模型-多分类操作 ====================
@@ -233,13 +235,13 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ModelCategoryAssociationRespVO batchAssociateModelToCategories(
-            Long modelId, List<Long> categoryIds, String businessTypeCode) {
+            Long modelId, List<Long> categoryIds, String entityTypeCode) {
         // 排序策略：批量增量关联不全量重排；仅对恢复/新增记录分配新的尾部 sort。
         long startTime = System.currentTimeMillis();
 
         // 1. 验证实体存在
         // Step 1: 校验实体存在性（不存在直接返回失败结构）
-        boolean modelExists = isModelExists(modelId, businessTypeCode);
+        boolean modelExists = isModelExists(modelId, entityTypeCode);
         if (!modelExists) {
             return ModelCategoryAssociationRespVO.builder()
                     .operationType("ASSOCIATE")
@@ -251,7 +253,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
                     .successCategoryIds(Collections.emptyList())
                     .failItems(List.of(CategoryAssociationBaseRespVO.FailItem.builder()
                             .categoryId(null)
-                            .reason("实体不存在 (ID: " + modelId + ", businessTypeCode: " + businessTypeCode + ")")
+                            .reason("实体不存在 (ID: " + modelId + ", entityTypeCode: " + entityTypeCode + ")")
                             .errorCode(ENTITY_NOT_EXISTS.getCode())
                             .build()))
                     .executionTime(System.currentTimeMillis() - startTime)
@@ -259,7 +261,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         }
 
         // 2. 执行关联操作（传入实体业务类型用于跨业务关联验证）
-        BatchAssociateResult associateResult = batchAssociateInternal(modelId, categoryIds, businessTypeCode);
+        BatchAssociateResult associateResult = batchAssociateInternal(modelId, categoryIds, entityTypeCode);
 
         return ModelCategoryAssociationRespVO.builder()
                 .operationType("ASSOCIATE")
@@ -279,7 +281,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ModelCategoryAssociationRespVO batchDisassociateModelFromCategories(Long modelId, List<Long> categoryIds, String businessTypeCode) {
+    public ModelCategoryAssociationRespVO batchDisassociateModelFromCategories(Long modelId, List<Long> categoryIds, String entityTypeCode) {
         long startTime = System.currentTimeMillis();
         if (modelId == null || categoryIds == null || categoryIds.isEmpty()) {
             return ModelCategoryAssociationRespVO.builder()
@@ -299,15 +301,15 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
                     .build();
         }
 
-        validateBusinessTypeCodeNotBlank(businessTypeCode);
+        validateEntityTypeCodeNotBlank(entityTypeCode);
         int successCount = 0;
         for (Long categoryId : categoryIds) {
             // 仅删除 model-category 关联
-            relationMapper.deleteByModelAndCategory(modelId, categoryId, businessTypeCode);
+            relationMapper.deleteByModelAndCategory(modelId, categoryId, entityTypeCode);
             successCount++;
         }
 
-        log.info("批量取消实体与分类的关联: modelId={}, categoryIds={}, businessTypeCode={}", modelId, categoryIds, businessTypeCode);
+        log.info("批量取消实体与分类的关联: modelId={}, categoryIds={}, entityTypeCode={}", modelId, categoryIds, entityTypeCode);
         return ModelCategoryAssociationRespVO.builder()
                 .operationType("BATCH_DISASSOCIATE")
                 .modelId(modelId)
@@ -324,13 +326,13 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ModelCategoryAssociationRespVO updateAssociation(
-            Long modelId, List<Long> categoryIds, String businessTypeCode) {
+            Long modelId, List<Long> categoryIds, String entityTypeCode) {
         // 排序策略：更新实体关联的分类时，不重排未变关联；仅对恢复/新增关联分配新的 sort。
         long startTime = System.currentTimeMillis();
         List<CategoryAssociationBaseRespVO.FailItem> failItems = new ArrayList<>();
 
         // 1. 验证实体存在
-        boolean modelExists = isModelExists(modelId, businessTypeCode);
+        boolean modelExists = isModelExists(modelId, entityTypeCode);
         if (!modelExists) {
             return ModelCategoryAssociationRespVO.builder()
                     .operationType("UPDATE")
@@ -342,7 +344,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
                     .successCategoryIds(Collections.emptyList())
                     .failItems(List.of(ModelCategoryAssociationRespVO.FailItem.builder()
                             .categoryId(null)
-                            .reason("实体不存在 (ID: " + modelId + ", businessTypeCode: " + businessTypeCode + ")")
+                            .reason("实体不存在 (ID: " + modelId + ", entityTypeCode: " + entityTypeCode + ")")
                             .errorCode(ENTITY_NOT_EXISTS.getCode())
                             .build()))
                     .executionTime(System.currentTimeMillis() - startTime)
@@ -365,10 +367,10 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
             }
         }
 
-        // Step 3: 读取当前有效关联（按 modelId，再在内存中过滤 businessTypeCode）
+        // Step 3: 读取当前有效关联（按 modelId，再在内存中过滤 entityTypeCode）
         List<ModelCategoryRelationDO> activeRelations = relationMapper.selectByModelId(modelId);
         Set<Long> activeCategoryIds = activeRelations.stream()
-                .filter(rel -> businessTypeCode.equals(rel.getBusinessTypeCode()))
+                .filter(rel -> entityTypeCode.equals(rel.getEntityTypeCode()))
                 .map(ModelCategoryRelationDO::getCategoryId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -376,7 +378,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         // Step 4: 读取目标分类上的历史关联（含 deleted）并提取恢复候选
         List<ModelCategoryRelationDO> existingRelationsOnTarget = validCategoryIds.isEmpty()
                 ? Collections.emptyList()
-                : relationMapper.selectByModelAndCategoryIdsIncludingDeleted(modelId, validCategoryIds, businessTypeCode);
+                : relationMapper.selectByModelAndCategoryIdsIncludingDeleted(modelId, validCategoryIds, entityTypeCode);
         Set<Long> restoreCandidates = existingRelationsOnTarget.stream()
                 .filter(rel -> Boolean.TRUE.equals(rel.getDeleted()))
                 .map(ModelCategoryRelationDO::getCategoryId)
@@ -395,7 +397,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         }
         // Step 7: 先完成状态变更（恢复 + 新增），不在此阶段分段编号
         if (!toRestore.isEmpty()) {
-            relationMapper.restoreDeletedRelationsBatch(modelId, toRestore, businessTypeCode);
+            relationMapper.restoreDeletedRelationsBatch(modelId, toRestore, entityTypeCode);
         }
         if (!toInsert.isEmpty()) {
             List<ModelCategoryRelationDO> relationsToInsert = new ArrayList<>();
@@ -403,10 +405,11 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
                 relationsToInsert.add(ModelCategoryRelationDO.builder()
                         .modelId(modelId)
                         .categoryId(categoryId)
-                        .businessTypeCode(businessTypeCode)
+                        .entityTypeCode(entityTypeCode)
                         .sort(0)
                         .build());
             }
+            enrichRelationCodes(relationsToInsert);
             relationMapper.insertBatchRelations(relationsToInsert);
         }
 
@@ -419,7 +422,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
             Map<Long, Integer> sortOffsetMap = new HashMap<>();
             for (Long categoryId : changedOrdered) {
                 relationMapper.updateSortByModelAndCategory(modelId, categoryId,
-                        calculateSortWithBase(baseSortMap, sortOffsetMap, categoryId), businessTypeCode);
+                        calculateSortWithBase(baseSortMap, sortOffsetMap, categoryId), entityTypeCode);
             }
         }
 
@@ -456,9 +459,9 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
                 .findFirst()
                 .orElseThrow(() -> new ServiceException(404, "源模型不在目标分类下"));
 
-        String businessTypeCode = sourceRel.getBusinessTypeCode();
+        String entityTypeCode = sourceRel.getEntityTypeCode();
         List<ModelCategoryRelationDO> ordered = allInCategory.stream()
-                .filter(r -> Objects.equals(businessTypeCode, r.getBusinessTypeCode()))
+                .filter(r -> Objects.equals(entityTypeCode, r.getEntityTypeCode()))
                 .sorted(Comparator.comparing(ModelCategoryRelationDO::getSort, Comparator.nullsLast(Integer::compareTo))
                         .thenComparing(ModelCategoryRelationDO::getId, Comparator.nullsLast(Long::compareTo)))
                 .collect(Collectors.toCollection(ArrayList::new));
@@ -480,13 +483,13 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         Integer newSort = modelRelationSortService.computeSparseSort(prevSort, nextSort);
 
         if (newSort == null) {
-            rebalanceSorts(ordered, businessTypeCode, categoryId);
+            rebalanceSorts(ordered, entityTypeCode, categoryId);
             prevSort = insertIndex > 0 ? modelRelationSortService.safeSort(ordered.get(insertIndex - 1).getSort()) : null;
             nextSort = insertIndex < ordered.size() - 1 ? modelRelationSortService.safeSort(ordered.get(insertIndex + 1).getSort()) : null;
             newSort = modelRelationSortService.computeSparseSort(prevSort, nextSort);
         }
 
-        relationMapper.updateSortByModelAndCategory(sourceModelId, categoryId, newSort, businessTypeCode);
+        relationMapper.updateSortByModelAndCategory(sourceModelId, categoryId, newSort, entityTypeCode);
     }
 
     @Override
@@ -497,14 +500,14 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
             throw new ServiceException(404, "模型未绑定任何分类，无法推断业务类型");
         }
 
-        String businessTypeCode = sourceRelations.get(0).getBusinessTypeCode();
+        String entityTypeCode = sourceRelations.get(0).getEntityTypeCode();
         if (sourceCategoryId != null && !Objects.equals(sourceCategoryId, targetCategoryId)) {
-            disassociate(modelId, sourceCategoryId, businessTypeCode);
+            disassociate(modelId, sourceCategoryId, entityTypeCode);
         }
 
-        ModelCategoryRelationDO existingTarget = relationMapper.selectByModelIdAndCategoryId(modelId, targetCategoryId, businessTypeCode);
+        ModelCategoryRelationDO existingTarget = relationMapper.selectByModelIdAndCategoryId(modelId, targetCategoryId, entityTypeCode);
         if (existingTarget == null) {
-            associate(modelId, targetCategoryId, businessTypeCode);
+            associate(modelId, targetCategoryId, entityTypeCode);
         }
     }
 
@@ -517,12 +520,12 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         return -1;
     }
 
-    private void rebalanceSorts(List<ModelCategoryRelationDO> ordered, String businessTypeCode, Long categoryId) {
+    private void rebalanceSorts(List<ModelCategoryRelationDO> ordered, String entityTypeCode, Long categoryId) {
         for (int i = 0; i < ordered.size(); i++) {
             ModelCategoryRelationDO relation = ordered.get(i);
             int sort = modelRelationSortService.rebalanceSortByIndex(i);
             relation.setSort(sort);
-            relationMapper.updateSortByModelAndCategory(relation.getModelId(), categoryId, sort, businessTypeCode);
+            relationMapper.updateSortByModelAndCategory(relation.getModelId(), categoryId, sort, entityTypeCode);
         }
     }
 
@@ -531,7 +534,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BatchModelCategoryAssociationRespVO batchAssociateModelsToCategory(
-            List<Long> modelIds, Long categoryId, String businessTypeCode) {
+            List<Long> modelIds, Long categoryId, String entityTypeCode) {
         long startTime = System.currentTimeMillis();
 
         // 验证分类存在
@@ -549,17 +552,17 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         }
 
         // 转换为多对多操作
-        return batchAssociateModelsToCategories(modelIds, List.of(categoryId), businessTypeCode);
+        return batchAssociateModelsToCategories(modelIds, List.of(categoryId), entityTypeCode);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BatchModelCategoryAssociationRespVO batchDisassociateModelsFromCategory(
-            List<Long> modelIds, Long categoryId, String businessTypeCode) {
+            List<Long> modelIds, Long categoryId, String entityTypeCode) {
         long startTime = System.currentTimeMillis();
 
 
-        validateBusinessTypeCodeNotBlank(businessTypeCode);
+        validateEntityTypeCodeNotBlank(entityTypeCode);
 
         if (modelIds == null || modelIds.isEmpty() || categoryId == null) {
             return BatchModelCategoryAssociationRespVO.builder()
@@ -574,11 +577,11 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
 
         int successCount = 0;
         for (Long modelId : modelIds) {
-            relationMapper.deleteByModelAndCategory(modelId, categoryId, businessTypeCode);
+            relationMapper.deleteByModelAndCategory(modelId, categoryId, entityTypeCode);
             successCount++;
         }
 
-        log.info("批量取消实体与分类的关联: modelIds={}, categoryId={}, businessTypeCode={}", modelIds, categoryId, businessTypeCode);
+        log.info("批量取消实体与分类的关联: modelIds={}, categoryId={}, entityTypeCode={}", modelIds, categoryId, entityTypeCode);
 
         return BatchModelCategoryAssociationRespVO.builder()
                 .operationType("BATCH_DISASSOCIATE")
@@ -596,11 +599,11 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BatchModelCategoryAssociationRespVO batchAssociateModelsToCategories(
-            List<Long> modelIds, List<Long> categoryIds, String businessTypeCode) {
+            List<Long> modelIds, List<Long> categoryIds, String entityTypeCode) {
         // 排序策略：批量增量关联不做全量重排；对恢复/新增记录分配尾部 sort。
         long startTime = System.currentTimeMillis();
 
-        validateBusinessTypeCodeNotBlank(businessTypeCode);
+        validateEntityTypeCodeNotBlank(entityTypeCode);
 
         if (modelIds == null || modelIds.isEmpty() || categoryIds == null || categoryIds.isEmpty()) {
             return BatchModelCategoryAssociationRespVO.builder()
@@ -615,7 +618,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
 
         // 1. 批量验证实体存在性
         List<Long> notFoundModelIds = new ArrayList<>();
-        Set<Long> existingModelIds = collectExistingModelIds(modelIds, businessTypeCode, notFoundModelIds);
+        Set<Long> existingModelIds = collectExistingModelIds(modelIds, entityTypeCode, notFoundModelIds);
 
         // 2. 批量验证分类存在性
         List<Long> notFoundCategoryIds = new ArrayList<>();
@@ -661,7 +664,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
                     relationsToInsert.add(ModelCategoryRelationDO.builder()
                             .modelId(modelId)
                             .categoryId(categoryId)
-                            .businessTypeCode(businessTypeCode)
+                            .entityTypeCode(entityTypeCode)
                             .build());
                     Integer currentInsert = insertCountByModel.get(modelId);
                     insertCountByModel.put(modelId, currentInsert == null ? 1 : currentInsert + 1);
@@ -679,6 +682,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
                 relation.setSort(calculateSortWithBase(baseSortMap, sortOffsetMap, relation.getCategoryId()));
             }
             try {
+                enrichRelationCodes(relationsToInsert);
                 relationMapper.insertBatchRelations(relationsToInsert);
             } catch (Exception e) {
                 log.error("批量插入关联失败: {}", e.getMessage(), e);
@@ -739,14 +743,14 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
      * <p>实现策略：</p>
      * <ul>
      *   <li>不做关联存在性预校验，直接删除（幂等）；</li>
-     *   <li>按 modelId + categoryId + businessTypeCode 精确删除；</li>
+     *   <li>按 modelId + categoryId + entityTypeCode 精确删除；</li>
      *   <li>按模型维度汇总成功数量。</li>
      * </ul>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BatchModelCategoryAssociationRespVO batchDisassociateModelsFromCategories(
-            List<Long> modelIds, List<Long> categoryIds, String businessTypeCode) {
+            List<Long> modelIds, List<Long> categoryIds, String entityTypeCode) {
         long startTime = System.currentTimeMillis();
 
         if (modelIds == null || modelIds.isEmpty() || categoryIds == null || categoryIds.isEmpty()) {
@@ -767,7 +771,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         for (Long modelId : modelIds) {
             int modelSuccessCount = 0;
             for (Long categoryId : categoryIds) {
-                relationMapper.deleteByModelAndCategory(modelId, categoryId, businessTypeCode);
+                relationMapper.deleteByModelAndCategory(modelId, categoryId, entityTypeCode);
                 modelSuccessCount++;
             }
 
@@ -780,7 +784,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
             successModelCount++;
         }
 
-        log.info("批量取消实体与分类的关联: modelIds={}, categoryIds={}, businessTypeCode={}", modelIds, categoryIds, businessTypeCode);
+        log.info("批量取消实体与分类的关联: modelIds={}, categoryIds={}, entityTypeCode={}", modelIds, categoryIds, entityTypeCode);
 
         return BatchModelCategoryAssociationRespVO.builder()
                 .operationType("BATCH_DISASSOCIATE")
@@ -803,7 +807,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BatchModelCategoryAssociationRespVO batchUpdateAssociation(
-            List<Long> modelIds, List<Long> categoryIds, String businessTypeCode) {
+            List<Long> modelIds, List<Long> categoryIds, String entityTypeCode) {
         // 排序策略：批量更新关联时，不重排未变关联；仅对恢复/新增关联分配新的 sort。
         long startTime = System.currentTimeMillis();
 
@@ -829,7 +833,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
 
         // Step 2: 逐实体复用 updateAssociation（统一差集逻辑）
         for (Long modelId : modelIds) {
-            ModelCategoryAssociationRespVO single = updateAssociation(modelId, targetCategoryIds, businessTypeCode);
+            ModelCategoryAssociationRespVO single = updateAssociation(modelId, targetCategoryIds, entityTypeCode);
             int modelFailCount = single.getFailCount();
             int modelSuccessCount = single.getSuccessCount();
             boolean modelExists = Boolean.TRUE.equals(single.getModelExists());
@@ -878,11 +882,11 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
     /**
      * 获取实体在指定业务类型下关联的分类ID列表。
      *
-     * <p>实现方式：先查实体的全部分类关联，再按 businessTypeCode 做反向校验过滤。</p>
+     * <p>实现方式：先查实体的全部分类关联，再按 entityTypeCode 做反向校验过滤。</p>
      */
     @Override
-    public List<Long> listCategoryIdsByModelId(Long modelId, String businessTypeCode) {
-        if (modelId == null || businessTypeCode == null || businessTypeCode.isBlank()) {
+    public List<Long> listCategoryIdsByModelId(Long modelId, String entityTypeCode) {
+        if (modelId == null || entityTypeCode == null || entityTypeCode.isBlank()) {
             return new ArrayList<>();
         }
 
@@ -902,7 +906,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         // 通过分类 -> modelIds(按业务过滤) 反向校验，避免返回其它业务实体关联到的分类
         List<Long> result = new ArrayList<>();
         for (Long categoryId : categoryIds) {
-            List<Long> modelIds = listModelIdsByCategoryIdOnly(categoryId, businessTypeCode);
+            List<Long> modelIds = listModelIdsByCategoryIdOnly(categoryId, entityTypeCode);
             if (modelIds.contains(modelId)) {
                 result.add(categoryId);
             }
@@ -921,13 +925,13 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
      * 应先展开 categoryIds 再调用 {@link #listModelIdsByCategoryIdsWithDescendants(List, String)}。</p>
      */
     @Override
-    public List<Long> listModelIdsByCategoryIdOnly(Long categoryId, String businessTypeCode) {
-        if (categoryId == null || businessTypeCode == null || businessTypeCode.isBlank()) {
+    public List<Long> listModelIdsByCategoryIdOnly(Long categoryId, String entityTypeCode) {
+        if (categoryId == null || entityTypeCode == null || entityTypeCode.isBlank()) {
             return new ArrayList<>();
         }
 
         // 单分类快路径：直接使用 Mapper 的“分类内 sort,id”排序结果，避免多分类编排开销。
-        List<ModelCategoryRelationDO> relations = relationMapper.selectByCategoryIdAndBusinessType(categoryId, businessTypeCode);
+        List<ModelCategoryRelationDO> relations = relationMapper.selectByCategoryIdAndEntityType(categoryId, entityTypeCode);
         if (relations == null || relations.isEmpty()) {
             return new ArrayList<>();
         }
@@ -949,14 +953,14 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
      * <p>步骤：先由 CategoryService 展开子树分类ID，再交给关系层做排序与去重。</p>
      */
     @Override
-    public List<Long> listModelIdsByCategoryIdWithDescendants(Long categoryId, String businessTypeCode) {
-        if (categoryId == null || businessTypeCode == null || businessTypeCode.isBlank()) {
+    public List<Long> listModelIdsByCategoryIdWithDescendants(Long categoryId, String entityTypeCode) {
+        if (categoryId == null || entityTypeCode == null || entityTypeCode.isBlank()) {
             return new ArrayList<>();
         }
         // 单分类含子树：子树展开由 CategoryService 统一处理（含容错/降级），
         // 关系服务只负责基于展开结果做有序关系查询。
         List<Long> allCategoryIds = categoryService.getAllCategoryIdsIncludingChildren(categoryId, null);
-        return resolveOrderedModelIds(allCategoryIds, businessTypeCode);
+        return resolveOrderedModelIds(allCategoryIds, entityTypeCode);
     }
 
 
@@ -1007,13 +1011,13 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteAllByCategoryIdInBusiness(Long categoryId, String businessTypeCode) {
-        if (categoryId == null || businessTypeCode == null || businessTypeCode.isBlank()) {
+    public void deleteAllByCategoryIdInBusiness(Long categoryId, String entityTypeCode) {
+        if (categoryId == null || entityTypeCode == null || entityTypeCode.isBlank()) {
             return;
         }
 
-        relationMapper.deleteByCategoryId(categoryId, businessTypeCode);
-        log.info("删除分类的所有实体关联(按业务隔离): categoryId={}, businessTypeCode={}", categoryId, businessTypeCode);
+        relationMapper.deleteByCategoryId(categoryId, entityTypeCode);
+        log.info("删除分类的所有实体关联(按业务隔离): categoryId={}, entityTypeCode={}", categoryId, entityTypeCode);
     }
 
     /**
@@ -1032,13 +1036,13 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteAllByCategoryIdsInBusiness(List<Long> categoryIds, String businessTypeCode) {
-        if (categoryIds == null || categoryIds.isEmpty() || businessTypeCode == null || businessTypeCode.isBlank()) {
+    public void deleteAllByCategoryIdsInBusiness(List<Long> categoryIds, String entityTypeCode) {
+        if (categoryIds == null || categoryIds.isEmpty() || entityTypeCode == null || entityTypeCode.isBlank()) {
             return;
         }
 
-        relationMapper.deleteByCategoryIds(categoryIds, businessTypeCode);
-        log.info("批量删除分类的所有实体关联(按业务隔离): categoryIds={}, businessTypeCode={}", categoryIds, businessTypeCode);
+        relationMapper.deleteByCategoryIds(categoryIds, entityTypeCode);
+        log.info("批量删除分类的所有实体关联(按业务隔离): categoryIds={}, entityTypeCode={}", categoryIds, entityTypeCode);
     }
 
     // ==================== 私有辅助方法 ====================
@@ -1048,10 +1052,10 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
      *
      * @param modelId 实体ID
      * @param categoryIds 分类ID列表
-     * @param modelBusinessType 实体所属业务类型（用于跨业务关联验证）
+     * @param modelEntityType 实体所属业务类型（用于跨业务关联验证）
      * @return 关联执行结果
      */
-    private BatchAssociateResult batchAssociateInternal(Long modelId, List<Long> categoryIds, String modelBusinessType) {
+    private BatchAssociateResult batchAssociateInternal(Long modelId, List<Long> categoryIds, String modelEntityType) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return new BatchAssociateResult(0, Collections.emptyList(), Collections.emptyList());
         }
@@ -1080,7 +1084,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         // 2) 查询目标分类上的现有关联（含 deleted），一次分流出三集合
         List<ModelCategoryRelationDO> existingRelations = relationMapper
                 // mybatis-plus 的配置过滤了 deleted=true 的记录，所以需要显式查询包含 deleted=true 的记录
-                .selectByModelAndCategoryIdsIncludingDeleted(modelId, validCategoryIds, modelBusinessType);
+                .selectByModelAndCategoryIdsIncludingDeleted(modelId, validCategoryIds, modelEntityType);
 
         Set<Long> alreadyActive = new LinkedHashSet<>();
         Set<Long> restoreCandidates = new LinkedHashSet<>();
@@ -1112,7 +1116,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
 
         // 4) 批量恢复软删除（恢复后需重新编号 sort）
         if (!toRestore.isEmpty()) {
-            int restored = relationMapper.restoreDeletedRelationsBatch(modelId, toRestore, modelBusinessType);
+            int restored = relationMapper.restoreDeletedRelationsBatch(modelId, toRestore, modelEntityType);
             successCount += restored;
             successCategoryIds.addAll(toRestore);
 
@@ -1124,7 +1128,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
                         modelId,
                         categoryId,
                         calculateSortWithBase(baseSortMap, sortOffsetMap, categoryId),
-                        modelBusinessType
+                        modelEntityType
                 );
             }
         }
@@ -1138,11 +1142,12 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
                 relationsToInsert.add(ModelCategoryRelationDO.builder()
                         .modelId(modelId)
                         .categoryId(categoryId)
-                        .businessTypeCode(modelBusinessType)
+                        .entityTypeCode(modelEntityType)
                         .sort(calculateSortWithBase(baseSortMap, sortOffsetMap, categoryId))
                         .build());
             }
             try {
+                enrichRelationCodes(relationsToInsert);
                 relationMapper.insertBatchRelations(relationsToInsert);
                 successCount += relationsToInsert.size();
                 successCategoryIds.addAll(toInsert);
@@ -1221,53 +1226,53 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
      * <p><b>输出语义</b>：返回保序去重后的 modelId 列表，顺序来自 relation.sort。</p>
      */
     @Override
-    public List<Long> listModelIdsByCategoryIdsOnly(List<Long> categoryIds, String businessTypeCode) {
-        return resolveOrderedModelIds(categoryIds, businessTypeCode);
+    public List<Long> listModelIdsByCategoryIdsOnly(List<Long> categoryIds, String entityTypeCode) {
+        return resolveOrderedModelIds(categoryIds, entityTypeCode);
     }
 
     @Override
-    public List<Long> listModelIdsByCategoryIdsWithDescendants(List<Long> categoryIds, String businessTypeCode) {
-        if (categoryIds == null || categoryIds.isEmpty() || businessTypeCode == null || businessTypeCode.isBlank()) {
+    public List<Long> listModelIdsByCategoryIdsWithDescendants(List<Long> categoryIds, String entityTypeCode) {
+        if (categoryIds == null || categoryIds.isEmpty() || entityTypeCode == null || entityTypeCode.isBlank()) {
             return new ArrayList<>();
         }
 
         // 多分类含子树：对每个输入分类做子树展开，并按输入顺序稳定合并
         List<Long> expandedCategoryIds = expandCategoryIdsWithDescendants(categoryIds);
-        return resolveOrderedModelIds(expandedCategoryIds, businessTypeCode);
+        return resolveOrderedModelIds(expandedCategoryIds, entityTypeCode);
     }
 
     @Override
-    public PageResult<Long> pageModelIdsByCategoryIdOnly(Long categoryId, String businessTypeCode,
+    public PageResult<Long> pageModelIdsByCategoryIdOnly(Long categoryId, String entityTypeCode,
                                                             Integer pageNo, Integer pageSize) {
-        List<Long> ordered = listModelIdsByCategoryIdOnly(categoryId, businessTypeCode);
+        List<Long> ordered = listModelIdsByCategoryIdOnly(categoryId, entityTypeCode);
         return pageOrderedIds(ordered, pageNo, pageSize);
     }
 
     @Override
-    public PageResult<Long> pageModelIdsByCategoryIdWithDescendants(Long categoryId, String businessTypeCode,
+    public PageResult<Long> pageModelIdsByCategoryIdWithDescendants(Long categoryId, String entityTypeCode,
                                                                         Integer pageNo, Integer pageSize) {
-        List<Long> ordered = listModelIdsByCategoryIdWithDescendants(categoryId, businessTypeCode);
+        List<Long> ordered = listModelIdsByCategoryIdWithDescendants(categoryId, entityTypeCode);
         return pageOrderedIds(ordered, pageNo, pageSize);
     }
 
     @Override
-    public PageResult<Long> pageModelIdsByCategoryIdsOnly(List<Long> categoryIds, String businessTypeCode,
+    public PageResult<Long> pageModelIdsByCategoryIdsOnly(List<Long> categoryIds, String entityTypeCode,
                                                             Integer pageNo, Integer pageSize) {
-        List<Long> ordered = listModelIdsByCategoryIdsOnly(categoryIds, businessTypeCode);
+        List<Long> ordered = listModelIdsByCategoryIdsOnly(categoryIds, entityTypeCode);
         return pageOrderedIds(ordered, pageNo, pageSize);
     }
 
     @Override
-    public PageResult<Long> pageModelIdsByCategoryIdsWithDescendants(List<Long> categoryIds, String businessTypeCode,
+    public PageResult<Long> pageModelIdsByCategoryIdsWithDescendants(List<Long> categoryIds, String entityTypeCode,
                                                                         Integer pageNo, Integer pageSize) {
-        List<Long> ordered = listModelIdsByCategoryIdsWithDescendants(categoryIds, businessTypeCode);
+        List<Long> ordered = listModelIdsByCategoryIdsWithDescendants(categoryIds, entityTypeCode);
         return pageOrderedIds(ordered, pageNo, pageSize);
     }
 
     @Override
-    public PageResult<Long> pageModelIdsByCategoryIdsOnlyDb(List<Long> categoryIds, String businessTypeCode,
+    public PageResult<Long> pageModelIdsByCategoryIdsOnlyDb(List<Long> categoryIds, String entityTypeCode,
                                                                 Integer pageNo, Integer pageSize) {
-        if (categoryIds == null || categoryIds.isEmpty() || businessTypeCode == null || businessTypeCode.isBlank()) {
+        if (categoryIds == null || categoryIds.isEmpty() || entityTypeCode == null || entityTypeCode.isBlank()) {
             return new PageResult<>(new ArrayList<>(), 0L);
         }
         int pn = normalizePageNo(pageNo);
@@ -1280,39 +1285,39 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         // 单分类不需要 rank，直接走分类内排序分页
         if (categoryIds.size() == 1) {
             Long categoryId = categoryIds.get(0);
-            pageIds = relationMapper.selectModelIdsBySingleCategoryPaged(categoryId, businessTypeCode, offset, ps);
-            total = relationMapper.countModelIdsBySingleCategory(categoryId, businessTypeCode);
+            pageIds = relationMapper.selectModelIdsBySingleCategoryPaged(categoryId, entityTypeCode, offset, ps);
+            total = relationMapper.countModelIdsBySingleCategory(categoryId, entityTypeCode);
         } else {
-            pageIds = relationMapper.selectModelIdsByCategoryIdsRankPaged(categoryIds, businessTypeCode, offset, ps);
-            total = relationMapper.countModelIdsByCategoryIdsRank(categoryIds, businessTypeCode);
+            pageIds = relationMapper.selectModelIdsByCategoryIdsRankPaged(categoryIds, entityTypeCode, offset, ps);
+            total = relationMapper.countModelIdsByCategoryIdsRank(categoryIds, entityTypeCode);
         }
 
         return new PageResult<>(pageIds == null ? new ArrayList<>() : pageIds, total);
     }
 
     @Override
-    public PageResult<Long> pageModelIdsByCategoryIdsWithDescendantsDb(List<Long> categoryIds, String businessTypeCode,
+    public PageResult<Long> pageModelIdsByCategoryIdsWithDescendantsDb(List<Long> categoryIds, String entityTypeCode,
                                                                             Integer pageNo, Integer pageSize) {
-        if (categoryIds == null || categoryIds.isEmpty() || businessTypeCode == null || businessTypeCode.isBlank()) {
+        if (categoryIds == null || categoryIds.isEmpty() || entityTypeCode == null || entityTypeCode.isBlank()) {
             return new PageResult<>(new ArrayList<>(), 0L);
         }
         List<Long> expandedCategoryIds = expandCategoryIdsWithDescendants(categoryIds);
-        return pageModelIdsByCategoryIdsOnlyDb(expandedCategoryIds, businessTypeCode, pageNo, pageSize);
+        return pageModelIdsByCategoryIdsOnlyDb(expandedCategoryIds, entityTypeCode, pageNo, pageSize);
     }
 
     /**
      * 统一解析“分类范围实体ID查询”结果（不负责子树展开）。
      *
      * @param categoryIds 分类ID集合（可为单个或多个）
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 稳定有序实体ID列表
      */
-    private List<Long> resolveOrderedModelIds(List<Long> categoryIds, String businessTypeCode) {
+    private List<Long> resolveOrderedModelIds(List<Long> categoryIds, String entityTypeCode) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return new ArrayList<>();
         }
-        // 兼容模式：businessTypeCode 为空表示不按业务过滤（仅用于兼容旧查询接口）
-        if (businessTypeCode == null || businessTypeCode.isBlank()) {
+        // 兼容模式：entityTypeCode 为空表示不按业务过滤（仅用于兼容旧查询接口）
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
             List<ModelCategoryRelationDO> relations = relationMapper.selectRelationsByCategoryIdsForOrdering(categoryIds, null);
             if (relations == null || relations.isEmpty()) {
                 return new ArrayList<>();
@@ -1334,10 +1339,10 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         }
         // 快路径：仅1个分类时直接走单分类查询，避免走多分类编排
         if (categoryIds.size() == 1) {
-            return listModelIdsByCategoryIdOnly(categoryIds.get(0), businessTypeCode);
+            return listModelIdsByCategoryIdOnly(categoryIds.get(0), entityTypeCode);
         }
         // 多分类路径：按“categoryIds顺序 -> 分类内sort,id -> 稳定去重”输出
-        RelationOrderData orderData = buildRelationOrderData(categoryIds, businessTypeCode);
+        RelationOrderData orderData = buildRelationOrderData(categoryIds, entityTypeCode);
         return orderData == null ? new ArrayList<>() : orderData.orderedModelIds;
     }
 
@@ -1421,24 +1426,24 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
     /**
      * 校验业务类型编码不能为空
      */
-    private void validateBusinessTypeCodeNotBlank(String businessTypeCode) {
-        if (businessTypeCode == null || businessTypeCode.isBlank()) {
-            throw new ServiceException(400, "businessTypeCode 不能为空");
+    private void validateEntityTypeCodeNotBlank(String entityTypeCode) {
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
+            throw new ServiceException(400, "entityTypeCode 不能为空");
         }
     }
 
     /**
      * 检查实体是否存在。
      */
-    private boolean isModelExists(Long modelId, String businessTypeCode) {
-        return modelCoreService.existsById(modelId, businessTypeCode);
+    private boolean isModelExists(Long modelId, String entityTypeCode) {
+        return modelCoreService.existsById(modelId, entityTypeCode);
     }
 
     /**
      * 校验实体是否存在
      */
-    private void validateModelExists(Long modelId, String businessTypeCode) {
-        if (!isModelExists(modelId, businessTypeCode)) {
+    private void validateModelExists(Long modelId, String entityTypeCode) {
+        if (!isModelExists(modelId, entityTypeCode)) {
             throw new ServiceException(404, "实体不存在");
         }
     }
@@ -1453,11 +1458,52 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         }
     }
 
+    /** 写入/更新关联时同步 model_code + category_code（迁移以 code 为幂等键）。 */
+    private void syncRelationIdentity(ModelCategoryRelationDO relation) {
+        if (relation == null) {
+            return;
+        }
+        enrichRelationCodes(List.of(relation));
+    }
+
+    private void enrichRelationCodes(List<ModelCategoryRelationDO> relations) {
+        if (relations == null || relations.isEmpty()) {
+            return;
+        }
+        List<Long> modelIds = relations.stream()
+                .map(ModelCategoryRelationDO::getModelId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        List<Long> categoryIds = relations.stream()
+                .map(ModelCategoryRelationDO::getCategoryId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, String> modelCodeById = modelCoreService.listByIds(modelIds).stream()
+                .collect(Collectors.toMap(ModelDO::getId, ModelDO::getCode, (a, b) -> a));
+        Map<Long, String> categoryCodeById = new HashMap<>();
+        for (Long categoryId : categoryIds) {
+            CategoryDO category = categoryMapper.selectById(categoryId);
+            if (category != null) {
+                categoryCodeById.put(categoryId, category.getCode());
+            }
+        }
+        for (ModelCategoryRelationDO relation : relations) {
+            if (relation.getModelId() != null) {
+                relation.setModelCode(modelCodeById.get(relation.getModelId()));
+            }
+            if (relation.getCategoryId() != null) {
+                relation.setCategoryCode(categoryCodeById.get(relation.getCategoryId()));
+            }
+        }
+    }
+
     /**
      * 批量收集存在的实体ID，并输出不存在实体列表。
      */
-    private Set<Long> collectExistingModelIds(List<Long> modelIds, String businessTypeCode, List<Long> notFoundModelIds) {
-        Set<Long> existingModelIds = modelCoreService.filterExistingModelIds(modelIds, businessTypeCode);
+    private Set<Long> collectExistingModelIds(List<Long> modelIds, String entityTypeCode, List<Long> notFoundModelIds) {
+        Set<Long> existingModelIds = modelCoreService.filterExistingModelIds(modelIds, entityTypeCode);
         for (Long modelId : modelIds) {
             if (!existingModelIds.contains(modelId)) {
                 notFoundModelIds.add(modelId);
@@ -1551,7 +1597,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
      *
      * <p>处理步骤：</p>
      * <ol>
-     *   <li>按 categoryIds + businessTypeCode 查询关联关系；</li>
+     *   <li>按 categoryIds + entityTypeCode 查询关联关系；</li>
      *   <li>先按“分类顺序”分组（以入参 categoryIds 的顺序为准）；</li>
      *   <li>在每个分类内按 relation.sort 升序、relation.id 升序；</li>
      *   <li>按“分类顺序 -> 分类内顺序”拼接实体ID，并做稳定去重。</li>
@@ -1566,10 +1612,10 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
      *
      * <p>返回空列表而非 null，便于上层统一空值处理。</p>
      */
-    private RelationOrderData buildRelationOrderData(List<Long> categoryIds, String businessTypeCode) {
+    private RelationOrderData buildRelationOrderData(List<Long> categoryIds, String entityTypeCode) {
         // ========== 步骤0：入参校验 ==========
         // 目标：只要关键参数缺失，就返回空结果，不抛异常，方便上层统一处理。
-        if (categoryIds == null || categoryIds.isEmpty() || businessTypeCode == null || businessTypeCode.isBlank()) {
+        if (categoryIds == null || categoryIds.isEmpty() || entityTypeCode == null || entityTypeCode.isBlank()) {
             return new RelationOrderData(Collections.emptyList());
         }
 
@@ -1585,7 +1631,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
 
             List<Long> orderedModelIds = singleRelations.stream()
                     .filter(r -> r.getModelId() != null)
-                    .filter(r -> businessTypeCode.equals(r.getBusinessTypeCode()))
+                    .filter(r -> entityTypeCode.equals(r.getEntityTypeCode()))
                     .map(ModelCategoryRelationDO::getModelId)
                     .distinct()
                     .toList();
@@ -1595,7 +1641,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         // ========== 步骤2：查询多分类原始关系数据 ==========
         // 说明：这里拿到的是“候选关系记录集合”，不能直接作为最终顺序。
         // 原因：Mapper 层无法保证“先 categoryIds 输入顺序，再分类内 sort”的完整语义。
-        List<ModelCategoryRelationDO> relations = relationMapper.selectRelationsByCategoryIdsForOrdering(categoryIds, businessTypeCode);
+        List<ModelCategoryRelationDO> relations = relationMapper.selectRelationsByCategoryIdsForOrdering(categoryIds, entityTypeCode);
         if (relations == null || relations.isEmpty()) {
             return new RelationOrderData(Collections.emptyList());
         }

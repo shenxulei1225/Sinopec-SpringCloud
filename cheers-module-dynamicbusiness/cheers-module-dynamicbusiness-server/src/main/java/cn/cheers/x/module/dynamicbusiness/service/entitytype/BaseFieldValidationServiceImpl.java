@@ -1,11 +1,11 @@
-package cn.cheers.x.module.dynamicbusiness.service.businesstype;
+package cn.cheers.x.module.dynamicbusiness.service.entitytype;
 
 import cn.iocoder.yudao.framework.common.exception.ServiceException;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeBaseFieldDO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeDO;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeBaseFieldMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeMapper;
-import cn.cheers.x.module.dynamicbusiness.enums.businesstype.StorageTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeBaseFieldMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
+import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
@@ -51,40 +51,40 @@ import java.util.Map;
 public class BaseFieldValidationServiceImpl implements BaseFieldValidationService {
 
     @Resource
-    private BusinessTypeBaseFieldMapper businessTypeBaseFieldMapper;
+    private EntityTypeBaseFieldMapper entityTypeBaseFieldMapper;
 
     @Resource
-    private BusinessTypeMapper businessTypeMapper;
+    private EntityTypeMapper entityTypeMapper;
 
     @Resource
     private ObjectMapper objectMapper;
 
     @Override
-    public BaseFieldValidationResult validateBaseFields(String businessTypeCode, Map<String, Object> fieldValues) {
+    public BaseFieldValidationResult validateBaseFields(String entityTypeCode, Map<String, Object> fieldValues) {
         BaseFieldValidationResult result = new BaseFieldValidationResult();
         
         // 1. 检查业务类型是否存在
-        BusinessTypeDO businessType = businessTypeMapper.selectByCode(businessTypeCode);
-        if (businessType == null) {
-            throw new ServiceException(400, "业务类型不存在：" + businessTypeCode);
+        EntityTypeDO entityType = entityTypeMapper.selectByCode(entityTypeCode);
+        if (entityType == null) {
+            throw new ServiceException(400, "业务类型不存在：" + entityTypeCode);
         }
 
         // 2. 通用存储类型不支持固定列字段,跳过验证
-        StorageTypeEnum storageType = StorageTypeEnum.getByCode(businessType.getStorageType());
+        StorageTypeEnum storageType = StorageTypeEnum.getByCode(entityType.getStorageType());
         if (storageType == StorageTypeEnum.GENERIC) {
-            log.debug("[validateBaseFields][通用存储类型不支持固定列字段,跳过验证,businessTypeCode={}]", businessTypeCode);
+            log.debug("[validateBaseFields][通用存储类型不支持固定列字段,跳过验证,entityTypeCode={}]", entityTypeCode);
             return result;
         }
         
         // 3. 获取所有启用的固定列字段
-        List<BusinessTypeBaseFieldDO> baseFields = businessTypeBaseFieldMapper.selectByBusinessTypeCode(businessTypeCode);
+        List<EntityTypeBaseFieldDO> baseFields = entityTypeBaseFieldMapper.selectByEntityTypeCode(entityTypeCode);
         if (baseFields.isEmpty()) {
-            log.debug("[validateBaseFields][没有固定列字段,跳过验证,businessTypeCode={}]", businessTypeCode);
+            log.debug("[validateBaseFields][没有固定列字段,跳过验证,entityTypeCode={}]", entityTypeCode);
             return result;
         }
         
         // 4. 验证每个固定列字段
-        for (BusinessTypeBaseFieldDO field : baseFields) {
+        for (EntityTypeBaseFieldDO field : baseFields) {
             Object value = fieldValues != null ? fieldValues.get(field.getFieldCode()) : null;
             String errorMessage = validateFieldValue(field, value);
             if (errorMessage != null) {
@@ -93,16 +93,16 @@ public class BaseFieldValidationServiceImpl implements BaseFieldValidationServic
         }
         
         if (!result.isValid()) {
-            log.info("[validateBaseFields][固定列字段验证失败,businessTypeCode={},errors={}]", 
-                    businessTypeCode, result.getFormattedErrorMessage());
+            log.info("[validateBaseFields][固定列字段验证失败,entityTypeCode={},errors={}]", 
+                    entityTypeCode, result.getFormattedErrorMessage());
         }
         
         return result;
     }
 
     @Override
-    public String validateSingleField(String businessTypeCode, String fieldCode, Object value) {
-        BusinessTypeBaseFieldDO field = businessTypeBaseFieldMapper.selectByBusinessTypeCodeAndFieldCode(businessTypeCode, fieldCode);
+    public String validateSingleField(String entityTypeCode, String fieldCode, Object value) {
+        EntityTypeBaseFieldDO field = entityTypeBaseFieldMapper.selectByEntityTypeCodeAndFieldCode(entityTypeCode, fieldCode);
         if (field == null) {
             return "字段不存在：" + fieldCode;
         }
@@ -110,13 +110,13 @@ public class BaseFieldValidationServiceImpl implements BaseFieldValidationServic
     }
 
     @Override
-    public List<BusinessTypeBaseFieldDO> getRequiredFields(String businessTypeCode) {
+    public List<EntityTypeBaseFieldDO> getRequiredFields(String entityTypeCode) {
         return List.of();
     }
 
     @Override
-    public boolean hasBaseFields(String businessTypeCode) {
-        Long count = businessTypeBaseFieldMapper.countByBusinessTypeCode(businessTypeCode);
+    public boolean hasBaseFields(String entityTypeCode) {
+        Long count = entityTypeBaseFieldMapper.countByEntityTypeCode(entityTypeCode);
         return count != null && count > 0;
     }
 
@@ -129,7 +129,7 @@ public class BaseFieldValidationServiceImpl implements BaseFieldValidationServic
      * @param value 字段值
      * @return 错误消息,null 表示验证通过
      */
-    private String validateFieldValue(BusinessTypeBaseFieldDO field, Object value) {
+    private String validateFieldValue(EntityTypeBaseFieldDO field, Object value) {
         // 1. 如果值为空,跳过后续验证
         if (value == null || StringUtils.isBlank(value.toString())) {
             return null;
@@ -160,7 +160,7 @@ public class BaseFieldValidationServiceImpl implements BaseFieldValidationServic
     /**
      * 验证数字类型值
      */
-    private String validateNumberValue(BusinessTypeBaseFieldDO field, String value) {
+    private String validateNumberValue(EntityTypeBaseFieldDO field, String value) {
         try {
             BigDecimal numValue = new BigDecimal(value);
             
@@ -228,7 +228,7 @@ public class BaseFieldValidationServiceImpl implements BaseFieldValidationServic
     /**
      * 验证枚举类型值
      */
-    private String validateEnumValue(BusinessTypeBaseFieldDO field, String value) {
+    private String validateEnumValue(EntityTypeBaseFieldDO field, String value) {
         if (StringUtils.isBlank(field.getTypeConfig())) {
             return null;
         }

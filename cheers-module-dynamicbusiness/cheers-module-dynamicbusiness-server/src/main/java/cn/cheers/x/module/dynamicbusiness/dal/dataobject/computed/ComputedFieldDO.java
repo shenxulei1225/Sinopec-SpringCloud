@@ -79,7 +79,7 @@ public class ComputedFieldDO extends TenantBaseDO {
     /**
      * 统计目标业务类型编码
      */
-    private String targetBusinessType;
+    private String targetEntityType;
 
     /**
      * 统计目标 Model 编码

@@ -44,7 +44,7 @@ public class DynamicTableDO extends TenantBaseDO {
     /**
      * 业务类型编码
      */
-    private String businessTypeCode;
+    private String entityTypeCode;
     
     /**
      * 物理表名

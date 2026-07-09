@@ -15,7 +15,7 @@ DECLARE
     page_config_record RECORD;
     view_config JSONB;
     view_item JSONB;
-    v_business_type_code TEXT;  -- 使用 v_ 前缀避免与列名冲突
+    v_entity_type_code TEXT;  -- 使用 v_ 前缀避免与列名冲突
     view_name TEXT;
     view_pattern TEXT;
     top_level_category_id BIGINT;
@@ -56,16 +56,16 @@ BEGIN
         END IF;
         
         -- 获取业务类型代码
-        v_business_type_code := page_config_record.config->>'businessType';
-        IF v_business_type_code IS NULL OR v_business_type_code = '' THEN
+        v_entity_type_code := page_config_record.config->>'businessType';
+        IF v_entity_type_code IS NULL OR v_entity_type_code = '' THEN
             -- 尝试从第一个视图获取
             IF jsonb_array_length(views_array) > 0 THEN
                 view_item := views_array->0;
-                v_business_type_code := view_item->>'leftTreeBusinessType';
+                v_entity_type_code := view_item->>'leftTreeBusinessType';
             END IF;
         END IF;
         
-        IF v_business_type_code IS NULL OR v_business_type_code = '' THEN
+        IF v_entity_type_code IS NULL OR v_entity_type_code = '' THEN
             RAISE NOTICE '跳过页面配置 % (menu_id: %): 无法确定业务类型代码', 
                 page_config_record.id, page_config_record.menu_id;
             CONTINUE;
@@ -119,7 +119,7 @@ BEGIN
             -- 注意：使用表别名 sc 来明确区分变量和列名
             SELECT sc.id INTO existing_category
             FROM dynamic_category sc
-            WHERE sc.business_type_code = v_business_type_code
+            WHERE sc.entity_type_code = v_entity_type_code
               AND sc.code = category_code
               AND (sc.parent_id IS NULL OR sc.parent_id = 0)
               AND sc.deleted = false
@@ -136,7 +136,7 @@ BEGIN
                 INSERT INTO dynamic_category (
                     name,
                     code,
-                    business_type_code,
+                    entity_type_code,
                     parent_id,
                     status,
                     sort,
@@ -150,7 +150,7 @@ BEGIN
                 ) VALUES (
                     category_dynamic_name,
                     category_code,
-                    v_business_type_code,
+                    v_entity_type_code,
                     NULL, -- 第一级别分类,parent_id 为 NULL
                     0,    -- 状态：启用
                     0,    -- 排序
@@ -183,7 +183,7 @@ BEGIN
                 SET parent_id = first_top_level_category_id,
                     updater = 'system',
                     update_time = CURRENT_TIMESTAMP
-                WHERE sc.business_type_code = v_business_type_code
+                WHERE sc.entity_type_code = v_entity_type_code
                   AND (sc.parent_id IS NULL OR sc.parent_id = 0)
                   AND sc.id != first_top_level_category_id  -- 不更新自己
                   AND sc.deleted = false

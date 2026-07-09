@@ -30,7 +30,7 @@ public class EntityListVO {
     private Long id;
 
     @Schema(description = "业务类型编码", example = "equipment")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "模型ID", example = "1")
     private Long modelId;

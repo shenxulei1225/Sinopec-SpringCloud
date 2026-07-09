@@ -26,7 +26,7 @@ public class RelationFieldLibraryWithStatusVO extends RelationFieldLibraryRespVO
      * 关联业务类型名称（如果存在）
      */
     @Schema(description = "关联业务类型名称", example = "人员管理")
-    private String targetBusinessTypeName;
+    private String targetEntityTypeName;
 
     /**
      * 目标 Model 名称（如果存在）

@@ -35,9 +35,9 @@ public class RuntimeQueryServiceImpl implements RuntimeQueryService {
     }
 
     @Override
-    public List<ScheduleSlotDTO> listSlots(String businessTypeCode, OffsetDateTime from, OffsetDateTime to) {
+    public List<ScheduleSlotDTO> listSlots(String entityTypeCode, OffsetDateTime from, OffsetDateTime to) {
         List<ScheduleSlotDO> slots = scheduleSlotMapper.selectList(new LambdaQueryWrapperX<ScheduleSlotDO>()
-                .eqIfPresent(ScheduleSlotDO::getBusinessTypeCode, businessTypeCode)
+                .eqIfPresent(ScheduleSlotDO::getEntityTypeCode, entityTypeCode)
                 .geIfPresent(ScheduleSlotDO::getPlannedStart, from)
                 .leIfPresent(ScheduleSlotDO::getPlannedEnd, to)
                 .orderByAsc(ScheduleSlotDO::getPlannedStart));

@@ -20,14 +20,14 @@ import org.apache.ibatis.type.JdbcType;
  *
  * <p>职责：</p>
  * <ul>
- *   <li>每条记录表示一个业务类型编码（businessTypeCode）的完整能力契约；</li>
+ *   <li>每条记录表示一个业务类型编码（entityTypeCode）的完整能力契约；</li>
  *   <li>契约以 JSONB 持久化在 capability_full 列；</li>
  *   <li>version 用于标记重建批次，保证前后端可按版本感知变更。</li>
  * </ul>
  *
  * <p>索引语义：</p>
  * <ul>
- *   <li>业务主键是 businessTypeCode（在库层由唯一索引约束）；</li>
+ *   <li>业务主键是 entityTypeCode（在库层由唯一索引约束）；</li>
  *   <li>不使用 dataSourceKey 等组件侧复合键作为能力索引。</li>
  * </ul>
  */
@@ -46,12 +46,12 @@ public class BusinessCapabilityDO extends TenantBaseDO {
     private Long id;
 
     /**
-     * 业务类型编码（businessTypeCode）。
+     * 业务类型编码（entityTypeCode）。
      *
      * <p>能力域统一索引字段。示例：equipment、system_dept。</p>
      */
-    @TableField("business_type_code")
-    private String businessTypeCode;
+    @TableField("entity_type_code")
+    private String entityTypeCode;
 
     /**
      * 业务分类：dynamic（动态业务）/ system（系统业务）。
@@ -72,7 +72,7 @@ public class BusinessCapabilityDO extends TenantBaseDO {
     /**
      * 重建版本号。
      *
-     * <p>同一个 businessTypeCode 每次重建递增，用于缓存失效、变更追踪与对账。</p>
+     * <p>同一个 entityTypeCode 每次重建递增，用于缓存失效、变更追踪与对账。</p>
      */
     @TableField("version")
     private Long version;

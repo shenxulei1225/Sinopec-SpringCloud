@@ -14,7 +14,7 @@ import lombok.EqualsAndHashCode;
 public class RelationFieldLibraryPageReqVO extends PageParam {
 
     @Schema(description = "关联业务类型编码", example = "personnel")
-    private String refBusinessType;
+    private String refEntityType;
 
     @Schema(description = "关键字（搜索字段名称、编码、说明）", example = "负责人")
     private String keyword;

@@ -97,20 +97,20 @@ public class EntityController {
             - 如果存在关联关系且 forceDelete=false，则禁止删除并返回关联关系数量
             - 如果 forceDelete=true，则同时删除所有关联关系
 
-            **重要**：businessTypeCode 是必填参数，用于路由到正确的存储策略。
+            **重要**：entityTypeCode 是必填参数，用于路由到正确的存储策略。
             """
     )
     @Parameter(name = "id", description = "实体编号", required = true, example = "1")
-    @Parameter(name = "businessTypeCode", description = "业务类型编码（必填，用于路由到对应存储策略）", required = true, example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码（必填，用于路由到对应存储策略）", required = true, example = "equipment")
     @Parameter(name = "forceDelete", description = "是否强制删除（同时删除所有关联关系）", example = "false")
     @ApiAccessLog(operateType = DELETE)
     @PreAuthorize("@ss.hasPermission('system:entity:delete')")
     public CommonResult<Boolean> delete(@RequestParam("id") Long id,
-                                        @RequestParam("businessTypeCode") String businessTypeCode,
+                                        @RequestParam("entityTypeCode") String entityTypeCode,
                                         @RequestParam(value = "forceDelete", required = false, defaultValue = "false") Boolean forceDelete) {
         EntityDeleteReqVO reqVO = new EntityDeleteReqVO();
         reqVO.setId(id);
-        reqVO.setBusinessTypeCode(businessTypeCode);
+        reqVO.setEntityTypeCode(entityTypeCode);
         reqVO.setForceDelete(forceDelete);
         entityService.delete(reqVO);
         return success(true);
@@ -125,19 +125,19 @@ public class EntityController {
             - modelId（关联的模型ID）
             - 自定义字段数据（customFields，已解密）
 
-            **重要**：businessTypeCode 是必填参数，用于路由到正确的存储策略。
+            **重要**：entityTypeCode 是必填参数，用于路由到正确的存储策略。
 
             - includeAssociations=true 时填充 associations（各 REF/REFMulti 关联块）
             - associationCategoryViews：JSON 数组字符串，元素为 {fieldCode, categoryTypeCode}，见 entity-detail-associations-design.md
             """
     )
     @Parameter(name = "id", description = "实体编号", required = true, example = "1")
-    @Parameter(name = "businessTypeCode", description = "业务类型编码（必填，用于路由到对应存储策略）", required = true, example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码（必填，用于路由到对应存储策略）", required = true, example = "equipment")
     @Parameter(name = "includeAssociations", description = "是否包含关联字段展示数据（默认 false）")
     @Parameter(name = "associationCategoryViews", description = "可选，JSON 数组：[{fieldCode,categoryTypeCode},...]")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<EntityRespVO> get(@RequestParam("id") Long id,
-                                          @RequestParam("businessTypeCode") String businessTypeCode,
+                                          @RequestParam("entityTypeCode") String entityTypeCode,
                                           @RequestParam(value = "includeAssociations", required = false, defaultValue = "false") Boolean includeAssociations,
                                           @RequestParam(value = "associationCategoryViews", required = false) String associationCategoryViewsJson) {
         List<AssociationCategoryViewReqVO> views = null;
@@ -148,7 +148,7 @@ public class EntityController {
                 throw new ServiceException(400, "associationCategoryViews 须为合法 JSON 数组");
             }
         }
-        return success(entityService.get(id, businessTypeCode, Boolean.TRUE.equals(includeAssociations), views));
+        return success(entityService.get(id, entityTypeCode, Boolean.TRUE.equals(includeAssociations), views));
     }
 
     @GetMapping("/exists-by-id")
@@ -157,36 +157,36 @@ public class EntityController {
         description = """
             检查指定业务下实体是否存在。
             - 适用场景：前端提交前校验、按钮态控制
-            - 业务范围：指定业务（必须传 businessTypeCode）
+            - 业务范围：指定业务（必须传 entityTypeCode）
             """
     )
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<Boolean> exists(@RequestParam("id") Long id,
-                                        @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(entityService.get(id, businessTypeCode) != null);
+                                        @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(entityService.get(id, entityTypeCode) != null);
     }
 
     @GetMapping("/check-field-unique")
     @Operation(
         summary = "校验实体字段值是否可用",
         description = """
-            CRUD 弹窗异步校验。当前支持 fieldKey=name：同 businessTypeCode + modelId 下名称唯一。
+            CRUD 弹窗异步校验。当前支持 fieldKey=name：同 entityTypeCode + modelId 下名称唯一。
             excludeId 用于编辑时排除自身。
             """
     )
-    @Parameter(name = "businessTypeCode", required = true, example = "equipment")
+    @Parameter(name = "entityTypeCode", required = true, example = "equipment")
     @Parameter(name = "modelId", required = true, example = "157")
     @Parameter(name = "fieldKey", required = true, example = "name")
     @Parameter(name = "value", required = true, example = "测试设备")
     @Parameter(name = "excludeId", description = "编辑时排除的实体 id")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<EntityFieldAvailabilityRespVO> checkFieldUnique(
-            @RequestParam("businessTypeCode") String businessTypeCode,
+            @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam("modelId") Long modelId,
             @RequestParam("fieldKey") String fieldKey,
             @RequestParam("value") String value,
             @RequestParam(value = "excludeId", required = false) Long excludeId) {
-        return success(entityService.checkFieldUnique(businessTypeCode, modelId, fieldKey, value, excludeId));
+        return success(entityService.checkFieldUnique(entityTypeCode, modelId, fieldKey, value, excludeId));
     }
 
     @GetMapping("/page-by-filters")
@@ -194,13 +194,13 @@ public class EntityController {
         summary = "分页查询实体列表",
         description = """
             支持按业务类型编码、模型ID、状态、关键词进行分页查询。
-            - businessTypeCode 是必填参数，用于路由到正确的存储策略
+            - entityTypeCode 是必填参数，用于路由到正确的存储策略
             - 如需按分类筛选，请先通过 ModelController 查询该分类下的模型，再使用 modelId 参数查询实体
             - 关键词会匹配实体名称（模糊查询）
             - 返回结果中的自定义字段数据已自动解密
             """
     )
-    @Parameter(name = "businessTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
     @Parameter(name = "modelId", description = "模型ID（可选，用于查询特定模型下的实体）", example = "1")
     @Parameter(name = "status", description = "状态（可选，0-禁用，1-启用）", example = "1")
     @Parameter(name = "keyword", description = "关键词（可选，模糊匹配实体名称）", example = "设备")
@@ -217,14 +217,14 @@ public class EntityController {
         description = """
             调整实体树层级关系（仅修改 parentId/treePath 相关语义）。
             - 适用场景：树结构拖拽调整
-            - 业务范围：指定业务（必须传 businessTypeCode）
+            - 业务范围：指定业务（必须传 entityTypeCode）
             """
     )
     @PreAuthorize("@ss.hasPermission('system:entity:update')")
     public CommonResult<Boolean> moveEntity(@RequestParam("entityId") Long entityId,
-                                            @RequestParam("businessTypeCode") String businessTypeCode,
+                                            @RequestParam("entityTypeCode") String entityTypeCode,
                                             @RequestParam(value = "newParentId", required = false) Long newParentId) {
-        entityService.moveEntity(entityId, businessTypeCode, newParentId);
+        entityService.moveEntity(entityId, entityTypeCode, newParentId);
         return success(true);
     }
 
@@ -234,13 +234,13 @@ public class EntityController {
         description = """
             获取实体从根到当前节点的路径（名称链路）。
             - 适用场景：面包屑展示、定位上下文
-            - 业务范围：指定业务（必须传 businessTypeCode）
+            - 业务范围：指定业务（必须传 entityTypeCode）
             """
     )
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<List<String>> getEntityPath(@RequestParam("entityId") Long entityId,
-                                                     @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(entityService.getEntityPath(entityId, businessTypeCode));
+                                                     @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(entityService.getEntityPath(entityId, entityTypeCode));
     }
 
     @GetMapping("/get-by-category-link")
@@ -250,15 +250,15 @@ public class EntityController {
             Pattern C 独立接口：先读取 dynamic_category_entity_link 获取绑定 entityId，再查询实体详情。
             - 该接口为 1 对 1 语义，不走分页，不返回数组
             - categoryId 为必填
-            - businessTypeCode 为必填（用于实体路由）
+            - entityTypeCode 为必填（用于实体路由）
             """
     )
     @Parameter(name = "categoryId", description = "分类ID（必填）", required = true, example = "1")
-    @Parameter(name = "businessTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<EntityRespVO> getCategoryLinkedEntity(@RequestParam("categoryId") Long categoryId,
-                                                                @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(entityService.getCategoryLinkedEntity(categoryId, businessTypeCode));
+                                                                @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(entityService.getCategoryLinkedEntity(categoryId, entityTypeCode));
     }
 
     // ==================== 搜索和过滤相关 API ====================
@@ -283,7 +283,7 @@ public class EntityController {
         description = """
             通过 scene 参数统一处理多种实体查询场景。
             - 适用场景：模式A/B/C/D统一入口
-            - 业务范围：多数场景为指定业务（建议传 businessTypeCode）
+            - 业务范围：多数场景为指定业务（建议传 entityTypeCode）
             """
     )
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
@@ -292,20 +292,20 @@ public class EntityController {
             @RequestParam(value = "resultShape", required = false, defaultValue = "PAGE") String resultShape,
             @RequestParam(value = "resultDetail", required = false, defaultValue = "FULL") String resultDetail,
             @RequestParam(value = "categoryTypeCode", required = false) String categoryTypeCode,
-            @RequestParam(value = "businessTypeCode", required = false) String businessTypeCode,
+            @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode,
             @RequestParam(value = "modelIds", required = false) List<Long> modelIds,
             @RequestParam(value = "categoryIds", required = false) List<Long> categoryIds,
             @RequestParam(value = "entityId", required = false) Long entityId,
             @RequestParam(value = "rootEntityId", required = false) Long rootEntityId,
-            @RequestParam(value = "entitySourceBusinessType", required = false) String entitySourceBusinessType,
+            @RequestParam(value = "entitySourceEntityType", required = false) String entitySourceEntityType,
             @RequestParam(value = "pageNo", required = false) Integer pageNo,
             @RequestParam(value = "pageSize", required = false) Integer pageSize,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestBody(required = false) List<FieldFilterReqVO> filters) {
         return success(entityService.queryEntities(scene, EntityQueryResultShape.ofNullable(resultShape).getCode(),
                 EntityQueryResultDetail.ofNullable(resultDetail).getCode(),
-                categoryTypeCode, businessTypeCode,
-                modelIds, categoryIds, entityId, rootEntityId, entitySourceBusinessType, pageNo, pageSize, keyword, filters));
+                categoryTypeCode, entityTypeCode,
+                modelIds, categoryIds, entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword, filters));
     }
 
     // ==================== 导入导出相关 API ====================
@@ -366,18 +366,18 @@ public class EntityController {
         summary = "获取导入模板",
         description = """
             下载业务实体导入模板 Excel 文件。
-            - businessTypeCode 是必填参数，用于路由到正确的存储策略
+            - entityTypeCode 是必填参数，用于路由到正确的存储策略
             - 可选传入 modelId 参数，生成带字段说明的模板
             - 模板包含示例数据和字段说明
             """
     )
-    @Parameter(name = "businessTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
     @Parameter(name = "modelId", description = "模型ID（可选，用于生成带字段说明的模板）", example = "1")
     @PreAuthorize("@ss.hasPermission('system:entity:import')")
-    public void getImportTemplate(@RequestParam("businessTypeCode") String businessTypeCode,
+    public void getImportTemplate(@RequestParam("entityTypeCode") String entityTypeCode,
                                     @RequestParam(value = "modelId", required = false) Long modelId,
                                     HttpServletResponse response) throws IOException {
-        List<EntityImportExcelVO> list = entityDataExportService.getImportTemplate(businessTypeCode, modelId);
+        List<EntityImportExcelVO> list = entityDataExportService.getImportTemplate(entityTypeCode, modelId);
         ExcelUtils.write(response, "业务实体导入模板.xls", "实体列表", EntityImportExcelVO.class, list);
     }
 
@@ -426,7 +426,7 @@ public class EntityController {
         description = """
             批量创建多个实体。
             - 适用场景：批量导入前的应用层创建、任务化批量建模
-            - 业务范围：指定业务（由请求体中的 businessTypeCode 决定）
+            - 业务范围：指定业务（由请求体中的 entityTypeCode 决定）
             """
     )
     @ApiAccessLog(operateType = CREATE)
@@ -476,7 +476,7 @@ public class EntityController {
         description = """
             批量将实体追加关联到目标分类（保留原有关联）。
             - 适用场景：批量标签化、增量挂载分类
-            - 业务范围：指定业务（必须在请求体中提供 businessTypeCode）
+            - 业务范围：指定业务（必须在请求体中提供 entityTypeCode）
             """
     )
     @ApiAccessLog(operateType = UPDATE)
@@ -492,7 +492,7 @@ public class EntityController {
         description = """
             批量解除实体与目标分类的关联（不影响其它分类关联）。
             - 适用场景：批量取消标签、分类关系清理
-            - 业务范围：指定业务（必须在请求体中提供 businessTypeCode）
+            - 业务范围：指定业务（必须在请求体中提供 entityTypeCode）
             """
     )
     @ApiAccessLog(operateType = UPDATE)
@@ -508,7 +508,7 @@ public class EntityController {
         description = """
             批量用目标分类集合覆盖实体当前分类集合。
             - 适用场景：导入覆盖、规则重算后的关系重建
-            - 业务范围：指定业务（必须在请求体中提供 businessTypeCode）
+            - 业务范围：指定业务（必须在请求体中提供 entityTypeCode）
             """
     )
     @ApiAccessLog(operateType = UPDATE)
@@ -523,18 +523,18 @@ public class EntityController {
         summary = "获取批量操作预览",
         description = """
             获取批量操作的预览信息。
-            - businessTypeCode 是必填参数，用于路由到正确的存储策略
+            - entityTypeCode 是必填参数，用于路由到正确的存储策略
             - 返回受影响的实体数量和详情
             - 检查实体是否存在、是否有关联关系等
             - 用于在执行批量操作前向用户展示影响范围
             """
     )
-    @Parameter(name = "businessTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<EntityBatchOperationRespVO> batchPreview(
-            @RequestParam("businessTypeCode") String businessTypeCode,
+            @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestBody List<Long> ids) {
-        return success(entityService.getBatchOperationPreview(businessTypeCode, ids));
+        return success(entityService.getBatchOperationPreview(entityTypeCode, ids));
     }
 
 }

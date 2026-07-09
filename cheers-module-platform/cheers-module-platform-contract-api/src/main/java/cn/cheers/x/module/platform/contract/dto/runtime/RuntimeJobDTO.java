@@ -19,7 +19,7 @@ public class RuntimeJobDTO {
 
     private String contractVersion;
     private String runtimeJobId;
-    private String businessTypeCode;
+    private String entityTypeCode;
     private String triggerAction;
     private RuntimeJobStatus status;
     private List<String> sourceWorkIds;

@@ -45,7 +45,7 @@ public interface BidirectionalRelationService {
      * 
      * @param entityId 实体 ID
      * @return 正向关联实体列表
-     * @deprecated 使用 {@link #getForwardRelations(Long, String)} 代替，需要传递 businessTypeCode 以支持动态表路由
+     * @deprecated 使用 {@link #getForwardRelations(Long, String)} 代替，需要传递 entityTypeCode 以支持动态表路由
      */
     @Deprecated
     List<RelatedEntityVO> getForwardRelations(Long entityId);
@@ -56,10 +56,10 @@ public interface BidirectionalRelationService {
      * <p>查询当前实体的所有 ENTITY_REF 类型字段，返回引用的实体信息。</p>
      * 
      * @param entityId 实体 ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 正向关联实体列表
      */
-    List<RelatedEntityVO> getForwardRelations(Long entityId, String businessTypeCode);
+    List<RelatedEntityVO> getForwardRelations(Long entityId, String entityTypeCode);
 
     /**
      * 获取实体的反向关联（引用当前实体的其他实体）
@@ -68,7 +68,7 @@ public interface BidirectionalRelationService {
      * 
      * @param entityId 实体 ID
      * @return 反向关联实体列表（按 Model 分组）
-     * @deprecated 使用 {@link #getReverseRelations(Long, String)} 代替，需要传递 businessTypeCode 以支持动态表路由
+     * @deprecated 使用 {@link #getReverseRelations(Long, String)} 代替，需要传递 entityTypeCode 以支持动态表路由
      */
     @Deprecated
     List<RelatedEntityVO> getReverseRelations(Long entityId);
@@ -79,10 +79,10 @@ public interface BidirectionalRelationService {
      * <p>系统自动发现所有关联关系，查询引用当前实体的所有记录。</p>
      * 
      * @param entityId 实体 ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 反向关联实体列表（按 Model 分组）
      */
-    List<RelatedEntityVO> getReverseRelations(Long entityId, String businessTypeCode);
+    List<RelatedEntityVO> getReverseRelations(Long entityId, String entityTypeCode);
 
     /**
      * 获取实体的反向关联（按 Model 过滤）
@@ -93,7 +93,7 @@ public interface BidirectionalRelationService {
      * @param modelCode Model 编码
      * @param pageParam 分页参数
      * @return 分页的实体列表
-     * @deprecated 使用 {@link #getReverseRelationsByModel(Long, String, String, PageParam)} 代替，需要传递 businessTypeCode 以支持动态表路由
+     * @deprecated 使用 {@link #getReverseRelationsByModel(Long, String, String, PageParam)} 代替，需要传递 entityTypeCode 以支持动态表路由
      */
     @Deprecated
     PageResult<EntitySimpleVO> getReverseRelationsByModel(Long entityId, String modelCode, PageParam pageParam);
@@ -104,12 +104,12 @@ public interface BidirectionalRelationService {
      * <p>查询指定 Model 中引用当前实体的所有记录，支持分页。</p>
      * 
      * @param entityId 实体 ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @param modelCode Model 编码
      * @param pageParam 分页参数
      * @return 分页的实体列表
      */
-    PageResult<EntitySimpleVO> getReverseRelationsByModel(Long entityId, String businessTypeCode, String modelCode, PageParam pageParam);
+    PageResult<EntitySimpleVO> getReverseRelationsByModel(Long entityId, String entityTypeCode, String modelCode, PageParam pageParam);
 
     /**
      * 获取关联统计
@@ -118,7 +118,7 @@ public interface BidirectionalRelationService {
      * 
      * @param entityId 实体 ID
      * @return 关联统计信息
-     * @deprecated 使用 {@link #getRelationStatistics(Long, String)} 代替，需要传递 businessTypeCode 以支持动态表路由
+     * @deprecated 使用 {@link #getRelationStatistics(Long, String)} 代替，需要传递 entityTypeCode 以支持动态表路由
      */
     @Deprecated
     RelationStatisticsVO getRelationStatistics(Long entityId);
@@ -129,10 +129,10 @@ public interface BidirectionalRelationService {
      * <p>统计引用当前实体的记录数量，按 Model 分组。</p>
      * 
      * @param entityId 实体 ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 关联统计信息
      */
-    RelationStatisticsVO getRelationStatistics(Long entityId, String businessTypeCode);
+    RelationStatisticsVO getRelationStatistics(Long entityId, String entityTypeCode);
 
     /**
      * 按关联字段分组统计
@@ -181,7 +181,7 @@ public interface BidirectionalRelationService {
      * 
      * @param entityId 实体 ID
      * @return 完整的关联信息
-     * @deprecated 使用 {@link #getEntityRelationInfo(Long, String)} 代替，需要传递 businessTypeCode 以支持动态表路由
+     * @deprecated 使用 {@link #getEntityRelationInfo(Long, String)} 代替，需要传递 entityTypeCode 以支持动态表路由
      */
     @Deprecated
     EntityRelationInfoVO getEntityRelationInfo(Long entityId);
@@ -192,10 +192,10 @@ public interface BidirectionalRelationService {
      * <p>一次性获取实体的所有关联信息，包括正向和反向关联。</p>
      * 
      * @param entityId 实体 ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 完整的关联信息
      */
-    EntityRelationInfoVO getEntityRelationInfo(Long entityId, String businessTypeCode);
+    EntityRelationInfoVO getEntityRelationInfo(Long entityId, String entityTypeCode);
 
     /**
      * 批量获取实体的反向关联统计
@@ -204,7 +204,7 @@ public interface BidirectionalRelationService {
      * 
      * @param entityIds 实体 ID 列表
      * @return 实体 ID -> 关联数量 的映射
-     * @deprecated 使用 {@link #batchGetReverseRelationCounts(String, List)} 代替，需要传递 businessTypeCode 以支持动态表路由
+     * @deprecated 使用 {@link #batchGetReverseRelationCounts(String, List)} 代替，需要传递 entityTypeCode 以支持动态表路由
      */
     @Deprecated
     Map<Long, Long> batchGetReverseRelationCounts(List<Long> entityIds);
@@ -214,11 +214,11 @@ public interface BidirectionalRelationService {
      * 
      * <p>批量查询多个实体的反向关联数量，用于列表展示。</p>
      * 
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @param entityIds 实体 ID 列表
      * @return 实体 ID -> 关联数量 的映射
      */
-    Map<Long, Long> batchGetReverseRelationCounts(String businessTypeCode, List<Long> entityIds);
+    Map<Long, Long> batchGetReverseRelationCounts(String entityTypeCode, List<Long> entityIds);
 
     /**
      * 清除统计结果缓存

@@ -31,7 +31,7 @@ SET
     }'::jsonb,
     update_time = CURRENT_TIMESTAMP,
     updater = 'system'
-WHERE business_type_code = 'equipment';
+WHERE entity_type_code = 'equipment';
 
 -- =====================================================
 -- 第二步：注册设备表到 system_dynamic_table
@@ -41,7 +41,7 @@ WHERE business_type_code = 'equipment';
 -- 使用 biz_ 前缀与其他业务数据表保持一致
 INSERT INTO system_dynamic_table (
     model_id,
-    business_type_code,
+    entity_type_code,
     table_name,
     table_comment,
     column_config,
@@ -103,7 +103,7 @@ SELECT
     '从 DEDICATED_STATIC 迁移到 DEDICATED_DYNAMIC',
     '{"storage_type": "DEDICATED_STATIC", "strategy_bean_name": "equipmentEntityStorageStrategy"}'::jsonb,
     '{"storage_type": "DEDICATED_DYNAMIC", "strategy_bean_name": null, "physical_column_mapping": "configured"}'::jsonb,
-    'UPDATE system_business_type_config SET storage_type = ''DEDICATED_DYNAMIC'', strategy_bean_name = NULL WHERE business_type_code = ''equipment''',
+    'UPDATE system_business_type_config SET storage_type = ''DEDICATED_DYNAMIC'', strategy_bean_name = NULL WHERE entity_type_code = ''equipment''',
     'SUCCESS',
     CURRENT_TIMESTAMP,
     'system',
@@ -136,6 +136,6 @@ WHERE dt.table_name = 'biz_equipment';
 -- SET storage_type = 'DEDICATED_STATIC', 
 --     strategy_bean_name = 'equipmentEntityStorageStrategy',
 --     physical_column_mapping = NULL
--- WHERE business_type_code = 'equipment';
+-- WHERE entity_type_code = 'equipment';
 -- 
 -- DELETE FROM system_dynamic_table WHERE table_name = 'biz_equipment';

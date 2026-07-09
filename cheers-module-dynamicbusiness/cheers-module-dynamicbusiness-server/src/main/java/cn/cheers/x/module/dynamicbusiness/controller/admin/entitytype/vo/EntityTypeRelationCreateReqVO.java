@@ -1,4 +1,4 @@
-package cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo;
+package cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -12,15 +12,15 @@ import jakarta.validation.constraints.NotBlank;
  * 
  * @author yudao
  */
-@Schema(description = "管理后台 - BusinessType 关联创建 Request VO")
+@Schema(description = "管理后台 - EntityType 关联创建 Request VO")
 @Data
-public class BusinessTypeRelationCreateReqVO {
+public class EntityTypeRelationCreateReqVO {
 
     @Schema(description = "源业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "task_management")
     @NotBlank(message = "源业务类型编码不能为空")
-    private String sourceBusinessTypeCode;
+    private String sourceEntityTypeCode;
 
     @Schema(description = "目标业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "production_plan")
     @NotBlank(message = "目标业务类型编码不能为空")
-    private String targetBusinessTypeCode;
+    private String targetEntityTypeCode;
 }

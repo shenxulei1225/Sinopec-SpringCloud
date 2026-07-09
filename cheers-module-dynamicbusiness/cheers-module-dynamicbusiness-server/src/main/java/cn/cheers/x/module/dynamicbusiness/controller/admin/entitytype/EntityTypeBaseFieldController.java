@@ -1,9 +1,9 @@
-package cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype;
+package cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype;
 
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo.BusinessTypeBaseFieldRespVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo.BusinessTypeBaseFieldSaveReqVO;
-import cn.cheers.x.module.dynamicbusiness.service.businesstype.BusinessTypeBaseFieldService;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldSaveReqVO;
+import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeBaseFieldService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,7 +22,7 @@ import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
  * 业务类型固定列字段 Controller
  *
  * 职责：
- * - 在 BusinessType 维度维护一组固定列字段（基于字段库定义），作为该业务类型下各模型的“基础字段候选集/基线”。
+ * - 在 EntityType 维度维护一组固定列字段（基于字段库定义），作为该业务类型下各模型的“基础字段候选集/基线”。
  * - 为字段-模型分配提供类型级的字段约束与推荐来源。
  *
  * 说明：
@@ -32,9 +32,9 @@ import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
  */
 @Tag(name = "管理后台 - 业务类型固定列字段", description = "在业务类型维度维护固定列字段候选集，用于约定该类型下各模型的基础字段基线")
 @RestController
-@RequestMapping("/dynamicbusiness/business-type-base-field")
+@RequestMapping("/dynamicbusiness/entity-type-base-field")
 @Validated
-public class BusinessTypeBaseFieldController {
+public class EntityTypeBaseFieldController {
 
     /** 支持的数据类型 */
     private static final List<String> SUPPORTED_DATA_TYPES = Arrays.asList(
@@ -42,83 +42,83 @@ public class BusinessTypeBaseFieldController {
     );
 
     @Resource
-    private BusinessTypeBaseFieldService businessTypeBaseFieldService;
+    private EntityTypeBaseFieldService entityTypeBaseFieldService;
 
     @PostMapping("/create")
-    @Operation(summary = "创建业务类型固定列字段", description = "在指定 BusinessType 下新增一个固定列字段定义，作为字段-模型分配时的基础候选字段")
-    @PreAuthorize("@ss.hasPermission('system:business-type-base-field:create')")
-    public CommonResult<Long> createBaseField(@Valid @RequestBody BusinessTypeBaseFieldSaveReqVO reqVO) {
-        return success(businessTypeBaseFieldService.createBaseField(reqVO));
+    @Operation(summary = "创建业务类型固定列字段", description = "在指定 EntityType 下新增一个固定列字段定义，作为字段-模型分配时的基础候选字段")
+    @PreAuthorize("@ss.hasPermission('system:entity-type-base-field:create')")
+    public CommonResult<Long> createBaseField(@Valid @RequestBody EntityTypeBaseFieldSaveReqVO reqVO) {
+        return success(entityTypeBaseFieldService.createBaseField(reqVO));
     }
 
     @PutMapping("/update")
-    @Operation(summary = "更新业务类型固定列字段", description = "修改 BusinessType 级别的固定列字段定义，不直接修改各模型已分配字段，仅影响候选基线")
-    @PreAuthorize("@ss.hasPermission('system:business-type-base-field:update')")
-    public CommonResult<Boolean> updateBaseField(@Valid @RequestBody BusinessTypeBaseFieldSaveReqVO reqVO) {
-        businessTypeBaseFieldService.updateBaseField(reqVO);
+    @Operation(summary = "更新业务类型固定列字段", description = "修改 EntityType 级别的固定列字段定义，不直接修改各模型已分配字段，仅影响候选基线")
+    @PreAuthorize("@ss.hasPermission('system:entity-type-base-field:update')")
+    public CommonResult<Boolean> updateBaseField(@Valid @RequestBody EntityTypeBaseFieldSaveReqVO reqVO) {
+        entityTypeBaseFieldService.updateBaseField(reqVO);
         return success(true);
     }
 
     @DeleteMapping("/delete")
-    @Operation(summary = "删除业务类型固定列字段", description = "从 BusinessType 的固定列候选集中移除某个字段，不会直接删除已有模型中的字段，仅影响后续分配")
+    @Operation(summary = "删除业务类型固定列字段", description = "从 EntityType 的固定列候选集中移除某个字段，不会直接删除已有模型中的字段，仅影响后续分配")
     @Parameter(name = "id", description = "字段ID", required = true, example = "1")
-    @PreAuthorize("@ss.hasPermission('system:business-type-base-field:delete')")
+    @PreAuthorize("@ss.hasPermission('system:entity-type-base-field:delete')")
     public CommonResult<Boolean> deleteBaseField(@RequestParam("id") Long id) {
-        businessTypeBaseFieldService.deleteBaseField(id);
+        entityTypeBaseFieldService.deleteBaseField(id);
         return success(true);
     }
 
     @GetMapping("/get")
     @Operation(summary = "获取业务类型固定列字段详情")
     @Parameter(name = "id", description = "字段ID", required = true, example = "1")
-    @PreAuthorize("@ss.hasPermission('system:business-type-base-field:query')")
-    public CommonResult<BusinessTypeBaseFieldRespVO> getBaseField(@RequestParam("id") Long id) {
-        return success(businessTypeBaseFieldService.getBaseFieldRespVO(id));
+    @PreAuthorize("@ss.hasPermission('system:entity-type-base-field:query')")
+    public CommonResult<EntityTypeBaseFieldRespVO> getBaseField(@RequestParam("id") Long id) {
+        return success(entityTypeBaseFieldService.getBaseFieldRespVO(id));
     }
 
     @GetMapping("/list")
-    @Operation(summary = "根据业务类型编码获取固定列字段列表", description = "查看某个 BusinessType 当前配置的固定列字段候选集，用于了解该类型下模型的基础字段基线")
-    @Parameter(name = "businessTypeCode", description = "业务类型编码", required = true, example = "equipment")
-    @PreAuthorize("@ss.hasPermission('system:business-type-base-field:query')")
-    public CommonResult<List<BusinessTypeBaseFieldRespVO>> listByBusinessTypeCode(
-            @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(businessTypeBaseFieldService.listByBusinessTypeCode(businessTypeCode));
+    @Operation(summary = "根据业务类型编码获取固定列字段列表", description = "查看某个 EntityType 当前配置的固定列字段候选集，用于了解该类型下模型的基础字段基线")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码", required = true, example = "equipment")
+    @PreAuthorize("@ss.hasPermission('system:entity-type-base-field:query')")
+    public CommonResult<List<EntityTypeBaseFieldRespVO>> listByEntityTypeCode(
+            @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(entityTypeBaseFieldService.listByEntityTypeCode(entityTypeCode));
     }
 
     @PutMapping("/update-status")
-    @Operation(summary = "更新固定列字段状态", description = "启用/停用某个 BusinessType 级固定列字段，影响其在后续模型分配中的可用性")
-    @PreAuthorize("@ss.hasPermission('system:business-type-base-field:update')")
+    @Operation(summary = "更新固定列字段状态", description = "启用/停用某个 EntityType 级固定列字段，影响其在后续模型分配中的可用性")
+    @PreAuthorize("@ss.hasPermission('system:entity-type-base-field:update')")
     public CommonResult<Boolean> updateBaseFieldStatus(@RequestParam("id") Long id,
                                                         @RequestParam("status") Integer status) {
-        businessTypeBaseFieldService.updateBaseFieldStatus(id, status);
+        entityTypeBaseFieldService.updateBaseFieldStatus(id, status);
         return success(true);
     }
 
     @GetMapping("/exists")
     @Operation(summary = "检查字段编码在该业务类型固定列中是否已存在")
-    @PreAuthorize("@ss.hasPermission('system:business-type-base-field:query')")
+    @PreAuthorize("@ss.hasPermission('system:entity-type-base-field:query')")
     public CommonResult<Boolean> existsFieldCode(
-            @RequestParam("businessTypeCode") String businessTypeCode,
+            @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam("fieldCode") String fieldCode) {
-        return success(businessTypeBaseFieldService.existsFieldCode(businessTypeCode, fieldCode));
+        return success(entityTypeBaseFieldService.existsFieldCode(entityTypeCode, fieldCode));
     }
 
     @GetMapping("/count")
     @Operation(summary = "统计业务类型下固定列字段数量")
-    @Parameter(name = "businessTypeCode", description = "业务类型编码", required = true, example = "equipment")
-    @PreAuthorize("@ss.hasPermission('system:business-type-base-field:query')")
-    public CommonResult<Long> countByBusinessTypeCode(
-            @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(businessTypeBaseFieldService.countByBusinessTypeCode(businessTypeCode));
+    @Parameter(name = "entityTypeCode", description = "业务类型编码", required = true, example = "equipment")
+    @PreAuthorize("@ss.hasPermission('system:entity-type-base-field:query')")
+    public CommonResult<Long> countByEntityTypeCode(
+            @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(entityTypeBaseFieldService.countByEntityTypeCode(entityTypeCode));
     }
 
     @GetMapping("/field-codes")
     @Operation(summary = "获取业务类型固定列字段编码列表")
-    @Parameter(name = "businessTypeCode", description = "业务类型编码", required = true, example = "equipment")
-    @PreAuthorize("@ss.hasPermission('system:business-type-base-field:query')")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码", required = true, example = "equipment")
+    @PreAuthorize("@ss.hasPermission('system:entity-type-base-field:query')")
     public CommonResult<List<String>> getFieldCodes(
-            @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(businessTypeBaseFieldService.getFieldCodes(businessTypeCode));
+            @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(entityTypeBaseFieldService.getFieldCodes(entityTypeCode));
     }
 
     @GetMapping("/data-types")
@@ -138,12 +138,12 @@ public class BusinessTypeBaseFieldController {
 
     @PostMapping("/validate")
     @Operation(summary = "验证字段值", description = "在为某个业务类型配置或生成数据前，校验给定字段值是否符合固定列字段的定义与约束")
-    @PreAuthorize("@ss.hasPermission('system:business-type-base-field:query')")
+    @PreAuthorize("@ss.hasPermission('system:entity-type-base-field:query')")
     public CommonResult<String> validateFieldValue(
-            @RequestParam("businessTypeCode") String businessTypeCode,
+            @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam("fieldCode") String fieldCode,
             @RequestParam(value = "value", required = false) String value) {
-        String error = businessTypeBaseFieldService.validateFieldValue(businessTypeCode, fieldCode, value);
+        String error = entityTypeBaseFieldService.validateFieldValue(entityTypeCode, fieldCode, value);
         return success(error);
     }
 

@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.capability;
 
-import cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo.BusinessTypeSimpleVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeSimpleVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.capability.vo.BusinessCapabilityFullRespVO;
 import cn.cheers.x.module.dynamicbusiness.service.capability.contract.BusinessCapabilityFullContract;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.capability.vo.BusinessCapabilitySummaryRespVO;
@@ -22,12 +22,12 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMa
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.relation.RelationFieldLibraryMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeBaseFieldDO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeDO;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeBaseFieldMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeMapper;
-import cn.cheers.x.module.dynamicbusiness.enums.businesstype.StorageTypeEnum;
-import cn.cheers.x.module.dynamicbusiness.service.businesstype.BusinessTypeService;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeBaseFieldMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
+import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldGroupRespVO;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelFieldGroupService;
 import cn.cheers.x.module.dynamicbusiness.service.capability.form.ModelCrudFormFieldAssembler;
@@ -63,7 +63,7 @@ import java.util.stream.Collectors;
  *
  * <p>实现策略：</p>
  * <ul>
- *   <li>读路径严格按 businessTypeCode / componentCode / modelId 三组主键访问；</li>
+ *   <li>读路径严格按 entityTypeCode / componentCode / modelId 三组主键访问；</li>
  *   <li>不接受 dataSourceKey 形式的兼容参数；</li>
  *   <li>重建时同批写入 business_capability、capability_component_projection、model_crud_form_definition。</li>
  * </ul>
@@ -96,13 +96,13 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     @Resource
     private FieldMapper fieldMapper;
     @Resource
-    private BusinessTypeService businessTypeService;
+    private EntityTypeService entityTypeService;
     @Resource
     private ModelFieldGroupService modelFieldGroupService;
     @Resource
-    private BusinessTypeBaseFieldMapper businessTypeBaseFieldMapper;
+    private EntityTypeBaseFieldMapper entityTypeBaseFieldMapper;
     @Resource
-    private BusinessTypeMapper businessTypeMapper;
+    private EntityTypeMapper entityTypeMapper;
     @Resource
     private ObjectMapper objectMapper;
 
@@ -112,8 +112,8 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             BusinessCategoryConstants.requireKnownCategory(businessCategory.trim());
         }
 
-        Map<String, String> dynamicNameMap = businessTypeService.listSimple().stream()
-                .collect(Collectors.toMap(BusinessTypeSimpleVO::getCode, BusinessTypeSimpleVO::getName, (a, b) -> a));
+        Map<String, String> dynamicNameMap = entityTypeService.listSimple().stream()
+                .collect(Collectors.toMap(EntityTypeSimpleVO::getCode, EntityTypeSimpleVO::getName, (a, b) -> a));
 
         return businessCapabilityMapper.selectAllOrderByCode(
                 StringUtils.hasText(businessCategory) ? businessCategory.trim() : null
@@ -128,16 +128,16 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                 ? item.getBusinessCategory().trim()
                 : BusinessCategoryConstants.DYNAMIC;
         vo.setBusinessCategory(category);
-        vo.setBusinessTypeCode(item.getBusinessTypeCode());
+        vo.setEntityTypeCode(item.getEntityTypeCode());
         vo.setVersion(item.getVersion());
         vo.setSupportedDataKinds(resolveSupportedDataKinds(category));
 
         if (BusinessCategoryConstants.isSystem(category)) {
-            vo.setBusinessTypeName(SystemCapabilityCatalog.find(item.getBusinessTypeCode())
-                    .map(SystemCapabilityDefinition::getBusinessTypeName)
-                    .orElse(item.getBusinessTypeCode()));
+            vo.setEntityTypeName(SystemCapabilityCatalog.find(item.getEntityTypeCode())
+                    .map(SystemCapabilityDefinition::getEntityTypeName)
+                    .orElse(item.getEntityTypeCode()));
         } else {
-            vo.setBusinessTypeName(dynamicNameMap.getOrDefault(item.getBusinessTypeCode(), item.getBusinessTypeCode()));
+            vo.setEntityTypeName(dynamicNameMap.getOrDefault(item.getEntityTypeCode(), item.getEntityTypeCode()));
         }
         return vo;
     }
@@ -150,14 +150,14 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     }
 
     @Override
-    public BusinessCapabilityFullRespVO getCapabilityFull(String businessTypeCode) {
-        String code = requireBusinessTypeCode(businessTypeCode);
-        BusinessCapabilityDO data = businessCapabilityMapper.selectByBusinessTypeCode(code);
+    public BusinessCapabilityFullRespVO getCapabilityFull(String entityTypeCode) {
+        String code = requireEntityTypeCode(entityTypeCode);
+        BusinessCapabilityDO data = businessCapabilityMapper.selectByEntityTypeCode(code);
         if (data == null) {
-            throw new ServiceException(404, "未找到能力全集，businessTypeCode=" + code);
+            throw new ServiceException(404, "未找到能力全集，entityTypeCode=" + code);
         }
         BusinessCapabilityFullRespVO vo = new BusinessCapabilityFullRespVO();
-        vo.setBusinessTypeCode(data.getBusinessTypeCode());
+        vo.setEntityTypeCode(data.getEntityTypeCode());
         vo.setCapabilityFull(parseCapabilityFull(data.getCapabilityFull(), code));
         vo.setVersion(data.getVersion());
         return vo;
@@ -166,34 +166,34 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public CapabilityComponentProjectionRespVO getProjection(
-            String businessTypeCode, String componentCode, String dataKind) {
-        String code = requireBusinessTypeCode(businessTypeCode);
+            String entityTypeCode, String componentCode, String dataKind) {
+        String code = requireEntityTypeCode(entityTypeCode);
         String comp = requireComponentCode(componentCode);
         String kind = requireDataKind(dataKind, code);
         CapabilityComponentProjectionDO data = capabilityComponentProjectionMapper
-                .selectByBusinessTypeComponentAndDataKind(code, comp, kind);
+                .selectByEntityTypeComponentAndDataKind(code, comp, kind);
         if (data == null) {
-            log.info("[getProjection][投影缺失，触发重建][businessTypeCode={}][componentCode={}][dataKind={}]",
+            log.info("[getProjection][投影缺失，触发重建][entityTypeCode={}][componentCode={}][dataKind={}]",
                     code, comp, kind);
             triggerRebuild(code);
-            data = capabilityComponentProjectionMapper.selectByBusinessTypeComponentAndDataKind(code, comp, kind);
+            data = capabilityComponentProjectionMapper.selectByEntityTypeComponentAndDataKind(code, comp, kind);
         } else if (isLegacyProjectionFormat(data.getComponentInterface())) {
-            log.info("[getProjection][检测到旧版 read/write 投影，触发重建][businessTypeCode={}][componentCode={}][dataKind={}]",
+            log.info("[getProjection][检测到旧版 read/write 投影，触发重建][entityTypeCode={}][componentCode={}][dataKind={}]",
                     code, comp, kind);
             triggerRebuild(code);
-            data = capabilityComponentProjectionMapper.selectByBusinessTypeComponentAndDataKind(code, comp, kind);
+            data = capabilityComponentProjectionMapper.selectByEntityTypeComponentAndDataKind(code, comp, kind);
         } else if (isBrokenDynamicTreeProjection(data.getComponentInterface(), comp, kind)) {
-            log.info("[getProjection][动态树读 URL 异常，触发重建][businessTypeCode={}][componentCode={}][dataKind={}]",
+            log.info("[getProjection][动态树读 URL 异常，触发重建][entityTypeCode={}][componentCode={}][dataKind={}]",
                     code, comp, kind);
             triggerRebuild(code);
-            data = capabilityComponentProjectionMapper.selectByBusinessTypeComponentAndDataKind(code, comp, kind);
+            data = capabilityComponentProjectionMapper.selectByEntityTypeComponentAndDataKind(code, comp, kind);
         }
         if (data == null) {
             throw new ServiceException(404,
-                    "未找到能力投影，businessTypeCode=" + code + ", componentCode=" + comp + ", dataKind=" + kind);
+                    "未找到能力投影，entityTypeCode=" + code + ", componentCode=" + comp + ", dataKind=" + kind);
         }
         CapabilityComponentProjectionRespVO vo = new CapabilityComponentProjectionRespVO();
-        vo.setBusinessTypeCode(data.getBusinessTypeCode());
+        vo.setEntityTypeCode(data.getEntityTypeCode());
         vo.setComponentCode(data.getComponentCode());
         vo.setDataKind(data.getDataKind());
         vo.setComponentInterface(data.getComponentInterface());
@@ -203,23 +203,23 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ModelCrudFormDefinitionRespVO getModelCrudFormDefinition(String businessTypeCode, Long modelId) {
-        String code = requireBusinessTypeCode(businessTypeCode);
+    public ModelCrudFormDefinitionRespVO getModelCrudFormDefinition(String entityTypeCode, Long modelId) {
+        String code = requireEntityTypeCode(entityTypeCode);
         if (modelId == null) {
             throw new ServiceException(400, "modelId 不能为空");
         }
-        ModelCrudFormDefinitionDO data = modelCrudFormDefinitionMapper.selectByBusinessTypeAndModel(code, modelId);
+        ModelCrudFormDefinitionDO data = modelCrudFormDefinitionMapper.selectByEntityTypeAndModel(code, modelId);
         if (data == null) {
-            log.info("[getModelCrudFormDefinition][表单定义缺失，首次生成][businessTypeCode={}][modelId={}]",
+            log.info("[getModelCrudFormDefinition][表单定义缺失，首次生成][entityTypeCode={}][modelId={}]",
                     code, modelId);
             refreshSingleModelCrudForm(code, modelId);
-            data = modelCrudFormDefinitionMapper.selectByBusinessTypeAndModel(code, modelId);
+            data = modelCrudFormDefinitionMapper.selectByEntityTypeAndModel(code, modelId);
         }
         if (data == null) {
-            throw new ServiceException(404, "未找到模型 CRUD 表单定义，businessTypeCode=" + code + ", modelId=" + modelId);
+            throw new ServiceException(404, "未找到模型 CRUD 表单定义，entityTypeCode=" + code + ", modelId=" + modelId);
         }
         ModelCrudFormDefinitionRespVO vo = new ModelCrudFormDefinitionRespVO();
-        vo.setBusinessTypeCode(data.getBusinessTypeCode());
+        vo.setEntityTypeCode(data.getEntityTypeCode());
         vo.setModelId(data.getModelId());
         vo.setCrudFormFields(data.getCrudFormFields());
         vo.setVersion(data.getVersion());
@@ -228,14 +228,14 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void rebuildByBusinessTypeCode(String businessTypeCode) {
-        String code = requireBusinessTypeCode(businessTypeCode);
+    public void rebuildByEntityTypeCode(String entityTypeCode) {
+        String code = requireEntityTypeCode(entityTypeCode);
         if (SystemCapabilityCatalog.isSystemCapability(code)) {
             rebuildSystemCapability(code);
             return;
         }
 
-        BusinessCapabilityDO existing = businessCapabilityMapper.selectByBusinessTypeCode(code);
+        BusinessCapabilityDO existing = businessCapabilityMapper.selectByEntityTypeCode(code);
         long newVersion = existing == null || existing.getVersion() == null ? 1L : existing.getVersion() + 1L;
 
         String fullJson = buildCapabilityFullJson(code);
@@ -248,7 +248,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             upsertProjection(code, componentCode, BusinessCategoryConstants.KIND_MODEL, modelProjectionJson, newVersion);
         }
 
-        List<ModelDO> models = modelMapper.selectByBusinessTypeCode(code);
+        List<ModelDO> models = modelMapper.selectByEntityTypeCode(code);
         for (ModelDO model : models) {
             String formJson = buildModelCrudFormJson(model.getId(), code);
             upsertModelCrudForm(code, model.getId(), formJson, newVersion);
@@ -259,18 +259,18 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     @Transactional(rollbackFor = Exception.class)
     public void rebuildAllSystemCapabilities() {
         for (SystemCapabilityDefinition definition : SystemCapabilityCatalog.all()) {
-            rebuildSystemCapability(definition.getBusinessTypeCode());
+            rebuildSystemCapability(definition.getEntityTypeCode());
         }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void rebuildSystemCapability(String businessTypeCode) {
-        String code = requireBusinessTypeCode(businessTypeCode);
+    public void rebuildSystemCapability(String entityTypeCode) {
+        String code = requireEntityTypeCode(entityTypeCode);
         SystemCapabilityDefinition definition = SystemCapabilityCatalog.find(code)
-                .orElseThrow(() -> new ServiceException(404, "未找到系统业务能力定义，businessTypeCode=" + code));
+                .orElseThrow(() -> new ServiceException(404, "未找到系统业务能力定义，entityTypeCode=" + code));
 
-        BusinessCapabilityDO existing = businessCapabilityMapper.selectByBusinessTypeCode(code);
+        BusinessCapabilityDO existing = businessCapabilityMapper.selectByEntityTypeCode(code);
         long newVersion = existing == null || existing.getVersion() == null ? 1L : existing.getVersion() + 1L;
 
         String fullJson = SystemCapabilityProjectionBuilder.buildCapabilityFullJson(definition, newVersion, objectMapper);
@@ -283,12 +283,12 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         }
     }
 
-    private void triggerRebuild(String businessTypeCode) {
-        if (SystemCapabilityCatalog.isSystemCapability(businessTypeCode)) {
-            rebuildSystemCapability(businessTypeCode);
+    private void triggerRebuild(String entityTypeCode) {
+        if (SystemCapabilityCatalog.isSystemCapability(entityTypeCode)) {
+            rebuildSystemCapability(entityTypeCode);
             return;
         }
-        rebuildByBusinessTypeCode(businessTypeCode);
+        rebuildByEntityTypeCode(entityTypeCode);
     }
 
     @Override
@@ -298,10 +298,10 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             throw new ServiceException(400, "modelId 不能为空");
         }
         ModelDO model = modelMapper.selectById(modelId);
-        if (model == null || !StringUtils.hasText(model.getBusinessTypeCode())) {
-            throw new ServiceException(404, "未找到模型或模型缺少 businessTypeCode，modelId=" + modelId);
+        if (model == null || !StringUtils.hasText(model.getEntityTypeCode())) {
+            throw new ServiceException(404, "未找到模型或模型缺少 entityTypeCode，modelId=" + modelId);
         }
-        rebuildByBusinessTypeCode(model.getBusinessTypeCode());
+        rebuildByEntityTypeCode(model.getEntityTypeCode());
     }
 
     @Override
@@ -311,25 +311,25 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             throw new ServiceException(400, "modelId 不能为空");
         }
         ModelDO model = modelMapper.selectById(modelId);
-        if (model == null || !StringUtils.hasText(model.getBusinessTypeCode())) {
-            throw new ServiceException(404, "未找到模型或模型缺少 businessTypeCode，modelId=" + modelId);
+        if (model == null || !StringUtils.hasText(model.getEntityTypeCode())) {
+            throw new ServiceException(404, "未找到模型或模型缺少 entityTypeCode，modelId=" + modelId);
         }
-        refreshSingleModelCrudForm(model.getBusinessTypeCode().trim(), modelId);
+        refreshSingleModelCrudForm(model.getEntityTypeCode().trim(), modelId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void refreshAfterBusinessTypeFieldDefinitionChanged(String businessTypeCode) {
-        rebuildByBusinessTypeCode(requireBusinessTypeCode(businessTypeCode));
+    public void refreshAfterEntityTypeFieldDefinitionChanged(String entityTypeCode) {
+        rebuildByEntityTypeCode(requireEntityTypeCode(entityTypeCode));
     }
 
     /**
      * 构建能力全集 JSON。
      */
-    private String buildCapabilityFullJson(String businessTypeCode) {
-        List<ModelDO> models = modelMapper.selectByBusinessTypeCode(businessTypeCode);
+    private String buildCapabilityFullJson(String entityTypeCode) {
+        List<ModelDO> models = modelMapper.selectByEntityTypeCode(entityTypeCode);
         Map<String, Object> root = new LinkedHashMap<>();
-        root.put("businessTypeCode", businessTypeCode);
+        root.put("entityTypeCode", entityTypeCode);
         root.put("businessCategory", BusinessCategoryConstants.DYNAMIC);
         root.put("capabilityVersion", 1);
         root.put("components", List.of("list", "tree", "table", "card"));
@@ -352,13 +352,13 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     /**
      * 构建 entity 组件投影 JSON（能力块模型：getList / filter / search / create 等）。
      */
-    private String buildEntityProjectionJson(String businessTypeCode, String componentCode, Long version) {
-        List<Map<String, Object>> displayFields = buildDisplayFields(businessTypeCode, componentCode);
-        List<Map<String, Object>> filterFields = buildFilterFields(businessTypeCode);
-        List<String> searchableFieldKeys = collectFieldKeys(businessTypeCode, "searchable");
-        List<String> sortableFieldKeys = collectFieldKeys(businessTypeCode, "sortable");
+    private String buildEntityProjectionJson(String entityTypeCode, String componentCode, Long version) {
+        List<Map<String, Object>> displayFields = buildDisplayFields(entityTypeCode, componentCode);
+        List<Map<String, Object>> filterFields = buildFilterFields(entityTypeCode);
+        List<String> searchableFieldKeys = collectFieldKeys(entityTypeCode, "searchable");
+        List<String> sortableFieldKeys = collectFieldKeys(entityTypeCode, "sortable");
         Map<String, Object> projection = CapabilityBlockProjectionBuilder.buildDynamicEntity(
-                businessTypeCode,
+                entityTypeCode,
                 componentCode,
                 version,
                 displayFields,
@@ -371,13 +371,13 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     /**
      * 构建 model 组件投影 JSON（模型目录：page-models 读路径，无实体 CRUD）。
      */
-    private String buildModelProjectionJson(String businessTypeCode, String componentCode, Long version) {
+    private String buildModelProjectionJson(String entityTypeCode, String componentCode, Long version) {
         List<Map<String, Object>> displayFields = buildModelDisplayFields(componentCode);
         List<Map<String, Object>> filterFields = buildModelFilterFields();
         List<String> searchableFieldKeys = List.of("name", "code");
         List<String> sortableFieldKeys = List.of("name", "code", "status");
         Map<String, Object> projection = CapabilityBlockProjectionBuilder.buildDynamicModel(
-                businessTypeCode,
+                entityTypeCode,
                 componentCode,
                 version,
                 displayFields,
@@ -426,8 +426,8 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         return List.of(statusFilter);
     }
 
-    private List<String> collectFieldKeys(String businessTypeCode, String flagKey) {
-        LinkedHashMap<String, Map<String, Object>> byFieldKey = collectFieldMeta(businessTypeCode);
+    private List<String> collectFieldKeys(String entityTypeCode, String flagKey) {
+        LinkedHashMap<String, Map<String, Object>> byFieldKey = collectFieldMeta(entityTypeCode);
         List<String> keys = new ArrayList<>();
         for (Map<String, Object> meta : byFieldKey.values()) {
             if (Boolean.TRUE.equals(meta.get(flagKey))) {
@@ -442,9 +442,9 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         return "/dynamicbusiness/business/entities/query-by-scene";
     }
 
-    private List<Map<String, Object>> buildDisplayFields(String businessTypeCode, String componentCode) {
-        LinkedHashMap<String, Map<String, Object>> byFieldKey = collectFieldMeta(businessTypeCode);
-        mergeBusinessBaseFieldMeta(businessTypeCode, byFieldKey);
+    private List<Map<String, Object>> buildDisplayFields(String entityTypeCode, String componentCode) {
+        LinkedHashMap<String, Map<String, Object>> byFieldKey = collectFieldMeta(entityTypeCode);
+        mergeBusinessBaseFieldMeta(entityTypeCode, byFieldKey);
         ensureBuiltinDisplayField(byFieldKey, "id", "ID", 0);
         ensureBuiltinDisplayField(byFieldKey, "name", "名称", 1);
         ensureBuiltinDisplayField(byFieldKey, "code", "编码", 2);
@@ -503,8 +503,8 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         };
     }
 
-    private List<Map<String, Object>> buildFilterFields(String businessTypeCode) {
-        LinkedHashMap<String, Map<String, Object>> byFieldKey = collectFieldMeta(businessTypeCode);
+    private List<Map<String, Object>> buildFilterFields(String entityTypeCode) {
+        LinkedHashMap<String, Map<String, Object>> byFieldKey = collectFieldMeta(entityTypeCode);
         List<Map<String, Object>> filters = new ArrayList<>();
         int order = 0;
         for (Map<String, Object> meta : byFieldKey.values()) {
@@ -530,9 +530,9 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         return filters;
     }
 
-    private LinkedHashMap<String, Map<String, Object>> collectFieldMeta(String businessTypeCode) {
+    private LinkedHashMap<String, Map<String, Object>> collectFieldMeta(String entityTypeCode) {
         LinkedHashMap<String, Map<String, Object>> byFieldKey = new LinkedHashMap<>();
-        List<ModelDO> models = modelMapper.selectByBusinessTypeCode(businessTypeCode);
+        List<ModelDO> models = modelMapper.selectByEntityTypeCode(entityTypeCode);
         for (ModelDO model : models) {
             List<ModelFieldAssignmentDO> assigns = modelFieldAssignmentMapper.selectByModelId(model.getId());
             for (ModelFieldAssignmentDO assign : assigns) {
@@ -612,13 +612,13 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         }
     }
 
-    private void mergeBusinessBaseFieldMeta(String businessTypeCode, LinkedHashMap<String, Map<String, Object>> byFieldKey) {
-        List<BusinessTypeBaseFieldDO> baseFields = businessTypeBaseFieldMapper.selectByBusinessTypeCode(businessTypeCode);
+    private void mergeBusinessBaseFieldMeta(String entityTypeCode, LinkedHashMap<String, Map<String, Object>> byFieldKey) {
+        List<EntityTypeBaseFieldDO> baseFields = entityTypeBaseFieldMapper.selectByEntityTypeCode(entityTypeCode);
         if (baseFields == null || baseFields.isEmpty()) {
             return;
         }
         int order = 0;
-        for (BusinessTypeBaseFieldDO baseField : baseFields) {
+        for (EntityTypeBaseFieldDO baseField : baseFields) {
             if (baseField == null || !StringUtils.hasText(baseField.getFieldCode())) {
                 continue;
             }
@@ -688,11 +688,11 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     /**
      * 构建模型 CRUD 表单定义 JSON。
      */
-    private String buildModelCrudFormJson(Long modelId, String businessTypeCode) {
-        CrudFormFieldContext context = loadCrudFormFieldContext(modelId, businessTypeCode);
+    private String buildModelCrudFormJson(Long modelId, String entityTypeCode) {
+        CrudFormFieldContext context = loadCrudFormFieldContext(modelId, entityTypeCode);
         Map<String, Object> root = ModelCrudFormFieldAssembler.buildFormRoot(
                 modelId,
-                businessTypeCode,
+                entityTypeCode,
                 context.includeBaseFields(),
                 context.assigns(),
                 context.fieldById(),
@@ -702,7 +702,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         return toJson(root);
     }
 
-    private CrudFormFieldContext loadCrudFormFieldContext(Long modelId, String businessTypeCode) {
+    private CrudFormFieldContext loadCrudFormFieldContext(Long modelId, String entityTypeCode) {
         List<ModelFieldAssignmentDO> assigns = modelFieldAssignmentMapper.selectByModelId(modelId);
         Map<Long, FieldDO> fieldById = new HashMap<>(Math.max(assigns.size(), 1));
         for (ModelFieldAssignmentDO assign : assigns) {
@@ -711,12 +711,12 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                 fieldById.put(field.getId(), field);
             }
         }
-        boolean includeBaseFields = shouldIncludeBaseFields(businessTypeCode);
-        Map<String, BusinessTypeBaseFieldDO> baseFieldByCode = new LinkedHashMap<>();
+        boolean includeBaseFields = shouldIncludeBaseFields(entityTypeCode);
+        Map<String, EntityTypeBaseFieldDO> baseFieldByCode = new LinkedHashMap<>();
         if (includeBaseFields) {
-            List<BusinessTypeBaseFieldDO> baseFields = businessTypeBaseFieldMapper.selectByBusinessTypeCode(businessTypeCode);
+            List<EntityTypeBaseFieldDO> baseFields = entityTypeBaseFieldMapper.selectByEntityTypeCode(entityTypeCode);
             if (baseFields != null) {
-                for (BusinessTypeBaseFieldDO baseField : baseFields) {
+                for (EntityTypeBaseFieldDO baseField : baseFields) {
                     if (baseField != null && StringUtils.hasText(baseField.getFieldCode())) {
                         baseFieldByCode.put(baseField.getFieldCode().trim(), baseField);
                     }
@@ -762,7 +762,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             }
         }
         Map<Long, ModelRelationDO> modelRelationById = new HashMap<>();
-        Map<String, String> modelCodeToBusinessTypeCode = new HashMap<>();
+        Map<String, String> modelCodeToEntityTypeCode = new HashMap<>();
         for (Long id : modelRelationIds) {
             ModelRelationDO rel = modelRelationMapper.selectById(id);
             if (rel == null) {
@@ -773,24 +773,24 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                 continue;
             }
             String modelCode = rel.getTargetModelCode().trim();
-            if (modelCodeToBusinessTypeCode.containsKey(modelCode)) {
+            if (modelCodeToEntityTypeCode.containsKey(modelCode)) {
                 continue;
             }
             ModelDO targetModel = modelMapper.selectByCode(modelCode);
-            if (targetModel != null && StringUtils.hasText(targetModel.getBusinessTypeCode())) {
-                modelCodeToBusinessTypeCode.put(modelCode, targetModel.getBusinessTypeCode().trim());
+            if (targetModel != null && StringUtils.hasText(targetModel.getEntityTypeCode())) {
+                modelCodeToEntityTypeCode.put(modelCode, targetModel.getEntityTypeCode().trim());
             }
         }
         return new ModelCrudFormFieldAssembler.RefResolveContext(
-                refLibraryById, modelRelationById, modelCodeToBusinessTypeCode);
+                refLibraryById, modelRelationById, modelCodeToEntityTypeCode);
     }
 
-    private boolean shouldIncludeBaseFields(String businessTypeCode) {
-        BusinessTypeDO businessType = businessTypeMapper.selectByCode(businessTypeCode);
-        if (businessType == null || !StringUtils.hasText(businessType.getStorageType())) {
+    private boolean shouldIncludeBaseFields(String entityTypeCode) {
+        EntityTypeDO entityType = entityTypeMapper.selectByCode(entityTypeCode);
+        if (entityType == null || !StringUtils.hasText(entityType.getStorageType())) {
             return false;
         }
-        StorageTypeEnum storageType = StorageTypeEnum.getByCode(businessType.getStorageType());
+        StorageTypeEnum storageType = StorageTypeEnum.getByCode(entityType.getStorageType());
         return storageType != null && storageType.isDedicated();
     }
 
@@ -798,7 +798,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             boolean includeBaseFields,
             List<ModelFieldAssignmentDO> assigns,
             Map<Long, FieldDO> fieldById,
-            Map<String, BusinessTypeBaseFieldDO> baseFieldByCode,
+            Map<String, EntityTypeBaseFieldDO> baseFieldByCode,
             List<ModelFieldGroupRespVO> groups,
             ModelCrudFormFieldAssembler.RefResolveContext refResolveContext) {
     }
@@ -807,13 +807,13 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
      * 能力全集 UPSERT。
      */
     private void upsertCapabilityFull(
-            String businessTypeCode,
+            String entityTypeCode,
             String businessCategory,
             String fullJson,
             Long version,
             BusinessCapabilityDO existing) {
         BusinessCapabilityDO data = existing == null ? new BusinessCapabilityDO() : existing;
-        data.setBusinessTypeCode(businessTypeCode);
+        data.setEntityTypeCode(entityTypeCode);
         data.setBusinessCategory(businessCategory);
         data.setCapabilityFull(fullJson);
         data.setVersion(version);
@@ -829,15 +829,15 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
      * 投影 UPSERT。
      */
     private void upsertProjection(
-            String businessTypeCode,
+            String entityTypeCode,
             String componentCode,
             String dataKind,
             String projectionJson,
             Long version) {
         CapabilityComponentProjectionDO existing = capabilityComponentProjectionMapper
-                .selectByBusinessTypeComponentAndDataKind(businessTypeCode, componentCode, dataKind);
+                .selectByEntityTypeComponentAndDataKind(entityTypeCode, componentCode, dataKind);
         CapabilityComponentProjectionDO data = existing == null ? new CapabilityComponentProjectionDO() : existing;
-        data.setBusinessTypeCode(businessTypeCode);
+        data.setEntityTypeCode(entityTypeCode);
         data.setComponentCode(componentCode);
         data.setDataKind(dataKind);
         data.setComponentInterface(projectionJson);
@@ -853,11 +853,11 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     /**
      * 模型 CRUD 表单定义 UPSERT。
      */
-    private void upsertModelCrudForm(String businessTypeCode, Long modelId, String formJson, Long version) {
+    private void upsertModelCrudForm(String entityTypeCode, Long modelId, String formJson, Long version) {
         ModelCrudFormDefinitionDO existing = modelCrudFormDefinitionMapper
-                .selectByBusinessTypeAndModel(businessTypeCode, modelId);
+                .selectByEntityTypeAndModel(entityTypeCode, modelId);
         ModelCrudFormDefinitionDO data = existing == null ? new ModelCrudFormDefinitionDO() : existing;
-        data.setBusinessTypeCode(businessTypeCode);
+        data.setEntityTypeCode(entityTypeCode);
         data.setModelId(modelId);
         data.setCrudFormFields(formJson);
         data.setVersion(version);
@@ -889,23 +889,23 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     }
 
     /** 仅刷新单个模型的 CRUD 表单定义（避免全量能力重建）。 */
-    private void refreshSingleModelCrudForm(String businessTypeCode, Long modelId) {
+    private void refreshSingleModelCrudForm(String entityTypeCode, Long modelId) {
         ModelDO model = modelMapper.selectById(modelId);
-        if (model == null || !businessTypeCode.equals(model.getBusinessTypeCode())) {
-            triggerRebuild(businessTypeCode);
+        if (model == null || !entityTypeCode.equals(model.getEntityTypeCode())) {
+            triggerRebuild(entityTypeCode);
             return;
         }
-        BusinessCapabilityDO existing = businessCapabilityMapper.selectByBusinessTypeCode(businessTypeCode);
+        BusinessCapabilityDO existing = businessCapabilityMapper.selectByEntityTypeCode(entityTypeCode);
         long version = existing != null && existing.getVersion() != null ? existing.getVersion() : 1L;
-        String formJson = buildModelCrudFormJson(modelId, businessTypeCode);
-        upsertModelCrudForm(businessTypeCode, modelId, formJson, version);
+        String formJson = buildModelCrudFormJson(modelId, entityTypeCode);
+        upsertModelCrudForm(entityTypeCode, modelId, formJson, version);
     }
 
-    private String requireBusinessTypeCode(String businessTypeCode) {
-        if (!StringUtils.hasText(businessTypeCode)) {
-            throw new ServiceException(400, "businessTypeCode 不能为空");
+    private String requireEntityTypeCode(String entityTypeCode) {
+        if (!StringUtils.hasText(entityTypeCode)) {
+            throw new ServiceException(400, "entityTypeCode 不能为空");
         }
-        return businessTypeCode.trim();
+        return entityTypeCode.trim();
     }
 
     private String requireComponentCode(String componentCode) {
@@ -919,7 +919,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         return value;
     }
 
-    private String requireDataKind(String dataKind, String businessTypeCode) {
+    private String requireDataKind(String dataKind, String entityTypeCode) {
         String kind = StringUtils.hasText(dataKind)
                 ? dataKind.trim()
                 : BusinessCategoryConstants.KIND_ENTITY;
@@ -927,7 +927,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                 && !BusinessCategoryConstants.KIND_ENTITY.equals(kind)) {
             throw new ServiceException(400, "dataKind 须为 model 或 entity");
         }
-        if (SystemCapabilityCatalog.isSystemCapability(businessTypeCode)) {
+        if (SystemCapabilityCatalog.isSystemCapability(entityTypeCode)) {
             return BusinessCategoryConstants.KIND_ENTITY;
         }
         return kind;
@@ -984,11 +984,11 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     /**
      * 解析能力全集 JSON 为结构体。
      */
-    private BusinessCapabilityFullContract parseCapabilityFull(String rawJson, String businessTypeCode) {
+    private BusinessCapabilityFullContract parseCapabilityFull(String rawJson, String entityTypeCode) {
         try {
             return objectMapper.readValue(rawJson, BusinessCapabilityFullContract.class);
         } catch (JsonProcessingException ex) {
-            log.error("[parseCapabilityFull][能力 JSON 反序列化失败][businessTypeCode={}]", businessTypeCode, ex);
+            log.error("[parseCapabilityFull][能力 JSON 反序列化失败][entityTypeCode={}]", entityTypeCode, ex);
             throw new ServiceException(500, "能力全集结构解析失败");
         }
     }

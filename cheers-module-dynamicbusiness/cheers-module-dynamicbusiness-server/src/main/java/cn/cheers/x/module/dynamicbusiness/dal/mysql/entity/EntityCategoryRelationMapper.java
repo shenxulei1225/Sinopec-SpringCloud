@@ -32,13 +32,13 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
     /**
      * 根据实体ID和分类ID查询关联（按业务类型过滤）。
      */
-    default EntityCategoryRelationDO selectByEntityAndCategory(Long entityId, Long categoryId, String businessTypeCode) {
+    default EntityCategoryRelationDO selectByEntityAndCategory(Long entityId, Long categoryId, String entityTypeCode) {
         LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
                 .eq(EntityCategoryRelationDO::getEntityId, entityId)
                 .eq(EntityCategoryRelationDO::getCategoryId, categoryId)
                 .eq(EntityCategoryRelationDO::getDeleted, false);
-        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
-            query.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
         }
         return selectOne(query);
     }
@@ -60,7 +60,7 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
             SELECT *
             FROM dynamic_entity_category_relation
             WHERE entity_id = #{entityId}
-                AND business_type_code = #{businessTypeCode}
+                AND entity_type_code = #{entityTypeCode}
                 AND category_id IN
                 <foreach collection='categoryIds' item='id' open='(' separator=',' close=')'>
                     #{id}
@@ -70,7 +70,7 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
             """)
     List<EntityCategoryRelationDO> selectByEntityAndCategoryIdsIncludingDeleted(@Param("entityId") Long entityId,
                                                                                     @Param("categoryIds") List<Long> categoryIds,
-                                                                                    @Param("businessTypeCode") String businessTypeCode);
+                                                                                    @Param("entityTypeCode") String entityTypeCode);
 
     /**
      * 根据分类ID查询所有关联（分类内按 sort,id 排序）。
@@ -89,14 +89,14 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
      *
      * <p>适用于“单分类”场景，保证分类内排序语义，同时按业务类型过滤。</p>
      */
-    default List<EntityCategoryRelationDO> selectByCategoryIdAndBusinessType(Long categoryId, String businessTypeCode) {
+    default List<EntityCategoryRelationDO> selectByCategoryIdAndEntityType(Long categoryId, String entityTypeCode) {
         LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>();
         query.eq(EntityCategoryRelationDO::getCategoryId, categoryId);
         query.eq(EntityCategoryRelationDO::getDeleted, false);
         query.orderByAsc(EntityCategoryRelationDO::getSort);
         query.orderByAsc(EntityCategoryRelationDO::getId);
-        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
-            query.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
         }
         return selectList(query);
     }
@@ -113,12 +113,12 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
     /**
      * 删除实体与分类的关联（按业务类型过滤）。
      */
-    default void deleteByEntityAndCategory(Long entityId, Long categoryId, String businessTypeCode) {
+    default void deleteByEntityAndCategory(Long entityId, Long categoryId, String entityTypeCode) {
         LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
                 .eq(EntityCategoryRelationDO::getEntityId, entityId)
                 .eq(EntityCategoryRelationDO::getCategoryId, categoryId);
-        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
-            query.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
         }
         delete(query);
     }
@@ -154,11 +154,11 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
     /**
      * 按业务类型删除分类的所有关联（按业务类型隔离）。
      */
-    default void deleteByCategoryId(Long categoryId, String businessTypeCode) {
+    default void deleteByCategoryId(Long categoryId, String entityTypeCode) {
         LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
                 .eq(EntityCategoryRelationDO::getCategoryId, categoryId);
-        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
-            query.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
         }
         delete(query);
     }
@@ -198,14 +198,14 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
     /**
      * 批量删除指定分类的所有实体关联（按业务类型隔离）。
      */
-    default void deleteByCategoryIds(List<Long> categoryIds, String businessTypeCode) {
+    default void deleteByCategoryIds(List<Long> categoryIds, String entityTypeCode) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return;
         }
         LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
                 .in(EntityCategoryRelationDO::getCategoryId, categoryIds);
-        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
-            query.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
         }
         delete(query);
     }
@@ -217,14 +217,14 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
             UPDATE dynamic_entity_category_relation
             SET deleted = FALSE,
                 sort = #{sort},
-                business_type_code = #{businessTypeCode}
+                entity_type_code = #{entityTypeCode}
             WHERE entity_id = #{entityId}
                 AND category_id = #{categoryId}
                 AND deleted = TRUE
             """)
     int restoreDeletedRelation(@Param("entityId") Long entityId,
                                 @Param("categoryId") Long categoryId,
-                                @Param("businessTypeCode") String businessTypeCode,
+                                @Param("entityTypeCode") String entityTypeCode,
                                 @Param("sort") Integer sort);
 
     /**
@@ -234,9 +234,9 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
             <script>
             UPDATE dynamic_entity_category_relation
             SET deleted = FALSE,
-                business_type_code = #{businessTypeCode}
+                entity_type_code = #{entityTypeCode}
             WHERE entity_id = #{entityId}
-                AND business_type_code = #{businessTypeCode}
+                AND entity_type_code = #{entityTypeCode}
                 AND category_id IN
                 <foreach collection='categoryIds' item='id' open='(' separator=',' close=')'>
                     #{id}
@@ -246,19 +246,19 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
             """)
     int restoreDeletedRelationsBatch(@Param("entityId") Long entityId,
                                         @Param("categoryIds") List<Long> categoryIds,
-                                        @Param("businessTypeCode") String businessTypeCode);
+                                        @Param("entityTypeCode") String entityTypeCode);
 
     /**
      * 更新实体-分类关联的排序值。
      */
-    default int updateSortByEntityAndCategory(Long entityId, Long categoryId, Integer sort, String businessTypeCode) {
+    default int updateSortByEntityAndCategory(Long entityId, Long categoryId, Integer sort, String entityTypeCode) {
         LambdaUpdateWrapper<EntityCategoryRelationDO> update = new LambdaUpdateWrapper<EntityCategoryRelationDO>()
                 .set(EntityCategoryRelationDO::getSort, sort)
                 .eq(EntityCategoryRelationDO::getEntityId, entityId)
                 .eq(EntityCategoryRelationDO::getCategoryId, categoryId)
                 .eq(EntityCategoryRelationDO::getDeleted, false);
-        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
-            update.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+            update.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
         }
         return update(update);
     }
@@ -327,15 +327,15 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
      * <p>多分类稳定有序输出应在 Service 层按 categoryIds 顺序二次编排。</p>
      */
     @Deprecated
-    default List<EntityCategoryRelationDO> selectRelationsByCategoryIds(List<Long> categoryIds, String businessTypeCode) {
+    default List<EntityCategoryRelationDO> selectRelationsByCategoryIds(List<Long> categoryIds, String entityTypeCode) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return new ArrayList<>();
         }
         LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<>();
         query.in(EntityCategoryRelationDO::getCategoryId, categoryIds);
         query.eq(EntityCategoryRelationDO::getDeleted, false);
-        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
-            query.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
         }
         // 分类上下文排序优先，其次按ID兜底
         query.orderByAsc(EntityCategoryRelationDO::getSort);
@@ -346,15 +346,15 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
     /**
      * 查询多分类原始关系记录（用于 Service 层按 categoryIds 顺序二次编排）。
      */
-    default List<EntityCategoryRelationDO> selectRelationsByCategoryIdsForOrdering(List<Long> categoryIds, String businessTypeCode) {
+    default List<EntityCategoryRelationDO> selectRelationsByCategoryIdsForOrdering(List<Long> categoryIds, String entityTypeCode) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return new ArrayList<>();
         }
         LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<>();
         query.in(EntityCategoryRelationDO::getCategoryId, categoryIds);
         query.eq(EntityCategoryRelationDO::getDeleted, false);
-        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
-            query.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
         }
         // 这里仅提供稳定基础顺序，最终顺序由 Service 层按输入 categoryIds 决定
         query.orderByAsc(EntityCategoryRelationDO::getSort);
@@ -369,7 +369,7 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
      * 仅用于非稳定排序场景。</p>
      */
     @Deprecated
-    default List<Long> selectEntityIdsByCategoryIdsPaged(List<Long> categoryIds, String businessTypeCode,
+    default List<Long> selectEntityIdsByCategoryIdsPaged(List<Long> categoryIds, String entityTypeCode,
                                                         int offset, int limit) {
         if (categoryIds == null || categoryIds.isEmpty() || limit <= 0) {
             return new ArrayList<>();
@@ -381,8 +381,8 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
         query.in(EntityCategoryRelationDO::getCategoryId, categoryIds);
         query.eq(EntityCategoryRelationDO::getDeleted, false);
         query.orderByAsc(EntityCategoryRelationDO::getId);
-        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
-            query.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
         }
         Page<EntityCategoryRelationDO> result = selectPage(page, query);
         return result.getRecords().stream()
@@ -407,8 +407,8 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
                 FROM dynamic_entity_category_relation r
                 WHERE r.deleted = FALSE
                     AND r.category_id = #{categoryId}
-                <if test='businessTypeCode != null and businessTypeCode != ""'>
-                    AND r.business_type_code = #{businessTypeCode}
+                <if test='entityTypeCode != null and entityTypeCode != ""'>
+                    AND r.entity_type_code = #{entityTypeCode}
                 </if>
             )
             SELECT entity_id
@@ -419,7 +419,7 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
             </script>
             """)
     List<Long> selectEntityIdsBySingleCategoryPaged(@Param("categoryId") Long categoryId,
-                                                        @Param("businessTypeCode") String businessTypeCode,
+                                                        @Param("entityTypeCode") String entityTypeCode,
                                                         @Param("offset") int offset,
                                                         @Param("limit") int limit);
 
@@ -432,13 +432,13 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
             FROM dynamic_entity_category_relation r
             WHERE r.deleted = FALSE
                 AND r.category_id = #{categoryId}
-            <if test='businessTypeCode != null and businessTypeCode != ""'>
-                AND r.business_type_code = #{businessTypeCode}
+            <if test='entityTypeCode != null and entityTypeCode != ""'>
+                AND r.entity_type_code = #{entityTypeCode}
             </if>
             </script>
             """)
     long countEntityIdsBySingleCategory(@Param("categoryId") Long categoryId,
-                                        @Param("businessTypeCode") String businessTypeCode);
+                                        @Param("entityTypeCode") String entityTypeCode);
 
     /**
      * DB 前置分页（多分类）：按 categoryIds 输入顺序(rank) + 分类内 sort,id 生成稳定顺序，
@@ -461,8 +461,8 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
                 FROM dynamic_entity_category_relation r
                 JOIN input_categories ic ON ic.category_id = r.category_id
                 WHERE r.deleted = FALSE
-                <if test='businessTypeCode != null and businessTypeCode != ""'>
-                    AND r.business_type_code = #{businessTypeCode}
+                <if test='entityTypeCode != null and entityTypeCode != ""'>
+                    AND r.entity_type_code = #{entityTypeCode}
                 </if>
             ),
             dedup AS (
@@ -481,7 +481,7 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
             </script>
             """)
     List<Long> selectEntityIdsByCategoryIdsRankPaged(@Param("categoryIds") List<Long> categoryIds,
-                                                        @Param("businessTypeCode") String businessTypeCode,
+                                                        @Param("entityTypeCode") String entityTypeCode,
                                                         @Param("offset") int offset,
                                                         @Param("limit") int limit);
 
@@ -502,26 +502,26 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
             FROM dynamic_entity_category_relation r
             JOIN input_categories ic ON ic.category_id = r.category_id
             WHERE r.deleted = FALSE
-            <if test='businessTypeCode != null and businessTypeCode != ""'>
-                AND r.business_type_code = #{businessTypeCode}
+            <if test='entityTypeCode != null and entityTypeCode != ""'>
+                AND r.entity_type_code = #{entityTypeCode}
             </if>
             </script>
             """)
     long countEntityIdsByCategoryIdsRank(@Param("categoryIds") List<Long> categoryIds,
-                                            @Param("businessTypeCode") String businessTypeCode);
+                                            @Param("entityTypeCode") String entityTypeCode);
 
     /**
      * 按分类范围和业务类型统计实体关联数量（MyBatis-Plus Wrapper 版）
      */
-    default long countEntityIdsByCategoryIds(List<Long> categoryIds, String businessTypeCode) {
+    default long countEntityIdsByCategoryIds(List<Long> categoryIds, String entityTypeCode) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return 0L;
         }
         LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<>();
         query.in(EntityCategoryRelationDO::getCategoryId, categoryIds);
         query.eq(EntityCategoryRelationDO::getDeleted, false);
-        if (businessTypeCode != null && !businessTypeCode.isBlank()) {
-            query.eq(EntityCategoryRelationDO::getBusinessTypeCode, businessTypeCode);
+        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
         }
         return selectCount(query);
     }

@@ -30,6 +30,9 @@ public class GroupDO extends TenantBaseDO {
 
     private Long parentId;
 
+    /** 父分组编码（迁移用，对应同 group_type 下父节点 code） */
+    private String parentCode;
+
     private String path;
 
     private Integer level;

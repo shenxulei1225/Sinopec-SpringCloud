@@ -2,7 +2,7 @@ SET search_path TO platform;
 
 CREATE TABLE IF NOT EXISTS platform_runtime_job (
     id                  VARCHAR(36) PRIMARY KEY,
-    business_type_code  VARCHAR(64)  NOT NULL,
+    entity_type_code  VARCHAR(64)  NOT NULL,
     trigger_action      VARCHAR(64)  NOT NULL,
     status              VARCHAR(32)  NOT NULL,
     source_work_ids     JSONB        NOT NULL DEFAULT '[]',
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS platform_runtime_job (
 );
 
 CREATE INDEX IF NOT EXISTS idx_platform_runtime_job_business_type
-    ON platform_runtime_job (business_type_code);
+    ON platform_runtime_job (entity_type_code);
 CREATE INDEX IF NOT EXISTS idx_platform_runtime_job_tenant
     ON platform_runtime_job (tenant_id);
 
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS platform_schedule_slot (
     id                  VARCHAR(36) PRIMARY KEY,
     runtime_job_id      VARCHAR(36)  NOT NULL REFERENCES platform_runtime_job (id),
     work_id             VARCHAR(64)  NOT NULL,
-    business_type_code  VARCHAR(64)  NOT NULL,
+    entity_type_code  VARCHAR(64)  NOT NULL,
     planned_start       TIMESTAMPTZ  NOT NULL,
     planned_end         TIMESTAMPTZ  NOT NULL,
     assigned_resources  JSONB,
@@ -46,6 +46,6 @@ CREATE TABLE IF NOT EXISTS platform_schedule_slot (
 CREATE INDEX IF NOT EXISTS idx_platform_schedule_slot_job
     ON platform_schedule_slot (runtime_job_id);
 CREATE INDEX IF NOT EXISTS idx_platform_schedule_slot_business_type
-    ON platform_schedule_slot (business_type_code);
+    ON platform_schedule_slot (entity_type_code);
 CREATE INDEX IF NOT EXISTS idx_platform_schedule_slot_planned_start
     ON platform_schedule_slot (planned_start);

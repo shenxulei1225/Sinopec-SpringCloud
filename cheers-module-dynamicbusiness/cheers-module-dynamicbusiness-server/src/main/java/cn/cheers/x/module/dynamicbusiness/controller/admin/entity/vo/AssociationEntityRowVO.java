@@ -14,7 +14,7 @@ public class AssociationEntityRowVO {
     private Long entityId;
 
     @Schema(description = "目标业务类型编码")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "目标实体名称")
     private String name;

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Export dynamicbusiness metadata into system / corridor / station packages."""
+"""Export dynamicbusiness metadata into platform-import packages (modular artifacts)."""
 
 from __future__ import annotations
 
+import argparse
 import os
-import shutil
 import subprocess
 import sys
 from datetime import date
@@ -12,6 +12,11 @@ from pathlib import Path
 
 import psycopg2
 
+from entity_type_canonical import (
+    normalize_entity_type_config_row,
+    normalize_entity_type_row,
+    normalize_model_row,
+)
 from seed_codegen import (
     TENANT_ID,
     compose_business_portal,
@@ -39,10 +44,40 @@ from seed_codegen import (
 
 ROOT = Path(__file__).resolve().parent.parent
 IMPORT_ROOT = ROOT / "scripts/platform-import"
-V1_SCHEMA = (
-    ROOT
-    / "cheers-module-dynamicbusiness-server/src/main/resources/db/migration/dynamicbusiness/V1__init_dynamicbusiness_schema.sql"
-)
+SCRIPTS_DIR = Path(__file__).resolve().parent
+
+# 独立导出单元：可按需组合，避免每次全量导出
+ARTIFACT_SEEDS: dict[str, list[str]] = {
+    "entity-types": [
+        "seed/dynamic_entity_type.sql",
+        "seed/dynamic_entity_type_config.sql",
+        "seed/dynamic_entity_type_relation.sql",
+        "seed/dynamic_entity_type_base_field.sql",
+    ],
+    "fields": [
+        "seed/dynamic_field.sql",
+        "seed/dynamic_group.sql",
+        "seed/dynamic_group_relation.sql",
+    ],
+    "models": [
+        "seed/dynamic_model.sql",
+        "seed/dynamic_model_relation.sql",
+        "seed/dynamic_model_relation_declaration.sql",
+    ],
+    "assignments": ["seed/dynamic_model_field_assignment.sql"],
+    "categories": [
+        "seed/dynamic_category_type.sql",
+        "seed/dynamic_category.sql",
+        "seed/dynamic_model_category_relation.sql",
+        "seed/dynamic_page_config.sql",
+    ],
+    "portal": [
+        "seed/dynamic_business.sql",
+        "seed/dynamic_business_entry.sql",
+        "seed/business_capability.sql",
+    ],
+}
+ALL_ARTIFACTS = list(ARTIFACT_SEEDS.keys())
 
 SYSTEM_SEED_ORDER = [
     "seed/dynamic_entity_type.sql",
@@ -138,18 +173,13 @@ def write_sql(path: Path, title: str, deps: str, body: str):
     path.write_text(file_header(title, deps) + body, encoding="utf-8")
 
 
-def write_schema(path: Path):
-    text = V1_SCHEMA.read_text(encoding="utf-8")
-    if "SET search_path TO dynamicbusiness;" in text:
-        body = text.split("SET search_path TO dynamicbusiness;", 1)[-1].strip()
-    else:
-        body = text
-    write_sql(
-        path,
-        "系统共用 · 01 建表（dynamicbusiness 全表 DDL）",
-        "-- 与 Flyway V1__init_dynamicbusiness_schema.sql 同源\n-- 新平台第一步：先执行本文件",
-        body,
-    )
+def seeds_for_artifacts(artifacts: list[str]) -> list[str]:
+    paths: list[str] = []
+    for name in artifacts:
+        paths.extend(ARTIFACT_SEEDS[name])
+    # preserve dependency order from SYSTEM_SEED_ORDER
+    order_index = {p: i for i, p in enumerate(SYSTEM_SEED_ORDER)}
+    return sorted(set(paths), key=lambda p: order_index.get(p, 999))
 
 
 def fetch_all_entity_type_codes(cur) -> list[str]:
@@ -337,11 +367,16 @@ def normalize_shared_device_models(rows: list[dict]) -> list[dict]:
     """Merge legacy device models into equipment business type for a single device library."""
     out: list[dict] = []
     for row in rows:
-        item = dict(row)
+        item = normalize_model_row(dict(row))
         if item.get("entity_type_code") in LEGACY_DEVICE_BUSINESS:
             item["entity_type_code"] = EQUIPMENT_BUSINESS
         out.append(item)
     return out
+
+
+def normalize_entity_type_models(rows: list[dict]) -> list[dict]:
+    """Map legacy pinyin entity_type_code on models to canonical English codes."""
+    return [normalize_model_row(dict(row)) for row in rows]
 
 
 def fetch_shared_device_models(cur) -> list[dict]:
@@ -660,7 +695,7 @@ def build_category_seed_parts(
     }
 
 
-def export_system_seeds(cur, all_codes: list[str]) -> dict[str, str]:
+def export_system_seeds(cur, all_codes: list[str], artifacts: list[str]) -> dict[str, str]:
     device_models = fetch_shared_device_models(cur)
     device_mids = [m["id"] for m in device_models]
     equipment_categories = fetch_categories_for_models(cur, device_mids)
@@ -672,54 +707,112 @@ def export_system_seeds(cur, all_codes: list[str]) -> dict[str, str]:
     group_relations = fetch_field_group_relations(cur)
     group_id_to_code = id_to_code_map(groups)
 
-    seeds: dict[str, str] = {
-        "seed/dynamic_entity_type.sql": render_business_types(fetch_business_types(cur, all_codes)),
-        "seed/dynamic_entity_type_config.sql": render_business_type_configs(
-            fetch_business_type_configs(cur, all_codes)
-        ),
-        "seed/dynamic_entity_type_relation.sql": render_business_type_relations(
+    want = set(seeds_for_artifacts(artifacts))
+    seeds: dict[str, str] = {}
+
+    if "seed/dynamic_entity_type.sql" in want:
+        seeds["seed/dynamic_entity_type.sql"] = render_business_types(
+            [
+                normalize_entity_type_row(row)
+                for row in fetch_business_types(cur, all_codes)
+            ]
+        )
+    if "seed/dynamic_entity_type_config.sql" in want:
+        seeds["seed/dynamic_entity_type_config.sql"] = render_business_type_configs(
+            [
+                normalize_entity_type_config_row(row)
+                for row in fetch_business_type_configs(cur, all_codes)
+            ]
+        )
+    if "seed/dynamic_entity_type_relation.sql" in want:
+        seeds["seed/dynamic_entity_type_relation.sql"] = render_business_type_relations(
             fetch_business_type_relations(cur, all_codes)
-        ),
-        "seed/dynamic_entity_type_base_field.sql": render_base_fields(fetch_all_base_fields(cur)),
-        "seed/dynamic_field.sql": render_field_library(fields),
-        "seed/dynamic_group.sql": render_field_groups(groups, group_id_to_code),
-        "seed/dynamic_group_relation.sql": render_field_group_relations(group_relations),
-        "seed/dynamic_business.sql": render_dynamic_business(fetch_dynamic_business(cur)),
-        "seed/dynamic_business_entry.sql": render_dynamic_business_entries(
+        )
+    if "seed/dynamic_entity_type_base_field.sql" in want:
+        seeds["seed/dynamic_entity_type_base_field.sql"] = render_base_fields(
+            fetch_all_base_fields(cur)
+        )
+    if "seed/dynamic_field.sql" in want:
+        seeds["seed/dynamic_field.sql"] = render_field_library(fields)
+    if "seed/dynamic_group.sql" in want:
+        seeds["seed/dynamic_group.sql"] = render_field_groups(groups, group_id_to_code)
+    if "seed/dynamic_group_relation.sql" in want:
+        seeds["seed/dynamic_group_relation.sql"] = render_field_group_relations(group_relations)
+    if "seed/dynamic_business.sql" in want:
+        seeds["seed/dynamic_business.sql"] = render_dynamic_business(fetch_dynamic_business(cur))
+    if "seed/dynamic_business_entry.sql" in want:
+        seeds["seed/dynamic_business_entry.sql"] = render_dynamic_business_entries(
             fetch_dynamic_business_entries(cur)
-        ),
-        "seed/business_capability.sql": render_business_capabilities(
+        )
+    if "seed/business_capability.sql" in want:
+        seeds["seed/business_capability.sql"] = render_business_capabilities(
             fetch_business_capabilities(cur)
-        ),
+        )
+
+    model_keys = {
+        "seed/dynamic_model.sql",
+        "seed/dynamic_model_relation.sql",
+        "seed/dynamic_model_relation_declaration.sql",
+        "seed/dynamic_model_field_assignment.sql",
     }
-    seeds.update(build_model_seed_parts(cur, device_models, internal_relations_only=True))
-    seeds.update(
-        build_category_seed_parts(
+    if want & model_keys:
+        model_parts = build_model_seed_parts(cur, device_models, internal_relations_only=True)
+        for k, v in model_parts.items():
+            if k in want:
+                seeds[k] = v
+
+    category_keys = {
+        "seed/dynamic_category_type.sql",
+        "seed/dynamic_category.sql",
+        "seed/dynamic_model_category_relation.sql",
+        "seed/dynamic_page_config.sql",
+    }
+    if want & category_keys:
+        cat_parts = build_category_seed_parts(
             cur,
             equipment_categories,
             device_models,
             fetch_category_types(cur, equipment_cat_codes),
             [],
         )
-    )
+        for k, v in cat_parts.items():
+            if k in want:
+                seeds[k] = v
+
     return seeds
 
 
-def export_corridor_seeds(cur) -> dict[str, str]:
+def export_corridor_seeds(cur, artifacts: list[str]) -> dict[str, str]:
+    want = set(seeds_for_artifacts(artifacts))
     station_models = fetch_models_by_codes(cur, list(STATION_MODEL_CODES))
     station_ids = tuple(m["id"] for m in station_models)
     all_models = fetch_all_models(cur, exclude_ids=station_ids)
-    corridor_models = [
-        m for m in all_models if m.get("entity_type_code") not in SHARED_DEVICE_BUSINESS
-    ]
+    corridor_models = normalize_entity_type_models(
+        [m for m in all_models if m.get("entity_type_code") not in SHARED_DEVICE_BUSINESS]
+    )
     categories = fetch_categories(cur, exclude_ids=STATION_CATEGORY_IDS)
     category_type_codes = sorted(
         {c["category_type_code"] for c in categories if c.get("category_type_code")}
     )
     seeds: dict[str, str] = {}
-    seeds.update(build_model_seed_parts(cur, corridor_models))
-    seeds.update(
-        build_category_seed_parts(
+    model_keys = {
+        "seed/dynamic_model.sql",
+        "seed/dynamic_model_relation.sql",
+        "seed/dynamic_model_relation_declaration.sql",
+        "seed/dynamic_model_field_assignment.sql",
+    }
+    if want & model_keys:
+        for k, v in build_model_seed_parts(cur, corridor_models).items():
+            if k in want:
+                seeds[k] = v
+    category_keys = {
+        "seed/dynamic_category_type.sql",
+        "seed/dynamic_category.sql",
+        "seed/dynamic_model_category_relation.sql",
+        "seed/dynamic_page_config.sql",
+    }
+    if want & category_keys:
+        for k, v in build_category_seed_parts(
             cur,
             categories,
             corridor_models,
@@ -727,29 +820,47 @@ def export_corridor_seeds(cur) -> dict[str, str]:
             if category_type_codes
             else fetch_corridor_category_types(cur),
             fetch_page_configs(cur, exclude_page_codes=("PAGE-REGION-OIL-DEPOT",)),
-        )
-    )
+        ).items():
+            if k in want:
+                seeds[k] = v
     return seeds
 
 
-def export_station_seeds(cur) -> dict[str, str] | None:
+def export_station_seeds(cur, artifacts: list[str]) -> dict[str, str] | None:
+    want = set(seeds_for_artifacts(artifacts))
     models = fetch_models_by_codes(cur, list(STATION_MODEL_CODES))
     if not models:
         return None
     categories = fetch_station_categories(cur)
     cids = [c["id"] for c in categories]
     seeds: dict[str, str] = {}
-    seeds.update(build_model_seed_parts(cur, models))
-    seeds.update(
-        build_category_seed_parts(
+    model_keys = {
+        "seed/dynamic_model.sql",
+        "seed/dynamic_model_relation.sql",
+        "seed/dynamic_model_relation_declaration.sql",
+        "seed/dynamic_model_field_assignment.sql",
+    }
+    if want & model_keys:
+        for k, v in build_model_seed_parts(cur, models).items():
+            if k in want:
+                seeds[k] = v
+    category_keys = {
+        "seed/dynamic_category_type.sql",
+        "seed/dynamic_category.sql",
+        "seed/dynamic_model_category_relation.sql",
+        "seed/dynamic_page_config.sql",
+    }
+    if want & category_keys:
+        for k, v in build_category_seed_parts(
             cur,
             categories,
             models,
             fetch_station_category_types(cur, cids),
             fetch_station_pages(cur),
-        )
-    )
-    return seeds
+        ).items():
+            if k in want:
+                seeds[k] = v
+    return seeds if seeds else None
 
 
 def preserve_entities(path: Path) -> str | None:
@@ -791,7 +902,7 @@ def write_import_script(path: Path, title: str, files: list[str]):
 
 def write_dev_all_script():
     content = """#!/usr/bin/env bash
-# 开发联调：system + corridor + station（站场包不存在时跳过）
+# 开发联调：Flyway 已由应用执行后，导入 system + corridor + station seed
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 bash "${SCRIPT_DIR}/system/import.sh"
@@ -859,118 +970,173 @@ def write_seed_files(base_dir: Path, seeds: dict[str, str], table_prefix: str = 
         )
 
 
-def main():
-    subprocess.run(
-        [sys.executable, str(Path(__file__).resolve().parent / "regenerate-v1-from-db.py")],
-        check=True,
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="从 PostgreSQL 导出 dynamicbusiness 元数据到 platform-import（可按单元独立导出）"
     )
+    parser.add_argument(
+        "--package",
+        choices=["system", "corridor", "station", "all"],
+        default="all",
+        help="导出目标包（默认 all）",
+    )
+    parser.add_argument(
+        "--artifacts",
+        default=",".join(ALL_ARTIFACTS),
+        help=(
+            "逗号分隔导出单元："
+            + ", ".join(ALL_ARTIFACTS)
+            + "（默认全部）"
+        ),
+    )
+    parser.add_argument(
+        "--schema",
+        action="store_true",
+        help="同时从库 pg_dump 刷新 Flyway V1（不写入 platform-import DDL）",
+    )
+    parser.add_argument(
+        "--rewrite-import-scripts",
+        action="store_true",
+        help="重写 import.sh / import-dev-all.sh（全量导出时建议开启）",
+    )
+    return parser.parse_args()
+
+
+def run_export(
+    *,
+    package: str,
+    artifacts: list[str],
+    schema: bool,
+    rewrite_import_scripts: bool,
+):
+    if schema:
+        subprocess.run([sys.executable, str(SCRIPTS_DIR / "regenerate-v1-from-db.py")], check=True)
 
     conn = connect()
     cur = conn.cursor()
     corridor_entities = preserve_entities(IMPORT_ROOT / "smart-corridor/07_entities.sql")
     if corridor_entities is None:
-        corridor_entities = preserve_entities(IMPORT_ROOT / "smart-corridor/05_entities.sql")
+        corridor_entities = preserve_entities(IMPORT_ROOT / "smart-corridor/seed/entities_optional.sql")
     station_entities = preserve_entities(IMPORT_ROOT / "smart-station/07_entities.sql")
     if station_entities is None:
-        station_entities = preserve_entities(IMPORT_ROOT / "smart-station/05_entities.sql")
+        station_entities = preserve_entities(IMPORT_ROOT / "smart-station/seed/entities_optional.sql")
 
     try:
         all_codes = fetch_all_entity_type_codes(cur)
+        packages = ["system", "corridor", "station"] if package == "all" else [package]
 
-        system_seeds = export_system_seeds(cur, all_codes)
-        write_seed_files(IMPORT_ROOT / "system", system_seeds, "系统 · ")
+        if "system" in packages:
+            system_seeds = export_system_seeds(cur, all_codes, artifacts)
+            write_seed_files(IMPORT_ROOT / "system", system_seeds, "系统 · ")
+            print(f"system: wrote {len(system_seeds)} seed file(s)")
 
-        field_count = len(fetch_all_field_library(cur))
-        group_count = len(fetch_field_groups(cur))
-        rel_count = len(fetch_field_group_relations(cur))
-        assign_count = fetch_rows(
-            cur,
-            "SELECT count(*) AS c FROM dynamic_model_field_assignment WHERE deleted=false AND tenant_id=%s",
-            (TENANT_ID,),
-        )[0]["c"]
-        model_count = fetch_rows(
-            cur,
-            "SELECT count(*) AS c FROM dynamic_model WHERE deleted=false AND tenant_id=%s",
-            (TENANT_ID,),
-        )[0]["c"]
-        print(
-            f"exported: fields={field_count}, field_groups={group_count}, "
-            f"group_relations={rel_count}, models={model_count}, "
-            f"model_field_assignments={assign_count}, "
-            f"businesses={len(fetch_dynamic_business(cur))}, "
-            f"capabilities={len(fetch_business_capabilities(cur))}"
-        )
-        if assign_count == 0:
-            print(
-                "warn: dynamic_model_field_assignment is empty — "
-                "models export without field bindings; re-link in model config UI"
-            )
-
-        corridor_seeds = export_corridor_seeds(cur)
-        write_seed_files(IMPORT_ROOT / "smart-corridor", corridor_seeds, "管廊 · ")
-        if corridor_entities:
-            write_sql(
-                IMPORT_ROOT / "smart-corridor/seed/entities_optional.sql",
-                "管廊 · 业务实例（可选，含 id）",
-                "-- 依赖：smart-corridor seed 全包\n-- 生产环境可跳过",
-                corridor_entities,
-            )
-
-        station_seeds = export_station_seeds(cur)
-        if station_seeds:
-            write_seed_files(IMPORT_ROOT / "smart-station", station_seeds, "站场 · ")
-            if station_entities:
+        if "corridor" in packages:
+            corridor_seeds = export_corridor_seeds(cur, artifacts)
+            write_seed_files(IMPORT_ROOT / "smart-corridor", corridor_seeds, "管廊 · ")
+            if corridor_entities and "entities" in artifacts:
                 write_sql(
-                    IMPORT_ROOT / "smart-station/seed/entities_optional.sql",
-                    "站场 · 示例实例（可选）",
-                    "-- 依赖：smart-station seed 全包",
-                    station_entities,
+                    IMPORT_ROOT / "smart-corridor/seed/entities_optional.sql",
+                    "管廊 · 业务实例（可选，含 id）",
+                    "-- 依赖：smart-corridor seed 全包\n-- 生产环境可跳过",
+                    corridor_entities,
                 )
-        else:
-            print("skip: smart-station (MODEL-REGION-SITE / MODEL-REGION-TANK-GROUP not in DB)")
+            print(f"corridor: wrote {len(corridor_seeds)} seed file(s)")
 
-        system_import_files = ["01_schema.sql"] + [
-            p for p in SYSTEM_SEED_ORDER if (IMPORT_ROOT / "system" / p).exists()
-        ]
-        write_import_script(
-            IMPORT_ROOT / "system/import.sh",
-            "系统共用包（V1 建表 + 按表 seed）",
-            system_import_files,
-        )
-        corridor_files = [
-            p for p in PRODUCT_SEED_ORDER if (IMPORT_ROOT / "smart-corridor" / p).exists()
-        ]
-        if (IMPORT_ROOT / "smart-corridor/seed/entities_optional.sql").exists():
-            corridor_files.append("seed/entities_optional.sql")
-        write_import_script(
-            IMPORT_ROOT / "smart-corridor/import.sh",
-            "智慧管廊产品包（需先导入 system/）",
-            corridor_files,
-        )
-        station_files = [
-            p for p in PRODUCT_SEED_ORDER if (IMPORT_ROOT / "smart-station" / p).exists()
-        ]
-        if (IMPORT_ROOT / "smart-station/seed/dynamic_model.sql").exists():
-            if (IMPORT_ROOT / "smart-station/seed/entities_optional.sql").exists():
-                station_files.append("seed/entities_optional.sql")
-            write_import_script(
-                IMPORT_ROOT / "smart-station/import.sh",
-                "智慧站场产品包（需先导入 system/）",
-                station_files,
+        if "station" in packages:
+            station_seeds = export_station_seeds(cur, artifacts)
+            if station_seeds:
+                write_seed_files(IMPORT_ROOT / "smart-station", station_seeds, "站场 · ")
+                if station_entities and "entities" in artifacts:
+                    write_sql(
+                        IMPORT_ROOT / "smart-station/seed/entities_optional.sql",
+                        "站场 · 示例实例（可选）",
+                        "-- 依赖：smart-station seed 全包",
+                        station_entities,
+                    )
+                print(f"station: wrote {len(station_seeds)} seed file(s)")
+            else:
+                print("skip: station (MODEL-REGION-SITE / MODEL-REGION-TANK-GROUP not in DB)")
+
+        if "system" in packages:
+            field_count = len(fetch_all_field_library(cur))
+            assign_count = fetch_rows(
+                cur,
+                "SELECT count(*) AS c FROM dynamic_model_field_assignment WHERE deleted=false AND tenant_id=%s",
+                (TENANT_ID,),
+            )[0]["c"]
+            model_count = fetch_rows(
+                cur,
+                "SELECT count(*) AS c FROM dynamic_model WHERE deleted=false AND tenant_id=%s",
+                (TENANT_ID,),
+            )[0]["c"]
+            print(
+                f"summary: fields={field_count}, models={model_count}, "
+                f"model_field_assignments={assign_count}"
             )
-        write_dev_all_script()
-        remove_legacy_files()
+            if assign_count == 0 and "assignments" in artifacts:
+                print(
+                    "warn: dynamic_model_field_assignment is empty — "
+                    "models export without field bindings"
+                )
 
-        for old in ("import-smart-corridor.sh", "import-smart-station.sh"):
-            p = IMPORT_ROOT / old
-            if p.exists():
-                p.unlink()
+        if rewrite_import_scripts:
+            system_import_files = [
+                p for p in SYSTEM_SEED_ORDER if (IMPORT_ROOT / "system" / p).exists()
+            ]
+            write_import_script(
+                IMPORT_ROOT / "system/import.sh",
+                "系统共用 seed（前置：Flyway V1→V2→V3）",
+                system_import_files,
+            )
+            corridor_files = [
+                p for p in PRODUCT_SEED_ORDER if (IMPORT_ROOT / "smart-corridor" / p).exists()
+            ]
+            if (IMPORT_ROOT / "smart-corridor/seed/entities_optional.sql").exists():
+                corridor_files.append("seed/entities_optional.sql")
+            write_import_script(
+                IMPORT_ROOT / "smart-corridor/import.sh",
+                "智慧管廊产品包 seed（需先 system/ + Flyway）",
+                corridor_files,
+            )
+            station_files = [
+                p for p in PRODUCT_SEED_ORDER if (IMPORT_ROOT / "smart-station" / p).exists()
+            ]
+            if (IMPORT_ROOT / "smart-station/seed/dynamic_model.sql").exists():
+                if (IMPORT_ROOT / "smart-station/seed/entities_optional.sql").exists():
+                    station_files.append("seed/entities_optional.sql")
+                write_import_script(
+                    IMPORT_ROOT / "smart-station/import.sh",
+                    "智慧站场产品包 seed（需先 system/ + Flyway）",
+                    station_files,
+                )
+            write_dev_all_script()
+            remove_legacy_files()
+            for old in ("import-smart-corridor.sh", "import-smart-station.sh"):
+                p = IMPORT_ROOT / old
+                if p.exists():
+                    p.unlink()
 
     finally:
         cur.close()
         conn.close()
 
     print("done:", IMPORT_ROOT)
+
+
+def main():
+    args = parse_args()
+    raw = [a.strip() for a in args.artifacts.split(",") if a.strip()]
+    unknown = [a for a in raw if a not in ALL_ARTIFACTS and a != "entities"]
+    if unknown:
+        raise SystemExit(f"unknown artifacts: {unknown}; allowed: {ALL_ARTIFACTS + ['entities']}")
+    artifacts = raw if raw else ALL_ARTIFACTS
+    rewrite = args.rewrite_import_scripts or (args.package == "all" and set(artifacts) == set(ALL_ARTIFACTS))
+    run_export(
+        package=args.package,
+        artifacts=artifacts,
+        schema=args.schema,
+        rewrite_import_scripts=rewrite,
+    )
 
 
 if __name__ == "__main__":

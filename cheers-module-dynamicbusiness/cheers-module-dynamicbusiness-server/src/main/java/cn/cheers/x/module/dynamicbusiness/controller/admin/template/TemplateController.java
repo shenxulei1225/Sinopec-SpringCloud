@@ -113,11 +113,11 @@ public class TemplateController {
             "- 如果不指定业务类型编码，则返回所有模板\n" +
             "- 适用于下拉选择等场景"
     )
-    @Parameter(name = "businessTypeCode", description = "业务类型编码（可选）", example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码（可选）", example = "equipment")
     @PreAuthorize("@ss.hasPermission('system:template:query')")
     public CommonResult<List<TemplateRespVO>> listTemplates(
-            @RequestParam(value = "businessTypeCode", required = false) String businessTypeCode) {
-        return success(templateService.listTemplates(businessTypeCode));
+            @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode) {
+        return success(templateService.listTemplates(entityTypeCode));
     }
 
     @GetMapping("/page")
@@ -138,12 +138,12 @@ public class TemplateController {
             "- 适用于模板选择器等场景"
     )
     @Parameter(name = "keyword", description = "关键词（必填）", required = true, example = "设备")
-    @Parameter(name = "businessTypeCode", description = "业务类型编码（可选）", example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码（可选）", example = "equipment")
     @PreAuthorize("@ss.hasPermission('system:template:query')")
     public CommonResult<List<TemplateRespVO>> searchTemplates(
             @RequestParam("keyword") String keyword,
-            @RequestParam(value = "businessTypeCode", required = false) String businessTypeCode) {
-        return success(templateService.searchTemplates(keyword, businessTypeCode));
+            @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode) {
+        return success(templateService.searchTemplates(keyword, entityTypeCode));
     }
 
     @PostMapping("/copy")

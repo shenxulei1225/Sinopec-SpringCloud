@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 智慧管廊产品包（需先导入 system/）
+# 智慧管廊产品包 seed（前置：Flyway V1→V2→V3 + system/import.sh）
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

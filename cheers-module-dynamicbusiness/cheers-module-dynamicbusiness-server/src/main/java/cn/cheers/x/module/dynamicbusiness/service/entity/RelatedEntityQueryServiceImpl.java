@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
  * <p>通过 EntityService 进行查询，自动路由到正确的存储策略：
  * <ul>
  *   <li>GENERIC 类型：查询 dynamic_entity 表</li>
- *   <li>DEDICATED 类型：查询动态创建的 biz_xxx 表</li>
+ *   <li>DEDICATED 类型：查询动态创建的 ent_xxx 表</li>
  * </ul>
  * </p>
  * 
@@ -76,29 +76,29 @@ public class RelatedEntityQueryServiceImpl implements RelatedEntityQueryService 
     }
 
     @Override
-    public List<RelatedEntityRespVO> getRelatedEntities(Long entityId, String modelCode, String targetBusinessTypeCode) {
+    public List<RelatedEntityRespVO> getRelatedEntities(Long entityId, String modelCode, String targetEntityTypeCode) {
         // 1. 获取目标 Entity（通过 EntityService 支持多存储策略）
-        // 必须提供 businessTypeCode 或 modelCode 来确定查询哪个存储
+        // 必须提供 entityTypeCode 或 modelCode 来确定查询哪个存储
         EntityRespVO targetEntity = null;
-        if (targetBusinessTypeCode != null && !targetBusinessTypeCode.isEmpty()) {
+        if (targetEntityTypeCode != null && !targetEntityTypeCode.isEmpty()) {
             // 如果指定了业务类型，直接路由到对应存储策略
-            EntityDO targetEntityDO = entityCoreService.get(entityId, targetBusinessTypeCode);
+            EntityDO targetEntityDO = entityCoreService.get(entityId, targetEntityTypeCode);
             targetEntity = targetEntityDO != null ? EntityDoVoHelper.toRespVO(targetEntityDO, customFieldValidationService) : null;
         } else if (modelCode != null && !modelCode.isEmpty()) {
-            // 否则从 modelCode 推断 businessTypeCode
-            log.debug("未指定 businessTypeCode，从 modelCode 推断: entityId={}, modelCode={}", entityId, modelCode);
+            // 否则从 modelCode 推断 entityTypeCode
+            log.debug("未指定 entityTypeCode，从 modelCode 推断: entityId={}, modelCode={}", entityId, modelCode);
             ModelDO model = modelMapper.selectByCode(modelCode);
             if (model != null) {
-                EntityDO targetEntityDO = entityCoreService.get(entityId, model.getBusinessTypeCode());
+                EntityDO targetEntityDO = entityCoreService.get(entityId, model.getEntityTypeCode());
                 targetEntity = targetEntityDO != null ? EntityDoVoHelper.toRespVO(targetEntityDO, customFieldValidationService) : null;
             }
         } else {
             // 两者都没有，无法确定存储位置
-            log.warn("未指定 businessTypeCode 和 modelCode，无法查询实体: entityId={}", entityId);
+            log.warn("未指定 entityTypeCode 和 modelCode，无法查询实体: entityId={}", entityId);
         }
         
         if (targetEntity == null) {
-            log.warn("目标 Entity 不存在: entityId={}, businessTypeCode={}", entityId, targetBusinessTypeCode);
+            log.warn("目标 Entity 不存在: entityId={}, entityTypeCode={}", entityId, targetEntityTypeCode);
             return new ArrayList<>();
         }
 
@@ -140,20 +140,20 @@ public class RelatedEntityQueryServiceImpl implements RelatedEntityQueryService 
                 continue;
             }
 
-            // 如果指定了 businessTypeCode，且与源 Model 的业务类型不一致，跳过该关联关系
-            // 这允许前端通过传入 businessTypeCode 来过滤只返回特定业务类型的关联实体
-            if (targetBusinessTypeCode != null && !targetBusinessTypeCode.isEmpty()) {
-                if (!targetBusinessTypeCode.equals(sourceModel.getBusinessTypeCode())) {
-                    log.debug("跳过业务类型不匹配的关联关系: sourceModelCode={}, expectedBusinessType={}, actualBusinessType={}", 
-                            relation.getSourceModelCode(), targetBusinessTypeCode, sourceModel.getBusinessTypeCode());
+            // 如果指定了 entityTypeCode，且与源 Model 的业务类型不一致，跳过该关联关系
+            // 这允许前端通过传入 entityTypeCode 来过滤只返回特定业务类型的关联实体
+            if (targetEntityTypeCode != null && !targetEntityTypeCode.isEmpty()) {
+                if (!targetEntityTypeCode.equals(sourceModel.getEntityTypeCode())) {
+                    log.debug("跳过业务类型不匹配的关联关系: sourceModelCode={}, expectedEntityType={}, actualEntityType={}", 
+                            relation.getSourceModelCode(), targetEntityTypeCode, sourceModel.getEntityTypeCode());
                     continue;
                 }
             }
 
             // 通过 EntityService 查询源 Model 下的所有 Entity（支持多存储策略）
-            // 使用 businessTypeCode 进行路由，确保能查询到动态表中的数据
+            // 使用 entityTypeCode 进行路由，确保能查询到动态表中的数据
             // 查询源 Model 下的所有 Entity（本体数据通过 CoreService 获取）
-            List<EntityDO> sourceEntityDOs = entityCoreService.listEntities(sourceModel.getBusinessTypeCode(), sourceModel.getId(), null);
+            List<EntityDO> sourceEntityDOs = entityCoreService.listEntities(sourceModel.getEntityTypeCode(), sourceModel.getId(), null);
             List<EntityRespVO> sourceEntities = EntityDoVoHelper.toRespVOList(sourceEntityDOs, customFieldValidationService);
             
             // 过滤出关联字段值等于目标 Entity ID 的 Entity
@@ -166,8 +166,8 @@ public class RelatedEntityQueryServiceImpl implements RelatedEntityQueryService 
             }
         }
 
-        log.debug("反向查询完成: entityId={}, modelCode={}, businessTypeCode={}, resultCount={}", 
-                entityId, modelCode, targetBusinessTypeCode, result.size());
+        log.debug("反向查询完成: entityId={}, modelCode={}, entityTypeCode={}, resultCount={}", 
+                entityId, modelCode, targetEntityTypeCode, result.size());
         return result;
     }
 
@@ -177,8 +177,8 @@ public class RelatedEntityQueryServiceImpl implements RelatedEntityQueryService 
     }
 
     @Override
-    public Long countRelatedEntities(Long entityId, String modelCode, String businessTypeCode) {
-        return (long) getRelatedEntities(entityId, modelCode, businessTypeCode).size();
+    public Long countRelatedEntities(Long entityId, String modelCode, String entityTypeCode) {
+        return (long) getRelatedEntities(entityId, modelCode, entityTypeCode).size();
     }
 
     // ========== 私有方法 ==========
@@ -262,7 +262,7 @@ public class RelatedEntityQueryServiceImpl implements RelatedEntityQueryService 
         respVO.setName(entity.getName());
         respVO.setModelCode(model.getCode());
         respVO.setModelName(model.getName());
-        respVO.setBusinessTypeCode(entity.getBusinessTypeCode());
+        respVO.setEntityTypeCode(entity.getEntityTypeCode());
         respVO.setRelationFieldCode(relation.getFieldCode());
         respVO.setRelationName(relation.getRelationName());
         respVO.setStatus(entity.getStatus());

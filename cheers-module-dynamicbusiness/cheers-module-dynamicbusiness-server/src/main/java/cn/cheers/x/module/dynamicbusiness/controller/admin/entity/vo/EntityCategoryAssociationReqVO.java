@@ -24,7 +24,7 @@ public class EntityCategoryAssociationReqVO {
 
     @Schema(description = "业务类型编码，用于路由到正确的存储表验证实体存在性", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
     @NotNull(message = "业务类型编码不能为空")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "分类ID列表", requiredMode = Schema.RequiredMode.REQUIRED, example = "[64, 65]")
     @NotEmpty(message = "分类ID列表不能为空")

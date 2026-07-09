@@ -290,19 +290,19 @@ public class PrecomputeServiceImpl implements PrecomputeService {
 
     @Override
     @Async("precomputeExecutor")
-    public void onRelatedDataChanged(String targetBusinessType, String targetModelCode, Long targetEntityId) {
-        if (targetBusinessType == null || targetModelCode == null || targetEntityId == null) {
+    public void onRelatedDataChanged(String targetEntityType, String targetModelCode, Long targetEntityId) {
+        if (targetEntityType == null || targetModelCode == null || targetEntityId == null) {
             return;
         }
 
-        log.debug("[onRelatedDataChanged][关联数据变化，触发预计算，targetBusinessType={}, targetModelCode={}, targetEntityId={}]", 
-                targetBusinessType, targetModelCode, targetEntityId);
+        log.debug("[onRelatedDataChanged][关联数据变化，触发预计算，targetEntityType={}, targetModelCode={}, targetEntityId={}]", 
+                targetEntityType, targetModelCode, targetEntityId);
 
         // 1. 查找所有引用该目标的聚合统计字段
         List<ComputedFieldDO> aggregateFields = computedFieldMapper.selectPrecomputedFields()
                 .stream()
                 .filter(f -> ComputedFieldDO.COMPUTE_TYPE_AGGREGATE.equals(f.getComputeType()))
-                .filter(f -> targetBusinessType.equals(f.getTargetBusinessType()))
+                .filter(f -> targetEntityType.equals(f.getTargetEntityType()))
                 .filter(f -> targetModelCode.equals(f.getTargetModelCode()))
                 .collect(Collectors.toList());
 
@@ -370,13 +370,13 @@ public class PrecomputeServiceImpl implements PrecomputeService {
             List<ComputedFieldDO> modelFields = entry.getValue();
 
             // 获取该 Model 的所有实体 ID（简化实现）
-            // 先获取 Model 的 businessTypeCode
+            // 先获取 Model 的 entityTypeCode
             ModelDO model = modelMapper.selectById(currentModelId);
             if (model == null) {
                 log.warn("[recomputeAll][Model 不存在，跳过，modelId={}]", currentModelId);
                 continue;
             }
-            List<Long> entityIds = getEntityIdsByModelId(currentModelId, model.getBusinessTypeCode());
+            List<Long> entityIds = getEntityIdsByModelId(currentModelId, model.getEntityTypeCode());
             
             if (!CollectionUtils.isEmpty(entityIds)) {
                 for (Long entityId : entityIds) {
@@ -540,14 +540,14 @@ public class PrecomputeServiceImpl implements PrecomputeService {
     /**
      * 获取实体对应的 Model ID
      * 
-     * 注意：此方法需要 businessTypeCode，但调用方可能不知道。
+     * 注意：此方法需要 entityTypeCode，但调用方可能不知道。
      * 这里采用降级策略：尝试从所有可能的业务类型中查找。
-     * 更好的做法是调用方传入 businessTypeCode。
+     * 更好的做法是调用方传入 entityTypeCode。
      */
     private Long getModelIdByEntityId(Long entityId) {
-        // 注意：此方法已废弃，因为 getEntity 需要 businessTypeCode
-        // 建议调用方直接传入 businessTypeCode 和 entityId
-        log.warn("[getModelIdByEntityId][此方法已废弃，请使用带 businessTypeCode 的方法，entityId={}]", entityId);
+        // 注意：此方法已废弃，因为 getEntity 需要 entityTypeCode
+        // 建议调用方直接传入 entityTypeCode 和 entityId
+        log.warn("[getModelIdByEntityId][此方法已废弃，请使用带 entityTypeCode 的方法，entityId={}]", entityId);
         return null;
     }
 
@@ -631,7 +631,7 @@ public class PrecomputeServiceImpl implements PrecomputeService {
             }
 
             // 获取目标实体的关联字段值
-            // 需要先获取目标实体的 businessTypeCode
+            // 需要先获取目标实体的 entityTypeCode
             // 这里简化处理：假设目标实体和当前字段属于同一个业务类型
             ModelDO fieldModel = modelMapper.selectById(field.getModelId());
             if (fieldModel == null) {
@@ -639,14 +639,14 @@ public class PrecomputeServiceImpl implements PrecomputeService {
                         field.getFieldCode(), field.getModelId());
                 return Collections.emptyList();
             }
-            // 尝试从目标实体的 Model 获取 businessTypeCode（简化处理）
-            // 实际应该通过其他方式确定目标实体的 businessTypeCode
-            EntityDO targetEntityDO = entityCoreService.get(targetEntityId, fieldModel.getBusinessTypeCode());
+            // 尝试从目标实体的 Model 获取 entityTypeCode（简化处理）
+            // 实际应该通过其他方式确定目标实体的 entityTypeCode
+            EntityDO targetEntityDO = entityCoreService.get(targetEntityId, fieldModel.getEntityTypeCode());
             var targetEntity = targetEntityDO != null ? EntityDoVoHelper.toRespVO(targetEntityDO, customFieldValidationService) : null;
             if (targetEntity == null) {
-                // 如果获取失败，可能是 businessTypeCode 不匹配，尝试其他方式
-                log.debug("[getAffectedEntityIds][目标实体不存在或 businessTypeCode 不匹配，targetEntityId={}, businessTypeCode={}]", 
-                        targetEntityId, fieldModel.getBusinessTypeCode());
+                // 如果获取失败，可能是 entityTypeCode 不匹配，尝试其他方式
+                log.debug("[getAffectedEntityIds][目标实体不存在或 entityTypeCode 不匹配，targetEntityId={}, entityTypeCode={}]", 
+                        targetEntityId, fieldModel.getEntityTypeCode());
                 return Collections.emptyList();
             }
 
@@ -659,12 +659,12 @@ public class PrecomputeServiceImpl implements PrecomputeService {
             // 查找关联字段值匹配的实体
             // 这里简化实现：返回 Model 下所有实体，实际应根据 currentField 进行精确匹配
             // fieldModel 已在上面声明，直接使用
-            List<Long> entityIds = entityCoreService.getEntityIdsByModelId(field.getModelId(), fieldModel.getBusinessTypeCode());
+            List<Long> entityIds = entityCoreService.getEntityIdsByModelId(field.getModelId(), fieldModel.getEntityTypeCode());
             
             // 过滤出关联字段值匹配的实体
             List<Long> affectedIds = new ArrayList<>();
             for (Long entityId : entityIds) {
-                EntityDO entityDO = entityCoreService.get(entityId, fieldModel.getBusinessTypeCode());
+                EntityDO entityDO = entityCoreService.get(entityId, fieldModel.getEntityTypeCode());
                 var entity = entityDO != null ? EntityDoVoHelper.toRespVO(entityDO, customFieldValidationService) : null;
                 if (entity != null) {
                     Object currentValue = getFieldValueFromEntity(entity, currentField);
@@ -818,16 +818,16 @@ public class PrecomputeServiceImpl implements PrecomputeService {
      * 获取 Model 的所有实体 ID
      * 
      * @param modelId Model ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      */
-    private List<Long> getEntityIdsByModelId(Long modelId, String businessTypeCode) {
+    private List<Long> getEntityIdsByModelId(Long modelId, String entityTypeCode) {
         try {
             // 简化实现：通过 EntityService 获取
             // 实际应分页处理大量数据
-            return entityCoreService.getEntityIdsByModelId(modelId, businessTypeCode);
+            return entityCoreService.getEntityIdsByModelId(modelId, entityTypeCode);
         } catch (Exception e) {
-            log.warn("[getEntityIdsByModelId][获取实体 ID 列表失败，modelId={}, businessTypeCode={}]", 
-                    modelId, businessTypeCode, e);
+            log.warn("[getEntityIdsByModelId][获取实体 ID 列表失败，modelId={}, entityTypeCode={}]", 
+                    modelId, entityTypeCode, e);
             return Collections.emptyList();
         }
     }

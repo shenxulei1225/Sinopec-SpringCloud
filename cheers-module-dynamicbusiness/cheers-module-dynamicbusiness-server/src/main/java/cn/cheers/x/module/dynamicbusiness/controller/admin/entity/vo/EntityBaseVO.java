@@ -12,7 +12,7 @@ import java.util.Map;
 @Data
 public class EntityBaseVO {
 
-    @Schema(description = "固定列（BaseField），key 为 fieldCode。含 businessTypeCode、modelId、name、status、parentId 及业务基础列")
+    @Schema(description = "固定列（BaseField），key 为 fieldCode。含 entityTypeCode、modelId、name、status、parentId 及业务基础列")
     @NotNull(message = "baseFields 不能为空")
     private Map<String, Object> baseFields;
 

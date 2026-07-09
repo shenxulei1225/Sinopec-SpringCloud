@@ -41,10 +41,10 @@ public class ComputedFieldRespVO {
     private String aggregateFunctionName;
 
     @Schema(description = "统计目标业务类型编码", example = "equipment")
-    private String targetBusinessType;
+    private String targetEntityType;
 
     @Schema(description = "统计目标业务类型名称", example = "设备管理")
-    private String targetBusinessTypeName;
+    private String targetEntityTypeName;
 
     @Schema(description = "统计目标 Model 编码", example = "device")
     private String targetModelCode;

@@ -1,16 +1,16 @@
-package cn.cheers.x.module.dynamicbusiness.service.businesstype;
+package cn.cheers.x.module.dynamicbusiness.service.entitytype;
 
 import cn.iocoder.yudao.framework.common.exception.ServiceException;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo.*;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.*;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldAssignmentRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelRespVO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeDO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeRelationDO;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeMapper;
-import cn.cheers.x.module.dynamicbusiness.enums.businesstype.StorageTypeEnum;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeRelationMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeRelationDO;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
+import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
@@ -37,13 +37,13 @@ import java.util.stream.Collectors;
 @Service
 @Validated
 @Slf4j
-public class BusinessTypeServiceImpl implements BusinessTypeService {
+public class EntityTypeServiceImpl implements EntityTypeService {
 
     @Resource
-    private BusinessTypeMapper businessTypeMapper;
+    private EntityTypeMapper entityTypeMapper;
 
     @Resource
-    private BusinessTypeRelationMapper businessTypeRelationMapper;
+    private EntityTypeRelationMapper entityTypeRelationMapper;
 
     @Resource
     private FieldService fieldService;
@@ -76,44 +76,44 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long create(BusinessTypeCreateReqVO reqVO) {
+    public Long create(EntityTypeCreateReqVO reqVO) {
         // 1. 验证业务是否已经存在
-        if (businessTypeMapper.existsByCode(reqVO.getCode())) {
+        if (entityTypeMapper.existsByCode(reqVO.getCode())) {
             throw new ServiceException(400, "业务类型编码已存在");
         }
-        BusinessTypeDO parentBusinessType = null;
+        EntityTypeDO parentEntityType = null;
         if (reqVO.getParentId() != null) {
-            parentBusinessType = businessTypeMapper.selectById(reqVO.getParentId());
-            if (parentBusinessType == null) {
+            parentEntityType = entityTypeMapper.selectById(reqVO.getParentId());
+            if (parentEntityType == null) {
                 throw new ServiceException(400, "父级业务类型不存在");
             }
         }
 
         // 2. 创建业务 (包括存储配置)
-        BusinessTypeDO businessType = new BusinessTypeDO();
-        copyBaseFields(businessType, reqVO);
-        businessType.setTypeLevel(BusinessTypeDO.TYPE_LEVEL_USER); //用户创建的业务
-        businessTypeMapper.insert(businessType);
+        EntityTypeDO entityType = new EntityTypeDO();
+        copyBaseFields(entityType, reqVO);
+        entityType.setTypeLevel(EntityTypeDO.TYPE_LEVEL_USER); //用户创建的业务
+        entityTypeMapper.insert(entityType);
 
 
         // 3. 创建业务的关联字段
-        createRelationFieldForBusinessType(businessType);
+        createRelationFieldForEntityType(entityType);
 
         // 4.为专用存储创建专用表
-        StorageTypeEnum storageType = StorageTypeEnum.getByCode(businessType.getStorageType());
+        StorageTypeEnum storageType = StorageTypeEnum.getByCode(entityType.getStorageType());
         if (storageType != null && storageType.isDedicated()) {
-            String tableName = StringUtils.hasText(businessType.getDedicatedTableName())
-                    ? businessType.getDedicatedTableName()
-                    : "biz_" + businessType.getCode().toLowerCase();
-            dynamicTableService.createDynamicTableForBusinessType(
-                    businessType.getCode(),
+            String tableName = StringUtils.hasText(entityType.getDedicatedTableName())
+                    ? entityType.getDedicatedTableName()
+                    : "ent_" + entityType.getCode().toLowerCase();
+            dynamicTableService.createDynamicTableForEntityType(
+                    entityType.getCode(),
                     tableName,
-                    businessType.getName(),
-                    PhysicalColumnMappingUtils.parseMapping(businessType.getPhysicalColumnMapping())
+                    entityType.getName(),
+                    PhysicalColumnMappingUtils.parseMapping(entityType.getPhysicalColumnMapping())
             );
         }
 
-        return businessType.getId();
+        return entityType.getId();
     }
 
     /**
@@ -125,86 +125,86 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void update(BusinessTypeUpdateReqVO reqVO) {
-        BusinessTypeDO oldBT = businessTypeMapper.selectById(reqVO.getId());
-        if (oldBT == null) {
+    public void update(EntityTypeUpdateReqVO reqVO) {
+        EntityTypeDO oldEntityType = entityTypeMapper.selectById(reqVO.getId());
+        if (oldEntityType == null) {
             throw new ServiceException(404, "业务类型不存在");
         }
 
-        String oldCode = oldBT.getCode();
+        String oldCode = oldEntityType.getCode();
 
         // 业务类型的增量更新
-        BusinessTypeDO newBT = new BusinessTypeDO();
-        newBT.setId(oldBT.getId());
+        EntityTypeDO newEntityType = new EntityTypeDO();
+        newEntityType.setId(oldEntityType.getId());
         // 从旧数据中获取基础信息
-        newBT.setCode(oldBT.getCode());
-        newBT.setName(oldBT.getName());
-        newBT.setSort(oldBT.getSort());
-        newBT.setStatus(oldBT.getStatus());
-        newBT.setDescription(oldBT.getDescription());
-        newBT.setIcon(oldBT.getIcon());
-        newBT.setAlias(oldBT.getAlias());
-        newBT.setAssociationFields(oldBT.getAssociationFields());
-        newBT.setParentId(oldBT.getParentId());
-        newBT.setStorageType(oldBT.getStorageType());
-        newBT.setDedicatedTableName(oldBT.getDedicatedTableName());
-        newBT.setPhysicalColumnMapping(oldBT.getPhysicalColumnMapping());
-        newBT.setEnableRuleEngine(oldBT.getEnableRuleEngine());
+        newEntityType.setCode(oldEntityType.getCode());
+        newEntityType.setName(oldEntityType.getName());
+        newEntityType.setSort(oldEntityType.getSort());
+        newEntityType.setStatus(oldEntityType.getStatus());
+        newEntityType.setDescription(oldEntityType.getDescription());
+        newEntityType.setIcon(oldEntityType.getIcon());
+        newEntityType.setAlias(oldEntityType.getAlias());
+        newEntityType.setAssociationFields(oldEntityType.getAssociationFields());
+        newEntityType.setParentId(oldEntityType.getParentId());
+        newEntityType.setStorageType(oldEntityType.getStorageType());
+        newEntityType.setDedicatedTableName(oldEntityType.getDedicatedTableName());
+        newEntityType.setPhysicalColumnMapping(oldEntityType.getPhysicalColumnMapping());
+        newEntityType.setEnableRuleEngine(oldEntityType.getEnableRuleEngine());
 
-        updateBTFromVO(newBT, reqVO);
+        updateBTFromVO(newEntityType, reqVO);
 
         // 验证
-        if (!Objects.equals(oldCode, newBT.getCode()) && businessTypeMapper.existsByCodeExcludeId(newBT.getCode(), newBT.getId())) {
+        if (!Objects.equals(oldCode, newEntityType.getCode()) && entityTypeMapper.existsByCodeExcludeId(newEntityType.getCode(), newEntityType.getId())) {
             throw new ServiceException(400, "业务类型编码已存在");
         }
-        if (newBT.getParentId() != null && businessTypeMapper.selectById(newBT.getParentId()) == null) {
+        if (newEntityType.getParentId() != null && entityTypeMapper.selectById(newEntityType.getParentId()) == null) {
             throw new ServiceException(400, "父级业务类型不存在");
         }
 
         // 持久化保存
-        businessTypeMapper.updateById(newBT);
+        entityTypeMapper.updateById(newEntityType);
     }
 
-    private void updateBTFromVO(BusinessTypeDO businessType, BusinessTypeUpdateReqVO reqVO) {
+    private void updateBTFromVO(EntityTypeDO entityType, EntityTypeUpdateReqVO reqVO) {
         if (StringUtils.hasText(reqVO.getName())) {
-            businessType.setName(reqVO.getName());
+            entityType.setName(reqVO.getName());
         }
         if (StringUtils.hasText(reqVO.getCode())) {
-            businessType.setCode(reqVO.getCode());
+            entityType.setCode(reqVO.getCode());
         }
         if (reqVO.getSort() != null) {
-            businessType.setSort(reqVO.getSort());
+            entityType.setSort(reqVO.getSort());
         }
         if (reqVO.getStatus() != null) {
-            businessType.setStatus(reqVO.getStatus());
+            entityType.setStatus(reqVO.getStatus());
         }
         if (reqVO.getDescription() != null) {
-            businessType.setDescription(StringUtils.hasText(reqVO.getDescription()) ? reqVO.getDescription() : null);
+            entityType.setDescription(StringUtils.hasText(reqVO.getDescription()) ? reqVO.getDescription() : null);
         }
         if (reqVO.getIcon() != null) {
-            businessType.setIcon(reqVO.getIcon());
+            entityType.setIcon(reqVO.getIcon());
         }
         if (reqVO.getAlias() != null) {
-            businessType.setAlias(StringUtils.hasText(reqVO.getAlias()) ? reqVO.getAlias() : null);
+            entityType.setAlias(StringUtils.hasText(reqVO.getAlias()) ? reqVO.getAlias() : null);
         }
         if (reqVO.getAssociationFields() != null) {
-            businessType.setAssociationFields(reqVO.getAssociationFields());
+            entityType.setAssociationFields(reqVO.getAssociationFields());
         }
         if (reqVO.getParentId() != null) {
-            businessType.setParentId(reqVO.getParentId());
+            entityType.setParentId(reqVO.getParentId());
         }
         // Update storage config fields
         if (StringUtils.hasText(reqVO.getStorageType())) {
-            businessType.setStorageType(reqVO.getStorageType());
+            entityType.setStorageType(reqVO.getStorageType());
         }
         if (reqVO.getDedicatedTableName() != null) {
-            businessType.setDedicatedTableName(reqVO.getDedicatedTableName());
+            entityType.setDedicatedTableName(reqVO.getDedicatedTableName());
         }
         if (reqVO.getPhysicalColumnMapping() != null) {
-            businessType.setPhysicalColumnMapping(reqVO.getPhysicalColumnMapping());
+            entityType.setPhysicalColumnMapping(reqVO.getPhysicalColumnMapping());
         }
         if (reqVO.getEnableRuleEngine() != null) {
-            businessType.setEnableRuleEngine(reqVO.getEnableRuleEngine());
+            entityType.setEnableRuleEngine(reqVO.getEnableRuleEngine());
         }
     }
 
@@ -218,20 +218,20 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
-        BusinessTypeDO businessType = businessTypeMapper.selectById(id);
-        if (businessType == null) {
+        EntityTypeDO entityType = entityTypeMapper.selectById(id);
+        if (entityType == null) {
             throw new ServiceException(404, "业务类型不存在");
         }
 
-        if (BusinessTypeDO.TYPE_LEVEL_SYSTEM.equals(businessType.getTypeLevel())) {
+        if (EntityTypeDO.TYPE_LEVEL_SYSTEM.equals(entityType.getTypeLevel())) {
             throw new ServiceException(403, "系统级业务类型不可删除");
         }
 
-        if (businessTypeMapper.selectCountByParentId(id) > 0) {
+        if (entityTypeMapper.selectCountByParentId(id) > 0) {
             throw new ServiceException(400, "请先删除子业务类型");
         }
 
-        businessTypeMapper.deleteById(id);
+        entityTypeMapper.deleteById(id);
     }
 
     /**
@@ -242,12 +242,12 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      * - 编辑前回填。
      */
     @Override
-    public BusinessTypeRespVO get(Long id) {
-        BusinessTypeDO businessType = businessTypeMapper.selectById(id);
-        if (businessType == null) {
+    public EntityTypeRespVO get(Long id) {
+        EntityTypeDO entityType = entityTypeMapper.selectById(id);
+        if (entityType == null) {
             throw new ServiceException(404, "业务类型不存在");
         }
-        return convertToVO(businessType);
+        return convertToVO(entityType);
     }
 
     /**
@@ -263,10 +263,10 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      * 3) 返回平铺列表（结构平铺，顺序保留层级语义）。
      */
     @Override
-    public List<BusinessTypeRespVO> listAcrossBusinessTypes() {
+    public List<EntityTypeRespVO> listAcrossEntityTypes() {
         // 先构建有序树，再 DFS 展平为平铺列表（顺序与树遍历一致）
-        List<BusinessTypeRespVO> flattened = new java.util.ArrayList<>();
-        flattenDfs(loadOrderedBusinessTypeTree(), flattened);
+        List<EntityTypeRespVO> flattened = new java.util.ArrayList<>();
+        flattenDfs(loadOrderedEntityTypeTree(), flattened);
         return flattened;
     }
 
@@ -279,8 +279,8 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      */
     @Override
     @Deprecated
-    public List<BusinessTypeRespVO> listAll() {
-        return listAcrossBusinessTypes();
+    public List<EntityTypeRespVO> listAll() {
+        return listAcrossEntityTypes();
     }
 
     /**
@@ -291,8 +291,8 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      * - 轻量展示（code/name/description）。
      */
     @Override
-    public List<BusinessTypeSimpleVO> listSimple() {
-        return businessTypeMapper.selectAllList().stream()
+    public List<EntityTypeSimpleVO> listSimple() {
+        return entityTypeMapper.selectAllList().stream()
                 .map(this::convertToSimpleVO)
                 .toList();
     }
@@ -311,8 +311,8 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      * 4) 返回树结构（children 递归）。
      */
     @Override
-    public List<BusinessTypeRespVO> listTree() {
-        return loadOrderedBusinessTypeTree();
+    public List<EntityTypeRespVO> listTree() {
+        return loadOrderedEntityTypeTree();
     }
 
     /**
@@ -326,8 +326,8 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      * 3) 递归按 parentId 组装为树；
      * 4) 对每层做稳定排序（sort、id）。
      */
-    private List<BusinessTypeRespVO> loadOrderedBusinessTypeTree() {
-        List<BusinessTypeRespVO> list = businessTypeMapper.selectAllList().stream()
+    private List<EntityTypeRespVO> loadOrderedEntityTypeTree() {
+        List<EntityTypeRespVO> list = entityTypeMapper.selectAllList().stream()
                 .map(this::convertToVO)
                 .toList();
         return buildTree(list, null);
@@ -342,11 +342,11 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      * 3) 递归填充每个节点 children；
      * 4) 返回当前层结果。
      */
-    private List<BusinessTypeRespVO> buildTree(List<BusinessTypeRespVO> list, Long parentId) {
+    private List<EntityTypeRespVO> buildTree(List<EntityTypeRespVO> list, Long parentId) {
         return list.stream()
                 .filter(vo -> Objects.equals(vo.getParentId(), parentId))
                 .sorted(java.util.Comparator
-                        .comparing((BusinessTypeRespVO vo) -> vo.getSort() == null ? Integer.MAX_VALUE : vo.getSort())
+                        .comparing((EntityTypeRespVO vo) -> vo.getSort() == null ? Integer.MAX_VALUE : vo.getSort())
                         .thenComparing(vo -> vo.getId() == null ? Long.MAX_VALUE : vo.getId()))
                 .map(vo -> {
                     vo.setChildren(buildTree(list, vo.getId()));
@@ -362,11 +362,11 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      * - 当调用方需要“平铺结构 + 层级顺序”时使用；
      * - 与 listTree 的区别在于返回结构不同（平铺 vs 树）。
      */
-    private void flattenDfs(List<BusinessTypeRespVO> nodes, List<BusinessTypeRespVO> out) {
+    private void flattenDfs(List<EntityTypeRespVO> nodes, List<EntityTypeRespVO> out) {
         if (nodes == null || nodes.isEmpty()) {
             return;
         }
-        for (BusinessTypeRespVO node : nodes) {
+        for (EntityTypeRespVO node : nodes) {
             out.add(node);
             flattenDfs(node.getChildren(), out);
         }
@@ -380,8 +380,8 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      * - 业务联动前的防御性检查。
      */
     @Override
-    public boolean checkBusinessTypeExists(String businessTypeCode) {
-        return StringUtils.hasText(businessTypeCode) && businessTypeMapper.existsByCode(businessTypeCode.trim());
+    public boolean checkEntityTypeExists(String entityTypeCode) {
+        return StringUtils.hasText(entityTypeCode) && entityTypeMapper.existsByCode(entityTypeCode.trim());
     }
 
     /**
@@ -392,9 +392,9 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      * - 其他服务按 code 读取业务元信息。
      */
     @Override
-    public BusinessTypeRespVO getByCode(String code) {
-        BusinessTypeDO businessType = businessTypeMapper.selectByCode(code);
-        return businessType != null ? convertToVO(businessType) : null;
+    public EntityTypeRespVO getByCode(String code) {
+        EntityTypeDO entityType = entityTypeMapper.selectByCode(code);
+        return entityType != null ? convertToVO(entityType) : null;
     }
 
     /**
@@ -405,16 +405,16 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      * - includeChildren 语义的业务码收集前置。
      */
     @Override
-    public List<BusinessTypeRespVO> listChildrenTreeByCode(String businessTypeCode) {
-        if (!StringUtils.hasText(businessTypeCode)) {
+    public List<EntityTypeRespVO> listChildrenTreeByCode(String entityTypeCode) {
+        if (!StringUtils.hasText(entityTypeCode)) {
             throw new ServiceException(400, "业务类型编码不能为空");
         }
-        BusinessTypeDO root = businessTypeMapper.selectByCode(businessTypeCode.trim());
+        EntityTypeDO root = entityTypeMapper.selectByCode(entityTypeCode.trim());
         if (root == null) {
             throw new ServiceException(404, "业务类型不存在");
         }
 
-        List<BusinessTypeRespVO> all = listAll();
+        List<EntityTypeRespVO> all = listAll();
         // 只构建以 root 为起点的子树
         return buildTree(all, root.getId());
     }
@@ -427,30 +427,30 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      * - 按 relation(source->target) 做精确过滤。
      */
     @Override
-    public List<BusinessTypeRespVO> listConfigChildrenByCode(String businessTypeCode) {
-        if (!StringUtils.hasText(businessTypeCode)) {
+    public List<EntityTypeRespVO> listConfigChildrenByCode(String entityTypeCode) {
+        if (!StringUtils.hasText(entityTypeCode)) {
             throw new ServiceException(400, "业务类型编码不能为空");
         }
-        // 基于 BusinessTypeRelationDO 定义的门禁关系,按 sourceCode=主业务、relationType=CONFIG 过滤
-        List<BusinessTypeRelationDO> relations = businessTypeRelationMapper.selectList(
-                new LambdaQueryWrapperX<BusinessTypeRelationDO>()
-                        .eq(BusinessTypeRelationDO::getSourceBusinessTypeCode, businessTypeCode.trim())
-                        .eq(BusinessTypeRelationDO::getDeleted, false)
+        // 基于 EntityTypeRelationDO 定义的门禁关系,按 sourceCode=主业务、relationType=CONFIG 过滤
+        List<EntityTypeRelationDO> relations = entityTypeRelationMapper.selectList(
+                new LambdaQueryWrapperX<EntityTypeRelationDO>()
+                        .eq(EntityTypeRelationDO::getSourceEntityTypeCode, entityTypeCode.trim())
+                        .eq(EntityTypeRelationDO::getDeleted, false)
         );
         if (relations.isEmpty()) {
             return List.of();
         }
         Set<String> targetCodes = relations.stream()
-                .map(BusinessTypeRelationDO::getTargetBusinessTypeCode)
+                .map(EntityTypeRelationDO::getTargetEntityTypeCode)
                 .filter(StringUtils::hasText)
                 .collect(Collectors.toSet());
         if (targetCodes.isEmpty()) {
             return List.of();
         }
-        List<BusinessTypeDO> children = businessTypeMapper.selectList(
-                new LambdaQueryWrapperX<BusinessTypeDO>()
-                        .inIfPresent(BusinessTypeDO::getCode, targetCodes)
-                        .eq(BusinessTypeDO::getDeleted, false)
+        List<EntityTypeDO> children = entityTypeMapper.selectList(
+                new LambdaQueryWrapperX<EntityTypeDO>()
+                        .inIfPresent(EntityTypeDO::getCode, targetCodes)
+                        .eq(EntityTypeDO::getDeleted, false)
         );
         return children.stream().map(this::convertToVO).toList();
     }
@@ -463,9 +463,9 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      * - 动态建表/迁移流程前置判断。
      */
     @Override
-    public boolean isDedicatedStorage(String businessTypeCode) {
-        BusinessTypeDO businessType = businessTypeMapper.selectByCode(businessTypeCode);
-        return businessType != null && "DEDICATED".equals(businessType.getStorageType());
+    public boolean isDedicatedStorage(String entityTypeCode) {
+        EntityTypeDO entityType = entityTypeMapper.selectByCode(entityTypeCode);
+        return entityType != null && "DEDICATED".equals(entityType.getStorageType());
     }
 
     /**
@@ -478,11 +478,11 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateStatus(Long id, String status) {
-        BusinessTypeDO businessType = businessTypeMapper.selectById(id);
-        if (businessType == null) {
+        EntityTypeDO entityType = entityTypeMapper.selectById(id);
+        if (entityType == null) {
             throw new ServiceException(404, "业务类型不存在");
         }
-        businessTypeMapper.updateById(BusinessTypeDO.builder()
+        entityTypeMapper.updateById(EntityTypeDO.builder()
                 .id(id)
                 .status(status)
                 .build());
@@ -496,7 +496,7 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      * - 系统级能力开关控制。
      */
     @Override
-    public List<BusinessTypeRespVO> listSystemBusinessTypes() {
+    public List<EntityTypeRespVO> listSystemEntityTypes() {
         return listAll().stream()
                 .filter(this::isSystemType)
                 .toList();
@@ -510,7 +510,7 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      * - 与系统内置业务分组展示。
      */
     @Override
-    public List<BusinessTypeRespVO> listUserBusinessTypes() {
+    public List<EntityTypeRespVO> listUserEntityTypes() {
         return listAll().stream()
                 .filter(bt -> !isSystemType(bt))
                 .toList();
@@ -524,8 +524,8 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      * - 模型选择联动。
      */
     @Override
-    public List<ModelRespVO> getModels(String businessTypeCode) {
-        return modelService.listModelsByBusinessType(businessTypeCode);
+    public List<ModelRespVO> getModels(String entityTypeCode) {
+        return modelService.listModelsByEntityType(entityTypeCode);
     }
 
     /**
@@ -570,13 +570,13 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      * - 运维巡检指标聚合。
      */
     @Override
-    public Map<String, Object> getBusinessTypeStatistics(String businessTypeCode) {
+    public Map<String, Object> getEntityTypeStatistics(String entityTypeCode) {
         Map<String, Object> stats = new HashMap<>();
 
-        Long modelCount = modelMapper.selectCountByBusinessTypeCode(businessTypeCode);
+        Long modelCount = modelMapper.selectCountByEntityTypeCode(entityTypeCode);
         stats.put("modelCount", modelCount);
 
-        Long entityCount = entityRepository.countByBusinessTypeCode(businessTypeCode);
+        Long entityCount = entityRepository.countByEntityTypeCode(entityTypeCode);
         stats.put("entityCount", entityCount);
 
         return stats;
@@ -590,77 +590,77 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
      * - 前端按钮显隐控制。
      */
     @Override
-    public boolean isSystemBusinessType(String businessTypeCode) {
+    public boolean isSystemEntityType(String entityTypeCode) {
         return listAll().stream()
-                .filter(bt -> businessTypeCode.equals(bt.getCode()))
+                .filter(bt -> entityTypeCode.equals(bt.getCode()))
                 .anyMatch(this::isSystemType);
     }
 
-    private boolean isSystemType(BusinessTypeRespVO businessType) {
-        return BusinessTypeDO.TYPE_LEVEL_SYSTEM.equals(businessType.getTypeLevel());
+    private boolean isSystemType(EntityTypeRespVO entityType) {
+        return EntityTypeDO.TYPE_LEVEL_SYSTEM.equals(entityType.getTypeLevel());
     }
 
-    private void copyBaseFields(BusinessTypeDO businessType, BusinessTypeBaseVO reqVO) {
-        businessType.setCode(reqVO.getCode());
-        businessType.setName(reqVO.getName());
-        businessType.setSort(reqVO.getSort());
-        businessType.setStatus(reqVO.getStatus());
-        businessType.setDescription(reqVO.getDescription());
-        businessType.setIcon(reqVO.getIcon());
-        businessType.setAlias(reqVO.getAlias());
-        businessType.setAssociationFields(reqVO.getAssociationFields());
-        businessType.setParentId(reqVO.getParentId());
+    private void copyBaseFields(EntityTypeDO entityType, EntityTypeBaseVO reqVO) {
+        entityType.setCode(reqVO.getCode());
+        entityType.setName(reqVO.getName());
+        entityType.setSort(reqVO.getSort());
+        entityType.setStatus(reqVO.getStatus());
+        entityType.setDescription(reqVO.getDescription());
+        entityType.setIcon(reqVO.getIcon());
+        entityType.setAlias(reqVO.getAlias());
+        entityType.setAssociationFields(reqVO.getAssociationFields());
+        entityType.setParentId(reqVO.getParentId());
         // Copy storage config fields
-        businessType.setStorageType(reqVO.getStorageType());
-        businessType.setDedicatedTableName(reqVO.getDedicatedTableName());
-        businessType.setPhysicalColumnMapping(reqVO.getPhysicalColumnMapping());
-        businessType.setEnableRuleEngine(reqVO.getEnableRuleEngine());
+        entityType.setStorageType(reqVO.getStorageType());
+        entityType.setDedicatedTableName(reqVO.getDedicatedTableName());
+        entityType.setPhysicalColumnMapping(reqVO.getPhysicalColumnMapping());
+        entityType.setEnableRuleEngine(reqVO.getEnableRuleEngine());
     }
 
-    private BusinessTypeSimpleVO convertToSimpleVO(BusinessTypeDO businessType) {
-        BusinessTypeSimpleVO vo = new BusinessTypeSimpleVO();
-        vo.setCode(businessType.getCode());
-        vo.setName(businessType.getName());
-        vo.setDescription(businessType.getDescription());
+    private EntityTypeSimpleVO convertToSimpleVO(EntityTypeDO entityType) {
+        EntityTypeSimpleVO vo = new EntityTypeSimpleVO();
+        vo.setCode(entityType.getCode());
+        vo.setName(entityType.getName());
+        vo.setDescription(entityType.getDescription());
         return vo;
     }
 
-    private BusinessTypeRespVO convertToVO(BusinessTypeDO businessType) {
-        BusinessTypeRespVO vo = new BusinessTypeRespVO();
-        vo.setId(businessType.getId());
-        vo.setName(businessType.getName());
-        vo.setCode(businessType.getCode());
-        vo.setSort(businessType.getSort());
-        vo.setStatus(businessType.getStatus());
-        vo.setDescription(businessType.getDescription());
-        vo.setIcon(businessType.getIcon());
-        vo.setAlias(businessType.getAlias());
-        vo.setAssociationFields(businessType.getAssociationFields());
-        vo.setTypeLevel(businessType.getTypeLevel());
-        vo.setParentId(businessType.getParentId());
-        vo.setCreateTime(businessType.getCreateTime());
+    private EntityTypeRespVO convertToVO(EntityTypeDO entityType) {
+        EntityTypeRespVO vo = new EntityTypeRespVO();
+        vo.setId(entityType.getId());
+        vo.setName(entityType.getName());
+        vo.setCode(entityType.getCode());
+        vo.setSort(entityType.getSort());
+        vo.setStatus(entityType.getStatus());
+        vo.setDescription(entityType.getDescription());
+        vo.setIcon(entityType.getIcon());
+        vo.setAlias(entityType.getAlias());
+        vo.setAssociationFields(entityType.getAssociationFields());
+        vo.setTypeLevel(entityType.getTypeLevel());
+        vo.setParentId(entityType.getParentId());
+        vo.setCreateTime(entityType.getCreateTime());
         // Copy storage config fields
-        vo.setStorageType(businessType.getStorageType());
-        vo.setDedicatedTableName(businessType.getDedicatedTableName());
-        vo.setPhysicalColumnMapping(businessType.getPhysicalColumnMapping());
-        vo.setEnableRuleEngine(businessType.getEnableRuleEngine());
+        vo.setStorageType(entityType.getStorageType());
+        vo.setDedicatedTableName(entityType.getDedicatedTableName());
+        vo.setPhysicalColumnMapping(entityType.getPhysicalColumnMapping());
+        vo.setEnableRuleEngine(entityType.getEnableRuleEngine());
         return vo;
     }
 
-    private void createRelationFieldForBusinessType(BusinessTypeDO businessType) {
+    private void createRelationFieldForEntityType(EntityTypeDO entityType) {
         try {
             FieldCreateReqVO fieldReqVO = new FieldCreateReqVO();
-            fieldReqVO.setName("关联" + businessType.getName());
+            fieldReqVO.setName("关联" + entityType.getName());
             fieldReqVO.setType("REF_Multi");
-            fieldReqVO.setDescription("系统自动创建的关联字段模板,用于关联" + businessType.getName());
+            fieldReqVO.setDescription("系统自动创建的关联字段模板,用于关联" + entityType.getName());
             fieldReqVO.setSource("SYSTEM");
             fieldReqVO.setStatus(1);
-            fieldReqVO.setTargetBusinessType(businessType.getCode());
-            fieldReqVO.setTargetBusinessTypeName(businessType.getName());
+            fieldReqVO.setTargetEntityType(entityType.getCode());
+            fieldReqVO.setTargetEntityTypeName(entityType.getName());
             fieldService.createField(fieldReqVO);
         } catch (Exception e) {
-            log.warn("[createRelationFieldForBusinessType][关联字段模板创建失败: {}, error={}]",
-                    businessType.getCode(), e.getMessage());
+            log.warn("[createRelationFieldForEntityType][关联字段模板创建失败: {}, error={}]",
+                    entityType.getCode(), e.getMessage());
         }
     }
 }

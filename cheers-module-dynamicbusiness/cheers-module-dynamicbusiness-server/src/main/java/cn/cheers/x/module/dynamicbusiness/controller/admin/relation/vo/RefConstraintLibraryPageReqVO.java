@@ -11,7 +11,7 @@ import lombok.EqualsAndHashCode;
 public class RefConstraintLibraryPageReqVO extends PageParam {
 
     @Schema(description = "业务类型编码", example = "personnel")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "Ref 目标类型", example = "personnel")
     private String refTargetType;

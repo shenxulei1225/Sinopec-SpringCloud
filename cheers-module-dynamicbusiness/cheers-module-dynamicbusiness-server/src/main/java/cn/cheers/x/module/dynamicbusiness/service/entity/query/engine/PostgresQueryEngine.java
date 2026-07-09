@@ -1041,7 +1041,7 @@ public class PostgresQueryEngine implements QueryEngine {
         public EntityDO mapRow(ResultSet rs, int rowNum) throws SQLException {
             EntityDO entity = new EntityDO();
             entity.setId(rs.getLong(prefix + "id"));
-            entity.setBusinessTypeCode(rs.getString(prefix + "business_type_code"));
+            entity.setEntityTypeCode(rs.getString(prefix + "entity_type_code"));
             entity.setModelId(rs.getLong(prefix + "model_id"));
             entity.setParentId(rs.getLong(prefix + "parent_id"));
             entity.setName(rs.getString(prefix + "name"));

@@ -1,5 +1,6 @@
 package cn.cheers.x.module.platformresource.controller.admin.component.vo;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -13,8 +14,9 @@ public class ComponentDataSourceVO {
     @Schema(description = "业务分类：dynamic（动态业务）/ system（系统业务）", example = "dynamic")
     private String businessCategory;
 
-    @Schema(description = "业务类型编码（动态业务类型与系统模块编码统一）", example = "equipment")
-    private String businessTypeCode;
+    @Schema(description = "实体类型编码（动态业务类型与系统模块编码统一）", example = "equipment")
+    @JsonAlias("businessTypeCode")
+    private String entityTypeCode;
 
     @Schema(description = "数据类型：model / entity；system 恒为 entity", example = "entity")
     private String dataKind;

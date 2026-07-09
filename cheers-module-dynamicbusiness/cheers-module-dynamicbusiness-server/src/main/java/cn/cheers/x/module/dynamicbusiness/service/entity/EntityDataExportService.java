@@ -34,7 +34,7 @@ public interface EntityDataExportService {
      *
      * @param modelId 模型ID（可选，用于生成带字段说明的模板）
      * @return 模板数据列表
-     * @deprecated 使用 {@link #getImportTemplate(String, Long)} 代替，需要传递 businessTypeCode
+     * @deprecated 使用 {@link #getImportTemplate(String, Long)} 代替，需要传递 entityTypeCode
      */
     @Deprecated
     List<EntityImportExcelVO> getImportTemplate(Long modelId);
@@ -42,11 +42,11 @@ public interface EntityDataExportService {
     /**
      * 获取导入模板数据（指定业务类型）
      *
-     * @param businessTypeCode 业务类型编码（必填）
+     * @param entityTypeCode 业务类型编码（必填）
      * @param modelId 模型ID（可选，用于生成带字段说明的模板）
      * @return 模板数据列表
      */
-    List<EntityImportExcelVO> getImportTemplate(String businessTypeCode, Long modelId);
+    List<EntityImportExcelVO> getImportTemplate(String entityTypeCode, Long modelId);
 
     /**
      * 导出为 CSV 格式

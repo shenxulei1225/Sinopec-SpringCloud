@@ -27,7 +27,7 @@ import org.apache.ibatis.type.JdbcType;
  *
  * <p>索引语义：</p>
  * <ul>
- *   <li>唯一键是 (businessTypeCode, modelId, tenantId)；</li>
+ *   <li>唯一键是 (entityTypeCode, modelId, tenantId)；</li>
  *   <li>按模型增量更新，不影响同业务下其他模型。</li>
  * </ul>
  */
@@ -46,17 +46,17 @@ public class ModelCrudFormDefinitionDO extends TenantBaseDO {
     private Long id;
 
     /**
-     * 业务类型编码（businessTypeCode）。
+     * 业务类型编码（entityTypeCode）。
      *
      * <p>表单定义的业务域边界，用于与能力全集/投影一致定位。</p>
      */
-    @TableField("business_type_code")
-    private String businessTypeCode;
+    @TableField("entity_type_code")
+    private String entityTypeCode;
 
     /**
      * 模型编号（modelId）。
      *
-     * <p>同一 businessTypeCode 下的细粒度模型索引。</p>
+     * <p>同一 entityTypeCode 下的细粒度模型索引。</p>
      */
     @TableField("model_id")
     private Long modelId;

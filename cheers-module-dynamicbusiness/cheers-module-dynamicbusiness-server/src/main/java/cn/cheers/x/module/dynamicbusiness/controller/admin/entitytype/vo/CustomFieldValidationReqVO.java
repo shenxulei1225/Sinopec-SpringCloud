@@ -1,4 +1,4 @@
-package cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo;
+package cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -14,7 +14,7 @@ import java.util.Map;
  * 
  * <h3>应用场景</h3>
  * <ul>
- *   <li><b>接口</b>：POST /system/business-type/validate-custom-fields</li>
+ *   <li><b>接口</b>：POST /system/entity-type/validate-custom-fields</li>
  *   <li><b>场景1</b>：实体创建/更新前，验证自定义字段数据的合法性</li>
  *   <li><b>场景2</b>：批量导入数据时，预校验自定义字段格式</li>
  *   <li><b>场景3</b>：表单提交前的前端预校验（可选）</li>

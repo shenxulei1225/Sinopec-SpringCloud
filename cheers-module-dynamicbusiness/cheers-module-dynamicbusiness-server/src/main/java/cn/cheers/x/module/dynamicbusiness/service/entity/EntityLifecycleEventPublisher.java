@@ -23,43 +23,43 @@ public class EntityLifecycleEventPublisher {
 
     private final ApplicationEventPublisher eventPublisher;
 
-    public void publishEntityCreatedEvent(Long modelId, Long entityId, String businessTypeCode, EntityDO entity) {
+    public void publishEntityCreatedEvent(Long modelId, Long entityId, String entityTypeCode, EntityDO entity) {
         try {
             if (entity != null) {
                 eventPublisher.publishEvent(new EntitySavedEvent(entity));
             }
-            eventPublisher.publishEvent(EntityChangeEvent.created(this, modelId, entityId, businessTypeCode));
+            eventPublisher.publishEvent(EntityChangeEvent.created(this, modelId, entityId, entityTypeCode));
         } catch (Exception e) {
             log.warn("[publishEntityCreatedEvent] 发布事件失败: entityId={}", entityId, e);
         }
     }
 
-    public void publishEntityUpdatedEvent(Long modelId, Long entityId, String businessTypeCode,
+    public void publishEntityUpdatedEvent(Long modelId, Long entityId, String entityTypeCode,
             List<String> changedFields, EntityDO entity) {
         try {
             if (entity != null) {
                 eventPublisher.publishEvent(new EntityUpdatedEvent(entity));
             }
-            eventPublisher.publishEvent(EntityChangeEvent.updated(this, modelId, entityId, businessTypeCode, changedFields));
+            eventPublisher.publishEvent(EntityChangeEvent.updated(this, modelId, entityId, entityTypeCode, changedFields));
         } catch (Exception e) {
             log.warn("[publishEntityUpdatedEvent] 发布事件失败: entityId={}", entityId, e);
         }
     }
 
-    public void publishEntityDeletedEvent(Long modelId, Long entityId, String businessTypeCode) {
+    public void publishEntityDeletedEvent(Long modelId, Long entityId, String entityTypeCode) {
         try {
             eventPublisher.publishEvent(new EntityDeletedEvent(entityId));
-            eventPublisher.publishEvent(EntityChangeEvent.deleted(this, modelId, entityId, businessTypeCode));
+            eventPublisher.publishEvent(EntityChangeEvent.deleted(this, modelId, entityId, entityTypeCode));
         } catch (Exception e) {
             log.warn("[publishEntityDeletedEvent] 发布事件失败: entityId={}", entityId, e);
         }
     }
 
     public void publishEntityNameChangedEvent(Long entityId, String oldName, String newName,
-            String businessTypeCode, String modelCode, Long tenantId) {
+            String entityTypeCode, String modelCode, Long tenantId) {
         try {
             eventPublisher.publishEvent(new EntityNameChangedEvent(
-                    this, entityId, oldName, newName, businessTypeCode, modelCode, tenantId));
+                    this, entityId, oldName, newName, entityTypeCode, modelCode, tenantId));
         } catch (Exception e) {
             log.warn("[publishEntityNameChangedEvent] 发布事件失败: entityId={}", entityId, e);
         }

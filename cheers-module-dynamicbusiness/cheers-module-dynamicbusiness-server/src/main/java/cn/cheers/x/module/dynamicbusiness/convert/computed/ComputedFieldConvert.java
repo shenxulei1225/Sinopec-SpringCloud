@@ -32,7 +32,7 @@ public interface ComputedFieldConvert {
         field.setFieldCode(reqVO.getFieldCode());
         field.setComputeType(reqVO.getComputeType());
         field.setAggregateFunction(reqVO.getAggregateFunction());
-        field.setTargetBusinessType(reqVO.getTargetBusinessType());
+        field.setTargetEntityType(reqVO.getTargetEntityType());
         field.setTargetModelCode(reqVO.getTargetModelCode());
         field.setTargetFieldCode(reqVO.getTargetFieldCode());
         field.setRelationCondition(reqVO.getRelationCondition());
@@ -61,7 +61,7 @@ public interface ComputedFieldConvert {
         field.setFieldCode(reqVO.getFieldCode());
         field.setComputeType(reqVO.getComputeType());
         field.setAggregateFunction(reqVO.getAggregateFunction());
-        field.setTargetBusinessType(reqVO.getTargetBusinessType());
+        field.setTargetEntityType(reqVO.getTargetEntityType());
         field.setTargetModelCode(reqVO.getTargetModelCode());
         field.setTargetFieldCode(reqVO.getTargetFieldCode());
         field.setRelationCondition(reqVO.getRelationCondition());
@@ -96,7 +96,7 @@ public interface ComputedFieldConvert {
         
         // 聚合统计配置
         vo.setAggregateFunction(field.getAggregateFunction());
-        vo.setTargetBusinessType(field.getTargetBusinessType());
+        vo.setTargetEntityType(field.getTargetEntityType());
         vo.setTargetModelCode(field.getTargetModelCode());
         vo.setTargetFieldCode(field.getTargetFieldCode());
         vo.setRelationCondition(field.getRelationCondition());

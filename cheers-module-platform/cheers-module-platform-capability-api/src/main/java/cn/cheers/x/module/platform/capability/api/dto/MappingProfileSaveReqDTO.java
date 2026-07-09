@@ -17,8 +17,8 @@ public class MappingProfileSaveReqDTO {
     @NotBlank(message = "id 不能为空")
     private String id;
 
-    @NotBlank(message = "businessTypeCode 不能为空")
-    private String businessTypeCode;
+    @NotBlank(message = "entityTypeCode 不能为空")
+    private String entityTypeCode;
 
     @NotBlank(message = "sourceModelCode 不能为空")
     private String sourceModelCode;

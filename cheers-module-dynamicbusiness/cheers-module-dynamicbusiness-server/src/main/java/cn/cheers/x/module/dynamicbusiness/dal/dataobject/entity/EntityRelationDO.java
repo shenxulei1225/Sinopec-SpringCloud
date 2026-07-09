@@ -20,7 +20,7 @@ import lombok.*;
  * V1.0.33 扩展：新增字段支持高效的反向查询和统计
  * - fieldCode: 关联来源字段编码
  * - sourceModelCode/targetModelCode: Model 编码，用于按 Model 分组
- * - sourceBusinessTypeCode/targetBusinessTypeCode: 业务类型编码，用于跨业务类型查询
+ * - sourceEntityTypeCode/targetEntityTypeCode: 业务类型编码，用于跨业务类型查询
  */
 @TableName("dynamic_entity_relation")
 @KeySequence("dynamic_entity_relation_seq")
@@ -109,12 +109,12 @@ public class EntityRelationDO extends TenantBaseDO {
      * 用于跨业务类型查询
      * 例如："task_management"、"device_management"
      */
-    private String sourceBusinessTypeCode;
+    private String sourceEntityTypeCode;
 
     /**
      * 目标业务类型编码
      * 用于跨业务类型查询
      * 例如："personnel_management"、"device_management"
      */
-    private String targetBusinessTypeCode;
+    private String targetEntityTypeCode;
 }

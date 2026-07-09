@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS platform_policy_template (
 
 CREATE TABLE IF NOT EXISTS platform_policy_set (
     id                  VARCHAR(36) PRIMARY KEY,
-    business_type_code  VARCHAR(64)  NOT NULL,
+    entity_type_code  VARCHAR(64)  NOT NULL,
     template_id         VARCHAR(64)  NOT NULL,
     status              VARCHAR(16)  NOT NULL,
     version             INTEGER      NOT NULL DEFAULT 0,
@@ -32,13 +32,13 @@ CREATE TABLE IF NOT EXISTS platform_policy_set (
 );
 
 CREATE INDEX IF NOT EXISTS idx_platform_policy_set_btc
-    ON platform_policy_set (business_type_code);
+    ON platform_policy_set (entity_type_code);
 
 CREATE TABLE IF NOT EXISTS platform_policy_snapshot (
     id                  VARCHAR(64) PRIMARY KEY,
     policy_set_id       VARCHAR(36)  NOT NULL,
     policy_set_version  INTEGER      NOT NULL,
-    business_type_code  VARCHAR(64)  NOT NULL,
+    entity_type_code  VARCHAR(64)  NOT NULL,
     platform_law_version VARCHAR(32) NOT NULL DEFAULT '2.4.0-mvp',
     resolved_spec       JSONB        NOT NULL,
     provenance_index    JSONB        NOT NULL DEFAULT '[]',

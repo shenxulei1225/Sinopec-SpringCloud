@@ -2,7 +2,7 @@ SET search_path TO platform;
 
 CREATE TABLE IF NOT EXISTS platform_mapping_profile (
     id                      VARCHAR(64)  PRIMARY KEY,
-    business_type_code      VARCHAR(64)  NOT NULL,
+    entity_type_code      VARCHAR(64)  NOT NULL,
     source_model_code       VARCHAR(64)  NOT NULL,
     display_name            VARCHAR(128),
     field_mappings          JSONB        NOT NULL DEFAULT '{}',
@@ -18,5 +18,5 @@ CREATE TABLE IF NOT EXISTS platform_mapping_profile (
 );
 
 CREATE INDEX IF NOT EXISTS idx_platform_mapping_profile_btc
-    ON platform_mapping_profile (business_type_code)
+    ON platform_mapping_profile (entity_type_code)
     WHERE deleted = FALSE;

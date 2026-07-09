@@ -1,4 +1,4 @@
-package cn.cheers.x.module.dynamicbusiness.enums.businesstype;
+package cn.cheers.x.module.dynamicbusiness.enums.entitytype;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -104,7 +104,7 @@ public enum StorageTypeEnum {
      * 
      * <h3>特点</h3>
      * <ul>
-     *   <li>使用专用表（如 biz_equipment）</li>
+     *   <li>使用专用表（如 ent_equipment）</li>
      *   <li>统一使用 JdbcTemplate 实现</li>
      *   <li>纯配置驱动，无需编写专用策略类</li>
      *   <li>支持渐进式优化：先用 JSONB，后续按需添加物理列映射</li>
@@ -115,14 +115,14 @@ public enum StorageTypeEnum {
      * // 无物理列映射（原 DYNAMIC 行为）
      * {
      *   "storageType": "DEDICATED",
-     *   "dedicatedTableName": "biz_task",
+     *   "dedicatedTableName": "ent_task",
      *   "physicalColumnMapping": null
      * }
      * 
      * // 有物理列映射（原 STATIC 行为）
      * {
      *   "storageType": "DEDICATED",
-     *   "dedicatedTableName": "biz_equipment",
+     *   "dedicatedTableName": "ent_equipment",
      *   "physicalColumnMapping": {
      *     "code": {"column": "code", "type": "VARCHAR"},
      *     "manufacturer": {"column": "manufacturer", "type": "VARCHAR"}

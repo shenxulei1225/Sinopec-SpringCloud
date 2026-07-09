@@ -17,7 +17,7 @@ public class ProcessCapabilityBindingApiImpl implements ProcessCapabilityBinding
     private ProcessCapabilityBindingService processCapabilityBindingService;
 
     @Override
-    public CommonResult<ProcessCapabilityBindingRespDTO> getPublishedBinding(String businessTypeCode) {
-        return success(processCapabilityBindingService.getPublishedBinding(businessTypeCode));
+    public CommonResult<ProcessCapabilityBindingRespDTO> getPublishedBinding(String entityTypeCode) {
+        return success(processCapabilityBindingService.getPublishedBinding(entityTypeCode));
     }
 }

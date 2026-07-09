@@ -17,7 +17,7 @@ public class RefConstraintLibraryUpdateReqVO {
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "personnel")
     @NotBlank(message = "业务类型编码不能为空")
     @Size(max = 64, message = "业务类型编码长度不能超过64个字符")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "Ref 目标类型", example = "personnel")
     @Size(max = 64, message = "Ref 目标类型长度不能超过64个字符")

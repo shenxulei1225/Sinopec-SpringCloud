@@ -12,7 +12,7 @@ import lombok.Data;
 public class BusinessCapabilityFullRespVO {
 
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "完整能力契约结构体", requiredMode = Schema.RequiredMode.REQUIRED)
     private BusinessCapabilityFullContract capabilityFull;

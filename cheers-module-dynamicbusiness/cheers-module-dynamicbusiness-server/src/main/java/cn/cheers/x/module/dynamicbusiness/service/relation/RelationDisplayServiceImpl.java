@@ -42,7 +42,7 @@ public class RelationDisplayServiceImpl implements RelationDisplayService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public String getDisplayValue(String targetBusinessType, String targetModelCode,
+    public String getDisplayValue(String targetEntityType, String targetModelCode,
                                    Long entityId, String displayFieldCode) {
         if (entityId == null) {
             return null;
@@ -50,23 +50,23 @@ public class RelationDisplayServiceImpl implements RelationDisplayService {
 
         // 获取实际使用的展示字段编码
         String effectiveFieldCode = getEffectiveDisplayFieldCode(
-                targetBusinessType, targetModelCode, displayFieldCode);
+                targetEntityType, targetModelCode, displayFieldCode);
 
         // 查询实体（通过 EntityService 支持多存储策略）
         EntityRespVO entity;
         try {
             EntityDO entityDO;
-            if (targetBusinessType != null && !targetBusinessType.isEmpty()) {
-                entityDO = entityCoreService.get(entityId, targetBusinessType);
+            if (targetEntityType != null && !targetEntityType.isEmpty()) {
+                entityDO = entityCoreService.get(entityId, targetEntityType);
             } else {
-                // 没有 businessTypeCode 时，尝试使用 null（通用表）
-                log.warn("[getDisplayValue][未指定 businessTypeCode，entityId={}，尝试从通用表查询]", entityId);
+                // 没有 entityTypeCode 时，尝试使用 null（通用表）
+                log.warn("[getDisplayValue][未指定 entityTypeCode，entityId={}，尝试从通用表查询]", entityId);
                 entityDO = entityCoreService.get(entityId, null);
             }
             entity = entityDO != null ? EntityDoVoHelper.toRespVO(entityDO, customFieldValidationService) : null;
         } catch (Exception e) {
             log.warn("[getDisplayValue][查询实体失败，entityId={}, businessType={}]", 
-                    entityId, targetBusinessType, e);
+                    entityId, targetEntityType, e);
             return String.valueOf(entityId);
         }
         
@@ -79,7 +79,7 @@ public class RelationDisplayServiceImpl implements RelationDisplayService {
     }
 
     @Override
-    public Map<Long, String> getDisplayValues(String targetBusinessType, String targetModelCode,
+    public Map<Long, String> getDisplayValues(String targetEntityType, String targetModelCode,
                                                List<Long> entityIds, String displayFieldCode) {
         Map<Long, String> result = new HashMap<>();
         if (entityIds == null || entityIds.isEmpty()) {
@@ -88,7 +88,7 @@ public class RelationDisplayServiceImpl implements RelationDisplayService {
 
         // 获取实际使用的展示字段编码
         String effectiveFieldCode = getEffectiveDisplayFieldCode(
-                targetBusinessType, targetModelCode, displayFieldCode);
+                targetEntityType, targetModelCode, displayFieldCode);
 
         // 批量查询实体（通过 EntityService 支持多存储策略）
         List<EntityRespVO> entities = new ArrayList<>();
@@ -97,8 +97,8 @@ public class RelationDisplayServiceImpl implements RelationDisplayService {
         for (Long entityId : entityIds) {
             try {
                 EntityDO entityDO;
-                if (targetBusinessType != null && !targetBusinessType.isEmpty()) {
-                    entityDO = entityCoreService.get(entityId, targetBusinessType);
+                if (targetEntityType != null && !targetEntityType.isEmpty()) {
+                    entityDO = entityCoreService.get(entityId, targetEntityType);
                 } else {
                     entityDO = entityCoreService.get(entityId, null);
                 }
@@ -107,7 +107,7 @@ public class RelationDisplayServiceImpl implements RelationDisplayService {
                 }
             } catch (Exception e) {
                 log.debug("[getDisplayValues][查询实体失败，entityId={}, businessType={}]", 
-                        entityId, targetBusinessType);
+                        entityId, targetEntityType);
             }
         }
 
@@ -128,7 +128,7 @@ public class RelationDisplayServiceImpl implements RelationDisplayService {
     }
 
     @Override
-    public String getEffectiveDisplayFieldCode(String targetBusinessType, String targetModelCode,
+    public String getEffectiveDisplayFieldCode(String targetEntityType, String targetModelCode,
                                                 String displayFieldCode) {
         // 1. 如果指定了 displayFieldCode，优先使用
         if (displayFieldCode != null && !displayFieldCode.isEmpty()) {
@@ -140,20 +140,20 @@ public class RelationDisplayServiceImpl implements RelationDisplayService {
     }
 
     @Override
-    public RelationDisplayInfo getDisplayInfo(String targetBusinessType, String targetModelCode,
+    public RelationDisplayInfo getDisplayInfo(String targetEntityType, String targetModelCode,
                                                Long entityId, String displayFieldCode) {
         RelationDisplayInfo info = new RelationDisplayInfo();
         info.setEntityId(entityId);
-        info.setTargetBusinessType(targetBusinessType);
+        info.setTargetEntityType(targetEntityType);
         info.setTargetModelCode(targetModelCode);
 
         // 获取实际使用的展示字段编码
         String effectiveFieldCode = getEffectiveDisplayFieldCode(
-                targetBusinessType, targetModelCode, displayFieldCode);
+                targetEntityType, targetModelCode, displayFieldCode);
         info.setDisplayFieldCode(effectiveFieldCode);
 
         // 获取展示值
-        String displayValue = getDisplayValue(targetBusinessType, targetModelCode,
+        String displayValue = getDisplayValue(targetEntityType, targetModelCode,
                 entityId, displayFieldCode);
         info.setDisplayValue(displayValue);
 

@@ -497,7 +497,7 @@ public class ComputedFieldServiceImpl implements ComputedFieldService {
                 throw ServiceExceptionUtil.exception(ErrorCodeConstants.COMPUTED_FIELD_FORMULA_SYNTAX_ERROR, 
                         "聚合统计必须指定聚合函数");
             }
-            if (!StringUtils.hasText(reqVO.getTargetBusinessType())) {
+            if (!StringUtils.hasText(reqVO.getTargetEntityType())) {
                 throw ServiceExceptionUtil.exception(ErrorCodeConstants.COMPUTED_FIELD_FORMULA_SYNTAX_ERROR, 
                         "聚合统计必须指定目标业务类型");
             }
@@ -737,7 +737,7 @@ public class ComputedFieldServiceImpl implements ComputedFieldService {
             StringBuilder sb = new StringBuilder();
             sb.append(getAggregateFunctionName(field.getAggregateFunction()));
             sb.append(" ");
-            sb.append(field.getTargetBusinessType());
+            sb.append(field.getTargetEntityType());
             if (StringUtils.hasText(field.getTargetModelCode())) {
                 sb.append("/").append(field.getTargetModelCode());
             }

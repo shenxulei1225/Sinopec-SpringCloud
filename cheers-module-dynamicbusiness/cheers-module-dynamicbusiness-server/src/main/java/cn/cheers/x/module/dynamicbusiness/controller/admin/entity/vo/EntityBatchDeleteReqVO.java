@@ -22,7 +22,7 @@ public class EntityBatchDeleteReqVO {
 
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
     @NotBlank(message = "业务类型编码不能为空")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "实体ID列表", requiredMode = Schema.RequiredMode.REQUIRED, example = "[1, 2, 3]")
     @NotEmpty(message = "实体ID列表不能为空")

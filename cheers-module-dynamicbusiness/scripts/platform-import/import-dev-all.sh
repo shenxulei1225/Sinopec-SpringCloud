@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 开发联调：system + corridor + station（站场包不存在时跳过）
+# 开发联调：Flyway 已由应用执行后，导入 system + corridor + station seed
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 bash "${SCRIPT_DIR}/system/import.sh"

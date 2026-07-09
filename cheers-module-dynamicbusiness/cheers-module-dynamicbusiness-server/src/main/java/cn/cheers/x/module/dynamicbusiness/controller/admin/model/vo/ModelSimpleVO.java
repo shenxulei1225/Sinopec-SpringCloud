@@ -30,5 +30,5 @@ public class ModelSimpleVO {
     private String name;
 
     @Schema(description = "业务类型编码", example = "task")
-    private String businessTypeCode;
+    private String entityTypeCode;
 }

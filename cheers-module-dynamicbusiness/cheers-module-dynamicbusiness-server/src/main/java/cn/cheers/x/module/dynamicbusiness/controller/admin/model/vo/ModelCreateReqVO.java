@@ -22,7 +22,7 @@ public class ModelCreateReqVO {
 
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
     @NotBlank(message = "业务类型编码不能为空")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "模型描述", example = "适用于消防设备的9kg泡沫灭火器A型号")
     private String description;

@@ -127,10 +127,10 @@ public class TemplateServiceImpl implements TemplateService {
     }
 
     @Override
-    public List<TemplateRespVO> listTemplates(String businessTypeCode) {
+    public List<TemplateRespVO> listTemplates(String entityTypeCode) {
         List<TemplateDO> templates;
-        if (StrUtil.isNotBlank(businessTypeCode)) {
-            templates = templateMapper.selectByBusinessTypeCode(businessTypeCode);
+        if (StrUtil.isNotBlank(entityTypeCode)) {
+            templates = templateMapper.selectByEntityTypeCode(entityTypeCode);
         } else {
             templates = templateMapper.selectList();
         }
@@ -145,11 +145,11 @@ public class TemplateServiceImpl implements TemplateService {
     }
 
     @Override
-    public List<TemplateRespVO> searchTemplates(String keyword, String businessTypeCode) {
+    public List<TemplateRespVO> searchTemplates(String keyword, String entityTypeCode) {
         if (StrUtil.isBlank(keyword)) {
-            return listTemplates(businessTypeCode);
+            return listTemplates(entityTypeCode);
         }
-        List<TemplateDO> templates = templateMapper.search(keyword, businessTypeCode);
+        List<TemplateDO> templates = templateMapper.search(keyword, entityTypeCode);
         return convertWithFieldCount(templates);
     }
 
@@ -166,7 +166,7 @@ public class TemplateServiceImpl implements TemplateService {
         TemplateDO newTemplate = new TemplateDO();
         newTemplate.setCode(generateTemplateCode());
         newTemplate.setName(newName);
-        newTemplate.setBusinessTypeCode(sourceTemplate.getBusinessTypeCode());
+        newTemplate.setEntityTypeCode(sourceTemplate.getEntityTypeCode());
         newTemplate.setDescription(sourceTemplate.getDescription());
         newTemplate.setStatus(sourceTemplate.getStatus());
         newTemplate.setIsSystem(false);  // 复制的模板不是系统模板
@@ -182,6 +182,7 @@ public class TemplateServiceImpl implements TemplateService {
             newAssignment.setSortOrder(sourceAssignment.getSortOrder());
             newAssignment.setRequired(sourceAssignment.getRequired());
             newAssignment.setDefaultValue(sourceAssignment.getDefaultValue());
+            syncTemplateAssignmentIdentity(newAssignment, newTemplate.getId(), sourceAssignment.getFieldId());
             templateFieldAssignmentMapper.insert(newAssignment);
         }
 
@@ -220,6 +221,7 @@ public class TemplateServiceImpl implements TemplateService {
         if (assignment.getRequired() == null) {
             assignment.setRequired(false);
         }
+        syncTemplateAssignmentIdentity(assignment, templateId, reqVO.getFieldId());
         templateFieldAssignmentMapper.insert(assignment);
 
         log.info("[assignFieldToTemplate][为模板分配字段成功，templateId={}, fieldId={}]", 
@@ -263,6 +265,7 @@ public class TemplateServiceImpl implements TemplateService {
             if (assignment.getRequired() == null) {
                 assignment.setRequired(false);
             }
+            syncTemplateAssignmentIdentity(assignment, templateId, reqVO.getFieldId());
             templateFieldAssignmentMapper.insert(assignment);
         }
 
@@ -389,5 +392,22 @@ public class TemplateServiceImpl implements TemplateService {
                     return respVO;
                 })
                 .collect(Collectors.toList());
+    }
+
+    /** 写入模板字段分配时同步 template_code + field_code（迁移以 code 为幂等键）。 */
+    private void syncTemplateAssignmentIdentity(TemplateFieldAssignmentDO assignment, Long templateId, Long fieldId) {
+        if (assignment == null) {
+            return;
+        }
+        TemplateDO template = templateMapper.selectById(templateId);
+        FieldDO field = fieldMapper.selectById(fieldId);
+        if (template != null) {
+            assignment.setTemplateId(template.getId());
+            assignment.setTemplateCode(template.getCode());
+        }
+        if (field != null) {
+            assignment.setFieldId(field.getId());
+            assignment.setFieldCode(field.getCode());
+        }
     }
 }

@@ -20,9 +20,9 @@ public interface RefConstraintLibraryService {
 
     PageResult<RefConstraintLibraryRespVO> getPage(RefConstraintLibraryPageReqVO reqVO);
 
-    List<RefConstraintLibraryRespVO> listByBusinessType(String businessTypeCode, String refTargetType);
+    List<RefConstraintLibraryRespVO> listByEntityType(String entityTypeCode, String refTargetType);
 
-    void validateConstraintType(String businessTypeCode, String refTargetType, String constraintType);
+    void validateConstraintType(String entityTypeCode, String refTargetType, String constraintType);
 
     List<RefConstraintLibraryRespVO> listAll();
 }

@@ -24,7 +24,7 @@ public class MappingProfileDO extends TenantBaseDO {
     @TableId
     private String id;
 
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     private String sourceModelCode;
 

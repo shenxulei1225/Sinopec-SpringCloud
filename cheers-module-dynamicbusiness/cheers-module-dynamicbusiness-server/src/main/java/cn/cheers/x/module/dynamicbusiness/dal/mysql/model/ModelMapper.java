@@ -21,9 +21,9 @@ public interface ModelMapper extends BaseMapperX<ModelDO> {
         /**
          * 根据业务类型编码查询模型列表
          */
-        default List<ModelDO> selectByBusinessTypeCode(String businessTypeCode) {
+        default List<ModelDO> selectByEntityTypeCode(String entityTypeCode) {
                 return selectList(new LambdaQueryWrapperX<ModelDO>()
-                        .eq(ModelDO::getBusinessTypeCode, businessTypeCode)
+                        .eq(ModelDO::getEntityTypeCode, entityTypeCode)
                         .eq(ModelDO::getStatus, 1)
                         .orderByAsc(ModelDO::getSort)
                         .orderByDesc(ModelDO::getCreateTime));
@@ -32,10 +32,10 @@ public interface ModelMapper extends BaseMapperX<ModelDO> {
         /**
          * 根据ID和业务类型编码查询模型
          */
-        default ModelDO selectByIdAndBusinessTypeCode(Long id, String businessTypeCode) {
+        default ModelDO selectByIdAndEntityTypeCode(Long id, String entityTypeCode) {
                 return selectOne(new LambdaQueryWrapperX<ModelDO>()
                         .eq(ModelDO::getId, id)
-                        .eq(ModelDO::getBusinessTypeCode, businessTypeCode));
+                        .eq(ModelDO::getEntityTypeCode, entityTypeCode));
         }
 
         /**
@@ -49,18 +49,18 @@ public interface ModelMapper extends BaseMapperX<ModelDO> {
         /**
          * 根据名称 + 业务类型查询模型（同一租户、同业务类型内唯一）
          */
-        default ModelDO selectByNameAndBusinessTypeCode(String name, String businessTypeCode) {
+        default ModelDO selectByNameAndEntityTypeCode(String name, String entityTypeCode) {
                 return selectOne(new LambdaQueryWrapperX<ModelDO>()
                         .eq(ModelDO::getName, name)
-                        .eq(ModelDO::getBusinessTypeCode, businessTypeCode));
+                        .eq(ModelDO::getEntityTypeCode, entityTypeCode));
         }
 
         /**
-         * 搜索模型（按名称、描述）- 单业务类型（businessTypeCode 必填）
+         * 搜索模型（按名称、描述）- 单业务类型（entityTypeCode 必填）
          */
-        default List<ModelDO> searchLikeInBusinessType(String keyword, String businessTypeCode) {
+        default List<ModelDO> searchLikeInEntityType(String keyword, String entityTypeCode) {
                 return selectList(new LambdaQueryWrapperX<ModelDO>()
-                        .eq(ModelDO::getBusinessTypeCode, businessTypeCode)
+                        .eq(ModelDO::getEntityTypeCode, entityTypeCode)
                         .and(StringUtils.isNotBlank(keyword), q -> q.like(ModelDO::getName, keyword)
                                 .or().like(ModelDO::getDescription, keyword))
                         .orderByAsc(ModelDO::getSort)
@@ -71,12 +71,12 @@ public interface ModelMapper extends BaseMapperX<ModelDO> {
         /**
          * 分页查询模型
          */
-        default PageResult<ModelDO> selectPage(String businessTypeCode, String keyword, Integer status, Integer pageNo, Integer pageSize) {
+        default PageResult<ModelDO> selectPage(String entityTypeCode, String keyword, Integer status, Integer pageNo, Integer pageSize) {
                 PageParam pageParam = new PageParam();
                 pageParam.setPageNo(pageNo);
                 pageParam.setPageSize(pageSize);
                 return selectPage(pageParam, new LambdaQueryWrapperX<ModelDO>()
-                        .eq(StringUtils.isNotBlank(businessTypeCode), ModelDO::getBusinessTypeCode, businessTypeCode)
+                        .eq(StringUtils.isNotBlank(entityTypeCode), ModelDO::getEntityTypeCode, entityTypeCode)
                         .eq(status != null, ModelDO::getStatus, status)
                         .and(StringUtils.isNotBlank(keyword), q -> q.like(ModelDO::getName, keyword)
                                 .or().like(ModelDO::getDescription, keyword))
@@ -88,9 +88,9 @@ public interface ModelMapper extends BaseMapperX<ModelDO> {
         /**
          * 查询业务类型下当前最大排序值
          */
-        default Integer selectMaxSortByBusinessTypeCode(String businessTypeCode) {
+        default Integer selectMaxSortByEntityTypeCode(String entityTypeCode) {
                 ModelDO one = selectOne(new LambdaQueryWrapperX<ModelDO>()
-                        .eq(ModelDO::getBusinessTypeCode, businessTypeCode)
+                        .eq(ModelDO::getEntityTypeCode, entityTypeCode)
                         .orderByDesc(ModelDO::getSort)
                         .last("LIMIT 1"));
                 return one != null && one.getSort() != null ? one.getSort() : 0;
@@ -99,9 +99,9 @@ public interface ModelMapper extends BaseMapperX<ModelDO> {
         /**
          * 统计业务类型下的模型数量
          */
-        default Long selectCountByBusinessTypeCode(String businessTypeCode) {
+        default Long selectCountByEntityTypeCode(String entityTypeCode) {
                 return selectCount(new LambdaQueryWrapperX<ModelDO>()
-                        .eq(ModelDO::getBusinessTypeCode, businessTypeCode));
+                        .eq(ModelDO::getEntityTypeCode, entityTypeCode));
         }
 }
 

@@ -96,11 +96,11 @@ public class RelationFieldLibraryController {
 
     @GetMapping("/available")
     @Operation(summary = "获取可用的关联字段列表")
-    @Parameter(name = "refBusinessType", description = "关联业务类型编码（可选过滤）", example = "personnel")
+    @Parameter(name = "refEntityType", description = "关联业务类型编码（可选过滤）", example = "personnel")
     @PreAuthorize("@ss.hasPermission('system:relation-field-library:query')")
     public CommonResult<List<RelationFieldLibraryRespVO>> getAvailableRelationFields(
-            @RequestParam(value = "refBusinessType", required = false) String refBusinessType) {
-        return success(relationFieldLibraryService.getAvailableRelationFields(refBusinessType));
+            @RequestParam(value = "refEntityType", required = false) String refEntityType) {
+        return success(relationFieldLibraryService.getAvailableRelationFields(refEntityType));
     }
 
     @GetMapping("/page")
@@ -122,24 +122,24 @@ public class RelationFieldLibraryController {
 
     @GetMapping("/check-target-exists")
     @Operation(summary = "检查关联目标是否存在")
-    @Parameter(name = "businessType", description = "业务类型编码", required = true, example = "personnel")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码", required = true, example = "personnel")
     @Parameter(name = "modelCode", description = "Model 编码", required = true, example = "employee")
     @PreAuthorize("@ss.hasPermission('system:relation-field-library:query')")
     public CommonResult<Boolean> checkTargetExists(
-            @RequestParam("businessType") String businessType,
+            @RequestParam("entityTypeCode") String entityType,
             @RequestParam("modelCode") String modelCode) {
-        return success(relationFieldLibraryService.checkTargetExists(businessType, modelCode));
+        return success(relationFieldLibraryService.checkTargetExists(entityType, modelCode));
     }
 
     @GetMapping("/target-names")
     @Operation(summary = "获取关联目标的名称信息")
-    @Parameter(name = "businessType", description = "业务类型编码", required = true, example = "personnel")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码", required = true, example = "personnel")
     @Parameter(name = "modelCode", description = "Model 编码", required = true, example = "employee")
     @PreAuthorize("@ss.hasPermission('system:relation-field-library:query')")
     public CommonResult<TargetNamesVO> getTargetNames(
-            @RequestParam("businessType") String businessType,
+            @RequestParam("entityTypeCode") String entityType,
             @RequestParam("modelCode") String modelCode) {
-        String[] names = relationFieldLibraryService.getTargetNames(businessType, modelCode);
+        String[] names = relationFieldLibraryService.getTargetNames(entityType, modelCode);
         return success(new TargetNamesVO(names[0], names[1]));
     }
 
@@ -147,7 +147,7 @@ public class RelationFieldLibraryController {
      * 关联目标名称信息 VO
      */
     public record TargetNamesVO(
-            String businessTypeName,
+            String entityTypeName,
             String modelName
     ) {}
 }

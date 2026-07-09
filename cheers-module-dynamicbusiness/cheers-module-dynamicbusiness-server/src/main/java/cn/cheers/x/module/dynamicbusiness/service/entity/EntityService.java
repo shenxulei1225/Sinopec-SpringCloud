@@ -30,7 +30,7 @@ import java.util.List;
  *
  * <p>Service 层负责业务逻辑处理，不关心数据存储细节。
  * 通过 Repository 层访问数据，底层使用 MyBatis-Plus 动态表名机制实现存储透明。
- * 支持通用表（dynamic_entity）和动态表（biz_{businessTypeCode}），对调用方完全透明。</p>
+ * 支持通用表（dynamic_entity）和动态表（ent_{entityTypeCode}），对调用方完全透明。</p>
  *
  * <h3>架构说明</h3>
  * <ul>
@@ -83,7 +83,7 @@ public interface EntityService {
      * 存储操作委托给 Repository 层，自动路由到对应的表。</p>
      *
      * @param id 实体ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @param forceDelete 是否强制删除（可为 null，默认 false）
      */
     void delete(EntityDeleteReqVO reqVO);
@@ -92,7 +92,7 @@ public interface EntityService {
      * CRUD 弹窗字段异步校验：当前支持实体 name 在同 model 下唯一。
      */
     EntityFieldAvailabilityRespVO checkFieldUnique(
-            String businessTypeCode,
+            String entityTypeCode,
             Long modelId,
             String fieldKey,
             String value,
@@ -127,17 +127,17 @@ public interface EntityService {
      * Service 层不关心数据存在哪个表，存储完全透明。</p>
      *
      * @param id 实体ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 实体详情
      */
-    EntityRespVO get(Long id, String businessTypeCode);
+    EntityRespVO get(Long id, String entityTypeCode);
 
     /**
      * 获取实体详情，可选填充关联字段数据（见 entity-detail-associations-design.md）。
      *
      * @param associationCategoryViews 多视角配置；null 或空时关联块为 default 扁平行（不解析分类）
      */
-    EntityRespVO get(Long id, String businessTypeCode, boolean includeAssociations,
+    EntityRespVO get(Long id, String entityTypeCode, boolean includeAssociations,
             List<AssociationCategoryViewReqVO> associationCategoryViews);
 
     /**
@@ -154,10 +154,10 @@ public interface EntityService {
      * 移动实体到新的父实体下，建立层级关系。
      * 比如设备下的子设备，子设备下的子设备
      * @param entityId 实体ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @param newParentId 新的父实体ID
      */
-    void moveEntity(Long entityId, String businessTypeCode, Long newParentId);
+    void moveEntity(Long entityId, String entityTypeCode, Long newParentId);
 
 
     /**
@@ -170,7 +170,7 @@ public interface EntityService {
      * <p><b>参数规则</b>：</p>
      * <ul>
      *   <li>{@code modelId}：必填，表示查询范围限定在该模型下。</li>
-     *   <li>{@code businessTypeCode}：建议传入。
+     *   <li>{@code entityTypeCode}：建议传入。
      *       当传入时用于明确存储路由与边界；
      *       当为空时由实现层根据 modelId 推导/校验业务类型。</li>
      * </ul>
@@ -183,16 +183,16 @@ public interface EntityService {
      *
      * <p><b>典型场景</b>：模型管理页、模型详情页、模型配置页中的实体树展示。</p>
      *
-     * @param businessTypeCode 业务类型编码（建议传入，提升路由明确性）
+     * @param entityTypeCode 业务类型编码（建议传入，提升路由明确性）
      * @param modelId 模型 ID（必填）
      * @return 模型范围内的实体树根节点列表
      */
-    List<EntityRespVO> getEntityTreeByModelId(String businessTypeCode, Long modelId);
+    List<EntityRespVO> getEntityTreeByModelId(String entityTypeCode, Long modelId);
 
     /**
      * 获取实体路径
      */
-    List<String> getEntityPath(Long entityId, String businessTypeCode);
+    List<String> getEntityPath(Long entityId, String entityTypeCode);
 
     // ==================== 分类关联操作（已移除，请直接使用 EntityCategoryRelationService）====================
 
@@ -214,19 +214,19 @@ public interface EntityService {
      * 包括点击操作和拖动后的刷新操作。</p>
      *
      * @param scene 查询场景（必填）
-     * @param businessTypeCode 业务类型编码（部分场景必填）
+     * @param entityTypeCode 业务类型编码（部分场景必填）
      * @param modelId 模型ID（部分场景必填）
      * @param categoryIds 分类ID列表（部分场景必填；单分类场景传单元素列表）
      * @param entityId 实体ID（部分场景必填）
      * @param rootEntityId 根实体ID（部分场景必填）
-     * @param entitySourceBusinessType 实体来源业务类型（模式C必填）
+     * @param entitySourceEntityType 实体来源业务类型（模式C必填）
      * @param pageNo 页码（LIST形态时使用，默认1）
      * @param pageSize 每页条数（LIST形态时使用，默认20）
      * @param keyword 搜索关键词（可选）
      * @return 分页结果，包含实体列表和总数（树形结构或平铺结构，根据场景而定）
      */
-    EntitySceneQueryRespVO queryEntities(EntityQueryScene scene, String resultShape, String resultDetail, String categoryTypeCode, String businessTypeCode,
-            List<Long> modelIds, List<Long> categoryIds, Long entityId, Long rootEntityId, String entitySourceBusinessType,
+    EntitySceneQueryRespVO queryEntities(EntityQueryScene scene, String resultShape, String resultDetail, String categoryTypeCode, String entityTypeCode,
+            List<Long> modelIds, List<Long> categoryIds, Long entityId, Long rootEntityId, String entitySourceEntityType,
             Integer pageNo, Integer pageSize, String keyword, List<FieldFilterReqVO> filters);
 
 
@@ -236,10 +236,10 @@ public interface EntityService {
      * <p>该接口返回单对象，不走分页语义。</p>
      *
      * @param categoryId 分类ID
-     * @param businessTypeCode 业务类型编码（可选，未传时按链接记录路由）
+     * @param entityTypeCode 业务类型编码（可选，未传时按链接记录路由）
      * @return 绑定实体详情，不存在时返回 null
      */
-    EntityRespVO getCategoryLinkedEntity(Long categoryId, String businessTypeCode);
+    EntityRespVO getCategoryLinkedEntity(Long categoryId, String entityTypeCode);
 
     // ==================== 批量操作相关方法 ====================
     /**
@@ -315,11 +315,11 @@ public interface EntityService {
      * 获取批量操作预览信息（指定业务类型）
      * 返回受影响的实体数量和详情
      *
-     * @param businessTypeCode 业务类型编码（必填）
+     * @param entityTypeCode 业务类型编码（必填）
      * @param ids 实体ID列表
      * @return 预览信息
      */
-    EntityBatchOperationRespVO getBatchOperationPreview(String businessTypeCode, List<Long> ids);
+    EntityBatchOperationRespVO getBatchOperationPreview(String entityTypeCode, List<Long> ids);
 
     // ==================== 预计算相关方法 ====================
 

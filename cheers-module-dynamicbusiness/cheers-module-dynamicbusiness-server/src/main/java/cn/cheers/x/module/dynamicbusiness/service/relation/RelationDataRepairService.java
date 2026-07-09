@@ -5,7 +5,7 @@ package cn.cheers.x.module.dynamicbusiness.service.relation;
  * 
  * 用于修复历史数据中缺失的关联信息，包括：
  * - 回填 ModelFieldAssignment 中缺失的 modelRelationId
- * - 回填 ModelFieldAssignment 中缺失的 targetBusinessType、targetModelCode
+ * - 回填 ModelFieldAssignment 中缺失的 targetEntityType、targetModelCode
  * 
  * 需求：5.1, 5.2, 5.3
  * 
@@ -19,7 +19,7 @@ public interface RelationDataRepairService {
      * 执行以下修复操作：
      * 1. 查找所有 ENTITY_REF 类型字段的 ModelFieldAssignment 记录
      * 2. 对于缺少 modelRelationId 的记录，尝试通过字段编码匹配 ModelRelation
-     * 3. 对于缺少 targetBusinessType/targetModelCode 的记录，从 RelationFieldLibrary 或 ModelRelation 回填
+     * 3. 对于缺少 targetEntityType/targetModelCode 的记录，从 RelationFieldLibrary 或 ModelRelation 回填
      * 
      * @return 修复结果统计
      */

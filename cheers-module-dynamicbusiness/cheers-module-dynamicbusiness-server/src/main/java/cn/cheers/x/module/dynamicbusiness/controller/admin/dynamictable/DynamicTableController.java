@@ -75,13 +75,13 @@ public class DynamicTableController {
         return success(convertToRespVO(dynamicTable));
     }
 
-    @GetMapping("/list-by-business-type")
+    @GetMapping("/list-by-entity-type")
     @Operation(summary = "根据业务类型获取动态表列表")
-    @Parameter(name = "businessTypeCode", description = "业务类型编码", required = true, example = "task")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码", required = true, example = "task")
     @PreAuthorize("@ss.hasPermission('system:dynamic-table:query')")
-    public CommonResult<List<DynamicTableRespVO>> listByBusinessType(
-            @RequestParam("businessTypeCode") String businessTypeCode) {
-        List<DynamicTableDO> list = dynamicTableService.listDynamicTablesByBusinessType(businessTypeCode);
+    public CommonResult<List<DynamicTableRespVO>> listByEntityType(
+            @RequestParam("entityTypeCode") String entityTypeCode) {
+        List<DynamicTableDO> list = dynamicTableService.listDynamicTablesByEntityType(entityTypeCode);
         return success(list.stream().map(this::convertToRespVO).collect(Collectors.toList()));
     }
 
@@ -189,7 +189,7 @@ public class DynamicTableController {
         DynamicTableRespVO respVO = new DynamicTableRespVO();
         respVO.setId(dynamicTable.getId());
         respVO.setModelId(dynamicTable.getModelId());
-        respVO.setBusinessTypeCode(dynamicTable.getBusinessTypeCode());
+        respVO.setEntityTypeCode(dynamicTable.getEntityTypeCode());
         respVO.setTableName(dynamicTable.getTableName());
         respVO.setTableComment(dynamicTable.getTableComment());
         respVO.setStatus(dynamicTable.getStatus());

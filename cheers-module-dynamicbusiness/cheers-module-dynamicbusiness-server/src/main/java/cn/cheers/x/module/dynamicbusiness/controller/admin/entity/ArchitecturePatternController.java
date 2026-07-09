@@ -191,16 +191,16 @@ public class ArchitecturePatternController {
             """
     )
     @Parameter(name = "entityId", description = "实体ID(必填)", required = true, example = "1001")
-    @Parameter(name = "businessTypeCode", description = "业务类型编码(必填,如 'equipment'、'region'),用于验证实体存在性", required = true, example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码(必填,如 'equipment'、'region'),用于验证实体存在性", required = true, example = "equipment")
     @PreAuthorize("@ss.hasPermission('system:entity:update')")
     public CommonResult<EntityCategoryAssociationRespVO> batchAssociateEntityToCategories(
             @RequestParam("entityId") Long entityId,
-            @RequestParam("businessTypeCode") String businessTypeCode,
+            @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestBody List<Long> categoryIds) {
         return success(entityCategoryRelationService.batchAssociateEntityToCategories(
                 entityId, 
                 categoryIds, 
-                businessTypeCode));
+                entityTypeCode));
     }
 
     @PostMapping("/entity/categories/disassociate")
@@ -215,12 +215,12 @@ public class ArchitecturePatternController {
     )
     @PreAuthorize("@ss.hasPermission('system:entity:update')")
     public CommonResult<Boolean> batchDisassociateEntityFromCategories(
-            @RequestParam("businessTypeCode") String businessTypeCode,
+            @RequestParam("entityTypeCode") String entityTypeCode,
             @Valid @RequestBody EntityCategoryDisassociationReqVO reqVO) {
         entityCategoryRelationService.batchDisassociateEntityFromCategories(
                 reqVO.getEntityId(), 
                 reqVO.getCategoryIds(),
-                businessTypeCode);
+                entityTypeCode);
         return success(true);
     }
 
@@ -243,16 +243,16 @@ public class ArchitecturePatternController {
             """
     )
     @Parameter(name = "entityId", description = "实体ID(必填)", required = true, example = "1001")
-    @Parameter(name = "businessTypeCode", description = "业务类型编码(必填,如 'equipment')", required = true, example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码(必填,如 'equipment')", required = true, example = "equipment")
     @PreAuthorize("@ss.hasPermission('system:entity:update')")
     public CommonResult<EntityCategoryAssociationRespVO> replaceEntityCategories(
             @RequestParam("entityId") Long entityId,
-            @RequestParam("businessTypeCode") String businessTypeCode,
+            @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestBody List<Long> categoryIds) {
         return success(entityCategoryRelationService.updateAssociation(
                 entityId, 
                 categoryIds, 
-                businessTypeCode));
+                entityTypeCode));
     }
 
     @GetMapping("/entity/by-category")
@@ -266,7 +266,7 @@ public class ArchitecturePatternController {
             - ✅ 自动包含所有子分类
             - ✅ 支持按 Model 过滤(modelId)
             - ✅ 支持分页查询(pageNo、pageSize)
-            - ✅ 支持跨业务类型查询(contentBusinessTypeCode)
+            - ✅ 支持跨业务类型查询(contentEntityTypeCode)
 
             **使用场景**:
             - 模式A(灵活分类视图):点击左侧分类树节点,右侧显示该分类下的实体列表(分页)
@@ -289,14 +289,14 @@ public class ArchitecturePatternController {
             """
     )
     @Parameter(name = "categoryId", description = "分类 ID(必填,会自动包含所有子分类)", required = true, example = "100")
-    @Parameter(name = "contentBusinessTypeCode", description = "内容业务类型编码(必填,用于跨业务类型查询)", required = true, example = "equipment")
+    @Parameter(name = "contentEntityTypeCode", description = "内容业务类型编码(必填,用于跨业务类型查询)", required = true, example = "equipment")
     @Parameter(name = "modelId", description = "Model ID(可选,用于进一步过滤实体)", example = "1")
     @Parameter(name = "pageNo", description = "页码(可选,默认1)", example = "1")
     @Parameter(name = "pageSize", description = "每页条数(可选,默认10)", example = "10")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<List<EntityRespVO>> getEntityByCategory(
             @RequestParam("categoryId") Long categoryId,
-            @RequestParam("contentBusinessTypeCode") String contentBusinessTypeCode,
+            @RequestParam("contentEntityTypeCode") String contentEntityTypeCode,
             @RequestParam(value = "modelId", required = false) Long modelId,
             @RequestParam(value = "pageNo", defaultValue = "1") Integer pageNo,
             @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize) {
@@ -305,12 +305,12 @@ public class ArchitecturePatternController {
                 "PAGE",
                 "FULL",
                 null,
-                contentBusinessTypeCode,
+                contentEntityTypeCode,
                 modelId == null ? null : java.util.List.of(modelId),
                 List.of(categoryId),
                 null,
                 null,
-                contentBusinessTypeCode,
+                contentEntityTypeCode,
                 pageNo,
                 pageSize,
                 null,
@@ -329,7 +329,7 @@ public class ArchitecturePatternController {
             - ✅ 多个分类查询(categoryIds 列表)
             - ✅ 每个分类自动包含所有子分类
             - ✅ 支持 AND/OR 逻辑(matchAll 参数)
-            - ✅ 支持跨业务类型查询(contentBusinessTypeCode)
+            - ✅ 支持跨业务类型查询(contentEntityTypeCode)
             - ❌ 不支持分页(返回全部结果)
 
             **使用场景**:
@@ -360,20 +360,20 @@ public class ArchitecturePatternController {
             """
     )
     @Parameter(name = "categoryIds", description = "分类 ID 列表(必填,多个分类ID,每个分类会自动包含其所有子分类)", required = true, example = "100,101,102")
-    @Parameter(name = "contentBusinessTypeCode", description = "内容业务类型编码(必填,用于跨业务类型查询)", required = true, example = "equipment")
+    @Parameter(name = "contentEntityTypeCode", description = "内容业务类型编码(必填,用于跨业务类型查询)", required = true, example = "equipment")
     @Parameter(name = "matchAll", description = "是否要求匹配所有分类(可选,默认false=OR模式,true=AND模式)", example = "false")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<List<EntityRespVO>> getEntitiesByCategoryIds(
             @RequestParam("categoryIds") List<Long> categoryIds,
             @RequestParam(value = "matchAll", defaultValue = "false") Boolean matchAll,
-            @RequestParam("contentBusinessTypeCode") String contentBusinessTypeCode) {
+            @RequestParam("contentEntityTypeCode") String contentEntityTypeCode) {
         java.util.Set<Long> allCategoryIds = expandCategoryIdsIncludingChildren(categoryIds);
         java.util.List<java.util.List<Long>> entityIdsPerCategory = allCategoryIds.stream()
-                .map(id -> entityCategoryRelationService.listEntityIdsByCategoryIdOnly(id, contentBusinessTypeCode))
+                .map(id -> entityCategoryRelationService.listEntityIdsByCategoryIdOnly(id, contentEntityTypeCode))
                 .toList();
         java.util.Set<Long> entityIds = aggregateEntityIds(entityIdsPerCategory, Boolean.TRUE.equals(matchAll));
         java.util.List<EntityRespVO> entities = entityIds.stream()
-                .map(id -> entityService.get(id, contentBusinessTypeCode))
+                .map(id -> entityService.get(id, contentEntityTypeCode))
                 .filter(java.util.Objects::nonNull)
                 .toList();
         return success(entities);

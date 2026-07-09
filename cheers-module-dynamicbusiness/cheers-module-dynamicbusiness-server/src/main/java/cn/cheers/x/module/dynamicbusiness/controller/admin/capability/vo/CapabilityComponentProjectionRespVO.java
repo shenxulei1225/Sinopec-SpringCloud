@@ -11,7 +11,7 @@ import lombok.Data;
 public class CapabilityComponentProjectionRespVO {
 
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "组件维度编码（list/tree/table/card）", requiredMode = Schema.RequiredMode.REQUIRED, example = "list")
     private String componentCode;

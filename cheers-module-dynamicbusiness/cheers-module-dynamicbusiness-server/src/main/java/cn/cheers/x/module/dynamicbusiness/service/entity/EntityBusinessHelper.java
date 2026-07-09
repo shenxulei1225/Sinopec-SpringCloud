@@ -37,9 +37,9 @@ public class EntityBusinessHelper {
         return model;
     }
 
-    public void validateModelBusinessType(Long modelId, String businessTypeCode) {
+    public void validateModelEntityType(Long modelId, String entityTypeCode) {
         ModelDO model = modelMapper.selectById(modelId);
-        if (model != null && !Objects.equals(model.getBusinessTypeCode(), businessTypeCode)) {
+        if (model != null && !Objects.equals(model.getEntityTypeCode(), entityTypeCode)) {
             throw new ServiceException(400, "模型与业务类型不匹配");
         }
     }
@@ -50,8 +50,8 @@ public class EntityBusinessHelper {
         }
     }
 
-    public void validateBaseFields(String businessTypeCode, Map<String, Object> baseFields) {
-        EntityFieldMapsSupport.getRequiredBusinessTypeCode(baseFields);
+    public void validateBaseFields(String entityTypeCode, Map<String, Object> baseFields) {
+        EntityFieldMapsSupport.getRequiredEntityTypeCode(baseFields);
         Map<String, Object> base = EntityFieldMapsSupport.normalizeMap(baseFields);
         Object entityName = base.get("name");
         if (entityName == null || String.valueOf(entityName).isBlank()) {
@@ -65,24 +65,24 @@ public class EntityBusinessHelper {
     }
 
     public void validateEntityReferences(EntityDO entity, ModelDO model,
-            Map<String, Object> customFields, String businessTypeCode) {
+            Map<String, Object> customFields, String entityTypeCode) {
         // TODO: 与 EntityValidationService 对齐后在此实现引用校验
     }
 
     public EntityDO prepareCreateEntity(EntityCreateReqVO reqVO) {
         Map<String, Object> baseFields = EntityFieldMapsSupport.normalizeMap(reqVO.getBaseFields());
         Long modelId = EntityFieldMapsSupport.getRequiredModelId(baseFields);
-        String businessTypeCode = EntityFieldMapsSupport.getRequiredBusinessTypeCode(baseFields);
+        String entityTypeCode = EntityFieldMapsSupport.getRequiredEntityTypeCode(baseFields);
 
         ModelDO model = validateModelExists(modelId);
-        validateModelBusinessType(modelId, businessTypeCode);
-        validateBaseFields(businessTypeCode, baseFields);
+        validateModelEntityType(modelId, entityTypeCode);
+        validateBaseFields(entityTypeCode, baseFields);
         validateCustomFields(modelId, reqVO.getCustomFields());
 
         EntityDO data = EntityConvert.INSTANCE.convert(reqVO);
         data.setTenantId(getTenantId());
 
-        validateEntityReferences(data, model, data.getCustomFields(), businessTypeCode);
+        validateEntityReferences(data, model, data.getCustomFields(), entityTypeCode);
 
         if (data.getCustomFields() != null) {
             data.setCustomFields(customFieldValidationService.normalizeAndEncryptCustomFields(
@@ -99,22 +99,22 @@ public class EntityBusinessHelper {
             modelId = dbEntity.getModelId();
             baseFields.put("modelId", modelId);
         }
-        String businessTypeCode = EntityFieldMapsSupport.getBusinessTypeCode(baseFields);
-        if (businessTypeCode == null || businessTypeCode.isBlank()) {
-            businessTypeCode = dbEntity.getBusinessTypeCode();
-            baseFields.put("businessTypeCode", businessTypeCode);
+        String entityTypeCode = EntityFieldMapsSupport.getEntityTypeCode(baseFields);
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
+            entityTypeCode = dbEntity.getEntityTypeCode();
+            baseFields.put("entityTypeCode", entityTypeCode);
         }
 
         ModelDO model = validateModelExists(modelId);
-        validateModelBusinessType(modelId, businessTypeCode);
-        validateBaseFields(businessTypeCode, baseFields);
+        validateModelEntityType(modelId, entityTypeCode);
+        validateBaseFields(entityTypeCode, baseFields);
         validateCustomFields(modelId, reqVO.getCustomFields());
 
         reqVO.setBaseFields(baseFields);
         EntityDO update = EntityConvert.INSTANCE.convert(reqVO);
         update.setTenantId(dbEntity.getTenantId());
 
-        validateEntityReferences(update, model, update.getCustomFields(), businessTypeCode);
+        validateEntityReferences(update, model, update.getCustomFields(), entityTypeCode);
 
         if (update.getCustomFields() != null) {
             update.setCustomFields(customFieldValidationService.normalizeAndEncryptCustomFields(

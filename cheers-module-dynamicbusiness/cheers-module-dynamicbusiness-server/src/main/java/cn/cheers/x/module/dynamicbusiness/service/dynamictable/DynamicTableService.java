@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.dynamictable;
 
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeBaseFieldDO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.PhysicalColumnConfig;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.PhysicalColumnConfig;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.dynamictable.DynamicTableAuditLogDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.dynamictable.DynamicTableColumnDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.dynamictable.DynamicTableDO;
@@ -19,14 +19,14 @@ public interface DynamicTableService {
     // ==================== 表管理方法 ====================
 
     /**
-     * 为业务类型创建动态表（在创建 BusinessTypeConfig 时调用）
+     * 为业务类型创建动态表（在创建 EntityTypeConfig 时调用）
      * 
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @param tableName 表名
      * @param tableComment 表注释
      * @return 动态表ID
      */
-    Long createDynamicTableForBusinessType(String businessTypeCode, String tableName, String tableComment);
+    Long createDynamicTableForEntityType(String entityTypeCode, String tableName, String tableComment);
 
     /**
      * 为业务类型创建动态表（支持物理列映射配置）
@@ -34,27 +34,27 @@ public interface DynamicTableService {
      * <p>当配置了 physicalColumnMapping 时，会在创建表时添加物理列定义和 B-Tree 索引。
      * 物理列用于高频查询字段，提供更好的查询性能。</p>
      * 
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @param tableName 表名
      * @param tableComment 表注释
      * @param physicalColumnMapping 物理列映射配置，key 为字段编码，value 为列配置；可为 null
      * @return 动态表ID
      */
-    Long createDynamicTableForBusinessType(String businessTypeCode, String tableName, String tableComment,
+    Long createDynamicTableForEntityType(String entityTypeCode, String tableName, String tableComment,
                                            Map<String, PhysicalColumnConfig> physicalColumnMapping);
 
     Long createDynamicTable(Long modelId);
     void deleteDynamicTable(Long dynamicTableId);
     DynamicTableDO getDynamicTable(Long dynamicTableId);
     DynamicTableDO getDynamicTableByModelId(Long modelId);
-    List<DynamicTableDO> listDynamicTablesByBusinessType(String businessTypeCode);
+    List<DynamicTableDO> listDynamicTablesByEntityType(String entityTypeCode);
     boolean hasDynamicTable(Long modelId);
 
     // ==================== 表结构管理方法 ====================
 
     boolean tableExists(String tableName);
     boolean columnExists(String tableName, String columnName);
-    void addColumn(String tableName, BusinessTypeBaseFieldDO baseField);
+    void addColumn(String tableName, EntityTypeBaseFieldDO baseField);
     void deprecateColumn(String tableName, String columnName);
 
     /**

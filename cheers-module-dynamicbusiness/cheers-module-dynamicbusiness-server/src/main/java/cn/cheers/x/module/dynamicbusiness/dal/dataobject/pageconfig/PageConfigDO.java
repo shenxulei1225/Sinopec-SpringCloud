@@ -45,6 +45,9 @@ public class PageConfigDO extends TenantBaseDO {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    /** 所属门户业务 id（dynamic_business.id） */
+    private Long businessId;
+
     /**
      * 配置代码（唯一标识）
      * 

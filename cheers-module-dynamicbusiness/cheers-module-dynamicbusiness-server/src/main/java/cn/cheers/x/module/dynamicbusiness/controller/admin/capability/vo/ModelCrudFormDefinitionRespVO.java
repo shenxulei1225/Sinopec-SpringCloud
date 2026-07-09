@@ -11,7 +11,7 @@ import lombok.Data;
 public class ModelCrudFormDefinitionRespVO {
 
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "模型编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "1001")
     private Long modelId;

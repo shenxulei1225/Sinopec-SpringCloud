@@ -563,13 +563,13 @@ public class DataMigrationServiceImpl implements DataMigrationService {
         for (RelationFieldLibraryDO libraryField : libraryFields) {
             result.setTotalCount(result.getTotalCount() + 1);
             
-            // 这里简化处理，实际应该查询 BusinessType 和 Model 是否存在
+            // 这里简化处理，实际应该查询 EntityType 和 Model 是否存在
             // 由于松散引用的设计，目标不存在也是允许的（状态为 PENDING）
-            if (StrUtil.isNotBlank(libraryField.getRefBusinessType())) {
+            if (StrUtil.isNotBlank(libraryField.getRefEntityType())) {
                 result.setSuccessCount(result.getSuccessCount() + 1);
                 result.addSuccessDetail(libraryField.getId(), "LIBRARY_FIELD", libraryField.getFieldCode(),
                         MigrationResultVO.ActionType.VALID.name(),
-                        "关联字段库记录配置完整: " + libraryField.getRefBusinessType());
+                        "关联字段库记录配置完整: " + libraryField.getRefEntityType());
             } else {
                 result.addWarning("关联字段库记录 " + libraryField.getFieldCode() + " 关联业务类型为空");
                 result.setSkippedCount(result.getSkippedCount() + 1);

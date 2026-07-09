@@ -103,10 +103,10 @@ public class IndexRebuildServiceImpl implements IndexRebuildService {
                 failProgress(progress, "Model 不存在", progressCallback);
                 return;
             }
-            String businessTypeCode = model.getBusinessTypeCode();
+            String entityTypeCode = model.getEntityTypeCode();
 
             // 2. 使用 Repository 获取实体列表
-            List<EntityDO> allEntities = entityRepository.findByModelId(modelId, businessTypeCode);
+            List<EntityDO> allEntities = entityRepository.findByModelId(modelId, entityTypeCode);
             long total = allEntities.size();
             progress.setTotal(total);
 
@@ -205,7 +205,7 @@ public class IndexRebuildServiceImpl implements IndexRebuildService {
             // 2. 统计总 Entity 数量（通过 Repository）
             long totalEntities = 0;
             for (ModelDO model : models) {
-                List<EntityDO> entities = entityRepository.findByModelId(model.getId(), model.getBusinessTypeCode());
+                List<EntityDO> entities = entityRepository.findByModelId(model.getId(), model.getEntityTypeCode());
                 totalEntities += entities.size();
             }
             progress.setTotal(totalEntities);
@@ -234,7 +234,7 @@ public class IndexRebuildServiceImpl implements IndexRebuildService {
                 entityFieldIndexMapper.deleteByModelId(model.getId());
 
                 // 通过 Repository 获取该 Model 的所有 Entity
-                List<EntityDO> entities = entityRepository.findByModelId(model.getId(), model.getBusinessTypeCode());
+                List<EntityDO> entities = entityRepository.findByModelId(model.getId(), model.getEntityTypeCode());
 
                 for (EntityDO entity : entities) {
                     // 检查是否取消
@@ -305,21 +305,21 @@ public class IndexRebuildServiceImpl implements IndexRebuildService {
     // ==================== 补同步功能 ====================
 
     @Override
-    public boolean resyncByEntityId(Long entityId, String businessTypeCode) {
+    public boolean resyncByEntityId(Long entityId, String entityTypeCode) {
         if (entityId == null) {
             log.warn("[resyncByEntityId][Entity ID 不能为空]");
             return false;
         }
-        if (businessTypeCode == null || businessTypeCode.isEmpty()) {
-            log.warn("[resyncByEntityId][businessTypeCode 不能为空][entityId={}]", entityId);
+        if (entityTypeCode == null || entityTypeCode.isEmpty()) {
+            log.warn("[resyncByEntityId][entityTypeCode 不能为空][entityId={}]", entityId);
             return false;
         }
 
         // 使用 Repository 获取实体 DO
-        EntityDO entity = entityRepository.findById(entityId, businessTypeCode);
+        EntityDO entity = entityRepository.findById(entityId, entityTypeCode);
         if (entity == null) {
-            log.warn("[resyncByEntityId][实体不存在][entityId={}, businessTypeCode={}]", 
-                    entityId, businessTypeCode);
+            log.warn("[resyncByEntityId][实体不存在][entityId={}, entityTypeCode={}]", 
+                    entityId, entityTypeCode);
             return false;
         }
 
@@ -327,38 +327,38 @@ public class IndexRebuildServiceImpl implements IndexRebuildService {
             entitySyncService.syncEntity(entity);
             // 同步成功后，清理该 Entity 的失败日志
             entitySyncFailLogMapper.deleteByEntityId(entityId);
-            log.info("[resyncByEntityId][补同步成功][entityId={}, businessTypeCode={}]", 
-                    entityId, businessTypeCode);
+            log.info("[resyncByEntityId][补同步成功][entityId={}, entityTypeCode={}]", 
+                    entityId, entityTypeCode);
             return true;
         } catch (Exception e) {
-            log.error("[resyncByEntityId][补同步失败][entityId={}, businessTypeCode={}, error={}]", 
-                    entityId, businessTypeCode, e.getMessage());
+            log.error("[resyncByEntityId][补同步失败][entityId={}, entityTypeCode={}, error={}]", 
+                    entityId, entityTypeCode, e.getMessage());
             return false;
         }
     }
 
     @Override
-    public int resyncByEntityIds(List<Long> entityIds, String businessTypeCode) {
+    public int resyncByEntityIds(List<Long> entityIds, String entityTypeCode) {
         if (entityIds == null || entityIds.isEmpty()) {
             return 0;
         }
-        if (businessTypeCode == null || businessTypeCode.isEmpty()) {
-            log.warn("[resyncByEntityIds][businessTypeCode 不能为空]");
+        if (entityTypeCode == null || entityTypeCode.isEmpty()) {
+            log.warn("[resyncByEntityIds][entityTypeCode 不能为空]");
             return 0;
         }
 
-        log.info("[resyncByEntityIds][开始批量补同步][count={}, businessTypeCode={}]", 
-                entityIds.size(), businessTypeCode);
+        log.info("[resyncByEntityIds][开始批量补同步][count={}, entityTypeCode={}]", 
+                entityIds.size(), entityTypeCode);
         int successCount = 0;
 
         for (Long entityId : entityIds) {
-            if (resyncByEntityId(entityId, businessTypeCode)) {
+            if (resyncByEntityId(entityId, entityTypeCode)) {
                 successCount++;
             }
         }
 
-        log.info("[resyncByEntityIds][批量补同步完成][total={}, success={}, businessTypeCode={}]", 
-                entityIds.size(), successCount, businessTypeCode);
+        log.info("[resyncByEntityIds][批量补同步完成][total={}, success={}, entityTypeCode={}]", 
+                entityIds.size(), successCount, entityTypeCode);
         return successCount;
     }
 
@@ -429,7 +429,7 @@ public class IndexRebuildServiceImpl implements IndexRebuildService {
     /**
      * 处理单个失败日志
      *
-     * <p>使用失败日志中记录的 businessTypeCode 路由到正确的存储策略。</p>
+     * <p>使用失败日志中记录的 entityTypeCode 路由到正确的存储策略。</p>
      */
     private boolean processFailLog(EntitySyncFailLogDO failLog) {
         if (failLog == null) {
@@ -437,28 +437,28 @@ public class IndexRebuildServiceImpl implements IndexRebuildService {
         }
 
         Long entityId = failLog.getEntityId();
-        String businessTypeCode = failLog.getBusinessTypeCode();
+        String entityTypeCode = failLog.getEntityTypeCode();
 
-        // 检查 businessTypeCode 是否存在
-        if (businessTypeCode == null || businessTypeCode.isEmpty()) {
-            log.warn("[processFailLog][失败日志缺少 businessTypeCode，尝试从 Model 获取][failLogId={}, entityId={}]",
+        // 检查 entityTypeCode 是否存在
+        if (entityTypeCode == null || entityTypeCode.isEmpty()) {
+            log.warn("[processFailLog][失败日志缺少 entityTypeCode，尝试从 Model 获取][failLogId={}, entityId={}]",
                     failLog.getId(), entityId);
-            // 尝试从 Model 获取 businessTypeCode
+            // 尝试从 Model 获取 entityTypeCode
             if (failLog.getModelId() != null) {
                 ModelDO model = modelMapper.selectById(failLog.getModelId());
                 if (model != null) {
-                    businessTypeCode = model.getBusinessTypeCode();
+                    entityTypeCode = model.getEntityTypeCode();
                 }
             }
-            if (businessTypeCode == null || businessTypeCode.isEmpty()) {
-                log.error("[processFailLog][无法确定 businessTypeCode，跳过处理][failLogId={}, entityId={}]",
+            if (entityTypeCode == null || entityTypeCode.isEmpty()) {
+                log.error("[processFailLog][无法确定 entityTypeCode，跳过处理][failLogId={}, entityId={}]",
                         failLog.getId(), entityId);
                 return false;
             }
         }
 
         // 使用 Repository 获取实体 DO
-        EntityDO entity = entityRepository.findById(entityId, businessTypeCode);
+        EntityDO entity = entityRepository.findById(entityId, entityTypeCode);
 
         if (entity == null) {
             // Entity 已被删除，标记为成功
@@ -476,12 +476,12 @@ public class IndexRebuildServiceImpl implements IndexRebuildService {
             entitySyncService.syncEntity(entity);
             // 同步成功，更新状态
             entitySyncFailLogMapper.updateStatus(failLog.getId(), EntitySyncFailLogDO.STATUS_SUCCESS, LocalDateTime.now());
-            log.info("[processFailLog][补同步成功][failLogId={}, entityId={}, businessTypeCode={}]",
-                    failLog.getId(), entityId, businessTypeCode);
+            log.info("[processFailLog][补同步成功][failLogId={}, entityId={}, entityTypeCode={}]",
+                    failLog.getId(), entityId, entityTypeCode);
             return true;
         } catch (Exception e) {
-            log.error("[processFailLog][补同步失败][failLogId={}, entityId={}, businessTypeCode={}, error={}]",
-                    failLog.getId(), entityId, businessTypeCode, e.getMessage());
+            log.error("[processFailLog][补同步失败][failLogId={}, entityId={}, entityTypeCode={}, error={}]",
+                    failLog.getId(), entityId, entityTypeCode, e.getMessage());
             // 同步失败，更新状态
             entitySyncFailLogMapper.updateStatus(failLog.getId(), EntitySyncFailLogDO.STATUS_FAILED, LocalDateTime.now());
             return false;

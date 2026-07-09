@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  * <ul>
  *   <li>Core 层只提供“模型主表(dynamic_model)的基础能力”；</li>
  *   <li>不在 Core 层做跨业务编排、分类关系聚合、前端场景拼装；</li>
- *   <li>复杂查询（如多 businessTypeCode 汇总排序）应由上层 Service 编排后调用 Core/Mapper。</li>
+ *   <li>复杂查询（如多 entityTypeCode 汇总排序）应由上层 Service 编排后调用 Core/Mapper。</li>
  * </ul>
  */
 @Service
@@ -43,11 +43,11 @@ public class ModelCoreServiceImpl implements ModelCoreService {
      * <p>返回规则：入参为空或业务类型空白时直接返回 false，不抛异常。</p>
      */
     @Override
-    public boolean existsById(Long modelId, String businessTypeCode) {
-        if (modelId == null || businessTypeCode == null || businessTypeCode.isBlank()) {
+    public boolean existsById(Long modelId, String entityTypeCode) {
+        if (modelId == null || entityTypeCode == null || entityTypeCode.isBlank()) {
             return false;
         }
-        return modelMapper.selectByIdAndBusinessTypeCode(modelId, businessTypeCode) != null;
+        return modelMapper.selectByIdAndEntityTypeCode(modelId, entityTypeCode) != null;
     }
 
     /**
@@ -63,12 +63,12 @@ public class ModelCoreServiceImpl implements ModelCoreService {
      * <p>返回规则：参数不合法时返回空集合。</p>
      */
     @Override
-    public Set<Long> filterExistingModelIds(List<Long> modelIds, String businessTypeCode) {
-        if (modelIds == null || modelIds.isEmpty() || businessTypeCode == null || businessTypeCode.isBlank()) {
+    public Set<Long> filterExistingModelIds(List<Long> modelIds, String entityTypeCode) {
+        if (modelIds == null || modelIds.isEmpty() || entityTypeCode == null || entityTypeCode.isBlank()) {
             return new HashSet<>();
         }
         List<ModelDO> existing = modelMapper.selectByIds(modelIds).stream()
-                .filter(model -> businessTypeCode.equals(model.getBusinessTypeCode()))
+                .filter(model -> entityTypeCode.equals(model.getEntityTypeCode()))
                 .toList();
         return existing.stream().map(ModelDO::getId).collect(Collectors.toSet());
     }
@@ -142,8 +142,8 @@ public class ModelCoreServiceImpl implements ModelCoreService {
      * <p>排序语义由 Mapper 统一保证：sort ASC, createTime DESC。</p>
      */
     @Override
-    public List<ModelDO> listByBusinessTypeCode(String businessTypeCode) {
-        return modelMapper.selectByBusinessTypeCode(businessTypeCode);
+    public List<ModelDO> listByEntityTypeCode(String entityTypeCode) {
+        return modelMapper.selectByEntityTypeCode(entityTypeCode);
     }
 
     /**
@@ -158,9 +158,9 @@ public class ModelCoreServiceImpl implements ModelCoreService {
      * <p>说明：Core 层提供的是“单业务”能力；跨业务合并由上层 Service 编排。</p>
      */
     @Override
-    public List<ModelDO> listEnabledModelsByBusinessTypeCode(String businessTypeCode) {
+    public List<ModelDO> listEnabledModelsByEntityTypeCode(String entityTypeCode) {
         return modelMapper.selectList(new LambdaQueryWrapperX<ModelDO>()
-                .eq(ModelDO::getBusinessTypeCode, businessTypeCode)
+                .eq(ModelDO::getEntityTypeCode, entityTypeCode)
                 .eq(ModelDO::getStatus, 1)
                 .orderByAsc(ModelDO::getSort)
                 .orderByDesc(ModelDO::getCreateTime));
@@ -170,8 +170,8 @@ public class ModelCoreServiceImpl implements ModelCoreService {
      * 单业务类型关键字模糊搜索模型（名称/描述）。
      */
     @Override
-    public List<ModelDO> searchLikeInBusinessType(String keyword, String businessTypeCode) {
-        return modelMapper.searchLikeInBusinessType(keyword, businessTypeCode);
+    public List<ModelDO> searchLikeInEntityType(String keyword, String entityTypeCode) {
+        return modelMapper.searchLikeInEntityType(keyword, entityTypeCode);
     }
 
 
@@ -185,8 +185,8 @@ public class ModelCoreServiceImpl implements ModelCoreService {
      * </ul>
      */
     @Override
-    public ModelDO getByNameInBusinessType(String name, String businessTypeCode) {
-        return modelMapper.selectByNameAndBusinessTypeCode(name, businessTypeCode);
+    public ModelDO getByNameInEntityType(String name, String entityTypeCode) {
+        return modelMapper.selectByNameAndEntityTypeCode(name, entityTypeCode);
     }
 
     /**
@@ -218,7 +218,7 @@ public class ModelCoreServiceImpl implements ModelCoreService {
      * <p>说明：该方法仅负责主表分页，不负责 includeChildren、多业务合并排序、分类上下文排序等编排。</p>
      */
     @Override
-    public PageResult<ModelDO> pageModels(String businessTypeCode, String keyword, Integer status, Integer pageNo, Integer pageSize) {
-        return modelMapper.selectPage(businessTypeCode, keyword, status, pageNo, pageSize);
+    public PageResult<ModelDO> pageModels(String entityTypeCode, String keyword, Integer status, Integer pageNo, Integer pageSize) {
+        return modelMapper.selectPage(entityTypeCode, keyword, status, pageNo, pageSize);
     }
 }

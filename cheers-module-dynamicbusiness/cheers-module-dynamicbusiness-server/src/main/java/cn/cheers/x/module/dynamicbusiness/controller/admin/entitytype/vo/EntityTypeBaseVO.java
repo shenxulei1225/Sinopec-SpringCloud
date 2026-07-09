@@ -1,4 +1,4 @@
-package cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo;
+package cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -12,7 +12,7 @@ import lombok.Data;
  * 包含业务类型最基础的核心字段及通用校验规则。
  */
 @Data
-public class BusinessTypeBaseVO {
+public class EntityTypeBaseVO {
 
     @Schema(description = "显示顺序", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     @NotNull(message = "显示顺序不能为空")
@@ -53,7 +53,7 @@ public class BusinessTypeBaseVO {
     @NotBlank(message = "存储类型不能为空")
     private String storageType;
 
-    @Schema(description = "专用表名", example = "biz_equipment")
+    @Schema(description = "专用表名", example = "ent_equipment")
     private String dedicatedTableName;
 
     @Schema(description = "物理列映射配置（JSON格式）", example = "{\"code\":{\"column\":\"code\",\"type\":\"VARCHAR\"}}")

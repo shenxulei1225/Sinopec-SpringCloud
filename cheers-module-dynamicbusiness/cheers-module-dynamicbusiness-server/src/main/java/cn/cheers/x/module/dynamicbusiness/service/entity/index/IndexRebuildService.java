@@ -80,26 +80,26 @@ public interface IndexRebuildService {
     // ==================== 补同步功能 ====================
 
     /**
-     * 按 Entity ID 补同步（需要提供 businessTypeCode）
+     * 按 Entity ID 补同步（需要提供 entityTypeCode）
      *
-     * <p>重新同步指定 Entity 的索引数据。通过 businessTypeCode 路由到正确的存储策略。</p>
+     * <p>重新同步指定 Entity 的索引数据。通过 entityTypeCode 路由到正确的存储策略。</p>
      *
      * @param entityId Entity ID
-     * @param businessTypeCode 业务类型编码（必填，用于路由到正确的存储策略）
+     * @param entityTypeCode 业务类型编码（必填，用于路由到正确的存储策略）
      * @return 是否同步成功
      */
-    boolean resyncByEntityId(Long entityId, String businessTypeCode);
+    boolean resyncByEntityId(Long entityId, String entityTypeCode);
 
     /**
-     * 按 Entity ID 列表批量补同步（需要提供 businessTypeCode）
+     * 按 Entity ID 列表批量补同步（需要提供 entityTypeCode）
      *
      * <p>批量重新同步指定 Entity 的索引数据。所有 Entity 必须属于同一业务类型。</p>
      *
      * @param entityIds Entity ID 列表
-     * @param businessTypeCode 业务类型编码（必填，用于路由到正确的存储策略）
+     * @param entityTypeCode 业务类型编码（必填，用于路由到正确的存储策略）
      * @return 成功同步的数量
      */
-    int resyncByEntityIds(List<Long> entityIds, String businessTypeCode);
+    int resyncByEntityIds(List<Long> entityIds, String entityTypeCode);
 
     /**
      * 按时间范围补同步失败的记录

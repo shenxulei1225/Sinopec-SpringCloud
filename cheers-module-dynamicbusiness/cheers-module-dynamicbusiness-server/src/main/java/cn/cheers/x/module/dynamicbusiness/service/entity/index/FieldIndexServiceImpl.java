@@ -249,10 +249,10 @@ public class FieldIndexServiceImpl implements FieldIndexService {
                 log.warn("Model 不存在，跳过索引创建: modelId={}", modelId);
                 return;
             }
-            String businessTypeCode = model.getBusinessTypeCode();
+            String entityTypeCode = model.getEntityTypeCode();
 
             // 2. 使用 Repository 获取该 Model 下的所有 Entity
-            List<EntityDO> entities = entityRepository.findByModelId(modelId, businessTypeCode);
+            List<EntityDO> entities = entityRepository.findByModelId(modelId, entityTypeCode);
             if (entities.isEmpty()) {
                 log.info("Model 下没有 Entity，跳过索引创建: modelId={}", modelId);
                 return;

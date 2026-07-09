@@ -11,11 +11,11 @@ import java.util.Set;
 public interface EntityFieldQueryEngine {
 
     /** 在候选范围内按关键词搜索实体ID。 */
-    Set<Long> searchEntityIdsByKeyword(String businessTypeCode, String keyword, List<Long> candidateEntityIds);
+    Set<Long> searchEntityIdsByKeyword(String entityTypeCode, String keyword, List<Long> candidateEntityIds);
 
     /** 在候选范围内按结构化筛选条件搜索实体ID（仅非 relation 字段）。 */
-    Set<Long> filterEntityIdsByFilters(String businessTypeCode, List<FieldFilterReqVO> filters, List<Long> candidateEntityIds);
+    Set<Long> filterEntityIdsByFilters(String entityTypeCode, List<FieldFilterReqVO> filters, List<Long> candidateEntityIds);
 
     /** 在候选范围内执行关键词 + 结构化筛选。 */
-    Set<Long> searchAndFilterEntityIds(String businessTypeCode, String keyword, List<FieldFilterReqVO> filters, List<Long> candidateEntityIds);
+    Set<Long> searchAndFilterEntityIds(String entityTypeCode, String keyword, List<FieldFilterReqVO> filters, List<Long> candidateEntityIds);
 }

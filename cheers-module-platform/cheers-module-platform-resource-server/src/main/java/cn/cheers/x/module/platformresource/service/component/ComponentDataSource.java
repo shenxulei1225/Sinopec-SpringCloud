@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 
 /**
- * 组件数据来源结构体：businessCategory + businessTypeCode + dataKind。
+ * 组件数据来源结构体：businessCategory + entityTypeCode + dataKind。
  * system 分类强制 dataKind=entity。
  */
 public final class ComponentDataSource {
@@ -22,9 +22,9 @@ public final class ComponentDataSource {
     private ComponentDataSource() {
     }
 
-    public static Normalized normalize(String businessCategory, String businessTypeCode, String dataKind) {
+    public static Normalized normalize(String businessCategory, String entityTypeCode, String dataKind) {
         String category = StrUtil.trim(businessCategory);
-        String typeCode = StrUtil.trim(businessTypeCode);
+        String typeCode = StrUtil.trim(entityTypeCode);
         String kind = StrUtil.trim(dataKind);
 
         if (StrUtil.isBlank(category) && StrUtil.isBlank(typeCode) && StrUtil.isBlank(kind)) {
@@ -46,7 +46,7 @@ public final class ComponentDataSource {
         if (vo == null) {
             return Normalized.empty();
         }
-        return normalize(vo.getBusinessCategory(), vo.getBusinessTypeCode(), vo.getDataKind());
+        return normalize(vo.getBusinessCategory(), vo.getEntityTypeCode(), vo.getDataKind());
     }
 
     public static ComponentDataSourceVO toVo(Normalized normalized) {
@@ -55,7 +55,7 @@ public final class ComponentDataSource {
         }
         ComponentDataSourceVO vo = new ComponentDataSourceVO();
         vo.setBusinessCategory(normalized.businessCategory());
-        vo.setBusinessTypeCode(normalized.businessTypeCode());
+        vo.setEntityTypeCode(normalized.entityTypeCode());
         vo.setDataKind(normalized.dataKind());
         return vo;
     }
@@ -110,13 +110,13 @@ public final class ComponentDataSource {
         return fromVo(vo);
     }
 
-    public record Normalized(String businessCategory, String businessTypeCode, String dataKind) {
+    public record Normalized(String businessCategory, String entityTypeCode, String dataKind) {
         public static Normalized empty() {
             return new Normalized(null, null, null);
         }
 
         public boolean isPresent() {
-            return StrUtil.isNotBlank(businessCategory) && StrUtil.isNotBlank(businessTypeCode);
+            return StrUtil.isNotBlank(businessCategory) && StrUtil.isNotBlank(entityTypeCode);
         }
     }
 }

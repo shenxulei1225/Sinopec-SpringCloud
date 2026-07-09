@@ -83,11 +83,11 @@ public class DragServiceImpl implements DragService {
         if (category == null) {
             throw new ServiceException(404, "目标分类不存在");
         }
-        String businessTypeCode = reqVO.getBusinessTypeCode();
-        if (businessTypeCode == null || businessTypeCode.isBlank()) {
-            throw new ServiceException(400, "businessTypeCode 不能为空");
+        String entityTypeCode = reqVO.getEntityTypeCode();
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
+            throw new ServiceException(400, "entityTypeCode 不能为空");
         }
-        entityCategoryRelationService.associate(reqVO.getSourceId(), reqVO.getTargetId(), businessTypeCode);
+        entityCategoryRelationService.associate(reqVO.getSourceId(), reqVO.getTargetId(), entityTypeCode);
         return DragExecuteRespVO.builder().success(true).action("ENTITY_BIND_CATEGORY").message("关联成功").build();
     }
 

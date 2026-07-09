@@ -1,4 +1,4 @@
-package cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype;
+package cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype;
 
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
@@ -8,26 +8,26 @@ import lombok.*;
 /**
  * 业务类型 DO
  * 
- * 业务含义:用于组织和管理业务元模型,一个 BusinessType 表达一种本质不同的业务对象或过程。
+ * 业务含义:用于组织和管理业务元模型,一个 EntityType 表达一种本质不同的业务对象或过程。
  * 
  * 存储策略:
  * - 字段直接包含存储配置(storageType, dedicatedTableName等),实现元模型与存储一体化。
  * 
  * 业务关联:
- * - BusinessType 可以与其他 BusinessType 建立关联关系
- * - 关联关系存储在 dynamic_business_type_relation 表中
+ * - EntityType 可以与其他 EntityType 建立关联关系
+ * - 关联关系存储在 dynamic_entity_type_relation 表中
  * 
  * @author yudao
  */
-@TableName("dynamic_business_type")
-@KeySequence("dynamic_business_type_seq")
+@TableName("dynamic_entity_type")
+@KeySequence("dynamic_entity_type_seq")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class BusinessTypeDO extends TenantBaseDO {
+public class EntityTypeDO extends TenantBaseDO {
 
     /**
      * 主键

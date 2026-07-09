@@ -73,10 +73,10 @@ public class ModelFieldAssignmentRespVO {
     private Long refLibraryId;
 
     @Schema(description = "关联目标业务类型编码", example = "personnel")
-    private String targetBusinessType;
+    private String targetEntityType;
 
     @Schema(description = "关联目标业务类型名称", example = "人员管理")
-    private String targetBusinessTypeName;
+    private String targetEntityTypeName;
 
     @Schema(description = "关联目标 Model 编码", example = "employee")
     private String targetModelCode;

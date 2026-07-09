@@ -271,22 +271,22 @@ public class EntitySyncServiceImpl implements EntitySyncService {
     // ==================== 补同步方法 ====================
 
     @Override
-    public boolean resyncByEntityId(Long entityId, String businessTypeCode) {
+    public boolean resyncByEntityId(Long entityId, String entityTypeCode) {
         if (entityId == null) {
             log.warn("[resyncByEntityId][Entity ID 不能为空]");
             return false;
         }
-        if (businessTypeCode == null || businessTypeCode.isEmpty()) {
-            log.warn("[resyncByEntityId][businessTypeCode 不能为空][entityId={}]", entityId);
+        if (entityTypeCode == null || entityTypeCode.isEmpty()) {
+            log.warn("[resyncByEntityId][entityTypeCode 不能为空][entityId={}]", entityId);
             return false;
         }
 
         // 注意：此方法目前仍使用 entityMapper，仅支持通用表
-        // 如果需要支持动态表，应该使用 IndexRebuildService.resyncByEntityId(entityId, businessTypeCode)
+        // 如果需要支持动态表，应该使用 IndexRebuildService.resyncByEntityId(entityId, entityTypeCode)
         EntityDO entity = entityMapper.selectById(entityId);
         if (entity == null) {
-            log.warn("[resyncByEntityId][Entity 不存在于通用表][entityId={}, businessTypeCode={}]", 
-                    entityId, businessTypeCode);
+            log.warn("[resyncByEntityId][Entity 不存在于通用表][entityId={}, entityTypeCode={}]", 
+                    entityId, entityTypeCode);
             return false;
         }
 
@@ -361,14 +361,14 @@ public class EntitySyncServiceImpl implements EntitySyncService {
     }
 
     @Override
-    public List<EntitySyncFailLogDO> getPendingFailLogsByBusinessTypeCode(String businessTypeCode, int limit) {
-        return entitySyncFailLogMapper.selectPendingLogsByBusinessTypeCode(businessTypeCode, limit);
+    public List<EntitySyncFailLogDO> getPendingFailLogsByEntityTypeCode(String entityTypeCode, int limit) {
+        return entitySyncFailLogMapper.selectPendingLogsByEntityTypeCode(entityTypeCode, limit);
     }
 
     @Override
-    public long countPendingFailLogsByBusinessTypeCode(String businessTypeCode) {
-        return entitySyncFailLogMapper.countByStatusAndBusinessTypeCode(
-                EntitySyncFailLogDO.STATUS_PENDING, businessTypeCode);
+    public long countPendingFailLogsByEntityTypeCode(String entityTypeCode) {
+        return entitySyncFailLogMapper.countByStatusAndEntityTypeCode(
+                EntitySyncFailLogDO.STATUS_PENDING, entityTypeCode);
     }
 
     @Override
@@ -557,13 +557,13 @@ public class EntitySyncServiceImpl implements EntitySyncService {
     /**
      * 记录同步失败日志
      * 
-     * <p>记录失败日志时会保存 businessTypeCode，以便补同步时能够路由到正确的存储策略。</p>
+     * <p>记录失败日志时会保存 entityTypeCode，以便补同步时能够路由到正确的存储策略。</p>
      */
     private void recordSyncFailure(EntityDO entity, String failReason) {
         try {
             EntitySyncFailLogDO failLog = EntitySyncFailLogDO.builder()
                     .entityId(entity.getId())
-                    .businessTypeCode(entity.getBusinessTypeCode())
+                    .entityTypeCode(entity.getEntityTypeCode())
                     .modelId(entity.getModelId())
                     .engineType(ENGINE_TYPE)
                     .failReason(failReason)
@@ -572,8 +572,8 @@ public class EntitySyncServiceImpl implements EntitySyncService {
                     .build();
 
             entitySyncFailLogMapper.insert(failLog);
-            log.debug("记录同步失败日志: entityId={}, businessTypeCode={}, failReason={}", 
-                    entity.getId(), entity.getBusinessTypeCode(), failReason);
+            log.debug("记录同步失败日志: entityId={}, entityTypeCode={}, failReason={}", 
+                    entity.getId(), entity.getEntityTypeCode(), failReason);
 
             // 检查是否需要告警
             checkAndTriggerAlert(entity.getId());

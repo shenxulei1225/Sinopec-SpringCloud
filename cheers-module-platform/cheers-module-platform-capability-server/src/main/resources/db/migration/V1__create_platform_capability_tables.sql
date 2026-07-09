@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS platform_capability_pack (
 
 CREATE TABLE IF NOT EXISTS platform_process_capability_binding (
     id                  BIGSERIAL PRIMARY KEY,
-    business_type_code  VARCHAR(64)  NOT NULL,
+    entity_type_code  VARCHAR(64)  NOT NULL,
     capability_pack_id  VARCHAR(64)  NOT NULL,
     orchestration_ref   VARCHAR(128),
     policy_set_id       VARCHAR(36),
@@ -38,5 +38,5 @@ CREATE TABLE IF NOT EXISTS platform_process_capability_binding (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_platform_process_binding_btc_tenant
-    ON platform_process_capability_binding (business_type_code, tenant_id)
+    ON platform_process_capability_binding (entity_type_code, tenant_id)
     WHERE deleted = FALSE;

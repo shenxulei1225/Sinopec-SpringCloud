@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.capability.form;
 
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldGroupRespVO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeBaseFieldDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelRelationDO;
@@ -39,6 +39,7 @@ public final class ModelCrudFormFieldAssembler {
             "creator", "createtime", "create_time",
             "updater", "updatetime", "update_time",
             "deleted",
+            "entitytypecode", "entity_type_code",
             "businesstypecode", "business_type_code",
             "modelid", "model_id",
             "customfields", "custom_fields",
@@ -55,7 +56,7 @@ public final class ModelCrudFormFieldAssembler {
     public record RefResolveContext(
             Map<Long, RelationFieldLibraryDO> refLibraryById,
             Map<Long, ModelRelationDO> modelRelationById,
-            Map<String, String> modelCodeToBusinessTypeCode) {
+            Map<String, String> modelCodeToEntityTypeCode) {
 
         public static RefResolveContext empty() {
             return new RefResolveContext(Map.of(), Map.of(), Map.of());
@@ -64,11 +65,11 @@ public final class ModelCrudFormFieldAssembler {
 
     public static Map<String, Object> buildFormRoot(
             Long modelId,
-            String businessTypeCode,
+            String entityTypeCode,
             boolean includeBaseFields,
             List<ModelFieldAssignmentDO> assigns,
             Map<Long, FieldDO> fieldById,
-            Map<String, BusinessTypeBaseFieldDO> baseFieldByCode,
+            Map<String, EntityTypeBaseFieldDO> baseFieldByCode,
             List<ModelFieldGroupRespVO> groups,
             RefResolveContext refResolveContext) {
         LinkedHashMap<String, Map<String, Object>> fieldItems = new LinkedHashMap<>();
@@ -78,9 +79,9 @@ public final class ModelCrudFormFieldAssembler {
         putIfAbsent(fieldItems, addedCodes, buildBuiltinStatusField());
 
         if (includeBaseFields && baseFieldByCode != null && !baseFieldByCode.isEmpty()) {
-            List<BusinessTypeBaseFieldDO> sortedBaseFields = new ArrayList<>(baseFieldByCode.values());
+            List<EntityTypeBaseFieldDO> sortedBaseFields = new ArrayList<>(baseFieldByCode.values());
             sortedBaseFields.sort(Comparator.comparingInt(base -> base.getSortOrder() != null ? base.getSortOrder() : 0));
-            for (BusinessTypeBaseFieldDO baseField : sortedBaseFields) {
+            for (EntityTypeBaseFieldDO baseField : sortedBaseFields) {
                 if (baseField == null || !baseField.isEnabled() || !StringUtils.hasText(baseField.getFieldCode())) {
                     continue;
                 }
@@ -88,7 +89,7 @@ public final class ModelCrudFormFieldAssembler {
                 if (shouldSkipField(code, baseField, null)) {
                     continue;
                 }
-                putIfAbsent(fieldItems, addedCodes, buildBaseFieldItem(businessTypeCode, baseField));
+                putIfAbsent(fieldItems, addedCodes, buildBaseFieldItem(entityTypeCode, baseField));
             }
         }
 
@@ -103,15 +104,15 @@ public final class ModelCrudFormFieldAssembler {
             if (addedCodes.contains(code) || shouldSkipField(code, baseFieldByCode.get(code), field)) {
                 continue;
             }
-            BusinessTypeBaseFieldDO baseField = baseFieldByCode != null ? baseFieldByCode.get(code) : null;
+            EntityTypeBaseFieldDO baseField = baseFieldByCode != null ? baseFieldByCode.get(code) : null;
             putIfAbsent(
                     fieldItems,
                     addedCodes,
-                    buildAssignmentField(businessTypeCode, assign, field, baseField, groups, refResolveContext));
+                    buildAssignmentField(entityTypeCode, assign, field, baseField, groups, refResolveContext));
         }
 
         Map<String, Object> root = new LinkedHashMap<>();
-        root.put("businessTypeCode", businessTypeCode);
+        root.put("entityTypeCode", entityTypeCode);
         root.put("modelId", modelId);
         List<Map<String, Object>> baseFieldDefs = new ArrayList<>();
         List<Map<String, Object>> customFieldDefs = new ArrayList<>();
@@ -131,7 +132,7 @@ public final class ModelCrudFormFieldAssembler {
         return root;
     }
 
-    private static boolean shouldSkipField(String fieldCode, BusinessTypeBaseFieldDO baseField, FieldDO field) {
+    private static boolean shouldSkipField(String fieldCode, EntityTypeBaseFieldDO baseField, FieldDO field) {
         if (!StringUtils.hasText(fieldCode)) {
             return true;
         }
@@ -152,7 +153,7 @@ public final class ModelCrudFormFieldAssembler {
         return AUTO_GENERATED_FIELD_CODES.contains(fieldCode.trim().toLowerCase());
     }
 
-    private static boolean isAutoGeneratedByConfig(BusinessTypeBaseFieldDO baseField) {
+    private static boolean isAutoGeneratedByConfig(EntityTypeBaseFieldDO baseField) {
         if (baseField == null) {
             return false;
         }
@@ -228,7 +229,7 @@ public final class ModelCrudFormFieldAssembler {
         return item;
     }
 
-    private static Map<String, Object> buildBaseFieldItem(String businessTypeCode, BusinessTypeBaseFieldDO baseField) {
+    private static Map<String, Object> buildBaseFieldItem(String entityTypeCode, EntityTypeBaseFieldDO baseField) {
         String code = baseField.getFieldCode().trim();
         String fieldType = StringUtils.hasText(baseField.getDataType()) ? baseField.getDataType().trim().toUpperCase() : "TEXT";
         String label = StringUtils.hasText(baseField.getFieldName()) ? baseField.getFieldName() : code;
@@ -238,12 +239,12 @@ public final class ModelCrudFormFieldAssembler {
         item.put("groupName", "基础信息");
         item.put("groupSortOrder", 0);
         applyBaseFieldTypeConfig(item, baseField);
-        applyBaseFieldTypeExtensions(item, businessTypeCode, baseField, fieldType);
+        applyBaseFieldTypeExtensions(item, entityTypeCode, baseField, fieldType);
         return item;
     }
 
     private static void applyBaseFieldTypeExtensions(
-            Map<String, Object> item, String businessTypeCode, BusinessTypeBaseFieldDO baseField, String fieldType) {
+            Map<String, Object> item, String entityTypeCode, EntityTypeBaseFieldDO baseField, String fieldType) {
         if ("REF_MULTI".equals(fieldType) || FieldTypeEnum.isMultiEntityRef(fieldType)) {
             item.put("renderAs", "ref-picker-multi");
             item.put("valueShape", "array");
@@ -253,7 +254,7 @@ public final class ModelCrudFormFieldAssembler {
             Map<String, Object> binding = new LinkedHashMap<>();
             binding.put("businessCategory", BusinessCategoryConstants.DYNAMIC);
             binding.put("dataKind", BusinessCategoryConstants.KIND_ENTITY);
-            binding.put("businessTypeCode", businessTypeCode);
+            binding.put("entityTypeCode", entityTypeCode);
             item.put("refTarget", Map.of(
                     "capabilityBinding", binding,
                     "valueField", "id",
@@ -270,10 +271,10 @@ public final class ModelCrudFormFieldAssembler {
     }
 
     private static Map<String, Object> buildAssignmentField(
-            String businessTypeCode,
+            String entityTypeCode,
             ModelFieldAssignmentDO assign,
             FieldDO field,
-            BusinessTypeBaseFieldDO baseField,
+            EntityTypeBaseFieldDO baseField,
             List<ModelFieldGroupRespVO> groups,
             RefResolveContext refResolveContext) {
         String code = field.getCode().trim();
@@ -296,7 +297,7 @@ public final class ModelCrudFormFieldAssembler {
         if (baseField != null) {
             applyBaseFieldTypeConfig(item, baseField);
         }
-        applyFieldTypeExtensions(item, businessTypeCode, field, fieldType, assign, refResolveContext);
+        applyFieldTypeExtensions(item, entityTypeCode, field, fieldType, assign, refResolveContext);
 
         applyGroupMeta(item, field.getId(), groups);
         return item;
@@ -314,7 +315,7 @@ public final class ModelCrudFormFieldAssembler {
         return item;
     }
 
-    private static String resolveFieldType(FieldDO field, BusinessTypeBaseFieldDO baseField) {
+    private static String resolveFieldType(FieldDO field, EntityTypeBaseFieldDO baseField) {
         if (baseField != null && StringUtils.hasText(baseField.getDataType())) {
             return baseField.getDataType().trim().toUpperCase();
         }
@@ -349,7 +350,7 @@ public final class ModelCrudFormFieldAssembler {
         }
     }
 
-    private static void applyBaseFieldTypeConfig(Map<String, Object> item, BusinessTypeBaseFieldDO baseField) {
+    private static void applyBaseFieldTypeConfig(Map<String, Object> item, EntityTypeBaseFieldDO baseField) {
         JSONObject config = parseJsonObject(baseField.getTypeConfig());
         if (config == null || config.isEmpty()) {
             return;
@@ -368,7 +369,7 @@ public final class ModelCrudFormFieldAssembler {
 
     private static void applyFieldTypeExtensions(
             Map<String, Object> item,
-            String businessTypeCode,
+            String entityTypeCode,
             FieldDO field,
             String fieldType,
             ModelFieldAssignmentDO assign,
@@ -387,53 +388,53 @@ public final class ModelCrudFormFieldAssembler {
 
         if (FieldTypeEnum.isEntityRef(fieldType) || "REFERENCE".equals(fieldType)) {
             item.put("renderAs", "ref-picker");
-            putEntityRefTarget(item, businessTypeCode, assign, refResolveContext);
+            putEntityRefTarget(item, entityTypeCode, assign, refResolveContext);
         }
     }
 
     private static void putEntityRefTarget(
             Map<String, Object> item,
-            String sourceBusinessTypeCode,
+            String sourceEntityTypeCode,
             ModelFieldAssignmentDO assign,
             RefResolveContext refResolveContext) {
-        String targetBusinessTypeCode = resolveRefTargetBusinessTypeCode(
-                sourceBusinessTypeCode, assign, refResolveContext);
+        String targetEntityTypeCode = resolveRefTargetEntityTypeCode(
+                sourceEntityTypeCode, assign, refResolveContext);
         Map<String, Object> binding = new LinkedHashMap<>();
         binding.put("businessCategory", BusinessCategoryConstants.DYNAMIC);
         binding.put("dataKind", BusinessCategoryConstants.KIND_ENTITY);
-        binding.put("businessTypeCode", targetBusinessTypeCode);
-        item.put("targetBusinessTypeCode", targetBusinessTypeCode);
+        binding.put("entityTypeCode", targetEntityTypeCode);
+        item.put("targetEntityTypeCode", targetEntityTypeCode);
         item.put("refTarget", Map.of(
                 "capabilityBinding", binding,
                 "valueField", "id",
                 "labelField", "name"));
     }
 
-    static String resolveRefTargetBusinessTypeCode(
-            String sourceBusinessTypeCode,
+    static String resolveRefTargetEntityTypeCode(
+            String sourceEntityTypeCode,
             ModelFieldAssignmentDO assign,
             RefResolveContext refResolveContext) {
         RefResolveContext ctx = refResolveContext != null ? refResolveContext : RefResolveContext.empty();
         if (assign != null && assign.getRefLibraryId() != null) {
             RelationFieldLibraryDO lib = ctx.refLibraryById().get(assign.getRefLibraryId());
-            if (lib != null && StringUtils.hasText(lib.getRefBusinessType())) {
-                return lib.getRefBusinessType().trim();
+            if (lib != null && StringUtils.hasText(lib.getRefEntityType())) {
+                return lib.getRefEntityType().trim();
             }
         }
         if (assign != null && assign.getModelRelationId() != null) {
             ModelRelationDO rel = ctx.modelRelationById().get(assign.getModelRelationId());
             if (rel != null && StringUtils.hasText(rel.getTargetModelCode())) {
                 String modelCode = rel.getTargetModelCode().trim();
-                String targetCode = ctx.modelCodeToBusinessTypeCode().get(modelCode);
+                String targetCode = ctx.modelCodeToEntityTypeCode().get(modelCode);
                 if (StringUtils.hasText(targetCode)) {
                     return targetCode.trim();
                 }
             }
         }
-        if (assign != null && StringUtils.hasText(assign.getTargetBusinessType())) {
-            return assign.getTargetBusinessType().trim();
+        if (assign != null && StringUtils.hasText(assign.getTargetEntityType())) {
+            return assign.getTargetEntityType().trim();
         }
-        return sourceBusinessTypeCode;
+        return sourceEntityTypeCode;
     }
 
     private static void putStaticOptions(Map<String, Object> item, Object optionsRaw) {

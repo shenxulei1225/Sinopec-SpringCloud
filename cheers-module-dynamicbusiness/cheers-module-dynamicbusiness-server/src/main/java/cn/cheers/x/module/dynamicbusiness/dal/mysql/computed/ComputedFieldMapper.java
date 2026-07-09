@@ -97,14 +97,14 @@ public interface ComputedFieldMapper extends BaseMapperX<ComputedFieldDO> {
     /**
      * 查询引用某个目标的聚合统计字段
      * 
-     * @param targetBusinessType 目标业务类型
+     * @param targetEntityType 目标业务类型
      * @param targetModelCode 目标 Model 编码
      * @return 计算字段列表
      */
-    default List<ComputedFieldDO> selectByAggregateTarget(String targetBusinessType, String targetModelCode) {
+    default List<ComputedFieldDO> selectByAggregateTarget(String targetEntityType, String targetModelCode) {
         return selectList(new LambdaQueryWrapperX<ComputedFieldDO>()
                 .eq(ComputedFieldDO::getComputeType, ComputedFieldDO.COMPUTE_TYPE_AGGREGATE)
-                .eq(ComputedFieldDO::getTargetBusinessType, targetBusinessType)
+                .eq(ComputedFieldDO::getTargetEntityType, targetEntityType)
                 .eqIfPresent(ComputedFieldDO::getTargetModelCode, targetModelCode));
     }
 

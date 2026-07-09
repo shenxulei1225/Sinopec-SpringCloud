@@ -22,7 +22,7 @@ public class EntityImportExcelVO {
     private String name;
 
     @ExcelProperty("业务类型编码")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @ExcelProperty("模型ID")
     private Long modelId;

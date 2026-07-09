@@ -1,4 +1,4 @@
-package cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo;
+package cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RelatableBusinessTypeRespVO {
+public class RelatableEntityTypeRespVO {
 
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
     private String code;

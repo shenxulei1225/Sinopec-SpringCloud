@@ -12,9 +12,9 @@ import java.util.List;
  *
  * <p>能力域约束（与定稿一致）：</p>
  * <ul>
- *   <li>能力索引统一使用 businessTypeCode；</li>
- *   <li>投影读取使用 businessTypeCode + componentCode；</li>
- *   <li>模型 CRUD 表单定义读取使用 businessTypeCode + modelId；</li>
+ *   <li>能力索引统一使用 entityTypeCode；</li>
+ *   <li>投影读取使用 entityTypeCode + componentCode；</li>
+ *   <li>模型 CRUD 表单定义读取使用 entityTypeCode + modelId；</li>
  *   <li>不接受 dataSourceKey 等组件侧历史复合键。</li>
  * </ul>
  */
@@ -30,7 +30,7 @@ public interface BusinessCapabilityService {
     /**
      * 按业务类型编码读取能力全集。
      */
-    BusinessCapabilityFullRespVO getCapabilityFull(String businessTypeCode);
+    BusinessCapabilityFullRespVO getCapabilityFull(String entityTypeCode);
 
     /**
      * 按业务类型编码 + 组件编码 + 数据种类读取组件能力投影。
@@ -38,17 +38,17 @@ public interface BusinessCapabilityService {
      * @param dataKind model / entity；system 固定 entity
      */
     CapabilityComponentProjectionRespVO getProjection(
-            String businessTypeCode, String componentCode, String dataKind);
+            String entityTypeCode, String componentCode, String dataKind);
 
     /**
      * 按业务类型编码 + 模型编号读取模型 CRUD 表单定义。
      */
-    ModelCrudFormDefinitionRespVO getModelCrudFormDefinition(String businessTypeCode, Long modelId);
+    ModelCrudFormDefinitionRespVO getModelCrudFormDefinition(String entityTypeCode, Long modelId);
 
     /**
      * 重建单个动态业务类型能力（全集 + 投影 + 表单定义）。
      */
-    void rebuildByBusinessTypeCode(String businessTypeCode);
+    void rebuildByEntityTypeCode(String entityTypeCode);
 
     /**
      * 重建全部已注册系统业务能力。
@@ -64,10 +64,10 @@ public interface BusinessCapabilityService {
     /**
      * 重建单个系统业务能力（全集 + 投影）。
      */
-    void rebuildSystemCapability(String businessTypeCode);
+    void rebuildSystemCapability(String entityTypeCode);
 
     /**
-     * 按模型触发重建（先解析模型所属 businessTypeCode，再重建该业务类型）。
+     * 按模型触发重建（先解析模型所属 entityTypeCode，再重建该业务类型）。
      */
     void rebuildByModelId(Long modelId);
 
@@ -79,5 +79,5 @@ public interface BusinessCapabilityService {
     /**
      * 业务类型基础字段变更后，重建该业务类型能力（全集、投影、全部模型 CRUD 表单）。
      */
-    void refreshAfterBusinessTypeFieldDefinitionChanged(String businessTypeCode);
+    void refreshAfterEntityTypeFieldDefinitionChanged(String entityTypeCode);
 }

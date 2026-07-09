@@ -310,20 +310,20 @@ public class ModelFieldAssignmentController {
         summary = "批量分配关联字段到多个模型",
         description = """
             适用场景：视图创建/业务初始化时，需一次性把同一个关联字段分配到多个模型。
-            业务范围：指定业务（调用方必须保证 modelIds 属于同一业务，建议同时传 targetBusinessTypeCode）。
+            业务范围：指定业务（调用方必须保证 modelIds 属于同一业务，建议同时传 targetEntityTypeCode）。
             说明：前端若无“批量操作”入口，建议由导入任务或后端编排任务触发。
             """
     )
     @Parameter(name = "modelIds", description = "模型ID列表", required = true, example = "1,2,3")
     @Parameter(name = "fieldId", description = "关联字段ID", required = true, example = "101")
-    @Parameter(name = "targetBusinessTypeCode", description = "目标业务类型编码（必填）", required = true, example = "task")
+    @Parameter(name = "targetEntityTypeCode", description = "目标业务类型编码（必填）", required = true, example = "task")
     @ApiAccessLog(operateType = UPDATE)
     @PreAuthorize("@ss.hasPermission('system:model-field-assignment:update')")
     public CommonResult<ModelFieldBatchOperationRespVO> batchAssignAssociationFieldToModels(
             @RequestParam("modelIds") List<Long> modelIds,
             @RequestParam("fieldId") Long fieldId,
-            @RequestParam("targetBusinessTypeCode") String targetBusinessTypeCode) {
-        int successCount = modelFieldAssignmentService.batchAssignAssociationFieldToModels(modelIds, fieldId, targetBusinessTypeCode);
+            @RequestParam("targetEntityTypeCode") String targetEntityTypeCode) {
+        int successCount = modelFieldAssignmentService.batchAssignAssociationFieldToModels(modelIds, fieldId, targetEntityTypeCode);
         return success(ModelFieldBatchOperationRespVO.of(modelIds.size(), successCount));
     }
 
@@ -332,20 +332,20 @@ public class ModelFieldAssignmentController {
         summary = "智能分配关联字段到多个模型",
         description = """
             适用场景：模型数量不确定时，自动选择合适策略进行关联字段分配。
-            业务范围：指定业务（调用方必须保证 modelIds 属于同一业务，建议同时传 targetBusinessTypeCode）。
+            业务范围：指定业务（调用方必须保证 modelIds 属于同一业务，建议同时传 targetEntityTypeCode）。
             说明：本接口用于性能优化编排，行为与批量分配一致但包含策略选择。
             """
     )
     @Parameter(name = "modelIds", description = "模型ID列表", required = true, example = "1,2,3")
     @Parameter(name = "fieldId", description = "关联字段ID", required = true, example = "101")
-    @Parameter(name = "targetBusinessTypeCode", description = "目标业务类型编码（必填）", required = true, example = "task")
+    @Parameter(name = "targetEntityTypeCode", description = "目标业务类型编码（必填）", required = true, example = "task")
     @ApiAccessLog(operateType = UPDATE)
     @PreAuthorize("@ss.hasPermission('system:model-field-assignment:update')")
     public CommonResult<ModelFieldBatchOperationRespVO> smartAssignAssociationFieldToModels(
             @RequestParam("modelIds") List<Long> modelIds,
             @RequestParam("fieldId") Long fieldId,
-            @RequestParam("targetBusinessTypeCode") String targetBusinessTypeCode) {
-        int successCount = modelFieldAssignmentService.smartAssignAssociationFieldToModels(modelIds, fieldId, targetBusinessTypeCode);
+            @RequestParam("targetEntityTypeCode") String targetEntityTypeCode) {
+        int successCount = modelFieldAssignmentService.smartAssignAssociationFieldToModels(modelIds, fieldId, targetEntityTypeCode);
         return success(ModelFieldBatchOperationRespVO.of(modelIds.size(), successCount));
     }
 }

@@ -9,7 +9,7 @@ import java.util.Set;
  * <p>提供动态 SQL 执行的安全防护机制：</p>
  * <ul>
  *   <li>表名白名单验证：只允许已注册的动态表</li>
- *   <li>列名白名单验证：只允许 dynamic_business_type_base_field 中定义的字段</li>
+ *   <li>列名白名单验证：只允许 dynamic_entity_type_base_field 中定义的字段</li>
  *   <li>所有值使用参数化查询（PreparedStatement）</li>
  *   <li>记录所有动态 SQL 执行的审计日志</li>
  * </ul>
@@ -74,7 +74,7 @@ public interface SqlInjectionProtectionService {
      * <p>只允许以下列名：</p>
      * <ul>
      *   <li>基础列（id, tenant_id, creator, create_time 等）</li>
-     *   <li>dynamic_business_type_base_field 中定义的固定列字段</li>
+     *   <li>dynamic_entity_type_base_field 中定义的固定列字段</li>
      *   <li>dynamic_dynamic_table_column 中定义的动态列</li>
      * </ul>
      * 

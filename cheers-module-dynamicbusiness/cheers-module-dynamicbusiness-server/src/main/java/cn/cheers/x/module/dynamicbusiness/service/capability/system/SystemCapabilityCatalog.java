@@ -86,26 +86,26 @@ public final class SystemCapabilityCatalog {
         return List.copyOf(BY_CODE.values());
     }
 
-    public static Optional<SystemCapabilityDefinition> find(String businessTypeCode) {
-        if (!StringUtils.hasText(businessTypeCode)) {
+    public static Optional<SystemCapabilityDefinition> find(String entityTypeCode) {
+        if (!StringUtils.hasText(entityTypeCode)) {
             return Optional.empty();
         }
-        return Optional.ofNullable(BY_CODE.get(businessTypeCode.trim()));
+        return Optional.ofNullable(BY_CODE.get(entityTypeCode.trim()));
     }
 
-    public static boolean isSystemCapability(String businessTypeCode) {
-        return find(businessTypeCode).isPresent();
+    public static boolean isSystemCapability(String entityTypeCode) {
+        return find(entityTypeCode).isPresent();
     }
 
     private static void register(SystemCapabilityDefinition definition) {
-        BY_CODE.put(definition.getBusinessTypeCode(), definition);
+        BY_CODE.put(definition.getEntityTypeCode(), definition);
     }
 
     private static SystemCapabilityDefinition dept(
             String code, String name, String url, boolean paginated) {
         return SystemCapabilityDefinition.builder()
-                .businessTypeCode(code)
-                .businessTypeName(name)
+                .entityTypeCode(code)
+                .entityTypeName(name)
                 .readUrl(url)
                 .readMethod("GET")
                 .paginated(paginated)
@@ -119,8 +119,8 @@ public final class SystemCapabilityCatalog {
             List<SystemCapabilityDefinition.SystemFieldDefinition> displayFields,
             List<SystemCapabilityDefinition.SystemFieldDefinition> filterFields) {
         return SystemCapabilityDefinition.builder()
-                .businessTypeCode(code)
-                .businessTypeName(name)
+                .entityTypeCode(code)
+                .entityTypeName(name)
                 .readUrl(url)
                 .readMethod("GET")
                 .paginated(true)

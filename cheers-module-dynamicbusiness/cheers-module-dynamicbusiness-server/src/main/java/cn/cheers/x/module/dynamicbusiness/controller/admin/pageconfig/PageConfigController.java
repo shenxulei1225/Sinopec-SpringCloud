@@ -5,7 +5,14 @@ import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.ApplyTemplateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.ApplyTemplateRespVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.*;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageConfigDraftCreateReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageConfigPageReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageConfigPublishReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageConfigRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageConfigSaveReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageConfigSummaryRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageConfigUpdateConfigByIdReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageConfigUpdateConfigReqVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.pageconfig.PageConfigDO;
 import cn.cheers.x.module.dynamicbusiness.service.pageconfig.PageConfigService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -168,12 +175,21 @@ public class PageConfigController {
         return success(BeanUtils.toBean(list, PageConfigRespVO.class));
     }
 
-    @GetMapping("/list-by-business-type")
-    @Operation(summary = "根据业务类型获得页面配置列表", description = "用于动态业务管理，获取某个业务类型的所有页面配置")
-    @Parameter(name = "businessType", description = "业务类型代码", required = true, example = "equipment")
+    @GetMapping("/list-by-business")
+    @Operation(summary = "按门户业务 id 获得功能页面摘要列表")
+    @Parameter(name = "businessId", description = "门户业务 id", required = true, example = "100")
     @PreAuthorize("@ss.hasPermission('system:page-config:query')")
-    public CommonResult<List<PageConfigRespVO>> getPageConfigListByBusinessType(@RequestParam("businessType") String businessType) {
-        List<PageConfigDO> list = pageConfigService.getPageConfigListByBusinessType(businessType);
+    public CommonResult<List<PageConfigSummaryRespVO>> getPageConfigListByBusiness(
+            @RequestParam("businessId") Long businessId) {
+        return success(pageConfigService.getPageConfigSummaryListByBusinessId(businessId));
+    }
+
+    @GetMapping("/list-by-entity-type")
+    @Operation(summary = "根据业务类型获得页面配置列表", description = "用于动态业务管理，获取某个业务类型的所有页面配置")
+    @Parameter(name = "entityTypeCode", description = "业务类型代码", required = true, example = "equipment")
+    @PreAuthorize("@ss.hasPermission('system:page-config:query')")
+    public CommonResult<List<PageConfigRespVO>> getPageConfigListByEntityType(@RequestParam("entityTypeCode") String entityTypeCode) {
+        List<PageConfigDO> list = pageConfigService.getPageConfigListByEntityType(entityTypeCode);
         return success(BeanUtils.toBean(list, PageConfigRespVO.class));
     }
 

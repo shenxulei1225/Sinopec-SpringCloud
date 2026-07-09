@@ -30,10 +30,10 @@ public class RelationDiscoveryVO {
     private String sourceModelName;
 
     @Schema(description = "源业务类型编码", example = "task")
-    private String sourceBusinessTypeCode;
+    private String sourceEntityTypeCode;
 
     @Schema(description = "源业务类型名称", example = "任务管理")
-    private String sourceBusinessTypeName;
+    private String sourceEntityTypeName;
 
     @Schema(description = "关联字段 ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "200")
     private Long fieldId;

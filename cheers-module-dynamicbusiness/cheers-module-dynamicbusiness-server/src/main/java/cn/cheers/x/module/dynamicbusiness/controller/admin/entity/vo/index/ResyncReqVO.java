@@ -36,7 +36,7 @@ public class ResyncReqVO {
      * 业务类型编码（BY_IDS 类型时必填，用于路由到正确的存储策略）
      */
     @Schema(description = "业务类型编码", example = "equipment")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     /**
      * Model ID（BY_TIME_RANGE 和 FAILED_ONLY 类型时可选）
@@ -94,12 +94,12 @@ public class ResyncReqVO {
         this.entityIds = entityIds;
     }
 
-    public String getBusinessTypeCode() {
-        return businessTypeCode;
+    public String getEntityTypeCode() {
+        return entityTypeCode;
     }
 
-    public void setBusinessTypeCode(String businessTypeCode) {
-        this.businessTypeCode = businessTypeCode;
+    public void setEntityTypeCode(String entityTypeCode) {
+        this.entityTypeCode = entityTypeCode;
     }
 
     public Long getModelId() {

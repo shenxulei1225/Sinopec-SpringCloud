@@ -39,9 +39,14 @@ public class ModelRelationDeclarationDO extends TenantBaseDO {
     private Long modelId;
 
     /**
+     * 模型编码（迁移幂等键，对应 {@link cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO#getCode()}）
+     */
+    private String modelCode;
+
+    /**
      * 可关联的业务类型编码
      * 
      * 声明该 Model 可以关联哪个业务类型
      */
-    private String targetBusinessType;
+    private String targetEntityType;
 }

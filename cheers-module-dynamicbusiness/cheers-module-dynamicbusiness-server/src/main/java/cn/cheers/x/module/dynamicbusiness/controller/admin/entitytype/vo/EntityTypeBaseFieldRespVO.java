@@ -1,4 +1,4 @@
-package cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo;
+package cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -27,19 +27,19 @@ import java.time.LocalDateTime;
  * 
  * <h3>关联 VO</h3>
  * <ul>
- *   <li>查询请求 → {@link BusinessTypeBaseFieldPageReqVO}</li>
- *   <li>保存请求 → {@link BusinessTypeBaseFieldSaveReqVO}</li>
+ *   <li>查询请求 → {@link EntityTypeBaseFieldPageReqVO}</li>
+ *   <li>保存请求 → {@link EntityTypeBaseFieldSaveReqVO}</li>
  * </ul>
  */
 @Schema(description = "管理后台 - 业务类型固定列字段 Response VO")
 @Data
-public class BusinessTypeBaseFieldRespVO {
+public class EntityTypeBaseFieldRespVO {
 
     @Schema(description = "字段ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     private Long id;
 
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "字段编码(对应数据库列名)", requiredMode = Schema.RequiredMode.REQUIRED, example = "code")
     private String fieldCode;

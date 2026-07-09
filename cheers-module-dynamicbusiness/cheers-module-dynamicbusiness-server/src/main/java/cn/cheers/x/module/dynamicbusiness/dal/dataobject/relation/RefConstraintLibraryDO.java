@@ -26,7 +26,7 @@ public class RefConstraintLibraryDO extends TenantBaseDO {
     /**
      * 业务类型编码
      */
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     /**
      * Ref 目标类型（可选）

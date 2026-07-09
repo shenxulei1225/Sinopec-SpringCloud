@@ -28,7 +28,7 @@ public class EntityAccessPermissionRespVO {
     private String entityName;
 
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "是否可查看", example = "true")
     private Boolean canView;

@@ -15,7 +15,7 @@ public class EntitySceneQueryReq {
     private EntityQueryScene scene;
 
     /** 业务类型编码（部分场景必填） */
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     /** 模型ID（部分场景必填） */
     private Long modelId;
@@ -30,7 +30,7 @@ public class EntitySceneQueryReq {
     private Long rootEntityId;
 
     /** 实体来源业务类型编码（模式C必填） */
-    private String entitySourceBusinessType;
+    private String entitySourceEntityType;
 
     /** 页码（LIST形态时使用，默认1） */
     private Integer pageNo;

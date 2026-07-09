@@ -19,7 +19,7 @@ public class TemplatePageReqVO extends PageParam {
     private String keyword;
 
     @Schema(description = "业务类型编码", example = "equipment")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "模板状态（1-启用，0-禁用）", example = "1")
     private Integer status;

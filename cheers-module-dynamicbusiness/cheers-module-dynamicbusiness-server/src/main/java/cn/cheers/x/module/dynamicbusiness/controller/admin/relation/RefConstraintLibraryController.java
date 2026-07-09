@@ -72,13 +72,13 @@ public class RefConstraintLibraryController {
         return success(refConstraintLibraryService.getPage(reqVO));
     }
 
-    @GetMapping("/list-by-business-type")
+    @GetMapping("/list-by-entity-type")
     @Operation(summary = "按业务类型查询约束器库")
     @PreAuthorize("@ss.hasPermission('system:ref-constraint-library:query')")
-    public CommonResult<List<RefConstraintLibraryRespVO>> listByBusinessType(
-            @RequestParam("businessTypeCode") String businessTypeCode,
+    public CommonResult<List<RefConstraintLibraryRespVO>> listByEntityType(
+            @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam(value = "refTargetType", required = false) String refTargetType) {
-        return success(refConstraintLibraryService.listByBusinessType(businessTypeCode, refTargetType));
+        return success(refConstraintLibraryService.listByEntityType(entityTypeCode, refTargetType));
     }
 
     @GetMapping("/list-all")

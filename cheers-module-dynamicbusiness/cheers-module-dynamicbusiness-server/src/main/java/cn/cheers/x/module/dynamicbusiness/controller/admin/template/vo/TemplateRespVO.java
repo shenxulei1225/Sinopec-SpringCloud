@@ -24,7 +24,7 @@ public class TemplateRespVO {
     private String name;
 
     @Schema(description = "业务类型编码", example = "equipment")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "模板描述", example = "包含设备管理的基础字段")
     private String description;

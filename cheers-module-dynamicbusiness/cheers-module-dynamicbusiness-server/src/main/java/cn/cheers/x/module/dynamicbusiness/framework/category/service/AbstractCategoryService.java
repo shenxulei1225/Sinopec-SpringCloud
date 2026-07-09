@@ -98,6 +98,7 @@ public abstract class AbstractCategoryService<
         category.setParentId(parentId);
         category.setLevel(newLevel);
         category.setTreePath(newPath);
+        category.setParentCode(parent == null ? null : parent.getCode());
         getMapper().updateById(category);
         updateChildrenPath(category.getId(), newPath, newLevel, categoryTypeCode);
         evictCache(categoryTypeCode);
@@ -152,6 +153,7 @@ public abstract class AbstractCategoryService<
         if (parentId == null) {
             category.setLevel(1);
             category.setTreePath(category.getName());
+            category.setParentCode(null);
             return;
         }
         DO parent = getMapper().selectById(parentId);
@@ -161,6 +163,7 @@ public abstract class AbstractCategoryService<
         assertSameCategoryType(parent.getCategoryTypeCode(), category.getCategoryTypeCode());
         category.setLevel(Objects.requireNonNullElse(parent.getLevel(), 0) + 1);
         category.setTreePath(CategoryUtils.generateTreePath(parent.getTreePath(), category.getName()));
+        category.setParentCode(parent.getCode());
     }
 
     private void fillLevelAndPathForUpdate(DO db, DO updateObj) {
@@ -172,6 +175,7 @@ public abstract class AbstractCategoryService<
                 updateObj.setTreePath(db.getTreePath());
             }
             updateObj.setLevel(db.getLevel());
+            updateObj.setParentCode(db.getParentCode());
             return;
         }
         DO parent = newParentId == null ? null : getMapper().selectById(newParentId);
@@ -186,6 +190,7 @@ public abstract class AbstractCategoryService<
         String newPath = CategoryUtils.generateTreePath(parent == null ? null : parent.getTreePath(), updateObj.getName());
         updateObj.setLevel(level);
         updateObj.setTreePath(newPath);
+        updateObj.setParentCode(parent == null ? null : parent.getCode());
     }
 
     private String extractParentPath(String treePath) {
@@ -238,6 +243,8 @@ public abstract class AbstractCategoryService<
     }
 
     private void updateChildrenPath(Long parentId, String parentPath, int parentLevel, String categoryTypeCode) {
+        DO parent = getMapper().selectById(parentId);
+        String parentCode = parent != null ? parent.getCode() : null;
         List<DO> children = getMapper().selectByParentIdAndCategoryTypeCode(parentId, categoryTypeCode);
         for (DO child : children) {
             int newLevel = parentLevel + 1;
@@ -245,6 +252,7 @@ public abstract class AbstractCategoryService<
             String newPath = CategoryUtils.generateTreePath(parentPath, child.getName());
             child.setLevel(newLevel);
             child.setTreePath(newPath);
+            child.setParentCode(parentCode);
             getMapper().updateById(child);
             updateChildrenPath(child.getId(), newPath, newLevel, categoryTypeCode);
         }

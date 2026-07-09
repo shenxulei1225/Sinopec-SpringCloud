@@ -13,10 +13,10 @@ import lombok.Data;
 public class AssociationTargetRespVO {
 
     @Schema(description = "业务模块编码", example = "equipment")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "业务模块名称", example = "设备管理")
-    private String businessTypeName;
+    private String entityTypeName;
 
     @Schema(description = "关联字段ID", example = "1001")
     private Long fieldId;

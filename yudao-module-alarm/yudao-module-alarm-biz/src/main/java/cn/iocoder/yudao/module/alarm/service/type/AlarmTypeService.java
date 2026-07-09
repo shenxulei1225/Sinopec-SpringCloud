@@ -17,7 +17,7 @@ import java.util.List;
  * </ul>
  * </p>
  * 
- * <p>告警类型数据存储在 system_category 表中，通过 business_type_code = 'ALARM_TYPE' 区分，
+ * <p>告警类型数据存储在 system_category 表中，通过 entity_type_code = 'ALARM_TYPE' 区分，
  * 通过 level 字段区分层级：
  * <ul>
  *   <li>level = 1：根节点（ALARM_TYPE_ROOT）</li>

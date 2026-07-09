@@ -20,7 +20,7 @@ public class TemplateCreateReqVO {
 
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
     @NotBlank(message = "业务类型编码不能为空")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "模板描述", example = "包含设备管理的基础字段")
     private String description;

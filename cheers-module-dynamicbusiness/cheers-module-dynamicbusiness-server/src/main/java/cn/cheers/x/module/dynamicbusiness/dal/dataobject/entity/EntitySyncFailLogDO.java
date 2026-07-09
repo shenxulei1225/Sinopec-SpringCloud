@@ -56,7 +56,7 @@ public class EntitySyncFailLogDO extends TenantBaseDO {
      * 
      * 用于路由到正确的存储策略（通用表或动态表）
      */
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     /**
      * 模型ID

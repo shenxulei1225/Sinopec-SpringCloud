@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Primary;
  *
  * <p>通过使用相同的 Bean 名称 "mybatisPlusInterceptor" 并配合框架层的
  * <p>通过 {@link Primary} 覆盖框架 {@code YudaoMybatisAutoConfiguration} 中的同名 Bean，
- * 确保 Entity 动态表名拦截器（DEDICATED → biz_{code}）一定生效。</p>
+ * 确保 Entity 动态表名拦截器（DEDICATED → ent_{code}）一定生效。</p>
  */
 @Configuration
 @Slf4j

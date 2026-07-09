@@ -15,7 +15,7 @@ public class EntityOperationPermissionCreateReqVO {
 
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
     @NotBlank(message = "业务类型编码不能为空")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "角色ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     @NotNull(message = "角色ID不能为空")

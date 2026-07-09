@@ -5,8 +5,8 @@ import cn.iocoder.yudao.framework.tenant.core.context.TenantContextHolder;
 import cn.hutool.core.util.IdUtil;
 import cn.iocoder.yudao.framework.common.exception.ServiceException;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo.BusinessTypeBaseFieldRespVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo.BusinessTypeRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldAssignmentRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldGroupCreateReqVO;
@@ -16,20 +16,20 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelUpdateR
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelAvailableFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelBatchSortReqVO;
 import cn.cheers.x.module.dynamicbusiness.convert.model.ModelConvert;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelCategoryRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelCategoryRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryDO;
-import cn.cheers.x.module.dynamicbusiness.enums.businesstype.StorageTypeEnum;
-import cn.cheers.x.module.dynamicbusiness.service.businesstype.BusinessTypeBaseFieldService;
-import cn.cheers.x.module.dynamicbusiness.service.businesstype.BusinessTypeService;
+import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeBaseFieldService;
+import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryTypeService;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
@@ -85,12 +85,12 @@ public class ModelServiceImpl implements ModelService {
     @Resource
     private CategoryMapper categoryMapper;
     @Resource
-    private BusinessTypeBaseFieldService businessTypeBaseFieldService;
+    private EntityTypeBaseFieldService entityTypeBaseFieldService;
     @Resource
-    private BusinessTypeMapper businessTypeMapper;
+    private EntityTypeMapper entityTypeMapper;
     @Resource
-    @Lazy // 避免与 BusinessTypeServiceImpl 循环依赖
-    private BusinessTypeService businessTypeService;
+    @Lazy // 避免与 EntityTypeServiceImpl 循环依赖
+    private EntityTypeService entityTypeService;
     @Resource
     @Lazy // 避免循环依赖
     private ModelFieldAssignmentService modelFieldAssignmentService;
@@ -131,18 +131,18 @@ public class ModelServiceImpl implements ModelService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createModel(ModelCreateReqVO reqVO) {
-        // 校验业务类型编码是否存在（租户隔离由 MyBatis Plus 租户插件自动处理,BusinessTypeDO 继承 TenantBaseDO）
-        if (reqVO.getBusinessTypeCode() != null) {
-            BusinessTypeDO businessType = 
-                    businessTypeMapper.selectByCode(reqVO.getBusinessTypeCode());
-            if (businessType == null) {
-                throw new ServiceException(404, "业务类型不存在,编码：" + reqVO.getBusinessTypeCode());
+        // 校验业务类型编码是否存在（租户隔离由 MyBatis Plus 租户插件自动处理,EntityTypeDO 继承 TenantBaseDO）
+        if (reqVO.getEntityTypeCode() != null) {
+            EntityTypeDO entityType = 
+                    entityTypeMapper.selectByCode(reqVO.getEntityTypeCode());
+            if (entityType == null) {
+                throw new ServiceException(404, "业务类型不存在,编码：" + reqVO.getEntityTypeCode());
             }
         }
         
         // 校验模型名称唯一性（租户隔离由 MyBatis Plus 租户插件自动处理）
         try {
-            ModelDO existModel = modelCoreService.getByNameInBusinessType(reqVO.getName(), reqVO.getBusinessTypeCode());
+            ModelDO existModel = modelCoreService.getByNameInEntityType(reqVO.getName(), reqVO.getEntityTypeCode());
             if (existModel != null) {
                 throw new ServiceException(400, "模型名称已存在：" + reqVO.getName());
             }
@@ -155,7 +155,7 @@ public class ModelServiceImpl implements ModelService {
         ModelDO model = ModelConvert.INSTANCE.convert(reqVO);
         model.setCode(generateCode());
         if (model.getSort() == null) {
-            Integer maxSort = modelMapper.selectMaxSortByBusinessTypeCode(reqVO.getBusinessTypeCode());
+            Integer maxSort = modelMapper.selectMaxSortByEntityTypeCode(reqVO.getEntityTypeCode());
             model.setSort(SparseSortUtils.next(maxSort));
         }
         modelCoreService.create(model);
@@ -179,7 +179,9 @@ public class ModelServiceImpl implements ModelService {
                 // 创建关联关系（租户插件会自动填充 tenantId）
                 ModelCategoryRelationDO relation = ModelCategoryRelationDO.builder()
                         .modelId(model.getId())
+                        .modelCode(model.getCode())
                         .categoryId(categoryIdToBind)
+                        .categoryCode(category.getCode())
                         .build();
                 modelCategoryRelationMapper.insert(relation);
             }
@@ -218,7 +220,7 @@ public class ModelServiceImpl implements ModelService {
         // 2. 如果名称改变且不冲突：selectByName 返回 null（同一租户内没有同名模型）,允许更新
         // 3. 如果名称改变但与其他模型冲突：selectByName 找到同一租户内的其他模型,nameModel.getId() != reqVO.getId(),抛出异常
         try {
-            ModelDO nameModel = modelCoreService.getByNameInBusinessType(reqVO.getName(), reqVO.getBusinessTypeCode());
+            ModelDO nameModel = modelCoreService.getByNameInEntityType(reqVO.getName(), reqVO.getEntityTypeCode());
             if (nameModel != null && !nameModel.getId().equals(reqVO.getId())) {
                 throw new ServiceException(400, "模型名称已存在：" + reqVO.getName());
             }
@@ -244,11 +246,11 @@ public class ModelServiceImpl implements ModelService {
             
             if (isReplaceMode) {
                 // 完全替换模式：使用 replaceModelCategories（删除所有+批量添加,复用软删除记录）
-                modelCategoryRelationService.updateAssociation(modelId, reqVO.getCategoryIds(), reqVO.getBusinessTypeCode());
+                modelCategoryRelationService.updateAssociation(modelId, reqVO.getCategoryIds(), reqVO.getEntityTypeCode());
             } else {
                 // 增量添加模式：只添加新分类,不删除现有分类
                 if (!reqVO.getCategoryIds().isEmpty()) {
-                    CategoryRelationBatchResult result = addCategoryRelationsBatch(modelId, reqVO.getCategoryIds(), reqVO.getBusinessTypeCode());
+                    CategoryRelationBatchResult result = addCategoryRelationsBatch(modelId, reqVO.getCategoryIds(), reqVO.getEntityTypeCode());
                     // 记录处理结果日志
                     logCategoryRelationResult(modelId, result, "增量添加模式");
                 }
@@ -305,7 +307,7 @@ public class ModelServiceImpl implements ModelService {
      * @param categoryIds 分类ID列表
      * @return 处理结果,包含已存在、已恢复、已创建的分类ID列表
      */
-    private CategoryRelationBatchResult addCategoryRelationsBatch(Long modelId, List<Long> categoryIds, String businessTypeCode) {
+    private CategoryRelationBatchResult addCategoryRelationsBatch(Long modelId, List<Long> categoryIds, String entityTypeCode) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return new CategoryRelationBatchResult(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
         }
@@ -330,7 +332,7 @@ public class ModelServiceImpl implements ModelService {
         List<ModelCategoryRelationDO> existingRelations = modelCategoryRelationMapper.selectList(
                 new LambdaQueryWrapperX<ModelCategoryRelationDO>()
                         .eq(ModelCategoryRelationDO::getModelId, modelId)
-                        .eq(ModelCategoryRelationDO::getBusinessTypeCode, businessTypeCode)
+                        .eq(ModelCategoryRelationDO::getEntityTypeCode, entityTypeCode)
                         .in(ModelCategoryRelationDO::getCategoryId, categoryIds));
         
         // 步骤3：将分类ID分为三类
@@ -351,7 +353,7 @@ public class ModelServiceImpl implements ModelService {
         // 步骤4：批量恢复软删除的关联（租户插件自动处理 tenantId）
         if (!existingButDeleted.isEmpty()) {
             List<Long> categoryIdsToRestore = new ArrayList<>(existingButDeleted);
-            modelCategoryRelationMapper.restoreDeletedRelationsBatch(modelId, categoryIdsToRestore, businessTypeCode);
+            modelCategoryRelationMapper.restoreDeletedRelationsBatch(modelId, categoryIdsToRestore, entityTypeCode);
         }
         
         // 步骤5：批量创建新的关联关系（租户插件会自动填充 tenantId）
@@ -361,7 +363,7 @@ public class ModelServiceImpl implements ModelService {
                 ModelCategoryRelationDO relation = ModelCategoryRelationDO.builder()
                         .modelId(modelId)
                         .categoryId(categoryId)
-                        .businessTypeCode(businessTypeCode)
+                        .entityTypeCode(entityTypeCode)
                         .build();
                 relationsToInsert.add(relation);
             }
@@ -470,9 +472,9 @@ public class ModelServiceImpl implements ModelService {
      * 根据业务类型编码获取模型列表
      */
     @Override
-    public List<ModelRespVO> listModelsByBusinessType(String businessTypeCode) {
+    public List<ModelRespVO> listModelsByEntityType(String entityTypeCode) {
         // 查询该业务类型下的所有模型
-        List<ModelDO> list = modelCoreService.listByBusinessTypeCode(businessTypeCode);
+        List<ModelDO> list = modelCoreService.listByEntityTypeCode(entityTypeCode);
         if (list.isEmpty()) {
             return List.of();
         }
@@ -481,7 +483,7 @@ public class ModelServiceImpl implements ModelService {
         List<ModelRespVO> result = ModelConvert.INSTANCE.convertList(list);
 
         // 查询每个模型关联的所有分类ID（多对多关系）
-        // 说明：该填充逻辑仍保留在 ModelService 内部,避免改变 list-by-business-type 等接口的返回结构。
+        // 说明：该填充逻辑仍保留在 ModelService 内部,避免改变 list-by-entity-type 等接口的返回结构。
         // 另外,ModelCategoryRelationService.listModelsByCategory 也会负责填充。
         fillModelCategoryIds(result);
 
@@ -492,29 +494,29 @@ public class ModelServiceImpl implements ModelService {
      * 获取全部业务模型列表（不分页）
      */
     @Override
-    public List<ModelRespVO> listModelsAcrossBusinessTypes() {
+    public List<ModelRespVO> listModelsAcrossEntityTypes() {
         // Service 层能力：跨业务类型模型查询（含启用/停用）
-        return listModelsAcrossBusinessTypesByStatus(null);
+        return listModelsAcrossEntityTypesByStatus(null);
     }
 
     @Override
-    public List<ModelRespVO> listEnabledModelsAcrossBusinessTypes() {
+    public List<ModelRespVO> listEnabledModelsAcrossEntityTypes() {
         // Service 层能力：跨业务类型启用模型查询（非 Core 的单业务能力）
-        return listModelsAcrossBusinessTypesByStatus(1);
+        return listModelsAcrossEntityTypesByStatus(1);
     }
 
     @Override
     @Deprecated
     public List<ModelRespVO> listAllModels() {
-        return listEnabledModelsAcrossBusinessTypes();
+        return listEnabledModelsAcrossEntityTypes();
     }
 
-    private List<ModelRespVO> listModelsAcrossBusinessTypesByStatus(Integer status) {
-        List<BusinessTypeRespVO> businessTypes = businessTypeService.listAll();
-        java.util.Map<String, Integer> businessTypeOrder = new java.util.HashMap<>();
-        for (BusinessTypeRespVO bt : businessTypes) {
+    private List<ModelRespVO> listModelsAcrossEntityTypesByStatus(Integer status) {
+        List<EntityTypeRespVO> entityTypes = entityTypeService.listAll();
+        java.util.Map<String, Integer> entityTypeOrder = new java.util.HashMap<>();
+        for (EntityTypeRespVO bt : entityTypes) {
             if (bt != null && bt.getCode() != null && !bt.getCode().isBlank()) {
-                businessTypeOrder.put(bt.getCode(), bt.getSort() == null ? Integer.MAX_VALUE : bt.getSort());
+                entityTypeOrder.put(bt.getCode(), bt.getSort() == null ? Integer.MAX_VALUE : bt.getSort());
             }
         }
 
@@ -527,8 +529,8 @@ public class ModelServiceImpl implements ModelService {
 
         List<ModelDO> ordered = list.stream()
                 .sorted(Comparator
-                        .comparing((ModelDO m) -> businessTypeOrder.getOrDefault(m.getBusinessTypeCode(), Integer.MAX_VALUE))
-                        .thenComparing((ModelDO m) -> m.getBusinessTypeCode() == null ? "" : m.getBusinessTypeCode())
+                        .comparing((ModelDO m) -> entityTypeOrder.getOrDefault(m.getEntityTypeCode(), Integer.MAX_VALUE))
+                        .thenComparing((ModelDO m) -> m.getEntityTypeCode() == null ? "" : m.getEntityTypeCode())
                         .thenComparing((ModelDO m) -> m.getSort() == null ? Integer.MAX_VALUE : m.getSort())
                         .thenComparing(ModelDO::getCreateTime, Comparator.nullsLast(Comparator.reverseOrder()))
                         .thenComparing((ModelDO m) -> m.getId() == null ? Long.MAX_VALUE : m.getId()))
@@ -583,26 +585,26 @@ public class ModelServiceImpl implements ModelService {
 
 
     @Override
-    public PageResult<ModelRespVO> pageModelByBusinessTypeCode(ModelPageReqVO reqVO) {
+    public PageResult<ModelRespVO> pageModelByEntityTypeCode(ModelPageReqVO reqVO) {
         PageResult<ModelDO> pageResult;
         Integer status = reqVO.getStatus() != null ? reqVO.getStatus() : 1;
-        if (Boolean.TRUE.equals(reqVO.getIncludeChildren()) && reqVO.getBusinessTypeCode() != null && !reqVO.getBusinessTypeCode().isBlank()) {
-            List<String> businessTypeCodes = collectBusinessTypeCodesWithChildren(reqVO.getBusinessTypeCode());
+        if (Boolean.TRUE.equals(reqVO.getIncludeChildren()) && reqVO.getEntityTypeCode() != null && !reqVO.getEntityTypeCode().isBlank()) {
+            List<String> entityTypeCodes = collectEntityTypeCodesWithChildren(reqVO.getEntityTypeCode());
             List<ModelDO> allModels = modelMapper.selectList(new LambdaQueryWrapperX<ModelDO>()
-                    .in(ModelDO::getBusinessTypeCode, businessTypeCodes)
+                    .in(ModelDO::getEntityTypeCode, entityTypeCodes)
                     .eq(ModelDO::getStatus, status)
                     .and(org.apache.commons.lang3.StringUtils.isNotBlank(reqVO.getKeyword()),
                             q -> q.like(ModelDO::getName, reqVO.getKeyword())
                                     .or().like(ModelDO::getDescription, reqVO.getKeyword())));
 
-            java.util.Map<String, Integer> businessTypeOrder = new java.util.HashMap<>();
-            for (int i = 0; i < businessTypeCodes.size(); i++) {
-                businessTypeOrder.put(businessTypeCodes.get(i), i);
+            java.util.Map<String, Integer> entityTypeOrder = new java.util.HashMap<>();
+            for (int i = 0; i < entityTypeCodes.size(); i++) {
+                entityTypeOrder.put(entityTypeCodes.get(i), i);
             }
 
             List<ModelDO> ordered = allModels.stream()
                     .sorted(Comparator
-                            .comparing((ModelDO m) -> businessTypeOrder.getOrDefault(m.getBusinessTypeCode(), Integer.MAX_VALUE))
+                            .comparing((ModelDO m) -> entityTypeOrder.getOrDefault(m.getEntityTypeCode(), Integer.MAX_VALUE))
                             .thenComparing((ModelDO m) -> m.getSort() == null ? Integer.MAX_VALUE : m.getSort())
                             .thenComparing(ModelDO::getCreateTime, Comparator.nullsLast(Comparator.reverseOrder()))
                             .thenComparing((ModelDO m) -> m.getId() == null ? Long.MAX_VALUE : m.getId()))
@@ -617,7 +619,7 @@ public class ModelServiceImpl implements ModelService {
             pageResult = new PageResult<>(pageList, (long) ordered.size());
         } else {
             pageResult = modelCoreService.pageModels(
-                    reqVO.getBusinessTypeCode(),
+                    reqVO.getEntityTypeCode(),
                     reqVO.getKeyword(),
                     status,
                     reqVO.getPageNo(),
@@ -657,12 +659,12 @@ public class ModelServiceImpl implements ModelService {
     }
 
     @Override
-    public List<ModelRespVO> searchModels(String keyword, String businessTypeCode) {
+    public List<ModelRespVO> searchModels(String keyword, String entityTypeCode) {
         List<ModelDO> list;
-        if (businessTypeCode == null || businessTypeCode.isBlank()) {
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
             return List.of();
         }
-        list = modelCoreService.searchLikeInBusinessType(keyword, businessTypeCode);
+        list = modelCoreService.searchLikeInEntityType(keyword, entityTypeCode);
         List<ModelRespVO> result = ModelConvert.INSTANCE.convertList(list);
         
         // 查询每个模型关联的所有分类ID（多对多关系）
@@ -714,7 +716,7 @@ public class ModelServiceImpl implements ModelService {
             if (model == null) {
                 throw new ServiceException(404, "模型不存在: " + item.getModelId());
             }
-            if (!reqVO.getBusinessTypeCode().equals(model.getBusinessTypeCode())) {
+            if (!reqVO.getEntityTypeCode().equals(model.getEntityTypeCode())) {
                 throw new ServiceException(400, "模型不属于指定业务类型: " + item.getModelId());
             }
         }
@@ -728,16 +730,16 @@ public class ModelServiceImpl implements ModelService {
         }
     }
 
-    private List<String> collectBusinessTypeCodesWithChildren(String businessTypeCode) {
-        List<BusinessTypeRespVO> children =
-                businessTypeService.listChildrenTreeByCode(businessTypeCode);
+    private List<String> collectEntityTypeCodesWithChildren(String entityTypeCode) {
+        List<EntityTypeRespVO> children =
+                entityTypeService.listChildrenTreeByCode(entityTypeCode);
 
         LinkedHashSet<String> codes = new LinkedHashSet<>();
-        codes.add(businessTypeCode);
+        codes.add(entityTypeCode);
 
-        java.util.Deque<BusinessTypeRespVO> queue = new java.util.ArrayDeque<>(children);
+        java.util.Deque<EntityTypeRespVO> queue = new java.util.ArrayDeque<>(children);
         while (!queue.isEmpty()) {
-            BusinessTypeRespVO node = queue.poll();
+            EntityTypeRespVO node = queue.poll();
             if (node == null) {
                 continue;
             }
@@ -772,15 +774,15 @@ public class ModelServiceImpl implements ModelService {
         List<ModelAvailableFieldRespVO> result = new ArrayList<>();
 
         // 2. 获取固定列字段（来自业务类型配置）
-        if (model.getBusinessTypeCode() != null) {
-            BusinessTypeDO businessType = businessTypeMapper.selectByCode(model.getBusinessTypeCode());
-            if (businessType != null) {
-                StorageTypeEnum storageType = StorageTypeEnum.getByCode(businessType.getStorageType());
+        if (model.getEntityTypeCode() != null) {
+            EntityTypeDO entityType = entityTypeMapper.selectByCode(model.getEntityTypeCode());
+            if (entityType != null) {
+                StorageTypeEnum storageType = StorageTypeEnum.getByCode(entityType.getStorageType());
                 if (storageType != null && storageType.isDedicated()) {
-                    List<BusinessTypeBaseFieldRespVO> baseFields = 
-                            businessTypeBaseFieldService.listByBusinessTypeCode(model.getBusinessTypeCode());
+                    List<EntityTypeBaseFieldRespVO> baseFields = 
+                            entityTypeBaseFieldService.listByEntityTypeCode(model.getEntityTypeCode());
                     
-                    for (BusinessTypeBaseFieldRespVO baseField : baseFields) {
+                    for (EntityTypeBaseFieldRespVO baseField : baseFields) {
                         ModelAvailableFieldRespVO option = ModelAvailableFieldRespVO.builder()
                                 .fieldCode(baseField.getFieldCode())
                                 .fieldName(baseField.getFieldName())
@@ -821,7 +823,7 @@ public class ModelServiceImpl implements ModelService {
      * 发布 Model 创建事件
      * 
      * 用于触发：
-     * 1. 展开已有的 BusinessType 关联到新 Model
+     * 1. 展开已有的 EntityType 关联到新 Model
      * 
      * 需求：FR-BDA-005, FR-BDA-023, FR-BDA-072
      */
@@ -832,7 +834,7 @@ public class ModelServiceImpl implements ModelService {
                     model.getId(),
                     model.getCode(),
                     model.getName(),
-                    model.getBusinessTypeCode(),
+                    model.getEntityTypeCode(),
                     model.getTenantId()
             );
             eventPublisher.publishEvent(event);
@@ -858,7 +860,7 @@ public class ModelServiceImpl implements ModelService {
                     model.getId(),
                     model.getCode(),
                     model.getName(),
-                    model.getBusinessTypeCode(),
+                    model.getEntityTypeCode(),
                     model.getTenantId()
             );
             eventPublisher.publishEvent(event);
@@ -884,7 +886,7 @@ public class ModelServiceImpl implements ModelService {
             return List.of();
         }
 
-        // 转换为 VO 列表（businessTypeCode 已在 convert 方法中设置）
+        // 转换为 VO 列表（entityTypeCode 已在 convert 方法中设置）
         List<ModelRespVO> result = ModelConvert.INSTANCE.convertList(models);
 
         // 批量查询所有模型的分类关联
@@ -915,10 +917,10 @@ public class ModelServiceImpl implements ModelService {
     }
 
     @Override
-    public PageResult<Long> queryOrderedModelIdsByCategoriesInBusiness(List<Long> categoryIds, String categoryTypeCode, String businessTypeCode,
+    public PageResult<Long> queryOrderedModelIdsByCategoriesInBusiness(List<Long> categoryIds, String categoryTypeCode, String entityTypeCode,
                                                                        Integer pageNo, Integer pageSize) {
-        if (businessTypeCode == null || businessTypeCode.isBlank()) {
-            throw new ServiceException(400, "businessTypeCode 不能为空");
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
+            throw new ServiceException(400, "entityTypeCode 不能为空");
         }
         List<Long> normalizedCategoryIds = categoryIds == null ? new ArrayList<>()
                 : categoryIds.stream().filter(Objects::nonNull).distinct().collect(Collectors.toList());
@@ -934,8 +936,8 @@ public class ModelServiceImpl implements ModelService {
             normalizedCategoryIds = List.of(rootCategoryId);
         }
         List<Long> modelIds = normalizedCategoryIds.size() == 1
-                ? modelCategoryRelationService.listModelIdsByCategoryIdWithDescendants(normalizedCategoryIds.get(0), businessTypeCode)
-                : modelCategoryRelationService.listModelIdsByCategoryIdsWithDescendants(normalizedCategoryIds, businessTypeCode);
+                ? modelCategoryRelationService.listModelIdsByCategoryIdWithDescendants(normalizedCategoryIds.get(0), entityTypeCode)
+                : modelCategoryRelationService.listModelIdsByCategoryIdsWithDescendants(normalizedCategoryIds, entityTypeCode);
         if (modelIds == null || modelIds.isEmpty()) {
             return new PageResult<>(List.of(), 0L);
         }

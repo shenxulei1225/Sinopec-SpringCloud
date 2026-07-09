@@ -60,12 +60,12 @@ public class EntityPermissionController {
     @GetMapping("/access/get")
     @Operation(summary = "获取实体访问权限")
     @Parameter(name = "id", description = "权限ID", required = true)
-    @Parameter(name = "businessTypeCode", description = "业务类型编码", required = true)
+    @Parameter(name = "entityTypeCode", description = "业务类型编码", required = true)
     @PreAuthorize("@ss.hasPermission('system:entity-permission:query')")
     public CommonResult<EntityAccessPermissionRespVO> getAccessPermission(
             @RequestParam("id") Long id,
-            @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(entityPermissionService.getAccessPermission(id, businessTypeCode));
+            @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(entityPermissionService.getAccessPermission(id, entityTypeCode));
     }
 
     @GetMapping("/access/list-by-role")
@@ -79,12 +79,12 @@ public class EntityPermissionController {
     @GetMapping("/access/list-by-entity")
     @Operation(summary = "获取实体的访问权限列表")
     @Parameter(name = "entityId", description = "实体ID", required = true)
-    @Parameter(name = "businessTypeCode", description = "业务类型编码（动态表实体必须提供）", required = false)
+    @Parameter(name = "entityTypeCode", description = "业务类型编码（动态表实体必须提供）", required = false)
     @PreAuthorize("@ss.hasPermission('system:entity-permission:query')")
     public CommonResult<List<EntityAccessPermissionRespVO>> getAccessPermissionsByEntityId(
             @RequestParam("entityId") Long entityId,
-            @RequestParam(value = "businessTypeCode") String businessTypeCode) {
-        return success(entityPermissionService.getAccessPermissionsByEntityId(entityId, businessTypeCode));
+            @RequestParam(value = "entityTypeCode") String entityTypeCode) {
+        return success(entityPermissionService.getAccessPermissionsByEntityId(entityId, entityTypeCode));
     }
 
     // ========== 实体操作权限 ==========
@@ -118,12 +118,12 @@ public class EntityPermissionController {
     @GetMapping("/operation/get")
     @Operation(summary = "获取实体操作权限")
     @Parameter(name = "id", description = "权限ID", required = true)
-    @Parameter(name = "businessTypeCode", description = "业务类型编码", required = true)
+    @Parameter(name = "entityTypeCode", description = "业务类型编码", required = true)
     @PreAuthorize("@ss.hasPermission('system:entity-permission:query')")
     public CommonResult<EntityOperationPermissionRespVO> getOperationPermission(
             @RequestParam("id") Long id,
-            @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(entityPermissionService.getOperationPermission(id, businessTypeCode));
+            @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(entityPermissionService.getOperationPermission(id, entityTypeCode));
     }
 
     @GetMapping("/operation/list-by-role")
@@ -242,12 +242,12 @@ public class EntityPermissionController {
     @GetMapping("/check/entity")
     @Operation(summary = "检查当前用户对实体的权限")
     @Parameter(name = "entityId", description = "实体ID", required = true)
-    @Parameter(name = "businessTypeCode", description = "业务类型编码", required = true)
+    @Parameter(name = "entityTypeCode", description = "业务类型编码", required = true)
     public CommonResult<EntityPermissionCheckRespVO> checkEntityPermission(
             @RequestParam("entityId") Long entityId,
-            @RequestParam("businessTypeCode") String businessTypeCode) {
+            @RequestParam("entityTypeCode") String entityTypeCode) {
         Long userId = SecurityFrameworkUtils.getLoginUserId();
-        return success(entityPermissionService.checkEntityPermission(userId, entityId, businessTypeCode));
+        return success(entityPermissionService.checkEntityPermission(userId, entityId, entityTypeCode));
     }
 
     @GetMapping("/check/model")

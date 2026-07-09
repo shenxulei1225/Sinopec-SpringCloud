@@ -55,10 +55,10 @@ public class RelationFieldLibraryDO extends TenantBaseDO {
     /**
      * 关联业务类型编码（松散引用）
      *
-     * 存储 BusinessType 的编码，不使用外键约束
+     * 存储 EntityType 的编码，不使用外键约束
      * 如"personnel"、"equipment"
      */
-    private String refBusinessType;
+    private String refEntityType;
 
     /**
      * 关联目标 Model 编码（历史字段，已弃用）

@@ -21,7 +21,7 @@ public class DynamicTableAuditLogRespVO {
     @Schema(description = "操作类型", example = "CREATE_TABLE")
     private String operationType;
 
-    @Schema(description = "操作描述", example = "创建动态表: biz_task_001")
+    @Schema(description = "操作描述", example = "创建动态表: ent_task_001")
     private String operationDesc;
 
     @Schema(description = "执行的SQL")

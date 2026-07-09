@@ -1,4 +1,4 @@
-package cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype;
+package cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype;
 
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -21,15 +21,15 @@ import lombok.*;
  * 
  * @author yudao
  */
-@TableName("dynamic_business_type_base_field")
-@KeySequence("dynamic_business_type_base_field_seq")
+@TableName("dynamic_entity_type_base_field")
+@KeySequence("dynamic_entity_type_base_field_seq")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class BusinessTypeBaseFieldDO extends TenantBaseDO {
+public class EntityTypeBaseFieldDO extends TenantBaseDO {
 
     /**
      * 字段ID
@@ -40,10 +40,10 @@ public class BusinessTypeBaseFieldDO extends TenantBaseDO {
     /**
      * 业务类型编码
      * 
-     * 关联 dynamic_business_type_config.business_type_code
+     * 关联 dynamic_entity_type_config.entity_type_code
      * 例如:equipment, maintenance_task
      */
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     /**
      * 字段编码

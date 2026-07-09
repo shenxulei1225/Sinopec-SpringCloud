@@ -42,7 +42,7 @@ public class ComputedFieldUpdateReqVO {
     private String aggregateFunction;
 
     @Schema(description = "统计目标业务类型编码", example = "equipment")
-    private String targetBusinessType;
+    private String targetEntityType;
 
     @Schema(description = "统计目标 Model 编码", example = "device")
     private String targetModelCode;

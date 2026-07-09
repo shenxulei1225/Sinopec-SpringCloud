@@ -25,7 +25,7 @@ public class EntitySearchReqVO extends PageParam {
 
     @Schema(description = "业务类型编码（必填）", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
     @jakarta.validation.constraints.NotBlank(message = "业务类型编码不能为空")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "模型ID", example = "1")
     private Long modelId;

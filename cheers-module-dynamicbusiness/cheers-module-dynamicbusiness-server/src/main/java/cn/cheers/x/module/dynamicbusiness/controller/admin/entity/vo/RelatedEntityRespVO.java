@@ -30,7 +30,7 @@ public class RelatedEntityRespVO {
     private String modelName;
 
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "task-management")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "关联字段编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "plan_id")
     private String relationFieldCode;

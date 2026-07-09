@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 public class PolicySetRespDTO {
 
     private String policySetId;
-    private String businessTypeCode;
+    private String entityTypeCode;
     private String templateId;
     private String status;
     private Integer version;

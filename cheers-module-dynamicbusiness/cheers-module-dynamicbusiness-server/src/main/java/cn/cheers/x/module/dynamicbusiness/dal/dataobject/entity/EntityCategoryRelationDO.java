@@ -16,13 +16,13 @@ import lombok.*;
  * <pre>
  * -- 核心索引：根据 Category 查询 Entity（最常用）
  * CREATE INDEX idx_category_business ON dynamic_entity_category_relation 
- *     (category_id, business_type_code);
+ *     (category_id, entity_type_code);
  * 
  * -- 辅助索引：根据 Entity 查询 Category
  * CREATE INDEX idx_entity ON dynamic_entity_category_relation (entity_id);
  * 
  * -- 辅助索引：根据业务类型批量操作
- * CREATE INDEX idx_business_type ON dynamic_entity_category_relation (business_type_code);
+ * CREATE INDEX idx_business_type ON dynamic_entity_category_relation (entity_type_code);
  * </pre>
  */
 @TableName("dynamic_entity_category_relation")
@@ -54,7 +54,7 @@ public class EntityCategoryRelationDO extends TenantBaseDO {
      * <p>用于按业务类型过滤，提高查询性能。</p>
      * <p>例如：equipment、task、personnel</p>
      */
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     /**
      * 分类视图下的排序（同一分类上下文内）

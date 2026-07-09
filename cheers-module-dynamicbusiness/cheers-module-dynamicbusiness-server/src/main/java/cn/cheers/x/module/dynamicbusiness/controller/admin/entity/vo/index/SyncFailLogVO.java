@@ -40,7 +40,7 @@ public class SyncFailLogVO {
      * 业务类型编码
      */
     @Schema(description = "业务类型编码", example = "equipment")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     /**
      * Model 名称
@@ -134,12 +134,12 @@ public class SyncFailLogVO {
         this.modelName = modelName;
     }
 
-    public String getBusinessTypeCode() {
-        return businessTypeCode;
+    public String getEntityTypeCode() {
+        return entityTypeCode;
     }
 
-    public void setBusinessTypeCode(String businessTypeCode) {
-        this.businessTypeCode = businessTypeCode;
+    public void setEntityTypeCode(String entityTypeCode) {
+        this.entityTypeCode = entityTypeCode;
     }
 
     public String getEngineType() {

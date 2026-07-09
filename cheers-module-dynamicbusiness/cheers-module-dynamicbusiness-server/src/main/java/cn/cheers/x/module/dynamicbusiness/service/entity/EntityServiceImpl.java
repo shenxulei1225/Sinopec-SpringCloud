@@ -151,13 +151,13 @@ public class EntityServiceImpl implements EntityService {
         // 3) 缓存失效：写后清理树/列表缓存，避免读到旧数据
         entityCacheEvictionService.evictEntityCaches(
                 EntityFieldMapsSupport.getRequiredModelId(reqVO.getBaseFields()),
-                EntityFieldMapsSupport.getRequiredBusinessTypeCode(reqVO.getBaseFields()));
+                EntityFieldMapsSupport.getRequiredEntityTypeCode(reqVO.getBaseFields()));
 
         // 4) 事件发布：通知预计算/同步链路，作为跨模块副作用入口
         entityLifecycleEventPublisher.publishEntityCreatedEvent(
                 EntityFieldMapsSupport.getRequiredModelId(reqVO.getBaseFields()),
                 entityId,
-                EntityFieldMapsSupport.getRequiredBusinessTypeCode(reqVO.getBaseFields()),
+                EntityFieldMapsSupport.getRequiredEntityTypeCode(reqVO.getBaseFields()),
                 data);
 
         return entityId;
@@ -170,7 +170,7 @@ public class EntityServiceImpl implements EntityService {
     @Transactional(rollbackFor = Exception.class)
     public void update(EntityUpdateReqVO reqVO) {
         // 1) 读取旧值：用于不存在校验与关系差异计算
-        EntityDO oldEntity = entityCoreService.get(reqVO.getId(), EntityFieldMapsSupport.getRequiredBusinessTypeCode(reqVO.getBaseFields()));
+        EntityDO oldEntity = entityCoreService.get(reqVO.getId(), EntityFieldMapsSupport.getRequiredEntityTypeCode(reqVO.getBaseFields()));
         if (oldEntity == null) {
             throw new ServiceException(404, ENTITY_NOT_EXISTS);
         }
@@ -191,12 +191,12 @@ public class EntityServiceImpl implements EntityService {
         entityRelationSyncService.syncRelationsOnUpdate(data, model, customFieldsMap, oldCustomFieldsMap);
 
         // 4) 缓存失效 + 事件通知：确保读取一致性并通知下游链路
-        entityCacheEvictionService.evictEntityCaches(modelId, EntityFieldMapsSupport.getRequiredBusinessTypeCode(reqVO.getBaseFields()));
+        entityCacheEvictionService.evictEntityCaches(modelId, EntityFieldMapsSupport.getRequiredEntityTypeCode(reqVO.getBaseFields()));
         List<String> changedFields = entityBusinessHelper.extractFieldCodes(reqVO.getBaseFields(), reqVO.getCustomFields());
         entityLifecycleEventPublisher.publishEntityUpdatedEvent(
                 modelId,
                 reqVO.getId(),
-                EntityFieldMapsSupport.getRequiredBusinessTypeCode(reqVO.getBaseFields()),
+                EntityFieldMapsSupport.getRequiredEntityTypeCode(reqVO.getBaseFields()),
                 changedFields,
                 data);
     }
@@ -208,39 +208,39 @@ public class EntityServiceImpl implements EntityService {
     @Transactional(rollbackFor = Exception.class)
     public void delete(EntityDeleteReqVO reqVO) {
         // 1) 存在性与删除前约束校验
-        EntityDO existingEntity = entityCoreService.get(reqVO.getId(), reqVO.getBusinessTypeCode());
+        EntityDO existingEntity = entityCoreService.get(reqVO.getId(), reqVO.getEntityTypeCode());
         if (existingEntity == null) {
             throw new ServiceException(404, ENTITY_NOT_EXISTS);
         }
 
         // 非强制删除时，做最小化保护：存在子实体则拒绝删除
         if (!Boolean.TRUE.equals(reqVO.getForceDelete())
-                && entityCoreService.existsByParentId(reqVO.getId(), reqVO.getBusinessTypeCode())) {
+                && entityCoreService.existsByParentId(reqVO.getId(), reqVO.getEntityTypeCode())) {
             throw new ServiceException(400, "存在子实体，无法删除。请先删除子实体或使用强制删除");
         }
 
         // 2) 先清理关系，再删本体，避免关系悬挂
-        entityRelationSyncService.syncRelationsOnDelete(reqVO.getId(), reqVO.getBusinessTypeCode());
-        entityCoreService.delete(reqVO.getId(), reqVO.getBusinessTypeCode());
+        entityRelationSyncService.syncRelationsOnDelete(reqVO.getId(), reqVO.getEntityTypeCode());
+        entityCoreService.delete(reqVO.getId(), reqVO.getEntityTypeCode());
 
         // 3) 写后副作用：缓存失效 + 删除事件
-        entityCacheEvictionService.evictEntityCaches(existingEntity.getModelId(), reqVO.getBusinessTypeCode());
-        entityLifecycleEventPublisher.publishEntityDeletedEvent(existingEntity.getModelId(), reqVO.getId(), reqVO.getBusinessTypeCode());
+        entityCacheEvictionService.evictEntityCaches(existingEntity.getModelId(), reqVO.getEntityTypeCode());
+        entityLifecycleEventPublisher.publishEntityDeletedEvent(existingEntity.getModelId(), reqVO.getId(), reqVO.getEntityTypeCode());
     }
 
     @Override
     public EntityFieldAvailabilityRespVO checkFieldUnique(
-            String businessTypeCode,
+            String entityTypeCode,
             Long modelId,
             String fieldKey,
             String value,
             Long excludeId) {
-        if (!org.springframework.util.StringUtils.hasText(businessTypeCode)
+        if (!org.springframework.util.StringUtils.hasText(entityTypeCode)
                 || !org.springframework.util.StringUtils.hasText(fieldKey)
                 || !org.springframework.util.StringUtils.hasText(value)) {
             return new EntityFieldAvailabilityRespVO(true, null);
         }
-        String code = businessTypeCode.trim();
+        String code = entityTypeCode.trim();
         String key = fieldKey.trim();
         String trimmedValue = value.trim();
         if (!"name".equals(key)) {
@@ -265,14 +265,14 @@ public class EntityServiceImpl implements EntityService {
      * @return 实体详情；不存在时返回 null
      */
     @Override
-    public EntityRespVO get(Long id, String businessTypeCode) {
-        return get(id, businessTypeCode, false, null);
+    public EntityRespVO get(Long id, String entityTypeCode) {
+        return get(id, entityTypeCode, false, null);
     }
 
     @Override
-    public EntityRespVO get(Long id, String businessTypeCode, boolean includeAssociations,
+    public EntityRespVO get(Long id, String entityTypeCode, boolean includeAssociations,
             List<AssociationCategoryViewReqVO> associationCategoryViews) {
-        EntityDO entity = entityCoreService.get(id, businessTypeCode);
+        EntityDO entity = entityCoreService.get(id, entityTypeCode);
         if (entity == null) {
             return null;
         }
@@ -314,8 +314,8 @@ public class EntityServiceImpl implements EntityService {
      */
 
     @Override
-    public EntitySceneQueryRespVO queryEntities(EntityQueryScene scene, String resultShape, String resultDetail, String categoryTypeCode, String businessTypeCode,
-            List<Long> modelIds, List<Long> categoryIds, Long entityId, Long rootEntityId, String entitySourceBusinessType,
+    public EntitySceneQueryRespVO queryEntities(EntityQueryScene scene, String resultShape, String resultDetail, String categoryTypeCode, String entityTypeCode,
+            List<Long> modelIds, List<Long> categoryIds, Long entityId, Long rootEntityId, String entitySourceEntityType,
             Integer pageNo, Integer pageSize, String keyword, List<FieldFilterReqVO> filters) {
 
         if (scene == null) throw new ServiceException(400, "查询场景 scene 参数不能为空");
@@ -340,13 +340,13 @@ public class EntityServiceImpl implements EntityService {
                 // Page分页查看实体列表
                 if (shape == EntityQueryResultShape.PAGE) {
                     PageResult<EntityRespVO> pagedCategoryEntities = queryEntitiesByCategoryIds(
-                            categoryIds, categoryTypeCode, businessTypeCode, keyword, filters,
+                            categoryIds, categoryTypeCode, entityTypeCode, keyword, filters,
                             effectivePageNo, effectivePageSize, true);
                     return EntitySceneQueryRespVO.page(applyResultDetail(pagedCategoryEntities, detail), detail.getCode());
                 }
                 // LIST/TREE 不分页：传 null 分页参数，返回的是全量有序结果（仅借用 PageResult 容器承载 list+total）
                 PageResult<EntityRespVO> fullCategoryEntitiesResult = queryEntitiesByCategoryIds(
-                        categoryIds, categoryTypeCode, businessTypeCode, keyword, filters,
+                        categoryIds, categoryTypeCode, entityTypeCode, keyword, filters,
                         null, null, false);
                 List<EntityRespVO> patternACCategoryEntities = fullCategoryEntitiesResult.getList();
 
@@ -364,9 +364,9 @@ public class EntityServiceImpl implements EntityService {
                 // 1.2 场景二： Pattern B：按分类查询模型下的实体列表（单/多分类分流），支持搜索功能
             case PATTERN_B_ENTITIES_BY_CATEGORY:
                 List<Long> patternBOrderedCandidateEntityIds = collectPatternBCategoryOrderedEntityIds(
-                        categoryIds, categoryTypeCode, businessTypeCode);
+                        categoryIds, categoryTypeCode, entityTypeCode);
                 PageResult<EntityRespVO> patternBCategoryResult = queryEntitiesByOrderedCandidateIds(
-                        patternBOrderedCandidateEntityIds, businessTypeCode, keyword, filters,
+                        patternBOrderedCandidateEntityIds, entityTypeCode, keyword, filters,
                         shape == EntityQueryResultShape.PAGE ? effectivePageNo : null,
                         shape == EntityQueryResultShape.PAGE ? effectivePageSize : null);
                 if (shape == EntityQueryResultShape.PAGE) {
@@ -383,9 +383,9 @@ public class EntityServiceImpl implements EntityService {
                         detail.getCode());
 
             case PATTERN_A_C_UNCATEGORIZED_ENTITIES_BY_CATEGORY_TYPE: {
-                List<Long> uncategorizedEntityIds = collectUncategorizedEntityIdsByCategoryType(categoryTypeCode, businessTypeCode);
+                List<Long> uncategorizedEntityIds = collectUncategorizedEntityIdsByCategoryType(categoryTypeCode, entityTypeCode);
                 PageResult<EntityRespVO> result = queryEntitiesByOrderedCandidateIds(
-                        uncategorizedEntityIds, businessTypeCode, keyword, filters,
+                        uncategorizedEntityIds, entityTypeCode, keyword, filters,
                         shape == EntityQueryResultShape.PAGE ? effectivePageNo : null,
                         shape == EntityQueryResultShape.PAGE ? effectivePageSize : null);
                 if (shape == EntityQueryResultShape.PAGE) {
@@ -401,9 +401,9 @@ public class EntityServiceImpl implements EntityService {
             }
 
             case PATTERN_B_UNCATEGORIZED_ENTITIES_BY_CATEGORY_TYPE: {
-                List<Long> uncategorizedPatternBEntityIds = collectPatternBUncategorizedEntityIdsByCategoryType(categoryTypeCode, businessTypeCode);
+                List<Long> uncategorizedPatternBEntityIds = collectPatternBUncategorizedEntityIdsByCategoryType(categoryTypeCode, entityTypeCode);
                 PageResult<EntityRespVO> result = queryEntitiesByOrderedCandidateIds(
-                        uncategorizedPatternBEntityIds, businessTypeCode, keyword, filters,
+                        uncategorizedPatternBEntityIds, entityTypeCode, keyword, filters,
                         shape == EntityQueryResultShape.PAGE ? effectivePageNo : null,
                         shape == EntityQueryResultShape.PAGE ? effectivePageSize : null);
                 if (shape == EntityQueryResultShape.PAGE) {
@@ -421,14 +421,14 @@ public class EntityServiceImpl implements EntityService {
             case PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE: {
                 if (shape == EntityQueryResultShape.TREE) {
                     List<EntityRespVO> treeRoots = buildEntityHierarchySubtree(
-                            businessTypeCode, null, keyword, filters, detail,
+                            entityTypeCode, null, keyword, filters, detail,
                             effectivePageNo, resolveTreeRootPageSize(pageSize));
                     return EntitySceneQueryRespVO.tree(
                             applyResultDetail(treeRoots, detail), detail.getCode());
                 }
-                List<Long> allEntityIds = collectAllEntityIdsByBusinessType(businessTypeCode);
+                List<Long> allEntityIds = collectAllEntityIdsByEntityType(entityTypeCode);
                 PageResult<EntityRespVO> result = queryEntitiesByOrderedCandidateIds(
-                        allEntityIds, businessTypeCode, keyword, filters,
+                        allEntityIds, entityTypeCode, keyword, filters,
                         shape == EntityQueryResultShape.PAGE ? effectivePageNo : null,
                         shape == EntityQueryResultShape.PAGE ? effectivePageSize : null);
                 if (shape == EntityQueryResultShape.PAGE) {
@@ -445,10 +445,10 @@ public class EntityServiceImpl implements EntityService {
                 List<Long> selectedModelIds = requireModelIds(
                         modelIds, "PATTERN_B_ENTITIES_BY_MODEL 场景下 modelIds 至少传一个");
                 if (shape == EntityQueryResultShape.TREE && selectedModelIds.size() == 1) {
-                    return EntitySceneQueryRespVO.tree(applyResultDetail(getEntityTreeByModelId(businessTypeCode, selectedModelIds.get(0)), detail),
+                    return EntitySceneQueryRespVO.tree(applyResultDetail(getEntityTreeByModelId(entityTypeCode, selectedModelIds.get(0)), detail),
                             detail.getCode());
                 }
-                PageResult<EntityRespVO> modelPage = handlePatternBModelEntities(selectedModelIds, businessTypeCode, keyword, filters,
+                PageResult<EntityRespVO> modelPage = handlePatternBModelEntities(selectedModelIds, entityTypeCode, keyword, filters,
                         shape == EntityQueryResultShape.PAGE ? effectivePageNo : 1,
                         shape == EntityQueryResultShape.PAGE ? effectivePageSize : fullPageSize);
                 if (shape == EntityQueryResultShape.PAGE) {
@@ -458,7 +458,7 @@ public class EntityServiceImpl implements EntityService {
 
             // 4. 查看单条实体详情（详情内携带跨业务关联关系摘要，非“关联实体列表”作为主结果）
             case PATTERN_D_ENTITY_DETAILED_INFO: {
-                EntityRespVO patternDDetail = buildPatternDEntityDetailedInfo(entityId, businessTypeCode);
+                EntityRespVO patternDDetail = buildPatternDEntityDetailedInfo(entityId, entityTypeCode);
                 if (patternDDetail == null) {
                     throw new ServiceException(404, ENTITY_NOT_EXISTS);
                 }
@@ -475,11 +475,11 @@ public class EntityServiceImpl implements EntityService {
             }
 
             case ROOT_ENTITY_SUBTREE: {
-                if (businessTypeCode == null || businessTypeCode.isBlank()) {
-                    throw new ServiceException(400, "ROOT_ENTITY_SUBTREE 场景下 businessTypeCode 不能为空");
+                if (entityTypeCode == null || entityTypeCode.isBlank()) {
+                    throw new ServiceException(400, "ROOT_ENTITY_SUBTREE 场景下 entityTypeCode 不能为空");
                 }
                 List<EntityRespVO> subtreeRoots = buildEntityHierarchySubtree(
-                        businessTypeCode, rootEntityId, keyword, filters, detail,
+                        entityTypeCode, rootEntityId, keyword, filters, detail,
                         rootEntityId == null ? effectivePageNo : null,
                         rootEntityId == null ? resolveTreeRootPageSize(pageSize) : null);
                 if (shape == EntityQueryResultShape.PAGE) {
@@ -544,9 +544,9 @@ public class EntityServiceImpl implements EntityService {
      * 按分类统一查询实体（LIST/PAGE 共用流程）。
      */
     private PageResult<EntityRespVO> queryEntitiesByCategoryIds(List<Long> categoryIds, String categoryTypeCode,
-                                                                String businessTypeCode, String keyword, List<FieldFilterReqVO> filters,
+                                                                String entityTypeCode, String keyword, List<FieldFilterReqVO> filters,
                                                                 Integer pageNo, Integer pageSize, boolean allowDirectPaging) {
-        if (businessTypeCode == null || businessTypeCode.isBlank()) {
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
             return new PageResult<>(new ArrayList<>(), 0L);
         }
         // 规范化分类ID列表；若未选择分类则使用分类类型的根分类ID （针对用户在界面上没选分类时的处理方法）
@@ -564,18 +564,18 @@ public class EntityServiceImpl implements EntityService {
             if (normalizedCategoryIds.size() == 1) {
                 // 点选是单个分类
                 pagedEntityIds = entityCategoryRelationService.pageEntityIdsByCategoryIdWithDescendants(
-                        normalizedCategoryIds.get(0), categoryTypeCode, businessTypeCode, pn, ps);
+                        normalizedCategoryIds.get(0), categoryTypeCode, entityTypeCode, pn, ps);
             } else {
                 // 点选是单个分类
                 pagedEntityIds = entityCategoryRelationService.pageEntityIdsByCategoryIdsWithDescendantsDb(
-                        normalizedCategoryIds, businessTypeCode, pn, ps);
+                        normalizedCategoryIds, entityTypeCode, pn, ps);
             }
-            return fetchEntityPageByOrderedIds(pagedEntityIds, businessTypeCode);
+            return fetchEntityPageByOrderedIds(pagedEntityIds, entityTypeCode);
         }
 
-        List<Long> orderedCandidateEntityIds = listOrderedEntityIdsByCategoriesInBusiness(normalizedCategoryIds, categoryTypeCode, businessTypeCode);
+        List<Long> orderedCandidateEntityIds = listOrderedEntityIdsByCategoriesInBusiness(normalizedCategoryIds, categoryTypeCode, entityTypeCode);
         return queryEntitiesByOrderedCandidateIds(
-                orderedCandidateEntityIds, businessTypeCode, keyword, filters, pageNo, pageSize);
+                orderedCandidateEntityIds, entityTypeCode, keyword, filters, pageNo, pageSize);
     }
 /**
      * 将有序实体ID列表统一转换为分页结果。
@@ -611,9 +611,9 @@ public class EntityServiceImpl implements EntityService {
      * <p><b>顺序规则</b>：分类顺序 -> 模型顺序 -> 实体ID顺序。</p>
      */
     private List<Long> collectPatternBCategoryOrderedEntityIds(List<Long> categoryIds, String categoryTypeCode,
-                                                               String businessTypeCode) {
+                                                               String entityTypeCode) {
         // Step 1) 参数校验
-        if (businessTypeCode == null || businessTypeCode.isBlank()) {
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
             return new ArrayList<>();
         }
 
@@ -621,17 +621,17 @@ public class EntityServiceImpl implements EntityService {
         *  按照输入categoryIds 的分类顺序 -> 获取分类内排序的模型列表 orderedModelIds）
         */
         List<Long> orderedModelIds = modelService
-                .queryOrderedModelIdsByCategoriesInBusiness(categoryIds, categoryTypeCode, businessTypeCode, null, null)
+                .queryOrderedModelIdsByCategoriesInBusiness(categoryIds, categoryTypeCode, entityTypeCode, null, null)
                 .getList();
-        log.info("[PATTERN_B_TRACE] collectPatternBCategoryOrderedEntityIds model stage: categoryTypeCode={}, businessTypeCode={}, categoryIds={}, orderedModelCount={}",
-                categoryTypeCode, businessTypeCode, categoryIds, orderedModelIds == null ? 0 : orderedModelIds.size());
+        log.info("[PATTERN_B_TRACE] collectPatternBCategoryOrderedEntityIds model stage: categoryTypeCode={}, entityTypeCode={}, categoryIds={}, orderedModelCount={}",
+                categoryTypeCode, entityTypeCode, categoryIds, orderedModelIds == null ? 0 : orderedModelIds.size());
 
         if (orderedModelIds.isEmpty()) {
             return new ArrayList<>();
         }
 
         // Step 5) 按模型顺序获取候选 entityIds（模型内按实体ID升序稳定排序）
-        List<EntityDO> entities = entityRepository.findByModelIds(orderedModelIds, businessTypeCode);
+        List<EntityDO> entities = entityRepository.findByModelIds(orderedModelIds, entityTypeCode);
         if (entities == null || entities.isEmpty()) {
             return new ArrayList<>();
         }
@@ -655,19 +655,19 @@ public class EntityServiceImpl implements EntityService {
         if (orderedEntityIds.isEmpty()) {
             return new ArrayList<>();
         }
-        log.info("[PATTERN_B_TRACE] collectPatternBCategoryOrderedEntityIds entity stage: businessTypeCode={}, orderedEntityCount={}",
-                businessTypeCode, orderedEntityIds.size());
+        log.info("[PATTERN_B_TRACE] collectPatternBCategoryOrderedEntityIds entity stage: entityTypeCode={}, orderedEntityCount={}",
+                entityTypeCode, orderedEntityIds.size());
         return orderedEntityIds;
     }
 
     /**
      * 全部实体：按业务类型返回全部实体 ID（有序）。
      */
-    private List<Long> collectAllEntityIdsByBusinessType(String businessTypeCode) {
-        if (businessTypeCode == null || businessTypeCode.isBlank()) {
+    private List<Long> collectAllEntityIdsByEntityType(String entityTypeCode) {
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
             return new ArrayList<>();
         }
-        List<EntityDO> allEntities = entityCoreService.listEntities(businessTypeCode, null, null);
+        List<EntityDO> allEntities = entityCoreService.listEntities(entityTypeCode, null, null);
         if (allEntities == null || allEntities.isEmpty()) {
             return new ArrayList<>();
         }
@@ -680,12 +680,12 @@ public class EntityServiceImpl implements EntityService {
     /**
      * A/C 未分类：在当前分类体系（categoryTypeCode）下未绑定任何分类的实体。
      */
-    private List<Long> collectUncategorizedEntityIdsByCategoryType(String categoryTypeCode, String businessTypeCode) {
-        if (businessTypeCode == null || businessTypeCode.isBlank() || categoryTypeCode == null || categoryTypeCode.isBlank()) {
+    private List<Long> collectUncategorizedEntityIdsByCategoryType(String categoryTypeCode, String entityTypeCode) {
+        if (entityTypeCode == null || entityTypeCode.isBlank() || categoryTypeCode == null || categoryTypeCode.isBlank()) {
             return new ArrayList<>();
         }
 
-        List<EntityDO> allEntities = entityCoreService.listEntities(businessTypeCode, null, null);
+        List<EntityDO> allEntities = entityCoreService.listEntities(entityTypeCode, null, null);
         if (allEntities == null || allEntities.isEmpty()) {
             return new ArrayList<>();
         }
@@ -705,7 +705,7 @@ public class EntityServiceImpl implements EntityService {
         }
 
         Set<Long> categorizedEntityIds = entityCategoryRelationMapper
-                .selectRelationsByCategoryIdsForOrdering(categoryIds, businessTypeCode)
+                .selectRelationsByCategoryIdsForOrdering(categoryIds, entityTypeCode)
                 .stream()
                 .map(EntityCategoryRelationDO::getEntityId)
                 .filter(Objects::nonNull)
@@ -719,12 +719,12 @@ public class EntityServiceImpl implements EntityService {
     /**
      * B 未分类：在当前分类体系（categoryTypeCode）下未绑定任何分类的模型，其下实体。
      */
-    private List<Long> collectPatternBUncategorizedEntityIdsByCategoryType(String categoryTypeCode, String businessTypeCode) {
-        if (businessTypeCode == null || businessTypeCode.isBlank() || categoryTypeCode == null || categoryTypeCode.isBlank()) {
+    private List<Long> collectPatternBUncategorizedEntityIdsByCategoryType(String categoryTypeCode, String entityTypeCode) {
+        if (entityTypeCode == null || entityTypeCode.isBlank() || categoryTypeCode == null || categoryTypeCode.isBlank()) {
             return new ArrayList<>();
         }
 
-        List<ModelRespVO> allModels = modelService.listModelsByBusinessType(businessTypeCode);
+        List<ModelRespVO> allModels = modelService.listModelsByEntityType(entityTypeCode);
         if (allModels == null || allModels.isEmpty()) {
             return new ArrayList<>();
         }
@@ -736,7 +736,7 @@ public class EntityServiceImpl implements EntityService {
         Set<Long> categorizedModelIds = new HashSet<>();
         if (!categoryIds.isEmpty()) {
             categorizedModelIds.addAll(modelService
-                    .queryOrderedModelIdsByCategoriesInBusiness(categoryIds, categoryTypeCode, businessTypeCode, null, null)
+                    .queryOrderedModelIdsByCategoriesInBusiness(categoryIds, categoryTypeCode, entityTypeCode, null, null)
                     .getList());
         }
 
@@ -744,14 +744,14 @@ public class EntityServiceImpl implements EntityService {
                 .filter(id -> !categorizedModelIds.contains(id))
                 .toList();
 
-        return collectCandidateEntityIdsByModelIds(uncategorizedModelIds, businessTypeCode);
+        return collectCandidateEntityIdsByModelIds(uncategorizedModelIds, entityTypeCode);
     }
 
     /**
      * 通用后处理：基于“前置已确定顺序的候选实体ID”执行搜索/筛选，再输出分页或全量结果。
      */
     private PageResult<EntityRespVO> queryEntitiesByOrderedCandidateIds(List<Long> orderedCandidateEntityIds,
-                                                                        String businessTypeCode, String keyword, List<FieldFilterReqVO> filters,
+                                                                        String entityTypeCode, String keyword, List<FieldFilterReqVO> filters,
                                                                         Integer pageNo, Integer pageSize) {
         if (orderedCandidateEntityIds == null || orderedCandidateEntityIds.isEmpty()) {
             return new PageResult<>(new ArrayList<>(), 0L);
@@ -762,15 +762,15 @@ public class EntityServiceImpl implements EntityService {
         // 性能优化：无 keyword/filters 且请求分页时，直接在有序 ID 上分页切片后回查，
         // 避免“先全量转 VO 再内存分页”导致大分类场景响应过慢。
         if (!hasKeyword && !hasFilters && pageNo != null && pageSize != null) {
-            return pageByOrderedIds(orderedCandidateEntityIds, businessTypeCode, pageNo, pageSize);
+            return pageByOrderedIds(orderedCandidateEntityIds, entityTypeCode, pageNo, pageSize);
         }
 
         List<EntityRespVO> searchedAndFilteredEntities;
         if (!hasKeyword && !hasFilters) {
-            searchedAndFilteredEntities = fetchEntitiesByOrderedIds(orderedCandidateEntityIds, businessTypeCode);
+            searchedAndFilteredEntities = fetchEntitiesByOrderedIds(orderedCandidateEntityIds, entityTypeCode);
         } else {
             // 有搜索/筛选时，直接返回过滤后的 VO 列表，避免后续再按 ID 二次回查实体
-            searchedAndFilteredEntities = filterCandidateEntities(orderedCandidateEntityIds, businessTypeCode, filters, keyword);
+            searchedAndFilteredEntities = filterCandidateEntities(orderedCandidateEntityIds, entityTypeCode, filters, keyword);
         }
         if (pageNo == null || pageSize == null) {
             return new PageResult<>(searchedAndFilteredEntities, (long) searchedAndFilteredEntities.size());
@@ -793,7 +793,7 @@ public class EntityServiceImpl implements EntityService {
      *   <li>若有 filters：先收集候选 entityIds，再执行筛选与搜索，最后对过滤后的 IDs 分页回查详情。</li>
      * </ol>
      */
-    private PageResult<EntityRespVO> handlePatternBModelEntities(List<Long> modelIds, String businessTypeCode,
+    private PageResult<EntityRespVO> handlePatternBModelEntities(List<Long> modelIds, String entityTypeCode,
                                                                     String keyword, List<FieldFilterReqVO> filters,
                                                                     Integer pageNo, Integer pageSize) {
         // Step 1) 无筛选：保留原有按模型分页能力（含 keyword）。
@@ -807,12 +807,12 @@ public class EntityServiceImpl implements EntityService {
             return new PageResult<>(new ArrayList<>(), 0L);
         }
         // Step 3) 对候选 IDs 执行 filters + keyword（先过滤后分页）。
-        candidateIds = filterCandidateEntityIds(candidateIds, businessTypeCode, filters, keyword);
+        candidateIds = filterCandidateEntityIds(candidateIds, entityTypeCode, filters, keyword);
         if (candidateIds.isEmpty()) {
             return new PageResult<>(new ArrayList<>(), 0L);
         }
         // Step 4) 对过滤后的有序 IDs 分页并回查实体详情。
-        return pageByOrderedIds(candidateIds, businessTypeCode, pageNo, pageSize);
+        return pageByOrderedIds(candidateIds, entityTypeCode, pageNo, pageSize);
     }
 
     /**----3. 分类即实体（Category Link Entity）视图下的分类详情查询
@@ -825,11 +825,11 @@ public class EntityServiceImpl implements EntityService {
     /**
      * 场景五 模式 D：单条实体详情并包含关联块（default 扁平行；多视角见 get + associationCategoryViews）。
      */
-    private EntityRespVO buildPatternDEntityDetailedInfo(Long entityId, String businessTypeCode) {
-        if (entityId == null || businessTypeCode == null) {
+    private EntityRespVO buildPatternDEntityDetailedInfo(Long entityId, String entityTypeCode) {
+        if (entityId == null || entityTypeCode == null) {
             throw new ServiceException(400, "参数缺失");
         }
-        return get(entityId, businessTypeCode, true, null);
+        return get(entityId, entityTypeCode, true, null);
     }
 
     /**
@@ -920,7 +920,7 @@ public class EntityServiceImpl implements EntityService {
             if (peerId == null) {
                 continue;
             }
-            String peerBtc = asSource ? r.getTargetBusinessTypeCode() : r.getSourceBusinessTypeCode();
+            String peerBtc = asSource ? r.getTargetEntityTypeCode() : r.getSourceEntityTypeCode();
             String dedupe = peerId + ":" + (peerBtc == null ? "" : peerBtc);
             if (!seen.add(dedupe)) {
                 continue;
@@ -944,7 +944,7 @@ public class EntityServiceImpl implements EntityService {
     private AssociationEntityRowVO toAssociationRow(PeerEdge p, String categoryTypeCodeOrNull) {
         AssociationEntityRowVO row = new AssociationEntityRowVO();
         row.setEntityId(p.peerId);
-        row.setBusinessTypeCode(p.peerBtc);
+        row.setEntityTypeCode(p.peerBtc);
         if (p.peerBtc != null && !p.peerBtc.isBlank()) {
             EntityRespVO peerVo = get(p.peerId, p.peerBtc);
             if (peerVo != null) {
@@ -957,13 +957,13 @@ public class EntityServiceImpl implements EntityService {
         return row;
     }
 
-    private void resolveCategoryForPeer(Long peerEntityId, String peerBusinessTypeCode, String categoryTypeCode,
+    private void resolveCategoryForPeer(Long peerEntityId, String peerEntityTypeCode, String categoryTypeCode,
             AssociationEntityRowVO row) {
-        if (peerEntityId == null || peerBusinessTypeCode == null || peerBusinessTypeCode.isBlank()
+        if (peerEntityId == null || peerEntityTypeCode == null || peerEntityTypeCode.isBlank()
                 || categoryTypeCode == null || categoryTypeCode.isBlank()) {
             return;
         }
-        List<Long> catIds = entityCategoryRelationService.listCategoryIdsByEntityId(peerEntityId, peerBusinessTypeCode);
+        List<Long> catIds = entityCategoryRelationService.listCategoryIdsByEntityId(peerEntityId, peerEntityTypeCode);
         if (catIds == null || catIds.isEmpty()) {
             return;
         }
@@ -1000,7 +1000,7 @@ public class EntityServiceImpl implements EntityService {
                 throw new ServiceException(404, "模型不存在");
             }
             PageResult<EntityDO> pageResult = entityCoreService.pageEntities(
-                    model.getBusinessTypeCode(),
+                    model.getEntityTypeCode(),
                     singleModelId,
                     null,
                     keyword,
@@ -1017,13 +1017,13 @@ public class EntityServiceImpl implements EntityService {
         if (models == null || models.isEmpty()) {
             throw new ServiceException(404, "模型不存在");
         }
-        String businessTypeCode = models.get(0).getBusinessTypeCode();
-        if (businessTypeCode == null || businessTypeCode.isBlank()) {
+        String entityTypeCode = models.get(0).getEntityTypeCode();
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
             throw new ServiceException(400, "业务类型不能为空");
         }
 
         PageResult<EntityDO> pageResult = entityCoreService.pageEntitiesByModelIds(
-                businessTypeCode,
+                entityTypeCode,
                 normalizedModelIds,
                 null,
                 keyword,
@@ -1070,7 +1070,7 @@ public class EntityServiceImpl implements EntityService {
         return orderedEntityIds;
     }
 
-    private List<Long> collectCandidateEntityIdsByModelIds(List<Long> modelIds, String businessTypeCode) {
+    private List<Long> collectCandidateEntityIdsByModelIds(List<Long> modelIds, String entityTypeCode) {
         List<Long> normalizedModelIds = normalizeModelIds(modelIds);
         if (normalizedModelIds.isEmpty()) {
             return List.of();
@@ -1078,7 +1078,7 @@ public class EntityServiceImpl implements EntityService {
 
         List<Long> orderedEntityIds = new ArrayList<>();
         for (Long mid : normalizedModelIds) {
-            List<Long> ids = entityCoreService.getEntityIdsByModelId(mid, businessTypeCode);
+            List<Long> ids = entityCoreService.getEntityIdsByModelId(mid, entityTypeCode);
             if (ids == null || ids.isEmpty()) {
                 continue;
             }
@@ -1103,7 +1103,7 @@ public class EntityServiceImpl implements EntityService {
      */
     private List<Long> filterCandidateEntityIds(
             List<Long> candidateIds,
-            String businessTypeCode,
+            String entityTypeCode,
             List<FieldFilterReqVO> filters,
             String keyword
     ) {
@@ -1150,7 +1150,7 @@ public class EntityServiceImpl implements EntityService {
         }
 
         // Step 3) 非关联字段/keyword 存在时，回查实体详情进行匹配。
-        List<EntityDO> entities = entityCoreService.listByIds(candidateIds, businessTypeCode);
+        List<EntityDO> entities = entityCoreService.listByIds(candidateIds, entityTypeCode);
         if (entities == null || entities.isEmpty()) {
             return Collections.emptyList();
         }
@@ -1209,7 +1209,7 @@ public class EntityServiceImpl implements EntityService {
      */
     private List<EntityRespVO> filterCandidateEntities(
             List<Long> candidateIds,
-            String businessTypeCode,
+            String entityTypeCode,
             List<FieldFilterReqVO> filters,
             String keyword
     ) {
@@ -1218,7 +1218,7 @@ public class EntityServiceImpl implements EntityService {
         }
 
         Set<Long> matchedIds = entityFieldQueryEngine.searchAndFilterEntityIds(
-                businessTypeCode,
+                entityTypeCode,
                 keyword,
                 filters,
                 candidateIds
@@ -1233,7 +1233,7 @@ public class EntityServiceImpl implements EntityService {
         if (orderedMatchedIds.isEmpty()) {
             return new ArrayList<>();
         }
-        return fetchEntitiesByOrderedIds(orderedMatchedIds, businessTypeCode);
+        return fetchEntitiesByOrderedIds(orderedMatchedIds, entityTypeCode);
     }
 
     /**
@@ -1250,7 +1250,7 @@ public class EntityServiceImpl implements EntityService {
      *
      * <p><b>返回约定</b>：total 使用过滤后的 ID 总数，确保分页总数准确。</p>
      */
-    private PageResult<EntityRespVO> pageByOrderedIds(List<Long> orderedIds, String businessTypeCode, Integer pageNo, Integer pageSize) {
+    private PageResult<EntityRespVO> pageByOrderedIds(List<Long> orderedIds, String entityTypeCode, Integer pageNo, Integer pageSize) {
         // Step 1) 标准化分页参数。
         Integer pn = normalizePageNo(pageNo);
         Integer ps = normalizePageSize(pageSize);
@@ -1265,18 +1265,18 @@ public class EntityServiceImpl implements EntityService {
 
         // Step 3) 回查实体详情并按切片顺序返回。
         PageResult<Long> pagedEntityIds = new PageResult<>(pageIds, (long) orderedIds.size());
-        return fetchEntityPageByOrderedIds(pagedEntityIds, businessTypeCode);
+        return fetchEntityPageByOrderedIds(pagedEntityIds, entityTypeCode);
     }
 
-    private List<EntityRespVO> fetchEntitiesByOrderedIds(List<Long> orderedIds, String businessTypeCode) {
+    private List<EntityRespVO> fetchEntitiesByOrderedIds(List<Long> orderedIds, String entityTypeCode) {
         if (orderedIds == null || orderedIds.isEmpty()) {
             return new ArrayList<>();
         }
-        return convertOrderedEntityIdsToRespList(orderedIds, businessTypeCode);
+        return convertOrderedEntityIdsToRespList(orderedIds, entityTypeCode);
     }
 
     @Override
-    public EntityRespVO getCategoryLinkedEntity(Long categoryId, String businessTypeCode) {
+    public EntityRespVO getCategoryLinkedEntity(Long categoryId, String entityTypeCode) {
         if (categoryId == null) {
             return null;
         }
@@ -1286,7 +1286,7 @@ public class EntityServiceImpl implements EntityService {
             return null;
         }
 
-        EntityDO entity = entityCoreService.get(link.getEntityId(), businessTypeCode);
+        EntityDO entity = entityCoreService.get(link.getEntityId(), entityTypeCode);
         if (entity == null) {
             return null;
         }
@@ -1333,30 +1333,30 @@ public class EntityServiceImpl implements EntityService {
     /**
      * 按分类范围（含子分类）获取完整有序实体ID列表。
      */
-    private List<Long> listOrderedEntityIdsByCategoriesInBusiness(List<Long> categoryIds, String categoryTypeCode, String businessTypeCode) {
+    private List<Long> listOrderedEntityIdsByCategoriesInBusiness(List<Long> categoryIds, String categoryTypeCode, String entityTypeCode) {
         return categoryIds.size() == 1
-                ? entityCategoryRelationService.listEntityIdsByCategoryIdWithDescendants(categoryIds.get(0), categoryTypeCode, businessTypeCode)
-                : entityCategoryRelationService.listEntityIdsByCategoryIdsWithDescendants(categoryIds, businessTypeCode);
+                ? entityCategoryRelationService.listEntityIdsByCategoryIdWithDescendants(categoryIds.get(0), categoryTypeCode, entityTypeCode)
+                : entityCategoryRelationService.listEntityIdsByCategoryIdsWithDescendants(categoryIds, entityTypeCode);
     }
 
     /** ----------------按有序 entityId 分页结果回查实体详情并保序返回。-----------
      */
-    private PageResult<EntityRespVO> fetchEntityPageByOrderedIds(PageResult<Long> pagedEntityIds, String businessTypeCode) {
+    private PageResult<EntityRespVO> fetchEntityPageByOrderedIds(PageResult<Long> pagedEntityIds, String entityTypeCode) {
         if (pagedEntityIds == null || pagedEntityIds.getList() == null || pagedEntityIds.getList().isEmpty()) {
             return new PageResult<>(new ArrayList<>(), pagedEntityIds == null ? 0L : pagedEntityIds.getTotal());
         }
-        List<EntityRespVO> result = convertOrderedEntityIdsToRespList(pagedEntityIds.getList(), businessTypeCode);
+        List<EntityRespVO> result = convertOrderedEntityIdsToRespList(pagedEntityIds.getList(), entityTypeCode);
         return new PageResult<>(result, pagedEntityIds.getTotal());
     }
 
     /**
      * 将有序实体ID列表转换为VO列表，并保持输入顺序。
      */
-    private List<EntityRespVO> convertOrderedEntityIdsToRespList(List<Long> orderedEntityIds, String businessTypeCode) {
+    private List<EntityRespVO> convertOrderedEntityIdsToRespList(List<Long> orderedEntityIds, String entityTypeCode) {
         if (orderedEntityIds == null || orderedEntityIds.isEmpty()) {
             return new ArrayList<>();
         }
-        List<EntityDO> entities = entityCoreService.listByIds(orderedEntityIds, businessTypeCode);
+        List<EntityDO> entities = entityCoreService.listByIds(orderedEntityIds, entityTypeCode);
         if (entities == null || entities.isEmpty()) {
             return new ArrayList<>();
         }
@@ -1403,7 +1403,7 @@ public class EntityServiceImpl implements EntityService {
      *
      * <p>解析顺序：</p>
      * <ol>
-     *   <li>核心字段（id/modelId/status/parentId/businessTypeCode/name）</li>
+     *   <li>核心字段（id/modelId/status/parentId/entityTypeCode/name）</li>
      *   <li>baseFields JSON</li>
      *   <li>customFields JSON</li>
      * </ol>
@@ -1435,7 +1435,7 @@ public class EntityServiceImpl implements EntityService {
             case "model_id", "modelId" -> entity.getModelId();
             case "status" -> entity.getStatus();
             case "parent_id", "parentId" -> entity.getParentId();
-            case "business_type_code", "businessTypeCode" -> entity.getBusinessTypeCode();
+            case "entity_type_code", "entityTypeCode" -> entity.getEntityTypeCode();
             case "name" -> entity.getName();
             default -> null;
         };
@@ -1706,7 +1706,7 @@ public class EntityServiceImpl implements EntityService {
         Integer pageSize = normalizePageSize(reqVO.getPageSize());
 
         PageResult<EntityDO> pageResult = entityCoreService.pageEntities(
-                reqVO.getBusinessTypeCode(),
+                reqVO.getEntityTypeCode(),
                 reqVO.getModelId(),
                 reqVO.getStatus(),
                 reqVO.getKeyword(),
@@ -1744,8 +1744,8 @@ public class EntityServiceImpl implements EntityService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void moveEntity(Long entityId, String businessTypeCode, Long newParentId) {
-        entityCoreService.moveEntity(entityId, businessTypeCode, newParentId);
+    public void moveEntity(Long entityId, String entityTypeCode, Long newParentId) {
+        entityCoreService.moveEntity(entityId, entityTypeCode, newParentId);
     }
 
     // ==================== 批量操作相关方法 ====================
@@ -1811,7 +1811,7 @@ public class EntityServiceImpl implements EntityService {
 
             Map<String, Object> baseOverlay = EntityWriteReqMaps.mergeBase(base.getBaseFields(), item.getBaseFields());
             EntityCreateReqVO createReq = EntityWriteReqMaps.createReq(
-                    EntityFieldMapsSupport.getRequiredBusinessTypeCode(base.getBaseFields()),
+                    EntityFieldMapsSupport.getRequiredEntityTypeCode(base.getBaseFields()),
                     EntityFieldMapsSupport.getRequiredModelId(base.getBaseFields()),
                     name,
                     status,
@@ -1826,7 +1826,7 @@ public class EntityServiceImpl implements EntityService {
                 entityCategoryRelationService.associate(
                         id,
                         scope.getCategoryId(),
-                        EntityFieldMapsSupport.getRequiredBusinessTypeCode(base.getBaseFields()));
+                        EntityFieldMapsSupport.getRequiredEntityTypeCode(base.getBaseFields()));
             }
 
             // TODO 后续完善：补充批量创建+分类关联失败时的审计与补偿策略。
@@ -1859,7 +1859,7 @@ public class EntityServiceImpl implements EntityService {
             try {
                 EntityUpdateReqVO updateReq = EntityWriteReqMaps.updateReq(
                         id,
-                        reqVO.getBusinessTypeCode(),
+                        reqVO.getEntityTypeCode(),
                         reqVO.getModelId(),
                         reqVO.getName(),
                         reqVO.getStatus(),
@@ -1889,7 +1889,7 @@ public class EntityServiceImpl implements EntityService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public EntityBatchOperationRespVO batchUpdateStatus(String businessTypeCode, List<Long> ids, Integer status) {
+    public EntityBatchOperationRespVO batchUpdateStatus(String entityTypeCode, List<Long> ids, Integer status) {
         List<EntityBatchOperationRespVO.FailItem> failItems = new ArrayList<>();
         if (ids == null || ids.isEmpty()) {
             return EntityBatchOperationRespVO.builder()
@@ -1897,7 +1897,7 @@ public class EntityServiceImpl implements EntityService {
                     .async(false).failItems(failItems).build();
         }
 
-        List<EntityDO> existings = entityCoreService.listByIds(ids, businessTypeCode);
+        List<EntityDO> existings = entityCoreService.listByIds(ids, entityTypeCode);
         Map<Long, EntityDO> existingMap = existings.stream()
                 .filter(e -> e.getId() != null)
                 .collect(Collectors.toMap(EntityDO::getId, e -> e, (a, b) -> a));
@@ -1934,13 +1934,13 @@ public class EntityServiceImpl implements EntityService {
         List<EntityBatchOperationRespVO.FailItem> failItems = new ArrayList<>();
         int successCount = 0;
 
-        String businessTypeCode = reqVO.getBusinessTypeCode();
+        String entityTypeCode = reqVO.getEntityTypeCode();
         List<Long> ids = reqVO.getIds();
         Boolean forceDelete = reqVO.getForceDelete();
 
         for (Long id : ids) {
             try {
-                EntityDO existing = entityCoreService.get(id, businessTypeCode);
+                EntityDO existing = entityCoreService.get(id, entityTypeCode);
                 if (existing == null) {
                     failItems.add(EntityBatchOperationRespVO.FailItem.builder()
                             .entityId(id).reason(ENTITY_NOT_EXISTS).errorCode(404).build());
@@ -1948,15 +1948,15 @@ public class EntityServiceImpl implements EntityService {
                 }
 
                 if (Boolean.FALSE.equals(forceDelete)
-                        && entityCoreService.existsByParentId(id, businessTypeCode)) {
+                        && entityCoreService.existsByParentId(id, entityTypeCode)) {
                     failItems.add(EntityBatchOperationRespVO.FailItem.builder()
                             .entityId(id).entityName(existing.getName()).reason("存在子实体，无法删除")
                             .errorCode(400).build());
                     continue;
                 }
 
-                entityRelationSyncService.syncRelationsOnDelete(id, businessTypeCode);
-                entityCoreService.delete(id, businessTypeCode);
+                entityRelationSyncService.syncRelationsOnDelete(id, entityTypeCode);
+                entityCoreService.delete(id, entityTypeCode);
                 successCount++;
             } catch (Exception e) {
                 failItems.add(EntityBatchOperationRespVO.FailItem.builder()
@@ -1980,7 +1980,7 @@ public class EntityServiceImpl implements EntityService {
         List<EntityBatchOperationRespVO.FailItem> failItems = new ArrayList<>();
         int successCount = 0;
 
-        String businessTypeCode = reqVO.getBusinessTypeCode();
+        String entityTypeCode = reqVO.getEntityTypeCode();
         List<Long> ids = reqVO.getIds();
         Long targetCategoryId = reqVO.getTargetCategoryId();
         boolean replaceExisting = Boolean.TRUE.equals(reqVO.getReplaceExisting());
@@ -1988,9 +1988,9 @@ public class EntityServiceImpl implements EntityService {
         for (Long id : ids) {
             try {
                 if (replaceExisting) {
-                    entityCategoryRelationService.updateAssociation(id, List.of(targetCategoryId), businessTypeCode);
+                    entityCategoryRelationService.updateAssociation(id, List.of(targetCategoryId), entityTypeCode);
                 } else {
-                    entityCategoryRelationService.associate(id, targetCategoryId, businessTypeCode);
+                    entityCategoryRelationService.associate(id, targetCategoryId, entityTypeCode);
                 }
                 successCount++;
             } catch (Exception e) {
@@ -2011,7 +2011,7 @@ public class EntityServiceImpl implements EntityService {
     @Transactional(rollbackFor = Exception.class)
     public BatchEntityCategoryAssociationRespVO batchAppendCategory(EntityBatchCategoryRelationReqVO reqVO) {
         return entityCategoryRelationService.batchAssociateEntitiesToCategory(
-                reqVO.getEntityIds(), reqVO.getCategoryId(), reqVO.getBusinessTypeCode());
+                reqVO.getEntityIds(), reqVO.getCategoryId(), reqVO.getEntityTypeCode());
     }
 
     /**
@@ -2021,7 +2021,7 @@ public class EntityServiceImpl implements EntityService {
     @Transactional(rollbackFor = Exception.class)
     public BatchEntityCategoryAssociationRespVO batchRemoveCategory(EntityBatchCategoryRelationReqVO reqVO) {
         return entityCategoryRelationService.batchDisassociateEntitiesFromCategory(
-                reqVO.getEntityIds(), reqVO.getCategoryId(), reqVO.getBusinessTypeCode());
+                reqVO.getEntityIds(), reqVO.getCategoryId(), reqVO.getEntityTypeCode());
     }
 
     /**
@@ -2031,23 +2031,23 @@ public class EntityServiceImpl implements EntityService {
     @Transactional(rollbackFor = Exception.class)
     public BatchEntityCategoryAssociationRespVO batchReplaceCategories(EntityBatchReplaceCategoriesReqVO reqVO) {
         return entityCategoryRelationService.batchUpdateAssociation(
-                reqVO.getEntityIds(), reqVO.getCategoryIds(), reqVO.getBusinessTypeCode());
+                reqVO.getEntityIds(), reqVO.getCategoryIds(), reqVO.getEntityTypeCode());
     }
 
     @Override
-    public EntityBatchOperationRespVO getBatchOperationPreview(String businessTypeCode, List<Long> ids) {
+    public EntityBatchOperationRespVO getBatchOperationPreview(String entityTypeCode, List<Long> ids) {
         List<EntityBatchOperationRespVO.FailItem> previewItems = new ArrayList<>();
         int validCount = 0;
 
         for (Long id : ids) {
             EntityRespVO entity = null;
             try {
-                EntityDO entityDO = entityCoreService.get(id, businessTypeCode);
+                EntityDO entityDO = entityCoreService.get(id, entityTypeCode);
                 if (entityDO != null) {
                     entity = EntityDoVoHelper.toRespVO(entityDO, customFieldValidationService);
                 }
             } catch (Exception e) {
-                log.debug("获取实体失败: id={}, businessTypeCode={}", id, businessTypeCode);
+                log.debug("获取实体失败: id={}, entityTypeCode={}", id, entityTypeCode);
             }
 
             if (entity == null) {
@@ -2085,7 +2085,7 @@ public class EntityServiceImpl implements EntityService {
      */
     private EntitySearchRespVO.AggregationInfo buildAggregation(EntitySearchReqVO reqVO, List<Long> filteredEntityIds) {
         EntitySearchRespVO.AggregationInfo aggregation = new EntitySearchRespVO.AggregationInfo();
-        if (reqVO == null || reqVO.getBusinessTypeCode() == null || reqVO.getBusinessTypeCode().isEmpty()) {
+        if (reqVO == null || reqVO.getEntityTypeCode() == null || reqVO.getEntityTypeCode().isEmpty()) {
             return aggregation;
         }
 
@@ -2097,7 +2097,7 @@ public class EntityServiceImpl implements EntityService {
         }
 
         try {
-            EntityTableNameContext.set(reqVO.getBusinessTypeCode());
+            EntityTableNameContext.set(reqVO.getEntityTypeCode());
             List<EntityAggregationCountDTO<Integer>> statusCounts = entityAggregationMapper.selectStatusCount(
                     reqVO.getModelId(), reqVO.getStatus(), reqVO.getKeyword(), entityIdsArray, entityIdsSize);
             Map<Integer, Long> statusMap = new HashMap<>();
@@ -2114,7 +2114,7 @@ public class EntityServiceImpl implements EntityService {
             }
             aggregation.setModelCount(modelMap);
         } catch (Exception e) {
-            log.warn("构建聚合统计信息失败: businessTypeCode={}, error={}", reqVO.getBusinessTypeCode(), e.getMessage());
+            log.warn("构建聚合统计信息失败: entityTypeCode={}, error={}", reqVO.getEntityTypeCode(), e.getMessage());
         } finally {
             EntityTableNameContext.clear();
         }
@@ -2133,7 +2133,7 @@ public class EntityServiceImpl implements EntityService {
     @Override
     public EntitySearchRespVO searchAdvanced(EntitySearchReqVO reqVO) {
         EntityPageReqVO pageReqVO = new EntityPageReqVO();
-        pageReqVO.setBusinessTypeCode(reqVO.getBusinessTypeCode());
+        pageReqVO.setEntityTypeCode(reqVO.getEntityTypeCode());
         pageReqVO.setModelId(reqVO.getModelId());
         pageReqVO.setStatus(reqVO.getStatus());
         pageReqVO.setKeyword(reqVO.getKeyword());
@@ -2159,7 +2159,7 @@ public class EntityServiceImpl implements EntityService {
     /**
      * 实体层级树子树：rootEntityId 为空时返回根节点（供 Tree 首屏懒加载）；否则返回该节点的直接子节点。
      */
-    private List<EntityRespVO> buildEntityHierarchySubtree(String businessTypeCode, Long rootEntityId,
+    private List<EntityRespVO> buildEntityHierarchySubtree(String entityTypeCode, Long rootEntityId,
             String keyword, List<FieldFilterReqVO> filters, EntityQueryResultDetail detail,
             Integer pageNo, Integer pageSize) {
         List<EntityDO> rawEntities;
@@ -2167,9 +2167,9 @@ public class EntityServiceImpl implements EntityService {
             int resolvedPageNo = pageNo == null || pageNo < 1 ? 1 : pageNo;
             int resolvedPageSize = resolveTreeRootPageSize(pageSize);
             rawEntities = entityCoreService.pageEntitiesByParentId(
-                    businessTypeCode, null, resolvedPageNo, resolvedPageSize).getList();
+                    entityTypeCode, null, resolvedPageNo, resolvedPageSize).getList();
         } else {
-            rawEntities = entityCoreService.listEntitiesByParentId(businessTypeCode, rootEntityId);
+            rawEntities = entityCoreService.listEntitiesByParentId(entityTypeCode, rootEntityId);
         }
         if (rawEntities == null || rawEntities.isEmpty()) {
             return new ArrayList<>();
@@ -2177,7 +2177,7 @@ public class EntityServiceImpl implements EntityService {
         List<EntityRespVO> entities = detail == EntityQueryResultDetail.LIGHT
                 ? EntityDoVoHelper.toLightRespVOList(rawEntities)
                 : EntityDoVoHelper.toRespVOList(rawEntities, customFieldValidationService);
-        entities = filterEntityRespList(entities, businessTypeCode, keyword, filters);
+        entities = filterEntityRespList(entities, entityTypeCode, keyword, filters);
 
         Comparator<EntityRespVO> comparator = Comparator
                 .comparing((EntityRespVO v) -> v.getSort() == null ? Integer.MAX_VALUE : v.getSort())
@@ -2197,7 +2197,7 @@ public class EntityServiceImpl implements EntityService {
         return Math.min(pageSize, 500);
     }
 
-    private List<EntityRespVO> filterEntityRespList(List<EntityRespVO> entities, String businessTypeCode,
+    private List<EntityRespVO> filterEntityRespList(List<EntityRespVO> entities, String entityTypeCode,
             String keyword, List<FieldFilterReqVO> filters) {
         if (entities == null || entities.isEmpty()) {
             return new ArrayList<>();
@@ -2211,7 +2211,7 @@ public class EntityServiceImpl implements EntityService {
                 .map(EntityRespVO::getId)
                 .filter(Objects::nonNull)
                 .toList();
-        List<Long> filteredIds = filterCandidateEntityIds(orderedIds, businessTypeCode, filters, keyword);
+        List<Long> filteredIds = filterCandidateEntityIds(orderedIds, entityTypeCode, filters, keyword);
         if (filteredIds.isEmpty()) {
             return new ArrayList<>();
         }
@@ -2244,8 +2244,8 @@ public class EntityServiceImpl implements EntityService {
      * 前提是实体有数型结构的情况下使用，如果实体不支持树形结构，使用实体列表的查询接口
      */
     @Override
-    public List<EntityRespVO> getEntityTreeByModelId(String businessTypeCode, Long modelId) {
-        List<EntityDO> entities = entityCoreService.listTreeEntities(businessTypeCode, modelId);
+    public List<EntityRespVO> getEntityTreeByModelId(String entityTypeCode, Long modelId) {
+        List<EntityDO> entities = entityCoreService.listTreeEntities(entityTypeCode, modelId);
         List<EntityRespVO> respVOList = EntityDoVoHelper.toRespVOList(entities, customFieldValidationService);
         // 模型树场景：采用“父节点内局部排序（sort）”策略
         return EntityTreeBuilder.buildTree(respVOList, EntityTreeBuilder.SortMode.LOCAL_SIBLING_SORT);
@@ -2257,8 +2257,8 @@ public class EntityServiceImpl implements EntityService {
      */
 
     @Override
-    public List<String> getEntityPath(Long entityId, String businessTypeCode) {
-        return entityCoreService.getEntityPath(entityId, businessTypeCode);
+    public List<String> getEntityPath(Long entityId, String entityTypeCode) {
+        return entityCoreService.getEntityPath(entityId, entityTypeCode);
     }
 
     // ==================== 结果粒度转换相关方法 ====================
@@ -2293,7 +2293,7 @@ public class EntityServiceImpl implements EntityService {
             light.setBaseFields(new LinkedHashMap<>(source.getBaseFields()));
         } else {
             Map<String, Object> base = new LinkedHashMap<>();
-            putIfNotNull(base, "businessTypeCode", source.getBusinessTypeCode());
+            putIfNotNull(base, "entityTypeCode", source.getEntityTypeCode());
             putIfNotNull(base, "modelId", source.getModelId());
             putIfNotNull(base, "name", source.getName());
             putIfNotNull(base, "status", source.getStatus());

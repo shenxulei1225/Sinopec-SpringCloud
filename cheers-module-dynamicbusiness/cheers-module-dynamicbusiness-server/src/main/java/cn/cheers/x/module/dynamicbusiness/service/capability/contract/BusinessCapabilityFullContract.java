@@ -11,7 +11,7 @@ import java.util.List;
  *
  * <p>职责边界：</p>
  * <ul>
- *   <li>描述某个 businessTypeCode 的完整能力契约结构；</li>
+ *   <li>描述某个 entityTypeCode 的完整能力契约结构；</li>
  *   <li>由业务能力服务层生成与解析，不属于 Controller 入参/出参 VO；</li>
  *   <li>持久化在 business_capability.capability_full JSONB 列。</li>
  * </ul>
@@ -22,13 +22,13 @@ import java.util.List;
 public class BusinessCapabilityFullContract {
 
     @Schema(description = "业务类型编码", example = "equipment")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "业务类型名称", example = "设备管理")
-    private String businessTypeName; 
+    private String entityTypeName; 
 
     @Schema(description = "业务类型层级", example = "USER")
-    private String businessTypeLevel;
+    private String entityTypeLevel;
 
     @Schema(description = "能力来源", example = "dynamic")
     private String capabilitySource;

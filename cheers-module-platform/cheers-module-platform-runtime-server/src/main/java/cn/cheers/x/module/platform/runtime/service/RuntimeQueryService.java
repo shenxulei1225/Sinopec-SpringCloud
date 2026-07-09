@@ -13,7 +13,7 @@ public interface RuntimeQueryService {
 
     RuntimeJobDTO getJob(String runtimeJobId);
 
-    List<ScheduleSlotDTO> listSlots(String businessTypeCode, OffsetDateTime from, OffsetDateTime to);
+    List<ScheduleSlotDTO> listSlots(String entityTypeCode, OffsetDateTime from, OffsetDateTime to);
 
     List<ScheduleSlotDTO> listSlotsByJobId(String runtimeJobId);
 }

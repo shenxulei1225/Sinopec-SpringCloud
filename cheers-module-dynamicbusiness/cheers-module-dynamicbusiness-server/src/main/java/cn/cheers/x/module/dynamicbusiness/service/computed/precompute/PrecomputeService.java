@@ -72,11 +72,11 @@ public interface PrecomputeService {
      * 关联数据变化后触发预计算
      * 用于聚合统计字段的重算
      * 
-     * @param targetBusinessType 目标业务类型
+     * @param targetEntityType 目标业务类型
      * @param targetModelCode 目标 Model 编码
      * @param targetEntityId 目标实体 ID
      */
-    void onRelatedDataChanged(String targetBusinessType, String targetModelCode, Long targetEntityId);
+    void onRelatedDataChanged(String targetEntityType, String targetModelCode, Long targetEntityId);
 
     // ========== 预计算任务管理 ==========
 

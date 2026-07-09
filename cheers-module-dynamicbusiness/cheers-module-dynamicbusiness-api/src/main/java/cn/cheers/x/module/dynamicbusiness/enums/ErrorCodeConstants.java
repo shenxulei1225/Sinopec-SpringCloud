@@ -242,7 +242,7 @@ public interface ErrorCodeConstants {
     ErrorCode TEMPLATE_FIELD_ASSIGNMENT_NOT_EXISTS = new ErrorCode(1_002_038_004, "模板字段分配不存在");
     ErrorCode TEMPLATE_FIELD_ALREADY_ASSIGNED = new ErrorCode(1_002_038_005, "字段已分配到该模板");
 
-    // ========== BusinessType 关联 1-002-039-000 ==========
+    // ========== EntityType 关联 1-002-039-000 ==========
     ErrorCode BUSINESS_TYPE_RELATION_NOT_EXISTS = new ErrorCode(1_002_039_000, "业务类型关联不存在");
     ErrorCode BUSINESS_TYPE_RELATION_ALREADY_EXISTS = new ErrorCode(1_002_039_001, "业务类型 {} 与 {} 的关联已存在");
     ErrorCode BUSINESS_TYPE_RELATION_SELF_REFERENCE = new ErrorCode(1_002_039_002, "不能创建自关联");

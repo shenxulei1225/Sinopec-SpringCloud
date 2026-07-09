@@ -44,11 +44,11 @@ public class EntityRelationServiceImpl implements EntityRelationService {
         // 校验关联类型
         validateRelationType(reqVO.getRelationType());
 
-        // 校验源实体存在并获取实体信息（使用 businessTypeCode 参数，支持多存储策略）
-        EntityRespVO sourceEntity = validateEntityExists(reqVO.getSourceEntityId(), reqVO.getSourceBusinessTypeCode(), "源实体");
+        // 校验源实体存在并获取实体信息（使用 entityTypeCode 参数，支持多存储策略）
+        EntityRespVO sourceEntity = validateEntityExists(reqVO.getSourceEntityId(), reqVO.getSourceEntityTypeCode(), "源实体");
 
-        // 校验目标实体存在并获取实体信息（使用 businessTypeCode 参数，支持多存储策略）
-        EntityRespVO targetEntity = validateEntityExists(reqVO.getTargetEntityId(), reqVO.getTargetBusinessTypeCode(), "目标实体");
+        // 校验目标实体存在并获取实体信息（使用 entityTypeCode 参数，支持多存储策略）
+        EntityRespVO targetEntity = validateEntityExists(reqVO.getTargetEntityId(), reqVO.getTargetEntityTypeCode(), "目标实体");
 
         // 校验不能自关联
         if (reqVO.getSourceEntityId().equals(reqVO.getTargetEntityId())) {
@@ -56,27 +56,27 @@ public class EntityRelationServiceImpl implements EntityRelationService {
         }
 
         // 校验关联关系不存在
-        if (existsRelation(reqVO.getSourceEntityId(), reqVO.getSourceBusinessTypeCode(),
-                reqVO.getTargetEntityId(), reqVO.getTargetBusinessTypeCode())) {
+        if (existsRelation(reqVO.getSourceEntityId(), reqVO.getSourceEntityTypeCode(),
+                reqVO.getTargetEntityId(), reqVO.getTargetEntityTypeCode())) {
             throw new ServiceException(400, "该关联关系已存在");
         }
 
         // 获取源实体和目标实体的业务类型编码（优先使用请求中的值，如果没有则使用从实体中获取的值）
-        String sourceBusinessTypeCode = reqVO.getSourceBusinessTypeCode();
-        if (sourceBusinessTypeCode == null || sourceBusinessTypeCode.isEmpty()) {
-            sourceBusinessTypeCode = sourceEntity.getBusinessTypeCode();
+        String sourceEntityTypeCode = reqVO.getSourceEntityTypeCode();
+        if (sourceEntityTypeCode == null || sourceEntityTypeCode.isEmpty()) {
+            sourceEntityTypeCode = sourceEntity.getEntityTypeCode();
         }
-        String targetBusinessTypeCode = reqVO.getTargetBusinessTypeCode();
-        if (targetBusinessTypeCode == null || targetBusinessTypeCode.isEmpty()) {
-            targetBusinessTypeCode = targetEntity.getBusinessTypeCode();
+        String targetEntityTypeCode = reqVO.getTargetEntityTypeCode();
+        if (targetEntityTypeCode == null || targetEntityTypeCode.isEmpty()) {
+            targetEntityTypeCode = targetEntity.getEntityTypeCode();
         }
 
         // 创建关联关系
         EntityRelationDO relation = EntityRelationDO.builder()
                 .sourceEntityId(reqVO.getSourceEntityId())
                 .targetEntityId(reqVO.getTargetEntityId())
-                .sourceBusinessTypeCode(sourceBusinessTypeCode)
-                .targetBusinessTypeCode(targetBusinessTypeCode)
+                .sourceEntityTypeCode(sourceEntityTypeCode)
+                .targetEntityTypeCode(targetEntityTypeCode)
                 .relationType(reqVO.getRelationType())
                 .relationName(reqVO.getRelationName())
                 .description(reqVO.getDescription())
@@ -113,40 +113,40 @@ public class EntityRelationServiceImpl implements EntityRelationService {
 
 
     @Override
-    public void deleteRelation(Long id, String sourceBusinessTypeCode, String targetBusinessTypeCode) {
+    public void deleteRelation(Long id, String sourceEntityTypeCode, String targetEntityTypeCode) {
         // 校验关联关系存在
         getRelationDO(id);
-        // businessTypeCode 参数预留用于后续扩展（如验证实体存在性）
+        // entityTypeCode 参数预留用于后续扩展（如验证实体存在性）
         entityRelationMapper.deleteById(id);
     }
 
 
     @Override
-    public EntityRelationRespVO getRelation(Long id, String sourceBusinessTypeCode, String targetBusinessTypeCode) {
+    public EntityRelationRespVO getRelation(Long id, String sourceEntityTypeCode, String targetEntityTypeCode) {
         EntityRelationDO relation = getRelationDO(id);
-        return convertToRespVO(relation, sourceBusinessTypeCode, targetBusinessTypeCode);
+        return convertToRespVO(relation, sourceEntityTypeCode, targetEntityTypeCode);
     }
 
 
     @Override
-    public List<EntityRelationRespVO> getRelationsBySourceEntity(Long sourceEntityId, String businessTypeCode) {
+    public List<EntityRelationRespVO> getRelationsBySourceEntity(Long sourceEntityId, String entityTypeCode) {
         List<EntityRelationDO> relations = entityRelationMapper.selectBySourceEntityId(sourceEntityId);
-        return convertToRespVOList(relations, businessTypeCode, null);
+        return convertToRespVOList(relations, entityTypeCode, null);
     }
 
 
     @Override
-    public List<EntityRelationRespVO> getRelationsByTargetEntity(Long targetEntityId, String businessTypeCode) {
+    public List<EntityRelationRespVO> getRelationsByTargetEntity(Long targetEntityId, String entityTypeCode) {
         List<EntityRelationDO> relations = entityRelationMapper.selectByTargetEntityId(targetEntityId);
-        // 如果数据库中有存储 sourceBusinessTypeCode，优先使用；否则尝试从实体中获取
-        return convertToRespVOList(relations, null, businessTypeCode);
+        // 如果数据库中有存储 sourceEntityTypeCode，优先使用；否则尝试从实体中获取
+        return convertToRespVOList(relations, null, entityTypeCode);
     }
 
 
     @Override
-    public List<EntityRelationRespVO> getAllRelationsByEntity(Long entityId, String businessTypeCode) {
+    public List<EntityRelationRespVO> getAllRelationsByEntity(Long entityId, String entityTypeCode) {
         List<EntityRelationDO> relations = entityRelationMapper.selectByEntityId(entityId);
-        return convertToRespVOList(relations, businessTypeCode, businessTypeCode);
+        return convertToRespVOList(relations, entityTypeCode, entityTypeCode);
     }
 
 
@@ -154,34 +154,34 @@ public class EntityRelationServiceImpl implements EntityRelationService {
 
 
     @Override
-    public List<EntityRelationRespVO> getRelatedEntities(Long sourceEntityId, String sourceBusinessTypeCode,
-                                                            Long targetEntityId, String targetBusinessTypeCode,
+    public List<EntityRelationRespVO> getRelatedEntities(Long sourceEntityId, String sourceEntityTypeCode,
+                                                            Long targetEntityId, String targetEntityTypeCode,
                                                             String relationType) {
         // 参数校验：必须提供源实体参数或目标实体参数之一
         // 支持两种场景：
-        // 1. 通过源实体查询：sourceEntityId + sourceBusinessTypeCode（可选：targetBusinessTypeCode用于过滤）
-        // 2. 通过目标实体查询：targetEntityId + sourceBusinessTypeCode（用于过滤源业务类型）
-        boolean hasSourceParams = sourceEntityId != null && sourceBusinessTypeCode != null;
-        boolean hasTargetParams = targetEntityId != null && sourceBusinessTypeCode != null;
+        // 1. 通过源实体查询：sourceEntityId + sourceEntityTypeCode（可选：targetEntityTypeCode用于过滤）
+        // 2. 通过目标实体查询：targetEntityId + sourceEntityTypeCode（用于过滤源业务类型）
+        boolean hasSourceParams = sourceEntityId != null && sourceEntityTypeCode != null;
+        boolean hasTargetParams = targetEntityId != null && sourceEntityTypeCode != null;
 
         if (!hasSourceParams && !hasTargetParams) {
-            throw new ServiceException(400, "必须提供源实体参数（sourceEntityId和sourceBusinessTypeCode）或目标实体参数（targetEntityId和sourceBusinessTypeCode）");
+            throw new ServiceException(400, "必须提供源实体参数（sourceEntityId和sourceEntityTypeCode）或目标实体参数（targetEntityId和sourceEntityTypeCode）");
         }
 
         List<EntityRelationDO> relations;
 
         // 根据提供的参数类型查询
-        if (sourceEntityId != null && sourceBusinessTypeCode != null) {
+        if (sourceEntityId != null && sourceEntityTypeCode != null) {
             // 通过源实体查询：查询目标业务类型的关联实体
-            // 如果提供了targetBusinessTypeCode，则按目标业务类型过滤
-            if (targetBusinessTypeCode != null && !targetBusinessTypeCode.isEmpty()) {
+            // 如果提供了targetEntityTypeCode，则按目标业务类型过滤
+            if (targetEntityTypeCode != null && !targetEntityTypeCode.isEmpty()) {
                 // 按目标业务类型编码过滤
                 if (relationType != null && !relationType.isEmpty()) {
-                    relations = entityRelationMapper.selectBySourceEntityIdAndTargetBusinessTypeCodeAndType(
-                            sourceEntityId, targetBusinessTypeCode, relationType);
+                    relations = entityRelationMapper.selectBySourceEntityIdAndTargetEntityTypeCodeAndType(
+                            sourceEntityId, targetEntityTypeCode, relationType);
                 } else {
-                    relations = entityRelationMapper.selectBySourceEntityIdAndTargetBusinessTypeCode(
-                            sourceEntityId, targetBusinessTypeCode);
+                    relations = entityRelationMapper.selectBySourceEntityIdAndTargetEntityTypeCode(
+                            sourceEntityId, targetEntityTypeCode);
                 }
             } else {
                 // 不按目标业务类型过滤，查询所有关联实体
@@ -191,56 +191,56 @@ public class EntityRelationServiceImpl implements EntityRelationService {
                     relations = entityRelationMapper.selectBySourceEntityId(sourceEntityId);
                 }
             }
-            return convertToRespVOList(relations, sourceBusinessTypeCode, targetBusinessTypeCode);
+            return convertToRespVOList(relations, sourceEntityTypeCode, targetEntityTypeCode);
         } else {
             // 通过目标实体查询：查询源业务类型的关联实体
-            // 使用sourceBusinessTypeCode来过滤源业务类型
+            // 使用sourceEntityTypeCode来过滤源业务类型
             if (relationType != null && !relationType.isEmpty()) {
-                relations = entityRelationMapper.selectByTargetEntityIdAndSourceBusinessTypeCodeAndType(
-                        targetEntityId, sourceBusinessTypeCode, relationType);
+                relations = entityRelationMapper.selectByTargetEntityIdAndSourceEntityTypeCodeAndType(
+                        targetEntityId, sourceEntityTypeCode, relationType);
             } else {
-                relations = entityRelationMapper.selectByTargetEntityIdAndSourceBusinessTypeCode(
-                        targetEntityId, sourceBusinessTypeCode);
+                relations = entityRelationMapper.selectByTargetEntityIdAndSourceEntityTypeCode(
+                        targetEntityId, sourceEntityTypeCode);
             }
-            return convertToRespVOList(relations, sourceBusinessTypeCode, targetBusinessTypeCode);
+            return convertToRespVOList(relations, sourceEntityTypeCode, targetEntityTypeCode);
         }
     }
 
 
 
     @Override
-    public boolean hasRelations(Long entityId, String businessTypeCode) {
-        return countRelations(entityId, businessTypeCode) > 0;
+    public boolean hasRelations(Long entityId, String entityTypeCode) {
+        return countRelations(entityId, entityTypeCode) > 0;
     }
 
 
 
     @Override
-    public Long countRelations(Long entityId, String businessTypeCode) {
-        // businessTypeCode 参数预留用于后续扩展
+    public Long countRelations(Long entityId, String entityTypeCode) {
+        // entityTypeCode 参数预留用于后续扩展
         return entityRelationMapper.countByEntityId(entityId);
     }
 
 
 
     @Override
-    public int deleteAllRelationsByEntity(Long entityId, String businessTypeCode) {
-        // businessTypeCode 参数预留用于后续扩展
+    public int deleteAllRelationsByEntity(Long entityId, String entityTypeCode) {
+        // entityTypeCode 参数预留用于后续扩展
         return entityRelationMapper.deleteByEntityId(entityId);
     }
 
 
 
     @Override
-    public boolean existsRelation(Long sourceEntityId, String sourceBusinessTypeCode,
-                                    Long targetEntityId, String targetBusinessTypeCode) {
-        // businessTypeCode 参数预留用于后续扩展（如验证实体存在性）
+    public boolean existsRelation(Long sourceEntityId, String sourceEntityTypeCode,
+                                    Long targetEntityId, String targetEntityTypeCode) {
+        // entityTypeCode 参数预留用于后续扩展（如验证实体存在性）
         EntityRelationDO relation = entityRelationMapper.selectBySourceAndTarget(sourceEntityId, targetEntityId);
         return relation != null;
     }
 
     @Override
-    public List<EntityRelationRespVO> getRelationsByTargetEntity(Long targetEntityId, String businessTypeCode, String sourceModelCode) {
+    public List<EntityRelationRespVO> getRelationsByTargetEntity(Long targetEntityId, String entityTypeCode, String sourceModelCode) {
         List<EntityRelationDO> relations;
         if (sourceModelCode != null && !sourceModelCode.isEmpty()) {
             // 按源 Model 过滤
@@ -249,20 +249,20 @@ public class EntityRelationServiceImpl implements EntityRelationService {
             // 不过滤，返回所有反向关联
             relations = entityRelationMapper.selectByTargetEntityId(targetEntityId);
         }
-        return convertToRespVOList(relations, null, businessTypeCode);
+        return convertToRespVOList(relations, null, entityTypeCode);
     }
 
     @Override
-    public Long countRelationsByTargetEntity(Long targetEntityId, String businessTypeCode) {
+    public Long countRelationsByTargetEntity(Long targetEntityId, String entityTypeCode) {
         // 使用 Mapper 的统计方法
         List<EntityRelationDO> relations = entityRelationMapper.selectByTargetEntityId(targetEntityId);
         return (long) relations.size();
     }
 
     @Override
-    public List<EntityRelationRespVO> getRelationsByFieldCode(Long entityId, String businessTypeCode, String fieldCode) {
+    public List<EntityRelationRespVO> getRelationsByFieldCode(Long entityId, String entityTypeCode, String fieldCode) {
         List<EntityRelationDO> relations = entityRelationMapper.selectBySourceEntityIdAndFieldCode(entityId, fieldCode);
-        return convertToRespVOList(relations, businessTypeCode, null);
+        return convertToRespVOList(relations, entityTypeCode, null);
     }
 
     @Override
@@ -280,13 +280,13 @@ public class EntityRelationServiceImpl implements EntityRelationService {
         }
     }
 
-    private EntityRespVO validateEntityExists(Long entityId, String businessTypeCode, String entityDesc) {
+    private EntityRespVO validateEntityExists(Long entityId, String entityTypeCode, String entityDesc) {
         EntityRespVO entity;
         try {
-            entity = entityService.get(entityId, businessTypeCode);
+            entity = entityService.get(entityId, entityTypeCode);
         } catch (Exception e) {
-            log.warn("查询实体失败: entityId={}, businessTypeCode={}, error={}",
-                    entityId, businessTypeCode, e.getMessage());
+            log.warn("查询实体失败: entityId={}, entityTypeCode={}, error={}",
+                    entityId, entityTypeCode, e.getMessage());
             throw new ServiceException(404, entityDesc + "不存在");
         }
 
@@ -309,8 +309,8 @@ public class EntityRelationServiceImpl implements EntityRelationService {
     }
 
     private EntityRelationRespVO convertToRespVO(EntityRelationDO relation,
-                                                    String sourceBusinessTypeCode,
-                                                    String targetBusinessTypeCode) {
+                                                    String sourceEntityTypeCode,
+                                                    String targetEntityTypeCode) {
         EntityRelationRespVO respVO = new EntityRelationRespVO();
         respVO.setId(relation.getId());
         respVO.setSourceEntityId(relation.getSourceEntityId());
@@ -323,50 +323,50 @@ public class EntityRelationServiceImpl implements EntityRelationService {
         respVO.setCreateTime(relation.getCreateTime());
         respVO.setUpdateTime(relation.getUpdateTime());
 
-        String actualSourceBusinessTypeCode = relation.getSourceBusinessTypeCode() != null
-                ? relation.getSourceBusinessTypeCode()
-                : sourceBusinessTypeCode;
-        String actualTargetBusinessTypeCode = relation.getTargetBusinessTypeCode() != null
-                ? relation.getTargetBusinessTypeCode()
-                : targetBusinessTypeCode;
+        String actualSourceEntityTypeCode = relation.getSourceEntityTypeCode() != null
+                ? relation.getSourceEntityTypeCode()
+                : sourceEntityTypeCode;
+        String actualTargetEntityTypeCode = relation.getTargetEntityTypeCode() != null
+                ? relation.getTargetEntityTypeCode()
+                : targetEntityTypeCode;
 
         try {
             EntityRespVO sourceEntity;
-            sourceEntity = entityService.get(relation.getSourceEntityId(), actualSourceBusinessTypeCode);
+            sourceEntity = entityService.get(relation.getSourceEntityId(), actualSourceEntityTypeCode);
             if (sourceEntity != null) {
                 respVO.setSourceEntityName(sourceEntity.getName());
-                respVO.setSourceBusinessTypeCode(
-                    relation.getSourceBusinessTypeCode() != null
-                        ? relation.getSourceBusinessTypeCode()
-                        : sourceEntity.getBusinessTypeCode()
+                respVO.setSourceEntityTypeCode(
+                    relation.getSourceEntityTypeCode() != null
+                        ? relation.getSourceEntityTypeCode()
+                        : sourceEntity.getEntityTypeCode()
                 );
-            } else if (relation.getSourceBusinessTypeCode() != null) {
-                respVO.setSourceBusinessTypeCode(relation.getSourceBusinessTypeCode());
+            } else if (relation.getSourceEntityTypeCode() != null) {
+                respVO.setSourceEntityTypeCode(relation.getSourceEntityTypeCode());
             }
         } catch (Exception e) {
             log.debug("获取源实体名称失败: sourceEntityId={}, error={}", relation.getSourceEntityId(), e.getMessage());
-            if (relation.getSourceBusinessTypeCode() != null) {
-                respVO.setSourceBusinessTypeCode(relation.getSourceBusinessTypeCode());
+            if (relation.getSourceEntityTypeCode() != null) {
+                respVO.setSourceEntityTypeCode(relation.getSourceEntityTypeCode());
             }
         }
 
         try {
             EntityRespVO targetEntity;
-            targetEntity = entityService.get(relation.getTargetEntityId(), actualTargetBusinessTypeCode);
+            targetEntity = entityService.get(relation.getTargetEntityId(), actualTargetEntityTypeCode);
             if (targetEntity != null) {
                 respVO.setTargetEntityName(targetEntity.getName());
-                respVO.setTargetBusinessTypeCode(
-                    relation.getTargetBusinessTypeCode() != null
-                        ? relation.getTargetBusinessTypeCode()
-                        : targetEntity.getBusinessTypeCode()
+                respVO.setTargetEntityTypeCode(
+                    relation.getTargetEntityTypeCode() != null
+                        ? relation.getTargetEntityTypeCode()
+                        : targetEntity.getEntityTypeCode()
                 );
-            } else if (relation.getTargetBusinessTypeCode() != null) {
-                respVO.setTargetBusinessTypeCode(relation.getTargetBusinessTypeCode());
+            } else if (relation.getTargetEntityTypeCode() != null) {
+                respVO.setTargetEntityTypeCode(relation.getTargetEntityTypeCode());
             }
         } catch (Exception e) {
             log.debug("获取目标实体名称失败: targetEntityId={}, error={}", relation.getTargetEntityId(), e.getMessage());
-            if (relation.getTargetBusinessTypeCode() != null) {
-                respVO.setTargetBusinessTypeCode(relation.getTargetBusinessTypeCode());
+            if (relation.getTargetEntityTypeCode() != null) {
+                respVO.setTargetEntityTypeCode(relation.getTargetEntityTypeCode());
             }
         }
 
@@ -378,11 +378,11 @@ public class EntityRelationServiceImpl implements EntityRelationService {
     }
 
     private List<EntityRelationRespVO> convertToRespVOList(List<EntityRelationDO> relations,
-                                                            String sourceBusinessTypeCode,
-                                                            String targetBusinessTypeCode) {
+                                                            String sourceEntityTypeCode,
+                                                            String targetEntityTypeCode) {
         List<EntityRelationRespVO> result = new ArrayList<>();
         for (EntityRelationDO relation : relations) {
-            result.add(convertToRespVO(relation, sourceBusinessTypeCode, targetBusinessTypeCode));
+            result.add(convertToRespVO(relation, sourceEntityTypeCode, targetEntityTypeCode));
         }
         return result;
     }

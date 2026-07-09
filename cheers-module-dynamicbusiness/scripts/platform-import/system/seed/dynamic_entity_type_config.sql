@@ -15,7 +15,7 @@ INSERT INTO dynamic_entity_type_config (
   enable_rule_engine, description, status, physical_column_mapping, tenant_id, creator
 ) VALUES (
   'billing', '收费管理',
-  'DEDICATED', 'ent_shou_fei',
+  'DEDICATED', 'ent_billing',
   NULL, TRUE,
   '各项收费', 1,
   NULL, 1, 'seed'
@@ -33,7 +33,7 @@ INSERT INTO dynamic_entity_type_config (
   enable_rule_engine, description, status, physical_column_mapping, tenant_id, creator
 ) VALUES (
   'customer', '客户管理',
-  'DEDICATED', 'ent_ke_hu',
+  'DEDICATED', 'ent_customer',
   NULL, TRUE,
   '客户管理、关系维护', 1,
   NULL, 1, 'seed'
@@ -51,7 +51,7 @@ INSERT INTO dynamic_entity_type_config (
   enable_rule_engine, description, status, physical_column_mapping, tenant_id, creator
 ) VALUES (
   'emergency_resource', '应急资源',
-  'DEDICATED', 'ent_ying_ji_zi_yuan',
+  'DEDICATED', 'ent_emergency_resource',
   NULL, TRUE,
   NULL, 1,
   NULL, 1, 'seed'
@@ -69,7 +69,7 @@ INSERT INTO dynamic_entity_type_config (
   enable_rule_engine, description, status, physical_column_mapping, tenant_id, creator
 ) VALUES (
   'emergency_team', '应急队伍',
-  'DEDICATED', 'ent_ying_ji_dui_wu',
+  'DEDICATED', 'ent_emergency_team',
   NULL, TRUE,
   NULL, 1,
   NULL, 1, 'seed'
@@ -141,7 +141,7 @@ INSERT INTO dynamic_entity_type_config (
   enable_rule_engine, description, status, physical_column_mapping, tenant_id, creator
 ) VALUES (
   'inspection_item', '检查内容',
-  'DEDICATED', 'ent_jian_cha_nei_rong',
+  'DEDICATED', 'ent_inspection_item',
   NULL, TRUE,
   NULL, 1,
   NULL, 1, 'seed'
@@ -159,7 +159,7 @@ INSERT INTO dynamic_entity_type_config (
   enable_rule_engine, description, status, physical_column_mapping, tenant_id, creator
 ) VALUES (
   'inspection_point', '点位管理',
-  'DEDICATED', 'ent_dian_wei',
+  'DEDICATED', 'ent_inspection_point',
   NULL, TRUE,
   NULL, 1,
   NULL, 1, 'seed'
@@ -195,7 +195,7 @@ INSERT INTO dynamic_entity_type_config (
   enable_rule_engine, description, status, physical_column_mapping, tenant_id, creator
 ) VALUES (
   'patrol', '巡检管理',
-  'DEDICATED', 'ent_xun_jian',
+  'DEDICATED', 'ent_patrol',
   NULL, TRUE,
   NULL, 1,
   NULL, 1, 'seed'
@@ -249,7 +249,7 @@ INSERT INTO dynamic_entity_type_config (
   enable_rule_engine, description, status, physical_column_mapping, tenant_id, creator
 ) VALUES (
   'route', '路线管理',
-  'DEDICATED', 'ent_lu_xian_guan_li',
+  'DEDICATED', 'ent_route',
   NULL, TRUE,
   NULL, 1,
   NULL, 1, 'seed'
@@ -269,7 +269,7 @@ INSERT INTO dynamic_entity_type_config (
   'spare_parts', '备件管理',
   'DEDICATED', 'ent_spare_part',
   NULL, TRUE,
-  'spare_part业务类型存储配置', 1,
+  'spare_parts业务类型存储配置', 1,
   NULL, 1, 'seed'
 )
 ON CONFLICT (entity_type_code, tenant_id) WHERE deleted = false

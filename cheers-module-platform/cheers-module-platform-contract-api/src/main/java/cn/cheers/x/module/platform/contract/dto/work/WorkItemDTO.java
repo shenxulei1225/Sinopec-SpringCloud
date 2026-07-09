@@ -19,7 +19,7 @@ public class WorkItemDTO {
 
     private String contractVersion;
     private String workId;
-    private String businessTypeCode;
+    private String entityTypeCode;
     private String sourceModelCode;
     private String sourceInstanceId;
     private Integer durationEstimateMinutes;

@@ -200,7 +200,7 @@ STOP_SERVICES=(
     facility scene twin inspection
 )
 
-# 检查服务是否运行
+# 检查服务是否运行（必须处于 LISTEN，避免误判瞬时连接）
 is_service_running() {
     local service_name=$1
     local port=$(get_service_port "$service_name")
@@ -209,11 +209,17 @@ is_service_running() {
         return 1
     fi
     
-    if lsof -ti:$port > /dev/null 2>&1; then
+    if lsof -iTCP:"$port" -sTCP:LISTEN > /dev/null 2>&1; then
         return 0
     else
         return 1
     fi
+}
+
+# 获取监听端口的应用 PID（Spring Boot 进程）
+get_service_app_pid() {
+    local port=$1
+    lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null | head -1
 }
 
 # 启动服务
@@ -260,15 +266,14 @@ start_service() {
     local log_file="$SCRIPT_DIR/logs/${service_name}-server.log"
     local port=$(get_service_port "$service_name")
     local working_dir="$service_path"
-    local maven_cmd="mvn spring-boot:run -Dspring-boot.run.profiles=local"
-
     cd "$working_dir"
     
-    # 使用 Maven 启动（后台运行）
-    nohup bash -lc "$maven_cmd" > "$log_file" 2>&1 &
+    # 后台启动；disown 避免启动脚本 shell 退出时 SIGHUP 带走 Maven/Spring Boot
+    nohup mvn spring-boot:run -Dspring-boot.run.profiles=local >> "$log_file" 2>&1 &
     local pid=$!
+    disown -h "$pid" 2>/dev/null || true
     
-    echo -e "${BLUE}   进程 ID: $pid${NC}"
+    echo -e "${BLUE}   Maven 进程 ID: $pid${NC}"
     echo -e "${BLUE}   日志文件: $log_file${NC}"
     echo -e "${BLUE}   等待服务启动（最多 60 秒）...${NC}"
     echo ""
@@ -291,14 +296,23 @@ start_service() {
     
     while [ $waited -lt $max_wait ]; do
         if is_service_running "$service_name"; then
+            # 端口刚起来时进程可能仍不稳定，再等几秒确认仍存活
+            sleep 3
+            if ! is_service_running "$service_name"; then
+                waited=$((waited + 3))
+                continue
+            fi
             # 如果正在显示日志,停止 tail
             if [ "$show_logs" = "true" ] && [ -n "$tail_pid" ]; then
                 kill $tail_pid 2>/dev/null
             fi
+            local app_pid
+            app_pid=$(get_service_app_pid "$port")
             echo ""
             echo -e "${GREEN}✅ 服务 $service_name 启动成功！${NC}"
             echo -e "   端口: ${BLUE}$port${NC}"
-            echo -e "   进程 ID: ${BLUE}$pid${NC}"
+            echo -e "   应用进程 ID: ${BLUE}${app_pid:-未知}${NC}"
+            echo -e "   Maven 进程 ID: ${BLUE}$pid${NC}"
             echo -e "   日志文件: ${BLUE}$log_file${NC}"
             echo -e "   ${YELLOW}📋 查看实时日志:${NC}"
             echo -e "      ${BLUE}./start-microservices.sh logs $service_name${NC}"
@@ -426,7 +440,8 @@ show_status() {
         local port=$(get_service_port "$svc")
         if [ -n "$port" ]; then
             if is_service_running "$svc"; then
-                local pid=$(lsof -ti:$port 2>/dev/null | head -1)
+                local pid
+                pid=$(get_service_app_pid "$port")
                 local url="http://localhost:$port"
                 printf "%-22s %-10s ${GREEN}%-10s${NC} %-20s ${BLUE}%-40s${NC}\n" "$svc" "$port" "运行中" "$pid" "$url"
             else

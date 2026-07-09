@@ -24,33 +24,33 @@ public interface ModelRelationDeclarationMapper extends BaseMapperX<ModelRelatio
     default List<ModelRelationDeclarationDO> selectByModelId(Long modelId) {
         return selectList(new LambdaQueryWrapperX<ModelRelationDeclarationDO>()
                 .eq(ModelRelationDeclarationDO::getModelId, modelId)
-                .orderByAsc(ModelRelationDeclarationDO::getTargetBusinessType));
+                .orderByAsc(ModelRelationDeclarationDO::getTargetEntityType));
     }
 
     /**
      * 根据 Model ID 和目标业务类型查询
      * 
      * @param modelId Model ID
-     * @param targetBusinessType 目标业务类型编码
+     * @param targetEntityType 目标业务类型编码
      * @return 关联声明
      */
-    default ModelRelationDeclarationDO selectByModelIdAndTarget(Long modelId, String targetBusinessType) {
+    default ModelRelationDeclarationDO selectByModelIdAndTarget(Long modelId, String targetEntityType) {
         return selectOne(new LambdaQueryWrapperX<ModelRelationDeclarationDO>()
                 .eq(ModelRelationDeclarationDO::getModelId, modelId)
-                .eq(ModelRelationDeclarationDO::getTargetBusinessType, targetBusinessType));
+                .eq(ModelRelationDeclarationDO::getTargetEntityType, targetEntityType));
     }
 
     /**
      * 检查 Model 是否已声明某个业务类型的关联
      * 
      * @param modelId Model ID
-     * @param targetBusinessType 目标业务类型编码
+     * @param targetEntityType 目标业务类型编码
      * @return 是否已声明
      */
-    default boolean existsByModelIdAndTarget(Long modelId, String targetBusinessType) {
+    default boolean existsByModelIdAndTarget(Long modelId, String targetEntityType) {
         return selectCount(new LambdaQueryWrapperX<ModelRelationDeclarationDO>()
                 .eq(ModelRelationDeclarationDO::getModelId, modelId)
-                .eq(ModelRelationDeclarationDO::getTargetBusinessType, targetBusinessType)) > 0;
+                .eq(ModelRelationDeclarationDO::getTargetEntityType, targetEntityType)) > 0;
     }
 
     /**
@@ -68,24 +68,24 @@ public interface ModelRelationDeclarationMapper extends BaseMapperX<ModelRelatio
      * 删除 Model 的指定关联声明
      * 
      * @param modelId Model ID
-     * @param targetBusinessType 目标业务类型编码
+     * @param targetEntityType 目标业务类型编码
      * @return 删除数量
      */
-    default int deleteByModelIdAndTarget(Long modelId, String targetBusinessType) {
+    default int deleteByModelIdAndTarget(Long modelId, String targetEntityType) {
         return delete(new LambdaQueryWrapperX<ModelRelationDeclarationDO>()
                 .eq(ModelRelationDeclarationDO::getModelId, modelId)
-                .eq(ModelRelationDeclarationDO::getTargetBusinessType, targetBusinessType));
+                .eq(ModelRelationDeclarationDO::getTargetEntityType, targetEntityType));
     }
 
     /**
      * 查询引用某个业务类型的所有 Model ID
      * 
-     * @param targetBusinessType 目标业务类型编码
+     * @param targetEntityType 目标业务类型编码
      * @return Model ID 列表
      */
-    default List<Long> selectModelIdsByTarget(String targetBusinessType) {
+    default List<Long> selectModelIdsByTarget(String targetEntityType) {
         return selectList(new LambdaQueryWrapperX<ModelRelationDeclarationDO>()
-                .eq(ModelRelationDeclarationDO::getTargetBusinessType, targetBusinessType))
+                .eq(ModelRelationDeclarationDO::getTargetEntityType, targetEntityType))
                 .stream()
                 .map(ModelRelationDeclarationDO::getModelId)
                 .distinct()

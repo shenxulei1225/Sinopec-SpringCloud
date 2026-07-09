@@ -58,6 +58,15 @@ public interface ModelFieldAssignmentMapper extends BaseMapperX<ModelFieldAssign
         }
 
         /**
+         * 根据模型编码与字段编码查询分配关系（迁移/seed 幂等）
+         */
+        default ModelFieldAssignmentDO selectByModelCodeAndFieldCode(String modelCode, String fieldCode) {
+                return selectOne(new LambdaQueryWrapperX<ModelFieldAssignmentDO>()
+                        .eq(ModelFieldAssignmentDO::getModelCode, modelCode)
+                        .eq(ModelFieldAssignmentDO::getFieldCode, fieldCode));
+        }
+
+        /**
          * 根据模型ID和字段ID查询分配关系（包含已删除的记录）
          * 用于在重新绑定时恢复已删除的记录
          * 使用原生 SQL 绕过 MyBatis Plus 的逻辑删除过滤

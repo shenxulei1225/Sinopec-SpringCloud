@@ -29,7 +29,7 @@ public class ComponentPropsDO extends BaseDO {
     private String componentCode;
 
     /**
-     * 数据来源 JSON：{ businessCategory, businessTypeCode, dataKind }。
+     * 数据来源 JSON：{ businessCategory, entityTypeCode, dataKind }。
      * system 分类保存时 dataKind 强制为 entity。
      */
     private String dataSource;

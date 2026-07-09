@@ -15,6 +15,6 @@ public class PolicySnapshotRespDTO {
     private String policySnapshotId;
     private String policySetId;
     private Integer policySetVersion;
-    private String businessTypeCode;
+    private String entityTypeCode;
     private SchedulingSpecDTO schedulingSpec;
 }

@@ -46,18 +46,18 @@ public class RelationDisplayController {
             3. 如果都没有,返回实体 ID
             """
     )
-    @Parameter(name = "targetBusinessType", description = "目标业务类型编码", required = true, example = "personnel")
+    @Parameter(name = "targetEntityType", description = "目标业务类型编码", required = true, example = "personnel")
     @Parameter(name = "targetModelCode", description = "目标 Model 编码", required = true, example = "employee")
     @Parameter(name = "entityId", description = "实体 ID", required = true, example = "1")
     @Parameter(name = "displayFieldCode", description = "展示字段编码(可选,优先使用)", example = "name")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<String> getDisplayValue(
-            @RequestParam("targetBusinessType") String targetBusinessType,
+            @RequestParam("targetEntityType") String targetEntityType,
             @RequestParam("targetModelCode") String targetModelCode,
             @RequestParam("entityId") Long entityId,
             @RequestParam(value = "displayFieldCode", required = false) String displayFieldCode) {
         return success(relationDisplayService.getDisplayValue(
-                targetBusinessType, targetModelCode, entityId, displayFieldCode));
+                targetEntityType, targetModelCode, entityId, displayFieldCode));
     }
 
     @GetMapping("/values")
@@ -65,18 +65,18 @@ public class RelationDisplayController {
         summary = "批量获取关联实体的展示值",
         description = "批量获取多个关联实体的展示值。"
     )
-    @Parameter(name = "targetBusinessType", description = "目标业务类型编码", required = true, example = "personnel")
+    @Parameter(name = "targetEntityType", description = "目标业务类型编码", required = true, example = "personnel")
     @Parameter(name = "targetModelCode", description = "目标 Model 编码", required = true, example = "employee")
     @Parameter(name = "entityIds", description = "实体 ID 列表(逗号分隔)", required = true, example = "1,2,3")
     @Parameter(name = "displayFieldCode", description = "展示字段编码(可选,优先使用)", example = "name")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<Map<Long, String>> getDisplayValues(
-            @RequestParam("targetBusinessType") String targetBusinessType,
+            @RequestParam("targetEntityType") String targetEntityType,
             @RequestParam("targetModelCode") String targetModelCode,
             @RequestParam("entityIds") List<Long> entityIds,
             @RequestParam(value = "displayFieldCode", required = false) String displayFieldCode) {
         return success(relationDisplayService.getDisplayValues(
-                targetBusinessType, targetModelCode, entityIds, displayFieldCode));
+                targetEntityType, targetModelCode, entityIds, displayFieldCode));
     }
 
     @GetMapping("/effective-field-code")
@@ -89,16 +89,16 @@ public class RelationDisplayController {
             2. 如果未指定,返回 null(后续会使用实体的 name 字段或 ID)
             """
     )
-    @Parameter(name = "targetBusinessType", description = "目标业务类型编码", required = true, example = "personnel")
+    @Parameter(name = "targetEntityType", description = "目标业务类型编码", required = true, example = "personnel")
     @Parameter(name = "targetModelCode", description = "目标 Model 编码", required = true, example = "employee")
     @Parameter(name = "displayFieldCode", description = "展示字段编码(可选,优先使用)", example = "name")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<String> getEffectiveDisplayFieldCode(
-            @RequestParam("targetBusinessType") String targetBusinessType,
+            @RequestParam("targetEntityType") String targetEntityType,
             @RequestParam("targetModelCode") String targetModelCode,
             @RequestParam(value = "displayFieldCode", required = false) String displayFieldCode) {
         return success(relationDisplayService.getEffectiveDisplayFieldCode(
-                targetBusinessType, targetModelCode, displayFieldCode));
+                targetEntityType, targetModelCode, displayFieldCode));
     }
 
     @GetMapping("/info")
@@ -106,17 +106,17 @@ public class RelationDisplayController {
         summary = "获取关联实体的展示信息",
         description = "获取关联实体的完整展示信息,包括展示值和使用的字段编码。"
     )
-    @Parameter(name = "targetBusinessType", description = "目标业务类型编码", required = true, example = "personnel")
+    @Parameter(name = "targetEntityType", description = "目标业务类型编码", required = true, example = "personnel")
     @Parameter(name = "targetModelCode", description = "目标 Model 编码", required = true, example = "employee")
     @Parameter(name = "entityId", description = "实体 ID", required = true, example = "1")
     @Parameter(name = "displayFieldCode", description = "展示字段编码(可选,优先使用)", example = "name")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<RelationDisplayService.RelationDisplayInfo> getDisplayInfo(
-            @RequestParam("targetBusinessType") String targetBusinessType,
+            @RequestParam("targetEntityType") String targetEntityType,
             @RequestParam("targetModelCode") String targetModelCode,
             @RequestParam("entityId") Long entityId,
             @RequestParam(value = "displayFieldCode", required = false) String displayFieldCode) {
         return success(relationDisplayService.getDisplayInfo(
-                targetBusinessType, targetModelCode, entityId, displayFieldCode));
+                targetEntityType, targetModelCode, entityId, displayFieldCode));
     }
 }

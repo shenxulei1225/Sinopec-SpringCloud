@@ -63,8 +63,8 @@ public final class EntityCacheHelper {
         }
     }
 
-    public static List<EntityDO> getCachedEntityList(StringRedisTemplate redis, String businessTypeCode, Long modelId) {
-        String key = entityListKey(businessTypeCode, modelId);
+    public static List<EntityDO> getCachedEntityList(StringRedisTemplate redis, String entityTypeCode, Long modelId) {
+        String key = entityListKey(entityTypeCode, modelId);
         String json = redis.opsForValue().get(key);
         if (json == null) {
             return null;
@@ -72,15 +72,15 @@ public final class EntityCacheHelper {
         return JSON.parseArray(json, EntityDO.class);
     }
 
-    public static void cacheEntityList(StringRedisTemplate redis, String businessTypeCode, Long modelId, List<EntityDO> entities) {
+    public static void cacheEntityList(StringRedisTemplate redis, String entityTypeCode, Long modelId, List<EntityDO> entities) {
         if (entities == null) {
             return;
         }
-        redis.opsForValue().set(entityListKey(businessTypeCode, modelId), JSON.toJSONString(entities), TTL);
+        redis.opsForValue().set(entityListKey(entityTypeCode, modelId), JSON.toJSONString(entities), TTL);
     }
 
-    public static void evictEntityList(StringRedisTemplate redis, String businessTypeCode, Long modelId) {
-        redis.delete(entityListKey(businessTypeCode, modelId));
+    public static void evictEntityList(StringRedisTemplate redis, String entityTypeCode, Long modelId) {
+        redis.delete(entityListKey(entityTypeCode, modelId));
     }
 
     public static void evictAllEntityLists(StringRedisTemplate redis) {
@@ -107,8 +107,8 @@ public final class EntityCacheHelper {
         return RedisKeyConstants.ENTITY_TREE + ":" + (modelId == null ? "all" : modelId);
     }
 
-    private static String entityListKey(String businessTypeCode, Long modelId) {
-        String btc = businessTypeCode == null ? "all" : businessTypeCode;
+    private static String entityListKey(String entityTypeCode, Long modelId) {
+        String btc = entityTypeCode == null ? "all" : entityTypeCode;
         String mid = modelId == null ? "all" : String.valueOf(modelId);
         return RedisKeyConstants.ENTITY_LIST + ":" + btc + ":" + mid;
     }

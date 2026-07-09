@@ -14,8 +14,8 @@
 -- =====================================================
 
 -- 业务类型编码索引（分类树查询的主要过滤条件）
-CREATE INDEX IF NOT EXISTS idx_category_business_type_code 
-    ON dynamic_category(business_type_code);
+CREATE INDEX IF NOT EXISTS idx_category_entity_type_code 
+    ON dynamic_category(entity_type_code);
 
 -- 父分类ID索引（树形结构查询）
 CREATE INDEX IF NOT EXISTS idx_category_parent_id 
@@ -27,11 +27,11 @@ CREATE INDEX IF NOT EXISTS idx_category_status
 
 -- 复合索引：业务类型 + 父分类 + 排序（树形查询优化）
 CREATE INDEX IF NOT EXISTS idx_category_tree_query 
-    ON dynamic_category(business_type_code, parent_id, sort);
+    ON dynamic_category(entity_type_code, parent_id, sort);
 
 -- 复合索引：业务类型 + 状态（带状态过滤的树查询）
 CREATE INDEX IF NOT EXISTS idx_category_business_status 
-    ON dynamic_category(business_type_code, status);
+    ON dynamic_category(entity_type_code, status);
 
 -- 名称模糊搜索索引（PostgreSQL 支持 pg_trgm 扩展）
 -- 注意：需要先启用 pg_trgm 扩展
@@ -49,7 +49,7 @@ CREATE INDEX IF NOT EXISTS idx_category_deleted
 
 -- 复合索引：业务类型 + 删除标记（常用查询组合）
 CREATE INDEX IF NOT EXISTS idx_category_business_deleted 
-    ON dynamic_category(business_type_code, deleted);
+    ON dynamic_category(entity_type_code, deleted);
 
 -- =====================================================
 -- 2. 字段表 (dynamic_field) 索引优化
@@ -100,8 +100,8 @@ CREATE INDEX IF NOT EXISTS idx_field_create_time
 -- =====================================================
 
 -- 业务类型编码索引
-CREATE INDEX IF NOT EXISTS idx_entity_business_type_code 
-    ON dynamic_entity(business_type_code);
+CREATE INDEX IF NOT EXISTS idx_entity_entity_type_code 
+    ON dynamic_entity(entity_type_code);
 
 -- 模型ID索引（实体树查询的主要过滤条件）
 CREATE INDEX IF NOT EXISTS idx_entity_model_id 
@@ -125,7 +125,7 @@ CREATE INDEX IF NOT EXISTS idx_entity_model_deleted
 
 -- 复合索引：业务类型 + 模型ID + 状态 + 删除标记（常用查询组合）
 CREATE INDEX IF NOT EXISTS idx_entity_business_model_status_deleted 
-    ON dynamic_entity(business_type_code, model_id, status, deleted);
+    ON dynamic_entity(entity_type_code, model_id, status, deleted);
 
 -- 名称索引（名称搜索）
 CREATE INDEX IF NOT EXISTS idx_entity_name 
@@ -170,8 +170,8 @@ CREATE INDEX IF NOT EXISTS idx_model_code
     ON dynamic_model(code);
 
 -- 业务类型编码索引
-CREATE INDEX IF NOT EXISTS idx_model_business_type_code 
-    ON dynamic_model(business_type_code);
+CREATE INDEX IF NOT EXISTS idx_model_entity_type_code 
+    ON dynamic_model(entity_type_code);
 
 -- 状态索引
 CREATE INDEX IF NOT EXISTS idx_model_status 
@@ -183,7 +183,7 @@ CREATE INDEX IF NOT EXISTS idx_model_deleted
 
 -- 复合索引：业务类型 + 状态 + 删除标记
 CREATE INDEX IF NOT EXISTS idx_model_business_status_deleted 
-    ON dynamic_model(business_type_code, status, deleted);
+    ON dynamic_model(entity_type_code, status, deleted);
 
 -- =====================================================
 -- 6. 模型字段分配表 (dynamic_model_field_assignment) 索引优化
@@ -245,7 +245,7 @@ $$;
 -- 索引注释
 -- =====================================================
 
-COMMENT ON INDEX idx_category_business_type_code IS '分类业务类型索引,用于分类树查询';
+COMMENT ON INDEX idx_category_entity_type_code IS '分类业务类型索引,用于分类树查询';
 COMMENT ON INDEX idx_category_parent_id IS '分类父ID索引,用于树形结构查询';
 COMMENT ON INDEX idx_category_tree_query IS '分类树查询复合索引';
 COMMENT ON INDEX idx_field_type_status_deleted IS '字段类型状态复合索引';

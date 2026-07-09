@@ -59,22 +59,22 @@ public class RelatedEntityController {
             "3. 对于每个关联关系，查询源 Model 下关联字段值等于目标 Entity ID 的 Entity\n\n" +
             "**过滤条件**：\n" +
             "- 可选指定 modelCode 只返回指定 Model 的关联 Entity\n" +
-            "- businessTypeCode 是必填参数，用于路由到正确的存储策略"
+            "- entityTypeCode 是必填参数，用于路由到正确的存储策略"
     )
     @Parameter(name = "id", description = "目标 Entity ID", required = true, example = "123")
     @Parameter(name = "modelCode", description = "过滤条件：只返回指定 Model 的关联 Entity（可选）", example = "task")
-    @Parameter(name = "businessTypeCode", description = "目标 Entity 的业务类型编码（必填，用于路由到正确的存储策略）", required = true, example = "personnel")
+    @Parameter(name = "entityTypeCode", description = "目标 Entity 的业务类型编码（必填，用于路由到正确的存储策略）", required = true, example = "personnel")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<List<RelatedEntityVO>> getRelatedEntities(
             @PathVariable("id") Long id,
             @RequestParam(value = "modelCode", required = false) String modelCode,
-            @RequestParam("businessTypeCode") String businessTypeCode) {
+            @RequestParam("entityTypeCode") String entityTypeCode) {
         if (modelCode != null && !modelCode.isBlank()) {
             // 仅返回指定 model 的反向关联统计，保持接口语义兼容
-            List<RelatedEntityVO> all = bidirectionalRelationService.getReverseRelations(id, businessTypeCode);
+            List<RelatedEntityVO> all = bidirectionalRelationService.getReverseRelations(id, entityTypeCode);
             return success(all.stream().filter(item -> modelCode.equals(item.getModelCode())).toList());
         }
-        return success(bidirectionalRelationService.getReverseRelations(id, businessTypeCode));
+        return success(bidirectionalRelationService.getReverseRelations(id, entityTypeCode));
     }
 
     @GetMapping("/{id}/related/count")
@@ -84,24 +84,24 @@ public class RelatedEntityController {
             "**使用场景**：\n" +
             "- 在删除 Entity 前检查是否有关联\n" +
             "- 显示关联数量统计信息\n\n" +
-            "**重要**：businessTypeCode 是必填参数，用于路由到正确的存储策略"
+            "**重要**：entityTypeCode 是必填参数，用于路由到正确的存储策略"
     )
     @Parameter(name = "id", description = "目标 Entity ID", required = true, example = "123")
     @Parameter(name = "modelCode", description = "过滤条件：只统计指定 Model 的关联 Entity（可选）", example = "task")
-    @Parameter(name = "businessTypeCode", description = "目标 Entity 的业务类型编码（必填，用于路由到正确的存储策略）", required = true, example = "personnel")
+    @Parameter(name = "entityTypeCode", description = "目标 Entity 的业务类型编码（必填，用于路由到正确的存储策略）", required = true, example = "personnel")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<Long> countRelatedEntities(
             @PathVariable("id") Long id,
             @RequestParam(value = "modelCode", required = false) String modelCode,
-            @RequestParam("businessTypeCode") String businessTypeCode) {
+            @RequestParam("entityTypeCode") String entityTypeCode) {
         if (modelCode != null && !modelCode.isBlank()) {
-            List<RelatedEntityVO> all = bidirectionalRelationService.getReverseRelations(id, businessTypeCode);
+            List<RelatedEntityVO> all = bidirectionalRelationService.getReverseRelations(id, entityTypeCode);
             long count = all.stream()
                     .filter(item -> modelCode.equals(item.getModelCode()))
                     .mapToLong(item -> item.getCount() == null ? 0L : item.getCount())
                     .sum();
             return success(count);
         }
-        return success(bidirectionalRelationService.getRelationStatistics(id, businessTypeCode).getReverseRelationCount());
+        return success(bidirectionalRelationService.getRelationStatistics(id, entityTypeCode).getReverseRelationCount());
     }
 }

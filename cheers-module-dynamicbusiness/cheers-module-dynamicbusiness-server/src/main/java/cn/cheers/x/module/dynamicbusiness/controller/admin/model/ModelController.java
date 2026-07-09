@@ -134,11 +134,11 @@ public class ModelController {
     @Operation(
         summary = "查找指定业务下分类关联的模型",
         description = "根据分类ID和业务类型编码，查找该业务下与分类关联的模型列表（通过 ModelCategoryRelation 关联）。\n" +
-            "- businessTypeCode 必填，按业务类型命中关系表索引\n" +
+            "- entityTypeCode 必填，按业务类型命中关系表索引\n" +
             "- 聚合链路：先查 model_category_relation 的 modelId 列表，再批量查询 model 详情"
     )
     @Parameter(name = "categoryId", description = "分类ID（必填，用于查询分类下的模型，Category只用于归类筛选，不影响字段规则）", required = true, example = "1")
-    @Parameter(name = "businessTypeCode", description = "业务类型编码（必填，用于关系过滤并命中索引）", required = true, example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码（必填，用于关系过滤并命中索引）", required = true, example = "equipment")
     @PreAuthorize("@ss.hasPermission('system:model:query')")
     /**
      * 用途：查找指定业务下分类关联的模型（Controller 聚合接口）。
@@ -149,39 +149,39 @@ public class ModelController {
      */
     public CommonResult<List<ModelRespVO>> findModelsByCategoryInBusiness(
             @RequestParam("categoryId") Long categoryId,
-            @RequestParam("businessTypeCode") String businessTypeCode) {
-        List<Long> modelIds = modelCategoryRelationService.listModelIdsByCategoryIdWithDescendants(categoryId, businessTypeCode);
+            @RequestParam("entityTypeCode") String entityTypeCode) {
+        List<Long> modelIds = modelCategoryRelationService.listModelIdsByCategoryIdWithDescendants(categoryId, entityTypeCode);
         return success(modelIds.isEmpty() ? List.of() : modelService.getModelsByIds(modelIds));
     }
 
-    @GetMapping("/list-by-business-type")
+    @GetMapping("/list-by-entity-type")
     @Operation(
         summary = "按业务类型编码获取模型列表",
-        description = "根据 businessTypeCode 返回该业务类型下的所有模型列表（扁平列表，不构建树结构）。"
+        description = "根据 entityTypeCode 返回该业务类型下的所有模型列表（扁平列表，不构建树结构）。"
     )
-    @Parameter(name = "businessTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
     @PreAuthorize("@ss.hasPermission('system:model:query')")
     /**
      * 用途：按业务类型查询模型列表。
-     * Service 映射：{@link ModelService#listModelsByBusinessType(String)}。
+     * Service 映射：{@link ModelService#listModelsByEntityType(String)}。
      */
-    public CommonResult<List<ModelRespVO>> listModelsByBusinessType(@RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(modelService.listModelsByBusinessType(businessTypeCode));
+    public CommonResult<List<ModelRespVO>> listModelsByEntityType(@RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(modelService.listModelsByEntityType(entityTypeCode));
     }
 
     @GetMapping("/list-all")
     @Operation(
         summary = "查询全部业务模型列表（不分页）",
-        description = "返回当前租户下全部启用（status=1）的业务模型列表，适用于门户页一次性加载后按 businessTypeCode 分组展示等场景。"
+        description = "返回当前租户下全部启用（status=1）的业务模型列表，适用于门户页一次性加载后按 entityTypeCode 分组展示等场景。"
     )
     @PreAuthorize("@ss.hasPermission('system:model:query-all')")
     /**
      * 用途：查询当前租户全部启用模型（跨业务类型）。
-     * Service 映射：{@link ModelService#listEnabledModelsAcrossBusinessTypes()}。
+     * Service 映射：{@link ModelService#listEnabledModelsAcrossEntityTypes()}。
      * 页面边界：模型管理页面仅读取“已排序业务树”做分组展示，不在本页面调整业务排序。
      */
     public CommonResult<List<ModelRespVO>> listAllModels() {
-        return success(modelService.listEnabledModelsAcrossBusinessTypes());
+        return success(modelService.listEnabledModelsAcrossEntityTypes());
     }
 
     @GetMapping("/page-models")
@@ -191,7 +191,7 @@ public class ModelController {
             "- 关键词会同时匹配模型名称和描述字段（模糊查询）\n" +
             "- 返回结果包含模型的基本信息和统计信息（字段数量、实体数量等）"
     )
-    @Parameter(name = "businessTypeCode", description = "业务类型编码（可选）", example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码（可选）", example = "equipment")
     @Parameter(name = "keyword", description = "关键词（可选，模糊匹配模型名称和描述）", example = "灭火器")
     @Parameter(name = "status", description = "模型状态（可选，1-启用，0-禁用）", example = "1")
     @Parameter(name = "pageNo", description = "页码（默认1）", example = "1")
@@ -201,8 +201,8 @@ public class ModelController {
      * 用途：分页查询模型。
      * Service 映射：{@link ModelService#pageModel(ModelPageReqVO)}。
      */
-    public CommonResult<PageResult<ModelRespVO>> pageModelByBusinessTypeCode(@Valid ModelPageReqVO reqVO) {
-        return success(modelService.pageModelByBusinessTypeCode(reqVO));
+    public CommonResult<PageResult<ModelRespVO>> pageModelByEntityTypeCode(@Valid ModelPageReqVO reqVO) {
+        return success(modelService.pageModelByEntityTypeCode(reqVO));
     }
 
     @PutMapping("/sort/batch")
@@ -222,15 +222,15 @@ public class ModelController {
             "- 适用于模型选择器等场景"
     )
     @Parameter(name = "keyword", description = "关键词（必填，模糊匹配模型名称和描述）", required = true, example = "灭火器")
-    @Parameter(name = "businessTypeCode", description = "业务类型编码（可选，如果指定则只在该业务类型下搜索）", example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码（可选，如果指定则只在该业务类型下搜索）", example = "equipment")
     @PreAuthorize("@ss.hasPermission('system:model:query')")
     /**
      * 用途：关键词搜索模型（不分页）。
      * Service 映射：{@link ModelService#searchModels(String, String)}。
      */
     public CommonResult<List<ModelRespVO>> searchModels(@RequestParam("keyword") String keyword,
-                                                         @RequestParam(value = "businessTypeCode", required = false) String businessTypeCode) {
-        return success(modelService.searchModels(keyword, businessTypeCode));
+                                                         @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode) {
+        return success(modelService.searchModels(keyword, entityTypeCode));
     }
 
     // ========== 模型字段查询（视图配置用）==========

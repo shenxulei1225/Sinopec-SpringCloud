@@ -17,18 +17,18 @@ import java.util.List;
 @Mapper
 public interface RefConstraintLibraryMapper extends BaseMapperX<RefConstraintLibraryDO> {
 
-    default List<RefConstraintLibraryDO> selectByBusinessType(String businessTypeCode, String refTargetType) {
+    default List<RefConstraintLibraryDO> selectByEntityType(String entityTypeCode, String refTargetType) {
         return selectList(new LambdaQueryWrapperX<RefConstraintLibraryDO>()
-                .eq(RefConstraintLibraryDO::getBusinessTypeCode, businessTypeCode)
+                .eq(RefConstraintLibraryDO::getEntityTypeCode, entityTypeCode)
                 .eqIfPresent(RefConstraintLibraryDO::getRefTargetType, refTargetType)
                 .eq(RefConstraintLibraryDO::getStatus, CommonStatusEnum.ENABLE.getStatus())
                 .orderByAsc(RefConstraintLibraryDO::getSort)
                 .orderByAsc(RefConstraintLibraryDO::getConstraintName));
     }
 
-    default boolean existsEnabled(String businessTypeCode, String refTargetType, String constraintType) {
+    default boolean existsEnabled(String entityTypeCode, String refTargetType, String constraintType) {
         return selectCount(new LambdaQueryWrapperX<RefConstraintLibraryDO>()
-                .eq(RefConstraintLibraryDO::getBusinessTypeCode, businessTypeCode)
+                .eq(RefConstraintLibraryDO::getEntityTypeCode, entityTypeCode)
                 .eqIfPresent(RefConstraintLibraryDO::getRefTargetType, refTargetType)
                 .eq(RefConstraintLibraryDO::getConstraintType, constraintType)
                 .eq(RefConstraintLibraryDO::getStatus, CommonStatusEnum.ENABLE.getStatus())) > 0;
@@ -36,7 +36,7 @@ public interface RefConstraintLibraryMapper extends BaseMapperX<RefConstraintLib
 
     default PageResult<RefConstraintLibraryDO> selectPage(RefConstraintLibraryPageReqVO reqVO) {
         return selectPage(reqVO, new LambdaQueryWrapperX<RefConstraintLibraryDO>()
-                .eqIfPresent(RefConstraintLibraryDO::getBusinessTypeCode, reqVO.getBusinessTypeCode())
+                .eqIfPresent(RefConstraintLibraryDO::getEntityTypeCode, reqVO.getEntityTypeCode())
                 .eqIfPresent(RefConstraintLibraryDO::getRefTargetType, reqVO.getRefTargetType())
                 .eqIfPresent(RefConstraintLibraryDO::getConstraintType, reqVO.getConstraintType())
                 .eqIfPresent(RefConstraintLibraryDO::getStatus, reqVO.getStatus())

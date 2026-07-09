@@ -87,20 +87,20 @@ public interface EntityRelationMapper extends BaseMapperX<EntityRelationDO> {
         /**
          * 根据源实体ID和目标业务类型编码查询关联关系列表
          */
-        default List<EntityRelationDO> selectBySourceEntityIdAndTargetBusinessTypeCode(Long sourceEntityId, String targetBusinessTypeCode) {
+        default List<EntityRelationDO> selectBySourceEntityIdAndTargetEntityTypeCode(Long sourceEntityId, String targetEntityTypeCode) {
                 return selectList(new LambdaQueryWrapperX<EntityRelationDO>()
                         .eq(EntityRelationDO::getSourceEntityId, sourceEntityId)
-                        .eq(EntityRelationDO::getTargetBusinessTypeCode, targetBusinessTypeCode)
+                        .eq(EntityRelationDO::getTargetEntityTypeCode, targetEntityTypeCode)
                         .eq(EntityRelationDO::getDeleted, false));
         }
 
         /**
          * 根据源实体ID、目标业务类型编码和关联类型查询关联关系列表
          */
-        default List<EntityRelationDO> selectBySourceEntityIdAndTargetBusinessTypeCodeAndType(Long sourceEntityId, String targetBusinessTypeCode, String relationType) {
+        default List<EntityRelationDO> selectBySourceEntityIdAndTargetEntityTypeCodeAndType(Long sourceEntityId, String targetEntityTypeCode, String relationType) {
                 return selectList(new LambdaQueryWrapperX<EntityRelationDO>()
                         .eq(EntityRelationDO::getSourceEntityId, sourceEntityId)
-                        .eq(EntityRelationDO::getTargetBusinessTypeCode, targetBusinessTypeCode)
+                        .eq(EntityRelationDO::getTargetEntityTypeCode, targetEntityTypeCode)
                         .eqIfPresent(EntityRelationDO::getRelationType, relationType)
                         .eq(EntityRelationDO::getDeleted, false));
         }
@@ -108,20 +108,20 @@ public interface EntityRelationMapper extends BaseMapperX<EntityRelationDO> {
         /**
          * 根据目标实体ID和源业务类型编码查询关联关系列表
          */
-        default List<EntityRelationDO> selectByTargetEntityIdAndSourceBusinessTypeCode(Long targetEntityId, String sourceBusinessTypeCode) {
+        default List<EntityRelationDO> selectByTargetEntityIdAndSourceEntityTypeCode(Long targetEntityId, String sourceEntityTypeCode) {
                 return selectList(new LambdaQueryWrapperX<EntityRelationDO>()
                         .eq(EntityRelationDO::getTargetEntityId, targetEntityId)
-                        .eq(EntityRelationDO::getSourceBusinessTypeCode, sourceBusinessTypeCode)
+                        .eq(EntityRelationDO::getSourceEntityTypeCode, sourceEntityTypeCode)
                         .eq(EntityRelationDO::getDeleted, false));
         }
 
         /**
          * 根据目标实体ID、源业务类型编码和关联类型查询关联关系列表
          */
-        default List<EntityRelationDO> selectByTargetEntityIdAndSourceBusinessTypeCodeAndType(Long targetEntityId, String sourceBusinessTypeCode, String relationType) {
+        default List<EntityRelationDO> selectByTargetEntityIdAndSourceEntityTypeCodeAndType(Long targetEntityId, String sourceEntityTypeCode, String relationType) {
                 return selectList(new LambdaQueryWrapperX<EntityRelationDO>()
                         .eq(EntityRelationDO::getTargetEntityId, targetEntityId)
-                        .eq(EntityRelationDO::getSourceBusinessTypeCode, sourceBusinessTypeCode)
+                        .eq(EntityRelationDO::getSourceEntityTypeCode, sourceEntityTypeCode)
                         .eqIfPresent(EntityRelationDO::getRelationType, relationType)
                         .eq(EntityRelationDO::getDeleted, false));
         }
@@ -273,20 +273,20 @@ public interface EntityRelationMapper extends BaseMapperX<EntityRelationDO> {
          * @param targetEntityId 目标实体ID
          * @return 按目标业务类型分组的统计结果
          */
-        default List<Map<String, Object>> countByTargetEntityIdGroupBySourceBusinessType(Long targetEntityId) {
+        default List<Map<String, Object>> countByTargetEntityIdGroupBySourceEntityType(Long targetEntityId) {
                 List<EntityRelationDO> relations = selectList(new LambdaQueryWrapperX<EntityRelationDO>()
-                        .select(EntityRelationDO::getSourceBusinessTypeCode)
+                        .select(EntityRelationDO::getSourceEntityTypeCode)
                         .eq(EntityRelationDO::getTargetEntityId, targetEntityId)
-                        .isNotNull(EntityRelationDO::getSourceBusinessTypeCode)
+                        .isNotNull(EntityRelationDO::getSourceEntityTypeCode)
                         .eq(EntityRelationDO::getDeleted, false));
                 Map<String, Long> grouped = relations.stream()
                         .collect(java.util.stream.Collectors.groupingBy(
-                                EntityRelationDO::getSourceBusinessTypeCode,
+                                EntityRelationDO::getSourceEntityTypeCode,
                                 java.util.stream.Collectors.counting()));
                 List<Map<String, Object>> result = new java.util.ArrayList<>();
                 grouped.forEach((k, v) -> {
                         Map<String, Object> item = new HashMap<>();
-                        item.put("source_business_type_code", k);
+                        item.put("source_entity_type_code", k);
                         item.put("count", v);
                         result.add(item);
                 });
@@ -414,12 +414,12 @@ public interface EntityRelationMapper extends BaseMapperX<EntityRelationDO> {
          * 按目标业务类型编码查询关联关系
          * 用于跨业务类型查询
          *
-         * @param targetBusinessTypeCode 目标业务类型编码
+         * @param targetEntityTypeCode 目标业务类型编码
          * @return 关联关系列表
          */
-        default List<EntityRelationDO> selectByTargetBusinessTypeCode(String targetBusinessTypeCode) {
+        default List<EntityRelationDO> selectByTargetEntityTypeCode(String targetEntityTypeCode) {
                 return selectList(new LambdaQueryWrapperX<EntityRelationDO>()
-                        .eq(EntityRelationDO::getTargetBusinessTypeCode, targetBusinessTypeCode)
+                        .eq(EntityRelationDO::getTargetEntityTypeCode, targetEntityTypeCode)
                         .eq(EntityRelationDO::getDeleted, false));
         }
 
@@ -427,12 +427,12 @@ public interface EntityRelationMapper extends BaseMapperX<EntityRelationDO> {
          * 按源业务类型编码查询关联关系
          * 用于跨业务类型查询
          *
-         * @param sourceBusinessTypeCode 源业务类型编码
+         * @param sourceEntityTypeCode 源业务类型编码
          * @return 关联关系列表
          */
-        default List<EntityRelationDO> selectBySourceBusinessTypeCode(String sourceBusinessTypeCode) {
+        default List<EntityRelationDO> selectBySourceEntityTypeCode(String sourceEntityTypeCode) {
                 return selectList(new LambdaQueryWrapperX<EntityRelationDO>()
-                        .eq(EntityRelationDO::getSourceBusinessTypeCode, sourceBusinessTypeCode)
+                        .eq(EntityRelationDO::getSourceEntityTypeCode, sourceEntityTypeCode)
                         .eq(EntityRelationDO::getDeleted, false));
         }
 }

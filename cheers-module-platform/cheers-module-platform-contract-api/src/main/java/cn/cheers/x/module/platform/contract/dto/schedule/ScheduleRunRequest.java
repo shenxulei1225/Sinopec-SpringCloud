@@ -19,7 +19,7 @@ import java.util.List;
 public class ScheduleRunRequest {
 
     private String contractVersion;
-    private String businessTypeCode;
+    private String entityTypeCode;
     private List<WorkItemDTO> workItems;
     /** Phase 3：L1 实例引用；与 workItems 二选一，由编排按 binding.mappingProfileIds 解析 */
     private List<SourceInstanceRefDTO> sourceInstances;

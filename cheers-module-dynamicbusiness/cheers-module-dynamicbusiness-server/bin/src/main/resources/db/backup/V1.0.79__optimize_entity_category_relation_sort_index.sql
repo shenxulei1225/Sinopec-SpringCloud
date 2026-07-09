@@ -6,10 +6,10 @@
 -- =====================================================
 
 -- 查询模式：
--- WHERE category_id IN (...) AND business_type_code = ? AND tenant_id = ? AND deleted = false
+-- WHERE category_id IN (...) AND entity_type_code = ? AND tenant_id = ? AND deleted = false
 -- ORDER BY sort ASC, id ASC
 --
 -- 该索引用于减少排序回表与额外排序开销，提升分类维度实体ID有序查询性能。
 CREATE INDEX IF NOT EXISTS idx_ecr_category_business_tenant_sort_id_not_deleted
-ON system_entity_category_relation (category_id, business_type_code, tenant_id, sort, id)
+ON system_entity_category_relation (category_id, entity_type_code, tenant_id, sort, id)
 WHERE deleted = false;

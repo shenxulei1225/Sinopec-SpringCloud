@@ -21,7 +21,7 @@ import java.util.List;
  * 
  * <p>处理关联目标创建事件，实现以下功能：</p>
  * <ul>
- *   <li>更新字段状态：当关联目标（BusinessType 或 Model）被创建时，
+ *   <li>更新字段状态：当关联目标（EntityType 或 Model）被创建时，
  *       自动更新关联字段库中引用该目标的字段状态（从"待建"变为"可用"）</li>
  * </ul>
  * 
@@ -51,7 +51,7 @@ public class RelationFieldLibraryEventListener {
     /**
      * 处理关联目标创建事件
      * 
-     * <p>当 BusinessType 或 Model 被创建时，检查关联字段库中是否有引用该目标的字段，
+     * <p>当 EntityType 或 Model 被创建时，检查关联字段库中是否有引用该目标的字段，
      * 如果有，则更新这些字段的状态。</p>
      * 
      * <p>状态更新规则：</p>
@@ -77,9 +77,9 @@ public class RelationFieldLibraryEventListener {
         // 在租户上下文中执行
         TenantUtils.execute(tenantId, () -> {
             try {
-                if (event.isBusinessTypeCreated()) {
-                    // 处理 BusinessType 创建事件
-                    handleBusinessTypeCreated(event);
+                if (event.isEntityTypeCreated()) {
+                    // 处理 EntityType 创建事件
+                    handleEntityTypeCreated(event);
                 } else if (event.isModelCreated()) {
                     // 处理 Model 创建事件
                     handleModelCreated(event);
@@ -95,24 +95,24 @@ public class RelationFieldLibraryEventListener {
     }
 
     /**
-     * 处理 BusinessType 创建事件
+     * 处理 EntityType 创建事件
      * 
-     * <p>当新的 BusinessType 被创建时，查找关联字段库中引用该 BusinessType 的字段，
+     * <p>当新的 EntityType 被创建时，查找关联字段库中引用该 EntityType 的字段，
      * 并记录日志（状态是动态计算的，不需要更新数据库）。</p>
      * 
      * @param event 关联目标创建事件
      */
-    private void handleBusinessTypeCreated(RelationTargetCreatedEvent event) {
-        String businessTypeCode = event.getTargetCode();
+    private void handleEntityTypeCreated(RelationTargetCreatedEvent event) {
+        String entityTypeCode = event.getTargetCode();
 
-        log.debug("[handleBusinessTypeCreated][处理 BusinessType 创建: businessTypeCode={}]", businessTypeCode);
+        log.debug("[handleEntityTypeCreated][处理 EntityType 创建: entityTypeCode={}]", entityTypeCode);
 
-        // 查找引用该 BusinessType 的所有字段
+        // 查找引用该 EntityType 的所有字段
         List<RelationFieldLibraryDO> affectedFields =
-                relationFieldLibraryMapper.selectByRefBusinessType(businessTypeCode);
+                relationFieldLibraryMapper.selectByRefEntityType(entityTypeCode);
 
         if (CollUtil.isEmpty(affectedFields)) {
-            log.debug("[handleBusinessTypeCreated][没有字段引用该 BusinessType，跳过处理]");
+            log.debug("[handleEntityTypeCreated][没有字段引用该 EntityType，跳过处理]");
             return;
         }
 
@@ -120,12 +120,12 @@ public class RelationFieldLibraryEventListener {
         // 注意：字段状态是动态计算的（通过 checkTargetExists 方法），不存储在数据库中
         // 这里只是记录日志，实际状态会在查询时动态计算
         for (RelationFieldLibraryDO field : affectedFields) {
-            log.info("[handleBusinessTypeCreated][字段状态可能已更新: fieldCode={}, refBusinessType={}]",
-                    field.getFieldCode(), field.getRefBusinessType());
+            log.info("[handleEntityTypeCreated][字段状态可能已更新: fieldCode={}, refEntityType={}]",
+                    field.getFieldCode(), field.getRefEntityType());
         }
 
-        log.info("[handleBusinessTypeCreated][BusinessType 创建处理完成: businessTypeCode={}, affectedFieldCount={}]",
-                businessTypeCode, affectedFields.size());
+        log.info("[handleEntityTypeCreated][EntityType 创建处理完成: entityTypeCode={}, affectedFieldCount={}]",
+                entityTypeCode, affectedFields.size());
     }
 
     /**

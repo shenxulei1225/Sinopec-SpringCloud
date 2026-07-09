@@ -20,14 +20,14 @@
 -- 
 -- 2. 检查特定字段的值：
 --    SELECT * FROM dynamic_business_type 
---    WHERE association_fields @> '{"equipment_ref": {"refBusinessTypeCode": "equipment"}}';
+--    WHERE association_fields @> '{"equipment_ref": {"refEntityTypeCode": "equipment"}}';
 --    性能：✅ 优秀（使用 GIN 索引）
 -- 
 -- 3. 查找所有有指向特定业务类型的关联字段的业务类型：
 --    SELECT * FROM dynamic_business_type 
 --    WHERE EXISTS (
 --      SELECT 1 FROM jsonb_each(association_fields) AS field
---      WHERE (field.value->>'refBusinessTypeCode') = 'equipment'
+--      WHERE (field.value->>'refEntityTypeCode') = 'equipment'
 --    );
 --    性能：⚠️ 一般（可能需要遍历,GIN 索引支持有限）
 -- 
@@ -46,13 +46,13 @@
 -- CREATE INDEX IF NOT EXISTS idx_business_type_association_ref_business_type 
 --     ON dynamic_business_type 
 --     USING GIN (
---         (SELECT jsonb_path_query_array(association_fields, '$.*.refBusinessTypeCode'))
+--         (SELECT jsonb_path_query_array(association_fields, '$.*.refEntityTypeCode'))
 --     )
 --     WHERE association_fields IS NOT NULL AND association_fields != '{}'::jsonb;
 -- 
 -- 优化后的查询：
 -- SELECT * FROM dynamic_business_type 
--- WHERE (SELECT jsonb_path_query_array(association_fields, '$.*.refBusinessTypeCode')) 
+-- WHERE (SELECT jsonb_path_query_array(association_fields, '$.*.refEntityTypeCode')) 
 --       @> '["equipment"]'::jsonb;
 -- 
 -- =====================================================

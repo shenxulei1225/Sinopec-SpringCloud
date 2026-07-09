@@ -106,7 +106,7 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
     public List<EntityExportExcelVO> exportEntityList(EntityExportReqVO reqVO) {
         // 查询实体列表（通过 Repository 层，自动处理动态表名）
         EntityRepository.EntityQuery query = EntityRepository.EntityQuery.builder()
-                .businessTypeCode(reqVO.getBusinessTypeCode())
+                .entityTypeCode(reqVO.getEntityTypeCode())
                 .modelId(reqVO.getModelId())
                 .status(reqVO.getStatus())
                 .build();
@@ -135,13 +135,13 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
     }
 
     @Override
-    public List<EntityImportExcelVO> getImportTemplate(String businessTypeCode, Long modelId) {
+    public List<EntityImportExcelVO> getImportTemplate(String entityTypeCode, Long modelId) {
         List<EntityImportExcelVO> templateList = new ArrayList<>();
 
         // 创建示例数据
         EntityImportExcelVO example = EntityImportExcelVO.builder()
                 .name("示例实体名称")
-                .businessTypeCode(StrUtil.isNotBlank(businessTypeCode) ? businessTypeCode : "equipment")
+                .entityTypeCode(StrUtil.isNotBlank(entityTypeCode) ? entityTypeCode : "equipment")
                 .modelId(modelId != null ? modelId : 1L)
                 .customFields("{\"1\":\"字段值1\", \"2\":\"字段值2\"}")
                 .status(1)
@@ -154,7 +154,7 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
             if (StrUtil.isNotBlank(fieldDescription)) {
                 EntityImportExcelVO descRow = EntityImportExcelVO.builder()
                         .name("【字段说明】")
-                        .businessTypeCode("")
+                        .entityTypeCode("")
                         .modelId(null)
                         .customFields(fieldDescription)
                         .status(null)
@@ -178,7 +178,7 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
         for (EntityExportExcelVO vo : exportList) {
             csv.append(escapeCsvField(vo.getId()))
                     .append(",").append(escapeCsvField(vo.getName()))
-                    .append(",").append(escapeCsvField(vo.getBusinessTypeCode()))
+                    .append(",").append(escapeCsvField(vo.getEntityTypeCode()))
                     .append(",").append(escapeCsvField(vo.getModelId()))
                     .append(",").append(escapeCsvField(vo.getModelName()))
                     .append(",").append(escapeCsvField(vo.getCustomFields()))
@@ -206,7 +206,7 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
         if (StrUtil.isBlank(importVO.getName())) {
             throw new ServiceException(400, String.format("第%d行：实体名称不能为空", rowNum));
         }
-        if (StrUtil.isBlank(importVO.getBusinessTypeCode())) {
+        if (StrUtil.isBlank(importVO.getEntityTypeCode())) {
             throw new ServiceException(400, String.format("第%d行：业务类型编码不能为空", rowNum));
         }
         if (importVO.getModelId() == null) {
@@ -221,7 +221,7 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
         if (model == null) {
             throw new ServiceException(400, String.format("第%d行：模型ID[%d]不存在", rowNum, importVO.getModelId()));
         }
-        if (!Objects.equals(model.getBusinessTypeCode(), importVO.getBusinessTypeCode())) {
+        if (!Objects.equals(model.getEntityTypeCode(), importVO.getEntityTypeCode())) {
             throw new ServiceException(400, String.format("第%d行：模型与业务类型不匹配", rowNum));
         }
 
@@ -277,7 +277,7 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
     private EntityDO findExistingEntity(EntityImportExcelVO importVO) {
         // 通过 Repository 层查询（自动处理动态表名）
         EntityRepository.EntityQuery query = EntityRepository.EntityQuery.builder()
-                .businessTypeCode(importVO.getBusinessTypeCode())
+                .entityTypeCode(importVO.getEntityTypeCode())
                 .modelId(importVO.getModelId())
                 .build();
         List<EntityDO> existList = entityRepository.findAll(query);
@@ -293,7 +293,7 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
     private void createNewEntity(EntityImportExcelVO importVO) {
         EntityDO entity = EntityDO.builder()
                 .name(importVO.getName())
-                .businessTypeCode(importVO.getBusinessTypeCode())
+                .entityTypeCode(importVO.getEntityTypeCode())
                 .modelId(importVO.getModelId())
                 .customFields(entityBusinessHelper.parseCustomFieldsFromJson(importVO.getCustomFields()))
                 .status(importVO.getStatus())
@@ -309,7 +309,7 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
     private void updateExistingEntity(EntityDO existEntity, EntityImportExcelVO importVO) {
         EntityDO update = new EntityDO();
         update.setId(existEntity.getId());
-        update.setBusinessTypeCode(existEntity.getBusinessTypeCode()); // 必须设置 businessTypeCode 用于表名路由
+        update.setEntityTypeCode(existEntity.getEntityTypeCode()); // 必须设置 entityTypeCode 用于表名路由
         update.setCustomFields(entityBusinessHelper.parseCustomFieldsFromJson(importVO.getCustomFields()));
         update.setStatus(importVO.getStatus());
         // 通过 Repository 层更新（自动处理动态表名）
@@ -346,7 +346,7 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
         return EntityExportExcelVO.builder()
                 .id(entity.getId())
                 .name(entity.getName())
-                .businessTypeCode(entity.getBusinessTypeCode())
+                .entityTypeCode(entity.getEntityTypeCode())
                 .modelId(entity.getModelId())
                 .modelName(modelNameMap.get(entity.getModelId()))
                 .customFields(entity.getCustomFields() != null ? JSON.toJSONString(entity.getCustomFields()) : null)

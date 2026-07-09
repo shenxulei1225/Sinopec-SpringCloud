@@ -35,7 +35,7 @@ public final class CapabilityBlockProjectionBuilder {
     }
 
     public static Map<String, Object> buildDynamicEntity(
-            String businessTypeCode,
+            String entityTypeCode,
             String componentCode,
             long version,
             List<Map<String, Object>> displayFields,
@@ -43,7 +43,7 @@ public final class CapabilityBlockProjectionBuilder {
             List<String> searchableFieldKeys,
             List<String> sortableFieldKeys) {
         Map<String, Object> projection = baseHeader(
-                businessTypeCode,
+                entityTypeCode,
                 BusinessCategoryConstants.DYNAMIC,
                 BusinessCategoryConstants.KIND_ENTITY,
                 componentCode,
@@ -51,13 +51,13 @@ public final class CapabilityBlockProjectionBuilder {
 
         switch (componentCode) {
             case "list", "table" -> appendEntityListLikeBlocks(
-                    projection, businessTypeCode, displayFields, filterFields,
+                    projection, entityTypeCode, displayFields, filterFields,
                     searchableFieldKeys, sortableFieldKeys, true);
             case "card" -> appendEntityListLikeBlocks(
-                    projection, businessTypeCode, displayFields, filterFields,
+                    projection, entityTypeCode, displayFields, filterFields,
                     searchableFieldKeys, sortableFieldKeys, false);
             case "tree" -> appendEntityTreeBlocks(
-                    projection, businessTypeCode, displayFields, filterFields, searchableFieldKeys);
+                    projection, entityTypeCode, displayFields, filterFields, searchableFieldKeys);
             default -> throw new IllegalArgumentException("unsupported componentCode: " + componentCode);
         }
         return projection;
@@ -66,7 +66,7 @@ public final class CapabilityBlockProjectionBuilder {
     /** @deprecated 使用 {@link #buildDynamicEntity} */
     @Deprecated
     public static Map<String, Object> buildDynamic(
-            String businessTypeCode,
+            String entityTypeCode,
             String componentCode,
             long version,
             List<Map<String, Object>> displayFields,
@@ -74,12 +74,12 @@ public final class CapabilityBlockProjectionBuilder {
             List<String> searchableFieldKeys,
             List<String> sortableFieldKeys) {
         return buildDynamicEntity(
-                businessTypeCode, componentCode, version,
+                entityTypeCode, componentCode, version,
                 displayFields, filterFields, searchableFieldKeys, sortableFieldKeys);
     }
 
     public static Map<String, Object> buildDynamicModel(
-            String businessTypeCode,
+            String entityTypeCode,
             String componentCode,
             long version,
             List<Map<String, Object>> displayFields,
@@ -87,7 +87,7 @@ public final class CapabilityBlockProjectionBuilder {
             List<String> searchableFieldKeys,
             List<String> sortableFieldKeys) {
         Map<String, Object> projection = baseHeader(
-                businessTypeCode,
+                entityTypeCode,
                 BusinessCategoryConstants.DYNAMIC,
                 BusinessCategoryConstants.KIND_MODEL,
                 componentCode,
@@ -95,13 +95,13 @@ public final class CapabilityBlockProjectionBuilder {
 
         switch (componentCode) {
             case "list", "table" -> appendModelListLikeBlocks(
-                    projection, businessTypeCode, displayFields, filterFields,
+                    projection, entityTypeCode, displayFields, filterFields,
                     searchableFieldKeys, sortableFieldKeys, true);
             case "card" -> appendModelListLikeBlocks(
-                    projection, businessTypeCode, displayFields, filterFields,
+                    projection, entityTypeCode, displayFields, filterFields,
                     searchableFieldKeys, sortableFieldKeys, false);
             case "tree" -> appendModelTreeBlocks(
-                    projection, businessTypeCode, displayFields, filterFields, searchableFieldKeys);
+                    projection, entityTypeCode, displayFields, filterFields, searchableFieldKeys);
             default -> throw new IllegalArgumentException("unsupported componentCode: " + componentCode);
         }
         return projection;
@@ -115,7 +115,7 @@ public final class CapabilityBlockProjectionBuilder {
             List<Map<String, Object>> filterFields,
             List<String> searchableFieldKeys) {
         Map<String, Object> projection = baseHeader(
-                definition.getBusinessTypeCode(), BusinessCategoryConstants.SYSTEM,
+                definition.getEntityTypeCode(), BusinessCategoryConstants.SYSTEM,
                 BusinessCategoryConstants.KIND_ENTITY, componentCode, version);
 
         Map<String, Object> endpoint = new LinkedHashMap<>();
@@ -154,13 +154,13 @@ public final class CapabilityBlockProjectionBuilder {
     }
 
     private static Map<String, Object> baseHeader(
-            String businessTypeCode,
+            String entityTypeCode,
             String businessCategory,
             String dataKind,
             String componentCode,
             long version) {
         Map<String, Object> projection = new LinkedHashMap<>();
-        projection.put("businessTypeCode", businessTypeCode);
+        projection.put("entityTypeCode", entityTypeCode);
         projection.put("businessCategory", businessCategory);
         projection.put("dataKind", dataKind);
         projection.put("componentCode", componentCode);
@@ -170,16 +170,16 @@ public final class CapabilityBlockProjectionBuilder {
 
     private static void appendEntityListLikeBlocks(
             Map<String, Object> projection,
-            String businessTypeCode,
+            String entityTypeCode,
             List<Map<String, Object>> displayFields,
             List<Map<String, Object>> filterFields,
             List<String> searchableFieldKeys,
             List<String> sortableFieldKeys,
             boolean includeSort) {
-        Map<String, Object> endpoint = entityListEndpoint(businessTypeCode);
+        Map<String, Object> endpoint = entityListEndpoint(entityTypeCode);
         String readBlockKey = projection.get("componentCode").equals("card") ? "getCard" : "getList";
         projection.put(readBlockKey, readBlock(endpoint, displayFields));
-        projection.put("getDetail", detailBlock(businessTypeCode));
+        projection.put("getDetail", detailBlock(entityTypeCode));
         appendSearch(projection, searchableFieldKeys);
         appendFilter(projection, filterFields);
         if (includeSort) {
@@ -195,14 +195,14 @@ public final class CapabilityBlockProjectionBuilder {
 
     private static void appendEntityTreeBlocks(
             Map<String, Object> projection,
-            String businessTypeCode,
+            String entityTypeCode,
             List<Map<String, Object>> displayFields,
             List<Map<String, Object>> filterFields,
             List<String> searchableFieldKeys) {
         projection.put("treeReadKind", "ENTITY_HIERARCHY");
         projection.put("selectionOutput", entityHierarchySelectionOutput());
-        projection.put("getTree", readBlock(entityTreeEndpoint(businessTypeCode), displayFields));
-        projection.put("getDetail", detailBlock(businessTypeCode));
+        projection.put("getTree", readBlock(entityTreeEndpoint(entityTypeCode), displayFields));
+        projection.put("getDetail", detailBlock(entityTypeCode));
         appendSearch(projection, searchableFieldKeys);
         appendFilter(projection, filterFields);
         appendCrudBlocks(projection);
@@ -221,7 +221,7 @@ public final class CapabilityBlockProjectionBuilder {
     }
 
     /**
-     * 分类域树投影（domain=category，与 businessTypeCode 解耦）。
+     * 分类域树投影（domain=category，与 entityTypeCode 解耦）。
      * categoryTypeCode 由页面/用户增量 params 提供。
      */
     public static Map<String, Object> buildCategoryPlainTree(
@@ -250,13 +250,13 @@ public final class CapabilityBlockProjectionBuilder {
 
     private static void appendModelListLikeBlocks(
             Map<String, Object> projection,
-            String businessTypeCode,
+            String entityTypeCode,
             List<Map<String, Object>> displayFields,
             List<Map<String, Object>> filterFields,
             List<String> searchableFieldKeys,
             List<String> sortableFieldKeys,
             boolean includeSort) {
-        Map<String, Object> endpoint = modelListEndpoint(businessTypeCode);
+        Map<String, Object> endpoint = modelListEndpoint(entityTypeCode);
         String readBlockKey = "card".equals(projection.get("componentCode")) ? "getCard" : "getList";
         projection.put(readBlockKey, readBlock(endpoint, displayFields));
         appendSearch(projection, searchableFieldKeys);
@@ -271,13 +271,13 @@ public final class CapabilityBlockProjectionBuilder {
 
     private static void appendModelTreeBlocks(
             Map<String, Object> projection,
-            String businessTypeCode,
+            String entityTypeCode,
             List<Map<String, Object>> displayFields,
             List<Map<String, Object>> filterFields,
             List<String> searchableFieldKeys) {
         projection.put("treeReadKind", "MODEL_CATALOG");
         projection.put("selectionOutput", modelCatalogSelectionOutput());
-        projection.put("getTree", readBlock(modelTreeEndpoint(businessTypeCode), displayFields));
+        projection.put("getTree", readBlock(modelTreeEndpoint(entityTypeCode), displayFields));
         appendSearch(projection, searchableFieldKeys);
         appendFilter(projection, filterFields);
         projection.put("asyncChecks", List.of());
@@ -285,13 +285,13 @@ public final class CapabilityBlockProjectionBuilder {
                 externalInput("rootId", "parentId", "readQuery", true)));
     }
 
-    private static Map<String, Object> entityTreeEndpoint(String businessTypeCode) {
+    private static Map<String, Object> entityTreeEndpoint(String entityTypeCode) {
         Map<String, Object> endpoint = new LinkedHashMap<>();
         endpoint.put("url", ENTITY_SCENE_QUERY_URL);
         endpoint.put("method", "GET");
         endpoint.put("paramStyle", "entity-scene");
         Map<String, Object> defaultParams = new LinkedHashMap<>();
-        defaultParams.put("businessTypeCode", businessTypeCode);
+        defaultParams.put("entityTypeCode", entityTypeCode);
         defaultParams.put("scene", ENTITY_TREE_SCENE);
         defaultParams.put("resultShape", "TREE");
         defaultParams.put("resultDetail", "LIGHT");
@@ -320,14 +320,14 @@ public final class CapabilityBlockProjectionBuilder {
         return output;
     }
 
-    private static Map<String, Object> modelTreeEndpoint(String businessTypeCode) {
+    private static Map<String, Object> modelTreeEndpoint(String entityTypeCode) {
         Map<String, Object> endpoint = new LinkedHashMap<>();
         endpoint.put("url", MODEL_PAGE_URL);
         endpoint.put("method", "GET");
         Map<String, Object> defaultParams = new LinkedHashMap<>();
         defaultParams.put("pageNo", 1);
         defaultParams.put("pageSize", 100);
-        defaultParams.put("businessTypeCode", businessTypeCode);
+        defaultParams.put("entityTypeCode", entityTypeCode);
         endpoint.put("defaultParams", defaultParams);
         Map<String, Object> mapping = treeResponseMapping();
         mapping.put("listPath", "list");
@@ -335,20 +335,20 @@ public final class CapabilityBlockProjectionBuilder {
         return endpoint;
     }
 
-    private static Map<String, Object> modelListEndpoint(String businessTypeCode) {
+    private static Map<String, Object> modelListEndpoint(String entityTypeCode) {
         Map<String, Object> endpoint = new LinkedHashMap<>();
         endpoint.put("url", MODEL_PAGE_URL);
         endpoint.put("method", "GET");
         Map<String, Object> defaultParams = new LinkedHashMap<>();
         defaultParams.put("pageNo", 1);
         defaultParams.put("pageSize", 10);
-        defaultParams.put("businessTypeCode", businessTypeCode);
+        defaultParams.put("entityTypeCode", entityTypeCode);
         endpoint.put("defaultParams", defaultParams);
         endpoint.put("responseMapping", listResponseMapping());
         return endpoint;
     }
 
-    private static Map<String, Object> entityListEndpoint(String businessTypeCode) {
+    private static Map<String, Object> entityListEndpoint(String entityTypeCode) {
         Map<String, Object> endpoint = new LinkedHashMap<>();
         endpoint.put("url", ENTITY_SCENE_QUERY_URL);
         endpoint.put("method", "GET");
@@ -356,7 +356,7 @@ public final class CapabilityBlockProjectionBuilder {
         Map<String, Object> defaultParams = new LinkedHashMap<>();
         defaultParams.put("pageNo", 1);
         defaultParams.put("pageSize", 10);
-        defaultParams.put("businessTypeCode", businessTypeCode);
+        defaultParams.put("entityTypeCode", entityTypeCode);
         defaultParams.put("scene", ENTITY_SCENE_DEFAULT);
         defaultParams.put("resultShape", "PAGE");
         defaultParams.put("resultDetail", "FULL");
@@ -365,11 +365,11 @@ public final class CapabilityBlockProjectionBuilder {
         return endpoint;
     }
 
-    private static Map<String, Object> detailBlock(String businessTypeCode) {
+    private static Map<String, Object> detailBlock(String entityTypeCode) {
         Map<String, Object> endpoint = new LinkedHashMap<>();
         endpoint.put("url", ENTITY_DETAIL_URL);
         endpoint.put("method", "GET");
-        endpoint.put("defaultParams", Map.of("businessTypeCode", businessTypeCode));
+        endpoint.put("defaultParams", Map.of("entityTypeCode", entityTypeCode));
         return Map.of("endpoint", endpoint);
     }
 

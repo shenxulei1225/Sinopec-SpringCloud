@@ -13,10 +13,10 @@ public interface EntityKeywordSearchService {
     /**
      * 在候选实体范围内执行关键词搜索。
      *
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @param keyword 关键词
      * @param candidateEntityIds 候选实体ID（用于范围收敛）
      * @return 命中的实体ID集合
      */
-    Set<Long> searchMatchedEntityIds(String businessTypeCode, String keyword, List<Long> candidateEntityIds);
+    Set<Long> searchMatchedEntityIds(String entityTypeCode, String keyword, List<Long> candidateEntityIds);
 }

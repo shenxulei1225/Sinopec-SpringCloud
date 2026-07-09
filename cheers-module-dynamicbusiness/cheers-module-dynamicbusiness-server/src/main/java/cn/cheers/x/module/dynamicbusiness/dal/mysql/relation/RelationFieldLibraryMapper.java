@@ -32,12 +32,12 @@ public interface RelationFieldLibraryMapper extends BaseMapperX<RelationFieldLib
     /**
      * 根据关联业务类型查询字段列表
      *
-     * @param refBusinessType 关联业务类型编码
+     * @param refEntityType 关联业务类型编码
      * @return 字段列表
      */
-    default List<RelationFieldLibraryDO> selectByRefBusinessType(String refBusinessType) {
+    default List<RelationFieldLibraryDO> selectByRefEntityType(String refEntityType) {
         return selectList(new LambdaQueryWrapperX<RelationFieldLibraryDO>()
-                .eq(RelationFieldLibraryDO::getRefBusinessType, refBusinessType)
+                .eq(RelationFieldLibraryDO::getRefEntityType, refEntityType)
                 .orderByDesc(RelationFieldLibraryDO::getUsageCount)
                 .orderByAsc(RelationFieldLibraryDO::getFieldName));
     }
@@ -67,19 +67,19 @@ public interface RelationFieldLibraryMapper extends BaseMapperX<RelationFieldLib
     /**
      * 分页查询
      * 
-     * @param targetBusinessType 目标业务类型（可选）
+     * @param targetEntityType 目标业务类型（可选）
      * @param keyword 关键字（可选，搜索名称和编码）
      * @param pageNo 页码
      * @param pageSize 每页大小
      * @return 分页结果
      */
-    default PageResult<RelationFieldLibraryDO> selectPage(String refBusinessType, String keyword,
+    default PageResult<RelationFieldLibraryDO> selectPage(String refEntityType, String keyword,
                                                            Integer pageNo, Integer pageSize) {
         PageParam pageParam = new PageParam();
         pageParam.setPageNo(pageNo);
         pageParam.setPageSize(pageSize);
         return selectPage(pageParam, new LambdaQueryWrapperX<RelationFieldLibraryDO>()
-                .eqIfPresent(RelationFieldLibraryDO::getRefBusinessType, refBusinessType)
+                .eqIfPresent(RelationFieldLibraryDO::getRefEntityType, refEntityType)
                 .and(StringUtils.isNotBlank(keyword), q -> q
                         .like(RelationFieldLibraryDO::getFieldName, keyword)
                         .or().like(RelationFieldLibraryDO::getFieldCode, keyword)

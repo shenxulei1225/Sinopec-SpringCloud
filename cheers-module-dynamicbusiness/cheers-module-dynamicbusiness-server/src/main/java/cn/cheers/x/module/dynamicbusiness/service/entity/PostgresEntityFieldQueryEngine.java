@@ -54,8 +54,8 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
      * </ul>
      */
     @Override
-    public Set<Long> searchEntityIdsByKeyword(String businessTypeCode, String keyword, List<Long> candidateEntityIds) {
-        if (businessTypeCode == null || businessTypeCode.isBlank()) {
+    public Set<Long> searchEntityIdsByKeyword(String entityTypeCode, String keyword, List<Long> candidateEntityIds) {
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
             return Collections.emptySet();
         }
         if (keyword == null || keyword.trim().isEmpty()) {
@@ -78,7 +78,7 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
             }
         }
 
-        List<EntityDO> entities = entityCoreService.listByIds(candidateEntityIds, businessTypeCode);
+        List<EntityDO> entities = entityCoreService.listByIds(candidateEntityIds, entityTypeCode);
         if (entities != null) {
             for (EntityDO e : entities) {
                 if (e == null || e.getId() == null || e.getName() == null) {
@@ -93,8 +93,8 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
     }
 
     @Override
-    public Set<Long> filterEntityIdsByFilters(String businessTypeCode, List<FieldFilterReqVO> filters, List<Long> candidateEntityIds) {
-        if (businessTypeCode == null || businessTypeCode.isBlank()) {
+    public Set<Long> filterEntityIdsByFilters(String entityTypeCode, List<FieldFilterReqVO> filters, List<Long> candidateEntityIds) {
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
             return Collections.emptySet();
         }
         if (candidateEntityIds == null || candidateEntityIds.isEmpty()) {
@@ -184,15 +184,15 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
      * <p>注：当前采用固定顺序（filter -> keyword）。后续可基于统计信息做自适应顺序优化。</p>
      */
     @Override
-    public Set<Long> searchAndFilterEntityIds(String businessTypeCode, String keyword, List<FieldFilterReqVO> filters, List<Long> candidateEntityIds) {
-        Set<Long> byFilter = filterEntityIdsByFilters(businessTypeCode, filters, candidateEntityIds);
+    public Set<Long> searchAndFilterEntityIds(String entityTypeCode, String keyword, List<FieldFilterReqVO> filters, List<Long> candidateEntityIds) {
+        Set<Long> byFilter = filterEntityIdsByFilters(entityTypeCode, filters, candidateEntityIds);
         if (byFilter.isEmpty()) {
             return Collections.emptySet();
         }
         if (keyword == null || keyword.trim().isEmpty()) {
             return byFilter;
         }
-        Set<Long> byKeyword = searchEntityIdsByKeyword(businessTypeCode, keyword, List.copyOf(byFilter));
+        Set<Long> byKeyword = searchEntityIdsByKeyword(entityTypeCode, keyword, List.copyOf(byFilter));
         if (byKeyword.isEmpty()) {
             return Collections.emptySet();
         }

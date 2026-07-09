@@ -34,9 +34,9 @@ public class ApplyTemplateReqVO {
     @Schema(description = "页面代码（唯一标识），用于页面加载", example = "region-management-default")
     private String pageCode;
 
-    @Schema(description = "业务类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
-    @NotBlank(message = "业务类型不能为空")
-    private String businessType;
+    @Schema(description = "实体类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
+    @NotBlank(message = "实体类型编码不能为空")
+    private String entityTypeCode;
 
     @Schema(description = "Tab配置列表", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "Tab配置不能为空")
@@ -47,6 +47,9 @@ public class ApplyTemplateReqVO {
 
     @Schema(description = "其他配置参数")
     private Map<String, Object> additionalConfig;
+
+    @Schema(description = "所属门户业务 id", example = "100")
+    private Long businessId;
 
     /**
      * Tab配置 VO
@@ -69,13 +72,13 @@ public class ApplyTemplateReqVO {
         private String pattern;
 
         @Schema(description = "左侧树业务类型", example = "region")
-        private String leftTreeBusinessType;
+        private String leftTreeEntityType;
 
         @Schema(description = "左侧树分类类型代码（CategoryType.code，用于左树分类加载）", example = "region_category")
         private String leftTreeCategoryTypeCode;
 
-        @Schema(description = "右侧内容业务类型（实体列表的业务类型），如果未设置则使用页面级别的businessType", example = "equipment")
-        private String rightContentBusinessType;
+        @Schema(description = "右侧内容实体类型编码，如果未设置则使用页面级别的 entityTypeCode", example = "equipment")
+        private String rightContentEntityType;
 
         @Schema(description = "显示顺序", example = "1")
         private Integer displayOrder;

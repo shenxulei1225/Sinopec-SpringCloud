@@ -40,9 +40,19 @@ public class TemplateFieldAssignmentDO extends TenantBaseDO {
     private Long templateId;
 
     /**
+     * 模板编码（迁移幂等键，对应 {@link TemplateDO#getCode()}）
+     */
+    private String templateCode;
+
+    /**
      * 字段ID
      */
     private Long fieldId;
+
+    /**
+     * 字段编码（迁移幂等键，对应字段池 {@code dynamic_field.code}）
+     */
+    private String fieldCode;
 
     /**
      * 排序值

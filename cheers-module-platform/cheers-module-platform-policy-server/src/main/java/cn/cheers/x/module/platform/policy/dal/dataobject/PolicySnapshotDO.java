@@ -29,7 +29,7 @@ public class PolicySnapshotDO extends TenantBaseDO {
 
     private Integer policySetVersion;
 
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     private String platformLawVersion;
 

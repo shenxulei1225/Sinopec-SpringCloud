@@ -55,27 +55,27 @@ public class EntityValidationServiceImpl implements EntityValidationService {
     public void validateEntity(EntityDO entity, ModelDO model) {
         Map<String, Object> customFields = entity.getCustomFields() != null
                 ? entity.getCustomFields() : Collections.emptyMap();
-        validateEntity(entity, model, customFields, model.getBusinessTypeCode());
+        validateEntity(entity, model, customFields, model.getEntityTypeCode());
     }
 
     @Override
     public void validateEntity(EntityDO entity, ModelDO model, Map<String, Object> customFields) {
-        validateEntity(entity, model, customFields, model.getBusinessTypeCode());
+        validateEntity(entity, model, customFields, model.getEntityTypeCode());
     }
 
     /**
-     * 验证 Entity 的所有引用字段（带 businessTypeCode）
+     * 验证 Entity 的所有引用字段（带 entityTypeCode）
      *
      * @param entity 待验证的 Entity
      * @param model Entity 所属的 Model
      * @param customFields 解析后的扩展字段数据
-     * @param businessTypeCode 业务类型编码（用于存储路由）
+     * @param entityTypeCode 业务类型编码（用于存储路由）
      */
-    public void validateEntity(EntityDO entity, ModelDO model, Map<String, Object> customFields, String businessTypeCode) {
-        log.debug("开始验证 Entity: id={}, modelId={}, businessTypeCode={}", entity.getId(), model.getId(), businessTypeCode);
+    public void validateEntity(EntityDO entity, ModelDO model, Map<String, Object> customFields, String entityTypeCode) {
+        log.debug("开始验证 Entity: id={}, modelId={}, entityTypeCode={}", entity.getId(), model.getId(), entityTypeCode);
 
         if (entity.getParentId() != null && entity.getParentId() > 0) {
-            validateParentRef(entity.getParentId(), entity.getId(), model.getId(), businessTypeCode);
+            validateParentRef(entity.getParentId(), entity.getId(), model.getId(), entityTypeCode);
         }
 
         if (customFields != null && !customFields.isEmpty()) {
@@ -91,28 +91,28 @@ public class EntityValidationServiceImpl implements EntityValidationService {
         if (model == null) {
             throw InvalidParentRefException.notExists(entityId, modelId, parentId);
         }
-        validateParentRef(parentId, entityId, modelId, model.getBusinessTypeCode());
+        validateParentRef(parentId, entityId, modelId, model.getEntityTypeCode());
     }
 
     /**
-     * 验证 parent_id 引用（带 businessTypeCode）
+     * 验证 parent_id 引用（带 entityTypeCode）
      *
      * @param parentId 父节点 ID
      * @param entityId 当前 Entity ID
      * @param modelId Model ID
-     * @param businessTypeCode 业务类型编码（parent 与当前实体同 businessTypeCode）
+     * @param entityTypeCode 业务类型编码（parent 与当前实体同 entityTypeCode）
      */
-    public void validateParentRef(Long parentId, Long entityId, Long modelId, String businessTypeCode) {
-        log.debug("验证 parent_id: parentId={}, entityId={}, modelId={}, businessTypeCode={}",
-                parentId, entityId, modelId, businessTypeCode);
+    public void validateParentRef(Long parentId, Long entityId, Long modelId, String entityTypeCode) {
+        log.debug("验证 parent_id: parentId={}, entityId={}, modelId={}, entityTypeCode={}",
+                parentId, entityId, modelId, entityTypeCode);
 
         EntityRespVO parentEntity;
         try {
-            EntityDO parentEntityDO = entityCoreService.get(parentId, businessTypeCode);
+            EntityDO parentEntityDO = entityCoreService.get(parentId, entityTypeCode);
             parentEntity = parentEntityDO != null ? EntityDoVoHelper.toRespVO(parentEntityDO, customFieldValidationService) : null;
         } catch (Exception e) {
-            log.warn("parent_id 引用无效：目标 Entity 不存在, parentId={}, businessTypeCode={}, error={}",
-                    parentId, businessTypeCode, e.getMessage());
+            log.warn("parent_id 引用无效：目标 Entity 不存在, parentId={}, entityTypeCode={}, error={}",
+                    parentId, entityTypeCode, e.getMessage());
             throw InvalidParentRefException.notExists(entityId, modelId, parentId);
         }
         if (parentEntity == null) {
@@ -126,7 +126,7 @@ public class EntityValidationServiceImpl implements EntityValidationService {
         }
 
         if (entityId != null) {
-            List<Long> cyclePath = detectCircularReference(parentId, entityId, modelId, businessTypeCode);
+            List<Long> cyclePath = detectCircularReference(parentId, entityId, modelId, entityTypeCode);
             if (cyclePath != null) {
                 log.warn("检测到循环引用: entityId={}, cyclePath={}", entityId, cyclePath);
                 throw new CircularReferenceException(entityId, modelId, cyclePath);
@@ -141,15 +141,15 @@ public class EntityValidationServiceImpl implements EntityValidationService {
         log.debug("验证 ENTITY_REF 字段: fieldCode={}, refEntityId={}, entityId={}",
                 field.getCode(), refEntityId, entityId);
 
-        String refBusinessTypeCode = resolveRefBusinessTypeCode(field, refEntityId, modelId);
+        String refEntityTypeCode = resolveRefEntityTypeCode(field, refEntityId, modelId);
 
         EntityRespVO refEntity;
         try {
-            EntityDO refEntityDO = entityCoreService.get(refEntityId, refBusinessTypeCode);
+            EntityDO refEntityDO = entityCoreService.get(refEntityId, refEntityTypeCode);
             refEntity = refEntityDO != null ? EntityDoVoHelper.toRespVO(refEntityDO, customFieldValidationService) : null;
         } catch (Exception e) {
-            log.warn("ENTITY_REF 引用无效：目标 Entity 不存在, fieldCode={}, refEntityId={}, businessTypeCode={}, error={}",
-                    field.getCode(), refEntityId, refBusinessTypeCode, e.getMessage());
+            log.warn("ENTITY_REF 引用无效：目标 Entity 不存在, fieldCode={}, refEntityId={}, entityTypeCode={}, error={}",
+                    field.getCode(), refEntityId, refEntityTypeCode, e.getMessage());
             throw InvalidEntityRefException.notExists(entityId, modelId, field.getCode(),
                     field.getName(), refEntityId);
         }
@@ -172,17 +172,17 @@ public class EntityValidationServiceImpl implements EntityValidationService {
     }
 
     /**
-     * 根据模型字段分配（关联字段库 / 模型关系 / 兜底 targetBusinessType）解析引用实体所在业务类型。
+     * 根据模型字段分配（关联字段库 / 模型关系 / 兜底 targetEntityType）解析引用实体所在业务类型。
      */
-    private String resolveRefBusinessTypeCode(FieldDO field, Long refEntityId, Long modelId) {
+    private String resolveRefEntityTypeCode(FieldDO field, Long refEntityId, Long modelId) {
         ModelFieldAssignmentDO assignment = modelFieldAssignmentMapper.selectByModelIdAndFieldId(modelId, field.getId());
         if (assignment == null) {
             return null;
         }
         if (assignment.getRefLibraryId() != null) {
             RelationFieldLibraryDO lib = relationFieldLibraryMapper.selectById(assignment.getRefLibraryId());
-            if (lib != null && lib.getRefBusinessType() != null && !lib.getRefBusinessType().isEmpty()) {
-                String bt = lib.getRefBusinessType();
+            if (lib != null && lib.getRefEntityType() != null && !lib.getRefEntityType().isEmpty()) {
+                String bt = lib.getRefEntityType();
                 if (entityCoreService.get(refEntityId, bt) != null) {
                     return bt;
                 }
@@ -193,15 +193,15 @@ public class EntityValidationServiceImpl implements EntityValidationService {
             if (rel != null && rel.getTargetModelCode() != null) {
                 ModelDO tm = modelMapper.selectByCode(rel.getTargetModelCode());
                 if (tm != null) {
-                    String bt = tm.getBusinessTypeCode();
+                    String bt = tm.getEntityTypeCode();
                     if (entityCoreService.get(refEntityId, bt) != null) {
                         return bt;
                     }
                 }
             }
         }
-        if (assignment.getTargetBusinessType() != null && !assignment.getTargetBusinessType().isEmpty()) {
-            String bt = assignment.getTargetBusinessType();
+        if (assignment.getTargetEntityType() != null && !assignment.getTargetEntityType().isEmpty()) {
+            String bt = assignment.getTargetEntityType();
             if (entityCoreService.get(refEntityId, bt) != null) {
                 return bt;
             }
@@ -215,10 +215,10 @@ public class EntityValidationServiceImpl implements EntityValidationService {
         if (model == null) {
             return null;
         }
-        return detectCircularReference(parentId, entityId, modelId, model.getBusinessTypeCode());
+        return detectCircularReference(parentId, entityId, modelId, model.getEntityTypeCode());
     }
 
-    public List<Long> detectCircularReference(Long parentId, Long entityId, Long modelId, String businessTypeCode) {
+    public List<Long> detectCircularReference(Long parentId, Long entityId, Long modelId, String entityTypeCode) {
         Set<Long> visited = new HashSet<>();
         List<Long> path = new ArrayList<>();
 
@@ -237,10 +237,10 @@ public class EntityValidationServiceImpl implements EntityValidationService {
 
             EntityRespVO current;
             try {
-                EntityDO currentDO = entityCoreService.get(currentParentId, businessTypeCode);
+                EntityDO currentDO = entityCoreService.get(currentParentId, entityTypeCode);
                 current = currentDO != null ? EntityDoVoHelper.toRespVO(currentDO, customFieldValidationService) : null;
             } catch (Exception e) {
-                log.debug("获取父节点失败: parentId={}, businessTypeCode={}", currentParentId, businessTypeCode);
+                log.debug("获取父节点失败: parentId={}, entityTypeCode={}", currentParentId, entityTypeCode);
                 break;
             }
             if (current == null) {

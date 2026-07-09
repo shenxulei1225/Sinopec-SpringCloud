@@ -1,13 +1,13 @@
-package cn.cheers.x.module.dynamicbusiness.service.businesstype;
+package cn.cheers.x.module.dynamicbusiness.service.entitytype;
 
 import cn.iocoder.yudao.framework.common.exception.ServiceException;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo.BusinessTypeRelationCreateReqVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo.BusinessTypeRelationRespVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo.RelatableBusinessTypeRespVO;
-import cn.cheers.x.module.dynamicbusiness.convert.businesstype.BusinessTypeRelationConvert;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeRelationDO;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeRelationMapper;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeRelationCreateReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeRelationRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.RelatableEntityTypeRespVO;
+import cn.cheers.x.module.dynamicbusiness.convert.entitytype.EntityTypeRelationConvert;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeRelationDO;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeRelationMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,25 +19,25 @@ import java.util.List;
 @Service
 @Validated
 @Slf4j
-public class BusinessTypeRelationServiceImpl implements BusinessTypeRelationService {
+public class EntityTypeRelationServiceImpl implements EntityTypeRelationService {
 
     @Resource
-    private BusinessTypeRelationMapper relationMapper;
+    private EntityTypeRelationMapper relationMapper;
 
     @Resource
-    private BusinessTypeMapper businessTypeMapper;
+    private EntityTypeMapper entityTypeMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long createRelation(BusinessTypeRelationCreateReqVO reqVO) {
-        if (businessTypeMapper.selectByCode(reqVO.getSourceBusinessTypeCode()) == null
-                || businessTypeMapper.selectByCode(reqVO.getTargetBusinessTypeCode()) == null) {
+    public Long createRelation(EntityTypeRelationCreateReqVO reqVO) {
+        if (entityTypeMapper.selectByCode(reqVO.getSourceEntityTypeCode()) == null
+                || entityTypeMapper.selectByCode(reqVO.getTargetEntityTypeCode()) == null) {
             throw new ServiceException(404, "业务类型不存在");
         }
-        if (existsRelation(reqVO.getSourceBusinessTypeCode(), reqVO.getTargetBusinessTypeCode())) {
+        if (existsRelation(reqVO.getSourceEntityTypeCode(), reqVO.getTargetEntityTypeCode())) {
             throw new ServiceException(400, "业务类型关联已存在");
         }
-        BusinessTypeRelationDO relation = BusinessTypeRelationConvert.INSTANCE.convert(reqVO);
+        EntityTypeRelationDO relation = EntityTypeRelationConvert.INSTANCE.convert(reqVO);
         relationMapper.insert(relation);
         return relation.getId();
     }
@@ -49,36 +49,36 @@ public class BusinessTypeRelationServiceImpl implements BusinessTypeRelationServ
     }
 
     @Override
-    public BusinessTypeRelationRespVO getRelation(Long id) {
-        return BusinessTypeRelationConvert.INSTANCE.convert(relationMapper.selectById(id));
+    public EntityTypeRelationRespVO getRelation(Long id) {
+        return EntityTypeRelationConvert.INSTANCE.convert(relationMapper.selectById(id));
     }
 
     @Override
-    public List<BusinessTypeRelationRespVO> getRelationsBySourceCode(String sourceBusinessTypeCode) {
-        return BusinessTypeRelationConvert.INSTANCE.convertList(relationMapper.selectBySourceBusinessTypeCode(sourceBusinessTypeCode));
+    public List<EntityTypeRelationRespVO> getRelationsBySourceCode(String sourceEntityTypeCode) {
+        return EntityTypeRelationConvert.INSTANCE.convertList(relationMapper.selectBySourceEntityTypeCode(sourceEntityTypeCode));
     }
 
     @Override
-    public List<BusinessTypeRelationRespVO> getRelationsByTargetCode(String targetBusinessTypeCode) {
-        return BusinessTypeRelationConvert.INSTANCE.convertList(relationMapper.selectByTargetBusinessTypeCode(targetBusinessTypeCode));
+    public List<EntityTypeRelationRespVO> getRelationsByTargetCode(String targetEntityTypeCode) {
+        return EntityTypeRelationConvert.INSTANCE.convertList(relationMapper.selectByTargetEntityTypeCode(targetEntityTypeCode));
     }
 
     @Override
-    public List<BusinessTypeRelationRespVO> getAllRelations() {
-        return BusinessTypeRelationConvert.INSTANCE.convertList(relationMapper.selectList());
+    public List<EntityTypeRelationRespVO> getAllRelations() {
+        return EntityTypeRelationConvert.INSTANCE.convertList(relationMapper.selectList());
     }
 
     @Override
-    public boolean existsRelation(String sourceBusinessTypeCode, String targetBusinessTypeCode) {
-        return relationMapper.existsBySourceAndTarget(sourceBusinessTypeCode, targetBusinessTypeCode);
+    public boolean existsRelation(String sourceEntityTypeCode, String targetEntityTypeCode) {
+        return relationMapper.existsBySourceAndTarget(sourceEntityTypeCode, targetEntityTypeCode);
     }
 
     @Override
-    public List<RelatableBusinessTypeRespVO> getAvailableTargets(String currentBusinessTypeCode, String currentBusinessTypeName) {
-        return businessTypeMapper.selectAllList().stream()
-                .filter(it -> !it.getCode().equals(currentBusinessTypeCode))
-                .filter(it -> !relationMapper.existsBySourceAndTarget(currentBusinessTypeCode, it.getCode()))
-                .map(it -> new RelatableBusinessTypeRespVO(it.getCode(), it.getName()))
+    public List<RelatableEntityTypeRespVO> getAvailableTargets(String currentEntityTypeCode, String currentEntityTypeName) {
+        return entityTypeMapper.selectAllList().stream()
+                .filter(it -> !it.getCode().equals(currentEntityTypeCode))
+                .filter(it -> !relationMapper.existsBySourceAndTarget(currentEntityTypeCode, it.getCode()))
+                .map(it -> new RelatableEntityTypeRespVO(it.getCode(), it.getName()))
                 .toList();
     }
 }

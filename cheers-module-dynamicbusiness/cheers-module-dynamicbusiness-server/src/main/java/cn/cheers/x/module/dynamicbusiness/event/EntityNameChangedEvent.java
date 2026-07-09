@@ -36,7 +36,7 @@ public class EntityNameChangedEvent extends ApplicationEvent {
     private final String newName;
 
     /** 业务类型编码 */
-    private final String businessTypeCode;
+    private final String entityTypeCode;
 
     /** Model 编码 */
     private final String modelCode;
@@ -51,17 +51,17 @@ public class EntityNameChangedEvent extends ApplicationEvent {
      * @param entityId 实体 ID
      * @param oldName 旧名称
      * @param newName 新名称
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @param modelCode Model 编码
      * @param tenantId 租户 ID
      */
     public EntityNameChangedEvent(Object source, Long entityId, String oldName, String newName,
-                                  String businessTypeCode, String modelCode, Long tenantId) {
+                                  String entityTypeCode, String modelCode, Long tenantId) {
         super(source);
         this.entityId = entityId;
         this.oldName = oldName;
         this.newName = newName;
-        this.businessTypeCode = businessTypeCode;
+        this.entityTypeCode = entityTypeCode;
         this.modelCode = modelCode;
         this.tenantId = tenantId;
     }
@@ -73,15 +73,15 @@ public class EntityNameChangedEvent extends ApplicationEvent {
      * @param entityId 实体 ID
      * @param oldName 旧名称
      * @param newName 新名称
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @param modelCode Model 编码
      * @param tenantId 租户 ID
      * @return 名称变更事件
      */
     public static EntityNameChangedEvent of(Object source, Long entityId, String oldName, String newName,
-                                            String businessTypeCode, String modelCode, Long tenantId) {
+                                            String entityTypeCode, String modelCode, Long tenantId) {
         return new EntityNameChangedEvent(source, entityId, oldName, newName, 
-                businessTypeCode, modelCode, tenantId);
+                entityTypeCode, modelCode, tenantId);
     }
 
     /**
@@ -105,7 +105,7 @@ public class EntityNameChangedEvent extends ApplicationEvent {
                 "entityId=" + entityId +
                 ", oldName='" + oldName + '\'' +
                 ", newName='" + newName + '\'' +
-                ", businessTypeCode='" + businessTypeCode + '\'' +
+                ", entityTypeCode='" + entityTypeCode + '\'' +
                 ", modelCode='" + modelCode + '\'' +
                 ", tenantId=" + tenantId +
                 '}';

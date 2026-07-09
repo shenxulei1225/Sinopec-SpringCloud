@@ -2,14 +2,14 @@
 -- 删除dynamic_category表中的遗留字段business_type
 -- 
 -- 问题说明：
--- 1. dynamic_category表中同时存在business_type和business_type_code两个字段
+-- 1. dynamic_category表中同时存在business_type和entity_type_code两个字段
 -- 2. business_type字段所有记录都为NULL（遗留字段,不再使用）
--- 3. 所有代码和索引都使用business_type_code字段
+-- 3. 所有代码和索引都使用entity_type_code字段
 -- 4. business_type字段应该被删除
 -- 
 -- 注意：
--- business_type_code是业务类型编码（如"region"、"equipment"）,
--- 同一个业务类型下可以有多个分类,所以business_type_code本身不需要唯一性约束
+-- entity_type_code是业务类型编码（如"region"、"equipment"）,
+-- 同一个业务类型下可以有多个分类,所以entity_type_code本身不需要唯一性约束
 -- =====================================================
 
 -- 步骤1：检查business_type字段的使用情况
@@ -62,7 +62,7 @@ DROP INDEX IF EXISTS idx_dynamic_category_business_type;
 ALTER TABLE dynamic_category DROP COLUMN IF EXISTS business_type;
 
 -- 步骤4：添加注释说明
-COMMENT ON COLUMN dynamic_category.business_type_code IS '业务类型编码（如"region"、"equipment"）,用于区分不同的业务类型。同一业务类型下可以有多个分类,所以此字段不需要唯一性约束';
+COMMENT ON COLUMN dynamic_category.entity_type_code IS '业务类型编码（如"region"、"equipment"）,用于区分不同的业务类型。同一业务类型下可以有多个分类,所以此字段不需要唯一性约束';
 
 -- 验证：查询表结构确认business_type字段已删除
 DO $$

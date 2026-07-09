@@ -54,7 +54,7 @@ public interface RelationFieldLibraryConvert {
     /**
      * DO 转带状态的响应 VO
      * 
-     * 注意：状态相关字段（status, targetBusinessTypeName, targetModelName, targetExists）
+     * 注意：状态相关字段（status, targetEntityTypeName, targetModelName, targetExists）
      * 需要在 Service 层设置
      */
     default RelationFieldLibraryWithStatusVO convertWithStatus(RelationFieldLibraryDO field) {
@@ -65,7 +65,7 @@ public interface RelationFieldLibraryConvert {
         vo.setId(field.getId());
         vo.setFieldName(field.getFieldName());
         vo.setFieldCode(field.getFieldCode());
-        vo.setRefBusinessType(field.getRefBusinessType());
+        vo.setRefEntityType(field.getRefEntityType());
         vo.setDisplayFieldCode(field.getDisplayFieldCode());
         vo.setConstraintEnabled(field.getConstraintEnabled());
         vo.setConstraintType(field.getConstraintType());

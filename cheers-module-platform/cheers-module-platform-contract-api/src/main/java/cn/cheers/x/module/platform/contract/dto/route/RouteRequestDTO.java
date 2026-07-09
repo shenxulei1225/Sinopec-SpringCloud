@@ -20,5 +20,5 @@ public class RouteRequestDTO {
     private String topologyRef;
     private List<String> stopIds;
     private String strategy;
-    private String businessTypeCode;
+    private String entityTypeCode;
 }

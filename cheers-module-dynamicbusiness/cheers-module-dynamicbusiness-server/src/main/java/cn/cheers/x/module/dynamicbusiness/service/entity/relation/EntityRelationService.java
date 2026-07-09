@@ -15,34 +15,34 @@ public interface EntityRelationService {
 
     void updateRelation(EntityRelationUpdateReqVO reqVO);
 
-    void deleteRelation(Long id, String sourceBusinessTypeCode, String targetBusinessTypeCode);
+    void deleteRelation(Long id, String sourceEntityTypeCode, String targetEntityTypeCode);
 
-    EntityRelationRespVO getRelation(Long id, String sourceBusinessTypeCode, String targetBusinessTypeCode);
+    EntityRelationRespVO getRelation(Long id, String sourceEntityTypeCode, String targetEntityTypeCode);
 
-    List<EntityRelationRespVO> getRelationsBySourceEntity(Long sourceEntityId, String businessTypeCode);
+    List<EntityRelationRespVO> getRelationsBySourceEntity(Long sourceEntityId, String entityTypeCode);
 
-    List<EntityRelationRespVO> getRelationsByTargetEntity(Long targetEntityId, String businessTypeCode);
+    List<EntityRelationRespVO> getRelationsByTargetEntity(Long targetEntityId, String entityTypeCode);
 
-    List<EntityRelationRespVO> getAllRelationsByEntity(Long entityId, String businessTypeCode);
+    List<EntityRelationRespVO> getAllRelationsByEntity(Long entityId, String entityTypeCode);
 
-    List<EntityRelationRespVO> getRelatedEntities(Long sourceEntityId, String sourceBusinessTypeCode,
-                                                    Long targetEntityId, String targetBusinessTypeCode,
+    List<EntityRelationRespVO> getRelatedEntities(Long sourceEntityId, String sourceEntityTypeCode,
+                                                    Long targetEntityId, String targetEntityTypeCode,
                                                     String relationType);
 
-    boolean hasRelations(Long entityId, String businessTypeCode);
+    boolean hasRelations(Long entityId, String entityTypeCode);
 
-    Long countRelations(Long entityId, String businessTypeCode);
+    Long countRelations(Long entityId, String entityTypeCode);
 
-    int deleteAllRelationsByEntity(Long entityId, String businessTypeCode);
+    int deleteAllRelationsByEntity(Long entityId, String entityTypeCode);
 
-    boolean existsRelation(Long sourceEntityId, String sourceBusinessTypeCode,
-                            Long targetEntityId, String targetBusinessTypeCode);
+    boolean existsRelation(Long sourceEntityId, String sourceEntityTypeCode,
+                            Long targetEntityId, String targetEntityTypeCode);
 
-    List<EntityRelationRespVO> getRelationsByTargetEntity(Long targetEntityId, String businessTypeCode, String sourceModelCode);
+    List<EntityRelationRespVO> getRelationsByTargetEntity(Long targetEntityId, String entityTypeCode, String sourceModelCode);
 
-    Long countRelationsByTargetEntity(Long targetEntityId, String businessTypeCode);
+    Long countRelationsByTargetEntity(Long targetEntityId, String entityTypeCode);
 
-    List<EntityRelationRespVO> getRelationsByFieldCode(Long entityId, String businessTypeCode, String fieldCode);
+    List<EntityRelationRespVO> getRelationsByFieldCode(Long entityId, String entityTypeCode, String fieldCode);
 
     /**
      * 根据关联字段编码和关联实体ID列表，查询当前实体ID列表。

@@ -22,7 +22,7 @@ public class RelationFieldLibraryRespVO {
     private String fieldCode;
 
     @Schema(description = "关联业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "personnel")
-    private String refBusinessType;
+    private String refEntityType;
 
     @Schema(description = "展示字段编码", example = "name")
     private String displayFieldCode;

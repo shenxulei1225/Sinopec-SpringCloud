@@ -14,7 +14,7 @@ import java.util.Map;
 public class MappingProfileRespDTO {
 
     private String id;
-    private String businessTypeCode;
+    private String entityTypeCode;
     private String sourceModelCode;
     private String displayName;
     private Map<String, String> fieldMappings;

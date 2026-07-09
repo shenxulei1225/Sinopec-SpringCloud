@@ -43,14 +43,14 @@ public interface RelatedEntityQueryService {
      * 查询关联到指定 Entity 的所有 Entity（支持指定业务类型）
      * 
      * <p>反向查询：查询所有通过关联字段引用了指定 Entity 的其他 Entity。
-     * 通过 businessTypeCode 参数可以直接路由到对应的存储策略（动态表或通用表）。</p>
+     * 通过 entityTypeCode 参数可以直接路由到对应的存储策略（动态表或通用表）。</p>
      * 
      * @param entityId 目标 Entity ID
      * @param modelCode 过滤条件：只返回指定 Model 的关联 Entity（可选）
-     * @param businessTypeCode 目标 Entity 的业务类型编码（可选，用于路由到正确的存储策略）
+     * @param entityTypeCode 目标 Entity 的业务类型编码（可选，用于路由到正确的存储策略）
      * @return 关联 Entity 列表
      */
-    List<RelatedEntityRespVO> getRelatedEntities(Long entityId, String modelCode, String businessTypeCode);
+    List<RelatedEntityRespVO> getRelatedEntities(Long entityId, String modelCode, String entityTypeCode);
 
     /**
      * 统计关联到指定 Entity 的 Entity 数量
@@ -66,8 +66,8 @@ public interface RelatedEntityQueryService {
      * 
      * @param entityId 目标 Entity ID
      * @param modelCode 过滤条件：只统计指定 Model 的关联 Entity（可选）
-     * @param businessTypeCode 目标 Entity 的业务类型编码（可选，用于路由到正确的存储策略）
+     * @param entityTypeCode 目标 Entity 的业务类型编码（可选，用于路由到正确的存储策略）
      * @return 关联 Entity 数量
      */
-    Long countRelatedEntities(Long entityId, String modelCode, String businessTypeCode);
+    Long countRelatedEntities(Long entityId, String modelCode, String entityTypeCode);
 }

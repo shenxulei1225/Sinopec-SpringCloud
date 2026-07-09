@@ -1,4 +1,4 @@
-package cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo;
+package cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -9,5 +9,5 @@ import lombok.ToString;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class BusinessTypeCreateReqVO extends BusinessTypeBaseVO {
+public class EntityTypeCreateReqVO extends EntityTypeBaseVO {
 }

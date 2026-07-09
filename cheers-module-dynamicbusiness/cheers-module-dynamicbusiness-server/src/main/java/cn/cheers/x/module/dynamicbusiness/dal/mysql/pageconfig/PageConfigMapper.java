@@ -17,6 +17,12 @@ import java.util.List;
 @Mapper
 public interface PageConfigMapper extends BaseMapperX<PageConfigDO> {
 
+    default List<PageConfigDO> selectListByBusinessId(Long businessId) {
+        return selectList(new LambdaQueryWrapperX<PageConfigDO>()
+                .eq(PageConfigDO::getBusinessId, businessId)
+                .orderByDesc(PageConfigDO::getCreateTime));
+    }
+
     /**
      * 根据页面类型查询页面配置列表
      *
@@ -37,9 +43,9 @@ public interface PageConfigMapper extends BaseMapperX<PageConfigDO> {
      * @param businessType 业务类型代码
      * @return 页面配置列表
      */
-    default List<PageConfigDO> selectListByBusinessType(String businessType) {
+    default List<PageConfigDO> selectListByEntityType(String entityTypeCode) {
         return selectList(new LambdaQueryWrapperX<PageConfigDO>()
-                .likeLeft(PageConfigDO::getConfigCode, businessType + "-")
+                .likeLeft(PageConfigDO::getConfigCode, entityTypeCode + "-")
                 .orderByDesc(PageConfigDO::getCreateTime));
     }
 

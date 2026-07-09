@@ -7,6 +7,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageCon
 import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageConfigPageReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageConfigPublishReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageConfigSaveReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageConfigSummaryRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageConfigUpdateConfigByIdReqVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.pageconfig.PageConfigDO;
 
@@ -107,7 +108,12 @@ public interface PageConfigService {
      * @param businessType 业务类型代码
      * @return 页面配置列表
      */
-    List<PageConfigDO> getPageConfigListByBusinessType(String businessType);
+    List<PageConfigDO> getPageConfigListByEntityType(String entityTypeCode);
+
+    /**
+     * 按门户业务 id 获取功能页面摘要列表
+     */
+    List<PageConfigSummaryRespVO> getPageConfigSummaryListByBusinessId(Long businessId);
 
     /**
      * 获得页面配置分页

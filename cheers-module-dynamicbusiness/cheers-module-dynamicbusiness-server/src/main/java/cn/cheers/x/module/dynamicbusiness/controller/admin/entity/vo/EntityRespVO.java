@@ -47,9 +47,9 @@ public class EntityRespVO {
 
     // ---------- 兼容读路径（由 baseFields 投影，勿用于 Write） ----------
 
-    @Schema(description = "业务类型编码（= baseFields.businessTypeCode）", accessMode = Schema.AccessMode.READ_ONLY)
-    public String getBusinessTypeCode() {
-        return readBaseString("businessTypeCode");
+    @Schema(description = "业务类型编码（= baseFields.entityTypeCode）", accessMode = Schema.AccessMode.READ_ONLY)
+    public String getEntityTypeCode() {
+        return readBaseString("entityTypeCode");
     }
 
     @Schema(description = "模型ID（= baseFields.modelId）", accessMode = Schema.AccessMode.READ_ONLY)

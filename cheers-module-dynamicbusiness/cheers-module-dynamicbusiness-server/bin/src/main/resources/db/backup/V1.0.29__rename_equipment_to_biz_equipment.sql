@@ -49,7 +49,7 @@ SET
     dedicated_table_name = 'biz_equipment',
     update_time = CURRENT_TIMESTAMP,
     updater = 'system'
-WHERE business_type_code = 'equipment';
+WHERE entity_type_code = 'equipment';
 
 -- =====================================================
 -- 第五步：更新 system_dynamic_table 配置
@@ -87,6 +87,6 @@ COMMENT ON TABLE biz_equipment IS '设备管理专用表（业务数据表,使�
 -- 回滚方法（如需要）：
 -- ALTER TABLE biz_equipment RENAME TO equipment;
 -- ALTER SEQUENCE IF EXISTS biz_equipment_seq RENAME TO equipment_seq;
--- UPDATE system_business_type_config SET dedicated_table_name = 'equipment' WHERE business_type_code = 'equipment';
+-- UPDATE system_business_type_config SET dedicated_table_name = 'equipment' WHERE entity_type_code = 'equipment';
 -- UPDATE system_dynamic_table SET table_name = 'equipment' WHERE table_name = 'biz_equipment';
 

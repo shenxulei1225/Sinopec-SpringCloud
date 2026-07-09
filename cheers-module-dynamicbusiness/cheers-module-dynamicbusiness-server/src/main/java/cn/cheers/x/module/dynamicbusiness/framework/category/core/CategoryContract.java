@@ -8,6 +8,14 @@ public interface CategoryContract<I> {
     I getParentId();
     void setParentId(I parentId);
 
+    /** 父分类编码（迁移用；默认实现不参与持久化） */
+    default String getParentCode() {
+        return null;
+    }
+
+    default void setParentCode(String parentCode) {
+    }
+
     String getName();
     default void setName(String name) {
     }

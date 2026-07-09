@@ -14,7 +14,7 @@ import java.util.List;
 public class EntityPageReqVO extends PageParam {
 
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "模型ID（可选，用于查询特定模型下的实体）", example = "1")
     private Long modelId;

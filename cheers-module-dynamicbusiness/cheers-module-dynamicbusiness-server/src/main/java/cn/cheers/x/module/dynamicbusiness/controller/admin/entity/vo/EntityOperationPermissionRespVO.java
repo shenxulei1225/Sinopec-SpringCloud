@@ -28,7 +28,7 @@ public class EntityOperationPermissionRespVO {
     private String entityName;
 
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "模型ID", example = "1")
     private Long modelId;

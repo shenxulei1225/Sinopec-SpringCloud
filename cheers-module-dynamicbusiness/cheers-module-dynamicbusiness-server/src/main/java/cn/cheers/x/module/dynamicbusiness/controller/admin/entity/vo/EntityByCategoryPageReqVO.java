@@ -21,7 +21,7 @@ public class EntityByCategoryPageReqVO extends PageParam {
 
     @Schema(description = "内容业务类型编码（必填，用于跨业务类型查询）", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
     @NotBlank(message = "内容业务类型编码不能为空")
-    private String contentBusinessTypeCode;
+    private String contentEntityTypeCode;
 
     @Schema(description = "Model ID（可选，用于进一步过滤实体）", example = "1")
     private Long modelId;

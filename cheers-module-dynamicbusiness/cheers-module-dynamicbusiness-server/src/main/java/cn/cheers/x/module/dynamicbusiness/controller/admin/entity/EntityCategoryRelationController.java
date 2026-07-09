@@ -42,8 +42,8 @@ public class EntityCategoryRelationController {
     public CommonResult<EntityCategoryAssociationRespVO> associateByEntityIdAndCategoryId(
             @RequestParam("entityId") Long entityId,
             @RequestParam("categoryId") Long categoryId,
-            @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(relationService.associate(entityId, categoryId, businessTypeCode));
+            @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(relationService.associate(entityId, categoryId, entityTypeCode));
     }
 
     @DeleteMapping("/disassociate")
@@ -52,8 +52,8 @@ public class EntityCategoryRelationController {
     public CommonResult<EntityCategoryAssociationRespVO> disassociateByEntityIdAndCategoryId(
             @RequestParam("entityId") Long entityId,
             @RequestParam("categoryId") Long categoryId,
-            @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(relationService.disassociate(entityId, categoryId, businessTypeCode));
+            @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(relationService.disassociate(entityId, categoryId, entityTypeCode));
     }
 
     @GetMapping("/exists")
@@ -62,8 +62,8 @@ public class EntityCategoryRelationController {
     public CommonResult<Boolean> existsByEntityIdAndCategoryId(
             @RequestParam("entityId") Long entityId,
             @RequestParam("categoryId") Long categoryId,
-            @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(relationService.existsRelation(entityId, categoryId, businessTypeCode));
+            @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(relationService.existsRelation(entityId, categoryId, entityTypeCode));
     }
 
     @GetMapping("/entity/{entityId}/category-ids")
@@ -71,8 +71,8 @@ public class EntityCategoryRelationController {
     @Parameter(name = "entityId", description = "实体ID", required = true, example = "1001")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<List<Long>> listCategoryIdsByEntityId(@PathVariable("entityId") Long entityId,
-                                                              @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(relationService.listCategoryIdsByEntityId(entityId, businessTypeCode));
+                                                              @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(relationService.listCategoryIdsByEntityId(entityId, entityTypeCode));
     }
 
     // ==================== 单个操作（按 categoryId） ====================
@@ -82,8 +82,8 @@ public class EntityCategoryRelationController {
     @Parameter(name = "categoryId", description = "分类ID", required = true, example = "64")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<List<Long>> listEntityIdsByCategoryId(@PathVariable("categoryId") Long categoryId,
-                                                              @RequestParam("businessTypeCode") String businessTypeCode) {
-        return success(relationService.listEntityIdsByCategoryIdOnly(categoryId, businessTypeCode));
+                                                              @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(relationService.listEntityIdsByCategoryIdOnly(categoryId, entityTypeCode));
     }
 
 
@@ -94,9 +94,9 @@ public class EntityCategoryRelationController {
     @PreAuthorize("@ss.hasPermission('system:entity:update')")
     public CommonResult<BatchEntityCategoryAssociationRespVO> batchAssociateByCategoryIdAndEntityIds(
             @PathVariable("categoryId") Long categoryId,
-            @RequestParam("businessTypeCode") String businessTypeCode,
+            @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestBody List<Long> entityIds) {
-        return success(relationService.batchAssociateEntitiesToCategory(entityIds, categoryId, businessTypeCode));
+        return success(relationService.batchAssociateEntitiesToCategory(entityIds, categoryId, entityTypeCode));
     }
 
     @DeleteMapping("/category/{categoryId}/entities")
@@ -104,9 +104,9 @@ public class EntityCategoryRelationController {
     @PreAuthorize("@ss.hasPermission('system:entity:update')")
     public CommonResult<BatchEntityCategoryAssociationRespVO> batchDisassociateByCategoryIdAndEntityIds(
             @PathVariable("categoryId") Long categoryId,
-            @RequestParam("businessTypeCode") String businessTypeCode,
+            @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestBody List<Long> entityIds) {
-        return success(relationService.batchDisassociateEntitiesFromCategory(entityIds, categoryId, businessTypeCode));
+        return success(relationService.batchDisassociateEntitiesFromCategory(entityIds, categoryId, entityTypeCode));
     }
 
     // ==================== 批量操作（按 entityIds + categoryIds） ====================
@@ -117,7 +117,7 @@ public class EntityCategoryRelationController {
     public CommonResult<BatchEntityCategoryAssociationRespVO> batchAssociateByEntityIdsAndCategoryIds(
             @RequestBody @Valid BatchEntityCategoryAssociationReqVO reqVO) {
         return success(relationService.batchAssociateEntitiesToCategories(
-                reqVO.getEntityIds(), reqVO.getCategoryIds(), reqVO.getBusinessTypeCode()));
+                reqVO.getEntityIds(), reqVO.getCategoryIds(), reqVO.getEntityTypeCode()));
     }
 
     @PostMapping("/batch/disassociate")
@@ -126,7 +126,7 @@ public class EntityCategoryRelationController {
     public CommonResult<BatchEntityCategoryAssociationRespVO> batchDisassociateByEntityIdsAndCategoryIds(
             @RequestBody @Valid BatchEntityCategoryAssociationReqVO reqVO) {
         return success(relationService.batchDisassociateEntitiesFromCategories(
-                reqVO.getEntityIds(), reqVO.getCategoryIds(), reqVO.getBusinessTypeCode()));
+                reqVO.getEntityIds(), reqVO.getCategoryIds(), reqVO.getEntityTypeCode()));
     }
 
     @PostMapping("/batch/replace")
@@ -135,7 +135,7 @@ public class EntityCategoryRelationController {
     public CommonResult<BatchEntityCategoryAssociationRespVO> batchUpdateByEntityIdsAndCategoryIds(
             @RequestBody @Valid BatchEntityCategoryAssociationReqVO reqVO) {
         return success(relationService.batchUpdateAssociation(
-                reqVO.getEntityIds(), reqVO.getCategoryIds(), reqVO.getBusinessTypeCode()));
+                reqVO.getEntityIds(), reqVO.getCategoryIds(), reqVO.getEntityTypeCode()));
     }
 
     

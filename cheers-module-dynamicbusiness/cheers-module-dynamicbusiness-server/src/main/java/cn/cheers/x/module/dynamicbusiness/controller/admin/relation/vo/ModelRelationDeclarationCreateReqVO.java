@@ -20,5 +20,5 @@ public class ModelRelationDeclarationCreateReqVO {
     @Schema(description = "可关联的业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "personnel")
     @NotBlank(message = "目标业务类型不能为空")
     @Size(max = 64, message = "目标业务类型编码长度不能超过64个字符")
-    private String targetBusinessType;
+    private String targetEntityType;
 }

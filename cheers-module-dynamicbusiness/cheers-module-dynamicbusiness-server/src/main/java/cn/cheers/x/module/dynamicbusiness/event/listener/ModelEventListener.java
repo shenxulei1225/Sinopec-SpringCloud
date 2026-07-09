@@ -2,7 +2,7 @@ package cn.cheers.x.module.dynamicbusiness.event.listener;
 
 import cn.iocoder.yudao.framework.tenant.core.util.TenantUtils;
 import cn.cheers.x.module.dynamicbusiness.event.ModelCreatedEvent;
-import cn.cheers.x.module.dynamicbusiness.service.businesstype.BusinessTypeRelationService;
+import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeRelationService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -18,13 +18,13 @@ import java.util.List;
  *
  * <p>处理 Model 创建事件，实现以下功能：</p>
  * <ul>
- *   <li>暂时禁用：展开 BusinessType 关联（不再在Model层展开以避免字段爆炸）</li>
+ *   <li>暂时禁用：展开 EntityType 关联（不再在Model层展开以避免字段爆炸）</li>
  *   <li>预留：未来可能添加其他Model相关的事件处理</li>
  * </ul>
  *
  * <h3>变更说明</h3>
  * <ul>
- *   <li>FR-BDA-072: 已取消自动展开BusinessType关联到Model层面的功能</li>
+ *   <li>FR-BDA-072: 已取消自动展开EntityType关联到Model层面的功能</li>
  *   <li>原因：Model层展开会导致字段爆炸问题</li>
  * </ul>
  *
@@ -36,12 +36,12 @@ public class ModelEventListener {
 
     @Resource
     @Lazy // 避免循环依赖
-    private BusinessTypeRelationService businessTypeRelationService;
+    private EntityTypeRelationService entityTypeRelationService;
 
     /**
      * 处理 Model 创建事件
      *
-     * <p>Model创建事件处理 - 当前已禁用BusinessType关联展开功能</p>
+     * <p>Model创建事件处理 - 当前已禁用EntityType关联展开功能</p>
      *
      * @param event Model 创建事件
      */
@@ -60,8 +60,8 @@ public class ModelEventListener {
         // 在租户上下文中执行
         TenantUtils.execute(tenantId, () -> {
             try {
-                // 已禁用：展开已有的 BusinessType 关联到新 Model
-                // expandBusinessTypeRelations(event);
+                // 已禁用：展开已有的 EntityType 关联到新 Model
+                // expandEntityTypeRelations(event);
 
                 log.info("[onModelCreated][Model 创建事件处理完成: modelId={}, modelCode={}]",
                         event.getModelId(), event.getModelCode());
@@ -73,18 +73,18 @@ public class ModelEventListener {
     }
 
     /**
-     * 展开已有的 BusinessType 关联到新 Model
+     * 展开已有的 EntityType 关联到新 Model
      *
-     * <p>已禁用：当新 Model 创建时，不再自动展开 BusinessType 关联</p>
+     * <p>已禁用：当新 Model 创建时，不再自动展开 EntityType 关联</p>
      *
      * 变更原因：Model层展开会导致字段爆炸问题
      * 原需求：FR-BDA-072
      *
      * @param event Model 创建事件
      */
-    private void expandBusinessTypeRelations(ModelCreatedEvent event) {
-        // 已禁用：不再在Model层展开BusinessType关联
-        log.debug("[expandBusinessTypeRelations][跳过展开 BusinessType 关联: modelCode={}]",
+    private void expandEntityTypeRelations(ModelCreatedEvent event) {
+        // 已禁用：不再在Model层展开EntityType关联
+        log.debug("[expandEntityTypeRelations][跳过展开 EntityType 关联: modelCode={}]",
                 event.getModelCode());
     }
 }

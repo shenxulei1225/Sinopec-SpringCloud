@@ -6,7 +6,7 @@ import org.springframework.context.ApplicationEvent;
 /**
  * 关联目标创建事件
  * 
- * 当关联字段库中引用的目标（BusinessType 或 Model）被创建时发布此事件，用于：
+ * 当关联字段库中引用的目标（EntityType 或 Model）被创建时发布此事件，用于：
  * 1. 更新关联字段库中字段的状态（从"待建"变为"可用"）
  * 2. 其他需要响应关联目标创建的业务逻辑
  * 
@@ -30,7 +30,7 @@ public class RelationTargetCreatedEvent extends ApplicationEvent {
     private final String targetName;
 
     /** 业务类型编码（如果目标是 Model，则为所属业务类型编码） */
-    private final String businessTypeCode;
+    private final String entityTypeCode;
 
     /** 租户 ID */
     private final Long tenantId;
@@ -50,20 +50,20 @@ public class RelationTargetCreatedEvent extends ApplicationEvent {
      */
     public RelationTargetCreatedEvent(Object source, TargetType targetType, Long targetId, 
                                       String targetCode, String targetName, 
-                                      String businessTypeCode, Long tenantId) {
+                                      String entityTypeCode, Long tenantId) {
         super(source);
         this.targetType = targetType;
         this.targetId = targetId;
         this.targetCode = targetCode;
         this.targetName = targetName;
-        this.businessTypeCode = businessTypeCode;
+        this.entityTypeCode = entityTypeCode;
         this.tenantId = tenantId;
     }
 
     /**
-     * 创建 BusinessType 创建事件
+     * 创建 EntityType 创建事件
      */
-    public static RelationTargetCreatedEvent businessTypeCreated(Object source, Long targetId, 
+    public static RelationTargetCreatedEvent entityTypeCreated(Object source, Long targetId, 
                                                                   String targetCode, String targetName, 
                                                                   Long tenantId) {
         return new RelationTargetCreatedEvent(source, TargetType.BUSINESS_TYPE, targetId, 
@@ -75,15 +75,15 @@ public class RelationTargetCreatedEvent extends ApplicationEvent {
      */
     public static RelationTargetCreatedEvent modelCreated(Object source, Long targetId, 
                                                           String targetCode, String targetName, 
-                                                          String businessTypeCode, Long tenantId) {
+                                                          String entityTypeCode, Long tenantId) {
         return new RelationTargetCreatedEvent(source, TargetType.MODEL, targetId, 
-                targetCode, targetName, businessTypeCode, tenantId);
+                targetCode, targetName, entityTypeCode, tenantId);
     }
 
     /**
-     * 判断是否为 BusinessType 创建事件
+     * 判断是否为 EntityType 创建事件
      */
-    public boolean isBusinessTypeCreated() {
+    public boolean isEntityTypeCreated() {
         return targetType == TargetType.BUSINESS_TYPE;
     }
 
@@ -101,7 +101,7 @@ public class RelationTargetCreatedEvent extends ApplicationEvent {
                 ", targetId=" + targetId +
                 ", targetCode='" + targetCode + '\'' +
                 ", targetName='" + targetName + '\'' +
-                ", businessTypeCode='" + businessTypeCode + '\'' +
+                ", entityTypeCode='" + entityTypeCode + '\'' +
                 ", tenantId=" + tenantId +
                 '}';
     }

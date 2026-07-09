@@ -15,7 +15,7 @@ import lombok.*;
  * 
  * 层级关系：
  * <pre>
- * BusinessType (业务类型)
+ * EntityType (业务类型)
  *     └── Model (模型/品类)
  *             └── Entity (实体/实例)
  * </pre>
@@ -38,7 +38,7 @@ import lombok.*;
  * 
  * 字段说明：
  * - code: Model 自身的唯一编码，如 daily-task、fire-extinguisher-9kg
- * - businessTypeCode: Model 所属的业务类型编码，如 task、plan、equipment
+ * - entityTypeCode: Model 所属的业务类型编码，如 task、plan、equipment
  *
  * 关于“基础字段/固定列字段（BASE）”：
  * - BASE 字段的“定义”不存放在 dynamic_model 表中，而是由业务类型固定列字段配置统一定义，并在模型维度自动继承展示
@@ -76,7 +76,7 @@ public class ModelDO extends TenantBaseDO {
     /**
      * 业务类型编码（用于区分不同业务领域）
      */
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     /**
      * 模型描述

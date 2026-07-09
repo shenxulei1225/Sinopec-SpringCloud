@@ -67,7 +67,7 @@ public class PolicySnapshotServiceImpl implements PolicySnapshotService {
                 .id("psnap_" + UUID.randomUUID())
                 .policySetId(policySet.getId())
                 .policySetVersion(policySet.getVersion())
-                .businessTypeCode(policySet.getBusinessTypeCode())
+                .entityTypeCode(policySet.getEntityTypeCode())
                 .platformLawVersion(DEFAULT_PLATFORM_LAW_VERSION)
                 .resolvedSpec(policySet.getSpecParams())
                 .provenanceIndex(provenanceIndex)
@@ -101,7 +101,7 @@ public class PolicySnapshotServiceImpl implements PolicySnapshotService {
                 .policySnapshotId(snapshot.getId())
                 .policySetId(snapshot.getPolicySetId())
                 .policySetVersion(snapshot.getPolicySetVersion())
-                .businessTypeCode(snapshot.getBusinessTypeCode())
+                .entityTypeCode(snapshot.getEntityTypeCode())
                 .schedulingSpec(PolicySpecHelper.extractSchedulingSpec(snapshot.getResolvedSpec()))
                 .build();
     }

@@ -56,10 +56,10 @@ public class FieldBaseVO {
     // ========== 关联字段专用属性 ==========
 
     @Schema(description = "关联目标业务类型编码（关联字段使用）", example = "personnel")
-    private String targetBusinessType;
+    private String targetEntityType;
 
     @Schema(description = "关联目标业务类型名称（关联字段使用）", example = "人员管理")
-    private String targetBusinessTypeName;
+    private String targetEntityTypeName;
 
     @Schema(description = "关联目标 Model 编码（关联字段使用）", example = "employee")
     private String targetModelCode;

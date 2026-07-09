@@ -29,17 +29,17 @@ public class ProcessCapabilityBindingServiceImpl implements ProcessCapabilityBin
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ProcessCapabilityBindingRespDTO saveBinding(String businessTypeCode,
+    public ProcessCapabilityBindingRespDTO saveBinding(String entityTypeCode,
                                                        ProcessCapabilityBindingSaveReqDTO request) {
         CapabilityPackDO pack = capabilityPackService.requireById(request.getCapabilityPackId());
         String orchestrationRef = StringUtils.hasText(request.getOrchestrationRef())
                 ? request.getOrchestrationRef()
                 : pack.getOrchestrationRef();
 
-        ProcessCapabilityBindingDO existing = processCapabilityBindingMapper.selectByBusinessTypeCode(businessTypeCode);
+        ProcessCapabilityBindingDO existing = processCapabilityBindingMapper.selectByEntityTypeCode(entityTypeCode);
         if (existing == null) {
             ProcessCapabilityBindingDO binding = ProcessCapabilityBindingDO.builder()
-                    .businessTypeCode(businessTypeCode)
+                    .entityTypeCode(entityTypeCode)
                     .capabilityPackId(request.getCapabilityPackId())
                     .orchestrationRef(orchestrationRef)
                     .policySetId(request.getPolicySetId())
@@ -63,14 +63,14 @@ public class ProcessCapabilityBindingServiceImpl implements ProcessCapabilityBin
     }
 
     @Override
-    public ProcessCapabilityBindingRespDTO getBinding(String businessTypeCode) {
-        return toResp(requireExisting(businessTypeCode));
+    public ProcessCapabilityBindingRespDTO getBinding(String entityTypeCode) {
+        return toResp(requireExisting(entityTypeCode));
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ProcessCapabilityBindingRespDTO publishBinding(String businessTypeCode) {
-        ProcessCapabilityBindingDO binding = requireExisting(businessTypeCode);
+    public ProcessCapabilityBindingRespDTO publishBinding(String entityTypeCode) {
+        ProcessCapabilityBindingDO binding = requireExisting(entityTypeCode);
         binding.setStatus(BindingStatus.PUBLISHED.name());
         binding.setVersion(binding.getVersion() + 1);
         processCapabilityBindingMapper.updateById(binding);
@@ -78,16 +78,16 @@ public class ProcessCapabilityBindingServiceImpl implements ProcessCapabilityBin
     }
 
     @Override
-    public ProcessCapabilityBindingRespDTO getPublishedBinding(String businessTypeCode) {
-        ProcessCapabilityBindingDO binding = requireExisting(businessTypeCode);
+    public ProcessCapabilityBindingRespDTO getPublishedBinding(String entityTypeCode) {
+        ProcessCapabilityBindingDO binding = requireExisting(entityTypeCode);
         if (!BindingStatus.PUBLISHED.name().equals(binding.getStatus())) {
             throw exception(BINDING_NOT_PUBLISHED);
         }
         return toResp(binding);
     }
 
-    private ProcessCapabilityBindingDO requireExisting(String businessTypeCode) {
-        ProcessCapabilityBindingDO binding = processCapabilityBindingMapper.selectByBusinessTypeCode(businessTypeCode);
+    private ProcessCapabilityBindingDO requireExisting(String entityTypeCode) {
+        ProcessCapabilityBindingDO binding = processCapabilityBindingMapper.selectByEntityTypeCode(entityTypeCode);
         if (binding == null) {
             throw exception(BINDING_NOT_FOUND);
         }
@@ -96,7 +96,7 @@ public class ProcessCapabilityBindingServiceImpl implements ProcessCapabilityBin
 
     static ProcessCapabilityBindingRespDTO toResp(ProcessCapabilityBindingDO binding) {
         return ProcessCapabilityBindingRespDTO.builder()
-                .businessTypeCode(binding.getBusinessTypeCode())
+                .entityTypeCode(binding.getEntityTypeCode())
                 .capabilityPackId(binding.getCapabilityPackId())
                 .orchestrationRef(binding.getOrchestrationRef())
                 .policySetId(binding.getPolicySetId())

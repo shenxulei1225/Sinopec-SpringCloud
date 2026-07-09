@@ -1,4 +1,4 @@
-package cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype;
+package cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype;
 
 import cn.hutool.core.util.StrUtil;
 import lombok.AllArgsConstructor;
@@ -49,7 +49,7 @@ import java.io.Serializable;
  * </pre>
  * 
  * @author 基础服务模块
- * @see BusinessTypeDO#getPhysicalColumnMapping()
+ * @see EntityTypeDO#getPhysicalColumnMapping()
  */
 @Data
 @Builder

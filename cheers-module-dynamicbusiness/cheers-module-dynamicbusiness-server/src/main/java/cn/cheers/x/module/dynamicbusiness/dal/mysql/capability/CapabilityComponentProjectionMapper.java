@@ -13,8 +13,8 @@ import java.util.List;
  * <p>说明：</p>
  * <ul>
  *   <li>面向 capability_component_projection 表；</li>
- *   <li>按 (businessTypeCode, componentCode) 读取单条投影；</li>
- *   <li>按 businessTypeCode 读取一组组件投影；</li>
+ *   <li>按 (entityTypeCode, componentCode) 读取单条投影；</li>
+ *   <li>按 entityTypeCode 读取一组组件投影；</li>
  *   <li>不接受 dataSourceKey 作为查询键。</li>
  * </ul>
  */
@@ -24,21 +24,21 @@ public interface CapabilityComponentProjectionMapper extends BaseMapperX<Capabil
     /**
      * 按业务类型编码 + 组件编码查询 entity 投影（兼容旧调用）。
      */
-    default CapabilityComponentProjectionDO selectByBusinessTypeAndComponent(String businessTypeCode,
+    default CapabilityComponentProjectionDO selectByEntityTypeAndComponent(String entityTypeCode,
                                                                              String componentCode) {
-        return selectByBusinessTypeComponentAndDataKind(
-                businessTypeCode, componentCode, "entity");
+        return selectByEntityTypeComponentAndDataKind(
+                entityTypeCode, componentCode, "entity");
     }
 
     /**
      * 按业务类型编码 + 组件编码 + 数据种类查询唯一投影。
      */
-    default CapabilityComponentProjectionDO selectByBusinessTypeComponentAndDataKind(
-            String businessTypeCode,
+    default CapabilityComponentProjectionDO selectByEntityTypeComponentAndDataKind(
+            String entityTypeCode,
             String componentCode,
             String dataKind) {
         return selectOne(new LambdaQueryWrapperX<CapabilityComponentProjectionDO>()
-                .eq(CapabilityComponentProjectionDO::getBusinessTypeCode, businessTypeCode)
+                .eq(CapabilityComponentProjectionDO::getEntityTypeCode, entityTypeCode)
                 .eq(CapabilityComponentProjectionDO::getComponentCode, componentCode)
                 .eq(CapabilityComponentProjectionDO::getDataKind, dataKind));
     }
@@ -46,9 +46,9 @@ public interface CapabilityComponentProjectionMapper extends BaseMapperX<Capabil
     /**
      * 查询某个业务类型下全部组件投影（按组件编码升序）。
      */
-    default List<CapabilityComponentProjectionDO> selectByBusinessTypeCode(String businessTypeCode) {
+    default List<CapabilityComponentProjectionDO> selectByEntityTypeCode(String entityTypeCode) {
         return selectList(new LambdaQueryWrapperX<CapabilityComponentProjectionDO>()
-                .eq(CapabilityComponentProjectionDO::getBusinessTypeCode, businessTypeCode)
+                .eq(CapabilityComponentProjectionDO::getEntityTypeCode, entityTypeCode)
                 .orderByAsc(CapabilityComponentProjectionDO::getComponentCode));
     }
 }

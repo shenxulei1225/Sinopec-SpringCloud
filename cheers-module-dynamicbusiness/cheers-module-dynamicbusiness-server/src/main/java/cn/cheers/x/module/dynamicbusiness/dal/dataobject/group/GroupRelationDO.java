@@ -22,7 +22,13 @@ public class GroupRelationDO extends TenantBaseDO {
 
     private String groupType;
 
+    /** 分组编码（迁移幂等键，对应 {@link GroupDO#getCode()}） */
+    private String groupCode;
+
     private Long groupId;
+
+    /** 目标编码（FIELD 类型时为字段池 {@code dynamic_field.code}） */
+    private String targetCode;
 
     private Long targetId;
 

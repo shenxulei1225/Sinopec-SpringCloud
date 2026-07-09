@@ -19,9 +19,9 @@ public class DynamicTableRespVO {
     private Long modelId;
 
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "task")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
-    @Schema(description = "表名", requiredMode = Schema.RequiredMode.REQUIRED, example = "biz_task_001")
+    @Schema(description = "表名", requiredMode = Schema.RequiredMode.REQUIRED, example = "ent_task_001")
     private String tableName;
 
     @Schema(description = "表注释", example = "任务数据表")

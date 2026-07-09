@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
  * Entity 聚合统计 Mapper（PostgreSQL）
  *
  * <p>仅用于聚合统计（facet）。表名固定写 dynamic_entity，由 MyBatis-Plus DynamicTableNameInnerInterceptor
- * 结合 ThreadLocal 的 businessTypeCode 在运行时替换为 biz_xxx。</p>
+ * 结合 ThreadLocal 的 entityTypeCode 在运行时替换为 ent_xxx。</p>
  */
 @Mapper
 public interface EntityAggregationMapper extends BaseMapperX<EntityDO> {

@@ -20,14 +20,17 @@ public class PageConfigPublishReqVO {
     @Schema(description = "页面代码（唯一标识），用于页面加载", example = "region-management-default")
     private String pageCode;
 
-    @Schema(description = "业务类型代码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
-    @NotBlank(message = "业务类型不能为空")
-    private String businessType;
+    @Schema(description = "实体类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
+    @NotBlank(message = "实体类型编码不能为空")
+    private String entityTypeCode;
 
     @Schema(description = "父菜单ID（可选，不传则自动推断）", example = "100")
     private Long parentMenuId;
 
     @Schema(description = "菜单图标", example = "icon-equipment")
     private String icon;
+
+    @Schema(description = "所属门户业务 id", example = "100")
+    private Long businessId;
 }
 

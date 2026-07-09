@@ -4,8 +4,8 @@ import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.AssociationTargetRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldRespVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo.BusinessTypeRespVO;
-import cn.cheers.x.module.dynamicbusiness.service.businesstype.BusinessTypeService;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeRespVO;
+import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
 import cn.cheers.x.module.dynamicbusiness.service.field.FieldService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -41,7 +41,7 @@ public class AssociationFieldController {
     @Resource
     private FieldService fieldService;
     @Resource
-    private BusinessTypeService businessTypeService;
+    private EntityTypeService entityTypeService;
 
     @PostMapping("/create")
     @Operation(summary = "新增业务关联字段(REF_Multi)")
@@ -84,24 +84,24 @@ public class AssociationFieldController {
 
     @GetMapping("/available-targets")
     @Operation(summary = "获取可关联的业务模块列表（按业务类型，不依赖关联字段库）")
-    @Parameter(name = "excludeBusinessTypeCode", description = "排除的业务模块编码(可选,通常为当前模块编码)", example = "task")
+    @Parameter(name = "excludeEntityTypeCode", description = "排除的业务模块编码(可选,通常为当前模块编码)", example = "task")
     @Parameter(name = "status", description = "保留参数，当前未使用", example = "1")
-    @PreAuthorize("@ss.hasPermission('system:business-type:query')")
+    @PreAuthorize("@ss.hasPermission('system:entity-type:query')")
     public CommonResult<List<AssociationTargetRespVO>> getAvailableTargets(
-            @RequestParam(value = "excludeBusinessTypeCode", required = false) String excludeBusinessTypeCode,
+            @RequestParam(value = "excludeEntityTypeCode", required = false) String excludeEntityTypeCode,
             @RequestParam(value = "status", required = false) Integer status) {
-        List<BusinessTypeRespVO> allTypes = businessTypeService.listAll();
+        List<EntityTypeRespVO> allTypes = entityTypeService.listAll();
         List<AssociationTargetRespVO> result = new ArrayList<>();
-        for (BusinessTypeRespVO type : allTypes) {
+        for (EntityTypeRespVO type : allTypes) {
             if (type.getCode() == null) {
                 continue;
             }
-            if (excludeBusinessTypeCode != null && excludeBusinessTypeCode.equals(type.getCode())) {
+            if (excludeEntityTypeCode != null && excludeEntityTypeCode.equals(type.getCode())) {
                 continue;
             }
             result.add(AssociationTargetRespVO.builder()
-                    .businessTypeCode(type.getCode())
-                    .businessTypeName(type.getName())
+                    .entityTypeCode(type.getCode())
+                    .entityTypeName(type.getName())
                     .fieldId(null)
                     .fieldName(null)
                     .fieldCode(null)

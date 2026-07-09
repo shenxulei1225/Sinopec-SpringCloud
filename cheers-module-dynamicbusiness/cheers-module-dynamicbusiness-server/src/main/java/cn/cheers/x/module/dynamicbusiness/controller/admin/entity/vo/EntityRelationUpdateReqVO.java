@@ -18,11 +18,11 @@ public class EntityRelationUpdateReqVO {
 
     @Schema(description = "源实体业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
     @NotBlank(message = "源实体业务类型编码不能为空")
-    private String sourceBusinessTypeCode;
+    private String sourceEntityTypeCode;
 
     @Schema(description = "目标实体业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "task")
     @NotBlank(message = "目标实体业务类型编码不能为空")
-    private String targetBusinessTypeCode;
+    private String targetEntityTypeCode;
 
     @Schema(description = "关联类型（ONE_TO_ONE/ONE_TO_MANY/MANY_TO_MANY）", example = "ONE_TO_MANY")
     private String relationType;

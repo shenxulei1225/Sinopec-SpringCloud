@@ -42,7 +42,7 @@ public interface ModelConvert {
         vo.setId(bean.getId());
         vo.setCode(bean.getCode());
         vo.setName(bean.getName());
-        vo.setBusinessTypeCode(bean.getBusinessTypeCode());
+        vo.setEntityTypeCode(bean.getEntityTypeCode());
         vo.setDescription(bean.getDescription());
         vo.setStatus(bean.getStatus());
         vo.setSort(bean.getSort());

@@ -27,7 +27,7 @@ import org.apache.ibatis.type.JdbcType;
  *
  * <p>索引语义：</p>
  * <ul>
- *   <li>唯一键是 (businessTypeCode, componentCode, dataKind, tenantId)；</li>
+ *   <li>唯一键是 (entityTypeCode, componentCode, dataKind, tenantId)；</li>
  *   <li>该表是 business_capability 的投影结果，不是运行时临时拼装缓存。</li>
  * </ul>
  */
@@ -46,12 +46,12 @@ public class CapabilityComponentProjectionDO extends TenantBaseDO {
     private Long id;
 
     /**
-     * 业务类型编码（businessTypeCode）。
+     * 业务类型编码（entityTypeCode）。
      *
-     * <p>与 business_capability.business_type_code 对齐，表示投影来源业务能力。</p>
+     * <p>与 business_capability.entity_type_code 对齐，表示投影来源业务能力。</p>
      */
-    @TableField("business_type_code")
-    private String businessTypeCode;
+    @TableField("entity_type_code")
+    private String entityTypeCode;
 
     /**
      * 组件维度编码（componentCode）。

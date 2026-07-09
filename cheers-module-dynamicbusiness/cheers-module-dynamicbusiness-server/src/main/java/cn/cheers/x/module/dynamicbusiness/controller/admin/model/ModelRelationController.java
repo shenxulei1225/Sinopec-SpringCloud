@@ -109,7 +109,7 @@ public class ModelRelationController {
                 reqVO.getTargetModelCode(),
                 null,
                 false, // 手动创建
-                null   // 无 BusinessType 关联
+                null   // 无 EntityType 关联
         );
         return success(relationId);
     }

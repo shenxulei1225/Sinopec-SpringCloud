@@ -34,7 +34,7 @@ public interface TemplateConvert {
     TemplateDO convert(TemplateCreateReqVO bean);
 
     @Mapping(target = "code", ignore = true)
-    @Mapping(target = "businessTypeCode", ignore = true)  // 业务类型不可修改
+    @Mapping(target = "entityTypeCode", ignore = true)  // 业务类型不可修改
     @Mapping(target = "isSystem", ignore = true)          // 系统标记不可修改
     TemplateDO convert(TemplateUpdateReqVO bean);
 
@@ -51,7 +51,7 @@ public interface TemplateConvert {
         vo.setId(bean.getId());
         vo.setCode(bean.getCode());
         vo.setName(bean.getName());
-        vo.setBusinessTypeCode(bean.getBusinessTypeCode());
+        vo.setEntityTypeCode(bean.getEntityTypeCode());
         vo.setDescription(bean.getDescription());
         vo.setStatus(bean.getStatus());
         vo.setIsSystem(bean.getIsSystem());

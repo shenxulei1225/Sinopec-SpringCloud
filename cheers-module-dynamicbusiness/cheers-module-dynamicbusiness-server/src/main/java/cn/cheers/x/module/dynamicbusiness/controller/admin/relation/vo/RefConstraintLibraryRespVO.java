@@ -13,7 +13,7 @@ public class RefConstraintLibraryRespVO {
     private Long id;
 
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "personnel")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "Ref 目标类型", example = "personnel")
     private String refTargetType;

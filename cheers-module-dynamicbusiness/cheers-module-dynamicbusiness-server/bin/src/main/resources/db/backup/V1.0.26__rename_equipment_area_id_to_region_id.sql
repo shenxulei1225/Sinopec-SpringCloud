@@ -24,5 +24,5 @@ SET field_code = 'regionId',
     field_name = '所属区域',
     description = '设备所属区域（关联 Region 业务类型）',
     type_config = '{"refBusinessType": "Region", "refDisplayField": "name"}'
-WHERE business_type_code = 'equipment' 
+WHERE entity_type_code = 'equipment' 
   AND field_code = 'areaId';

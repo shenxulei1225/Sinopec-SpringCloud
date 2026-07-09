@@ -16,6 +16,9 @@ public class PageConfigRespVO {
     @Schema(description = "主键ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "1024")
     private Long id;
 
+    @Schema(description = "所属门户业务 id", example = "100")
+    private Long businessId;
+
     @Schema(description = "关联菜单ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "100")
     private Long menuId;
 

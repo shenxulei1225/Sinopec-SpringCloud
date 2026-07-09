@@ -143,15 +143,15 @@ public class IndexManagementController {
         
         ResyncReqVO.ResyncType type = reqVO.getType();
         List<Long> entityIds = reqVO.getEntityIds();
-        String businessTypeCode = reqVO.getBusinessTypeCode();
+        String entityTypeCode = reqVO.getEntityTypeCode();
         
         if (type == ResyncReqVO.ResyncType.BY_IDS && entityIds != null) {
-            // 按 Entity ID 列表补同步（需要 businessTypeCode）
-            if (businessTypeCode == null || businessTypeCode.isEmpty()) {
-                throw new IllegalArgumentException("BY_IDS 类型补同步必须提供 businessTypeCode");
+            // 按 Entity ID 列表补同步（需要 entityTypeCode）
+            if (entityTypeCode == null || entityTypeCode.isEmpty()) {
+                throw new IllegalArgumentException("BY_IDS 类型补同步必须提供 entityTypeCode");
             }
             totalCount = entityIds.size();
-            successCount = indexRebuildService.resyncByEntityIds(entityIds, businessTypeCode);
+            successCount = indexRebuildService.resyncByEntityIds(entityIds, entityTypeCode);
             failedCount = totalCount - successCount;
         } else if (type == ResyncReqVO.ResyncType.BY_TIME_RANGE) {
             // 按时间范围补同步
@@ -192,7 +192,7 @@ public class IndexManagementController {
             "- 按状态过滤（PENDING/RETRYING/FAILED/SUCCESS）\n" +
             "- 按时间范围过滤"
     )
-    @Parameter(name = "businessTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
     @Parameter(name = "modelId", description = "Model ID（可选）", example = "1")
     @Parameter(name = "status", description = "状态（可选）", example = "FAILED")
     @Parameter(name = "startTime", description = "开始时间（可选）")
@@ -201,7 +201,7 @@ public class IndexManagementController {
     @Parameter(name = "pageSize", description = "每页条数（默认10）", example = "10")
     @PreAuthorize("@ss.hasPermission('system:entity:index:query')")
     public CommonResult<PageResult<SyncFailLogVO>> getSyncFailLogs(
-            @RequestParam("businessTypeCode") String businessTypeCode,
+            @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam(value = "modelId", required = false) Long modelId,
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "startTime", required = false) LocalDateTime startTime,
@@ -209,9 +209,9 @@ public class IndexManagementController {
             @RequestParam(value = "pageNo", defaultValue = "1") Integer pageNo,
             @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize) {
         
-        // 获取待处理的失败日志（按 businessTypeCode 过滤）
+        // 获取待处理的失败日志（按 entityTypeCode 过滤）
         List<cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntitySyncFailLogDO> failLogs = 
-            entitySyncService.getPendingFailLogsByBusinessTypeCode(businessTypeCode, pageSize);
+            entitySyncService.getPendingFailLogsByEntityTypeCode(entityTypeCode, pageSize);
         
         // 转换为 VO（使用 setter 方法）
         List<SyncFailLogVO> voList = failLogs.stream()
@@ -220,7 +220,7 @@ public class IndexManagementController {
                 vo.setId(log.getId());
                 vo.setEntityId(log.getEntityId());
                 vo.setModelId(log.getModelId());
-                vo.setBusinessTypeCode(log.getBusinessTypeCode());
+                vo.setEntityTypeCode(log.getEntityTypeCode());
                 vo.setEngineType(log.getEngineType());
                 vo.setFailReason(log.getFailReason());
                 vo.setRetryCount(log.getRetryCount());
@@ -232,8 +232,8 @@ public class IndexManagementController {
             })
             .collect(Collectors.toList());
         
-        // 获取总数（按 businessTypeCode 过滤）
-        long total = entitySyncService.countPendingFailLogsByBusinessTypeCode(businessTypeCode);
+        // 获取总数（按 entityTypeCode 过滤）
+        long total = entitySyncService.countPendingFailLogsByEntityTypeCode(entityTypeCode);
         
         return success(new PageResult<>(voList, total));
     }
@@ -241,11 +241,11 @@ public class IndexManagementController {
     @PostMapping("/sync/fail-logs/retry")
     @Operation(
         summary = "重试失败的同步",
-        description = "重试指定的同步失败记录。失败日志中已包含 businessTypeCode，无需额外传入。"
+        description = "重试指定的同步失败记录。失败日志中已包含 entityTypeCode，无需额外传入。"
     )
     @PreAuthorize("@ss.hasPermission('system:entity:index:resync')")
     public CommonResult<Integer> retryFailedSync(@RequestBody List<Long> failLogIds) {
-        // 通过失败日志处理，失败日志中已包含 businessTypeCode
+        // 通过失败日志处理，失败日志中已包含 entityTypeCode
         int successCount = indexRebuildService.resyncPendingFailLogs(failLogIds.size());
         return success(successCount);
     }

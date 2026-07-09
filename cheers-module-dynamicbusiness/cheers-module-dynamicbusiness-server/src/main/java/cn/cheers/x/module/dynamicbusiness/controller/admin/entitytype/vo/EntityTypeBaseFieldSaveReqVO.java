@@ -1,4 +1,4 @@
-package cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo;
+package cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -13,7 +13,7 @@ import lombok.Data;
  * 
  * <h3>应用场景</h3>
  * <ul>
- *   <li><b>接口</b>：POST /system/business-type/base-field/create、PUT /system/business-type/base-field/update</li>
+ *   <li><b>接口</b>：POST /system/entity-type/base-field/create、PUT /system/entity-type/base-field/update</li>
  *   <li><b>场景1</b>：系统初始化时，为 equipment 业务类型定义 code、name、status 等固定列</li>
  * </ul>
  * 
@@ -27,12 +27,12 @@ import lombok.Data;
  * 
  * <h3>与其他 VO 的关系</h3>
  * <ul>
- *   <li>响应结果 → {@link BusinessTypeBaseFieldRespVO}</li>
+ *   <li>响应结果 → {@link EntityTypeBaseFieldRespVO}</li>
  * </ul>
  */
 @Schema(description = "管理后台 - 业务类型固定列字段保存 Request VO")
 @Data
-public class BusinessTypeBaseFieldSaveReqVO {
+public class EntityTypeBaseFieldSaveReqVO {
 
     @Schema(description = "字段ID（更新时必填）", example = "1")
     private Long id;
@@ -40,7 +40,7 @@ public class BusinessTypeBaseFieldSaveReqVO {
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
     @NotBlank(message = "业务类型编码不能为空")
     @Size(max = 50, message = "业务类型编码长度不能超过50个字符")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "字段编码（对应数据库列名）", requiredMode = Schema.RequiredMode.REQUIRED, example = "code")
     @NotBlank(message = "字段编码不能为空")

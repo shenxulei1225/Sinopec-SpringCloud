@@ -90,10 +90,10 @@ public interface RelationFieldLibraryService {
     /**
      * 获取可用的关联字段列表（目标已存在）
      * 
-     * @param refBusinessType 关联业务类型（可选过滤）
+     * @param refEntityType 关联业务类型（可选过滤）
      * @return 可用的字段列表
      */
-    List<RelationFieldLibraryRespVO> getAvailableRelationFields(String refBusinessType);
+    List<RelationFieldLibraryRespVO> getAvailableRelationFields(String refEntityType);
 
     /**
      * 分页查询关联字段
@@ -116,14 +116,14 @@ public interface RelationFieldLibraryService {
      * 检查关联目标是否存在
      * 
      * 检查规则：
-     * - 业务类型编码对应的 BusinessTypeConfig 存在
+     * - 业务类型编码对应的 EntityTypeConfig 存在
      * - Model 编码对应的 Model 存在且属于该业务类型
      * 
      * @param businessType 业务类型编码
      * @param modelCode Model 编码
      * @return 是否存在
      */
-    boolean checkTargetExists(String businessType, String modelCode);
+    boolean checkTargetExists(String entityType, String modelCode);
 
     /**
      * 获取关联业务类型的名称信息
@@ -132,7 +132,7 @@ public interface RelationFieldLibraryService {
      * @param modelCode Model 编码（兼容旧逻辑，可为空）
      * @return 名称信息数组 [业务类型名称, Model名称]，不存在时对应位置为 null
      */
-    String[] getTargetNames(String businessType, String modelCode);
+    String[] getTargetNames(String entityType, String modelCode);
 
     // ========== 使用次数管理 ==========
 
@@ -173,5 +173,5 @@ public interface RelationFieldLibraryService {
      * @param businessType 业务类型编码
      * @param modelCode Model 编码
      */
-    void validateTargetAvailable(String businessType, String modelCode);
+    void validateTargetAvailable(String entityType, String modelCode);
 }

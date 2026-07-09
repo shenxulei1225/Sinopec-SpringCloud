@@ -34,7 +34,7 @@ public class ScheduleSlotDO extends TenantBaseDO {
 
     private String workId;
 
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     private OffsetDateTime plannedStart;
 

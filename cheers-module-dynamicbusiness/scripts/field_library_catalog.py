@@ -3,7 +3,7 @@
 分组与平台业务场景对齐：用户配模型时按「设备管理」「告警管理」等找字段，
 而不是按字段类型（日期、数值）找。
 
-供 generate-field-library.py 生成 seed。
+供 export-platform-import.py / generate-smart-station-import.py 等生成 seed 时引用。
 """
 from __future__ import annotations
 

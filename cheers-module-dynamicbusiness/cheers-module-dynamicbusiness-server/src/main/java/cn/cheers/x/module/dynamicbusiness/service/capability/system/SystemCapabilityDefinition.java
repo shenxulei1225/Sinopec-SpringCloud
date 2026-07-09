@@ -6,17 +6,17 @@ import lombok.Getter;
 import java.util.List;
 
 /**
- * 系统业务能力注册定义（能力源来自 yudao system 模块，非 dynamic_business_type）。
+ * 系统业务能力注册定义（能力源来自 yudao system 模块，非 dynamic_entity_type）。
  */
 @Getter
 @Builder
 public class SystemCapabilityDefinition {
 
-    /** 业务类型编码，与 dataSource.businessTypeCode 一致，如 dept、user */
-    private final String businessTypeCode;
+    /** 业务类型编码，与 dataSource.entityTypeCode 一致，如 dept、user */
+    private final String entityTypeCode;
 
     /** 展示名 */
-    private final String businessTypeName;
+    private final String entityTypeName;
 
     /** 列表读端点 URL */
     private final String readUrl;

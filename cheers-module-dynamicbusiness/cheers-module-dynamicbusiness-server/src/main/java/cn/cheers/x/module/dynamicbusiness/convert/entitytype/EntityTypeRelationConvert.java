@@ -1,20 +1,20 @@
-package cn.cheers.x.module.dynamicbusiness.convert.businesstype;
+package cn.cheers.x.module.dynamicbusiness.convert.entitytype;
 
-import cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo.BusinessTypeRelationCreateReqVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo.BusinessTypeRelationRespVO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeRelationDO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeRelationCreateReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeRelationRespVO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeRelationDO;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 
 @Mapper
-public interface BusinessTypeRelationConvert {
-    BusinessTypeRelationConvert INSTANCE = Mappers.getMapper(BusinessTypeRelationConvert.class);
+public interface EntityTypeRelationConvert {
+    EntityTypeRelationConvert INSTANCE = Mappers.getMapper(EntityTypeRelationConvert.class);
 
-    BusinessTypeRelationDO convert(BusinessTypeRelationCreateReqVO bean);
+    EntityTypeRelationDO convert(EntityTypeRelationCreateReqVO bean);
 
-    BusinessTypeRelationRespVO convert(BusinessTypeRelationDO bean);
+    EntityTypeRelationRespVO convert(EntityTypeRelationDO bean);
 
-    List<BusinessTypeRelationRespVO> convertList(List<BusinessTypeRelationDO> list);
+    List<EntityTypeRelationRespVO> convertList(List<EntityTypeRelationDO> list);
 }

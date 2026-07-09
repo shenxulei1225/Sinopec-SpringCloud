@@ -332,7 +332,7 @@ public class CategoryServiceImpl implements CategoryService {
         ModelDO model = modelMapper.selectById(reqVO.getEntityModelId());
         
         EntityCreateReqVO entityReqVO = EntityWriteReqMaps.createReq(
-                model.getBusinessTypeCode(),
+                model.getEntityTypeCode(),
                 reqVO.getEntityModelId(),
                 reqVO.getName(),
                 reqVO.getStatus(),
@@ -348,7 +348,7 @@ public class CategoryServiceImpl implements CategoryService {
         Long entityId = data.getId();
 
         // 3. 设置 treePath
-        entityCoreService.moveEntity(entityId, data.getBusinessTypeCode(), data.getParentId());
+        entityCoreService.moveEntity(entityId, data.getEntityTypeCode(), data.getParentId());
 
         // 4. 同步关联关系
         // 使用已查询的 model 变量，无需再次查询
@@ -358,13 +358,13 @@ public class CategoryServiceImpl implements CategoryService {
         // 5. 清除缓存
         entityCacheEvictionService.evictEntityCaches(
                 EntityFieldMapsSupport.getRequiredModelId(entityReqVO.getBaseFields()),
-                EntityFieldMapsSupport.getRequiredBusinessTypeCode(entityReqVO.getBaseFields()));
+                EntityFieldMapsSupport.getRequiredEntityTypeCode(entityReqVO.getBaseFields()));
 
         // 6. 发布事件
         entityLifecycleEventPublisher.publishEntityCreatedEvent(
                 EntityFieldMapsSupport.getRequiredModelId(entityReqVO.getBaseFields()),
                 entityId,
-                EntityFieldMapsSupport.getRequiredBusinessTypeCode(entityReqVO.getBaseFields()),
+                EntityFieldMapsSupport.getRequiredEntityTypeCode(entityReqVO.getBaseFields()),
                 data);
 
         return entityId;
@@ -472,7 +472,7 @@ public class CategoryServiceImpl implements CategoryService {
         if (model == null) {
             return;
         }
-        deleteEntityForCategory(link.getEntityId(), model.getBusinessTypeCode(), false);
+        deleteEntityForCategory(link.getEntityId(), model.getEntityTypeCode(), false);
     }
 
     private void syncBoundEntityIfNeeded(Long categoryId, CategoryUpdateReqVO reqVO) {
@@ -488,7 +488,7 @@ public class CategoryServiceImpl implements CategoryService {
         if (model == null) {
             return;
         }
-        EntityDO entityDO = entityCoreService.get(link.getEntityId(), model.getBusinessTypeCode());
+        EntityDO entityDO = entityCoreService.get(link.getEntityId(), model.getEntityTypeCode());
         EntityRespVO existingEntity = entityDO != null ? EntityDoVoHelper.toRespVO(entityDO, customFieldValidationService) : null;
         if (existingEntity == null) {
             return;
@@ -496,7 +496,7 @@ public class CategoryServiceImpl implements CategoryService {
 
         EntityUpdateReqVO entityUpdateReqVO = EntityWriteReqMaps.updateReq(
                 link.getEntityId(),
-                existingEntity.getBusinessTypeCode(),
+                existingEntity.getEntityTypeCode(),
                 existingEntity.getModelId(),
                 reqVO.getName() != null ? reqVO.getName() : existingEntity.getName(),
                 reqVO.getStatus() != null ? reqVO.getStatus() : existingEntity.getStatus(),
@@ -505,7 +505,7 @@ public class CategoryServiceImpl implements CategoryService {
                 reqVO.getCustomFields());
 
         // Replicate the update logic from EntityServiceImpl
-        EntityDO db = entityCoreService.get(entityUpdateReqVO.getId(), existingEntity.getBusinessTypeCode());
+        EntityDO db = entityCoreService.get(entityUpdateReqVO.getId(), existingEntity.getEntityTypeCode());
         if (db == null) {
             throw new ServiceException(404, "实体不存在");
         }
@@ -518,18 +518,18 @@ public class CategoryServiceImpl implements CategoryService {
         Map<String, Object> newCustomFields = entityBusinessHelper.emptyIfNull(entityUpdateReqVO.getCustomFields());
         entityRelationSyncService.syncRelationsOnUpdate(update, model, newCustomFields, oldCustomFields);
 
-        entityCacheEvictionService.evictEntityCaches(model.getId(), model.getBusinessTypeCode());
+        entityCacheEvictionService.evictEntityCaches(model.getId(), model.getEntityTypeCode());
         entityCacheEvictionService.evictEntity(entityUpdateReqVO.getId());
 
         List<String> changedFields = entityBusinessHelper.extractFieldCodes(
                 entityUpdateReqVO.getBaseFields(), entityUpdateReqVO.getCustomFields());
-        entityLifecycleEventPublisher.publishEntityUpdatedEvent(model.getId(), entityUpdateReqVO.getId(), model.getBusinessTypeCode(), changedFields, update);
+        entityLifecycleEventPublisher.publishEntityUpdatedEvent(model.getId(), entityUpdateReqVO.getId(), model.getEntityTypeCode(), changedFields, update);
 
         String newName = EntityFieldMapsSupport.asStringFromMap(entityUpdateReqVO.getBaseFields(), "name");
         if (newName != null && !newName.equals(oldName)) {
             entityLifecycleEventPublisher.publishEntityNameChangedEvent(
                     entityUpdateReqVO.getId(), oldName, newName,
-                    model.getBusinessTypeCode(), model.getCode(), db.getTenantId());
+                    model.getEntityTypeCode(), model.getCode(), db.getTenantId());
         }
     }
 
@@ -583,10 +583,10 @@ public class CategoryServiceImpl implements CategoryService {
         List<CategoryEntityLinkDO> links = categoryEntityLinkService.getLinksByCategoryIds(categoryIdsToDelete);
         for (CategoryEntityLinkDO link : links) {
             if (link.getEntityId() != null) {
-                // 模式C：通过 Model 获取真正的 businessTypeCode 进行路由
+                // 模式C：通过 Model 获取真正的 entityTypeCode 进行路由
                 ModelDO model = modelMapper.selectById(link.getEntityModelId());
                 if (model != null) {
-                    deleteEntityForCategory(link.getEntityId(), model.getBusinessTypeCode(), false);
+                    deleteEntityForCategory(link.getEntityId(), model.getEntityTypeCode(), false);
                 }
                 categoryEntityLinkService.unlinkCategoryEntity(link.getCategoryId());
             }
@@ -630,10 +630,10 @@ public class CategoryServiceImpl implements CategoryService {
             respVO.setIsEntity(true);
             respVO.setEntityModelId(link.getEntityModelId());
             try {
-                // 模式C：通过 Model 获取真正的 businessTypeCode 进行路由
+                // 模式C：通过 Model 获取真正的 entityTypeCode 进行路由
                 ModelDO model = modelMapper.selectById(link.getEntityModelId());
                 if (model != null) {
-                    EntityDO entityDO = entityCoreService.get(link.getEntityId(), model.getBusinessTypeCode());
+                    EntityDO entityDO = entityCoreService.get(link.getEntityId(), model.getEntityTypeCode());
                     if (entityDO != null) {
                         EntityRespVO entityRespVO = EntityDoVoHelper.toRespVO(entityDO, customFieldValidationService);
                         respVO.setCustomFields(entityRespVO.getCustomFields());
@@ -1144,11 +1144,11 @@ public class CategoryServiceImpl implements CategoryService {
         return path;
     }
 
-    private void deleteEntityForCategory(Long id, String businessTypeCode, Boolean forceDelete) {
+    private void deleteEntityForCategory(Long id, String entityTypeCode, Boolean forceDelete) {
         // 1. 使用 CoreService 查询实体
-        EntityDO db = entityCoreService.get(id, businessTypeCode);
+        EntityDO db = entityCoreService.get(id, entityTypeCode);
         if (db == null) {
-            log.warn("分类关联的实体不存在，无需删除: entityId={}, businessTypeCode={}", id, businessTypeCode);
+            log.warn("分类关联的实体不存在，无需删除: entityId={}, entityTypeCode={}", id, entityTypeCode);
             return;
         }
 
@@ -1165,14 +1165,14 @@ public class CategoryServiceImpl implements CategoryService {
         entityRelationMapper.deleteByEntityId(id);
 
         // 4. 使用 CoreService 删除实体
-        entityCoreService.delete(id, businessTypeCode);
+        entityCoreService.delete(id, entityTypeCode);
 
         // 5. 清除缓存
-        entityCacheEvictionService.evictEntityCaches(db.getModelId(), businessTypeCode);
+        entityCacheEvictionService.evictEntityCaches(db.getModelId(), entityTypeCode);
         entityCacheEvictionService.evictEntity(id);
 
         // 6. 发布事件
-        entityLifecycleEventPublisher.publishEntityDeletedEvent(db.getModelId(), id, businessTypeCode);
+        entityLifecycleEventPublisher.publishEntityDeletedEvent(db.getModelId(), id, entityTypeCode);
     }
 
     private String generateCode() {

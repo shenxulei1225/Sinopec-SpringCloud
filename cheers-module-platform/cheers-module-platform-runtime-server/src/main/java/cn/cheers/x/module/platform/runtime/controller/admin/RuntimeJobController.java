@@ -42,11 +42,11 @@ public class RuntimeJobController {
     @GetMapping("/slots")
     @Operation(summary = "按计划时间范围查询计划点")
     public CommonResult<List<ScheduleSlotDTO>> listSlots(
-            @RequestParam(value = "businessTypeCode", required = false) String businessTypeCode,
+            @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode,
             @RequestParam(value = "from", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
             @RequestParam(value = "to", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to) {
-        return success(runtimeQueryService.listSlots(businessTypeCode, from, to));
+        return success(runtimeQueryService.listSlots(entityTypeCode, from, to));
     }
 }

@@ -16,8 +16,8 @@ import java.util.Map;
 @AllArgsConstructor
 public class ResolveWorkItemsReqDTO {
 
-    @NotBlank(message = "businessTypeCode 不能为空")
-    private String businessTypeCode;
+    @NotBlank(message = "entityTypeCode 不能为空")
+    private String entityTypeCode;
 
     @NotEmpty(message = "instances 不能为空")
     private List<SourceInstanceInputDTO> instances;

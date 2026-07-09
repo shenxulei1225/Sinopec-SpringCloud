@@ -56,12 +56,12 @@ public class BidirectionalRelationController {
         description = "获取引用当前实体的所有其他实体,按 Model 分组返回。系统自动发现所有关联关系,无需用户额外配置。"
     )
     @Parameter(name = "id", description = "实体 ID", required = true, example = "123")
-    @Parameter(name = "businessTypeCode", description = "业务类型编码", required = false, example = "tunnel")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码", required = false, example = "tunnel")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<List<RelatedEntityVO>> getReverseRelations(
             @RequestParam("id") Long id,
-            @RequestParam(value = "businessTypeCode", required = false) String businessTypeCode) {
-        return success(bidirectionalRelationService.getReverseRelations(id, businessTypeCode));
+            @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode) {
+        return success(bidirectionalRelationService.getReverseRelations(id, entityTypeCode));
     }
 
     @GetMapping("/entity/reverse-relations-by-model")
@@ -71,18 +71,18 @@ public class BidirectionalRelationController {
     )
     @Parameter(name = "id", description = "实体 ID", required = true, example = "123")
     @Parameter(name = "modelCode", description = "Model 编码", required = true, example = "production_task")
-    @Parameter(name = "businessTypeCode", description = "业务类型编码", required = false, example = "tunnel")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码", required = false, example = "tunnel")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<PageResult<EntitySimpleVO>> getReverseRelationsByModel(
             @RequestParam("id") Long id,
             @RequestParam("modelCode") String modelCode,
-            @RequestParam(value = "businessTypeCode", required = false) String businessTypeCode,
+            @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode,
             @RequestParam(value = "pageNo", defaultValue = "1") Integer pageNo,
             @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize) {
         PageParam pageParam = new PageParam();
         pageParam.setPageNo(pageNo);
         pageParam.setPageSize(pageSize);
-        return success(bidirectionalRelationService.getReverseRelationsByModel(id, businessTypeCode, modelCode, pageParam));
+        return success(bidirectionalRelationService.getReverseRelationsByModel(id, entityTypeCode, modelCode, pageParam));
     }
 
     @GetMapping("/entity/forward-relations")
@@ -91,12 +91,12 @@ public class BidirectionalRelationController {
         description = "获取当前实体引用的所有其他实体。"
     )
     @Parameter(name = "id", description = "实体 ID", required = true, example = "123")
-    @Parameter(name = "businessTypeCode", description = "业务类型编码", required = false, example = "tunnel")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码", required = false, example = "tunnel")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<List<RelatedEntityVO>> getForwardRelations(
             @RequestParam("id") Long id,
-            @RequestParam(value = "businessTypeCode", required = false) String businessTypeCode) {
-        return success(bidirectionalRelationService.getForwardRelations(id, businessTypeCode));
+            @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode) {
+        return success(bidirectionalRelationService.getForwardRelations(id, entityTypeCode));
     }
 
     @GetMapping("/entity/relation-info")
@@ -105,12 +105,12 @@ public class BidirectionalRelationController {
         description = "一次性获取实体的所有关联信息,包括正向关联、反向关联和统计信息。"
     )
     @Parameter(name = "id", description = "实体 ID", required = true, example = "123")
-    @Parameter(name = "businessTypeCode", description = "业务类型编码", required = false, example = "tunnel")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码", required = false, example = "tunnel")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<EntityRelationInfoVO> getEntityRelationInfo(
             @RequestParam("id") Long id,
-            @RequestParam(value = "businessTypeCode", required = false) String businessTypeCode) {
-        return success(bidirectionalRelationService.getEntityRelationInfo(id, businessTypeCode));
+            @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode) {
+        return success(bidirectionalRelationService.getEntityRelationInfo(id, entityTypeCode));
     }
 
     // ==================== 关联统计 API ====================
@@ -121,12 +121,12 @@ public class BidirectionalRelationController {
         description = "统计引用当前实体的记录数量，按 Model 分组。"
     )
     @Parameter(name = "id", description = "实体 ID", required = true, example = "123")
-    @Parameter(name = "businessTypeCode", description = "业务类型编码", required = false, example = "tunnel")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码", required = false, example = "tunnel")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<RelationStatisticsVO> getRelationStatistics(
             @RequestParam("id") Long id,
-            @RequestParam(value = "businessTypeCode", required = false) String businessTypeCode) {
-        return success(bidirectionalRelationService.getRelationStatistics(id, businessTypeCode));
+            @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode) {
+        return success(bidirectionalRelationService.getRelationStatistics(id, entityTypeCode));
     }
 
     @PostMapping("/entity/aggregate")
@@ -145,12 +145,12 @@ public class BidirectionalRelationController {
         summary = "批量获取实体的反向关联数量",
         description = "批量查询多个实体的反向关联数量,用于列表展示。"
     )
-    @Parameter(name = "businessTypeCode", description = "业务类型编码", required = false, example = "tunnel")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码", required = false, example = "tunnel")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<Map<Long, Long>> batchGetReverseRelationCounts(
-            @RequestParam(value = "businessTypeCode") String businessTypeCode,
+            @RequestParam(value = "entityTypeCode") String entityTypeCode,
             @RequestBody List<Long> entityIds) {
-        return success(bidirectionalRelationService.batchGetReverseRelationCounts(businessTypeCode, entityIds));
+        return success(bidirectionalRelationService.batchGetReverseRelationCounts(entityTypeCode, entityIds));
     }
 
     // ==================== 关联发现 API ====================

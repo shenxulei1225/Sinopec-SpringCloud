@@ -23,12 +23,12 @@ public interface ModelCoreService {
     /**
      * 检查指定业务类型下模型是否存在。
      */
-    boolean existsById(Long modelId, String businessTypeCode);
+    boolean existsById(Long modelId, String entityTypeCode);
 
     /**
      * 批量过滤出“真实存在”的模型ID集合。
      */
-    Set<Long> filterExistingModelIds(List<Long> modelIds, String businessTypeCode);
+    Set<Long> filterExistingModelIds(List<Long> modelIds, String entityTypeCode);
 
     // ==================== CRUD ====================
 
@@ -40,16 +40,16 @@ public interface ModelCoreService {
 
     ModelDO get(Long id);
 
-    List<ModelDO> listByBusinessTypeCode(String businessTypeCode);
+    List<ModelDO> listByEntityTypeCode(String entityTypeCode);
 
-    List<ModelDO> listEnabledModelsByBusinessTypeCode(String businessTypeCode);
+    List<ModelDO> listEnabledModelsByEntityTypeCode(String entityTypeCode);
 
-    List<ModelDO> searchLikeInBusinessType(String keyword, String businessTypeCode);
+    List<ModelDO> searchLikeInEntityType(String keyword, String entityTypeCode);
 
 
-    ModelDO getByNameInBusinessType(String name, String businessTypeCode);
+    ModelDO getByNameInEntityType(String name, String entityTypeCode);
 
     List<ModelDO> listByIds(List<Long> ids);
 
-    PageResult<ModelDO> pageModels(String businessTypeCode, String keyword, Integer status, Integer pageNo, Integer pageSize);
+    PageResult<ModelDO> pageModels(String entityTypeCode, String keyword, Integer status, Integer pageNo, Integer pageSize);
 }

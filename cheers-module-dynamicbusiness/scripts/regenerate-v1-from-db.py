@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate Flyway V1 and platform-import 01_schema.sql from live PostgreSQL DDL."""
+"""Regenerate Flyway V1 schema from live PostgreSQL DDL (schema-only, no data)."""
 
 from __future__ import annotations
 
@@ -10,19 +10,29 @@ from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-V1 = (
+MIG_DIR = (
     ROOT
-    / "cheers-module-dynamicbusiness-server/src/main/resources/db/migration/dynamicbusiness/V1__init_dynamicbusiness_schema.sql"
+    / "cheers-module-dynamicbusiness-server/src/main/resources/db/migration/dynamicbusiness"
 )
-SCHEMA_IMPORT = ROOT / "scripts/platform-import/system/01_schema.sql"
+V1 = MIG_DIR / "V1__init_dynamicbusiness_schema.sql"
 BACKUP_DIR = ROOT / "cheers-module-dynamicbusiness-server/src/main/resources/db/backup/flyway-legacy-pre-seed"
+
+# Active Flyway chain for empty DB: V1 (DDL) → V2 (assignment codes) → V3 (association codes)
+ACTIVE_MIGRATIONS = frozenset(
+    {
+        "V1__init_dynamicbusiness_schema.sql",
+        "V2__model_field_assignment_codes.sql",
+        "V3__cross_platform_association_codes.sql",
+    }
+)
 
 HEADER = f"""-- ============================================================================
 -- Flyway V1: dynamicbusiness 全量表结构（纯 DDL）
 -- Generated: {date.today().isoformat()} by scripts/regenerate-v1-from-db.py
 --
--- 约定: 所有建表/索引/注释集中在本文件；数据见 platform-import/system/seed/
--- 新环境: Flyway 仅执行 V1 → 再运行 platform-import/system/import.sh
+-- 约定: 建表/索引集中在本文件；增量版本见同目录 V2+；数据见 platform-import seed
+-- 刷新本文件 = 修改已执行迁移 → 所有已有机库需 scripts/flyway-repair-local.sh（见 .cursor/rules/flyway-migration.mdc）
+-- 新空库: Flyway 顺序执行 classpath 全部 V*.sql → platform-import/import-dev-all.sh（仅 seed）
 -- ============================================================================
 
 CREATE SCHEMA IF NOT EXISTS dynamicbusiness;
@@ -76,7 +86,10 @@ def clean_dump(raw: str) -> str:
     for line in raw.splitlines():
         if line.startswith("\\"):
             continue
-        if re.match(r"^SET (statement_timeout|lock_timeout|idle_in_transaction|client_encoding|standard_conforming|check_function|xmloption|client_min_messages|row_security|default_table)", line):
+        if re.match(
+            r"^SET (statement_timeout|lock_timeout|idle_in_transaction|client_encoding|standard_conforming|check_function|xmloption|client_min_messages|row_security|default_table)",
+            line,
+        ):
             continue
         if line.strip() == "SELECT pg_catalog.set_config('search_path', '', false);":
             continue
@@ -98,27 +111,11 @@ def clean_dump(raw: str) -> str:
     return HEADER + body + "\n"
 
 
-def write_schema_files(body: str):
-    V1.parent.mkdir(parents=True, exist_ok=True)
-    V1.write_text(body, encoding="utf-8")
-    import_body = body.split("SET search_path TO dynamicbusiness;", 1)[-1].strip()
-    import_header = f"""-- ============================================================================
--- 系统共用 · 01 建表（与 Flyway V1 同源）
--- Generated: {date.today().isoformat()} by scripts/regenerate-v1-from-db.py
--- ============================================================================
-
-SET search_path TO dynamicbusiness;
-
-"""
-    SCHEMA_IMPORT.parent.mkdir(parents=True, exist_ok=True)
-    SCHEMA_IMPORT.write_text(import_header + import_body + "\n", encoding="utf-8")
-
-
-def archive_legacy_flyway():
-    mig_dir = V1.parent
+def archive_stray_migrations():
+    """Move any V*.sql not in ACTIVE_MIGRATIONS to backup (historical zhgl/seed scripts)."""
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-    for path in sorted(mig_dir.glob("V*.sql")):
-        if path.name == V1.name:
+    for path in sorted(MIG_DIR.glob("V*.sql")):
+        if path.name in ACTIVE_MIGRATIONS:
             continue
         target = BACKUP_DIR / path.name
         if target.exists():
@@ -130,10 +127,12 @@ def archive_legacy_flyway():
 def main():
     raw = pg_dump_schema()
     body = clean_dump(raw)
-    write_schema_files(body)
-    archive_legacy_flyway()
+    V1.parent.mkdir(parents=True, exist_ok=True)
+    V1.write_text(body, encoding="utf-8")
+    archive_stray_migrations()
     print("done:", V1)
-    print("done:", SCHEMA_IMPORT)
+    print("active flyway:", ", ".join(sorted(ACTIVE_MIGRATIONS)))
+    print("warn: 已有机库请执行 scripts/flyway-repair-local.sh 对齐 V1 checksum")
 
 
 if __name__ == "__main__":

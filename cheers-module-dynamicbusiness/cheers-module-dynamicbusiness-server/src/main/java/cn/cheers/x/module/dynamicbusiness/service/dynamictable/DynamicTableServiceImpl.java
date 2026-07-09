@@ -6,7 +6,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.exception.ServiceException;
 import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.PhysicalColumnConfig;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.PhysicalColumnConfig;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.dynamictable.DynamicTableAuditLogDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.dynamictable.DynamicTableColumnDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.dynamictable.DynamicTableDO;
@@ -62,25 +62,25 @@ public class DynamicTableServiceImpl implements DynamicTableService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long createDynamicTableForBusinessType(String businessTypeCode, String tableName, String tableComment) {
+    public Long createDynamicTableForEntityType(String entityTypeCode, String tableName, String tableComment) {
         // 委托给带物理列映射参数的方法，传入 null 表示不使用物理列
-        return createDynamicTableForBusinessType(businessTypeCode, tableName, tableComment, null);
+        return createDynamicTableForEntityType(entityTypeCode, tableName, tableComment, null);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long createDynamicTableForBusinessType(String businessTypeCode, String tableName, String tableComment,
+    public Long createDynamicTableForEntityType(String entityTypeCode, String tableName, String tableComment,
                                                   Map<String, PhysicalColumnConfig> physicalColumnMapping) {
         // 1. 校验参数
-        if (StrUtil.isBlank(businessTypeCode)) {
+        if (StrUtil.isBlank(entityTypeCode)) {
             throw new ServiceException(400, "业务类型编码不能为空");
         }
         if (StrUtil.isBlank(tableName)) {
             throw new ServiceException(400, "表名不能为空");
         }
-        // 业务类型专用表名必须带 biz_ 前缀
-        if (!StrUtil.startWith(tableName, "biz_")) {
-            tableName = "biz_" + tableName;
+        // 业务类型专用表名必须带 ent_ 前缀
+        if (!StrUtil.startWith(tableName, "ent_")) {
+            tableName = "ent_" + tableName;
         }
 
         // 2. 验证物理列映射配置（如果有）
@@ -96,7 +96,7 @@ public class DynamicTableServiceImpl implements DynamicTableService {
         if (tableExists(tableName)) {
             log.info("动态表 {} 已存在，跳过创建", tableName);
             // 检查是否已有配置记录
-            List<DynamicTableDO> existingTables = dynamicTableMapper.selectByBusinessTypeCode(businessTypeCode);
+            List<DynamicTableDO> existingTables = dynamicTableMapper.selectByEntityTypeCode(entityTypeCode);
             for (DynamicTableDO existing : existingTables) {
                 if (tableName.equals(existing.getTableName())) {
                     return existing.getId();
@@ -107,9 +107,9 @@ public class DynamicTableServiceImpl implements DynamicTableService {
         // 4. 创建动态表配置记录（不关联 modelId）
         DynamicTableDO dynamicTable = DynamicTableDO.builder()
                 .modelId(null) // 业务类型级别的动态表，不关联具体模型
-                .businessTypeCode(businessTypeCode)
+                .entityTypeCode(entityTypeCode)
                 .tableName(tableName)
-                .tableComment(StrUtil.isNotBlank(tableComment) ? tableComment : businessTypeCode + " 数据表")
+                .tableComment(StrUtil.isNotBlank(tableComment) ? tableComment : entityTypeCode + " 数据表")
                 .status(1)
                 .version(1)
                 .lastSyncTime(LocalDateTime.now())
@@ -130,7 +130,7 @@ public class DynamicTableServiceImpl implements DynamicTableService {
 
             // 6. 记录审计日志
             saveAuditLog(dynamicTable.getId(), "CREATE_TABLE",
-                    "为业务类型 " + businessTypeCode + " 创建动态表: " + tableName,
+                    "为业务类型 " + entityTypeCode + " 创建动态表: " + tableName,
                     null, createTableSql, createTableSql, "SUCCESS", null);
         }
 
@@ -142,8 +142,8 @@ public class DynamicTableServiceImpl implements DynamicTableService {
             log.warn("注册动态表到 SQL 注入白名单失败，tableName={}", tableName, e);
         }
 
-        log.info("[createDynamicTableForBusinessType] 成功为业务类型 {} 创建动态表 {}, 物理列数量: {}", 
-                businessTypeCode, tableName, 
+        log.info("[createDynamicTableForEntityType] 成功为业务类型 {} 创建动态表 {}, 物理列数量: {}", 
+                entityTypeCode, tableName, 
                 physicalColumnMapping != null ? physicalColumnMapping.size() : 0);
         return dynamicTable.getId();
     }
@@ -168,7 +168,7 @@ public class DynamicTableServiceImpl implements DynamicTableService {
         // 4. 创建动态表配置记录
         DynamicTableDO dynamicTable = DynamicTableDO.builder()
                 .modelId(modelId)
-                .businessTypeCode(model.getBusinessTypeCode())
+                .entityTypeCode(model.getEntityTypeCode())
                 .tableName(tableName)
                 .tableComment(model.getName() + " 数据表")
                 .status(1)
@@ -243,29 +243,29 @@ public class DynamicTableServiceImpl implements DynamicTableService {
 
     @Override
     public DynamicTableDO getDynamicTableByModelId(Long modelId) {
-        // 采用 modelId → businessTypeCode → DynamicTable 的查询链路
-        // 这样更符合当前的数据模型设计：动态表是按 businessTypeCode 创建的
+        // 采用 modelId → entityTypeCode → DynamicTable 的查询链路
+        // 这样更符合当前的数据模型设计：动态表是按 entityTypeCode 创建的
         if (modelId == null) {
             return null;
         }
         
         ModelDO model = modelMapper.selectById(modelId);
-        if (model == null || StrUtil.isBlank(model.getBusinessTypeCode())) {
+        if (model == null || StrUtil.isBlank(model.getEntityTypeCode())) {
             return null;
         }
         
-        List<DynamicTableDO> tables = dynamicTableMapper.selectByBusinessTypeCode(model.getBusinessTypeCode());
+        List<DynamicTableDO> tables = dynamicTableMapper.selectByEntityTypeCode(model.getEntityTypeCode());
         return tables != null && !tables.isEmpty() ? tables.get(0) : null;
     }
 
     @Override
-    public List<DynamicTableDO> listDynamicTablesByBusinessType(String businessTypeCode) {
-        return dynamicTableMapper.selectByBusinessTypeCode(businessTypeCode);
+    public List<DynamicTableDO> listDynamicTablesByEntityType(String entityTypeCode) {
+        return dynamicTableMapper.selectByEntityTypeCode(entityTypeCode);
     }
 
     @Override
     public boolean hasDynamicTable(Long modelId) {
-        // 采用 modelId → businessTypeCode → DynamicTable 的查询链路
+        // 采用 modelId → entityTypeCode → DynamicTable 的查询链路
         return getDynamicTableByModelId(modelId) != null;
     }
 
@@ -681,7 +681,7 @@ public class DynamicTableServiceImpl implements DynamicTableService {
         return dynamicTableAuditLogMapper.selectByDynamicTableId(dynamicTableId);
     }
 
-    // ==================== 表结构管理方法（供 BusinessTypeBaseFieldService 使用） ====================
+    // ==================== 表结构管理方法（供 EntityTypeBaseFieldService 使用） ====================
 
     @Override
     public boolean tableExists(String tableName) {
@@ -706,7 +706,7 @@ public class DynamicTableServiceImpl implements DynamicTableService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void addColumn(String tableName, cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeBaseFieldDO baseField) {
+    public void addColumn(String tableName, cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO baseField) {
         if (baseField == null || StrUtil.isBlank(baseField.getFieldCode())) {
             throw new ServiceException(400, "字段定义不能为空");
         }
@@ -994,10 +994,10 @@ public class DynamicTableServiceImpl implements DynamicTableService {
      * 生成表名
      */
     private String generateTableName(ModelDO model) {
-        String businessType = StrUtil.isNotBlank(model.getBusinessTypeCode()) 
-                ? model.getBusinessTypeCode().toLowerCase() : "default";
+        String entityTypeCode = StrUtil.isNotBlank(model.getEntityTypeCode()) 
+                ? model.getEntityTypeCode().toLowerCase() : "default";
         String modelCode = model.getCode().toLowerCase().replace("-", "_");
-        return "biz_" + businessType + "_" + modelCode;
+        return "ent_" + entityTypeCode + "_" + modelCode;
     }
 
     /**
@@ -1090,7 +1090,7 @@ public class DynamicTableServiceImpl implements DynamicTableService {
                     tenant_id BIGINT NOT NULL DEFAULT 0,
                     
                     -- ==================== 核心业务字段（与 dynamic_entity 一致） ====================
-                    business_type_code VARCHAR(64),
+                    entity_type_code VARCHAR(64),
                     model_id BIGINT NOT NULL,
                     name VARCHAR(255) NOT NULL,
                     code VARCHAR(100),
@@ -1114,7 +1114,7 @@ public class DynamicTableServiceImpl implements DynamicTableService {
                 
                 -- 表注释
                 COMMENT ON TABLE %s IS '%s';
-                COMMENT ON COLUMN %s.business_type_code IS '业务类型编码';
+                COMMENT ON COLUMN %s.entity_type_code IS '业务类型编码';
                 COMMENT ON COLUMN %s.model_id IS '所属 Model ID';
                 COMMENT ON COLUMN %s.name IS '名称';
                 COMMENT ON COLUMN %s.code IS '编码';
@@ -1126,7 +1126,7 @@ public class DynamicTableServiceImpl implements DynamicTableService {
 %s
                 -- 基础索引
                 CREATE INDEX IF NOT EXISTS idx_%s_tenant ON %s(tenant_id);
-                CREATE INDEX IF NOT EXISTS idx_%s_biz_type ON %s(business_type_code);
+                CREATE INDEX IF NOT EXISTS idx_%s_ent_type ON %s(entity_type_code);
                 CREATE INDEX IF NOT EXISTS idx_%s_model ON %s(model_id);
                 CREATE INDEX IF NOT EXISTS idx_%s_status ON %s(status);
                 CREATE INDEX IF NOT EXISTS idx_%s_area ON %s(area_id);

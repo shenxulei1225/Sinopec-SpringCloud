@@ -15,7 +15,7 @@ public class ModelBatchSortReqVO {
 
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
     @NotBlank(message = "业务类型编码不能为空")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "按目标顺序提交的模型列表", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotEmpty(message = "模型排序列表不能为空")

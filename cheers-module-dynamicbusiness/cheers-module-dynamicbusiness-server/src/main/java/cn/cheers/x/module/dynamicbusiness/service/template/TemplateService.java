@@ -71,10 +71,10 @@ public interface TemplateService {
     /**
      * 查询字段模板列表
      *
-     * @param businessTypeCode 业务类型编码（可选）
+     * @param entityTypeCode 业务类型编码（可选）
      * @return 模板列表
      */
-    List<TemplateRespVO> listTemplates(String businessTypeCode);
+    List<TemplateRespVO> listTemplates(String entityTypeCode);
 
     /**
      * 分页查询字段模板
@@ -88,10 +88,10 @@ public interface TemplateService {
      * 搜索字段模板
      *
      * @param keyword 关键词
-     * @param businessTypeCode 业务类型编码（可选）
+     * @param entityTypeCode 业务类型编码（可选）
      * @return 模板列表
      */
-    List<TemplateRespVO> searchTemplates(String keyword, String businessTypeCode);
+    List<TemplateRespVO> searchTemplates(String keyword, String entityTypeCode);
 
     /**
      * 复制字段模板

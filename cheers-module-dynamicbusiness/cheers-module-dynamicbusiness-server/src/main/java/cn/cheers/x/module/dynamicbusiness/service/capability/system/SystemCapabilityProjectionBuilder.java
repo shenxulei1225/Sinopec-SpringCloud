@@ -24,7 +24,7 @@ public final class SystemCapabilityProjectionBuilder {
     public static String buildCapabilityFullJson(
             SystemCapabilityDefinition definition, long version, ObjectMapper objectMapper) {
         Map<String, Object> root = new LinkedHashMap<>();
-        root.put("businessTypeCode", definition.getBusinessTypeCode());
+        root.put("entityTypeCode", definition.getEntityTypeCode());
         root.put("businessCategory", "system");
         root.put("capabilityVersion", version);
         root.put("components", List.copyOf(SUPPORTED_COMPONENT_CODES));

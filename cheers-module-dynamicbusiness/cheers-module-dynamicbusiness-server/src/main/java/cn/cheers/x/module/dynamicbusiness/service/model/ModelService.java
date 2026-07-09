@@ -63,14 +63,14 @@ public interface ModelService {
      * 根据业务类型编码获取模型列表
      *
      * 规则：
-     * - 仅返回指定 businessTypeCode 下的模型
+     * - 仅返回指定 entityTypeCode 下的模型
      * - 返回扁平列表，不构建树结构
      * - 自动填充每个模型关联的分类ID列表
      *
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 模型列表
      */
-    List<ModelRespVO> listModelsByBusinessType(String businessTypeCode);
+    List<ModelRespVO> listModelsByEntityType(String entityTypeCode);
 
     /**
      * 获取跨业务类型的模型列表（不分页，含启用/停用）。
@@ -81,7 +81,7 @@ public interface ModelService {
      *
      * @return 模型列表
      */
-    List<ModelRespVO> listModelsAcrossBusinessTypes();
+    List<ModelRespVO> listModelsAcrossEntityTypes();
 
     /**
      * 获取跨业务类型的启用模型列表（不分页）。
@@ -93,12 +93,12 @@ public interface ModelService {
      *
      * @return 模型列表
      */
-    List<ModelRespVO> listEnabledModelsAcrossBusinessTypes();
+    List<ModelRespVO> listEnabledModelsAcrossEntityTypes();
 
     /**
      * 兼容旧命名：获取跨业务类型的启用模型列表（不分页）。
      *
-     * @deprecated 请使用 {@link #listEnabledModelsAcrossBusinessTypes()}
+     * @deprecated 请使用 {@link #listEnabledModelsAcrossEntityTypes()}
      */
     @Deprecated
     List<ModelRespVO> listAllModels();
@@ -110,16 +110,16 @@ public interface ModelService {
      * @param reqVO 分页查询条件
      * @return 分页结果
      */
-    PageResult<ModelRespVO> pageModelByBusinessTypeCode(ModelPageReqVO reqVO);
+    PageResult<ModelRespVO> pageModelByEntityTypeCode(ModelPageReqVO reqVO);
 
     /**
      * 搜索业务模型
      *
      * @param keyword 关键词
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 模型列表
      */
-    List<ModelRespVO> searchModels(String keyword, String businessTypeCode);
+    List<ModelRespVO> searchModels(String keyword, String entityTypeCode);
 
     // ========== 模型字段查询（视图配置用）==========
 
@@ -152,7 +152,7 @@ public interface ModelService {
      * <p>当 pageNo/pageSize 为空时返回全量；当 pageNo/pageSize 有值时返回分页切片。</p>
      * <p>当未选分类时，使用 categoryTypeCode 对应根分类作为默认分类范围。</p>
      */
-    PageResult<Long> queryOrderedModelIdsByCategoriesInBusiness(List<Long> categoryIds, String categoryTypeCode, String businessTypeCode,
+    PageResult<Long> queryOrderedModelIdsByCategoriesInBusiness(List<Long> categoryIds, String categoryTypeCode, String entityTypeCode,
                                                                 Integer pageNo, Integer pageSize);
 
     /**

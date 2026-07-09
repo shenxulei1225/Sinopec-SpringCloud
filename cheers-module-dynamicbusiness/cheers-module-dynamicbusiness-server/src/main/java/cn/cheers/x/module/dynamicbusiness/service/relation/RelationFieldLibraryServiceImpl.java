@@ -7,10 +7,10 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.relation.vo.RelationF
 import cn.cheers.x.module.dynamicbusiness.controller.admin.relation.vo.RelationFieldLibraryUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.relation.vo.RelationFieldLibraryWithStatusVO;
 import cn.cheers.x.module.dynamicbusiness.convert.relation.RelationFieldLibraryConvert;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.relation.RelationFieldLibraryDO;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.relation.RelationFieldLibraryMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +29,7 @@ import static cn.cheers.x.module.dynamicbusiness.enums.ErrorCodeConstants.*;
  * 关联字段库 Service 实现类
  * 
  * 业务规则：
- * - BR-BDA-010：松散引用，库存 {@code refBusinessType}（业务类型编码）；模型选用后字段编码为 {@link RelationFieldCodes#toModelFieldCode(String)}，与实体 JSON 键、关系表 {@code field_code} 一致
+ * - BR-BDA-010：松散引用，库存 {@code refEntityType}（业务类型编码）；模型选用后字段编码为 {@link RelationFieldCodes#toModelFieldCode(String)}，与实体 JSON 键、关系表 {@code field_code} 一致
  * - BR-BDA-011：状态自动更新,关联目标创建后,字段状态自动从"待建"变为"可用"
  * - BR-BDA-012：使用时验证,Model 选用关联字段时,验证目标是否存在
  * 
@@ -44,7 +44,7 @@ public class RelationFieldLibraryServiceImpl implements RelationFieldLibraryServ
     private RelationFieldLibraryMapper relationFieldLibraryMapper;
 
     @Resource
-    private BusinessTypeMapper businessTypeMapper;
+    private EntityTypeMapper entityTypeMapper;
 
     @Resource
     private ModelMapper modelMapper;
@@ -62,7 +62,7 @@ public class RelationFieldLibraryServiceImpl implements RelationFieldLibraryServ
 
         // 2. 规范化并校验约束器配置
         normalizeConstraintConfig(reqVO);
-        validateConstraintConfig(reqVO.getConstraintEnabled(), reqVO.getConstraintType(), reqVO.getRefBusinessType());
+        validateConstraintConfig(reqVO.getConstraintEnabled(), reqVO.getConstraintType(), reqVO.getRefEntityType());
 
         // 3. 转换并创建
         RelationFieldLibraryDO field = RelationFieldLibraryConvert.INSTANCE.convert(reqVO);
@@ -70,8 +70,8 @@ public class RelationFieldLibraryServiceImpl implements RelationFieldLibraryServ
         field.setIsSystem(false);
         relationFieldLibraryMapper.insert(field);
 
-        log.info("[createRelationField][创建关联字段成功,id={}, fieldCode={}, refBusinessType={}]",
-                field.getId(), field.getFieldCode(), field.getRefBusinessType());
+        log.info("[createRelationField][创建关联字段成功,id={}, fieldCode={}, refEntityType={}]",
+                field.getId(), field.getFieldCode(), field.getRefEntityType());
         return field.getId();
     }
 
@@ -86,7 +86,7 @@ public class RelationFieldLibraryServiceImpl implements RelationFieldLibraryServ
 
         // 3. 规范化并校验约束器配置
         normalizeConstraintConfig(reqVO);
-        validateConstraintConfig(reqVO.getConstraintEnabled(), reqVO.getConstraintType(), reqVO.getRefBusinessType());
+        validateConstraintConfig(reqVO.getConstraintEnabled(), reqVO.getConstraintType(), reqVO.getRefEntityType());
 
         // 4. 更新
         RelationFieldLibraryDO updateField = RelationFieldLibraryConvert.INSTANCE.convert(reqVO);
@@ -143,13 +143,13 @@ public class RelationFieldLibraryServiceImpl implements RelationFieldLibraryServ
     }
 
     @Override
-    public List<RelationFieldLibraryRespVO> getAvailableRelationFields(String refBusinessType) {
-        List<RelationFieldLibraryDO> fields = relationFieldLibraryMapper.selectByRefBusinessType(refBusinessType);
+    public List<RelationFieldLibraryRespVO> getAvailableRelationFields(String refEntityType) {
+        List<RelationFieldLibraryDO> fields = relationFieldLibraryMapper.selectByRefEntityType(refEntityType);
 
         // 过滤出业务类型存在的字段
         List<RelationFieldLibraryRespVO> result = new ArrayList<>();
         for (RelationFieldLibraryDO field : fields) {
-            if (checkTargetExists(field.getRefBusinessType(), null)) {
+            if (checkTargetExists(field.getRefEntityType(), null)) {
                 result.add(RelationFieldLibraryConvert.INSTANCE.convert(field));
             }
         }
@@ -159,7 +159,7 @@ public class RelationFieldLibraryServiceImpl implements RelationFieldLibraryServ
     @Override
     public PageResult<RelationFieldLibraryWithStatusVO> getRelationFieldPage(RelationFieldLibraryPageReqVO reqVO) {
         PageResult<RelationFieldLibraryDO> pageResult = relationFieldLibraryMapper.selectPage(
-                reqVO.getRefBusinessType(),
+                reqVO.getRefEntityType(),
                 reqVO.getKeyword(),
                 reqVO.getPageNo(),
                 reqVO.getPageSize()
@@ -180,10 +180,10 @@ public class RelationFieldLibraryServiceImpl implements RelationFieldLibraryServ
     // ========== 状态检查方法 ==========
 
     @Override
-    public boolean checkTargetExists(String businessType, String modelCode) {
+    public boolean checkTargetExists(String entityType, String modelCode) {
         // 1. 检查业务类型是否存在
-        BusinessTypeDO businessTypeDO = businessTypeMapper.selectByCode(businessType);
-        if (businessTypeDO == null) {
+        EntityTypeDO entityTypeDO = entityTypeMapper.selectByCode(entityType);
+        if (entityTypeDO == null) {
             return false;
         }
 
@@ -198,17 +198,17 @@ public class RelationFieldLibraryServiceImpl implements RelationFieldLibraryServ
             return false;
         }
 
-        return businessType.equals(model.getBusinessTypeCode());
+        return entityType.equals(model.getEntityTypeCode());
     }
 
     @Override
-    public String[] getTargetNames(String businessType, String modelCode) {
+    public String[] getTargetNames(String entityType, String modelCode) {
         String[] names = new String[2];
 
-        // 1. 获取业务类型名称
-        BusinessTypeDO businessTypeDO = businessTypeMapper.selectByCode(businessType);
-        if (businessTypeDO != null) {
-            names[0] = businessTypeDO.getName();
+        // 1. 获取实体类型名称
+        EntityTypeDO entityTypeDO = entityTypeMapper.selectByCode(entityType);
+        if (entityTypeDO != null) {
+            names[0] = entityTypeDO.getName();
         }
 
         // 2. 业务级引用默认不展示模型名称
@@ -217,7 +217,7 @@ public class RelationFieldLibraryServiceImpl implements RelationFieldLibraryServ
         }
 
         ModelDO model = modelMapper.selectByCode(modelCode);
-        if (model != null && businessType.equals(model.getBusinessTypeCode())) {
+        if (model != null && entityType.equals(model.getEntityTypeCode())) {
             names[1] = model.getName();
         }
 
@@ -248,8 +248,8 @@ public class RelationFieldLibraryServiceImpl implements RelationFieldLibraryServ
     }
 
     @Override
-    public void validateTargetAvailable(String businessType, String modelCode) {
-        if (!checkTargetExists(businessType, modelCode)) {
+    public void validateTargetAvailable(String entityType, String modelCode) {
+        if (!checkTargetExists(entityType, modelCode)) {
             throw exception(RELATION_FIELD_TARGET_NOT_EXISTS);
         }
     }
@@ -276,12 +276,12 @@ public class RelationFieldLibraryServiceImpl implements RelationFieldLibraryServ
         }
     }
 
-    private void validateConstraintConfig(Boolean constraintEnabled, String constraintType, String targetBusinessType) {
+    private void validateConstraintConfig(Boolean constraintEnabled, String constraintType, String targetEntityType) {
         if (Boolean.TRUE.equals(constraintEnabled)) {
             if (constraintType == null || constraintType.isBlank()) {
                 throw exception(RELATION_FIELD_CONSTRAINT_TYPE_REQUIRED);
             }
-            refConstraintLibraryService.validateConstraintType(targetBusinessType, null, constraintType);
+            refConstraintLibraryService.validateConstraintType(targetEntityType, null, constraintType);
         } else {
             if (constraintType != null && !constraintType.isBlank() && !CONSTRAINT_NONE.equals(constraintType)) {
                 throw exception(RELATION_FIELD_CONSTRAINT_TYPE_NOT_ALLOWED);
@@ -327,14 +327,14 @@ public class RelationFieldLibraryServiceImpl implements RelationFieldLibraryServ
             RelationFieldLibraryWithStatusVO vo = RelationFieldLibraryConvert.INSTANCE.convertWithStatus(field);
 
             // 检查目标是否存在
-            boolean targetExists = checkTargetExists(field.getRefBusinessType(), null);
+            boolean targetExists = checkTargetExists(field.getRefEntityType(), null);
             vo.setTargetExists(targetExists);
             vo.setStatus(targetExists ? RelationFieldLibraryWithStatusVO.STATUS_AVAILABLE
                                       : RelationFieldLibraryWithStatusVO.STATUS_PENDING);
 
             // 获取目标名称
-            String[] names = getTargetNames(field.getRefBusinessType(), null);
-            vo.setTargetBusinessTypeName(names[0]);
+            String[] names = getTargetNames(field.getRefEntityType(), null);
+            vo.setTargetEntityTypeName(names[0]);
             vo.setTargetModelName(names[1]);
 
             result.add(vo);

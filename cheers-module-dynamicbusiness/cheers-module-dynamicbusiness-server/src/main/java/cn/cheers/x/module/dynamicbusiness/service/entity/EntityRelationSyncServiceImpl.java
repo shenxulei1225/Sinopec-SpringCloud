@@ -15,7 +15,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.relation.RelationFieldLibraryMapper;
 import cn.iocoder.yudao.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
-import cn.cheers.x.module.dynamicbusiness.service.businesstype.BusinessTypeRelationService;
+import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
 import cn.cheers.x.module.dynamicbusiness.service.relation.BidirectionalRelationService;
 
@@ -53,7 +53,7 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
     @Lazy // 避免循环依赖
     private final BidirectionalRelationService bidirectionalRelationService;
 
-    private final BusinessTypeRelationService businessTypeRelationService;
+    private final EntityTypeRelationService entityTypeRelationService;
 
     private final ObjectProvider<EntityRelationSyncServiceImpl> selfProvider;
 
@@ -214,7 +214,7 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void syncRelationsOnDelete(Long entityId, String businessTypeCode) {
+    public void syncRelationsOnDelete(Long entityId, String entityTypeCode) {
         if (entityId == null) return;
         entityRelationMapper.deleteBySourceEntityId(entityId);
     }
@@ -280,8 +280,8 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
     private void resolveMetadata(ModelFieldAssignmentDO assignment, EntityRefFieldInfo info) {
         if (assignment.getRefLibraryId() != null) {
             RelationFieldLibraryDO lib = relationFieldLibraryMapper.selectById(assignment.getRefLibraryId());
-            if (lib != null && StringUtils.hasText(lib.getRefBusinessType())) {
-                info.setRefBusinessType(lib.getRefBusinessType().trim());
+            if (lib != null && StringUtils.hasText(lib.getRefEntityType())) {
+                info.setRefEntityType(lib.getRefEntityType().trim());
             }
         } else if (assignment.getModelRelationId() != null) {
             ModelRelationDO rel = modelRelationMapper.selectById(assignment.getModelRelationId());
@@ -289,13 +289,13 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
                 info.setTargetModelCode(rel.getTargetModelCode());
                 if (StringUtils.hasText(rel.getTargetModelCode())) {
                     ModelDO targetModel = modelMapper.selectByCode(rel.getTargetModelCode().trim());
-                    if (targetModel != null && StringUtils.hasText(targetModel.getBusinessTypeCode())) {
-                        info.setRefBusinessType(targetModel.getBusinessTypeCode().trim());
+                    if (targetModel != null && StringUtils.hasText(targetModel.getEntityTypeCode())) {
+                        info.setRefEntityType(targetModel.getEntityTypeCode().trim());
                     }
                 }
             }
-        } else if (StringUtils.hasText(assignment.getTargetBusinessType())) {
-            info.setRefBusinessType(assignment.getTargetBusinessType().trim());
+        } else if (StringUtils.hasText(assignment.getTargetEntityType())) {
+            info.setRefEntityType(assignment.getTargetEntityType().trim());
         }
     }
 
@@ -311,27 +311,27 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
                                 boolean isMultiRef) {
         Long targetEntityId = targetRef.getId();
         String targetModelCode = fieldInfo.getTargetModelCode();
-        String refBusinessTypeCode = targetRef.getBusinessTypeCode();
+        String refEntityTypeCode = targetRef.getEntityTypeCode();
 
-        if ((refBusinessTypeCode == null || refBusinessTypeCode.isBlank()) && fieldInfo.getRefBusinessType() != null) {
-            refBusinessTypeCode = fieldInfo.getRefBusinessType();
+        if ((refEntityTypeCode == null || refEntityTypeCode.isBlank()) && fieldInfo.getRefEntityType() != null) {
+            refEntityTypeCode = fieldInfo.getRefEntityType();
         }
 
-        if (targetModelCode != null && (refBusinessTypeCode == null || refBusinessTypeCode.isBlank())) {
+        if (targetModelCode != null && (refEntityTypeCode == null || refEntityTypeCode.isBlank())) {
             ModelDO targetModel = modelMapper.selectByCode(targetModelCode);
             if (targetModel != null) {
-                refBusinessTypeCode = targetModel.getBusinessTypeCode();
+                refEntityTypeCode = targetModel.getEntityTypeCode();
             }
         }
 
         // 1) 强校验：业务门禁必须存在
-        if (model.getBusinessTypeCode() == null || refBusinessTypeCode == null || refBusinessTypeCode.isBlank()) {
+        if (model.getEntityTypeCode() == null || refEntityTypeCode == null || refEntityTypeCode.isBlank()) {
             throw new ServiceException(400, "ASSOC_PARAM_INVALID: 关联参数缺失");
         }
-        if (!businessTypeRelationService.existsRelation(model.getBusinessTypeCode(), refBusinessTypeCode)) {
+        if (!entityTypeRelationService.existsRelation(model.getEntityTypeCode(), refEntityTypeCode)) {
             throw new ServiceException(400, String.format(
                     "ASSOC_GATE_DENIED: 当前业务 %s 不允许关联目标业务 %s，请在「业务类型关联」中配置",
-                    model.getBusinessTypeCode(), refBusinessTypeCode));
+                    model.getEntityTypeCode(), refEntityTypeCode));
         }
 
         // 2) 去重校验：同 source + fieldCode + target 的有效关联不重复写入
@@ -352,8 +352,8 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
                 .fieldCode(fieldInfo.getFieldCode())
                 .sourceModelCode(model.getCode())
                 .targetModelCode(targetModelCode)
-                .sourceBusinessTypeCode(model.getBusinessTypeCode())
-                .targetBusinessTypeCode(refBusinessTypeCode)
+                .sourceEntityTypeCode(model.getEntityTypeCode())
+                .targetEntityTypeCode(refEntityTypeCode)
                 .status(1)
                 .build();
 
@@ -370,18 +370,18 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
         if (value == null) return null;
         if (value instanceof Map<?, ?> map) {
             Object idObj = map.get("id");
-            Object typeObj = firstNonBlankMapValue(map, "businessTypeCode", "bizCode");
+            Object typeObj = firstNonBlankMapValue(map, "entityTypeCode", "bizCode");
             Long id = parseLong(idObj);
-            String businessTypeCode = typeObj == null ? null : String.valueOf(typeObj).trim();
-            if (id == null || businessTypeCode == null || businessTypeCode.isBlank()) {
-                throw new ServiceException(400, "ASSOC_PARAM_INVALID: Ref 必须包含 businessTypeCode 与 id");
+            String entityTypeCode = typeObj == null ? null : String.valueOf(typeObj).trim();
+            if (id == null || entityTypeCode == null || entityTypeCode.isBlank()) {
+                throw new ServiceException(400, "ASSOC_PARAM_INVALID: Ref 必须包含 entityTypeCode 与 id");
             }
             EntityRefValue ref = new EntityRefValue();
             ref.setId(id);
-            ref.setBusinessTypeCode(businessTypeCode);
+            ref.setEntityTypeCode(entityTypeCode);
             return ref;
         }
-        throw new ServiceException(400, "ASSOC_PARAM_INVALID: Ref 字段格式错误，必须为 {businessTypeCode,id}");
+        throw new ServiceException(400, "ASSOC_PARAM_INVALID: Ref 字段格式错误，必须为 {entityTypeCode,id}");
     }
 
     private Object firstNonBlankMapValue(Map<?, ?> map, String... keys) {
@@ -424,7 +424,7 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
         private String fieldType;
         private boolean multiRef;
         private Integer maxRelations;
-        private String refBusinessType;
+        private String refEntityType;
         private String targetModelCode;
     }
 
@@ -440,18 +440,18 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
             }
             return refs;
         }
-        throw new ServiceException(400, "ASSOC_PARAM_INVALID: RefMulti 字段格式错误，必须为 [{businessTypeCode,id},...]");
+        throw new ServiceException(400, "ASSOC_PARAM_INVALID: RefMulti 字段格式错误，必须为 [{entityTypeCode,id},...]");
     }
 
     private boolean validateTargetEntityExists(EntityRefValue ref, EntityRefFieldInfo fieldInfo) {
-        if (ref == null || ref.getId() == null || ref.getBusinessTypeCode() == null || ref.getBusinessTypeCode().isBlank()) {
+        if (ref == null || ref.getId() == null || ref.getEntityTypeCode() == null || ref.getEntityTypeCode().isBlank()) {
             return false;
         }
-        if (fieldInfo.getRefBusinessType() != null && !fieldInfo.getRefBusinessType().isBlank()
-                && !fieldInfo.getRefBusinessType().equals(ref.getBusinessTypeCode())) {
+        if (fieldInfo.getRefEntityType() != null && !fieldInfo.getRefEntityType().isBlank()
+                && !fieldInfo.getRefEntityType().equals(ref.getEntityTypeCode())) {
             throw new ServiceException(400, "ASSOC_PARAM_INVALID: 关联业务类型与字段配置不一致");
         }
-        return entityCoreService.existsById(ref.getId(), ref.getBusinessTypeCode());
+        return entityCoreService.existsById(ref.getId(), ref.getEntityTypeCode());
     }
 
     private List<EntityRefValue> validateTargetEntitiesExist(List<EntityRefValue> refs, EntityRefFieldInfo fieldInfo) {
@@ -468,6 +468,6 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
     @lombok.Data
     private static class EntityRefValue {
         private Long id;
-        private String businessTypeCode;
+        private String entityTypeCode;
     }
 }

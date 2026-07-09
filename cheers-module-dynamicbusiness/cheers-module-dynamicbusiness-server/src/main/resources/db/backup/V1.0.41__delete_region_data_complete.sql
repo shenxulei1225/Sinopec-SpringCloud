@@ -19,7 +19,7 @@ WITH RECURSIVE category_tree AS (
     -- 根分类（region类型的根分类）
     SELECT id, parent_id, 1 as level
     FROM dynamic_category
-    WHERE business_type_code = 'region' 
+    WHERE entity_type_code = 'region' 
     AND tenant_id = 1
     
     UNION ALL
@@ -28,7 +28,7 @@ WITH RECURSIVE category_tree AS (
     SELECT c.id, c.parent_id, ct.level + 1
     FROM dynamic_category c
     INNER JOIN category_tree ct ON c.parent_id = ct.id
-    WHERE c.business_type_code = 'region' 
+    WHERE c.entity_type_code = 'region' 
     AND c.tenant_id = 1
 )
 SELECT id FROM category_tree;
@@ -39,9 +39,9 @@ WHERE category_id IN (SELECT id FROM temp_region_category_ids);
 
 -- 步骤3：删除 biz_region 专用表中的数据
 -- 使用 Dedicated 方式存储,区域实体存储在 biz_region 表中
--- 通过 business_type_code 字段关联到 region 业务类型
+-- 通过 entity_type_code 字段关联到 region 业务类型
 DELETE FROM biz_region
-WHERE business_type_code = 'region' 
+WHERE entity_type_code = 'region' 
 AND tenant_id = 1;
 
 -- 步骤4：删除 Entity-Category 关联关系（如果使用）
@@ -64,13 +64,13 @@ BEGIN
         WHERE id IN (
             SELECT c.id
             FROM dynamic_category c
-            WHERE c.business_type_code = 'region'
+            WHERE c.entity_type_code = 'region'
             AND c.tenant_id = 1
             AND NOT EXISTS (
                 SELECT 1 
                 FROM dynamic_category child
                 WHERE child.parent_id = c.id
-                AND child.business_type_code = 'region'
+                AND child.entity_type_code = 'region'
                 AND child.tenant_id = 1
             )
         );
@@ -89,7 +89,7 @@ END $$;
 
 -- 步骤6：强制删除所有剩余的region类型分类（防止有循环引用等情况）
 DELETE FROM dynamic_category
-WHERE business_type_code = 'region' 
+WHERE entity_type_code = 'region' 
 AND tenant_id = 1;
 
 -- 清理临时表
@@ -98,12 +98,12 @@ DROP TABLE IF EXISTS temp_region_category_ids;
 -- 验证：查询剩余region类型的分类数量（应该为0）
 -- SELECT COUNT(*) as remaining_category_count 
 -- FROM dynamic_category 
--- WHERE business_type_code = 'region' 
+-- WHERE entity_type_code = 'region' 
 -- AND tenant_id = 1;
 --
 -- SELECT COUNT(*) as remaining_entity_count
 -- FROM dynamic_entity e
 -- INNER JOIN dynamic_category c ON e.category_id = c.id
--- WHERE c.business_type_code = 'region'
+-- WHERE c.entity_type_code = 'region'
 -- AND c.tenant_id = 1;
 

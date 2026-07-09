@@ -14,7 +14,7 @@ import java.util.List;
  * <p>说明：</p>
  * <ul>
  *   <li>面向 business_capability 表；</li>
- *   <li>所有查询以 businessTypeCode 为业务索引；</li>
+ *   <li>所有查询以 entityTypeCode 为业务索引；</li>
  *   <li>逻辑删除由 MP 框架处理，这里不额外拼 deleted 条件，避免重复和歧义。</li>
  * </ul>
  */
@@ -24,12 +24,12 @@ public interface BusinessCapabilityMapper extends BaseMapperX<BusinessCapability
     /**
      * 按业务类型编码查询单条能力全集。
      *
-     * @param businessTypeCode 业务类型编码（必填）
+     * @param entityTypeCode 业务类型编码（必填）
      * @return 对应能力全集；不存在返回 null
      */
-    default BusinessCapabilityDO selectByBusinessTypeCode(String businessTypeCode) {
+    default BusinessCapabilityDO selectByEntityTypeCode(String entityTypeCode) {
         return selectOne(new LambdaQueryWrapperX<BusinessCapabilityDO>()
-                .eq(BusinessCapabilityDO::getBusinessTypeCode, businessTypeCode));
+                .eq(BusinessCapabilityDO::getEntityTypeCode, entityTypeCode));
     }
 
     /**
@@ -46,7 +46,7 @@ public interface BusinessCapabilityMapper extends BaseMapperX<BusinessCapability
      */
     default List<BusinessCapabilityDO> selectAllOrderByCode(String businessCategory) {
         LambdaQueryWrapperX<BusinessCapabilityDO> query = new LambdaQueryWrapperX<BusinessCapabilityDO>()
-                .orderByAsc(BusinessCapabilityDO::getBusinessTypeCode);
+                .orderByAsc(BusinessCapabilityDO::getEntityTypeCode);
         if (StringUtils.hasText(businessCategory)) {
             query.eq(BusinessCapabilityDO::getBusinessCategory, businessCategory.trim());
         }

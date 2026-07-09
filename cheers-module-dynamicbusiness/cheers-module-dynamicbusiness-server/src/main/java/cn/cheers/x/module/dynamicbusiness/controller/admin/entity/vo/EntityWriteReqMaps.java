@@ -12,14 +12,14 @@ public final class EntityWriteReqMaps {
     }
 
     public static Map<String, Object> baseOf(
-            String businessTypeCode,
+            String entityTypeCode,
             Long modelId,
             String name,
             Integer status,
             Long parentId) {
         Map<String, Object> base = new LinkedHashMap<>();
-        if (businessTypeCode != null) {
-            base.put("businessTypeCode", businessTypeCode);
+        if (entityTypeCode != null) {
+            base.put("entityTypeCode", entityTypeCode);
         }
         if (modelId != null) {
             base.put("modelId", modelId);
@@ -45,7 +45,7 @@ public final class EntityWriteReqMaps {
     }
 
     public static EntityCreateReqVO createReq(
-            String businessTypeCode,
+            String entityTypeCode,
             Long modelId,
             String name,
             Integer status,
@@ -53,14 +53,14 @@ public final class EntityWriteReqMaps {
             Map<String, Object> baseFieldsOverlay,
             Map<String, Object> customFields) {
         EntityCreateReqVO req = new EntityCreateReqVO();
-        req.setBaseFields(mergeBase(baseOf(businessTypeCode, modelId, name, status, parentId), baseFieldsOverlay));
+        req.setBaseFields(mergeBase(baseOf(entityTypeCode, modelId, name, status, parentId), baseFieldsOverlay));
         req.setCustomFields(customFields);
         return req;
     }
 
     public static EntityUpdateReqVO updateReq(
             Long id,
-            String businessTypeCode,
+            String entityTypeCode,
             Long modelId,
             String name,
             Integer status,
@@ -69,7 +69,7 @@ public final class EntityWriteReqMaps {
             Map<String, Object> customFields) {
         EntityUpdateReqVO req = new EntityUpdateReqVO();
         req.setId(id);
-        req.setBaseFields(mergeBase(baseOf(businessTypeCode, modelId, name, status, parentId), baseFieldsOverlay));
+        req.setBaseFields(mergeBase(baseOf(entityTypeCode, modelId, name, status, parentId), baseFieldsOverlay));
         req.setCustomFields(customFields);
         return req;
     }

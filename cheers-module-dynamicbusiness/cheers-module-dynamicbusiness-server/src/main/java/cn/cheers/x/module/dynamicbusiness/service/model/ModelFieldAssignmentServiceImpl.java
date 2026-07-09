@@ -7,6 +7,7 @@ import static cn.cheers.x.module.dynamicbusiness.enums.ErrorCodeConstants.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -18,32 +19,32 @@ import org.springframework.validation.annotation.Validated;
 
 import cn.iocoder.yudao.framework.common.exception.ServiceException;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo.BusinessTypeBaseFieldRespVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo.BusinessTypeRelationRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeRelationRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.CustomRelationFieldCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldBatchAssignReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldAssignmentRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFilterFieldMetaRespVO;
 import cn.cheers.x.module.dynamicbusiness.convert.field.FieldConvert;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.relation.RelationFieldLibraryDO;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.relation.RelationFieldLibraryMapper;
-import cn.cheers.x.module.dynamicbusiness.enums.businesstype.StorageTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
-import cn.cheers.x.module.dynamicbusiness.service.businesstype.BusinessTypeBaseFieldService;
-import cn.cheers.x.module.dynamicbusiness.service.businesstype.BusinessTypeRelationService;
+import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeBaseFieldService;
+import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.capability.BusinessCapabilityService;
 import cn.cheers.x.module.dynamicbusiness.service.field.SmartSearchableService;
 import cn.cheers.x.module.dynamicbusiness.service.relation.RelationFieldCodes;
@@ -75,9 +76,9 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
     @Resource
     private EntityMapper entityMapper;
     @Resource
-    private BusinessTypeBaseFieldService businessTypeBaseFieldService;
+    private EntityTypeBaseFieldService entityTypeBaseFieldService;
     @Resource
-    private BusinessTypeMapper businessTypeMapper;
+    private EntityTypeMapper entityTypeMapper;
     @Resource
     private RelationFieldLibraryMapper relationFieldLibraryMapper;
     @Resource
@@ -91,7 +92,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
     private SmartSearchableService smartSearchableService;
     @Resource
     @Lazy // 避免循环依赖
-    private BusinessTypeRelationService businessTypeRelationService;
+    private EntityTypeRelationService entityTypeRelationService;
     @Resource
     private ModelFieldGroupService modelFieldGroupService;
     @Resource
@@ -103,6 +104,18 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
             return;
         }
         businessCapabilityService.refreshModelCrudFormDefinition(modelId);
+    }
+
+    /** 写入/更新分配时同步 model_id + model_code、field_id + field_code（迁移以 code 为幂等键）。 */
+    private void syncAssignmentIdentity(ModelFieldAssignmentDO assignment, ModelDO model, FieldDO field) {
+        if (model != null) {
+            assignment.setModelId(model.getId());
+            assignment.setModelCode(model.getCode());
+        }
+        if (field != null) {
+            assignment.setFieldId(field.getId());
+            assignment.setFieldCode(field.getCode());
+        }
     }
 
     @Override
@@ -132,6 +145,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
             exist.setIsSortable(isSortable != null ? isSortable : exist.getIsSortable());
             exist.setDefaultValue(defaultValue != null ? defaultValue : exist.getDefaultValue());
             exist.setValidationRules(validationRules != null ? validationRules : exist.getValidationRules());
+            syncAssignmentIdentity(exist, model, field);
             modelFieldAssignmentMapper.updateById(exist);
         } else {
             // 不存在正常记录,检查是否有已删除的记录（用于恢复）
@@ -158,8 +172,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
             } else {
                 // 完全不存在,创建新分配
                 ModelFieldAssignmentDO assignment = new ModelFieldAssignmentDO();
-                assignment.setModelId(modelId);
-                assignment.setFieldId(fieldId);
+                syncAssignmentIdentity(assignment, model, field);
                 assignment.setRequired(required != null ? required : false);
                 assignment.setIsSearchable(isSearchable);
                 assignment.setIsFilterable(isFilterable);
@@ -211,10 +224,11 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 }
                 // 如果是关联字段,保存前端选择的目标业务类型作为兜底信息
                 if (isEntityRef) {
-                    if (item.getTargetBusinessType() != null) {
-                        exist.setTargetBusinessType(item.getTargetBusinessType());
+                    if (item.getTargetEntityType() != null) {
+                        exist.setTargetEntityType(item.getTargetEntityType());
                     }
                 }
+                syncAssignmentIdentity(exist, model, field);
                 modelFieldAssignmentMapper.updateById(exist);
                 affectedCount++;
             } else {
@@ -243,8 +257,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 } else {
                     // 完全不存在,创建新分配
                     ModelFieldAssignmentDO assignment = new ModelFieldAssignmentDO();
-                    assignment.setModelId(reqVO.getModelId());
-                    assignment.setFieldId(item.getFieldId());
+                    syncAssignmentIdentity(assignment, model, field);
                     assignment.setRequired(item.getRequired() != null ? item.getRequired() : false);
                     assignment.setIsSearchable(item.getIsSearchable());
                     assignment.setIsFilterable(item.getIsFilterable());
@@ -254,7 +267,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                     assignment.setSort(item.getSort());
                     // 如果是关联字段,保存前端选择的目标业务类型作为兜底信息
                     if (isEntityRef) {
-                        assignment.setTargetBusinessType(item.getTargetBusinessType());
+                        assignment.setTargetEntityType(item.getTargetEntityType());
                     }
                     assignment.setTenantId(tenantId);
                     modelFieldAssignmentMapper.insert(assignment);
@@ -368,17 +381,17 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
 
         // 1. 获取固定列字段（来自业务类型配置,自动继承）
         // 只有专用存储类型（DEDICATED）才有固定列字段
-        if (model.getBusinessTypeCode() != null) {
-            BusinessTypeDO businessType = businessTypeMapper.selectByCode(model.getBusinessTypeCode());
-            if (businessType != null) {
-                StorageTypeEnum storageType = StorageTypeEnum.getByCode(businessType.getStorageType());
+        if (model.getEntityTypeCode() != null) {
+            EntityTypeDO entityType = entityTypeMapper.selectByCode(model.getEntityTypeCode());
+            if (entityType != null) {
+                StorageTypeEnum storageType = StorageTypeEnum.getByCode(entityType.getStorageType());
                 if (storageType != null && storageType.isDedicated()) {
                     // 获取该业务类型的固定列字段
-                    List<BusinessTypeBaseFieldRespVO> baseFields = 
-                            businessTypeBaseFieldService.listByBusinessTypeCode(model.getBusinessTypeCode());
+                    List<EntityTypeBaseFieldRespVO> baseFields = 
+                            entityTypeBaseFieldService.listByEntityTypeCode(model.getEntityTypeCode());
                     
-                    for (BusinessTypeBaseFieldRespVO baseField : baseFields) {
-                        ModelFieldAssignmentRespVO respVO = convertBaseFieldToAssignmentRespVO(baseField, model.getBusinessTypeCode());
+                    for (EntityTypeBaseFieldRespVO baseField : baseFields) {
+                        ModelFieldAssignmentRespVO respVO = convertBaseFieldToAssignmentRespVO(baseField, model.getEntityTypeCode());
                         result.add(respVO);
                     }
                 }
@@ -440,25 +453,25 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                         RelationFieldLibraryDO relationField = relationFieldLibraryMapper.selectById(assignment.getRefLibraryId());
                         if (relationField != null) {
                             respVO.setRefLibraryId(assignment.getRefLibraryId());
-                            respVO.setTargetBusinessType(relationField.getRefBusinessType());
+                            respVO.setTargetEntityType(relationField.getRefEntityType());
                             respVO.setDisplayFieldCode(relationField.getDisplayFieldCode());
                             respVO.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_RELATION);
                             
                             // 获取目标业务类型名称（模型名称不再使用）
                             String[] targetNames = relationFieldLibraryService.getTargetNames(
-                                    relationField.getRefBusinessType(),
+                                    relationField.getRefEntityType(),
                                     null);
                             if (targetNames != null) {
-                                respVO.setTargetBusinessTypeName(targetNames[0]);
+                                respVO.setTargetEntityTypeName(targetNames[0]);
                             }
                         }
-                    } else if (assignment.getTargetBusinessType() != null) {
+                    } else if (assignment.getTargetEntityType() != null) {
                         // 2. 兜底方式：字段分配记录中保存了目标业务类型
                         respVO.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_RELATION);
-                        respVO.setTargetBusinessType(assignment.getTargetBusinessType());
-                        BusinessTypeDO targetBT = businessTypeMapper.selectByCode(assignment.getTargetBusinessType());
-                        if (targetBT != null) {
-                            respVO.setTargetBusinessTypeName(targetBT.getName());
+                        respVO.setTargetEntityType(assignment.getTargetEntityType());
+                        EntityTypeDO targetEntityType = entityTypeMapper.selectByCode(assignment.getTargetEntityType());
+                        if (targetEntityType != null) {
+                            respVO.setTargetEntityTypeName(targetEntityType.getName());
                         }
                     } else {
                         log.warn("[getModelFields] 关联字段缺少来源信息, fieldId={}, modelId={}", field.getId(), modelId);
@@ -507,10 +520,10 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
      * 将固定列字段转换为 ModelFieldAssignmentRespVO
      * 
      * @param baseField 固定列字段
-     * @param sourceBusinessTypeCode 源业务类型编码（用于查询关联关系）
+     * @param sourceEntityTypeCode 源业务类型编码（用于查询关联关系）
      * @return 模型字段分配响应 VO
      */
-    private ModelFieldAssignmentRespVO convertBaseFieldToAssignmentRespVO(BusinessTypeBaseFieldRespVO baseField, String sourceBusinessTypeCode) {
+    private ModelFieldAssignmentRespVO convertBaseFieldToAssignmentRespVO(EntityTypeBaseFieldRespVO baseField, String sourceEntityTypeCode) {
         ModelFieldAssignmentRespVO respVO = new ModelFieldAssignmentRespVO();
         
         // 创建一个虚拟的 FieldRespVO 用于兼容现有结构
@@ -545,37 +558,37 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         respVO.setTypeConfig(baseField.getTypeConfig());
         
         // 如果是关联字段（REF_Multi 类型）,从 fieldCode 解析关联信息
-        // fieldCode 格式为 REL_{targetBusinessTypeCode},例如 REL_REGION
+        // fieldCode 格式为 REL_{targetEntityTypeCode},例如 REL_REGION
         if ("REF_Multi".equals(baseField.getDataType()) && baseField.getFieldCode() != null 
                 && baseField.getFieldCode().startsWith("REL_")) {
             try {
-                // 从 fieldCode 解析出 targetBusinessTypeCode（去掉 "REL_" 前缀）
-                // 注意：fieldCode 中的 targetBusinessTypeCode 是大写的（如 REL_REGION）,
-                // 但实际的 targetBusinessTypeCode 可能是 "Region",需要不区分大小写匹配
+                // 从 fieldCode 解析出 targetEntityTypeCode（去掉 "REL_" 前缀）
+                // 注意：fieldCode 中的 targetEntityTypeCode 是大写的（如 REL_REGION）,
+                // 但实际的 targetEntityTypeCode 可能是 "Region",需要不区分大小写匹配
                 String fieldCodeSuffix = baseField.getFieldCode().substring(4); // 去掉 "REL_" 前缀
                 
-                // 查询 BusinessType 关联关系,获取关联信息
-                if (sourceBusinessTypeCode != null) {
+                // 查询 EntityType 关联关系,获取关联信息
+                if (sourceEntityTypeCode != null) {
                     // 查询所有从源业务类型出发的关联关系
-                    List<BusinessTypeRelationRespVO> relations = businessTypeRelationService.getRelationsBySourceCode(sourceBusinessTypeCode);
+                    List<EntityTypeRelationRespVO> relations = entityTypeRelationService.getRelationsBySourceCode(sourceEntityTypeCode);
                     
-                    // 不区分大小写匹配 targetBusinessTypeCode
-                    BusinessTypeRelationRespVO relation = relations.stream()
-                            .filter(r -> r.getTargetBusinessTypeCode() != null 
-                                    && r.getTargetBusinessTypeCode().equalsIgnoreCase(fieldCodeSuffix))
+                    // 不区分大小写匹配 targetEntityTypeCode
+                    EntityTypeRelationRespVO relation = relations.stream()
+                            .filter(r -> r.getTargetEntityTypeCode() != null 
+                                    && r.getTargetEntityTypeCode().equalsIgnoreCase(fieldCodeSuffix))
                             .findFirst()
                             .orElse(null);
                     
                     if (relation != null) {
-                        respVO.setTargetBusinessType(relation.getTargetBusinessTypeCode());
-                        respVO.setTargetBusinessTypeName(relation.getTargetBusinessTypeName());
+                        respVO.setTargetEntityType(relation.getTargetEntityTypeCode());
+                        respVO.setTargetEntityTypeName(relation.getTargetEntityTypeName());
                         respVO.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_RELATION);
                         
-                        log.debug("[convertBaseFieldToAssignmentRespVO][为关联字段设置关联信息: fieldCode={}, targetBusinessType={}]",
-                                baseField.getFieldCode(), relation.getTargetBusinessTypeCode());
+                        log.debug("[convertBaseFieldToAssignmentRespVO][为关联字段设置关联信息: fieldCode={}, targetEntityType={}]",
+                                baseField.getFieldCode(), relation.getTargetEntityTypeCode());
                     } else {
-                        log.debug("[convertBaseFieldToAssignmentRespVO][未找到匹配的关联关系: fieldCode={}, sourceBusinessType={}]",
-                                baseField.getFieldCode(), sourceBusinessTypeCode);
+                        log.debug("[convertBaseFieldToAssignmentRespVO][未找到匹配的关联关系: fieldCode={}, sourceEntityType={}]",
+                                baseField.getFieldCode(), sourceEntityTypeCode);
                     }
                 }
             } catch (Exception e) {
@@ -595,10 +608,10 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
     /**
      * 检查指定的字段ID是否是固定列字段
      * 
-     * 固定列字段是通过 BusinessTypeBaseFieldService 管理的,
+     * 固定列字段是通过 EntityTypeBaseFieldService 管理的,
      * 它们自动继承到该业务类型下的所有 Model,不允许删除或修改。
      * 
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @param fieldId 字段ID（可能是固定列字段的ID）
      * @return 是否是固定列字段
      */
@@ -615,7 +628,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         }
 
         // 2. 验证关联目标已在当前 Model 启用（FR-BDA-032）
-        // 注意：由于不再从 reqVO 直接获取 targetBusinessType,改为通过 modelRelationId 校验
+        // 注意：由于不再从 reqVO 直接获取 targetEntityType,改为通过 modelRelationId 校验
         if (reqVO.getModelRelationId() != null) {
             ModelRelationDO modelRelation = modelRelationMapper.selectById(reqVO.getModelRelationId());
             if (modelRelation == null || !modelRelation.getSourceModelId().equals(reqVO.getModelId())) {
@@ -681,8 +694,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
 
         // 6. 创建字段分配
         ModelFieldAssignmentDO assignment = new ModelFieldAssignmentDO();
-        assignment.setModelId(reqVO.getModelId());
-        assignment.setFieldId(field.getId());
+        syncAssignmentIdentity(assignment, model, field);
         assignment.setRefLibraryId(refLibraryId);
         assignment.setRequired(reqVO.getRequired() != null ? reqVO.getRequired() : false);
         assignment.setSort(reqVO.getSort());
@@ -743,15 +755,15 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 RelationFieldLibraryDO relationField = relationFieldLibraryMapper.selectById(assignment.getRefLibraryId());
                 if (relationField != null) {
                     respVO.setRefLibraryId(assignment.getRefLibraryId());
-                    respVO.setTargetBusinessType(relationField.getRefBusinessType());
+                    respVO.setTargetEntityType(relationField.getRefEntityType());
                     respVO.setDisplayFieldCode(relationField.getDisplayFieldCode());
                     respVO.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_RELATION);
                     
                     String[] targetNames = relationFieldLibraryService.getTargetNames(
-                            relationField.getRefBusinessType(),
+                            relationField.getRefEntityType(),
                             null);
                     if (targetNames != null) {
-                        respVO.setTargetBusinessTypeName(targetNames[0]);
+                        respVO.setTargetEntityTypeName(targetNames[0]);
                     }
                 }
             } else if (assignment.getModelRelationId() != null) {
@@ -764,21 +776,21 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                             .eq(ModelDO::getCode, modelRelation.getTargetModelCode())
                             .eq(ModelDO::getDeleted, false));
                     if (targetModel != null) {
-                        respVO.setTargetBusinessType(targetModel.getBusinessTypeCode());
+                        respVO.setTargetEntityType(targetModel.getEntityTypeCode());
                         respVO.setTargetModelName(targetModel.getName());
-                        BusinessTypeDO targetBT = businessTypeMapper.selectByCode(targetModel.getBusinessTypeCode());
-                        if (targetBT != null) {
-                            respVO.setTargetBusinessTypeName(targetBT.getName());
+                        EntityTypeDO targetEntityType = entityTypeMapper.selectByCode(targetModel.getEntityTypeCode());
+                        if (targetEntityType != null) {
+                            respVO.setTargetEntityTypeName(targetEntityType.getName());
                         }
                     }
                 }
-            } else if (assignment.getTargetBusinessType() != null) {
+            } else if (assignment.getTargetEntityType() != null) {
                 // 3. 兜底：从字段分配记录中读取前端选择的目标业务类型
                 respVO.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_RELATION);
-                respVO.setTargetBusinessType(assignment.getTargetBusinessType());
-                BusinessTypeDO targetBT = businessTypeMapper.selectByCode(assignment.getTargetBusinessType());
-                if (targetBT != null) {
-                    respVO.setTargetBusinessTypeName(targetBT.getName());
+                respVO.setTargetEntityType(assignment.getTargetEntityType());
+                EntityTypeDO targetEntityType = entityTypeMapper.selectByCode(assignment.getTargetEntityType());
+                if (targetEntityType != null) {
+                    respVO.setTargetEntityTypeName(targetEntityType.getName());
                 }
             } else {
                 // 关联信息缺失,记录警告日志
@@ -883,8 +895,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
 
         // 4. 创建新的字段分配记录
         ModelFieldAssignmentDO assignment = new ModelFieldAssignmentDO();
-        assignment.setModelId(modelId);
-        assignment.setFieldId(fieldId);
+        syncAssignmentIdentity(assignment, model, field);
         assignment.setRequired(false);
         assignment.setSort(999); // 排在最后
         assignment.setTenantId(getTenantId());
@@ -1000,7 +1011,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int batchAssignAssociationFieldToModels(List<Long> modelIds, Long fieldId, String targetBusinessTypeCode) {
+    public int batchAssignAssociationFieldToModels(List<Long> modelIds, Long fieldId, String targetEntityTypeCode) {
         if (modelIds == null || modelIds.isEmpty()) {
             log.warn("[batchAssignAssociationFieldToModels][Model列表为空,跳过]");
             return 0;
@@ -1008,6 +1019,11 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
 
         if (fieldId == null) {
             throw new ServiceException(400, "字段ID不能为空");
+        }
+
+        FieldDO field = fieldMapper.selectById(fieldId);
+        if (field == null) {
+            throw new ServiceException(404, "字段不存在：" + fieldId);
         }
 
         Long tenantId = getTenantId();
@@ -1053,11 +1069,13 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         }
 
         // 4. 批量插入ModelFieldAssignment记录
+        Map<Long, ModelDO> modelById = models.stream()
+                .collect(Collectors.toMap(ModelDO::getId, m -> m, (a, b) -> a));
         List<ModelFieldAssignmentDO> assignments = new ArrayList<>();
         for (Long modelId : needAssignModelIds) {
+            ModelDO model = modelById.get(modelId);
             ModelFieldAssignmentDO assignment = new ModelFieldAssignmentDO();
-            assignment.setModelId(modelId);
-            assignment.setFieldId(fieldId);
+            syncAssignmentIdentity(assignment, model, field);
             assignment.setRequired(false);  // 关联字段默认非必填
             assignment.setIsSearchable(false);  // 关联字段默认不可搜索
             assignment.setIsFilterable(true);   // 关联字段默认可筛选（下拉选择关联对象）
@@ -1081,9 +1099,9 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
             }
         }
 
-        log.info("[batchAssignAssociationFieldToModels][批量分配关联字段完成: fieldId={}, targetBusinessType={}, " +
+        log.info("[batchAssignAssociationFieldToModels][批量分配关联字段完成: fieldId={}, targetEntityType={}, " +
                         "totalModelCount={}, assignedCount={}, successCount={}]",
-                fieldId, targetBusinessTypeCode, modelIds.size(), needAssignModelIds.size(), successCount);
+                fieldId, targetEntityTypeCode, modelIds.size(), needAssignModelIds.size(), successCount);
 
         if (successCount > 0) {
             for (Long modelId : needAssignModelIds) {
@@ -1095,7 +1113,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int smartAssignAssociationFieldToModels(List<Long> modelIds, Long fieldId, String targetBusinessTypeCode) {
+    public int smartAssignAssociationFieldToModels(List<Long> modelIds, Long fieldId, String targetEntityTypeCode) {
         if (modelIds == null || modelIds.isEmpty()) {
             return 0;
         }
@@ -1106,12 +1124,12 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         if (modelCount <= 10) {
             // 小批量：同步批量处理
             log.info("[smartAssignAssociationFieldToModels][小批量同步处理: modelCount={}]", modelCount);
-            return batchAssignAssociationFieldToModels(modelIds, fieldId, targetBusinessTypeCode);
+            return batchAssignAssociationFieldToModels(modelIds, fieldId, targetEntityTypeCode);
         } else {
             // 中大批量：同步批量处理（短期方案）
             // 后续可以改为异步处理,提升用户体验
             log.info("[smartAssignAssociationFieldToModels][中大批量同步处理: modelCount={}]", modelCount);
-            return batchAssignAssociationFieldToModels(modelIds, fieldId, targetBusinessTypeCode);
+            return batchAssignAssociationFieldToModels(modelIds, fieldId, targetEntityTypeCode);
         }
     }
 

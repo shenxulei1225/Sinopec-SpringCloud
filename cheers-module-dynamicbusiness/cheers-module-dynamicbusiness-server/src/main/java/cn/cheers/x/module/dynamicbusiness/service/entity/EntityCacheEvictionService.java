@@ -13,9 +13,9 @@ public class EntityCacheEvictionService {
 
     private final StringRedisTemplate stringRedisTemplate;
 
-    public void evictEntityCaches(Long modelId, String businessTypeCode) {
+    public void evictEntityCaches(Long modelId, String entityTypeCode) {
         EntityCacheHelper.evictEntityTree(stringRedisTemplate, modelId);
-        EntityCacheHelper.evictEntityList(stringRedisTemplate, businessTypeCode, modelId);
+        EntityCacheHelper.evictEntityList(stringRedisTemplate, entityTypeCode, modelId);
     }
 
     public void evictEntity(Long entityId) {

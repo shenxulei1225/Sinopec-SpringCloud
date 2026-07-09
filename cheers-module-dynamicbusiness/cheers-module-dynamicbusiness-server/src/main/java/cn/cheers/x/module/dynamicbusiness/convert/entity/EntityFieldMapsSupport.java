@@ -11,12 +11,13 @@ import java.util.Set;
 /**
  * 实体 Write/Read 与 DO 之间的 baseFields / customFields 分桶转换。
  *
- * <p>固定列（含 businessTypeCode、modelId、name、status、parentId）在 API 层进入 {@code baseFields}；
+ * <p>固定列（含 entityTypeCode、modelId、name、status、parentId）在 API 层进入 {@code baseFields}；
  * DO 表列存核心固定列，其余 base 扩展键暂合并进 customFields JSONB 持久化。</p>
  */
 public final class EntityFieldMapsSupport {
 
     private static final Set<String> CORE_BASE_KEYS = Set.of(
+            "entitytypecode", "entity_type_code",
             "businesstypecode", "business_type_code",
             "modelid", "model_id",
             "name", "status", "parentid", "parent_id");
@@ -35,8 +36,9 @@ public final class EntityFieldMapsSupport {
         return CORE_BASE_KEYS.contains(fieldCode.trim().toLowerCase());
     }
 
-    public static String getBusinessTypeCode(Map<String, Object> baseFields) {
-        return asString(firstPresent(baseFields, "businessTypeCode", "business_type_code"));
+    public static String getEntityTypeCode(Map<String, Object> baseFields) {
+        return asString(firstPresent(baseFields,
+                "entityTypeCode", "entity_type_code", "businessTypeCode", "business_type_code"));
     }
 
     public static Long getModelId(Map<String, Object> baseFields) {
@@ -51,10 +53,10 @@ public final class EntityFieldMapsSupport {
         return modelId;
     }
 
-    public static String getRequiredBusinessTypeCode(Map<String, Object> baseFields) {
-        String code = getBusinessTypeCode(baseFields);
+    public static String getRequiredEntityTypeCode(Map<String, Object> baseFields) {
+        String code = getEntityTypeCode(baseFields);
         if (code == null || code.isBlank()) {
-            throw new ServiceException(400, "baseFields.businessTypeCode 不能为空");
+            throw new ServiceException(400, "baseFields.entityTypeCode 不能为空");
         }
         return code.trim();
     }
@@ -66,7 +68,7 @@ public final class EntityFieldMapsSupport {
         Map<String, Object> base = normalizeMap(baseFields);
         Map<String, Object> custom = normalizeMap(customFields);
 
-        entity.setBusinessTypeCode(getBusinessTypeCode(base));
+        entity.setEntityTypeCode(getEntityTypeCode(base));
         entity.setModelId(getModelId(base));
         entity.setName(asString(firstPresent(base, "name")));
         entity.setStatus(asInteger(firstPresent(base, "status")));
@@ -89,7 +91,7 @@ public final class EntityFieldMapsSupport {
         if (entity == null) {
             return base;
         }
-        putIfNotNull(base, "businessTypeCode", entity.getBusinessTypeCode());
+        putIfNotNull(base, "entityTypeCode", entity.getEntityTypeCode());
         putIfNotNull(base, "modelId", entity.getModelId());
         putIfNotNull(base, "name", entity.getName());
         putIfNotNull(base, "status", entity.getStatus());

@@ -25,7 +25,7 @@ public class PolicySetDO extends TenantBaseDO {
     @TableId(type = IdType.INPUT)
     private String id;
 
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     private String templateId;
 

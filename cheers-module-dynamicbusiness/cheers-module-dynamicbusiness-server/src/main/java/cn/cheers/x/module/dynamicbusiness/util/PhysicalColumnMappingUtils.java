@@ -4,7 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.PhysicalColumnConfig;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.PhysicalColumnConfig;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;

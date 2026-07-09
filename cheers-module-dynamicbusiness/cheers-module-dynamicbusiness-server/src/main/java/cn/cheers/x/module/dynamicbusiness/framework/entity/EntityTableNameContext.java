@@ -3,14 +3,14 @@ package cn.cheers.x.module.dynamicbusiness.framework.entity;
 /**
  * 实体表名上下文
  * 
- * <p>使用 ThreadLocal 传递当前操作的 businessTypeCode，
+ * <p>使用 ThreadLocal 传递当前操作的 entityTypeCode，
  * 供 MyBatis-Plus 动态表名拦截器使用。</p>
  * 
  * <h3>使用示例</h3>
  * <pre>{@code
  * try {
  *     EntityTableNameContext.set("equipment");
- *     // 执行数据库操作，表名会自动替换为 biz_equipment
+ *     // 执行数据库操作，表名会自动替换为 ent_equipment
  *     mapper.selectById(id);
  * } finally {
  *     EntityTableNameContext.clear();
@@ -27,10 +27,10 @@ public class EntityTableNameContext {
     /**
      * 设置当前线程的业务类型编码
      * 
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      */
-    public static void set(String businessTypeCode) {
-        BUSINESS_TYPE_CODE.set(businessTypeCode);
+    public static void set(String entityTypeCode) {
+        BUSINESS_TYPE_CODE.set(entityTypeCode);
     }
 
     /**

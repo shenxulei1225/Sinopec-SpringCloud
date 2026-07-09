@@ -33,7 +33,7 @@ public class CategoryUpdateReqDTO {
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "emergency_event")
     @NotBlank(message = "业务类型编码不能为空")
     @Size(max = 50, message = "业务类型编码长度不能超过50")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "排序", example = "1")
     private Integer sort;

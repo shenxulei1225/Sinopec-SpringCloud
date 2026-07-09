@@ -8,8 +8,8 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface ProcessCapabilityBindingMapper extends BaseMapperX<ProcessCapabilityBindingDO> {
 
-    default ProcessCapabilityBindingDO selectByBusinessTypeCode(String businessTypeCode) {
+    default ProcessCapabilityBindingDO selectByEntityTypeCode(String entityTypeCode) {
         return selectOne(new LambdaQueryWrapperX<ProcessCapabilityBindingDO>()
-                .eq(ProcessCapabilityBindingDO::getBusinessTypeCode, businessTypeCode));
+                .eq(ProcessCapabilityBindingDO::getEntityTypeCode, entityTypeCode));
     }
 }

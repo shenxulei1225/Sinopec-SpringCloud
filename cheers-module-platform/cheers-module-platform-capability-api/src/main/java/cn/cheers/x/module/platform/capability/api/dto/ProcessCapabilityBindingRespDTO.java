@@ -14,7 +14,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class ProcessCapabilityBindingRespDTO {
 
-    private String businessTypeCode;
+    private String entityTypeCode;
     private String capabilityPackId;
     private String orchestrationRef;
     private String policySetId;

@@ -9,7 +9,7 @@ ALTER TABLE dynamic_business_type
 ADD COLUMN IF NOT EXISTS association_fields JSONB DEFAULT '{}'::jsonb;
 
 -- 添加字段注释
-COMMENT ON COLUMN dynamic_business_type.association_fields IS '可用的关联字段定义（JSONB格式）。存储该业务类型可供其他业务类型关联的字段定义。格式：{"字段key": {"fieldType": "REF_Multi", "refBusinessTypeCode": "xxx", ...}}。Model创建时可以从这些字段中选择使用。';
+COMMENT ON COLUMN dynamic_business_type.association_fields IS '可用的关联字段定义（JSONB格式）。存储该业务类型可供其他业务类型关联的字段定义。格式：{"字段key": {"fieldType": "REF_Multi", "refEntityTypeCode": "xxx", ...}}。Model创建时可以从这些字段中选择使用。';
 
 -- 创建 GIN 索引以加速 JSONB 查询
 -- GIN 索引支持以下操作符：
@@ -21,7 +21,7 @@ COMMENT ON COLUMN dynamic_business_type.association_fields IS '可用的关联�
 --   #>> : 路径查询（返回文本）
 -- 使用示例：
 --   SELECT * FROM dynamic_business_type WHERE association_fields ? 'equipment_ref';
---   SELECT * FROM dynamic_business_type WHERE association_fields @> '{"equipment_ref": {"refBusinessTypeCode": "equipment"}}';
+--   SELECT * FROM dynamic_business_type WHERE association_fields @> '{"equipment_ref": {"refEntityTypeCode": "equipment"}}';
 CREATE INDEX IF NOT EXISTS idx_dynamic_business_type_association_fields 
     ON dynamic_business_type USING GIN (association_fields);
 

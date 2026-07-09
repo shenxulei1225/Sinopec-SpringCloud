@@ -34,7 +34,7 @@ public interface EntitySyncFailLogMapper extends BaseMapperX<EntitySyncFailLogDO
     /**
      * 根据实体ID查询最新的失败日志（单条）
      *
-     * <p>用于获取实体的 businessTypeCode 等信息。</p>
+     * <p>用于获取实体的 entityTypeCode 等信息。</p>
      */
     default EntitySyncFailLogDO selectOneByEntityId(Long entityId) {
         return selectOne(new LambdaQueryWrapperX<EntitySyncFailLogDO>()
@@ -112,22 +112,22 @@ public interface EntitySyncFailLogMapper extends BaseMapperX<EntitySyncFailLogDO
     /**
      * 统计指定状态和业务类型的日志数量
      */
-    default Long countByStatusAndBusinessTypeCode(String status, String businessTypeCode) {
+    default Long countByStatusAndEntityTypeCode(String status, String entityTypeCode) {
         return selectCount(new LambdaQueryWrapperX<EntitySyncFailLogDO>()
                 .eq(EntitySyncFailLogDO::getStatus, status)
-                .eq(EntitySyncFailLogDO::getBusinessTypeCode, businessTypeCode));
+                .eq(EntitySyncFailLogDO::getEntityTypeCode, entityTypeCode));
     }
 
     /**
      * 查询待处理的失败日志（按业务类型过滤）
      */
-    default List<EntitySyncFailLogDO> selectPendingLogsByBusinessTypeCode(String businessTypeCode, int limit) {
+    default List<EntitySyncFailLogDO> selectPendingLogsByEntityTypeCode(String entityTypeCode, int limit) {
         if (limit <= 0) {
             return Collections.emptyList();
         }
         return selectList(new LambdaQueryWrapperX<EntitySyncFailLogDO>()
                 .eq(EntitySyncFailLogDO::getStatus, EntitySyncFailLogDO.STATUS_PENDING)
-                .eq(EntitySyncFailLogDO::getBusinessTypeCode, businessTypeCode)
+                .eq(EntitySyncFailLogDO::getEntityTypeCode, entityTypeCode)
                 .orderByAsc(EntitySyncFailLogDO::getCreateTime)
                 .last("LIMIT " + limit));
     }

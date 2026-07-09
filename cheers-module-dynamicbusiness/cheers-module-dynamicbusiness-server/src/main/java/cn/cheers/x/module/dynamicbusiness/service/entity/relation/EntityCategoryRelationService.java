@@ -23,13 +23,13 @@ import java.util.List;
  * <ol>
  *   <li><b>搜索分类（命中多个分类）</b>：
  *       <br/>CategoryService 先返回命中的 {@code categoryIds}；
- *       <br/>本服务必须调用 {@code listEntityIdsByCategoryIdsAndBusinessType(categoryIds, businessTypeCode)}；
+ *       <br/>本服务必须调用 {@code listEntityIdsByCategoryIdsAndEntityType(categoryIds, entityTypeCode)}；
  *       <br/>再由 EntityService 按返回 IDs 查询实体并更新右侧列表。</li>
  *   <li><b>搜索实体（左树不变）</b>：
  *       <br/>基于当前选中分类范围获取候选 IDs：
  *       <br/>- 仅当前分类（不包含子分类）：调用 {@code listEntityIdsByCategoryId(categoryId)}；
  *       <br/>- 含子分类范围：先由 CategoryService 展开 {@code categoryIds}，再调用
- *       {@code listEntityIdsByCategoryIdsAndBusinessType(categoryIds, businessTypeCode)}；
+ *       {@code listEntityIdsByCategoryIdsAndEntityType(categoryIds, entityTypeCode)}；
  *       <br/>最后由 EntityService 按实体字段（name/customFields）搜索并更新右侧列表。</li>
  * </ol>
  *
@@ -49,9 +49,9 @@ public interface EntityCategoryRelationService {
          *
          * @param entityId 实体ID
          * @param categoryId 分类ID
-         * @param businessTypeCode 业务类型编码（必填）
+         * @param entityTypeCode 业务类型编码（必填）
          */
-        EntityCategoryAssociationRespVO associate(Long entityId, Long categoryId, String businessTypeCode);
+        EntityCategoryAssociationRespVO associate(Long entityId, Long categoryId, String entityTypeCode);
 
         /**
          * 取消单个实体与单个分类的关联。
@@ -59,7 +59,7 @@ public interface EntityCategoryRelationService {
          * @param entityId 实体ID
          * @param categoryId 分类ID
          */
-        EntityCategoryAssociationRespVO disassociate(Long entityId, Long categoryId, String businessTypeCode);
+        EntityCategoryAssociationRespVO disassociate(Long entityId, Long categoryId, String entityTypeCode);
 
         /**
          * 检查关联是否存在。
@@ -68,7 +68,7 @@ public interface EntityCategoryRelationService {
          * @param categoryId 分类ID
          * @return 是否存在关联
          */
-        boolean existsRelation(Long entityId, Long categoryId, String businessTypeCode);
+        boolean existsRelation(Long entityId, Long categoryId, String entityTypeCode);
 
         // ==================== 单实体-多分类操作 ====================
 
@@ -79,23 +79,23 @@ public interface EntityCategoryRelationService {
          *
          * @param entityId 实体ID
          * @param categoryIds 分类ID列表
-         * @param businessTypeCode 业务类型编码，用于路由到正确的存储表验证实体存在性
+         * @param entityTypeCode 业务类型编码，用于路由到正确的存储表验证实体存在性
          * @return 关联操作结果，包含成功/失败详情
          */
         EntityCategoryAssociationRespVO batchAssociateEntityToCategories(
-                Long entityId, List<Long> categoryIds, String businessTypeCode);
+                Long entityId, List<Long> categoryIds, String entityTypeCode);
 
         /**
          * 批量取消单个实体与多个分类的关联。
          *
-         * <p><b>限制条件</b>：必须显式传入 {@code businessTypeCode}，用于命中业务分区与索引。</p>
+         * <p><b>限制条件</b>：必须显式传入 {@code entityTypeCode}，用于命中业务分区与索引。</p>
          * <p><b>适用范围</b>：单个实体场景（该实体对应唯一业务类型）。</p>
          *
          * @param entityId 实体ID
          * @param categoryIds 分类ID列表
-         * @param businessTypeCode 业务类型编码（必填）
+         * @param entityTypeCode 业务类型编码（必填）
          */
-        EntityCategoryAssociationRespVO batchDisassociateEntityFromCategories(Long entityId, List<Long> categoryIds, String businessTypeCode);
+        EntityCategoryAssociationRespVO batchDisassociateEntityFromCategories(Long entityId, List<Long> categoryIds, String entityTypeCode);
 
         /**
          * 替换单个实体的所有分类关联（带验证）
@@ -105,11 +105,11 @@ public interface EntityCategoryRelationService {
          *
          * @param entityId 实体ID
          * @param categoryIds 新的分类ID列表
-         * @param businessTypeCode 业务类型编码
+         * @param entityTypeCode 业务类型编码
          * @return 关联操作结果，包含成功/失败详情
          */
         EntityCategoryAssociationRespVO updateAssociation(
-                Long entityId, List<Long> categoryIds, String businessTypeCode);
+                Long entityId, List<Long> categoryIds, String entityTypeCode);
 
         // ==================== 多实体-单分类操作 ====================
 
@@ -118,25 +118,25 @@ public interface EntityCategoryRelationService {
          *
          * @param entityIds 实体ID列表
          * @param categoryId 分类ID
-         * @param businessTypeCode 业务类型编码
+         * @param entityTypeCode 业务类型编码
          * @return 批量操作结果
          */
         BatchEntityCategoryAssociationRespVO batchAssociateEntitiesToCategory(
-                List<Long> entityIds, Long categoryId, String businessTypeCode);
+                List<Long> entityIds, Long categoryId, String entityTypeCode);
 
         /**
         * 批量取消多个实体与单个分类的关联。
         *
-        * <p><b>限制条件</b>：调用方需保证 {@code entityIds} 对应同一 {@code businessTypeCode}。</p>
+        * <p><b>限制条件</b>：调用方需保证 {@code entityIds} 对应同一 {@code entityTypeCode}。</p>
         * <p>若同一批次内存在多个业务类型，请按业务类型拆分后分别调用，或使用按实体维度携带业务类型的专用批量方法。</p>
         *
         * @param entityIds 实体ID列表
         * @param categoryId 分类ID
-        * @param businessTypeCode 业务类型编码（必填）
+        * @param entityTypeCode 业务类型编码（必填）
         * @return 批量操作结果
         */
         BatchEntityCategoryAssociationRespVO batchDisassociateEntitiesFromCategory(
-                List<Long> entityIds, Long categoryId, String businessTypeCode);
+                List<Long> entityIds, Long categoryId, String entityTypeCode);
 
         // ==================== 多实体-多分类操作 ====================
 
@@ -148,25 +148,25 @@ public interface EntityCategoryRelationService {
          *
          * @param entityIds 实体ID列表
          * @param categoryIds 分类ID列表
-         * @param businessTypeCode 业务类型编码
+         * @param entityTypeCode 业务类型编码
          * @return 批量操作结果
          */
         BatchEntityCategoryAssociationRespVO batchAssociateEntitiesToCategories(
-                List<Long> entityIds, List<Long> categoryIds, String businessTypeCode);
+                List<Long> entityIds, List<Long> categoryIds, String entityTypeCode);
 
         /**
          * 批量取消多个实体与多个分类的关联（多对多）。
          *
-         * <p><b>限制条件</b>：调用方需保证本次请求内所有实体属于同一 {@code businessTypeCode}。</p>
+         * <p><b>限制条件</b>：调用方需保证本次请求内所有实体属于同一 {@code entityTypeCode}。</p>
          * <p>若存在跨业务类型实体，请先按业务类型分组并分批调用；超出该限制时应使用按实体维度传入业务类型的批量接口。</p>
          *
          * @param entityIds 实体ID列表
          * @param categoryIds 分类ID列表
-         * @param businessTypeCode 业务类型编码（必填）
+         * @param entityTypeCode 业务类型编码（必填）
          * @return 批量操作结果
          */
         BatchEntityCategoryAssociationRespVO batchDisassociateEntitiesFromCategories(
-                List<Long> entityIds, List<Long> categoryIds, String businessTypeCode);
+                List<Long> entityIds, List<Long> categoryIds, String entityTypeCode);
 
         /**
          * 批量替换多个实体的分类关联
@@ -175,11 +175,11 @@ public interface EntityCategoryRelationService {
          *
          * @param entityIds 实体ID列表
          * @param categoryIds 新的分类ID列表
-         * @param businessTypeCode 业务类型编码
+         * @param entityTypeCode 业务类型编码
          * @return 批量操作结果
          */
         BatchEntityCategoryAssociationRespVO batchUpdateAssociation(
-                List<Long> entityIds, List<Long> categoryIds, String businessTypeCode);
+                List<Long> entityIds, List<Long> categoryIds, String entityTypeCode);
 
         // ==================== 实体分类关系查询接口（仅关系查询，不做树解析） ====================
 
@@ -187,10 +187,10 @@ public interface EntityCategoryRelationService {
          * 获取实体关联的所有分类ID列表。
          *
          * @param entityId 实体ID
-         * @param businessTypeCode 业务类型编码（必填，用于过滤出当前业务下的关联）
+         * @param entityTypeCode 业务类型编码（必填，用于过滤出当前业务下的关联）
          * @return 分类ID列表
          */
-        List<Long> listCategoryIdsByEntityId(Long entityId, String businessTypeCode);
+        List<Long> listCategoryIdsByEntityId(Long entityId, String entityTypeCode);
 
         /**
          * 单分类（仅当前分类，不含子树）查询实体ID列表。
@@ -199,10 +199,10 @@ public interface EntityCategoryRelationService {
          * 应改用 {@link #listEntityIdsByCategoryIdWithDescendants(Long, String)}。</p>
          *
          * @param categoryId 分类ID
-         * @param businessTypeCode 业务类型编码（必填）
+         * @param entityTypeCode 业务类型编码（必填）
          * @return 有序实体ID列表（按 relation.sort，稳定去重）
          */
-        List<Long> listEntityIdsByCategoryIdOnly(Long categoryId, String businessTypeCode);
+        List<Long> listEntityIdsByCategoryIdOnly(Long categoryId, String entityTypeCode);
 
         /**
          * 查询单个分类（含其子分类）关联的实体ID列表。
@@ -211,19 +211,19 @@ public interface EntityCategoryRelationService {
          * 本服务不负责树结构解析。</p>
          *
          * @param categoryId 分类ID
-         * @param businessTypeCode 业务类型编码
+         * @param entityTypeCode 业务类型编码
          * @return 有序实体ID列表（分类顺序优先，其次 relation.sort，稳定去重）
          */
-        List<Long> listEntityIdsByCategoryIdWithDescendants(Long categoryId, String categoryTypeCode, String businessTypeCode);
+        List<Long> listEntityIdsByCategoryIdWithDescendants(Long categoryId, String categoryTypeCode, String entityTypeCode);
 
         /**
          * 查询多个分类（仅输入分类本身，不含子树）关联的实体ID列表。
          *
          * @param categoryIds 分类ID列表
-         * @param businessTypeCode 业务类型编码
+         * @param entityTypeCode 业务类型编码
          * @return 有序实体ID列表（先分类顺序，再 relation.sort，稳定去重）
          */
-        List<Long> listEntityIdsByCategoryIdsOnly(List<Long> categoryIds, String businessTypeCode);
+        List<Long> listEntityIdsByCategoryIdsOnly(List<Long> categoryIds, String entityTypeCode);
 
         /**
          * 查询多分类（每个分类都含子树）关联的实体ID列表。
@@ -240,35 +240,35 @@ public interface EntityCategoryRelationService {
          * {@link #listEntityIdsByCategoryIdsOnly(List, String)}。</p>
          *
          * @param categoryIds 分类ID列表（建议传入已展开的 descendant categoryIds）
-         * @param businessTypeCode 业务类型编码
+         * @param entityTypeCode 业务类型编码
          * @return 有序实体ID列表（先分类顺序，再 relation.sort，稳定去重）
          */
-        List<Long> listEntityIdsByCategoryIdsWithDescendants(List<Long> categoryIds, String businessTypeCode);
+        List<Long> listEntityIdsByCategoryIdsWithDescendants(List<Long> categoryIds, String entityTypeCode);
 
         // ==================== 实体分类关系分页查询接口（仅返回 entityId） ====================
 
         /**
          * 单分类（仅当前分类，不含子树）查询实体ID分页。
          */
-        PageResult<Long> pageEntityIdsByCategoryIdOnly(Long categoryId, String businessTypeCode,
+        PageResult<Long> pageEntityIdsByCategoryIdOnly(Long categoryId, String entityTypeCode,
                                                         Integer pageNo, Integer pageSize);
 
         /**
          * 单分类（含子树）查询实体ID分页。
          */
-        PageResult<Long> pageEntityIdsByCategoryIdWithDescendants(Long categoryId, String categoryTypeCode, String businessTypeCode,
+        PageResult<Long> pageEntityIdsByCategoryIdWithDescendants(Long categoryId, String categoryTypeCode, String entityTypeCode,
                                                                         Integer pageNo, Integer pageSize);
 
         /**
          * 多分类（仅输入分类本身，不含子树）查询实体ID分页。
          */
-        PageResult<Long> pageEntityIdsByCategoryIdsOnly(List<Long> categoryIds, String businessTypeCode,
+        PageResult<Long> pageEntityIdsByCategoryIdsOnly(List<Long> categoryIds, String entityTypeCode,
                                                                 Integer pageNo, Integer pageSize);
 
         /**
          * 多分类（每个分类都含子树）查询实体ID分页。
          */
-        PageResult<Long> pageEntityIdsByCategoryIdsWithDescendants(List<Long> categoryIds, String businessTypeCode,
+        PageResult<Long> pageEntityIdsByCategoryIdsWithDescendants(List<Long> categoryIds, String entityTypeCode,
                                                                         Integer pageNo, Integer pageSize);
 
         // ==================== DB 前置分页查询接口（新增，保留原内存分页方案） ====================
@@ -278,7 +278,7 @@ public interface EntityCategoryRelationService {
          *
          * <p>排序规则：categoryIds 输入顺序(rank) -> 分类内 sort -> relation.id，去重后分页。</p>
          */
-        PageResult<Long> pageEntityIdsByCategoryIdsOnlyDb(List<Long> categoryIds, String businessTypeCode,
+        PageResult<Long> pageEntityIdsByCategoryIdsOnlyDb(List<Long> categoryIds, String entityTypeCode,
                                                                 Integer pageNo, Integer pageSize);
 
         /**
@@ -286,7 +286,7 @@ public interface EntityCategoryRelationService {
          *
          * <p>先展开子树，再按 rank 排序与去重后分页。</p>
          */
-        PageResult<Long> pageEntityIdsByCategoryIdsWithDescendantsDb(List<Long> categoryIds, String businessTypeCode,
+        PageResult<Long> pageEntityIdsByCategoryIdsWithDescendantsDb(List<Long> categoryIds, String entityTypeCode,
                                                                         Integer pageNo, Integer pageSize);
 
         // ==================== 级联删除操作 ====================
@@ -309,25 +309,25 @@ public interface EntityCategoryRelationService {
          * 删除分类的所有实体关联（用于删除分类时级联清理）
          *
          * @param categoryId 分类ID
-         * @param businessTypeCode 业务类型编码
+         * @param entityTypeCode 业务类型编码
          */
         void deleteAllByCategoryId(Long categoryId);
 
         /**
          * 删除分类在指定业务下的所有实体关联。
          */
-        void deleteAllByCategoryIdInBusiness(Long categoryId, String businessTypeCode);
+        void deleteAllByCategoryIdInBusiness(Long categoryId, String entityTypeCode);
 
         /**
          * 批量删除多个分类的所有实体关联（按业务类型隔离）
          *
          * @param categoryIds 分类ID列表
-         * @param businessTypeCode 业务类型编码
+         * @param entityTypeCode 业务类型编码
          */
         void deleteAllByCategoryIds(List<Long> categoryIds);
 
         /**
          * 批量删除多个分类在指定业务下的所有实体关联。
          */
-        void deleteAllByCategoryIdsInBusiness(List<Long> categoryIds, String businessTypeCode);
+        void deleteAllByCategoryIdsInBusiness(List<Long> categoryIds, String entityTypeCode);
 }

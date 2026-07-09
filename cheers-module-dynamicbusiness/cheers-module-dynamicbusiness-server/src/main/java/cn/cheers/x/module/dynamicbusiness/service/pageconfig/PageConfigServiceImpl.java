@@ -14,6 +14,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageCon
 import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageConfigPageReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageConfigPublishReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageConfigSaveReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageConfigSummaryRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.pageconfig.vo.PageConfigUpdateConfigByIdReqVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.page.PageDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.pageconfig.PageConfigDO;
@@ -174,8 +175,20 @@ public class PageConfigServiceImpl implements PageConfigService {
     }
 
     @Override
-    public List<PageConfigDO> getPageConfigListByBusinessType(String businessType) {
-        return pageConfigMapper.selectListByBusinessType(businessType);
+    public List<PageConfigDO> getPageConfigListByEntityType(String entityTypeCode) {
+        return pageConfigMapper.selectListByEntityType(entityTypeCode);
+    }
+
+    @Override
+    public List<PageConfigSummaryRespVO> getPageConfigSummaryListByBusinessId(Long businessId) {
+        if (businessId == null) {
+            return List.of();
+        }
+        List<PageConfigDO> configs = pageConfigMapper.selectListByBusinessId(businessId);
+        if (CollUtil.isEmpty(configs)) {
+            return List.of();
+        }
+        return configs.stream().map(this::toPageConfigSummary).toList();
     }
 
     @Override
@@ -225,12 +238,12 @@ public class PageConfigServiceImpl implements PageConfigService {
     @Transactional(rollbackFor = Exception.class)
     public Long publish(PageConfigPublishReqVO reqVO) {
         PageConfigDO pageConfig = validatePageConfigExists(reqVO.getPageConfigId());
-        String pageCode = resolvePageCode(reqVO.getPageCode(), pageConfig.getPageCode(), reqVO.getBusinessType(), pageConfig.getId());
+        String pageCode = resolvePageCode(reqVO.getPageCode(), pageConfig.getPageCode(), reqVO.getEntityTypeCode(), pageConfig.getId());
         validatePageCodeUnique(pageCode, pageConfig.getId());
         validatePageCodeUniqueForPage(pageCode, null);
 
-        Long parentMenuId = resolveParentMenuId(reqVO.getParentMenuId(), reqVO.getBusinessType());
-        String menuPath = buildMenuPath(parentMenuId, pageCode, reqVO.getBusinessType());
+        Long parentMenuId = resolveParentMenuId(reqVO.getParentMenuId(), reqVO.getEntityTypeCode());
+        String menuPath = buildMenuPath(parentMenuId, pageCode, reqVO.getEntityTypeCode());
 
         MenuSaveReqDTO menuSaveReqDTO = new MenuSaveReqDTO();
         menuSaveReqDTO.setName(reqVO.getPageName());
@@ -246,6 +259,12 @@ public class PageConfigServiceImpl implements PageConfigService {
 
         updateMenuPageConfigId(menuId, pageConfig.getId());
         updatePageConfigLink(pageConfig.getId(), menuId, pageCode);
+        if (reqVO.getBusinessId() != null) {
+            PageConfigDO bizLink = new PageConfigDO();
+            bizLink.setId(pageConfig.getId());
+            bizLink.setBusinessId(reqVO.getBusinessId());
+            pageConfigMapper.updateById(bizLink);
+        }
         createOrUpdatePage(pageConfig, reqVO, menuId, parentMenuId, menuPath, pageCode);
 
         return menuId;
@@ -256,7 +275,7 @@ public class PageConfigServiceImpl implements PageConfigService {
     public ApplyTemplateRespVO applyTemplate(ApplyTemplateReqVO reqVO) {
         Map<String, Object> config = buildTemplateConfig(reqVO);
         String pageType = resolveTemplatePageType(reqVO.getTemplateId());
-        String pageCode = resolvePageCode(reqVO.getPageCode(), null, reqVO.getBusinessType(), null);
+        String pageCode = resolvePageCode(reqVO.getPageCode(), null, reqVO.getEntityTypeCode(), null);
         validatePageCodeUnique(pageCode, null);
         validatePageCodeUniqueForPage(pageCode, null);
 
@@ -270,8 +289,8 @@ public class PageConfigServiceImpl implements PageConfigService {
             menuId = menu.getId();
             menuPath = menu.getPath();
         } else {
-            Long parentMenuId = resolveParentMenuId(reqVO.getParentMenuId(), reqVO.getBusinessType());
-            menuPath = buildMenuPath(parentMenuId, pageCode, reqVO.getBusinessType());
+            Long parentMenuId = resolveParentMenuId(reqVO.getParentMenuId(), reqVO.getEntityTypeCode());
+            menuPath = buildMenuPath(parentMenuId, pageCode, reqVO.getEntityTypeCode());
             MenuSaveReqDTO menuSaveReqDTO = new MenuSaveReqDTO();
             menuSaveReqDTO.setName(reqVO.getPageName());
             menuSaveReqDTO.setType(MenuTypeEnum.MENU.getType());
@@ -290,12 +309,13 @@ public class PageConfigServiceImpl implements PageConfigService {
         pageConfig.setPageType(pageType);
         pageConfig.setPageCode(pageCode);
         pageConfig.setConfig(castConfig(config));
-        pageConfig.setConfigCode(generateConfigCode(pageCode, reqVO.getBusinessType()));
+        pageConfig.setConfigCode(generateConfigCode(pageCode, reqVO.getEntityTypeCode()));
+        pageConfig.setBusinessId(reqVO.getBusinessId());
         pageConfigMapper.insert(pageConfig);
 
         updateMenuPageConfigId(menuId, pageConfig.getId());
-        createOrUpdatePage(pageConfig, reqVO.getPageName(), reqVO.getBusinessType(), menuId,
-                resolveParentMenuId(reqVO.getParentMenuId(), reqVO.getBusinessType()), menuPath, pageCode, 0);
+        createOrUpdatePage(pageConfig, reqVO.getPageName(), reqVO.getEntityTypeCode(), menuId,
+                resolveParentMenuId(reqVO.getParentMenuId(), reqVO.getEntityTypeCode()), menuPath, pageCode, 0);
 
         ApplyTemplateRespVO respVO = new ApplyTemplateRespVO();
         respVO.setMenuId(menuId);
@@ -308,7 +328,7 @@ public class PageConfigServiceImpl implements PageConfigService {
 
     private Map<String, Object> buildTemplateConfig(ApplyTemplateReqVO reqVO) {
         Map<String, Object> config = new HashMap<>();
-        config.put("businessType", reqVO.getBusinessType());
+        config.put("entityTypeCode", reqVO.getEntityTypeCode());
         config.put("pageName", reqVO.getPageName());
         config.put("tabs", reqVO.getTabs());
         if (CollUtil.isNotEmpty(reqVO.getFields())) {
@@ -333,10 +353,10 @@ public class PageConfigServiceImpl implements PageConfigService {
 
     private void createOrUpdatePage(PageConfigDO pageConfig, PageConfigPublishReqVO reqVO, Long menuId,
                                     Long parentMenuId, String menuPath, String pageCode) {
-        createOrUpdatePage(pageConfig, reqVO.getPageName(), reqVO.getBusinessType(), menuId, parentMenuId, menuPath, pageCode, 1);
+        createOrUpdatePage(pageConfig, reqVO.getPageName(), reqVO.getEntityTypeCode(), menuId, parentMenuId, menuPath, pageCode, 1);
     }
 
-    private void createOrUpdatePage(PageConfigDO pageConfig, String pageName, String businessType,
+    private void createOrUpdatePage(PageConfigDO pageConfig, String pageName, String entityTypeCode,
                                     Long menuId, Long parentMenuId, String menuPath, String pageCode, Integer status) {
         PageDO existing = pageMapper.selectOne(new LambdaQueryWrapperX<PageDO>()
                 .eq(PageDO::getPageConfigId, pageConfig.getId()));
@@ -356,7 +376,7 @@ public class PageConfigServiceImpl implements PageConfigService {
                 ? pageConfig.getConfig().get("icon").toString()
                 : null);
         saveReqVO.setRoutePath(menuPath);
-        saveReqVO.setRemark(StrUtil.format("businessType:{}", businessType));
+        saveReqVO.setRemark(StrUtil.format("entityTypeCode:{}", entityTypeCode));
 
         if (existing == null) {
             pageService.create(saveReqVO);
@@ -476,22 +496,22 @@ public class PageConfigServiceImpl implements PageConfigService {
         pageConfigMapper.updateById(updateObj);
     }
 
-    private Long resolveParentMenuId(Long parentMenuId, String businessType) {
+    private Long resolveParentMenuId(Long parentMenuId, String entityTypeCode) {
         if (parentMenuId != null) {
             return parentMenuId;
         }
         return 0L;
     }
 
-    private String buildMenuPath(Long parentMenuId, String pageCode, String businessType) {
+    private String buildMenuPath(Long parentMenuId, String pageCode, String entityTypeCode) {
         String suffix = StrUtil.isNotBlank(pageCode) ? pageCode : "page";
         if (parentMenuId == null || ObjUtil.equal(parentMenuId, 0L)) {
-            return "/" + StrUtil.blankToDefault(businessType, "page") + "/" + suffix;
+            return "/" + StrUtil.blankToDefault(entityTypeCode, "page") + "/" + suffix;
         }
-        return "/" + StrUtil.blankToDefault(businessType, "page") + "/" + suffix;
+        return "/" + StrUtil.blankToDefault(entityTypeCode, "page") + "/" + suffix;
     }
 
-    private String resolvePageCode(String requestCode, String existingCode, String businessType, Long pageConfigId) {
+    private String resolvePageCode(String requestCode, String existingCode, String entityTypeCode, Long pageConfigId) {
         if (StrUtil.isNotBlank(requestCode)) {
             return requestCode;
         }
@@ -499,14 +519,14 @@ public class PageConfigServiceImpl implements PageConfigService {
             return existingCode;
         }
         if (pageConfigId != null) {
-            return StrUtil.format("{}-{}", StrUtil.blankToDefault(businessType, "page"), pageConfigId);
+            return StrUtil.format("{}-{}", StrUtil.blankToDefault(entityTypeCode, "page"), pageConfigId);
         }
-        return StrUtil.format("{}-{}", StrUtil.blankToDefault(businessType, "page"), System.currentTimeMillis());
+        return StrUtil.format("{}-{}", StrUtil.blankToDefault(entityTypeCode, "page"), System.currentTimeMillis());
     }
 
-    private String generateConfigCode(String pageCode, String businessType) {
+    private String generateConfigCode(String pageCode, String entityTypeCode) {
         if (StrUtil.isNotBlank(pageCode)) {
-            return StrUtil.format("{}-{}", StrUtil.blankToDefault(businessType, "page"), pageCode);
+            return StrUtil.format("{}-{}", StrUtil.blankToDefault(entityTypeCode, "page"), pageCode);
         }
         return StrUtil.format("page_config_{}", System.currentTimeMillis());
     }
@@ -518,5 +538,63 @@ public class PageConfigServiceImpl implements PageConfigService {
         Map<String, Serializable> result = new HashMap<>();
         config.forEach((key, value) -> result.put(key, (Serializable) value));
         return result;
+    }
+
+    private PageConfigSummaryRespVO toPageConfigSummary(PageConfigDO pageConfig) {
+        PageConfigSummaryRespVO vo = new PageConfigSummaryRespVO();
+        vo.setId(pageConfig.getId());
+        vo.setBusinessId(pageConfig.getBusinessId());
+        vo.setMenuId(pageConfig.getMenuId());
+        vo.setPageType(pageConfig.getPageType());
+        vo.setPageCode(pageConfig.getPageCode());
+        vo.setCreateTime(pageConfig.getCreateTime());
+        Map<String, Object> cfg = toConfigMap(pageConfig.getConfig());
+        vo.setConfig(cfg);
+        if (cfg != null) {
+            Object pageName = cfg.get("pageName");
+            if (pageName != null) {
+                vo.setPageName(String.valueOf(pageName));
+            }
+            Object pattern = cfg.get("pattern");
+            if (pattern != null) {
+                vo.setPattern(String.valueOf(pattern));
+            }
+            Object entityTypeCode = cfg.get("entityTypeCode");
+            if (entityTypeCode == null) {
+                entityTypeCode = cfg.get("entityType");
+            }
+            if (entityTypeCode != null) {
+                vo.setEntityTypeCode(String.valueOf(entityTypeCode));
+            }
+        }
+        if (StrUtil.isBlank(vo.getPageName()) && StrUtil.isNotBlank(pageConfig.getPageCode())) {
+            vo.setPageName(pageConfig.getPageCode());
+        }
+        vo.setMenuPath(resolveMenuPathForPageConfig(pageConfig));
+        return vo;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> toConfigMap(Map<String, Serializable> config) {
+        if (config == null) {
+            return null;
+        }
+        return new HashMap<>((Map<String, Object>) (Map<?, ?>) config);
+    }
+
+    private String resolveMenuPathForPageConfig(PageConfigDO pageConfig) {
+        PageDO page = pageMapper.selectOne(new LambdaQueryWrapperX<PageDO>()
+                .eq(PageDO::getPageConfigId, pageConfig.getId()));
+        if (page != null && StrUtil.isNotBlank(page.getRoutePath())) {
+            return page.getRoutePath();
+        }
+        Long menuId = pageConfig.getMenuId();
+        if (menuId != null && menuId > 0) {
+            MenuRespDTO menu = menuApi.getMenu(menuId).getCheckedData();
+            if (menu != null && StrUtil.isNotBlank(menu.getPath())) {
+                return menu.getPath();
+            }
+        }
+        return null;
     }
 }

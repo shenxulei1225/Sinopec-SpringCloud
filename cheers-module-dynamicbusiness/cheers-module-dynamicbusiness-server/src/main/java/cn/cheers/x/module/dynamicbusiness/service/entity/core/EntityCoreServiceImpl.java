@@ -22,32 +22,32 @@ public class EntityCoreServiceImpl implements EntityCoreService {
     private EntityRepository entityRepository;
 
     @Override
-    public boolean existsById(Long entityId, String businessTypeCode) {
-        if (entityId == null || businessTypeCode == null || businessTypeCode.isEmpty()) {
+    public boolean existsById(Long entityId, String entityTypeCode) {
+        if (entityId == null || entityTypeCode == null || entityTypeCode.isEmpty()) {
             return false;
         }
         try {
-            return entityRepository.exists(entityId, businessTypeCode);
+            return entityRepository.exists(entityId, entityTypeCode);
         } catch (Exception e) {
-            log.warn("检查实体存在性失败: entityId={}, businessTypeCode={}, error={}", entityId, businessTypeCode, e.getMessage());
+            log.warn("检查实体存在性失败: entityId={}, entityTypeCode={}, error={}", entityId, entityTypeCode, e.getMessage());
             return false;
         }
     }
 
     @Override
-    public Set<Long> filterExistingEntityIds(List<Long> entityIds, String businessTypeCode) {
-        if (entityIds == null || entityIds.isEmpty() || businessTypeCode == null || businessTypeCode.isEmpty()) {
+    public Set<Long> filterExistingEntityIds(List<Long> entityIds, String entityTypeCode) {
+        if (entityIds == null || entityIds.isEmpty() || entityTypeCode == null || entityTypeCode.isEmpty()) {
             return new HashSet<>();
         }
 
         try {
-            List<EntityDO> existingEntities = entityRepository.findByIds(entityIds, businessTypeCode);
+            List<EntityDO> existingEntities = entityRepository.findByIds(entityIds, entityTypeCode);
             return existingEntities.stream().map(EntityDO::getId).collect(Collectors.toSet());
         } catch (Exception e) {
-            log.warn("批量检查实体存在性失败: entityIds={}, businessTypeCode={}, error={}", entityIds, businessTypeCode, e.getMessage());
+            log.warn("批量检查实体存在性失败: entityIds={}, entityTypeCode={}, error={}", entityIds, entityTypeCode, e.getMessage());
             Set<Long> existingIds = new HashSet<>();
             for (Long entityId : entityIds) {
-                if (existsById(entityId, businessTypeCode)) {
+                if (existsById(entityId, entityTypeCode)) {
                     existingIds.add(entityId);
                 }
             }
@@ -69,7 +69,7 @@ public class EntityCoreServiceImpl implements EntityCoreService {
 
         // 若有父节点，则拼接父节点 treePath
         if (entity.getParentId() != null && entity.getParentId() != 0) {
-            EntityDO parent = entityRepository.findById(entity.getParentId(), entity.getBusinessTypeCode());
+            EntityDO parent = entityRepository.findById(entity.getParentId(), entity.getEntityTypeCode());
             if (parent == null) {
                 throw new ServiceException(404, "父实体不存在");
             }
@@ -103,25 +103,25 @@ public class EntityCoreServiceImpl implements EntityCoreService {
     }
 
     @Override
-    public void delete(Long id, String businessTypeCode) {
-        if (id == null || businessTypeCode == null || businessTypeCode.isEmpty()) {
+    public void delete(Long id, String entityTypeCode) {
+        if (id == null || entityTypeCode == null || entityTypeCode.isEmpty()) {
             throw new ServiceException(400, "参数不完整");
         }
-        entityRepository.delete(id, businessTypeCode);
+        entityRepository.delete(id, entityTypeCode);
     }
 
     @Override
-    public EntityDO get(Long id, String businessTypeCode) {
-        if (id == null || businessTypeCode == null || businessTypeCode.isEmpty()) {
+    public EntityDO get(Long id, String entityTypeCode) {
+        if (id == null || entityTypeCode == null || entityTypeCode.isEmpty()) {
             return null;
         }
-        return entityRepository.findById(id, businessTypeCode);
+        return entityRepository.findById(id, entityTypeCode);
     }
 
     @Override
-    public List<EntityDO> listEntities(String businessTypeCode, Long modelId, Integer status) {
+    public List<EntityDO> listEntities(String entityTypeCode, Long modelId, Integer status) {
         EntityRepository.EntityQuery query = EntityRepository.EntityQuery.builder()
-                .businessTypeCode(businessTypeCode)
+                .entityTypeCode(entityTypeCode)
                 .modelId(modelId)
                 .status(status)
                 .build();
@@ -129,9 +129,9 @@ public class EntityCoreServiceImpl implements EntityCoreService {
     }
 
     @Override
-    public PageResult<EntityDO> pageEntities(String businessTypeCode, Long modelId, Integer status, String keyword, Integer pageNo, Integer pageSize) {
+    public PageResult<EntityDO> pageEntities(String entityTypeCode, Long modelId, Integer status, String keyword, Integer pageNo, Integer pageSize) {
         EntityRepository.EntityQuery query = EntityRepository.EntityQuery.builder()
-                .businessTypeCode(businessTypeCode)
+                .entityTypeCode(entityTypeCode)
                 .modelId(modelId)
                 .status(status)
                 .keyword(keyword)
@@ -142,24 +142,24 @@ public class EntityCoreServiceImpl implements EntityCoreService {
     }
 
     @Override
-    public PageResult<EntityDO> pageEntitiesByModelIds(String businessTypeCode, List<Long> modelIds, Integer status,
+    public PageResult<EntityDO> pageEntitiesByModelIds(String entityTypeCode, List<Long> modelIds, Integer status,
                                                         String keyword, Integer pageNo, Integer pageSize) {
-        if (businessTypeCode == null || businessTypeCode.isEmpty() || modelIds == null || modelIds.isEmpty()) {
+        if (entityTypeCode == null || entityTypeCode.isEmpty() || modelIds == null || modelIds.isEmpty()) {
             return new PageResult<>(Collections.emptyList(), 0L);
         }
-        return entityRepository.findPageByModelIds(modelIds, businessTypeCode, status, keyword, pageNo, pageSize);
+        return entityRepository.findPageByModelIds(modelIds, entityTypeCode, status, keyword, pageNo, pageSize);
     }
 
     @Override
-    public void moveEntity(Long entityId, String businessTypeCode, Long newParentId) {
-        if (businessTypeCode == null || businessTypeCode.isEmpty()) {
-            throw new ServiceException(400, "businessTypeCode 不能为空");
+    public void moveEntity(Long entityId, String entityTypeCode, Long newParentId) {
+        if (entityTypeCode == null || entityTypeCode.isEmpty()) {
+            throw new ServiceException(400, "entityTypeCode 不能为空");
         }
         if (Objects.equals(entityId, newParentId)) {
             throw new ServiceException(400, "不能将实体移动到自身下方");
         }
 
-        EntityDO entity = entityRepository.findById(entityId, businessTypeCode);
+        EntityDO entity = entityRepository.findById(entityId, entityTypeCode);
         if (entity == null) {
             throw new ServiceException(404, "实体不存在");
         }
@@ -170,7 +170,7 @@ public class EntityCoreServiceImpl implements EntityCoreService {
         if (newParentId == null || newParentId == 0) {
             newTreePath = "/" + entity.getId() + "/";
         } else {
-            EntityDO newParent = entityRepository.findById(newParentId, businessTypeCode);
+            EntityDO newParent = entityRepository.findById(newParentId, entityTypeCode);
             if (newParent == null) {
                 throw new ServiceException(404, "新的父实体不存在");
             }
@@ -188,14 +188,14 @@ public class EntityCoreServiceImpl implements EntityCoreService {
         entity.setTreePath(newTreePath);
         entityRepository.update(entity);
 
-        updateChildrenTreePaths(entity.getId(), newTreePath, oldTreePath, businessTypeCode);
+        updateChildrenTreePaths(entity.getId(), newTreePath, oldTreePath, entityTypeCode);
     }
 
-    private void updateChildrenTreePaths(Long parentId, String newTreePath, String oldTreePath, String businessTypeCode) {
+    private void updateChildrenTreePaths(Long parentId, String newTreePath, String oldTreePath, String entityTypeCode) {
         if (oldTreePath == null || oldTreePath.isEmpty()) {
             return;
         }
-        List<EntityDO> children = entityRepository.findByTreePathStartsWith(oldTreePath, businessTypeCode);
+        List<EntityDO> children = entityRepository.findByTreePathStartsWith(oldTreePath, entityTypeCode);
         if (children == null || children.isEmpty()) {
             return;
         }
@@ -220,24 +220,24 @@ public class EntityCoreServiceImpl implements EntityCoreService {
     }
 
     @Override
-    public List<EntityDO> listTreeEntities(String businessTypeCode, Long modelId) {
-        if (businessTypeCode == null || businessTypeCode.isEmpty()) {
-            throw new ServiceException(400, "查询实体树必须提供 businessTypeCode");
+    public List<EntityDO> listTreeEntities(String entityTypeCode, Long modelId) {
+        if (entityTypeCode == null || entityTypeCode.isEmpty()) {
+            throw new ServiceException(400, "查询实体树必须提供 entityTypeCode");
         }
         EntityRepository.EntityQuery query = EntityRepository.EntityQuery.builder()
-                .businessTypeCode(businessTypeCode)
+                .entityTypeCode(entityTypeCode)
                 .modelId(modelId)
                 .build();
         return entityRepository.findAll(query);
     }
 
     @Override
-    public List<EntityDO> listEntitiesByParentId(String businessTypeCode, Long parentId) {
-        if (businessTypeCode == null || businessTypeCode.isEmpty()) {
-            throw new ServiceException(400, "businessTypeCode 不能为空");
+    public List<EntityDO> listEntitiesByParentId(String entityTypeCode, Long parentId) {
+        if (entityTypeCode == null || entityTypeCode.isEmpty()) {
+            throw new ServiceException(400, "entityTypeCode 不能为空");
         }
         EntityRepository.EntityQuery.EntityQueryBuilder builder = EntityRepository.EntityQuery.builder()
-                .businessTypeCode(businessTypeCode);
+                .entityTypeCode(entityTypeCode);
         if (parentId == null) {
             builder.rootOnly(true);
         } else {
@@ -247,12 +247,12 @@ public class EntityCoreServiceImpl implements EntityCoreService {
     }
 
     @Override
-    public PageResult<EntityDO> pageEntitiesByParentId(String businessTypeCode, Long parentId, Integer pageNo, Integer pageSize) {
-        if (businessTypeCode == null || businessTypeCode.isEmpty()) {
-            throw new ServiceException(400, "businessTypeCode 不能为空");
+    public PageResult<EntityDO> pageEntitiesByParentId(String entityTypeCode, Long parentId, Integer pageNo, Integer pageSize) {
+        if (entityTypeCode == null || entityTypeCode.isEmpty()) {
+            throw new ServiceException(400, "entityTypeCode 不能为空");
         }
         EntityRepository.EntityQuery.EntityQueryBuilder builder = EntityRepository.EntityQuery.builder()
-                .businessTypeCode(businessTypeCode)
+                .entityTypeCode(entityTypeCode)
                 .pageNo(pageNo == null || pageNo < 1 ? 1 : pageNo)
                 .pageSize(pageSize == null || pageSize < 1 ? 200 : Math.min(pageSize, 500));
         if (parentId == null) {
@@ -264,11 +264,11 @@ public class EntityCoreServiceImpl implements EntityCoreService {
     }
 
     @Override
-    public List<String> getEntityPath(Long entityId, String businessTypeCode) {
-        if (businessTypeCode == null || businessTypeCode.isEmpty()) {
-            throw new ServiceException(400, "businessTypeCode 不能为空");
+    public List<String> getEntityPath(Long entityId, String entityTypeCode) {
+        if (entityTypeCode == null || entityTypeCode.isEmpty()) {
+            throw new ServiceException(400, "entityTypeCode 不能为空");
         }
-        EntityDO entity = entityRepository.findById(entityId, businessTypeCode);
+        EntityDO entity = entityRepository.findById(entityId, entityTypeCode);
         if (entity == null) {
             throw new ServiceException(404, "实体不存在");
         }
@@ -280,7 +280,7 @@ public class EntityCoreServiceImpl implements EntityCoreService {
         int depth = 0;
 
         while (currentParentId != null && currentParentId > 0 && depth < maxDepth) {
-            EntityDO parentEntity = entityRepository.findById(currentParentId, businessTypeCode);
+            EntityDO parentEntity = entityRepository.findById(currentParentId, entityTypeCode);
             if (parentEntity == null) {
                 break;
             }
@@ -293,34 +293,34 @@ public class EntityCoreServiceImpl implements EntityCoreService {
     }
 
     @Override
-    public List<EntityDO> listByIds(List<Long> ids, String businessTypeCode) {
-        if (ids == null || ids.isEmpty() || businessTypeCode == null || businessTypeCode.isEmpty()) {
+    public List<EntityDO> listByIds(List<Long> ids, String entityTypeCode) {
+        if (ids == null || ids.isEmpty() || entityTypeCode == null || entityTypeCode.isEmpty()) {
             return Collections.emptyList();
         }
-        return entityRepository.findByIds(ids, businessTypeCode);
+        return entityRepository.findByIds(ids, entityTypeCode);
     }
 
     @Override
-    public List<Long> getEntityIdsByModelId(Long modelId, String businessTypeCode) {
+    public List<Long> getEntityIdsByModelId(Long modelId, String entityTypeCode) {
         if (modelId == null) {
             return Collections.emptyList();
         }
-        if (businessTypeCode == null || businessTypeCode.isEmpty()) {
-            throw new ServiceException(400, "businessTypeCode 不能为空");
+        if (entityTypeCode == null || entityTypeCode.isEmpty()) {
+            throw new ServiceException(400, "entityTypeCode 不能为空");
         }
-        List<EntityDO> entities = entityRepository.findByModelId(modelId, businessTypeCode);
+        List<EntityDO> entities = entityRepository.findByModelId(modelId, entityTypeCode);
         return entities.stream().map(EntityDO::getId).collect(Collectors.toList());
     }
 
     @Override
-    public boolean existsByParentId(Long parentId, String businessTypeCode) {
+    public boolean existsByParentId(Long parentId, String entityTypeCode) {
         if (parentId == null) {
             return false;
         }
-        if (businessTypeCode == null || businessTypeCode.isEmpty()) {
-            throw new ServiceException(400, "businessTypeCode 不能为空");
+        if (entityTypeCode == null || entityTypeCode.isEmpty()) {
+            throw new ServiceException(400, "entityTypeCode 不能为空");
         }
-        return entityRepository.existsByParentId(parentId, businessTypeCode);
+        return entityRepository.existsByParentId(parentId, entityTypeCode);
     }
 }
 

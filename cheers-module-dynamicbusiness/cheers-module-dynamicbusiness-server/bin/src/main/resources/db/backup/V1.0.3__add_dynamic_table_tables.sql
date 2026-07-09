@@ -9,7 +9,7 @@
 CREATE TABLE IF NOT EXISTS system_dynamic_table (
     id BIGSERIAL PRIMARY KEY,
     model_id BIGINT NOT NULL,
-    business_type_code VARCHAR(64),
+    entity_type_code VARCHAR(64),
     table_name VARCHAR(128) NOT NULL,
     table_comment VARCHAR(500),
     column_config TEXT,
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS system_dynamic_table (
 
 -- 动态表配置表索引
 CREATE INDEX IF NOT EXISTS idx_dynamic_table_model_id ON system_dynamic_table(model_id);
-CREATE INDEX IF NOT EXISTS idx_dynamic_table_business_type ON system_dynamic_table(business_type_code);
+CREATE INDEX IF NOT EXISTS idx_dynamic_table_business_type ON system_dynamic_table(entity_type_code);
 CREATE INDEX IF NOT EXISTS idx_dynamic_table_table_name ON system_dynamic_table(table_name);
 CREATE INDEX IF NOT EXISTS idx_dynamic_table_tenant_id ON system_dynamic_table(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_dynamic_table_status ON system_dynamic_table(status);
@@ -35,7 +35,7 @@ CREATE INDEX IF NOT EXISTS idx_dynamic_table_status ON system_dynamic_table(stat
 COMMENT ON TABLE system_dynamic_table IS '动态表配置表';
 COMMENT ON COLUMN system_dynamic_table.id IS '主键ID';
 COMMENT ON COLUMN system_dynamic_table.model_id IS '关联的业务模型ID';
-COMMENT ON COLUMN system_dynamic_table.business_type_code IS '业务类型编码';
+COMMENT ON COLUMN system_dynamic_table.entity_type_code IS '业务类型编码';
 COMMENT ON COLUMN system_dynamic_table.table_name IS '物理表名';
 COMMENT ON COLUMN system_dynamic_table.table_comment IS '表描述';
 COMMENT ON COLUMN system_dynamic_table.column_config IS '字段配置（JSON格式）';

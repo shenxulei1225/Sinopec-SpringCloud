@@ -12,7 +12,7 @@ import java.util.List;
  *
  * <h3>设计说明</h3>
  * <ul>
- *   <li>所有方法都需要传入 businessTypeCode 用于动态表名路由</li>
+ *   <li>所有方法都需要传入 entityTypeCode 用于动态表名路由</li>
  *   <li>接口只处理 EntityDO，业务逻辑在 Service 层</li>
  *   <li>使用 MyBatis-Plus 的动态表名拦截器实现表名切换</li>
  * </ul>
@@ -26,7 +26,7 @@ public interface EntityRepository {
     /**
      * 保存实体
      *
-     * @param entity 实体对象（必须包含 businessTypeCode）
+     * @param entity 实体对象（必须包含 entityTypeCode）
      * @return 保存后的实体ID
      */
     Long save(EntityDO entity);
@@ -34,7 +34,7 @@ public interface EntityRepository {
     /**
      * 批量保存实体
      *
-     * @param entities 实体列表（所有实体必须属于同一个 businessTypeCode）
+     * @param entities 实体列表（所有实体必须属于同一个 entityTypeCode）
      */
     void saveBatch(List<EntityDO> entities);
 
@@ -44,19 +44,19 @@ public interface EntityRepository {
      * 根据ID查询实体
      *
      * @param id 实体ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 实体对象，不存在返回 null
      */
-    EntityDO findById(Long id, String businessTypeCode);
+    EntityDO findById(Long id, String entityTypeCode);
 
     /**
      * 根据ID列表批量查询实体
      *
      * @param ids 实体ID列表
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 实体列表
      */
-    List<EntityDO> findByIds(List<Long> ids, String businessTypeCode);
+    List<EntityDO> findByIds(List<Long> ids, String entityTypeCode);
 
     /**
      * 根据条件查询实体列表
@@ -78,49 +78,49 @@ public interface EntityRepository {
      * 根据模型ID查询实体列表
      *
      * @param modelId 模型ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 实体列表
      */
-    List<EntityDO> findByModelId(Long modelId, String businessTypeCode);
+    List<EntityDO> findByModelId(Long modelId, String entityTypeCode);
 
     /**
      * 根据模型ID列表查询实体列表
      *
      * @param modelIds 模型ID列表
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 实体列表
      */
-    List<EntityDO> findByModelIds(List<Long> modelIds, String businessTypeCode);
+    List<EntityDO> findByModelIds(List<Long> modelIds, String entityTypeCode);
 
     /**
      * 根据模型ID列表分页查询实体
      *
      * @param modelIds 模型ID列表
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @param status 状态（可选）
      * @param keyword 关键词（可选）
      * @param pageNo 页码（从1开始）
      * @param pageSize 每页条数
      * @return 分页结果
      */
-    PageResult<EntityDO> findPageByModelIds(List<Long> modelIds, String businessTypeCode,
+    PageResult<EntityDO> findPageByModelIds(List<Long> modelIds, String entityTypeCode,
                                             Integer status, String keyword, Integer pageNo, Integer pageSize);
 
     /**
      * 根据树路径查询所有子孙实体
      *
      * @param treePath 树路径
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 实体列表
      */
-    List<EntityDO> findByTreePathStartsWith(String treePath, String businessTypeCode);
+    List<EntityDO> findByTreePathStartsWith(String treePath, String entityTypeCode);
 
     // ==================== 更新操作 ====================
 
     /**
      * 更新实体
      * 
-     * @param entity 实体对象（必须包含 id 和 businessTypeCode）
+     * @param entity 实体对象（必须包含 id 和 entityTypeCode）
      */
     void update(EntityDO entity);
 
@@ -137,17 +137,17 @@ public interface EntityRepository {
      * 删除实体
      * 
      * @param id 实体ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      */
-    void delete(Long id, String businessTypeCode);
+    void delete(Long id, String entityTypeCode);
 
     /**
      * 批量删除实体
      * 
      * @param ids 实体ID列表
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      */
-    void deleteBatch(List<Long> ids, String businessTypeCode);
+    void deleteBatch(List<Long> ids, String entityTypeCode);
 
     // ==================== 统计操作 ====================
 
@@ -155,10 +155,10 @@ public interface EntityRepository {
      * 检查实体是否存在
      * 
      * @param id 实体ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 是否存在
      */
-    boolean exists(Long id, String businessTypeCode);
+    boolean exists(Long id, String entityTypeCode);
 
     /**
      * 统计实体数量
@@ -171,24 +171,24 @@ public interface EntityRepository {
     /**
      * 统计业务类型下的实体数量
      * 
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 数量
      */
-    long countByBusinessTypeCode(String businessTypeCode);
+    long countByEntityTypeCode(String entityTypeCode);
 
     /**
      * 判断是否存在指定父实体的直接子实体。
      *
      * @param parentId 父实体ID
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 是否存在子实体
      */
-    boolean existsByParentId(Long parentId, String businessTypeCode);
+    boolean existsByParentId(Long parentId, String entityTypeCode);
 
     /**
      * 同模型下是否存在同名实体（精确匹配，用于 CRUD 异步校验）。
      */
-    boolean existsByExactName(String businessTypeCode, Long modelId, String name, Long excludeId);
+    boolean existsByExactName(String entityTypeCode, Long modelId, String name, Long excludeId);
 
     // ==================== 查询条件类 ====================
 
@@ -201,7 +201,7 @@ public interface EntityRepository {
     @lombok.AllArgsConstructor
     class EntityQuery {
         /** 业务类型编码（必填） */
-        private String businessTypeCode;
+        private String entityTypeCode;
         /** 模型ID */
         private Long modelId;
         /** 父实体ID */

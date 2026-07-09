@@ -28,7 +28,7 @@ public class RelationFieldLibraryCreateReqVO {
     @Schema(description = "关联业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "personnel")
     @NotBlank(message = "关联业务类型不能为空")
     @Size(max = 64, message = "关联业务类型编码长度不能超过64个字符")
-    private String refBusinessType;
+    private String refEntityType;
 
     @Schema(description = "展示字段编码（可选，NULL 表示使用目标业务类型的默认名称字段）", example = "name")
     @Size(max = 64, message = "展示字段编码长度不能超过64个字符")

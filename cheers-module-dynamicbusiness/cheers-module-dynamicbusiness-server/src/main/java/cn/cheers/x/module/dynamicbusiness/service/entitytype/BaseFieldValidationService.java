@@ -1,6 +1,6 @@
-package cn.cheers.x.module.dynamicbusiness.service.businesstype;
+package cn.cheers.x.module.dynamicbusiness.service.entitytype;
 
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeBaseFieldDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
 
 import java.util.List;
 import java.util.Map;
@@ -30,37 +30,37 @@ public interface BaseFieldValidationService {
      *   <li>枚举值必须在允许的选项中</li>
      * </ul>
      * 
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @param fieldValues 字段值映射（字段编码 -> 字段值）
      * @return 验证结果，包含所有验证错误信息
      */
-    BaseFieldValidationResult validateBaseFields(String businessTypeCode, Map<String, Object> fieldValues);
+    BaseFieldValidationResult validateBaseFields(String entityTypeCode, Map<String, Object> fieldValues);
 
     /**
      * 验证单个固定列字段值
      * 
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @param fieldCode 字段编码
      * @param value 字段值
      * @return 验证错误信息，null 表示验证通过
      */
-    String validateSingleField(String businessTypeCode, String fieldCode, Object value);
+    String validateSingleField(String entityTypeCode, String fieldCode, Object value);
 
     /**
      * 获取业务类型的所有必填固定列字段
      * 
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 必填字段列表
      */
-    List<BusinessTypeBaseFieldDO> getRequiredFields(String businessTypeCode);
+    List<EntityTypeBaseFieldDO> getRequiredFields(String entityTypeCode);
 
     /**
      * 检查业务类型是否有固定列字段
      * 
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 是否有固定列字段
      */
-    boolean hasBaseFields(String businessTypeCode);
+    boolean hasBaseFields(String entityTypeCode);
 
     /**
      * 固定列字段验证结果

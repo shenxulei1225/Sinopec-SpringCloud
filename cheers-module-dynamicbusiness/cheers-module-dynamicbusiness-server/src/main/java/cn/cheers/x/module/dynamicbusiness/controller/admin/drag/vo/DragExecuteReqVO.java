@@ -36,5 +36,5 @@ public class DragExecuteReqVO {
     private Long targetContainerId;
 
     @Schema(description = "业务类型编码（ENTITY->CATEGORY 时建议显式传入）", example = "equipment")
-    private String businessTypeCode;
+    private String entityTypeCode;
 }

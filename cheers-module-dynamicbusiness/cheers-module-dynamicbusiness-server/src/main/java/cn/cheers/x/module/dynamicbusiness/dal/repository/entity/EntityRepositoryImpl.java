@@ -18,7 +18,7 @@ import java.util.function.Supplier;
 /**
  * 实体 Repository 实现。
  *
- * <p>职责：统一封装 EntityDO 的数据库访问，并通过 businessTypeCode 动态路由到对应业务表。</p>
+ * <p>职责：统一封装 EntityDO 的数据库访问，并通过 entityTypeCode 动态路由到对应业务表。</p>
  */
 @Repository
 @RequiredArgsConstructor
@@ -35,22 +35,22 @@ public class EntityRepositoryImpl implements EntityRepository {
      */
     @Override
     public Long save(EntityDO entity) {
-        return withTableName(entity.getBusinessTypeCode(), () -> {
+        return withTableName(entity.getEntityTypeCode(), () -> {
             entityMapper.insert(entity);
             return entity.getId();
         });
     }
 
     /**
-     * 批量保存实体（默认按首条记录的 businessTypeCode 路由）。
+     * 批量保存实体（默认按首条记录的 entityTypeCode 路由）。
      */
     @Override
     public void saveBatch(List<EntityDO> entities) {
         if (CollUtil.isEmpty(entities)) {
             return;
         }
-        String businessTypeCode = entities.get(0).getBusinessTypeCode();
-        withTableName(businessTypeCode, () -> {
+        String entityTypeCode = entities.get(0).getEntityTypeCode();
+        withTableName(entityTypeCode, () -> {
             entityMapper.insertBatch(entities);
             return null;
         });
@@ -62,19 +62,19 @@ public class EntityRepositoryImpl implements EntityRepository {
      * 按主键查询实体。
      */
     @Override
-    public EntityDO findById(Long id, String businessTypeCode) {
-        return withTableName(businessTypeCode, () -> entityMapper.selectById(id));
+    public EntityDO findById(Long id, String entityTypeCode) {
+        return withTableName(entityTypeCode, () -> entityMapper.selectById(id));
     }
 
     /**
      * 按 ID 列表批量查询实体。
      */
     @Override
-    public List<EntityDO> findByIds(List<Long> ids, String businessTypeCode) {
+    public List<EntityDO> findByIds(List<Long> ids, String entityTypeCode) {
         if (CollUtil.isEmpty(ids)) {
             return Collections.emptyList();
         }
-        return withTableName(businessTypeCode, () ->
+        return withTableName(entityTypeCode, () ->
                 entityMapper.selectList(new LambdaQueryWrapperX<EntityDO>()
                         .in(EntityDO::getId, ids))
         );
@@ -85,7 +85,7 @@ public class EntityRepositoryImpl implements EntityRepository {
      */
     @Override
     public List<EntityDO> findAll(EntityQuery query) {
-        return withTableName(query.getBusinessTypeCode(), () -> {
+        return withTableName(query.getEntityTypeCode(), () -> {
             LambdaQueryWrapperX<EntityDO> wrapper = buildQueryWrapper(query);
             return entityMapper.selectList(wrapper);
         });
@@ -96,7 +96,7 @@ public class EntityRepositoryImpl implements EntityRepository {
      */
     @Override
     public PageResult<EntityDO> findPage(EntityQuery query) {
-        return withTableName(query.getBusinessTypeCode(), () -> {
+        return withTableName(query.getEntityTypeCode(), () -> {
             LambdaQueryWrapperX<EntityDO> wrapper = buildQueryWrapper(query);
             PageParam pageParam = new PageParam();
             pageParam.setPageNo(query.getPageNo() != null ? query.getPageNo() : 1);
@@ -109,8 +109,8 @@ public class EntityRepositoryImpl implements EntityRepository {
      * 按模型 ID 查询实体列表。
      */
     @Override
-    public List<EntityDO> findByModelId(Long modelId, String businessTypeCode) {
-        return withTableName(businessTypeCode, () ->
+    public List<EntityDO> findByModelId(Long modelId, String entityTypeCode) {
+        return withTableName(entityTypeCode, () ->
                 entityMapper.selectList(new LambdaQueryWrapperX<EntityDO>()
                         .eq(EntityDO::getModelId, modelId)
                         .eq(EntityDO::getDeleted, false)
@@ -122,11 +122,11 @@ public class EntityRepositoryImpl implements EntityRepository {
      * 按模型 ID 列表查询实体列表。
      */
     @Override
-    public List<EntityDO> findByModelIds(List<Long> modelIds, String businessTypeCode) {
+    public List<EntityDO> findByModelIds(List<Long> modelIds, String entityTypeCode) {
         if (CollUtil.isEmpty(modelIds)) {
             return Collections.emptyList();
         }
-        return withTableName(businessTypeCode, () ->
+        return withTableName(entityTypeCode, () ->
                 entityMapper.selectList(new LambdaQueryWrapperX<EntityDO>()
                         .in(EntityDO::getModelId, modelIds)
                         .eq(EntityDO::getDeleted, false)
@@ -138,12 +138,12 @@ public class EntityRepositoryImpl implements EntityRepository {
      * 按模型 ID 列表分页查询实体。
      */
     @Override
-    public PageResult<EntityDO> findPageByModelIds(List<Long> modelIds, String businessTypeCode,
+    public PageResult<EntityDO> findPageByModelIds(List<Long> modelIds, String entityTypeCode,
                                                     Integer status, String keyword, Integer pageNo, Integer pageSize) {
         if (CollUtil.isEmpty(modelIds)) {
             return new PageResult<>(Collections.emptyList(), 0L);
         }
-        return withTableName(businessTypeCode, () -> {
+        return withTableName(entityTypeCode, () -> {
             LambdaQueryWrapperX<EntityDO> wrapper = new LambdaQueryWrapperX<>();
             wrapper.in(EntityDO::getModelId, modelIds)
                     .eqIfPresent(EntityDO::getStatus, status)
@@ -161,8 +161,8 @@ public class EntityRepositoryImpl implements EntityRepository {
      * 按树路径前缀查询实体（用于子树场景）。
      */
     @Override
-    public List<EntityDO> findByTreePathStartsWith(String treePath, String businessTypeCode) {
-        return withTableName(businessTypeCode, () ->
+    public List<EntityDO> findByTreePathStartsWith(String treePath, String entityTypeCode) {
+        return withTableName(entityTypeCode, () ->
                 entityMapper.selectList(new LambdaQueryWrapperX<EntityDO>()
                         .likeRight(EntityDO::getTreePath, treePath)));
     }
@@ -174,22 +174,22 @@ public class EntityRepositoryImpl implements EntityRepository {
      */
     @Override
     public void update(EntityDO entity) {
-        withTableName(entity.getBusinessTypeCode(), () -> {
+        withTableName(entity.getEntityTypeCode(), () -> {
             entityMapper.updateById(entity);
             return null;
         });
     }
 
     /**
-     * 批量更新实体（默认按首条记录的 businessTypeCode 路由）。
+     * 批量更新实体（默认按首条记录的 entityTypeCode 路由）。
      */
     @Override
     public void updateBatch(List<EntityDO> entities) {
         if (CollUtil.isEmpty(entities)) {
             return;
         }
-        String businessTypeCode = entities.get(0).getBusinessTypeCode();
-        withTableName(businessTypeCode, () -> {
+        String entityTypeCode = entities.get(0).getEntityTypeCode();
+        withTableName(entityTypeCode, () -> {
             entityMapper.updateBatch(entities);
             return null;
         });
@@ -201,8 +201,8 @@ public class EntityRepositoryImpl implements EntityRepository {
      * 删除单个实体。
      */
     @Override
-    public void delete(Long id, String businessTypeCode) {
-        withTableName(businessTypeCode, () -> {
+    public void delete(Long id, String entityTypeCode) {
+        withTableName(entityTypeCode, () -> {
             entityMapper.deleteById(id);
             return null;
         });
@@ -212,11 +212,11 @@ public class EntityRepositoryImpl implements EntityRepository {
      * 按 ID 列表批量删除实体。
      */
     @Override
-    public void deleteBatch(List<Long> ids, String businessTypeCode) {
+    public void deleteBatch(List<Long> ids, String entityTypeCode) {
         if (CollUtil.isEmpty(ids)) {
             return;
         }
-        withTableName(businessTypeCode, () -> {
+        withTableName(entityTypeCode, () -> {
             entityMapper.delete(new LambdaQueryWrapperX<EntityDO>()
                     .in(EntityDO::getId, ids));
             return null;
@@ -229,8 +229,8 @@ public class EntityRepositoryImpl implements EntityRepository {
      * 判断指定实体是否存在（且未删除）。
      */
     @Override
-    public boolean exists(Long id, String businessTypeCode) {
-        return withTableName(businessTypeCode, () -> {
+    public boolean exists(Long id, String entityTypeCode) {
+        return withTableName(entityTypeCode, () -> {
             EntityDO entity = entityMapper.selectById(id);
             return entity != null && !Boolean.TRUE.equals(entity.getDeleted());
         });
@@ -241,7 +241,7 @@ public class EntityRepositoryImpl implements EntityRepository {
      */
     @Override
     public long count(EntityQuery query) {
-        return withTableName(query.getBusinessTypeCode(), () -> {
+        return withTableName(query.getEntityTypeCode(), () -> {
             LambdaQueryWrapperX<EntityDO> wrapper = buildQueryWrapper(query);
             return entityMapper.selectCount(wrapper);
         });
@@ -251,10 +251,10 @@ public class EntityRepositoryImpl implements EntityRepository {
      * 按业务类型统计实体数量。
      */
     @Override
-    public long countByBusinessTypeCode(String businessTypeCode) {
-        return withTableName(businessTypeCode, () ->
+    public long countByEntityTypeCode(String entityTypeCode) {
+        return withTableName(entityTypeCode, () ->
                 entityMapper.selectCount(new LambdaQueryWrapperX<EntityDO>()
-                        .eq(EntityDO::getBusinessTypeCode, businessTypeCode)
+                        .eq(EntityDO::getEntityTypeCode, entityTypeCode)
                         .eq(EntityDO::getDeleted, false))
         );
     }
@@ -265,11 +265,11 @@ public class EntityRepositoryImpl implements EntityRepository {
      * <p>用途：删除前快速做“有无子实体”检查，避免全量查询子节点列表。</p>
      */
     @Override
-    public boolean existsByParentId(Long parentId, String businessTypeCode) {
+    public boolean existsByParentId(Long parentId, String entityTypeCode) {
         if (parentId == null) {
             return false;
         }
-        return withTableName(businessTypeCode, () ->
+        return withTableName(entityTypeCode, () ->
                 entityMapper.selectOne(new LambdaQueryWrapperX<EntityDO>()
                         .eq(EntityDO::getParentId, parentId)
                         .eq(EntityDO::getDeleted, false)
@@ -278,13 +278,13 @@ public class EntityRepositoryImpl implements EntityRepository {
     }
 
     @Override
-    public boolean existsByExactName(String businessTypeCode, Long modelId, String name, Long excludeId) {
-        if (!org.springframework.util.StringUtils.hasText(businessTypeCode)
+    public boolean existsByExactName(String entityTypeCode, Long modelId, String name, Long excludeId) {
+        if (!org.springframework.util.StringUtils.hasText(entityTypeCode)
                 || modelId == null
                 || !org.springframework.util.StringUtils.hasText(name)) {
             return false;
         }
-        return withTableName(businessTypeCode, () ->
+        return withTableName(entityTypeCode, () ->
                 entityMapper.selectOne(new LambdaQueryWrapperX<EntityDO>()
                         .eq(EntityDO::getModelId, modelId)
                         .eq(EntityDO::getName, name.trim())
@@ -299,9 +299,9 @@ public class EntityRepositoryImpl implements EntityRepository {
     /**
      * 设置动态表名上下文并执行操作。
      */
-    private <T> T withTableName(String businessTypeCode, Supplier<T> action) {
+    private <T> T withTableName(String entityTypeCode, Supplier<T> action) {
         try {
-            EntityTableNameContext.set(businessTypeCode);
+            EntityTableNameContext.set(entityTypeCode);
             return action.get();
         } finally {
             EntityTableNameContext.clear();
@@ -313,7 +313,7 @@ public class EntityRepositoryImpl implements EntityRepository {
      */
     private LambdaQueryWrapperX<EntityDO> buildQueryWrapper(EntityQuery query) {
         LambdaQueryWrapperX<EntityDO> wrapper = new LambdaQueryWrapperX<>();
-        wrapper.eqIfPresent(EntityDO::getBusinessTypeCode, query.getBusinessTypeCode());
+        wrapper.eqIfPresent(EntityDO::getEntityTypeCode, query.getEntityTypeCode());
         wrapper.eqIfPresent(EntityDO::getModelId, query.getModelId());
         wrapper.eqIfPresent(EntityDO::getStatus, query.getStatus());
         wrapper.likeIfPresent(EntityDO::getName, query.getKeyword());

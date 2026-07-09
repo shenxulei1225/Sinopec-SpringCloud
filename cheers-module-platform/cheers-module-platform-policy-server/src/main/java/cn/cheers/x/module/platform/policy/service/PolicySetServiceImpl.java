@@ -36,7 +36,7 @@ public class PolicySetServiceImpl implements PolicySetService {
         String mergedSpec = PolicySpecHelper.mergeTemplateWithParams(template.getDefaultSpec(), request.getParams());
         PolicySetDO policySet = PolicySetDO.builder()
                 .id(UUID.randomUUID().toString())
-                .businessTypeCode(request.getBusinessTypeCode())
+                .entityTypeCode(request.getEntityTypeCode())
                 .templateId(request.getTemplateId())
                 .status(PolicySetStatus.DRAFT.name())
                 .version(0)
@@ -81,7 +81,7 @@ public class PolicySetServiceImpl implements PolicySetService {
     private static PolicySetRespDTO toResp(PolicySetDO policySet) {
         return PolicySetRespDTO.builder()
                 .policySetId(policySet.getId())
-                .businessTypeCode(policySet.getBusinessTypeCode())
+                .entityTypeCode(policySet.getEntityTypeCode())
                 .templateId(policySet.getTemplateId())
                 .status(policySet.getStatus())
                 .version(policySet.getVersion())

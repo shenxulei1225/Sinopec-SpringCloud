@@ -34,9 +34,9 @@ public interface TemplateMapper extends BaseMapperX<TemplateDO> {
     /**
      * 根据业务类型编码查询模板列表
      */
-    default List<TemplateDO> selectByBusinessTypeCode(String businessTypeCode) {
+    default List<TemplateDO> selectByEntityTypeCode(String entityTypeCode) {
         return selectList(new LambdaQueryWrapperX<TemplateDO>()
-                .eqIfPresent(TemplateDO::getBusinessTypeCode, businessTypeCode)
+                .eqIfPresent(TemplateDO::getEntityTypeCode, entityTypeCode)
                 .orderByAsc(TemplateDO::getId));
     }
 
@@ -45,7 +45,7 @@ public interface TemplateMapper extends BaseMapperX<TemplateDO> {
      */
     default PageResult<TemplateDO> selectPage(TemplatePageReqVO reqVO) {
         LambdaQueryWrapperX<TemplateDO> wrapper = new LambdaQueryWrapperX<TemplateDO>()
-                .eqIfPresent(TemplateDO::getBusinessTypeCode, reqVO.getBusinessTypeCode())
+                .eqIfPresent(TemplateDO::getEntityTypeCode, reqVO.getEntityTypeCode())
                 .eqIfPresent(TemplateDO::getStatus, reqVO.getStatus())
                 .orderByDesc(TemplateDO::getId);
         // 关键字搜索：名称或描述
@@ -61,9 +61,9 @@ public interface TemplateMapper extends BaseMapperX<TemplateDO> {
     /**
      * 搜索模板（按名称和描述模糊搜索）
      */
-    default List<TemplateDO> search(String keyword, String businessTypeCode) {
+    default List<TemplateDO> search(String keyword, String entityTypeCode) {
         LambdaQueryWrapperX<TemplateDO> wrapper = new LambdaQueryWrapperX<TemplateDO>()
-                .eqIfPresent(TemplateDO::getBusinessTypeCode, businessTypeCode)
+                .eqIfPresent(TemplateDO::getEntityTypeCode, entityTypeCode)
                 .orderByDesc(TemplateDO::getId);
         // 关键字搜索：名称或描述
         if (keyword != null && !keyword.isEmpty()) {

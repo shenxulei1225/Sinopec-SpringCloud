@@ -9,6 +9,7 @@ import cn.iocoder.yudao.module.scene.platform.dal.dataobject.actor.ActorInstance
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.actor.ActorInstanceDO;
 import cn.iocoder.yudao.module.scene.platform.dal.mysql.actor.ActorInstanceComponentMapper;
 import cn.iocoder.yudao.module.scene.platform.dal.mysql.actor.ActorInstanceMapper;
+import cn.iocoder.yudao.module.scene.platform.dal.mysql.scene.SceneMapper;
 import cn.iocoder.yudao.module.scene.platform.model.ComponentTree;
 import cn.iocoder.yudao.module.scene.platform.model.ComponentTreeNode;
 import cn.iocoder.yudao.module.scene.platform.service.actor.ActorComponentTreeService;
@@ -48,10 +49,13 @@ class ActorInstanceServiceImplTest {
     private ActorInstanceWebSocketService webSocketService;
     @Mock
     private ActorRenderConfigValidator actorRenderConfigValidator;
+    @Mock
+    private SceneMapper sceneMapper;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        when(sceneMapper.selectById(anyLong())).thenReturn(null);
     }
 
     @Test

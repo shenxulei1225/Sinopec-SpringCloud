@@ -19,10 +19,10 @@ public class ModelRelationDeclarationRespVO {
     private Long modelId;
 
     @Schema(description = "可关联的业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "personnel")
-    private String targetBusinessType;
+    private String targetEntityType;
 
     @Schema(description = "目标业务类型名称", example = "人员管理")
-    private String targetBusinessTypeName;
+    private String targetEntityTypeName;
 
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime createTime;

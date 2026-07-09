@@ -26,8 +26,8 @@ public class EntityKeywordSearchServiceImpl implements EntityKeywordSearchServic
     private EntityCoreService entityCoreService;
 
     @Override
-    public Set<Long> searchMatchedEntityIds(String businessTypeCode, String keyword, List<Long> candidateEntityIds) {
-        if (businessTypeCode == null || businessTypeCode.isBlank()) {
+    public Set<Long> searchMatchedEntityIds(String entityTypeCode, String keyword, List<Long> candidateEntityIds) {
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
             return Collections.emptySet();
         }
         if (keyword == null || keyword.trim().isEmpty()) {
@@ -52,7 +52,7 @@ public class EntityKeywordSearchServiceImpl implements EntityKeywordSearchServic
         }
 
         // 通道2：实体名称（name）
-        List<EntityDO> entities = entityCoreService.listByIds(candidateEntityIds, businessTypeCode);
+        List<EntityDO> entities = entityCoreService.listByIds(candidateEntityIds, entityTypeCode);
         if (entities != null && !entities.isEmpty()) {
             Set<Long> matchedByName = entities.stream()
                     .filter(e -> e != null && e.getId() != null && e.getName() != null)

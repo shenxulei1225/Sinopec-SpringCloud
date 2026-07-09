@@ -139,15 +139,15 @@ public class ComputedFieldExecutorImpl implements ComputedFieldExecutor {
      */
     private String buildAggregateSql(Long entityId, ComputedFieldDO field) {
         String function = field.getAggregateFunction();
-        String targetBusinessType = field.getTargetBusinessType();
+        String targetEntityType = field.getTargetEntityType();
         String targetModelCode = field.getTargetModelCode();
         String targetFieldCode = field.getTargetFieldCode();
         
         // 1. 确定目标表名
-        String tableName = determineTableName(targetBusinessType, targetModelCode);
+        String tableName = determineTableName(targetEntityType, targetModelCode);
         if (tableName == null) {
-            log.warn("[buildAggregateSql][无法确定目标表名，targetBusinessType={}, targetModelCode={}]", 
-                    targetBusinessType, targetModelCode);
+            log.warn("[buildAggregateSql][无法确定目标表名，targetEntityType={}, targetModelCode={}]", 
+                    targetEntityType, targetModelCode);
             return null;
         }
         
@@ -208,13 +208,13 @@ public class ComputedFieldExecutorImpl implements ComputedFieldExecutor {
      * 
      * TODO: 需要根据业务类型和 Model 编码查询实际表名
      */
-    private String determineTableName(String businessType, String modelCode) {
-        // 这里需要从 BusinessTypeConfig 或 Model 配置中获取实际表名
+    private String determineTableName(String entityType, String modelCode) {
+        // 这里需要从 EntityTypeConfig 或 Model 配置中获取实际表名
         // 暂时使用简单的命名规则
         if (StringUtils.hasText(modelCode)) {
             return "dynamic_" + modelCode;
-        } else if (StringUtils.hasText(businessType)) {
-            return "dynamic_" + businessType;
+        } else if (StringUtils.hasText(entityType)) {
+            return "dynamic_" + entityType;
         }
         return null;
     }

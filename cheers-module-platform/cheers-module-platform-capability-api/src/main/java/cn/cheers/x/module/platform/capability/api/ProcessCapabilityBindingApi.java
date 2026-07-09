@@ -15,8 +15,8 @@ public interface ProcessCapabilityBindingApi {
 
     String PREFIX = ApiConstants.PREFIX;
 
-    @GetMapping(PREFIX + "/bindings/{businessTypeCode}/published")
+    @GetMapping(PREFIX + "/bindings/{entityTypeCode}/published")
     @Operation(summary = "读取已发布的过程能力绑定")
     CommonResult<ProcessCapabilityBindingRespDTO> getPublishedBinding(
-            @PathVariable("businessTypeCode") String businessTypeCode);
+            @PathVariable("entityTypeCode") String entityTypeCode);
 }

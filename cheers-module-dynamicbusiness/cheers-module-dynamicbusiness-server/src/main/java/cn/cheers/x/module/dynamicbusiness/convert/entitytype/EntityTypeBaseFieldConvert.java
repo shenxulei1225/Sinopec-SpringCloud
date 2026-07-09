@@ -1,8 +1,8 @@
-package cn.cheers.x.module.dynamicbusiness.convert.businesstype;
+package cn.cheers.x.module.dynamicbusiness.convert.entitytype;
 
-import cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo.BusinessTypeBaseFieldRespVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo.BusinessTypeBaseFieldSaveReqVO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeBaseFieldDO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldSaveReqVO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.factory.Mappers;
@@ -10,14 +10,14 @@ import org.mapstruct.factory.Mappers;
 import java.util.List;
 
 @Mapper
-public interface BusinessTypeBaseFieldConvert {
-    BusinessTypeBaseFieldConvert INSTANCE = Mappers.getMapper(BusinessTypeBaseFieldConvert.class);
+public interface EntityTypeBaseFieldConvert {
+    EntityTypeBaseFieldConvert INSTANCE = Mappers.getMapper(EntityTypeBaseFieldConvert.class);
 
-    BusinessTypeBaseFieldDO convert(BusinessTypeBaseFieldSaveReqVO bean);
+    EntityTypeBaseFieldDO convert(EntityTypeBaseFieldSaveReqVO bean);
 
-    BusinessTypeBaseFieldRespVO convert(BusinessTypeBaseFieldDO bean);
+    EntityTypeBaseFieldRespVO convert(EntityTypeBaseFieldDO bean);
 
-    List<BusinessTypeBaseFieldRespVO> convertList(List<BusinessTypeBaseFieldDO> list);
+    List<EntityTypeBaseFieldRespVO> convertList(List<EntityTypeBaseFieldDO> list);
 
-    void update(@MappingTarget BusinessTypeBaseFieldDO target, BusinessTypeBaseFieldSaveReqVO source);
+    void update(@MappingTarget EntityTypeBaseFieldDO target, EntityTypeBaseFieldSaveReqVO source);
 }

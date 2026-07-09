@@ -16,10 +16,10 @@ public class BusinessCapabilitySummaryRespVO {
     private String businessCategory;
 
     @Schema(description = "业务类型编码（能力主索引）", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "业务类型名称（展示名）", example = "设备管理")
-    private String businessTypeName;
+    private String entityTypeName;
 
     @Schema(description = "支持的数据种类：dynamic 为 model/entity；system 固定 entity", example = "[\"model\",\"entity\"]")
     private java.util.List<String> supportedDataKinds;

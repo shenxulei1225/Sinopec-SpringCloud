@@ -17,18 +17,18 @@ ADD COLUMN IF NOT EXISTS target_model_code VARCHAR(64);
 
 -- 新增字段：源业务类型编码
 ALTER TABLE dynamic_entity_relation 
-ADD COLUMN IF NOT EXISTS source_business_type_code VARCHAR(64);
+ADD COLUMN IF NOT EXISTS source_entity_type_code VARCHAR(64);
 
 -- 新增字段：目标业务类型编码
 ALTER TABLE dynamic_entity_relation 
-ADD COLUMN IF NOT EXISTS target_business_type_code VARCHAR(64);
+ADD COLUMN IF NOT EXISTS target_entity_type_code VARCHAR(64);
 
 -- 添加字段注释
 COMMENT ON COLUMN dynamic_entity_relation.field_code IS '关联来源字段编码,标识是哪个字段产生的关联';
 COMMENT ON COLUMN dynamic_entity_relation.source_model_code IS '源 Model 编码,用于按 Model 分组统计';
 COMMENT ON COLUMN dynamic_entity_relation.target_model_code IS '目标 Model 编码,用于反向查询过滤';
-COMMENT ON COLUMN dynamic_entity_relation.source_business_type_code IS '源业务类型编码,用于跨业务类型查询';
-COMMENT ON COLUMN dynamic_entity_relation.target_business_type_code IS '目标业务类型编码,用于跨业务类型查询';
+COMMENT ON COLUMN dynamic_entity_relation.source_entity_type_code IS '源业务类型编码,用于跨业务类型查询';
+COMMENT ON COLUMN dynamic_entity_relation.target_entity_type_code IS '目标业务类型编码,用于跨业务类型查询';
 
 -- =====================================================
 -- 创建索引,优化反向查询和统计性能
@@ -51,12 +51,12 @@ WHERE deleted = FALSE;
 
 -- 索引4：按目标业务类型查询（跨业务类型统计）
 CREATE INDEX IF NOT EXISTS idx_entity_relation_target_business_type 
-ON dynamic_entity_relation(target_business_type_code, target_entity_id) 
+ON dynamic_entity_relation(target_entity_type_code, target_entity_id) 
 WHERE deleted = FALSE;
 
 -- 索引5：按源业务类型查询（跨业务类型统计）
 CREATE INDEX IF NOT EXISTS idx_entity_relation_source_business_type 
-ON dynamic_entity_relation(source_business_type_code, source_entity_id) 
+ON dynamic_entity_relation(source_entity_type_code, source_entity_id) 
 WHERE deleted = FALSE;
 
 -- 索引6：复合索引用于精确统计（目标实体 + 源 Model + 字段）

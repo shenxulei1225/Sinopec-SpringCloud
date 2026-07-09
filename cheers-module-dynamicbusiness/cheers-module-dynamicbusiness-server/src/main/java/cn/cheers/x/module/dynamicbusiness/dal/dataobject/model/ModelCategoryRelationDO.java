@@ -38,14 +38,24 @@ public class ModelCategoryRelationDO extends TenantBaseDO {
     private Long modelId;
 
     /**
+     * 模型编码（迁移幂等键，对应 {@link ModelDO#getCode()}）
+     */
+    private String modelCode;
+
+    /**
      * 分类ID
      */
     private Long categoryId;
 
     /**
+     * 分类编码（迁移幂等键，对应分类 {@code dynamic_category.code}）
+     */
+    private String categoryCode;
+
+    /**
      * 业务类型编码（与实体侧保持一致的分区维度）
      */
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     /**
      * 排序值（同一分类内）

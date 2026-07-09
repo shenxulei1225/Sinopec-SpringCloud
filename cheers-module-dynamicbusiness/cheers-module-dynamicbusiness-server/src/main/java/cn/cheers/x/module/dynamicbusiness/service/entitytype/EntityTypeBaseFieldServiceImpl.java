@@ -1,13 +1,13 @@
-package cn.cheers.x.module.dynamicbusiness.service.businesstype;
+package cn.cheers.x.module.dynamicbusiness.service.entitytype;
 
 import cn.iocoder.yudao.framework.common.exception.ServiceException;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo.BusinessTypeBaseFieldRespVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.businesstype.vo.BusinessTypeBaseFieldSaveReqVO;
-import cn.cheers.x.module.dynamicbusiness.convert.businesstype.BusinessTypeBaseFieldConvert;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeBaseFieldDO;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeBaseFieldMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeMapper;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldSaveReqVO;
+import cn.cheers.x.module.dynamicbusiness.convert.entitytype.EntityTypeBaseFieldConvert;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeBaseFieldMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.service.capability.BusinessCapabilityService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -22,141 +22,141 @@ import java.util.Objects;
 @Service
 @Validated
 @Slf4j
-public class BusinessTypeBaseFieldServiceImpl implements BusinessTypeBaseFieldService {
+public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldService {
 
     @Resource
-    private BusinessTypeBaseFieldMapper baseFieldMapper;
+    private EntityTypeBaseFieldMapper baseFieldMapper;
 
     @Resource
-    private BusinessTypeMapper businessTypeMapper;
+    private EntityTypeMapper entityTypeMapper;
 
     @Resource
     @Lazy
     private BusinessCapabilityService businessCapabilityService;
 
-    private void notifyBusinessTypeFieldDefinitionChanged(String businessTypeCode) {
-        if (businessTypeCode == null || businessTypeCode.isBlank()) {
+    private void notifyEntityTypeFieldDefinitionChanged(String entityTypeCode) {
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
             return;
         }
-        businessCapabilityService.refreshAfterBusinessTypeFieldDefinitionChanged(businessTypeCode.trim());
+        businessCapabilityService.refreshAfterEntityTypeFieldDefinitionChanged(entityTypeCode.trim());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long createBaseField(BusinessTypeBaseFieldSaveReqVO reqVO) {
-        if (businessTypeMapper.selectByCode(reqVO.getBusinessTypeCode()) == null) {
+    public Long createBaseField(EntityTypeBaseFieldSaveReqVO reqVO) {
+        if (entityTypeMapper.selectByCode(reqVO.getEntityTypeCode()) == null) {
             throw new ServiceException(404, "业务类型不存在");
         }
-        if (baseFieldMapper.existsByFieldCode(reqVO.getBusinessTypeCode(), reqVO.getFieldCode(), null)) {
+        if (baseFieldMapper.existsByFieldCode(reqVO.getEntityTypeCode(), reqVO.getFieldCode(), null)) {
             throw new ServiceException(400, "字段编码已存在");
         }
-        BusinessTypeBaseFieldDO field = BusinessTypeBaseFieldConvert.INSTANCE.convert(reqVO);
+        EntityTypeBaseFieldDO field = EntityTypeBaseFieldConvert.INSTANCE.convert(reqVO);
         if (field.getStatus() == null) {
             field.setStatus(1);
         }
         if (field.getSortOrder() == null) {
-            field.setSortOrder(baseFieldMapper.selectMaxSortOrder(reqVO.getBusinessTypeCode()) + 1);
+            field.setSortOrder(baseFieldMapper.selectMaxSortOrder(reqVO.getEntityTypeCode()) + 1);
         }
         baseFieldMapper.insert(field);
-        notifyBusinessTypeFieldDefinitionChanged(reqVO.getBusinessTypeCode());
+        notifyEntityTypeFieldDefinitionChanged(reqVO.getEntityTypeCode());
         return field.getId();
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateBaseField(BusinessTypeBaseFieldSaveReqVO reqVO) {
-        BusinessTypeBaseFieldDO field = baseFieldMapper.selectById(reqVO.getId());
+    public void updateBaseField(EntityTypeBaseFieldSaveReqVO reqVO) {
+        EntityTypeBaseFieldDO field = baseFieldMapper.selectById(reqVO.getId());
         if (field == null) {
             throw new ServiceException(404, "固定列字段不存在");
         }
-        if (!Objects.equals(field.getBusinessTypeCode(), reqVO.getBusinessTypeCode())
-                && businessTypeMapper.selectByCode(reqVO.getBusinessTypeCode()) == null) {
+        if (!Objects.equals(field.getEntityTypeCode(), reqVO.getEntityTypeCode())
+                && entityTypeMapper.selectByCode(reqVO.getEntityTypeCode()) == null) {
             throw new ServiceException(404, "业务类型不存在");
         }
-        if (baseFieldMapper.existsByFieldCode(reqVO.getBusinessTypeCode(), reqVO.getFieldCode(), reqVO.getId())) {
+        if (baseFieldMapper.existsByFieldCode(reqVO.getEntityTypeCode(), reqVO.getFieldCode(), reqVO.getId())) {
             throw new ServiceException(400, "字段编码已存在");
         }
-        BusinessTypeBaseFieldConvert.INSTANCE.update(field, reqVO);
+        EntityTypeBaseFieldConvert.INSTANCE.update(field, reqVO);
         baseFieldMapper.updateById(field);
-        notifyBusinessTypeFieldDefinitionChanged(reqVO.getBusinessTypeCode());
+        notifyEntityTypeFieldDefinitionChanged(reqVO.getEntityTypeCode());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteBaseField(Long id) {
-        BusinessTypeBaseFieldDO field = baseFieldMapper.selectById(id);
+        EntityTypeBaseFieldDO field = baseFieldMapper.selectById(id);
         if (field == null) {
             return;
         }
-        String businessTypeCode = field.getBusinessTypeCode();
+        String entityTypeCode = field.getEntityTypeCode();
         baseFieldMapper.deleteById(id);
-        notifyBusinessTypeFieldDefinitionChanged(businessTypeCode);
+        notifyEntityTypeFieldDefinitionChanged(entityTypeCode);
     }
 
     @Override
-    public BusinessTypeBaseFieldDO getBaseField(Long id) {
+    public EntityTypeBaseFieldDO getBaseField(Long id) {
         return baseFieldMapper.selectById(id);
     }
 
     @Override
-    public BusinessTypeBaseFieldRespVO getBaseFieldRespVO(Long id) {
-        return BusinessTypeBaseFieldConvert.INSTANCE.convert(baseFieldMapper.selectById(id));
+    public EntityTypeBaseFieldRespVO getBaseFieldRespVO(Long id) {
+        return EntityTypeBaseFieldConvert.INSTANCE.convert(baseFieldMapper.selectById(id));
     }
 
     @Override
-    public List<BusinessTypeBaseFieldRespVO> listByBusinessTypeCode(String businessTypeCode) {
-        return BusinessTypeBaseFieldConvert.INSTANCE.convertList(baseFieldMapper.selectByBusinessTypeCode(businessTypeCode));
+    public List<EntityTypeBaseFieldRespVO> listByEntityTypeCode(String entityTypeCode) {
+        return EntityTypeBaseFieldConvert.INSTANCE.convertList(baseFieldMapper.selectByEntityTypeCode(entityTypeCode));
     }
 
     @Override
-    public List<BusinessTypeBaseFieldRespVO> listAllByBusinessTypeCode(String businessTypeCode) {
-        return BusinessTypeBaseFieldConvert.INSTANCE.convertList(baseFieldMapper.selectAllByBusinessTypeCode(businessTypeCode));
+    public List<EntityTypeBaseFieldRespVO> listAllByEntityTypeCode(String entityTypeCode) {
+        return EntityTypeBaseFieldConvert.INSTANCE.convertList(baseFieldMapper.selectAllByEntityTypeCode(entityTypeCode));
     }
 
     @Override
-    public List<BusinessTypeBaseFieldDO> getBaseFieldsByBusinessTypeCode(String businessTypeCode) {
-        return baseFieldMapper.selectAllByBusinessTypeCode(businessTypeCode);
+    public List<EntityTypeBaseFieldDO> getBaseFieldsByEntityTypeCode(String entityTypeCode) {
+        return baseFieldMapper.selectAllByEntityTypeCode(entityTypeCode);
     }
 
     @Override
-    public BusinessTypeBaseFieldDO getBaseFieldByCode(String businessTypeCode, String fieldCode) {
-        return baseFieldMapper.selectByBusinessTypeCodeAndFieldCode(businessTypeCode, fieldCode);
+    public EntityTypeBaseFieldDO getBaseFieldByCode(String entityTypeCode, String fieldCode) {
+        return baseFieldMapper.selectByEntityTypeCodeAndFieldCode(entityTypeCode, fieldCode);
     }
 
     @Override
-    public boolean existsFieldCode(String businessTypeCode, String fieldCode) {
-        return baseFieldMapper.existsByFieldCode(businessTypeCode, fieldCode, null);
+    public boolean existsFieldCode(String entityTypeCode, String fieldCode) {
+        return baseFieldMapper.existsByFieldCode(entityTypeCode, fieldCode, null);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateBaseFieldStatus(Long id, Integer status) {
-        BusinessTypeBaseFieldDO field = baseFieldMapper.selectById(id);
+        EntityTypeBaseFieldDO field = baseFieldMapper.selectById(id);
         if (field == null) {
             throw new ServiceException(404, "固定列字段不存在");
         }
         field.setStatus(status);
         baseFieldMapper.updateById(field);
-        notifyBusinessTypeFieldDefinitionChanged(field.getBusinessTypeCode());
+        notifyEntityTypeFieldDefinitionChanged(field.getEntityTypeCode());
     }
 
     @Override
-    public Long countByBusinessTypeCode(String businessTypeCode) {
-        return baseFieldMapper.countByBusinessTypeCode(businessTypeCode);
+    public Long countByEntityTypeCode(String entityTypeCode) {
+        return baseFieldMapper.countByEntityTypeCode(entityTypeCode);
     }
 
     @Override
-    public List<String> getFieldCodes(String businessTypeCode) {
-        return baseFieldMapper.selectList(new LambdaQueryWrapperX<BusinessTypeBaseFieldDO>()
-                .select(BusinessTypeBaseFieldDO::getFieldCode)
-                .eq(BusinessTypeBaseFieldDO::getBusinessTypeCode, businessTypeCode)
-                .eq(BusinessTypeBaseFieldDO::getStatus, 1))
-                .stream().map(BusinessTypeBaseFieldDO::getFieldCode).toList();
+    public List<String> getFieldCodes(String entityTypeCode) {
+        return baseFieldMapper.selectList(new LambdaQueryWrapperX<EntityTypeBaseFieldDO>()
+                .select(EntityTypeBaseFieldDO::getFieldCode)
+                .eq(EntityTypeBaseFieldDO::getEntityTypeCode, entityTypeCode)
+                .eq(EntityTypeBaseFieldDO::getStatus, 1))
+                .stream().map(EntityTypeBaseFieldDO::getFieldCode).toList();
     }
 
     @Override
-    public String validateFieldValue(String businessTypeCode, String fieldCode, Object value) {
-        BusinessTypeBaseFieldDO field = getBaseFieldByCode(businessTypeCode, fieldCode);
+    public String validateFieldValue(String entityTypeCode, String fieldCode, Object value) {
+        EntityTypeBaseFieldDO field = getBaseFieldByCode(entityTypeCode, fieldCode);
         if (field == null) {
             return "字段不存在";
         }

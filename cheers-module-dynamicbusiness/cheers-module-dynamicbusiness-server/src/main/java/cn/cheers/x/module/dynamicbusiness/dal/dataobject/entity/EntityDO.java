@@ -35,7 +35,7 @@ public class EntityDO extends TenantBaseDO {
     /**
      * 业务类型编码
      */
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     /**
      * 模型ID

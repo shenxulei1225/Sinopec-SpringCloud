@@ -36,6 +36,11 @@ public class CategoryDO extends TenantBaseDO implements CategoryContract<Long> {
     private Long parentId;
 
     /**
+     * 父分类编码（迁移用，对应 {@code dynamic_category.code}）
+     */
+    private String parentCode;
+
+    /**
      * 分类名称
      */
     private String name;

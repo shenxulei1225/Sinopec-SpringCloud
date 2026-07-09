@@ -39,9 +39,19 @@ public class ModelFieldAssignmentDO extends TenantBaseDO {
     private Long modelId;
 
     /**
+     * 模型编码（迁移幂等键，对应 {@link ModelDO#getCode()}）
+     */
+    private String modelCode;
+
+    /**
      * 字段ID
      */
     private Long fieldId;
+
+    /**
+     * 字段编码（迁移幂等键，对应字段池 {@code dynamic_field.code}）
+     */
+    private String fieldCode;
 
     /**
      * 是否必填
@@ -110,7 +120,7 @@ public class ModelFieldAssignmentDO extends TenantBaseDO {
     /**
      * 目标业务类型（关联字段兜底信息）
      */
-    private String targetBusinessType;
+    private String targetEntityType;
 
 
 }

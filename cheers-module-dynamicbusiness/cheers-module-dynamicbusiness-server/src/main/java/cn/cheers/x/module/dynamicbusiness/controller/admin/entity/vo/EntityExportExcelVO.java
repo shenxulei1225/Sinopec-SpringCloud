@@ -31,7 +31,7 @@ public class EntityExportExcelVO {
 
     @ExcelProperty("业务类型编码")
     @ColumnWidth(20)
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @ExcelProperty("模型ID")
     @ColumnWidth(15)

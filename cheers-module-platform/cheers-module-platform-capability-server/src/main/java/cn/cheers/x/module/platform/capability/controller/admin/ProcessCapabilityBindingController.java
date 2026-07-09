@@ -26,25 +26,25 @@ public class ProcessCapabilityBindingController {
     @Resource
     private ProcessCapabilityBindingService processCapabilityBindingService;
 
-    @PutMapping("/{businessTypeCode}/process-capability-binding")
+    @PutMapping("/{entityTypeCode}/process-capability-binding")
     @Operation(summary = "保存过程能力绑定")
     public CommonResult<ProcessCapabilityBindingRespDTO> saveBinding(
-            @PathVariable("businessTypeCode") String businessTypeCode,
+            @PathVariable("entityTypeCode") String entityTypeCode,
             @Valid @RequestBody ProcessCapabilityBindingSaveReqDTO request) {
-        return success(processCapabilityBindingService.saveBinding(businessTypeCode, request));
+        return success(processCapabilityBindingService.saveBinding(entityTypeCode, request));
     }
 
-    @GetMapping("/{businessTypeCode}/process-capability-binding")
+    @GetMapping("/{entityTypeCode}/process-capability-binding")
     @Operation(summary = "读取过程能力绑定")
     public CommonResult<ProcessCapabilityBindingRespDTO> getBinding(
-            @PathVariable("businessTypeCode") String businessTypeCode) {
-        return success(processCapabilityBindingService.getBinding(businessTypeCode));
+            @PathVariable("entityTypeCode") String entityTypeCode) {
+        return success(processCapabilityBindingService.getBinding(entityTypeCode));
     }
 
-    @PostMapping("/{businessTypeCode}/process-capability-binding/publish")
+    @PostMapping("/{entityTypeCode}/process-capability-binding/publish")
     @Operation(summary = "发布过程能力绑定")
     public CommonResult<ProcessCapabilityBindingRespDTO> publishBinding(
-            @PathVariable("businessTypeCode") String businessTypeCode) {
-        return success(processCapabilityBindingService.publishBinding(businessTypeCode));
+            @PathVariable("entityTypeCode") String entityTypeCode) {
+        return success(processCapabilityBindingService.publishBinding(entityTypeCode));
     }
 }

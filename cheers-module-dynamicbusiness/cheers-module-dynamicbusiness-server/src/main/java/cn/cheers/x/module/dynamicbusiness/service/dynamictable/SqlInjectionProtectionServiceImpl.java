@@ -6,16 +6,16 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.exception.ServiceException;
 import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeBaseFieldDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.dynamictable.DynamicTableColumnDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.dynamictable.DynamicTableDO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.BusinessTypeDO;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeBaseFieldMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.businesstype.BusinessTypeMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeBaseFieldMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.dynamictable.DynamicTableColumnMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.dynamictable.DynamicTableMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.dynamictable.DynamicSqlAuditLogMapper;
-import cn.cheers.x.module.dynamicbusiness.enums.businesstype.StorageTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.dynamictable.DynamicSqlAuditLogDO;
@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
  * <p>提供动态 SQL 执行的安全防护机制：</p>
  * <ul>
  *   <li>表名白名单验证：只允许已注册的动态表</li>
- *   <li>列名白名单验证：只允许 dynamic_business_type_base_field 中定义的字段</li>
+ *   <li>列名白名单验证：只允许 dynamic_entity_type_base_field 中定义的字段</li>
  *   <li>所有值使用参数化查询（PreparedStatement）</li>
  *   <li>记录所有动态 SQL 执行的审计日志</li>
  * </ul>
@@ -70,7 +70,7 @@ public class SqlInjectionProtectionServiceImpl implements SqlInjectionProtection
      */
     private static final Set<String> BASE_COLUMNS = Set.of(
             "id", "tenant_id", "creator", "create_time", "updater", "update_time", "deleted",
-            "business_type_code", "model_id", "name", "custom_fields", "status", "parent_id", "tree_path"
+            "entity_type_code", "model_id", "name", "custom_fields", "status", "parent_id", "tree_path"
     );
 
     /**
@@ -90,10 +90,10 @@ public class SqlInjectionProtectionServiceImpl implements SqlInjectionProtection
     private DynamicTableColumnMapper dynamicTableColumnMapper;
 
     @Resource
-    private BusinessTypeMapper businessTypeMapper;
+    private EntityTypeMapper entityTypeMapper;
 
     @Resource
-    private BusinessTypeBaseFieldMapper businessTypeBaseFieldMapper;
+    private EntityTypeBaseFieldMapper entityTypeBaseFieldMapper;
 
     @Resource
     private DynamicSqlAuditLogMapper dynamicSqlAuditLogMapper;
@@ -185,8 +185,8 @@ public class SqlInjectionProtectionServiceImpl implements SqlInjectionProtection
         }
         
         // 2. 加载所有 DEDICATED 类型的专用表
-        List<BusinessTypeDO> businessTypes = businessTypeMapper.selectAllList();
-        for (BusinessTypeDO bt : businessTypes) {
+        List<EntityTypeDO> entityTypes = entityTypeMapper.selectAllList();
+        for (EntityTypeDO bt : entityTypes) {
             StorageTypeEnum storageType = StorageTypeEnum.getByCode(bt.getStorageType());
             if (storageType != null && storageType.isDedicated() && StrUtil.isNotBlank(bt.getDedicatedTableName())) {
                 tableWhitelist.add(bt.getDedicatedTableName().toLowerCase());
@@ -285,13 +285,13 @@ public class SqlInjectionProtectionServiceImpl implements SqlInjectionProtection
         // 构建列名白名单
         Set<String> allowedColumns = new HashSet<>(BASE_COLUMNS);
         
-        // 1. 查找对应的业务类型（专用表 -> BusinessType）
-        BusinessTypeDO businessType = businessTypeMapper.selectByDedicatedTableName(tableName);
-        if (businessType != null) {
+        // 1. 查找对应的业务类型（专用表 -> EntityType）
+        EntityTypeDO entityType = entityTypeMapper.selectByDedicatedTableName(tableName);
+        if (entityType != null) {
             // 2. 加载固定列字段
-            List<BusinessTypeBaseFieldDO> baseFields =
-                    businessTypeBaseFieldMapper.selectByBusinessTypeCode(businessType.getCode());
-            for (BusinessTypeBaseFieldDO field : baseFields) {
+            List<EntityTypeBaseFieldDO> baseFields =
+                    entityTypeBaseFieldMapper.selectByEntityTypeCode(entityType.getCode());
+            for (EntityTypeBaseFieldDO field : baseFields) {
                 if (StrUtil.isNotBlank(field.getFieldCode())) {
                     // 转换为下划线命名
                     String columnName = camelToSnake(field.getFieldCode());
@@ -299,19 +299,19 @@ public class SqlInjectionProtectionServiceImpl implements SqlInjectionProtection
                 }
             }
 
-            // 2.1 加载物理列映射配置中的列名（BusinessType.physicalColumnMapping JSON）
-            if (StrUtil.isNotBlank(businessType.getPhysicalColumnMapping())) {
+            // 2.1 加载物理列映射配置中的列名（EntityType.physicalColumnMapping JSON）
+            if (StrUtil.isNotBlank(entityType.getPhysicalColumnMapping())) {
                 try {
-                    Map<String, cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.PhysicalColumnConfig> physicalColumnMapping =
-                            new ObjectMapper().readValue(businessType.getPhysicalColumnMapping(),
-                                    new TypeReference<Map<String, cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.PhysicalColumnConfig>>() {});
-                    for (cn.cheers.x.module.dynamicbusiness.dal.dataobject.businesstype.PhysicalColumnConfig colConfig : physicalColumnMapping.values()) {
+                    Map<String, cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.PhysicalColumnConfig> physicalColumnMapping =
+                            new ObjectMapper().readValue(entityType.getPhysicalColumnMapping(),
+                                    new TypeReference<Map<String, cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.PhysicalColumnConfig>>() {});
+                    for (cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.PhysicalColumnConfig colConfig : physicalColumnMapping.values()) {
                         if (colConfig != null && StrUtil.isNotBlank(colConfig.getColumn())) {
                             allowedColumns.add(colConfig.getColumn().toLowerCase());
                         }
                     }
                 } catch (Exception e) {
-                    log.warn("[getAllowedColumns][解析 physicalColumnMapping 失败,tableName={}, businessTypeCode={}]", tableName, businessType.getCode(), e);
+                    log.warn("[getAllowedColumns][解析 physicalColumnMapping 失败,tableName={}, entityTypeCode={}]", tableName, entityType.getCode(), e);
                 }
             }
         }

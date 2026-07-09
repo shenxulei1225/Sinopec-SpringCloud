@@ -17,8 +17,8 @@ public class ModelRelationRespVO {
     @Schema(description = "关联 ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     private Long id;
 
-    @Schema(description = "来源的 BusinessType 关联 ID（可为空，表示手动创建）", example = "1")
-    private Long businessTypeRelationId;
+    @Schema(description = "来源的 EntityType 关联 ID（可为空，表示手动创建）", example = "1")
+    private Long entityTypeRelationId;
 
     @Schema(description = "源 Model ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "10")
     private Long sourceModelId;

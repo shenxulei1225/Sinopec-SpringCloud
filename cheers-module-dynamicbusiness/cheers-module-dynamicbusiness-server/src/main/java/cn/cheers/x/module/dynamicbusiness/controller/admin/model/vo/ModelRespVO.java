@@ -25,7 +25,7 @@ public class ModelRespVO {
     private String name;
 
     @Schema(description = "业务类型编码", example = "equipment")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "模型描述", example = "适用于消防设备的9kg泡沫灭火器A型号")
     private String description;

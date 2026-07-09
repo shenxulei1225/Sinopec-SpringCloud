@@ -15,7 +15,7 @@ public class EntityDeleteReqVO {
 
     @Schema(description = "业务类型编码（用于路由到对应存储策略）", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
     @NotBlank(message = "业务类型编码不能为空")
-    private String businessTypeCode;
+    private String entityTypeCode;
 
     @Schema(description = "是否强制删除（同时删除所有关联关系）", example = "false")
     private Boolean forceDelete = false;

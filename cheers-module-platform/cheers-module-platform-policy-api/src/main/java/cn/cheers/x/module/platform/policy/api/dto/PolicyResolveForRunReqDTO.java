@@ -15,5 +15,5 @@ public class PolicyResolveForRunReqDTO {
     @NotBlank(message = "policySetId 不能为空")
     private String policySetId;
 
-    private String businessTypeCode;
+    private String entityTypeCode;
 }

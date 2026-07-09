@@ -8,14 +8,14 @@ import java.util.List;
 /**
  * 动态表配置 Mapper
  * 
- * <p>动态表是按 businessTypeCode 创建和管理的，一个 BusinessType 对应一个动态表。
- * 多个 Model 可以共享同一个 BusinessType 的动态表。</p>
+ * <p>动态表是按 entityTypeCode 创建和管理的，一个 EntityType 对应一个动态表。
+ * 多个 Model 可以共享同一个 EntityType 的动态表。</p>
  * 
  * <p>查询动态表的推荐方式：
  * <ul>
- *   <li>已知 businessTypeCode：直接使用 {@link #selectByBusinessTypeCode(String)}</li>
+ *   <li>已知 entityTypeCode：直接使用 {@link #selectByEntityTypeCode(String)}</li>
  *   <li>已知 modelId：通过 DynamicTableService.getDynamicTableByModelId(modelId)，
- *       内部会先查询 Model 获取 businessTypeCode，再查询动态表</li>
+ *       内部会先查询 Model 获取 entityTypeCode，再查询动态表</li>
  * </ul>
  * </p>
  * 
@@ -27,13 +27,13 @@ public interface DynamicTableMapper extends BaseMapperX<DynamicTableDO> {
     /**
      * 根据业务类型编码查询动态表列表
      * 
-     * <p>这是查询动态表的主要方法。一个 BusinessType 通常只有一个动态表。</p>
+     * <p>这是查询动态表的主要方法。一个 EntityType 通常只有一个动态表。</p>
      * 
-     * @param businessTypeCode 业务类型编码
+     * @param entityTypeCode 业务类型编码
      * @return 动态表列表
      */
-    default List<DynamicTableDO> selectByBusinessTypeCode(String businessTypeCode) {
-        return selectList(DynamicTableDO::getBusinessTypeCode, businessTypeCode);
+    default List<DynamicTableDO> selectByEntityTypeCode(String entityTypeCode) {
+        return selectList(DynamicTableDO::getEntityTypeCode, entityTypeCode);
     }
     
     /**

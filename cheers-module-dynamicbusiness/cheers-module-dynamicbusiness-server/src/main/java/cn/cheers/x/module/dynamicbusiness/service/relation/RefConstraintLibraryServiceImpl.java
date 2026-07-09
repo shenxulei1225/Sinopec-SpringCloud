@@ -69,14 +69,14 @@ public class RefConstraintLibraryServiceImpl implements RefConstraintLibraryServ
     }
 
     @Override
-    public List<RefConstraintLibraryRespVO> listByBusinessType(String businessTypeCode, String refTargetType) {
+    public List<RefConstraintLibraryRespVO> listByEntityType(String entityTypeCode, String refTargetType) {
         return RefConstraintLibraryConvert.INSTANCE.convertList(
-                refConstraintLibraryMapper.selectByBusinessType(businessTypeCode, refTargetType));
+                refConstraintLibraryMapper.selectByEntityType(entityTypeCode, refTargetType));
     }
 
     @Override
-    public void validateConstraintType(String businessTypeCode, String refTargetType, String constraintType) {
-        if (!refConstraintLibraryMapper.existsEnabled(businessTypeCode, refTargetType, constraintType)) {
+    public void validateConstraintType(String entityTypeCode, String refTargetType, String constraintType) {
+        if (!refConstraintLibraryMapper.existsEnabled(entityTypeCode, refTargetType, constraintType)) {
             throw ServiceExceptionUtil.exception(REF_CONSTRAINT_TYPE_NOT_CONFIGURED, constraintType);
         }
     }

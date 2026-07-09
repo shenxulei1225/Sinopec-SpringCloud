@@ -22,7 +22,7 @@ public class ScheduleSlotDTO {
     private String slotId;
     private String runtimeJobId;
     private String workId;
-    private String businessTypeCode;
+    private String entityTypeCode;
     private String plannedStart;
     private String plannedEnd;
     private List<AssignedResourceDTO> assignedResources;

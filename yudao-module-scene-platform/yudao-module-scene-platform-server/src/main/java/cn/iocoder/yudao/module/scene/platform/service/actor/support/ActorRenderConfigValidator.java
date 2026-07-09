@@ -1,13 +1,15 @@
 package cn.iocoder.yudao.module.scene.platform.service.actor.support;
 
 import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.actor.ActorInstanceComponentDO;
 import cn.iocoder.yudao.module.scene.platform.model.render.ActorRenderConfig;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -16,6 +18,7 @@ import static cn.iocoder.yudao.module.scene.platform.enums.ErrorCodeConstants.SC
 @Component
 public class ActorRenderConfigValidator {
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final Set<String> ALLOWED_RENDER_TYPES = Set.of(
             "gltf",
             "splat"
@@ -77,23 +80,28 @@ public class ActorRenderConfigValidator {
         JSONObject metadataObj = safeParse(metadataJson);
         JSONObject propertiesObj = safeParse(propertiesJson);
 
+        JSONObject sourceObj;
+        String source;
+        if (containsRenderConfig(overrideObj)) {
+            sourceObj = overrideObj;
+            source = "overrideJson";
+        } else if (containsRenderConfig(metadataObj)) {
+            sourceObj = metadataObj;
+            source = "metadataJson";
+        } else if (containsRenderConfig(propertiesObj)) {
+            sourceObj = propertiesObj;
+            source = "propertiesJson";
+        } else {
+            ActorRenderConfig empty = new ActorRenderConfig();
+            empty.setSource("none");
+            return empty;
+        }
+
         ActorRenderConfig config = new ActorRenderConfig();
-        config.setRenderType(normalizeRenderType(firstNonBlank(
-                pickString(overrideObj, "renderType"),
-                pickString(metadataObj, "renderType"),
-                pickString(propertiesObj, "renderType")
-        )));
-        config.setModelUrl(trimToNull(firstNonBlank(
-                pickString(overrideObj, "modelUrl"),
-                pickString(metadataObj, "modelUrl"),
-                pickString(propertiesObj, "modelUrl")
-        )));
-        config.setSplatUrl(trimToNull(firstNonBlank(
-                pickString(overrideObj, "splatUrl"),
-                pickString(metadataObj, "splatUrl"),
-                pickString(propertiesObj, "splatUrl")
-        )));
-        config.setSource(resolveSource(overrideObj, metadataObj, propertiesObj));
+        config.setRenderType(normalizeRenderType(pickString(sourceObj, "renderType")));
+        config.setModelUrl(trimToNull(pickString(sourceObj, "modelUrl")));
+        config.setSplatUrl(trimToNull(pickString(sourceObj, "splatUrl")));
+        config.setSource(source);
         return config;
     }
 
@@ -161,25 +169,12 @@ public class ActorRenderConfigValidator {
             return new JSONObject(Collections.emptyMap());
         }
         try {
-            return JSONUtil.parseObj(json);
-        } catch (Exception e) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = OBJECT_MAPPER.readValue(json.trim(), Map.class);
+            return new JSONObject(map != null ? map : Collections.emptyMap());
+        } catch (JsonProcessingException e) {
             throw exception(SCENE_RENDER_CONFIG_INVALID, "-", "渲染配置 JSON 非法");
         }
-    }
-
-    private String resolveSource(JSONObject overrideObj,
-                                 JSONObject metadataObj,
-                                 JSONObject propertiesObj) {
-        if (containsRenderConfig(overrideObj)) {
-            return "overrideJson";
-        }
-        if (containsRenderConfig(metadataObj)) {
-            return "metadataJson";
-        }
-        if (containsRenderConfig(propertiesObj)) {
-            return "propertiesJson";
-        }
-        return "none";
     }
 
     private boolean containsRenderConfig(JSONObject jsonObject) {
@@ -210,18 +205,6 @@ public class ActorRenderConfigValidator {
             }
         }
         return false;
-    }
-
-    private String firstNonBlank(String... values) {
-        if (values == null) {
-            return null;
-        }
-        for (String value : values) {
-            if (!isBlank(value)) {
-                return value.trim();
-            }
-        }
-        return null;
     }
 
     private String trimToNull(String value) {

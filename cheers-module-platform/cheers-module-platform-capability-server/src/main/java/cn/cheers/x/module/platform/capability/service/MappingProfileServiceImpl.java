@@ -35,7 +35,7 @@ public class MappingProfileServiceImpl implements MappingProfileService {
         MappingProfileDO existing = mappingProfileMapper.selectById(request.getId());
         MappingProfileDO profile = MappingProfileDO.builder()
                 .id(request.getId())
-                .businessTypeCode(request.getBusinessTypeCode())
+                .entityTypeCode(request.getEntityTypeCode())
                 .sourceModelCode(request.getSourceModelCode())
                 .displayName(request.getDisplayName())
                 .fieldMappings(toJsonObject(request.getFieldMappings()))
@@ -68,12 +68,12 @@ public class MappingProfileServiceImpl implements MappingProfileService {
     @Override
     public List<WorkItemDTO> resolveWorkItems(String profileId, ResolveWorkItemsReqDTO request) {
         MappingProfileDO profile = requireById(profileId);
-        if (!profile.getBusinessTypeCode().equals(request.getBusinessTypeCode())) {
+        if (!profile.getEntityTypeCode().equals(request.getEntityTypeCode())) {
             throw exception(MAPPING_PROFILE_BUSINESS_TYPE_MISMATCH);
         }
         List<WorkItemDTO> items = new ArrayList<>();
         for (ResolveWorkItemsReqDTO.SourceInstanceInputDTO instance : request.getInstances()) {
-            items.add(workItemMappingResolver.resolve(profile, request.getBusinessTypeCode(), instance));
+            items.add(workItemMappingResolver.resolve(profile, request.getEntityTypeCode(), instance));
         }
         return items;
     }
@@ -81,7 +81,7 @@ public class MappingProfileServiceImpl implements MappingProfileService {
     static MappingProfileRespDTO toResp(MappingProfileDO profile) {
         return MappingProfileRespDTO.builder()
                 .id(profile.getId())
-                .businessTypeCode(profile.getBusinessTypeCode())
+                .entityTypeCode(profile.getEntityTypeCode())
                 .sourceModelCode(profile.getSourceModelCode())
                 .displayName(profile.getDisplayName())
                 .fieldMappings(parseStringMap(profile.getFieldMappings()))

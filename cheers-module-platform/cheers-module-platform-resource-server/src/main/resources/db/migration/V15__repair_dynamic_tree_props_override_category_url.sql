@@ -6,41 +6,41 @@ SET search_path TO platformresource;
 UPDATE pr_component_props
 SET
     props_override = jsonb_set(
-        props_override,
+        props_override::jsonb,
         '{dataSource,dataSourceEndpoint,url}',
         '""'::jsonb,
         true
-    ),
+    )::text,
     updater = 'repair',
     update_time = CURRENT_TIMESTAMP
 WHERE component_code = 'tree'
   AND deleted = FALSE
   AND props_override IS NOT NULL
-  AND props_override <> '{}'::jsonb
-  AND COALESCE(data_source->>'businessCategory', '') = 'dynamic'
-  AND COALESCE(data_source->>'dataKind', '') IN ('model', 'entity')
+  AND props_override::jsonb <> '{}'::jsonb
+  AND COALESCE(data_source::jsonb->>'businessCategory', '') = 'dynamic'
+  AND COALESCE(data_source::jsonb->>'dataKind', '') IN ('model', 'entity')
   AND (
-    props_override->'dataSource'->'dataSourceEndpoint'->>'url' LIKE '%/dynamicbusiness/category/tree%'
-    OR props_override->'dataSource'->'dataSourceEndpoint'->>'url' LIKE '%/system/category/tree%'
+    props_override::jsonb->'dataSource'->'dataSourceEndpoint'->>'url' LIKE '%/dynamicbusiness/category/tree%'
+    OR props_override::jsonb->'dataSource'->'dataSourceEndpoint'->>'url' LIKE '%/system/category/tree%'
   );
 
 UPDATE pr_component_props
 SET
     props_override = jsonb_set(
-        props_override,
+        props_override::jsonb,
         '{apiConfig,dataEndpoint,url}',
         '""'::jsonb,
         true
-    ),
+    )::text,
     updater = 'repair',
     update_time = CURRENT_TIMESTAMP
 WHERE component_code = 'tree'
   AND deleted = FALSE
   AND props_override IS NOT NULL
-  AND props_override <> '{}'::jsonb
-  AND COALESCE(data_source->>'businessCategory', '') = 'dynamic'
-  AND COALESCE(data_source->>'dataKind', '') IN ('model', 'entity')
+  AND props_override::jsonb <> '{}'::jsonb
+  AND COALESCE(data_source::jsonb->>'businessCategory', '') = 'dynamic'
+  AND COALESCE(data_source::jsonb->>'dataKind', '') IN ('model', 'entity')
   AND (
-    props_override->'apiConfig'->'dataEndpoint'->>'url' LIKE '%/dynamicbusiness/category/tree%'
-    OR props_override->'apiConfig'->'dataEndpoint'->>'url' LIKE '%/system/category/tree%'
+    props_override::jsonb->'apiConfig'->'dataEndpoint'->>'url' LIKE '%/dynamicbusiness/category/tree%'
+    OR props_override::jsonb->'apiConfig'->'dataEndpoint'->>'url' LIKE '%/system/category/tree%'
   );
