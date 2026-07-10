@@ -9,6 +9,8 @@ import lombok.Data;
  * 组件库目录 DO：登记可复用 UI 单元。
  * 用户偏好 props 见 {@link ComponentPropsDO}；接口契约见业务能力模块 component_interface。
  * 前端实现路径由前端组件注册表维护，不在此表。
+ *
+ * <p>全租户共享目录：DO 不映射 tenant_id，插入时由库表默认值 0 填充。
  */
 @Data
 @TableName("pr_component")

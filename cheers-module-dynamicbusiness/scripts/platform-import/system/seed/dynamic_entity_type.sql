@@ -130,10 +130,13 @@ DO UPDATE SET
   update_time = CURRENT_TIMESTAMP;
 
 INSERT INTO dynamic_entity_type (code, name, parent_id, description, icon, alias, sort, status, type_level, association_fields, storage_type, dedicated_table_name, enable_rule_engine, physical_column_mapping, tenant_id, creator)
-VALUES ('fault', '故障管理', 41, '故障记录、故障分析', 'businessIcon:故障管理.png', '故障', 4, 'active', 'USER', '{}', 'DEDICATED', 'ent_fault', FALSE, NULL, 1, '1')
+SELECT 'fault', '故障管理', p.id, '故障记录、故障分析', 'businessIcon:故障管理.png', '故障', 4, 'active', 'USER', '{}', 'DEDICATED', 'ent_fault', FALSE, NULL, 1, '1'
+FROM dynamic_entity_type p
+WHERE p.deleted = false AND p.tenant_id = 1 AND p.code = 'patrol'
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   name = EXCLUDED.name,
+  parent_id = (SELECT id FROM dynamic_entity_type WHERE code = 'patrol' AND tenant_id = 1 AND deleted = false LIMIT 1),
   description = EXCLUDED.description,
   icon = EXCLUDED.icon,
   alias = EXCLUDED.alias,
@@ -164,10 +167,13 @@ DO UPDATE SET
   update_time = CURRENT_TIMESTAMP;
 
 INSERT INTO dynamic_entity_type (code, name, parent_id, description, icon, alias, sort, status, type_level, association_fields, storage_type, dedicated_table_name, enable_rule_engine, physical_column_mapping, tenant_id, creator)
-VALUES ('inspection_point', '巡检点位', 41, NULL, 'ep:calendar', '点位', 0, 'active', 'USER', '{}', 'DEDICATED', 'ent_inspection_point', FALSE, NULL, 1, '1')
+SELECT 'inspection_point', '巡检点位', p.id, NULL, 'ep:calendar', '点位', 0, 'active', 'USER', '{}', 'DEDICATED', 'ent_inspection_point', FALSE, NULL, 1, '1'
+FROM dynamic_entity_type p
+WHERE p.deleted = false AND p.tenant_id = 1 AND p.code = 'patrol'
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   name = EXCLUDED.name,
+  parent_id = (SELECT id FROM dynamic_entity_type WHERE code = 'patrol' AND tenant_id = 1 AND deleted = false LIMIT 1),
   description = EXCLUDED.description,
   icon = EXCLUDED.icon,
   alias = EXCLUDED.alias,
@@ -198,7 +204,24 @@ DO UPDATE SET
   update_time = CURRENT_TIMESTAMP;
 
 INSERT INTO dynamic_entity_type (code, name, parent_id, description, icon, alias, sort, status, type_level, association_fields, storage_type, dedicated_table_name, enable_rule_engine, physical_column_mapping, tenant_id, creator)
-VALUES ('patrol', '巡检管理', NULL, NULL, 'ep:baseball', '巡检任务', 0, 'active', 'USER', '{}', 'DEDICATED', 'ent_patrol', FALSE, NULL, 1, '1')
+VALUES ('patrol', '巡检域', NULL, '巡检主数据分组（路线、巡检点、故障等）；任务实例使用 entityTypeCode=task、modelCode=patrol_task', 'ep:baseball', '巡检', 0, 'active', 'USER', '{}', 'DEDICATED', 'ent_patrol', FALSE, NULL, 1, '1')
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  name = EXCLUDED.name,
+  description = EXCLUDED.description,
+  icon = EXCLUDED.icon,
+  alias = EXCLUDED.alias,
+  sort = EXCLUDED.sort,
+  status = EXCLUDED.status,
+  storage_type = EXCLUDED.storage_type,
+  dedicated_table_name = EXCLUDED.dedicated_table_name,
+  enable_rule_engine = EXCLUDED.enable_rule_engine,
+  physical_column_mapping = EXCLUDED.physical_column_mapping,
+  updater = EXCLUDED.creator,
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_entity_type (code, name, parent_id, description, icon, alias, sort, status, type_level, association_fields, storage_type, dedicated_table_name, enable_rule_engine, physical_column_mapping, tenant_id, creator)
+VALUES ('task', '任务', NULL, '任务定义（含巡检类 patrol_task）；排期/对象/资源策略存 custom_fields JSON', 'ep:calendar', '任务', 0, 'active', 'USER', '{}', 'DEDICATED', 'ent_task', FALSE, NULL, 1, 'seed')
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   name = EXCLUDED.name,
@@ -249,10 +272,13 @@ DO UPDATE SET
   update_time = CURRENT_TIMESTAMP;
 
 INSERT INTO dynamic_entity_type (code, name, parent_id, description, icon, alias, sort, status, type_level, association_fields, storage_type, dedicated_table_name, enable_rule_engine, physical_column_mapping, tenant_id, creator)
-VALUES ('route', '路线管理', 41, NULL, 'ep:burger', '路线', 0, 'active', 'USER', '{}', 'DEDICATED', 'ent_route', FALSE, NULL, 1, '1')
+SELECT 'route', '路线管理', p.id, NULL, 'ep:burger', '路线', 0, 'active', 'USER', '{}', 'DEDICATED', 'ent_route', FALSE, NULL, 1, '1'
+FROM dynamic_entity_type p
+WHERE p.deleted = false AND p.tenant_id = 1 AND p.code = 'patrol'
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   name = EXCLUDED.name,
+  parent_id = (SELECT id FROM dynamic_entity_type WHERE code = 'patrol' AND tenant_id = 1 AND deleted = false LIMIT 1),
   description = EXCLUDED.description,
   icon = EXCLUDED.icon,
   alias = EXCLUDED.alias,

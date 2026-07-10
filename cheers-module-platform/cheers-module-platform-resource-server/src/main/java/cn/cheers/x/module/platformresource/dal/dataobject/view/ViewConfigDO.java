@@ -1,6 +1,7 @@
 package cn.cheers.x.module.platformresource.dal.dataobject.view;
 
 import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -43,7 +44,8 @@ import lombok.EqualsAndHashCode;
 @TableName("pr_view_config")
 public class ViewConfigDO extends BaseDO {
 
-    @TableId
+    /** PostgreSQL BIGSERIAL：插入时由数据库生成，勿手写 null */
+    @TableId(type = IdType.AUTO)
     private Long id;
 
     /**

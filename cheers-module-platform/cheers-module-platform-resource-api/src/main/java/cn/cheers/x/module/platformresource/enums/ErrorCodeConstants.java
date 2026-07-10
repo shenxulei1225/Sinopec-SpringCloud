@@ -26,5 +26,6 @@ public interface ErrorCodeConstants {
     ErrorCode VIEW_CONFIG_SAVE_JSON_REQUIRED   = new ErrorCode(1_004_050_022, "模板保存需提供 configJson");
     ErrorCode VIEW_CONFIG_SAVE_OVERRIDE_REQUIRED = new ErrorCode(1_004_050_023, "实例保存需提供 configOverride");
     ErrorCode VIEW_CONFIG_TEMPLATE_HAS_INSTANCES = new ErrorCode(1_004_050_024, "视图模板仍有关联实例，无法删除");
+    ErrorCode VIEW_CONFIG_CODE_DUPLICATE       = new ErrorCode(1_004_050_025, "视图编码已存在：{}");
 
 }

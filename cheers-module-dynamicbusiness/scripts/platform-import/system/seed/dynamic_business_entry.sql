@@ -190,8 +190,8 @@ INSERT INTO dynamic_business_entry (
   sort, status, tenant_id, creator
 )
 SELECT
-  b.id, 'default-admin', '巡检管理管理',
-  'ENTITY_ADMIN', 'patrol',
+  b.id, 'default-admin', '任务管理',
+  'ENTITY_ADMIN', 'task',
   NULL, NULL,
   0, 'active',
   1, 'seed'
@@ -248,6 +248,31 @@ SELECT
 FROM dynamic_business b
 WHERE b.deleted = false AND b.tenant_id = 1
   AND b.code = 'region'
+ON CONFLICT (business_id, code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  name = EXCLUDED.name,
+  entry_type = EXCLUDED.entry_type,
+  entity_type_code = EXCLUDED.entity_type_code,
+  scope_config = EXCLUDED.scope_config,
+  page_config_id = EXCLUDED.page_config_id,
+  sort = EXCLUDED.sort,
+  status = EXCLUDED.status,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_business_entry (
+  business_id, code, name, entry_type, entity_type_code, scope_config, page_config_id,
+  sort, status, tenant_id, creator
+)
+SELECT
+  b.id, 'default-admin', '设施管理',
+  'ENTITY_ADMIN', 'facility',
+  NULL, NULL,
+  0, 'active',
+  1, 'seed'
+FROM dynamic_business b
+WHERE b.deleted = false AND b.tenant_id = 1
+  AND b.code = 'facility'
 ON CONFLICT (business_id, code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   name = EXCLUDED.name,

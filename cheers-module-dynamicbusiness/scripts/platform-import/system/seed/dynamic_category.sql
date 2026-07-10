@@ -8,7 +8,7 @@
 
 SET search_path TO dynamicbusiness;
 
--- dynamic_category: (empty)
+-- dynamic_category: equipment tree in dynamic_category_equipment.generated.sql (EQCAT-* standard library)
 
 
 -- rebuild tree_path / level after category upsert (id-agnostic)

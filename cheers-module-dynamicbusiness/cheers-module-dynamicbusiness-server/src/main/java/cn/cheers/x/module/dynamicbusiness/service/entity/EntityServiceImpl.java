@@ -21,9 +21,11 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityAggregationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.DataMgmtEntityQueryRepository;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
 import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityTableNameContext;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
+import cn.cheers.x.module.dynamicbusiness.service.category.CategoryService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.dto.EntityAggregationCountDTO;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
@@ -129,6 +131,13 @@ public class EntityServiceImpl implements EntityService {
 
     @Resource
     private CategoryEntityLinkService categoryEntityLinkService;
+
+    @Resource
+    @Lazy
+    private CategoryService categoryService;
+
+    @Resource
+    private DataMgmtEntityQueryRepository dataMgmtEntityQueryRepository;
 
     @Resource
     private ObjectProvider<EntityServiceImpl> selfProvider;
@@ -360,6 +369,33 @@ public class EntityServiceImpl implements EntityService {
                 return isTreeShape
                         ? EntitySceneQueryRespVO.tree(detailedCategoryEntities, detail.getCode())
                         : EntitySceneQueryRespVO.list(detailedCategoryEntities, detail.getCode());
+
+            /** 数据管理三栏：分类范围（含子树，空 categoryIds 回退根分类）+ 可选 modelIds 过滤（relation ∪ link） */
+            case DATA_MGMT_ENTITIES_BY_CATEGORY_MODEL: {
+                if (entityTypeCode == null || entityTypeCode.isBlank()) {
+                    throw new ServiceException(400, "DATA_MGMT_ENTITIES_BY_CATEGORY_MODEL 场景下 entityTypeCode 不能为空");
+                }
+                String dataMgmtCategoryTypeCode = (categoryTypeCode == null || categoryTypeCode.isBlank())
+                        ? entityTypeCode : categoryTypeCode;
+                if (shape == EntityQueryResultShape.PAGE) {
+                    PageResult<EntityRespVO> pagedDataMgmt = queryDataMgmtEntitiesByCategoryModel(
+                            categoryIds, dataMgmtCategoryTypeCode, entityTypeCode, modelIds,
+                            keyword, filters, effectivePageNo, effectivePageSize, true);
+                    return EntitySceneQueryRespVO.page(applyResultDetail(pagedDataMgmt, detail), detail.getCode());
+                }
+                PageResult<EntityRespVO> fullDataMgmtResult = queryDataMgmtEntitiesByCategoryModel(
+                        categoryIds, dataMgmtCategoryTypeCode, entityTypeCode, modelIds,
+                        keyword, filters, null, null, false);
+                List<EntityRespVO> dataMgmtEntities = fullDataMgmtResult.getList();
+                if (shape == EntityQueryResultShape.TREE) {
+                    return EntitySceneQueryRespVO.tree(
+                            applyResultDetail(EntityTreeBuilder.buildTree(dataMgmtEntities, EntityTreeBuilder.SortMode.LOCAL_SIBLING_SORT), detail),
+                            detail.getCode());
+                }
+                return EntitySceneQueryRespVO.list(
+                        applyResultDetail(dataMgmtEntities, detail),
+                        detail.getCode());
+            }
             
                 // 1.2 场景二： Pattern B：按分类查询模型下的实体列表（单/多分类分流），支持搜索功能
             case PATTERN_B_ENTITIES_BY_CATEGORY:
@@ -577,6 +613,69 @@ public class EntityServiceImpl implements EntityService {
         return queryEntitiesByOrderedCandidateIds(
                 orderedCandidateEntityIds, entityTypeCode, keyword, filters, pageNo, pageSize);
     }
+
+    /**
+     * 数据管理三栏：分类定范围（含子树，空 categoryIds 回退根分类）+ 可选 modelIds 过滤。
+     * <p>右栏实体只取分类范围内的 relation / link 关联，不做 modelId 全局扫表。</p>
+     */
+    private PageResult<EntityRespVO> queryDataMgmtEntitiesByCategoryModel(List<Long> categoryIds, String categoryTypeCode,
+                                                                          String entityTypeCode, List<Long> modelIds,
+                                                                          String keyword, List<FieldFilterReqVO> filters,
+                                                                          Integer pageNo, Integer pageSize, boolean allowDirectPaging) {
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
+            return new PageResult<>(new ArrayList<>(), 0L);
+        }
+        List<Long> normalizedCategoryIds = normalizeCategoryIdsOrUseRootCategory(categoryIds, categoryTypeCode);
+        if (normalizedCategoryIds.isEmpty()) {
+            return new PageResult<>(new ArrayList<>(), 0L);
+        }
+        List<Long> expandedCategoryIds = expandCategoryIdsWithDescendants(normalizedCategoryIds, categoryTypeCode);
+        if (expandedCategoryIds.isEmpty()) {
+            return new PageResult<>(new ArrayList<>(), 0L);
+        }
+
+        List<Long> orderedCandidateEntityIds = dataMgmtEntityQueryRepository.listOrderedEntityIdsByCategoryScope(
+                expandedCategoryIds, entityTypeCode, normalizeModelIds(modelIds));
+
+        if (allowDirectPaging && canPageDirectly(keyword, filters)) {
+            Integer pn = normalizePageNo(pageNo);
+            Integer ps = normalizePageSize(pageSize);
+            return pageByOrderedIds(orderedCandidateEntityIds, entityTypeCode, pn, ps);
+        }
+        return queryEntitiesByOrderedCandidateIds(
+                orderedCandidateEntityIds, entityTypeCode, keyword, filters, pageNo, pageSize);
+    }
+
+    /**
+     * 对多个输入分类做“含子树”展开，并按输入顺序稳定合并去重。
+     */
+    private List<Long> expandCategoryIdsWithDescendants(List<Long> categoryIds, String categoryTypeCode) {
+        List<Long> mergedDescendantCategoryIds = new ArrayList<>();
+        Set<Long> seen = new HashSet<>();
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return mergedDescendantCategoryIds;
+        }
+        Map<Long, List<Long>> descendantsByRoot = categoryService.getAllCategoryIdsIncludingChildrenBatch(categoryIds, categoryTypeCode);
+        for (Long categoryId : categoryIds) {
+            if (categoryId == null) {
+                continue;
+            }
+            List<Long> descendants = descendantsByRoot.get(categoryId);
+            if (descendants == null || descendants.isEmpty()) {
+                if (seen.add(categoryId)) {
+                    mergedDescendantCategoryIds.add(categoryId);
+                }
+                continue;
+            }
+            for (Long id : descendants) {
+                if (id != null && seen.add(id)) {
+                    mergedDescendantCategoryIds.add(id);
+                }
+            }
+        }
+        return mergedDescendantCategoryIds;
+    }
+
 /**
      * 将有序实体ID列表统一转换为分页结果。
      *

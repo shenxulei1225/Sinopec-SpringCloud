@@ -57,9 +57,9 @@ DO UPDATE SET
 INSERT INTO dynamic_business (
   code, name, parent_id, node_kind, description, icon, alias, sort, status, tenant_id, creator
 ) VALUES (
-  'patrol', '巡检管理', NULL,
-  'LEAF', NULL,
-  'ep:baseball', '巡检任务',
+  'patrol', '任务管理', NULL,
+  'LEAF', '巡检类任务定义（entityType=task，model=patrol_task）；路线/点位等主数据仍在本门户下',
+  'ep:baseball', '任务',
   0, 'active',
   1, 'seed'
 )
@@ -80,9 +80,31 @@ INSERT INTO dynamic_business (
   code, name, parent_id, node_kind, description, icon, alias, sort, status, tenant_id, creator
 ) VALUES (
   'region', '区域管理', NULL,
-  'LEAF', '智慧站场：站场/库区边界与罐组分区；Pattern C 分类即实体',
+  'LEAF', '组织层级：集团 / 省公司 / 作业区；Pattern C 分类即实体',
   'businessIcon:区域管理.png', '区域',
   1, 'active',
+  1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  name = EXCLUDED.name,
+  parent_id = EXCLUDED.parent_id,
+  node_kind = EXCLUDED.node_kind,
+  description = EXCLUDED.description,
+  icon = EXCLUDED.icon,
+  alias = EXCLUDED.alias,
+  sort = EXCLUDED.sort,
+  status = EXCLUDED.status,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_business (
+  code, name, parent_id, node_kind, description, icon, alias, sort, status, tenant_id, creator
+) VALUES (
+  'facility', '设施管理', NULL,
+  'LEAF', '站场、厂区、油库等设施点（entityType=facility）；REF_REGION 挂运营区域',
+  'businessIcon:设施管理.png', '设施',
+  2, 'active',
   1, 'seed'
 )
 ON CONFLICT (code, tenant_id) WHERE deleted = false

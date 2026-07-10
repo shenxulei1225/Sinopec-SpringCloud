@@ -39,6 +39,9 @@ public enum EntityQueryScene {
     /** 通用：以根实体获取子树 */
     ROOT_ENTITY_SUBTREE("ROOT_ENTITY_SUBTREE", "通用：以根实体获取子树"),
 
+    /** 数据管理三栏：分类范围（含子树，空 categoryIds 回退根分类）+ 可选 modelIds 过滤 */
+    DATA_MGMT_ENTITIES_BY_CATEGORY_MODEL("DATA_MGMT_ENTITIES_BY_CATEGORY_MODEL", "数据管理：按分类范围查实体（可选模型过滤）"),
+
     ;
 
     /**

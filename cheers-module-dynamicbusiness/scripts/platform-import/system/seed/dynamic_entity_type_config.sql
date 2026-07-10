@@ -194,16 +194,36 @@ INSERT INTO dynamic_entity_type_config (
   entity_type_code, name, storage_type, dedicated_table_name, strategy_bean_name,
   enable_rule_engine, description, status, physical_column_mapping, tenant_id, creator
 ) VALUES (
-  'patrol', '巡检管理',
+  'patrol', '巡检域',
   'DEDICATED', 'ent_patrol',
   NULL, TRUE,
-  NULL, 1,
+  '巡检主数据（路线、点位等）；任务实例见 task', 1,
   NULL, 1, 'seed'
 )
 ON CONFLICT (entity_type_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   storage_type = EXCLUDED.storage_type,
   dedicated_table_name = EXCLUDED.dedicated_table_name,
+  description = EXCLUDED.description,
+  physical_column_mapping = EXCLUDED.physical_column_mapping,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_entity_type_config (
+  entity_type_code, name, storage_type, dedicated_table_name, strategy_bean_name,
+  enable_rule_engine, description, status, physical_column_mapping, tenant_id, creator
+) VALUES (
+  'task', '任务',
+  'DEDICATED', 'ent_task',
+  NULL, TRUE,
+  '任务定义实体；patrol_task 模型存排期/巡检内容/资源策略 JSON', 1,
+  NULL, 1, 'seed'
+)
+ON CONFLICT (entity_type_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  storage_type = EXCLUDED.storage_type,
+  dedicated_table_name = EXCLUDED.dedicated_table_name,
+  description = EXCLUDED.description,
   physical_column_mapping = EXCLUDED.physical_column_mapping,
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;

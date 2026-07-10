@@ -25,6 +25,7 @@ import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
@@ -284,6 +285,9 @@ public class EntityController {
             通过 scene 参数统一处理多种实体查询场景。
             - 适用场景：模式A/B/C/D统一入口
             - 业务范围：多数场景为指定业务（建议传 entityTypeCode）
+            - modelIds / categoryIds 支持重复 query 参数（modelIds=1&modelIds=2）或逗号分隔单参数（modelIds=1,2,3）
+            - 多选 ID 较多时建议使用 POST /query-by-scene + JSON body
+            - DATA_MGMT_ENTITIES_BY_CATEGORY_MODEL：数据管理三栏；categoryIds 可空（回退根分类）；modelIds 可选过滤；仅 relation+link（分类范围内）
             """
     )
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
@@ -293,8 +297,8 @@ public class EntityController {
             @RequestParam(value = "resultDetail", required = false, defaultValue = "FULL") String resultDetail,
             @RequestParam(value = "categoryTypeCode", required = false) String categoryTypeCode,
             @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode,
-            @RequestParam(value = "modelIds", required = false) List<Long> modelIds,
-            @RequestParam(value = "categoryIds", required = false) List<Long> categoryIds,
+            @RequestParam(value = "modelIds", required = false) List<String> modelIds,
+            @RequestParam(value = "categoryIds", required = false) List<String> categoryIds,
             @RequestParam(value = "entityId", required = false) Long entityId,
             @RequestParam(value = "rootEntityId", required = false) Long rootEntityId,
             @RequestParam(value = "entitySourceEntityType", required = false) String entitySourceEntityType,
@@ -302,10 +306,75 @@ public class EntityController {
             @RequestParam(value = "pageSize", required = false) Integer pageSize,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestBody(required = false) List<FieldFilterReqVO> filters) {
+        return queryEntitiesInternal(scene, resultShape, resultDetail, categoryTypeCode, entityTypeCode,
+                parseFlexibleIdList(modelIds), parseFlexibleIdList(categoryIds),
+                entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword, filters);
+    }
+
+    @PostMapping("/query-by-scene")
+    @Operation(
+        summary = "统一实体查询（按场景，JSON body）",
+        description = """
+            与 GET /query-by-scene 语义一致，通过 JSON body 传 scene、modelIds[]、categoryIds[] 等。
+            - 适用场景：型号/分类多选、fieldFilters 较多，避免超长 query string
+            - body 示例：{"scene":"PATTERN_B_ENTITIES_BY_MODEL","entityTypeCode":"equipment","modelIds":[48,47],"pageNo":1,"pageSize":10}
+            """
+    )
+    @PreAuthorize("@ss.hasPermission('system:entity:query')")
+    public CommonResult<EntitySceneQueryRespVO> queryEntitiesByBody(@Valid @RequestBody EntitySceneQueryReqVO reqVO) {
+        return queryEntitiesInternal(reqVO.getScene(), reqVO.getResultShape(), reqVO.getResultDetail(),
+                reqVO.getCategoryTypeCode(), reqVO.getEntityTypeCode(),
+                reqVO.getModelIds(), reqVO.getCategoryIds(),
+                reqVO.getEntityId(), reqVO.getRootEntityId(), reqVO.getEntitySourceEntityType(),
+                reqVO.getPageNo(), reqVO.getPageSize(), reqVO.getKeyword(), reqVO.getFieldFilters());
+    }
+
+    private CommonResult<EntitySceneQueryRespVO> queryEntitiesInternal(
+            EntityQueryScene scene,
+            String resultShape,
+            String resultDetail,
+            String categoryTypeCode,
+            String entityTypeCode,
+            List<Long> modelIds,
+            List<Long> categoryIds,
+            Long entityId,
+            Long rootEntityId,
+            String entitySourceEntityType,
+            Integer pageNo,
+            Integer pageSize,
+            String keyword,
+            List<FieldFilterReqVO> filters) {
         return success(entityService.queryEntities(scene, EntityQueryResultShape.ofNullable(resultShape).getCode(),
                 EntityQueryResultDetail.ofNullable(resultDetail).getCode(),
                 categoryTypeCode, entityTypeCode,
                 modelIds, categoryIds, entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword, filters));
+    }
+
+    /**
+     * 解析 modelIds / categoryIds：支持 modelIds=1&modelIds=2 与 modelIds=1,2,3 两种写法。
+     */
+    private static List<Long> parseFlexibleIdList(List<String> raw) {
+        if (raw == null || raw.isEmpty()) {
+            return null;
+        }
+        List<Long> out = new ArrayList<>();
+        for (String token : raw) {
+            if (token == null || token.isBlank()) {
+                continue;
+            }
+            for (String part : token.split(",")) {
+                String trimmed = part.trim();
+                if (trimmed.isEmpty()) {
+                    continue;
+                }
+                try {
+                    out.add(Long.parseLong(trimmed));
+                } catch (NumberFormatException ignored) {
+                    // 跳过非法片段，避免整批请求失败
+                }
+            }
+        }
+        return out.isEmpty() ? null : out;
     }
 
     // ==================== 导入导出相关 API ====================

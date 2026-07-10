@@ -82,6 +82,13 @@ public class EntityTableNameHandler implements TableNameHandler {
     }
 
     /**
+     * 解析 entityTypeCode 对应的物理表名（供原生 SQL 使用；调用方须保证 code 已通过白名单校验）。
+     */
+    public String resolvePhysicalTableName(String entityTypeCode) {
+        return validateAndResolveTableName(entityTypeCode);
+    }
+
+    /**
      * 验证 entityTypeCode 并返回表名
      * 
      * @param entityTypeCode 业务类型编码

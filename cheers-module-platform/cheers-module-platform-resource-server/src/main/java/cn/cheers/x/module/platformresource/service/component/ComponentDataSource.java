@@ -14,6 +14,8 @@ public final class ComponentDataSource {
 
     public static final String CATEGORY_DYNAMIC = "dynamic";
     public static final String CATEGORY_SYSTEM = "system";
+    /** 分类体系（与前端 businessCategory=category 对齐，dataKind 恒为 entity） */
+    public static final String CATEGORY_CATEGORY = "category";
     public static final String KIND_MODEL = "model";
     public static final String KIND_ENTITY = "entity";
 
@@ -33,13 +35,19 @@ public final class ComponentDataSource {
         if (CATEGORY_SYSTEM.equals(category)) {
             return new Normalized(CATEGORY_SYSTEM, typeCode, KIND_ENTITY);
         }
+        if (CATEGORY_CATEGORY.equals(category)) {
+            if (StrUtil.isBlank(typeCode)) {
+                throw new IllegalArgumentException("分类体系须指定 entityTypeCode（分类类型编码）");
+            }
+            return new Normalized(CATEGORY_CATEGORY, typeCode, KIND_ENTITY);
+        }
         if (CATEGORY_DYNAMIC.equals(category)) {
             if (!KIND_MODEL.equals(kind) && !KIND_ENTITY.equals(kind)) {
                 throw new IllegalArgumentException("动态业务须指定 dataKind 为 model 或 entity");
             }
             return new Normalized(CATEGORY_DYNAMIC, typeCode, kind);
         }
-        throw new IllegalArgumentException("businessCategory 须为 dynamic 或 system");
+        throw new IllegalArgumentException("businessCategory 须为 dynamic、system 或 category");
     }
 
     public static Normalized fromVo(ComponentDataSourceVO vo) {

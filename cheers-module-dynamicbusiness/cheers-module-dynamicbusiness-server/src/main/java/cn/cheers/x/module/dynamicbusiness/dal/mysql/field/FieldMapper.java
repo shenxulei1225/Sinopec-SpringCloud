@@ -39,7 +39,9 @@ public interface FieldMapper extends BaseMapperX<FieldDO> {
         wrapper.eqIfPresent(FieldDO::getType, type)
                 .eqIfPresent(FieldDO::getSource, source)
                 .eqIfPresent(FieldDO::getStatus, status)
-                .orderByAsc(FieldDO::getCreateTime);
+                .eq(FieldDO::getDeleted, false)
+                .orderByAsc(FieldDO::getCreateTime)
+                .orderByAsc(FieldDO::getId);
         return selectList(wrapper);
     }
 
@@ -51,7 +53,8 @@ public interface FieldMapper extends BaseMapperX<FieldDO> {
                 .eqIfPresent(FieldDO::getSource, source)
                 .eqIfPresent(FieldDO::getStatus, status)
                 .eq(FieldDO::getDeleted, false)
-                .orderByAsc(FieldDO::getCreateTime));
+                .orderByAsc(FieldDO::getCreateTime)
+                .orderByAsc(FieldDO::getId));
     }
 
     default Long selectCountByUnit(String unitCode, Long tenantId) {

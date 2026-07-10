@@ -58,11 +58,18 @@ public class ViewConfigServiceImpl implements ViewConfigService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createTemplate(ViewConfigCreateTemplateReqVO reqVO) {
+        String viewCode = StrUtil.blankToDefault(reqVO.getViewCode(), null);
+        if (StrUtil.isNotBlank(viewCode)) {
+            ViewConfigDO existing = viewConfigMapper.selectByCode(viewCode);
+            if (existing != null) {
+                throw exception(VIEW_CONFIG_CODE_DUPLICATE, viewCode);
+            }
+        }
         ViewConfigDO row = new ViewConfigDO();
         row.setIsTemplate(true);
         row.setTemplateId(null);
         row.setViewType(reqVO.getViewType());
-        row.setViewCode(StrUtil.blankToDefault(reqVO.getViewCode(), null));
+        row.setViewCode(viewCode);
         row.setName(reqVO.getName());
         row.setDescription(reqVO.getDescription());
         row.setCategoryId(reqVO.getCategoryId());

@@ -123,6 +123,21 @@ public class FieldController {
         return success(fieldService.search(keyword, null, null, null));
     }
 
+    @GetMapping("/list")
+    @Operation(
+        summary = "字段全量列表(不分页)",
+        description = "返回字段库全量列表，不分页。\n" +
+            "- 适用于字段库、字段池等需要一次加载全部字段的场景\n" +
+            "- 支持按类型、来源、状态筛选"
+    )
+    @PreAuthorize("@ss.hasPermission('system:field:query')")
+    public CommonResult<List<FieldRespVO>> listFields(
+            @RequestParam(value = "type", required = false) String type,
+            @RequestParam(value = "source", required = false) String source,
+            @RequestParam(value = "status", required = false) Integer status) {
+        return success(fieldService.listAll(type, source, status));
+    }
+
     @GetMapping("/page")
     @Operation(
         summary = "分页查询字段列表",

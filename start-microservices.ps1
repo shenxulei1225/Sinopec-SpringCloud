@@ -1,4 +1,4 @@
-# ============================================================================
+﻿# ============================================================================
 # ZHGL 微服务启动脚本 (Windows PowerShell 版本)
 # ============================================================================
 # 使用方法:
@@ -9,6 +9,10 @@
 #   .\start-microservices.ps1 stop <服务名>       # 停止服务
 #   .\start-microservices.ps1 stop-all           # 停止所有服务
 #   .\start-microservices.ps1 logs <服务名>       # 查看服务日志
+#   .\start-microservices.ps1 nacos              # 启动 Nacos
+#   .\start-microservices.ps1 nacos status       # 查看 Nacos 状态
+#   .\start-microservices.ps1 nacos stop         # 停止 Nacos
+#   .\start-microservices.ps1 platform-all       # 仅启动 platform 五件套
 # ============================================================================
 
 param(
@@ -62,50 +66,51 @@ $ServiceConfig = @{
     "inspection" = @{ Path = "yudao-module-inspection-task\yudao-module-inspection-task-server"; Port = 58095 }
     "dynamic"    = @{ Path = "cheers-module-dynamicbusiness\cheers-module-dynamicbusiness-server"; Port = 58096 }
     "platform"   = @{ Path = "cheers-module-platform\cheers-module-platform-resource-server"; Port = 58098 }
-    "resource"   = @{ Path = "cheers-module-platform\cheers-module-platform-resource-server"; Port = 58098 }  # platform 别名
+    "resource"   = @{ Path = "cheers-module-platform\cheers-module-platform-resource-server"; Port = 58098 }
+    "platform-runtime" = @{ Path = "cheers-module-platform\cheers-module-platform-runtime-server"; Port = 58099 }
+    "runtime-l4" = @{ Path = "cheers-module-platform\cheers-module-platform-runtime-server"; Port = 58099 }
+    "platform-orchestration" = @{ Path = "cheers-module-platform\cheers-module-platform-orchestration-server"; Port = 58104 }
+    "orchestration" = @{ Path = "cheers-module-platform\cheers-module-platform-orchestration-server"; Port = 58104 }
+    "platform-policy" = @{ Path = "cheers-module-platform\cheers-module-platform-policy-server"; Port = 58105 }
+    "policy"     = @{ Path = "cheers-module-platform\cheers-module-platform-policy-server"; Port = 58105 }
+    "platform-capability" = @{ Path = "cheers-module-platform\cheers-module-platform-capability-server"; Port = 58106 }
+    "capability" = @{ Path = "cheers-module-platform\cheers-module-platform-capability-server"; Port = 58106 }
+    "platform-topology" = @{ Path = "cheers-module-platform\cheers-module-platform-topology-server"; Port = 58107 }
+    "topology"   = @{ Path = "cheers-module-platform\cheers-module-platform-topology-server"; Port = 58107 }
+    "platform-routing" = @{ Path = "cheers-module-platform\cheers-module-platform-routing-server"; Port = 58108 }
+    "routing"    = @{ Path = "cheers-module-platform\cheers-module-platform-routing-server"; Port = 58108 }
 }
 
-
-# 核心服务列表（按启动顺序）
-$CoreServices = @(
-    "infra",
-    "system",
-    "gateway",
-    "bpm",
-    "alarm",
-    "dynamic",
-    "platform",
-    "facility",
-    "scene",
-    "twin",
-    "inspection"
+# 与 start-microservices.sh 保持一致
+$KnownServices = @(
+    "gateway", "system", "infra", "member", "bpm", "pay", "report", "mp", "product", "promotion", "trade", "statistics",
+    "crm", "erp", "ai", "iot", "alarm", "dynamic",
+    "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
+    "facility", "scene", "twin", "inspection"
 )
 
-# 所有服务列表
+$CoreServices = @(
+    "infra", "system", "gateway", "bpm", "alarm", "dynamic",
+    "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
+    "facility", "scene", "twin", "inspection"
+)
+
 $AllServices = @(
-    "infra",
-    "system",
-    "gateway",
-    "member",
-    "bpm",
-    "pay",
-    "report",
-    "mp",
-    "product",
-    "promotion",
-    "trade",
-    "statistics",
-    "crm",
-    "erp",
-    "ai",
-    "iot",
-    "alarm",
-    "dynamic",
-    "platform",
-    "facility",
-    "scene",
-    "twin",
-    "inspection"
+    "system", "infra", "gateway", "member", "bpm", "pay", "report", "mp", "product", "promotion", "trade", "statistics",
+    "crm", "erp", "ai", "iot", "alarm", "dynamic",
+    "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
+    "facility", "scene", "twin", "inspection"
+)
+
+$StopServices = @(
+    "gateway", "infra", "system", "member", "bpm", "pay", "report", "mp", "product", "promotion", "trade", "statistics",
+    "crm", "erp", "ai", "iot", "alarm", "dynamic",
+    "platform-orchestration", "platform-runtime", "platform-policy", "platform-capability", "platform",
+    "facility", "scene", "twin", "inspection"
+)
+
+$PlatformAllServices = @(
+    "platform", "platform-policy", "platform-capability", "platform-runtime", "platform-orchestration"
 )
 
 # 颜色输出函数
@@ -117,10 +122,10 @@ function Write-ColorOutput {
     Write-Host $Message -ForegroundColor $Color
 }
 
-function Write-Success { param([string]$Message) Write-ColorOutput "✅ $Message" "Green" }
-function Write-Error { param([string]$Message) Write-ColorOutput "❌ $Message" "Red" }
-function Write-Warning { param([string]$Message) Write-ColorOutput "⚠️  $Message" "Yellow" }
-function Write-Info { param([string]$Message) Write-ColorOutput "🔹 $Message" "Cyan" }
+function Write-Success { param([string]$Message) Write-ColorOutput "[OK] $Message" "Green" }
+function Write-Error { param([string]$Message) Write-ColorOutput "[ERR] $Message" "Red" }
+function Write-Warning { param([string]$Message) Write-ColorOutput "[WARN] $Message" "Yellow" }
+function Write-Info { param([string]$Message) Write-ColorOutput "[INFO] $Message" "Cyan" }
 
 function Test-InCmd {
     return -not [string]::IsNullOrEmpty($env:ComSpec) -and $env:ComSpec.ToLower().EndsWith("\\cmd.exe") -and -not [string]::IsNullOrEmpty($env:PROMPT)
@@ -159,39 +164,19 @@ function Test-ServiceRunning {
 }
 
 
-# 检查 Nacos 是否运行
+# 检查 Nacos 是否运行（与 Mac 脚本一致：8848 /nacos/）
 function Test-NacosRunning {
-    # 方法1：检查端口是否被占用（最可靠）
     try {
-        $connection = Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue
-        if ($null -ne $connection) {
-            return $true
-        }
-    } catch {
-        # 继续尝试其他方法
-    }
-    
-    # 方法2：检查 8848 端口
-    try {
-        $connection = Get-NetTCPConnection -LocalPort 8848 -ErrorAction SilentlyContinue
-        if ($null -ne $connection) {
-            return $true
-        }
-    } catch {
-        # 继续尝试其他方法
-    }
-    
-    # 方法3：尝试 HTTP 请求（作为最后手段）
-    try {
-        $response = Invoke-WebRequest -Uri "http://localhost:8080/" -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop
+        $response = Invoke-WebRequest -Uri "http://localhost:8848/nacos/" -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop
         return $response.StatusCode -eq 200
     } catch {
-        return $false
+        $connection = Get-NetTCPConnection -LocalPort 8848 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+        return $null -ne $connection
     }
 }
 
-# Nacos 安装路径（可根据实际情况修改）
-$NacosPath = "H:\nacos"
+# Nacos 安装路径（可通过 NACOS_HOME 覆盖，默认 H:\nacos）
+$NacosPath = if ($env:NACOS_HOME) { $env:NACOS_HOME } else { "H:\nacos" }
 
 # 启动 Nacos
 function Start-Nacos {
@@ -365,9 +350,9 @@ function Start-SingleService {
     if (Test-ServiceRunning -ServiceName $ServiceName) {
         Write-Warning "服务 $ServiceName 已在运行 (端口: $port)"
         $logFile = Join-Path $LogDir "$ServiceName-server.log"
-        Write-ColorOutput "   📋 查看实时日志:" "Yellow"
+        Write-ColorOutput "   [LOG] 查看实时日志:" "Yellow"
         Write-ColorOutput "      .\start-microservices.ps1 logs $ServiceName" "Cyan"
-        Write-ColorOutput "   📚 API 文档:" "Yellow"
+        Write-ColorOutput "   [DOC] API 文档:" "Yellow"
         Write-ColorOutput "      Swagger UI: http://localhost:$port/swagger-ui" "Cyan"
         Write-ColorOutput "      Knife4j:    http://localhost:$port/doc.html" "Cyan"
         return $true
@@ -379,7 +364,7 @@ function Start-SingleService {
         return $false
     }
     
-    Write-ColorOutput "🚀 启动服务: $ServiceName" "Cyan"
+    Write-ColorOutput "[START] 启动服务: $ServiceName" "Cyan"
     Write-ColorOutput "   路径: $servicePath" "White"
     Write-ColorOutput "" "White"
     
@@ -436,10 +421,10 @@ function Start-SingleService {
             Write-Success "服务 $ServiceName 启动成功！"
             Write-ColorOutput "   端口: $port" "Cyan"
             Write-ColorOutput "   日志文件: $logFile" "Cyan"
-            Write-ColorOutput "   📋 查看实时日志:" "Yellow"
+            Write-ColorOutput "   [LOG] 查看实时日志:" "Yellow"
             Write-ColorOutput "      .\start-microservices.ps1 logs $ServiceName" "Cyan"
             Write-ColorOutput "   健康检查: curl http://localhost:$port/actuator/health" "Cyan"
-            Write-ColorOutput "   📚 API 文档:" "Yellow"
+            Write-ColorOutput "   [DOC] API 文档:" "Yellow"
             Write-ColorOutput "      Swagger UI: http://localhost:$port/swagger-ui" "Cyan"
             Write-ColorOutput "      Knife4j:    http://localhost:$port/doc.html" "Cyan"
             return $true
@@ -482,7 +467,7 @@ function Stop-SingleService {
         return $true
     }
 
-    Write-ColorOutput "🛑 停止服务: $ServiceName" "Cyan"
+    Write-ColorOutput "[STOP] 停止服务: $ServiceName" "Cyan"
 
     # 优先按端口获取 PID（更准确），再做二次确认与轮询等待端口释放
     $procId = Get-PortProcess -Port $port
@@ -546,7 +531,7 @@ function Stop-SingleService {
 
 # 显示服务状态
 function Show-Status {
-    Write-ColorOutput "📊 服务状态 (快速扫描模式):" "Cyan"
+    Write-ColorOutput "[STATUS] 服务状态 (快速扫描模式):" "Cyan"
     Write-ColorOutput "" "White"
     
     # 优化：一次性获取所有监听状态的 TCP 连接，极大提升 Windows 下的扫描速度
@@ -561,7 +546,8 @@ function Show-Status {
     Write-ColorOutput ($format -f "服务名", "端口", "状态", "PID", "访问链接") "White"
     Write-ColorOutput ("-" * 100) "White"
     
-    foreach ($svc in $AllServices) {
+    foreach ($svc in $KnownServices) {
+        if (-not $ServiceConfig.ContainsKey($svc)) { continue }
         $config = $ServiceConfig[$svc]
         $port = $config.Port
         
@@ -575,13 +561,12 @@ function Show-Status {
     }
     
     Write-ColorOutput "" "White"
-    Write-ColorOutput "📋 基础设施状态:" "Cyan"
+    Write-ColorOutput "[INFRA] 基础设施状态:" "Cyan"
     
-    # 使用内存表检查 Nacos 常用端口
-    if ($portMap.ContainsKey(8848) -or $portMap.ContainsKey(8080)) {
-        Write-Host "   Nacos (8848): 运行中 - http://localhost:8848/nacos" -ForegroundColor Green
+    if (Test-NacosRunning) {
+        Write-Host "   Nacos (8848): 运行中 - http://localhost:8848/nacos ($NacosPath)" -ForegroundColor Green
     } else {
-        Write-Host "   Nacos (8848): 未运行" -ForegroundColor Red
+        Write-Host "   Nacos (8848): 未运行 - 路径: $NacosPath" -ForegroundColor Red
     }
     
     if ($portMap.ContainsKey(6379)) {
@@ -591,17 +576,18 @@ function Show-Status {
     }
     
     Write-ColorOutput "" "White"
-    Write-ColorOutput "🔗 快捷访问链接:" "Cyan"
+    Write-ColorOutput "[LINK] 快捷访问链接:" "Cyan"
     Write-ColorOutput "   网关入口: http://localhost:58080" "Yellow"
     Write-ColorOutput "   系统管理: http://localhost:58080/admin-ui/" "Yellow"
     Write-ColorOutput "   应急管理: http://localhost:58080/emergency-admin/" "Yellow"
     Write-ColorOutput "   Nacos控制台: http://localhost:8848/nacos" "Yellow"
     
     Write-ColorOutput "" "White"
-    Write-ColorOutput "📚 API 文档链接:" "Cyan"
+    Write-ColorOutput "[DOC] API 文档链接:" "Cyan"
     
     $hasRunning = $false
-    foreach ($svc in $AllServices) {
+    foreach ($svc in $KnownServices) {
+        if (-not $ServiceConfig.ContainsKey($svc)) { continue }
         if ($portMap.ContainsKey($ServiceConfig[$svc].Port)) {
             $hasRunning = $true
             $port = $ServiceConfig[$svc].Port
@@ -618,14 +604,14 @@ function Show-Status {
 
 # 显示所有服务
 function Show-Services {
-    Write-ColorOutput "📋 可用微服务列表:" "Cyan"
+    Write-ColorOutput "[LIST] 可用微服务列表:" "Cyan"
     Write-ColorOutput "" "White"
     
     $format = "{0,-15} {1,-55} {2,-10}"
     Write-ColorOutput ($format -f "服务名", "模块路径", "端口") "White"
     Write-ColorOutput ("-" * 80) "White"
     
-    foreach ($svc in $AllServices) {
+    foreach ($svc in $KnownServices) {
         $config = $ServiceConfig[$svc]
         Write-ColorOutput ($format -f $svc, $config.Path, $config.Port) "White"
     }
@@ -636,11 +622,21 @@ function Show-Services {
     Write-ColorOutput "  .\start-microservices.ps1 all                # 启动所有核心服务" "White"
     Write-ColorOutput "  .\start-microservices.ps1 all -f             # 启动所有核心服务（显示日志）" "White"
     Write-ColorOutput "  .\start-microservices.ps1 all-services       # 启动所有服务包括业务服务" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 platform-all       # 仅启动 platform 五件套" "White"
     Write-ColorOutput "  .\start-microservices.ps1 <服务名>            # 启动单个服务" "White"
     Write-ColorOutput "  .\start-microservices.ps1 status             # 查看服务状态" "White"
     Write-ColorOutput "  .\start-microservices.ps1 logs <服务名>       # 查看服务日志" "White"
     Write-ColorOutput "  .\start-microservices.ps1 stop <服务名>       # 停止服务" "White"
     Write-ColorOutput "  .\start-microservices.ps1 stop-all           # 停止所有服务" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 nacos              # 启动 Nacos" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 nacos status       # 查看 Nacos 状态" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 nacos stop         # 停止 Nacos" "White"
+    
+    Write-ColorOutput "" "White"
+    Write-ColorOutput "说明:" "Cyan"
+    Write-ColorOutput "  - Nacos 默认路径: $NacosPath（可通过 NACOS_HOME 覆盖）" "White"
+    Write-ColorOutput "  - 默认后台运行,日志保存到 logs/ 目录" "White"
+    Write-ColorOutput "  - 使用 -f 参数可以实时查看启动日志" "White"
     
     Write-ColorOutput "" "White"
     Write-ColorOutput "核心服务（推荐启动顺序）:" "Cyan"
@@ -648,11 +644,12 @@ function Show-Services {
     Write-ColorOutput "  2. system    - 系统服务（必需,依赖 infra 的日志服务）" "White"
     Write-ColorOutput "  3. gateway   - 网关服务（必需）" "White"
     Write-ColorOutput "  4. bpm       - 工作流服务（必需）" "White"
-    Write-ColorOutput "  5. emergency - 应急管理服务（必需）" "White"
-    Write-ColorOutput "  6. alarm     - 告警管理服务（必需）" "White"
-    Write-ColorOutput "  7. dynamic   - 动态业务服务（facility 等模块依赖）" "White"
-    Write-ColorOutput "  8. platform  - 平台资源库（组件/视图/页面，端口 58098）" "White"
-    Write-ColorOutput "     (别名 resource) 网关: /admin-api/platformresource/**" "Gray"
+    Write-ColorOutput "  5. alarm     - 告警管理服务（必需）" "White"
+    Write-ColorOutput "  6. dynamic   - 动态业务服务（facility 等模块依赖）" "White"
+    Write-ColorOutput "  7. platform  - 平台资源库（组件/视图，别名 resource，58098）" "White"
+    Write-ColorOutput "  8. platform-runtime - 平台 L4 运行时（58099）" "White"
+    Write-ColorOutput "  9. platform-orchestration - 平台编排/排程 run（58104，依赖 runtime）" "White"
+    Write-ColorOutput "     （.\start-microservices.ps1 all 已按 7->8->9 顺序启动上述三项）" "Gray"
     
     Write-ColorOutput "" "White"
     Write-ColorOutput "业务服务（按需启动）:" "Cyan"
@@ -669,7 +666,7 @@ function Show-Services {
 function Start-AllCore {
     param([bool]$ShowLogs = $false)
     
-    Write-ColorOutput "🚀 启动所有核心服务..." "Cyan"
+    Write-ColorOutput "[START] 启动所有核心服务..." "Cyan"
     Write-ColorOutput "" "White"
     
     if (-not (Start-Nacos)) {
@@ -703,7 +700,7 @@ function Start-AllCore {
     }
     
     Write-ColorOutput "" "White"
-    Write-ColorOutput "📝 提示:" "Cyan"
+    Write-ColorOutput "[TIP] 提示:" "Cyan"
     Write-ColorOutput "  - 查看服务状态: .\start-microservices.ps1 status" "White"
     Write-ColorOutput "  - 查看服务日志: Get-Content logs\<服务名>-server.log -Tail 50" "White"
     Write-ColorOutput "  - 停止所有服务: .\start-microservices.ps1 stop-all" "White"
@@ -713,7 +710,7 @@ function Start-AllCore {
 function Start-AllServices {
     param([bool]$ShowLogs = $false)
     
-    Write-ColorOutput "🚀 启动所有服务（包括业务服务）..." "Cyan"
+    Write-ColorOutput "[START] 启动所有服务（包括业务服务）..." "Cyan"
     Write-ColorOutput "" "White"
     
     # 检查 Nacos,如果未运行则尝试启动（但不阻止继续）
@@ -750,7 +747,7 @@ function Start-AllServices {
     }
     
     Write-ColorOutput "" "White"
-    Write-ColorOutput "📝 提示:" "Cyan"
+    Write-ColorOutput "[TIP] 提示:" "Cyan"
     Write-ColorOutput "  - 查看服务状态: .\start-microservices.ps1 status" "White"
     Write-ColorOutput "  - 查看服务日志: Get-Content logs\<服务名>-server.log -Tail 50" "White"
     Write-ColorOutput "  - 停止所有服务: .\start-microservices.ps1 stop-all" "White"
@@ -758,7 +755,7 @@ function Start-AllServices {
 
 # 停止所有服务
 function Stop-AllServices {
-    Write-ColorOutput "🛑 停止所有服务 (快速模式)..." "Cyan"
+    Write-ColorOutput "[STOP] 停止所有服务 (快速模式)..." "Cyan"
     Write-ColorOutput "" "White"
 
     # 优化：一次性获取所有监听端口 -> PID 的映射，避免对每个服务重复调用 Get-NetTCPConnection
@@ -771,7 +768,8 @@ function Stop-AllServices {
     $stoppedCount = 0
     $failed = @()
 
-    foreach ($svc in $AllServices) {
+    foreach ($svc in $StopServices) {
+        if (-not $ServiceConfig.ContainsKey($svc)) { continue }
         $port = $ServiceConfig[$svc].Port
         if (-not $portMap.ContainsKey($port)) {
             continue
@@ -823,11 +821,11 @@ function Show-Logs {
     param([string]$ServiceName)
     
     if ([string]::IsNullOrEmpty($ServiceName)) {
-        Write-ColorOutput "📋 查看所有运行中服务的日志:" "Cyan"
+        Write-ColorOutput "[LOG] 查看所有运行中服务的日志:" "Cyan"
         Write-ColorOutput "" "White"
         
         $runningServices = @()
-        foreach ($svc in $AllServices) {
+        foreach ($svc in $KnownServices) {
             if (Test-ServiceRunning -ServiceName $svc) {
                 $runningServices += $svc
             }
@@ -847,7 +845,7 @@ function Show-Logs {
             $logFile = Join-Path $LogDir "$svc-server.log"
             if (Test-Path $logFile) {
                 Write-ColorOutput ("━" * 50) "Cyan"
-                Write-ColorOutput "📋 $svc 服务日志:" "Green"
+                Write-ColorOutput "[LOG] $svc 服务日志:" "Green"
                 Write-ColorOutput ("━" * 50) "Cyan"
                 Get-Content $logFile -Tail 20 -Encoding UTF8
                 Write-ColorOutput "" "White"
@@ -883,11 +881,55 @@ function Show-Logs {
         return
     }
     
-    Write-ColorOutput "📋 查看服务 $ServiceName 的日志（端口: $port）" "Cyan"
+    Write-ColorOutput "[LOG] 查看服务 $ServiceName 的日志（端口: $port）" "Cyan"
     Write-ColorOutput "   日志文件: $logFile" "Cyan"
     Write-ColorOutput "   按 Ctrl+C 退出" "Yellow"
     Write-ColorOutput "----------------------------------------------------------------" "White"
     Get-Content $logFile -Wait -Tail 50 -Encoding UTF8
+}
+
+function Start-PlatformAll {
+    param([bool]$ShowLogs = $false)
+
+    if (-not (Start-Nacos)) {
+        Write-Error "Nacos 启动失败,无法继续"
+        return
+    }
+    Check-Redis
+    Write-ColorOutput "" "White"
+
+    foreach ($svc in $PlatformAllServices) {
+        Start-SingleService -ServiceName $svc -ShowLogs $ShowLogs | Out-Null
+        if (-not $ShowLogs) {
+            Start-Sleep -Seconds 3
+        }
+    }
+}
+
+function Invoke-NacosCommand {
+    param([string]$SubCommand = "")
+
+    $nacosScript = Join-Path $ScriptDir "start-nacos.ps1"
+    if (Test-Path $nacosScript) {
+        if ([string]::IsNullOrEmpty($SubCommand)) {
+            & $nacosScript
+        } else {
+            & $nacosScript $SubCommand
+        }
+        return
+    }
+
+    switch ($SubCommand.ToLower()) {
+        "status" {
+            if (Test-NacosRunning) { Write-Success "Nacos 运行正常 ($NacosPath)" }
+            else { Write-Warning "Nacos 未运行 ($NacosPath)" }
+        }
+        "stop" {
+            $nacosPid = Get-NetTCPConnection -LocalPort 8848 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess
+            if ($nacosPid) { & taskkill.exe /PID $nacosPid /T /F 2>$null | Out-Null }
+        }
+        default { Start-Nacos | Out-Null }
+    }
 }
 
 # 主逻辑
@@ -900,6 +942,9 @@ switch ($Command.ToLower()) {
     }
     "all-services" {
         Start-AllServices -ShowLogs $f.IsPresent | Out-Null
+    }
+    "platform-all" {
+        Start-PlatformAll -ShowLogs $f.IsPresent | Out-Null
     }
     "status" {
         Show-Status
@@ -917,6 +962,9 @@ switch ($Command.ToLower()) {
     }
     "stop-all" {
         Stop-AllServices | Out-Null
+    }
+    "nacos" {
+        Invoke-NacosCommand -SubCommand $ServiceName
     }
     default {
         # 尝试作为服务名启动

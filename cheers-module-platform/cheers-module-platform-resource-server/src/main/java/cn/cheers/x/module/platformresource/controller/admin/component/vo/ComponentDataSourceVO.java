@@ -11,7 +11,7 @@ import lombok.Data;
 @Data
 public class ComponentDataSourceVO {
 
-    @Schema(description = "业务分类：dynamic（动态业务）/ system（系统业务）", example = "dynamic")
+    @Schema(description = "业务分类：dynamic（动态业务）/ system（系统业务）/ category（分类体系）", example = "dynamic")
     private String businessCategory;
 
     @Schema(description = "实体类型编码（动态业务类型与系统模块编码统一）", example = "equipment")

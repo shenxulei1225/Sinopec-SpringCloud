@@ -145,6 +145,11 @@ public class FieldServiceImpl implements FieldService {
     }
 
     @Override
+    public List<FieldRespVO> listAll(String type, String source, Integer status) {
+        return search(null, type, source, status);
+    }
+
+    @Override
     public PageResult<FieldRespVO> page(FieldPageReqVO reqVO) {
         PageResult<FieldDO> page = fieldMapper.selectPage(reqVO, reqVO.getKeyword(), reqVO.getType(), reqVO.getSource(), reqVO.getStatus());
         return new PageResult<>(FieldConvert.INSTANCE.convertList(page.getList()), page.getTotal());

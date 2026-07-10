@@ -1,6 +1,7 @@
 package cn.cheers.x.module.platformresource.dal.dataobject.component;
 
 import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -10,13 +11,21 @@ import lombok.EqualsAndHashCode;
 /**
  * 组件配置：模板 / 实例。props 仅存用户 UI 偏好，不含接口契约。
  * 数据来源见持久化字段 data_source（JSON 结构体）。
+ *
+ * <p>租户边界（目标态，见 docs 待补）：
+ * <ul>
+ *   <li>{@code is_template=true}：组件库模板，平台级或租户级（待产品定稿）</li>
+ *   <li>{@code is_template=false}：视图内组件实例，须按 {@code tenant_id} 隔离</li>
+ * </ul>
+ * DO 未声明 {@code tenantId} 字段时，由 MyBatis 租户插件在 SQL 层注入/过滤。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("pr_component_props")
 public class ComponentPropsDO extends BaseDO {
 
-    @TableId
+    /** PostgreSQL BIGSERIAL：插入时由数据库生成，勿手写 null */
+    @TableId(type = IdType.AUTO)
     private Long id;
 
     /** true=模板（props 全量）；false=实例（props_override 差异） */

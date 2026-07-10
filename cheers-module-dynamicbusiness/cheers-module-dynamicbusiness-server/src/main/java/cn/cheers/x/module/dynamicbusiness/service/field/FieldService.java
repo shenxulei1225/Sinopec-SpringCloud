@@ -20,6 +20,9 @@ public interface FieldService {
 
     List<FieldRespVO> search(String keyword, String type, String source, Integer status);
 
+    /** 字段库全量列表（不分页），供前端字段池加载 */
+    List<FieldRespVO> listAll(String type, String source, Integer status);
+
     PageResult<FieldRespVO> page(FieldPageReqVO reqVO);
 
     void enable(Long id);
