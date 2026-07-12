@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.inspection.task.framework.rpc.config;
 
+import cn.cheers.x.module.dynamicbusiness.api.entity.EntityRpcApi;
 import cn.iocoder.yudao.module.system.api.user.AdminUserApi;
 import cn.iocoder.yudao.module.infra.api.file.FileApi;
 import org.springframework.cloud.openfeign.EnableFeignClients;
@@ -13,8 +14,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(value = "inspectionTaskRpcConfiguration", proxyBeanMethods = false)
 @EnableFeignClients(
         clients = {
-                AdminUserApi.class,          // 用户服务API
-                FileApi.class                 // 文件服务API
+                AdminUserApi.class,
+                FileApi.class,
+                EntityRpcApi.class
         },
         basePackages = {} // 明确指定空包，避免自动扫描
 )

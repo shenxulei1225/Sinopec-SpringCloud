@@ -3,6 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.service.category;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryTreeRespVO;
 import cn.cheers.x.module.dynamicbusiness.dal.redis.RedisKeyConstants;
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONReader;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.CollectionUtils;
 
@@ -21,7 +22,7 @@ public final class CategoryCacheHelper {
         if (json == null) {
             return null;
         }
-        return JSON.parseArray(json, CategoryTreeRespVO.class);
+        return JSON.parseArray(json, CategoryTreeRespVO.class, JSONReader.Feature.UseLongForInts);
     }
 
     public static void cacheTree(StringRedisTemplate redis, String cacheKey, List<CategoryTreeRespVO> tree) {

@@ -29,7 +29,6 @@
         <module>yudao-module-mes</module>
         <module>yudao-module-ai</module>
         <module>yudao-module-sinopec-device</module>
-        <module>yudao-module-facility-management</module>
         <module>yudao-module-scene-platform</module>
         <module>yudao-module-inspection-task</module>
         <!-- 实时状态流 Runtime -->

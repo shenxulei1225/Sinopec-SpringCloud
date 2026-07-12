@@ -12,8 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public abstract class AbstractCategoryService<
@@ -85,19 +87,37 @@ public abstract class AbstractCategoryService<
         return CategoryUtils.buildTree(list);
     }
 
+    /**
+     * 按 id 路径格式（{@code /1/677/}）补全或修正节点的 tree_path、level；必要时级联修正子孙节点。
+     * 仅当父子关系非法、存在环、父节点缺失或层级超限等无法恢复的情况才抛异常。
+     */
+    public void ensureTreeMetadata(Long id, String categoryTypeCode) {
+        if (id == null) {
+            return;
+        }
+        ensureTreeMetadataInternal(id, categoryTypeCode, new HashSet<>());
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public void moveCategory(Long id, Long targetParentId) {
         DO category = findCategory(id, null);
         String categoryTypeCode = category.getCategoryTypeCode();
-        Long parentId = targetParentId;
-        if (Objects.equals(category.getParentId(), parentId)) {
+        Long parentId = normalizeParentId(targetParentId);
+        if (Objects.equals(normalizeParentId(category.getParentId()), parentId)) {
+            ensureTreeMetadata(id, categoryTypeCode);
             return;
         }
         List<DO> all = getMapper().selectByCategoryTypeCode(categoryTypeCode);
         if (parentId != null && isDescendant(category.getId(), parentId, all)) {
             throw new ServiceException(400, "无法将分类移动到自己的子节点下");
         }
-        DO parent = parentId == null ? null : all.stream().filter(item -> Objects.equals(item.getId(), parentId)).findFirst().orElse(null);
+        if (parentId != null) {
+            ensureTreeMetadata(parentId, categoryTypeCode);
+        }
+        DO parent = parentId == null ? null : getMapper().selectById(parentId);
+        if (parentId != null && parent == null) {
+            throw new ServiceException(404, "目标父分类(id=" + parentId + ")不存在，无法移动分类");
+        }
         int newLevel = parent == null ? 1 : Objects.requireNonNullElse(parent.getLevel(), 0) + 1;
         checkLevelLimit(newLevel);
         String newPath = CategoryUtils.buildIdTreePath(parent == null ? null : parent.getTreePath(), category.getId());
@@ -155,7 +175,8 @@ public abstract class AbstractCategoryService<
     }
 
     private void fillLevelFromParent(DO category) {
-        Long parentId = category.getParentId();
+        Long parentId = normalizeParentId(category.getParentId());
+        category.setParentId(parentId);
         if (parentId == null) {
             category.setLevel(1);
             category.setParentCode(null);
@@ -163,9 +184,11 @@ public abstract class AbstractCategoryService<
         }
         DO parent = getMapper().selectById(parentId);
         if (parent == null) {
-            throw new ServiceException(404, "父分类不存在");
+            throw new ServiceException(404, "父分类(id=" + parentId + ")不存在，无法创建子分类");
         }
         assertSameCategoryType(parent.getCategoryTypeCode(), category.getCategoryTypeCode());
+        ensureTreeMetadata(parentId, category.getCategoryTypeCode());
+        parent = getMapper().selectById(parentId);
         category.setLevel(Objects.requireNonNullElse(parent.getLevel(), 0) + 1);
         category.setParentCode(parent.getCode());
     }
@@ -174,29 +197,39 @@ public abstract class AbstractCategoryService<
         if (category.getId() == null) {
             return;
         }
-        Long parentId = category.getParentId();
+        Long parentId = normalizeParentId(category.getParentId());
         if (parentId == null) {
             category.setTreePath(CategoryUtils.buildIdTreePath(null, category.getId()));
             return;
         }
         DO parent = getMapper().selectById(parentId);
-        category.setTreePath(CategoryUtils.buildIdTreePath(parent == null ? null : parent.getTreePath(), category.getId()));
+        if (parent == null) {
+            throw new ServiceException(404, "父分类(id=" + parentId + ")不存在，无法生成 tree_path");
+        }
+        ensureTreeMetadata(parentId, category.getCategoryTypeCode());
+        parent = getMapper().selectById(parentId);
+        category.setTreePath(CategoryUtils.buildIdTreePath(parent.getTreePath(), category.getId()));
     }
 
     private void fillLevelAndPathForUpdate(DO db, DO updateObj) {
-        Long newParentId = updateObj.getParentId();
-        if (Objects.equals(db.getParentId(), newParentId)) {
-            updateObj.setTreePath(db.getTreePath());
-            updateObj.setLevel(db.getLevel());
-            updateObj.setParentCode(db.getParentCode());
+        Long newParentId = normalizeParentId(updateObj.getParentId());
+        updateObj.setParentId(newParentId);
+        if (Objects.equals(normalizeParentId(db.getParentId()), newParentId)) {
+            ensureTreeMetadata(db.getId(), updateObj.getCategoryTypeCode());
+            DO repaired = findCategory(db.getId(), updateObj.getCategoryTypeCode());
+            updateObj.setTreePath(repaired.getTreePath());
+            updateObj.setLevel(repaired.getLevel());
+            updateObj.setParentCode(repaired.getParentCode());
             return;
         }
         DO parent = newParentId == null ? null : getMapper().selectById(newParentId);
         if (newParentId != null && parent == null) {
-            throw new ServiceException(404, "父分类不存在");
+            throw new ServiceException(404, "父分类(id=" + newParentId + ")不存在，无法更新分类");
         }
         if (parent != null) {
             assertSameCategoryType(parent.getCategoryTypeCode(), updateObj.getCategoryTypeCode());
+            ensureTreeMetadata(newParentId, updateObj.getCategoryTypeCode());
+            parent = getMapper().selectById(newParentId);
         }
         int level = parent == null ? 1 : Objects.requireNonNullElse(parent.getLevel(), 0) + 1;
         checkLevelLimit(level);
@@ -223,7 +256,8 @@ public abstract class AbstractCategoryService<
 
     private void checkLevelLimit(int level) {
         if (level > getMaxLevel()) {
-            throw new ServiceException(400, "分类层级超过上限 " + getMaxLevel());
+            throw new ServiceException(400,
+                    "分类层级为 " + level + "，超过上限 " + getMaxLevel() + "，无法补全或更新 tree_path 与 level");
         }
     }
 
@@ -261,5 +295,61 @@ public abstract class AbstractCategoryService<
             getMapper().updateById(child);
             updateChildrenPath(child.getId(), newPath, newLevel, categoryTypeCode);
         }
+    }
+
+    private DO ensureTreeMetadataInternal(Long id, String categoryTypeCode, Set<Long> visiting) {
+        if (!visiting.add(id)) {
+            throw new ServiceException(400,
+                    "分类父子关系存在环（分类 id=" + id + "），无法补全 tree_path 与 level");
+        }
+        DO node = findCategory(id, categoryTypeCode);
+        String effectiveTypeCode = node.getCategoryTypeCode();
+        Long parentId = normalizeParentId(node.getParentId());
+        DO parent = null;
+        if (parentId != null) {
+            parent = getMapper().selectById(parentId);
+            if (parent == null) {
+                throw new ServiceException(400,
+                        "分类「" + safeName(node) + "」(id=" + id + ") 的父分类 id=" + parentId
+                                + " 不存在，无法补全 tree_path 与 level");
+            }
+            assertSameCategoryType(parent.getCategoryTypeCode(), effectiveTypeCode);
+            parent = ensureTreeMetadataInternal(parentId, effectiveTypeCode, visiting);
+        }
+
+        int expectedLevel = parent == null ? 1 : Objects.requireNonNullElse(parent.getLevel(), 0) + 1;
+        checkLevelLimit(expectedLevel);
+        String expectedPath = CategoryUtils.buildIdTreePath(parent == null ? null : parent.getTreePath(), node.getId());
+
+        if (needsTreeMetadataRepair(node, expectedPath, expectedLevel)) {
+            node.setLevel(expectedLevel);
+            node.setTreePath(expectedPath);
+            node.setParentCode(parent == null ? null : parent.getCode());
+            getMapper().updateById(node);
+            updateChildrenPath(node.getId(), expectedPath, expectedLevel, effectiveTypeCode);
+        }
+        visiting.remove(id);
+        return findCategory(id, effectiveTypeCode);
+    }
+
+    private boolean needsTreeMetadataRepair(DO node, String expectedPath, int expectedLevel) {
+        if (!Objects.equals(node.getLevel(), expectedLevel)) {
+            return true;
+        }
+        if (!CategoryUtils.treePathMatchesNode(node.getTreePath(), node.getId())) {
+            return true;
+        }
+        return !Objects.equals(expectedPath, node.getTreePath());
+    }
+
+    private Long normalizeParentId(Long parentId) {
+        if (parentId == null || parentId == 0L) {
+            return null;
+        }
+        return parentId;
+    }
+
+    private String safeName(DO node) {
+        return node.getName() != null ? node.getName() : "";
     }
 }

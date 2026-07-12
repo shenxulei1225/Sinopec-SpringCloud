@@ -13,6 +13,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -220,10 +221,26 @@ public class DataMgmtEntityQueryRepository {
 
         List<Long> scopedModelIds = modelBestRank.keySet().stream().toList();
         List<EntityDO> entities = entityRepository.findByModelIds(scopedModelIds, entityTypeCode);
+        if (entities.isEmpty()) {
+            return;
+        }
+
+        Set<Long> candidateEntityIds = entities.stream()
+                .map(EntityDO::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Set<Long> linkedOrRelatedInScope = resolveEntityIdsBoundInCategories(
+                expandedCategoryIds, entityTypeCode, candidateEntityIds);
+        Set<Long> linkedOrRelatedAnywhere = resolveEntityIdsWithCategoryBinding(entityTypeCode, candidateEntityIds);
+
         for (EntityDO entity : entities) {
             Long entityId = entity.getId();
             Long modelId = entity.getModelId();
             if (entityId == null || modelId == null) {
+                continue;
+            }
+            // Pattern C：实体已挂其它分类时，不可因「同型号」越界纳入当前分类范围；仅保留模型挂分类、实体只挂型号的场景。
+            if (!linkedOrRelatedInScope.contains(entityId) && linkedOrRelatedAnywhere.contains(entityId)) {
                 continue;
             }
             Integer rank = modelBestRank.get(modelId);
@@ -237,6 +254,73 @@ public class DataMgmtEntityQueryRepository {
                     modelBestTie.getOrDefault(modelId, Long.MAX_VALUE),
                     3));
         }
+    }
+
+    /** 分类范围内已有 entity↔category 绑定（link ∪ relation）的实体 id。 */
+    private Set<Long> resolveEntityIdsBoundInCategories(List<Long> expandedCategoryIds,
+                                                        String entityTypeCode,
+                                                        Set<Long> candidateEntityIds) {
+        if (expandedCategoryIds == null || expandedCategoryIds.isEmpty()
+                || candidateEntityIds == null || candidateEntityIds.isEmpty()) {
+            return Set.of();
+        }
+        Set<Long> bound = new HashSet<>();
+        List<CategoryEntityLinkDO> links = categoryEntityLinkMapper.selectList(
+                new LambdaQueryWrapperX<CategoryEntityLinkDO>()
+                        .in(CategoryEntityLinkDO::getCategoryId, expandedCategoryIds)
+                        .in(CategoryEntityLinkDO::getEntityId, candidateEntityIds)
+                        .eq(CategoryEntityLinkDO::getDeleted, false));
+        for (CategoryEntityLinkDO link : links) {
+            if (link.getEntityId() != null) {
+                bound.add(link.getEntityId());
+            }
+        }
+
+        LambdaQueryWrapperX<EntityCategoryRelationDO> relationQuery = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .in(EntityCategoryRelationDO::getCategoryId, expandedCategoryIds)
+                .in(EntityCategoryRelationDO::getEntityId, candidateEntityIds)
+                .eq(EntityCategoryRelationDO::getDeleted, false);
+        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+            relationQuery.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
+        }
+        List<EntityCategoryRelationDO> relations = entityCategoryRelationMapper.selectList(relationQuery);
+        for (EntityCategoryRelationDO relation : relations) {
+            if (relation.getEntityId() != null) {
+                bound.add(relation.getEntityId());
+            }
+        }
+        return bound;
+    }
+
+    /** 实体是否已在当前业务类型下挂接任意分类（link ∪ relation）。 */
+    private Set<Long> resolveEntityIdsWithCategoryBinding(String entityTypeCode, Set<Long> candidateEntityIds) {
+        if (candidateEntityIds == null || candidateEntityIds.isEmpty()) {
+            return Set.of();
+        }
+        Set<Long> bound = new HashSet<>();
+        List<CategoryEntityLinkDO> links = categoryEntityLinkMapper.selectList(
+                new LambdaQueryWrapperX<CategoryEntityLinkDO>()
+                        .in(CategoryEntityLinkDO::getEntityId, candidateEntityIds)
+                        .eq(CategoryEntityLinkDO::getDeleted, false));
+        for (CategoryEntityLinkDO link : links) {
+            if (link.getEntityId() != null) {
+                bound.add(link.getEntityId());
+            }
+        }
+
+        LambdaQueryWrapperX<EntityCategoryRelationDO> relationQuery = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .in(EntityCategoryRelationDO::getEntityId, candidateEntityIds)
+                .eq(EntityCategoryRelationDO::getDeleted, false);
+        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+            relationQuery.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
+        }
+        List<EntityCategoryRelationDO> relations = entityCategoryRelationMapper.selectList(relationQuery);
+        for (EntityCategoryRelationDO relation : relations) {
+            if (relation.getEntityId() != null) {
+                bound.add(relation.getEntityId());
+            }
+        }
+        return bound;
     }
 
     private Set<Long> filterEntityIdsByModelIds(List<Long> entityIds,

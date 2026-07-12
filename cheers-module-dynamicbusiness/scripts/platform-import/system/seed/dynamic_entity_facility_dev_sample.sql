@@ -42,7 +42,7 @@ SELECT
     v.longitude,
     v.latitude,
     v.facility_type,
-    '{}'::text
+    '{}'::jsonb
 FROM (
     VALUES
         (

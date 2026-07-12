@@ -44,4 +44,25 @@ public interface EntityRpcApi {
             @Parameter(description = "实体类型编码", required = true, example = "facility")
             @RequestParam("entityTypeCode") String entityTypeCode);
 
+    @GetMapping(PREFIX + "/list")
+    @Operation(summary = "按实体类型列出实体（可选按 modelId 过滤）")
+    CommonResult<List<EntityRespDTO>> listEntities(
+            @Parameter(description = "实体类型编码", required = true, example = "facility")
+            @RequestParam("entityTypeCode") String entityTypeCode,
+            @RequestParam(value = "modelId", required = false) Long modelId);
+
+    @GetMapping(PREFIX + "/get-by-code")
+    @Operation(summary = "按业务编码获取实体")
+    CommonResult<EntityRespDTO> getEntityByCode(
+            @RequestParam("code") String code,
+            @Parameter(description = "实体类型编码", required = true, example = "facility")
+            @RequestParam("entityTypeCode") String entityTypeCode);
+
+    @GetMapping(PREFIX + "/list-by-codes")
+    @Operation(summary = "按业务编码批量获取实体")
+    CommonResult<List<EntityRespDTO>> listEntitiesByCodes(
+            @RequestParam("codes") List<String> codes,
+            @Parameter(description = "实体类型编码", required = true, example = "facility")
+            @RequestParam("entityTypeCode") String entityTypeCode);
+
 }

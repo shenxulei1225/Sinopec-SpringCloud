@@ -929,18 +929,26 @@ public class CategoryServiceImpl implements CategoryService {
             }
         }
 
+        // 拖动前补全/修正涉及节点的 tree_path 与 level，避免历史脏数据导致移动失败
+        core.ensureTreeMetadata(drag.getId(), categoryTypeCode);
+        drag = categoryMapper.selectByIdAndCategoryTypeCode(reqVO.getDragId(), categoryTypeCode);
+        if (target != null) {
+            core.ensureTreeMetadata(target.getId(), categoryTypeCode);
+            target = categoryMapper.selectByIdAndCategoryTypeCode(reqVO.getTargetId(), categoryTypeCode);
+        }
+
         Long resolvedParentId;
-        switch (position) {
-            case BEFORE, AFTER -> {
-                if (target == null) {
-                    throw new ServiceException(400, "BEFORE/AFTER 需要提供 targetId");
-                }
-                resolvedParentId = target.getParentId();
+        if (position == CategoryDragReqVO.Position.BEFORE || position == CategoryDragReqVO.Position.AFTER) {
+            if (target == null) {
+                throw new ServiceException(400, "BEFORE/AFTER 需要提供 targetId");
             }
-            case INNER -> resolvedParentId = reqVO.getTargetParentId() != null
+            resolvedParentId = target.getParentId();
+        } else if (position == CategoryDragReqVO.Position.INNER) {
+            resolvedParentId = reqVO.getTargetParentId() != null
                     ? reqVO.getTargetParentId()
                     : (target != null ? target.getId() : null);
-            default -> throw new ServiceException(400, "不支持的拖拽位置");
+        } else {
+            throw new ServiceException(400, "不支持的拖拽位置");
         }
 
         List<CategoryDO> all = categoryMapper.selectByCategoryTypeCode(categoryTypeCode);
@@ -960,9 +968,13 @@ public class CategoryServiceImpl implements CategoryService {
             if (parent == null) {
                 throw new ServiceException(404, "目标父分类不存在");
             }
+            core.ensureTreeMetadata(resolvedParentId, categoryTypeCode);
+            parent = categoryMapper.selectByIdAndCategoryTypeCode(resolvedParentId, categoryTypeCode);
             int newLevel = (parent.getLevel() == null ? 0 : parent.getLevel()) + 1;
             if (newLevel > DEFAULT_MAX_LEVEL) {
-                throw new ServiceException(400, "分类层级超过上限 " + DEFAULT_MAX_LEVEL);
+                throw new ServiceException(400,
+                        "拖拽后分类层级为 " + newLevel + "，超过上限 " + DEFAULT_MAX_LEVEL
+                                + "（目标父分类「" + parent.getName() + "」当前 level=" + parent.getLevel() + "）");
             }
         } else {
             // 拖到根节点，层级为 1，不需要额外校验

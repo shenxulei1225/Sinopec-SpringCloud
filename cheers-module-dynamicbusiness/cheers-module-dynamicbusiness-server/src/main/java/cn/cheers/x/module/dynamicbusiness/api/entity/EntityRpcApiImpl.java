@@ -36,4 +36,19 @@ public class EntityRpcApiImpl implements EntityRpcApi {
         return success(entityRpcFacadeService.exists(id, entityTypeCode));
     }
 
+    @Override
+    public CommonResult<List<EntityRespDTO>> listEntities(String entityTypeCode, Long modelId) {
+        return success(entityRpcFacadeService.list(entityTypeCode, modelId));
+    }
+
+    @Override
+    public CommonResult<EntityRespDTO> getEntityByCode(String code, String entityTypeCode) {
+        return success(entityRpcFacadeService.getByCode(code, entityTypeCode));
+    }
+
+    @Override
+    public CommonResult<List<EntityRespDTO>> listEntitiesByCodes(List<String> codes, String entityTypeCode) {
+        return success(entityRpcFacadeService.listByCodes(codes, entityTypeCode));
+    }
+
 }

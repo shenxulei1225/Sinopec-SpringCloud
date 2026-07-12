@@ -10,6 +10,8 @@ public enum DmDimensionKindEnum {
     CATEGORY("CATEGORY"),
     MODEL("MODEL"),
     ENTITY("ENTITY"),
+    /** 实体列上方筛选区（配置落在 ENTITY 列表 props；本维仅作种类标识，不参与 enabled 开关） */
+    FILTER("FILTER"),
     DETAIL("DETAIL");
 
     private final String code;

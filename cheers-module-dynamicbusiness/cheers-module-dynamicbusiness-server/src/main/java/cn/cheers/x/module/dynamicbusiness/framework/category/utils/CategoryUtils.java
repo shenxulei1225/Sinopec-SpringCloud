@@ -113,6 +113,19 @@ public final class CategoryUtils {
     }
 
     /**
+     * 判断 tree_path 是否为按分类 id 拼接的路径，且末段与当前节点 id 一致。
+     */
+    public static boolean treePathMatchesNode(String treePath, Long categoryId) {
+        if (categoryId == null || treePath == null || treePath.isEmpty()) {
+            return false;
+        }
+        if (!treePath.startsWith("/") || !treePath.endsWith("/")) {
+            return false;
+        }
+        return treePath.endsWith("/" + categoryId + "/");
+    }
+
+    /**
      * @deprecated 旧实现按名称拼接，改名会导致子树前缀失效；请用 {@link #buildIdTreePath(String, Long)}。
      */
     @Deprecated
