@@ -16,8 +16,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.dynamictable.DynamicTableCol
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.dynamictable.DynamicTableMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.dynamictable.DynamicSqlAuditLogMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import cn.cheers.x.module.dynamicbusiness.util.PhysicalColumnMappingUtils;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.dynamictable.DynamicSqlAuditLogDO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -300,18 +299,13 @@ public class SqlInjectionProtectionServiceImpl implements SqlInjectionProtection
             }
 
             // 2.1 加载物理列映射配置中的列名（EntityType.physicalColumnMapping JSON）
-            if (StrUtil.isNotBlank(entityType.getPhysicalColumnMapping())) {
-                try {
-                    Map<String, cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.PhysicalColumnConfig> physicalColumnMapping =
-                            new ObjectMapper().readValue(entityType.getPhysicalColumnMapping(),
-                                    new TypeReference<Map<String, cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.PhysicalColumnConfig>>() {});
-                    for (cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.PhysicalColumnConfig colConfig : physicalColumnMapping.values()) {
-                        if (colConfig != null && StrUtil.isNotBlank(colConfig.getColumn())) {
-                            allowedColumns.add(colConfig.getColumn().toLowerCase());
-                        }
+            Map<String, cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.PhysicalColumnConfig> physicalColumnMapping =
+                    PhysicalColumnMappingUtils.parseMapping(entityType.getPhysicalColumnMapping());
+            if (CollUtil.isNotEmpty(physicalColumnMapping)) {
+                for (cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.PhysicalColumnConfig colConfig : physicalColumnMapping.values()) {
+                    if (colConfig != null && StrUtil.isNotBlank(colConfig.getColumn())) {
+                        allowedColumns.add(colConfig.getColumn().toLowerCase());
                     }
-                } catch (Exception e) {
-                    log.warn("[getAllowedColumns][解析 physicalColumnMapping 失败,tableName={}, entityTypeCode={}]", tableName, entityType.getCode(), e);
                 }
             }
         }

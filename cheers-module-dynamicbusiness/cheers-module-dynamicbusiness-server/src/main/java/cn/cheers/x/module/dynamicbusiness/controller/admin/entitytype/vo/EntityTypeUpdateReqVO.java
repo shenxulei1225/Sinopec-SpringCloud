@@ -16,5 +16,8 @@ public class EntityTypeUpdateReqVO extends EntityTypeBaseVO {
     @NotNull(message = "业务类型编号不能为空")
     private Long id;
 
+    @Schema(description = "为 true 时按 parentId 更新上级（parentId 为 null 表示升为根）")
+    private Boolean parentIdSpecified;
+
 }
  

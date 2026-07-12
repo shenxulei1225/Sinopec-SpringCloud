@@ -21,9 +21,10 @@
 |------|------|------|
 | V1 | `V1__init_dynamicbusiness_schema.sql` | 全量 DDL |
 | V2 | `V2__model_field_assignment_codes.sql` | 模型字段分配 code 幂等键 |
-| V3 | `V3__cross_platform_association_codes.sql` | 关联表 code 幂等键 |
+| V8 | `V8__ent_custom_fields_jsonb.sql` | 实体 custom_fields jsonb |
+| V9 | `V9__dm_entity_dimension_dedupe.sql` | 去重 dm_entity_dimension 同 scope 有效行 |
 
-下一新增版本应为 **V4**。  
+下一新增版本应为 **V10**。  
 已停用脚本在 `db/backup/flyway-legacy-pre-seed/`，不得放回本目录。
 
 > 上表随发版更新；改版本链时同步更新本节，并遵守通用规范中的历史对齐流程。

@@ -73,7 +73,9 @@ FROM (VALUES
   ('REG-CAT-OP-BJ-AP', 'REG-CAT-PROV-BJPIPE', '安平作业区', 100108, 'REG-OP-BJ-AP', 'operation', 'MODEL-REGION-OPERATION', 8),
   ('REG-CAT-OP-BJ-YQ', 'REG-CAT-PROV-BJPIPE', '永清作业区', 100109, 'REG-OP-BJ-YQ', 'operation', 'MODEL-REGION-OPERATION', 9),
   ('REG-CAT-OP-SW-JJ', 'REG-CAT-PROV-SW', '江津作业区', 100110, 'REG-OP-SW-JJ', 'operation', 'MODEL-REGION-OPERATION', 10),
-  ('REG-CAT-OP-SW-NJ', 'REG-CAT-PROV-SW', '内江作业区', 100111, 'REG-OP-SW-NJ', 'operation', 'MODEL-REGION-OPERATION', 11)
+  ('REG-CAT-OP-SW-NJ', 'REG-CAT-PROV-SW', '内江作业区', 100111, 'REG-OP-SW-NJ', 'operation', 'MODEL-REGION-OPERATION', 11),
+  ('REG-CAT-OP-EAST-LY', 'REG-CAT-PROV-EAST', '洛阳作业区', 100112, 'REG-OP-EAST-LY', 'operation', 'MODEL-REGION-OPERATION', 1),
+  ('REG-CAT-OP-EAST-JQ', 'REG-CAT-PROV-EAST', '金桥作业区', 100113, 'REG-OP-EAST-JQ', 'operation', 'MODEL-REGION-OPERATION', 2)
 ) AS v(
   category_code, parent_code, display_name, entity_id, entity_code,
   region_type, model_code, sort_order
@@ -174,7 +176,7 @@ WHERE tenant_id = 1 AND id IN (100002, 100003) AND deleted = false;
 
 SELECT setval(
   pg_get_serial_sequence('dynamicbusiness.ent_region', 'id'),
-  GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_region), 100111)
+  GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_region), 100113)
 );
 
 -- Pattern C 自检：除 region_root 外每个分类必须有实体绑定

@@ -27,7 +27,7 @@
         </dependency>
         <dependency>
             <groupId>cn.iocoder.cloud</groupId>
-            <artifactId>yudao-module-facility-management-api</artifactId>
+            <artifactId>cheers-module-dynamicbusiness-api</artifactId>
             <version>${revision}</version>
         </dependency>
         <dependency>

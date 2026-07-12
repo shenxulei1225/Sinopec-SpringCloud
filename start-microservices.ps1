@@ -60,7 +60,6 @@ $ServiceConfig = @{
     "ai"         = @{ Path = "yudao-module-ai\yudao-module-ai-server"; Port = 58090 }
     "iot"        = @{ Path = "yudao-module-iot\yudao-module-iot-server"; Port = 58091 }
     "alarm"      = @{ Path = "yudao-module-alarm\yudao-module-alarm-biz"; Port = 58097 }
-    "facility"   = @{ Path = "yudao-module-facility-management\yudao-module-facility-management-server"; Port = 58092 }
     "scene"      = @{ Path = "yudao-module-scene-platform\yudao-module-scene-platform-server"; Port = 58093 }
     "twin"       = @{ Path = "yudao-module-twin\yudao-module-twin-biz"; Port = 58094 }
     "inspection" = @{ Path = "yudao-module-inspection-task\yudao-module-inspection-task-server"; Port = 58095 }
@@ -86,27 +85,27 @@ $KnownServices = @(
     "gateway", "system", "infra", "member", "bpm", "pay", "report", "mp", "product", "promotion", "trade", "statistics",
     "crm", "erp", "ai", "iot", "alarm", "dynamic",
     "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
-    "facility", "scene", "twin", "inspection"
+    "scene", "twin", "inspection"
 )
 
 $CoreServices = @(
     "infra", "system", "gateway", "bpm", "alarm", "dynamic",
     "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
-    "facility", "scene", "twin", "inspection"
+    "scene", "twin", "inspection"
 )
 
 $AllServices = @(
     "system", "infra", "gateway", "member", "bpm", "pay", "report", "mp", "product", "promotion", "trade", "statistics",
     "crm", "erp", "ai", "iot", "alarm", "dynamic",
     "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
-    "facility", "scene", "twin", "inspection"
+    "scene", "twin", "inspection"
 )
 
 $StopServices = @(
     "gateway", "infra", "system", "member", "bpm", "pay", "report", "mp", "product", "promotion", "trade", "statistics",
     "crm", "erp", "ai", "iot", "alarm", "dynamic",
     "platform-orchestration", "platform-runtime", "platform-policy", "platform-capability", "platform",
-    "facility", "scene", "twin", "inspection"
+    "scene", "twin", "inspection"
 )
 
 $PlatformAllServices = @(
@@ -645,7 +644,7 @@ function Show-Services {
     Write-ColorOutput "  3. gateway   - 网关服务（必需）" "White"
     Write-ColorOutput "  4. bpm       - 工作流服务（必需）" "White"
     Write-ColorOutput "  5. alarm     - 告警管理服务（必需）" "White"
-    Write-ColorOutput "  6. dynamic   - 动态业务服务（facility 等模块依赖）" "White"
+    Write-ColorOutput "  6. dynamic   - 动态业务服务（设施/设备等实体，twin 等模块依赖）" "White"
     Write-ColorOutput "  7. platform  - 平台资源库（组件/视图，别名 resource，58098）" "White"
     Write-ColorOutput "  8. platform-runtime - 平台 L4 运行时（58099）" "White"
     Write-ColorOutput "  9. platform-orchestration - 平台编排/排程 run（58104，依赖 runtime）" "White"

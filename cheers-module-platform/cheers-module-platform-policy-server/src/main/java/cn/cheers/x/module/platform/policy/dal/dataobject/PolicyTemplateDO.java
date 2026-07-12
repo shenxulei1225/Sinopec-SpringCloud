@@ -1,6 +1,6 @@
 package cn.cheers.x.module.platform.policy.dal.dataobject;
 
-import cn.cheers.x.module.platform.policy.framework.mybatis.JsonbStringTypeHandler;
+import cn.iocoder.yudao.framework.mybatis.core.type.JsonbStringTypeHandler;
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;

@@ -801,22 +801,51 @@ public class CategoryServiceImpl implements CategoryService {
      */
     @Override
     public List<Long> getAllCategoryIdsIncludingChildren(Long categoryId, String categoryTypeCode) {
-        // 1) 获取根节点，拿到 treePath
         CategoryDO root = categoryMapper.selectByIdAndCategoryTypeCode(categoryId, categoryTypeCode);
-        if (root == null || root.getTreePath() == null) {
+        if (root == null) {
             return List.of(categoryId);
         }
 
-        // 2) 利用 treePath 前缀索引查询整棵子树（包含自身）
-        List<CategoryDO> list = categoryMapper.selectSubtreeByPath(root.getTreePath(), categoryTypeCode, null);
-        if (list.isEmpty()) {
-            return List.of(categoryId);
+        String effectiveCategoryTypeCode = categoryTypeCode != null && !categoryTypeCode.isBlank()
+                ? categoryTypeCode
+                : root.getCategoryTypeCode();
+
+        String treePath = root.getTreePath();
+        if (treePath != null && treePath.startsWith("/")) {
+            List<CategoryDO> list = categoryMapper.selectSubtreeByPath(treePath, effectiveCategoryTypeCode, null);
+            if (!list.isEmpty()) {
+                List<Long> ids = list.stream()
+                        .map(CategoryDO::getId)
+                        .filter(Objects::nonNull)
+                        .toList();
+                if (ids.size() > 1 || !hasDirectChildCategories(categoryId, effectiveCategoryTypeCode)) {
+                    return ids;
+                }
+            }
         }
 
-        return list.stream()
-                .map(CategoryDO::getId)
-                .filter(Objects::nonNull)
-                .toList();
+        // tree_path 缺失/非路径格式/前缀匹配不到子节点时，按 parent_id 递归展开子树
+        return collectCategoryIdsByParentLink(categoryId, effectiveCategoryTypeCode);
+    }
+
+    private boolean hasDirectChildCategories(Long categoryId, String categoryTypeCode) {
+        List<CategoryDO> children = categoryMapper.selectByParentIdAndCategoryTypeCode(categoryId, categoryTypeCode);
+        return children != null && !children.isEmpty();
+    }
+
+    private List<Long> collectCategoryIdsByParentLink(Long rootCategoryId, String categoryTypeCode) {
+        List<CategoryDO> all = categoryMapper.selectByCategoryTypeCode(categoryTypeCode);
+        if (all == null || all.isEmpty()) {
+            return List.of(rootCategoryId);
+        }
+        Map<Long, List<CategoryDO>> childrenMap = all.stream()
+                .collect(Collectors.groupingBy(item -> item.getParentId() == null ? 0L : item.getParentId()));
+        LinkedHashSet<Long> orderedIds = new LinkedHashSet<>();
+        orderedIds.add(rootCategoryId);
+        Set<Long> descendantIds = new HashSet<>();
+        collectDescendantIds(rootCategoryId, childrenMap, descendantIds);
+        orderedIds.addAll(descendantIds);
+        return new ArrayList<>(orderedIds);
     }
 
     @Override
@@ -1125,23 +1154,23 @@ public class CategoryServiceImpl implements CategoryService {
         if (target == null) {
             throw new ServiceException(404, "分类不存在");
         }
-        List<CategoryDO> list = categoryMapper.selectByCategoryTypeCode(categoryTypeCode != null ? categoryTypeCode : target.getCategoryTypeCode());
-        // 根据 treePath 分割路径名称，回溯 ancestors
-        String[] parts = target.getTreePath().split("/");
-        List<CategoryRespVO> path = list.stream()
-                .filter(item -> item.getTreePath() != null)
-                .filter(item -> {
-                    for (String part : parts) {
-                        if (item.getTreePath().endsWith(part)) {
-                            return target.getTreePath().startsWith(item.getTreePath());
-                        }
-                    }
-                    return false;
-                })
-                .sorted((a, b) -> Integer.compare(a.getLevel(), b.getLevel()))
-                .map(CategoryConvert.INSTANCE::convert)
-                .toList();
-        return path;
+        String resolvedTypeCode = categoryTypeCode != null ? categoryTypeCode : target.getCategoryTypeCode();
+        List<CategoryDO> all = categoryMapper.selectByCategoryTypeCode(resolvedTypeCode);
+        Map<Long, CategoryDO> idMap = all.stream()
+                .filter(item -> item.getId() != null)
+                .collect(Collectors.toMap(CategoryDO::getId, item -> item, (a, b) -> a));
+
+        List<CategoryDO> pathNodes = new ArrayList<>();
+        Long currentId = target.getId();
+        while (currentId != null) {
+            CategoryDO node = idMap.get(currentId);
+            if (node == null) {
+                break;
+            }
+            pathNodes.add(0, node);
+            currentId = node.getParentId();
+        }
+        return pathNodes.stream().map(CategoryConvert.INSTANCE::convert).toList();
     }
 
     private void deleteEntityForCategory(Long id, String entityTypeCode, Boolean forceDelete) {

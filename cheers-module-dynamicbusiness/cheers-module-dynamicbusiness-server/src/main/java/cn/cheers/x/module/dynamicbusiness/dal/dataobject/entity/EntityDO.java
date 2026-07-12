@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity;
 
-import cn.cheers.x.module.dynamicbusiness.framework.mybatis.JsonbMapTypeHandler;
+import cn.iocoder.yudao.framework.mybatis.core.type.JsonbMapTypeHandler;
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.KeySequence;

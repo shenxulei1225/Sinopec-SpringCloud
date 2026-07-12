@@ -4,7 +4,9 @@ import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryEntityLinkDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityCategoryRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelCategoryRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryEntityLinkMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelCategoryRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityCategoryRelationMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -24,8 +26,8 @@ import java.util.stream.Collectors;
  * <ul>
  *   <li>Pattern A：{@code dynamic_entity_category_relation}</li>
  *   <li>Pattern C：{@code dynamic_category_entity_link}</li>
+ *   <li>模型挂分类：{@code dynamic_model_category_relation} → 实体按 modelId 归入分类范围</li>
  * </ul>
- * <p>中栏模型列表仍由 model_category_relation 驱动；右栏实体必须在上述关联表内且落在 expandedCategoryIds 中。</p>
  */
 @Repository
 @RequiredArgsConstructor
@@ -35,6 +37,7 @@ public class DataMgmtEntityQueryRepository {
 
     private final EntityCategoryRelationMapper entityCategoryRelationMapper;
     private final CategoryEntityLinkMapper categoryEntityLinkMapper;
+    private final ModelCategoryRelationMapper modelCategoryRelationMapper;
     private final EntityRepository entityRepository;
 
     /**
@@ -52,6 +55,7 @@ public class DataMgmtEntityQueryRepository {
         Map<Long, ScopeCandidate> bestByEntityId = new HashMap<>();
         mergeRelationCandidates(bestByEntityId, categoryRank, expandedCategoryIds, entityTypeCode, modelIdFilter);
         mergeLinkCandidates(bestByEntityId, categoryRank, expandedCategoryIds, modelIdFilter);
+        mergeModelCategoryCandidates(bestByEntityId, categoryRank, expandedCategoryIds, entityTypeCode, modelIdFilter);
 
         return bestByEntityId.values().stream()
                 .sorted(Comparator.comparingInt(ScopeCandidate::catRank)
@@ -59,6 +63,39 @@ public class DataMgmtEntityQueryRepository {
                         .thenComparingInt(ScopeCandidate::sortKey)
                         .thenComparingLong(ScopeCandidate::tieId))
                 .map(ScopeCandidate::entityId)
+                .toList();
+    }
+
+    /**
+     * 分类体系下：模型已挂分类 → 实体按 modelId 归入（设备管理等主路径）。
+     */
+    public List<Long> listEntityIdsViaModelCategoryInCategoryType(String categoryTypeCode,
+                                                                  String entityTypeCode,
+                                                                  List<Long> modelIds) {
+        if (categoryTypeCode == null || categoryTypeCode.isBlank()
+                || entityTypeCode == null || entityTypeCode.isBlank()) {
+            return List.of();
+        }
+        List<Long> scopedModelIds = modelCategoryRelationMapper.selectDistinctModelIdsByCategoryTypeCode(
+                categoryTypeCode, entityTypeCode);
+        if (scopedModelIds == null || scopedModelIds.isEmpty()) {
+            return List.of();
+        }
+        Set<Long> modelIdFilter = toModelIdFilter(modelIds);
+        if (modelIdFilter != null) {
+            scopedModelIds = scopedModelIds.stream()
+                    .filter(modelIdFilter::contains)
+                    .distinct()
+                    .toList();
+        }
+        if (scopedModelIds.isEmpty()) {
+            return List.of();
+        }
+        List<EntityDO> entities = entityRepository.findByModelIds(scopedModelIds, entityTypeCode);
+        return entities.stream()
+                .map(EntityDO::getId)
+                .filter(Objects::nonNull)
+                .distinct()
                 .toList();
     }
 
@@ -132,6 +169,73 @@ public class DataMgmtEntityQueryRepository {
                     0,
                     link.getId() != null ? link.getId() : Long.MAX_VALUE,
                     2));
+        }
+    }
+
+    /**
+     * 模型已挂分类、实体只挂模型：通过 model_category_relation 将实体纳入分类范围。
+     */
+    private void mergeModelCategoryCandidates(Map<Long, ScopeCandidate> bestByEntityId,
+                                              Map<Long, Integer> categoryRank,
+                                              List<Long> expandedCategoryIds,
+                                              String entityTypeCode,
+                                              Set<Long> modelIdFilter) {
+        LambdaQueryWrapperX<ModelCategoryRelationDO> query = new LambdaQueryWrapperX<ModelCategoryRelationDO>()
+                .in(ModelCategoryRelationDO::getCategoryId, expandedCategoryIds)
+                .eq(ModelCategoryRelationDO::getDeleted, false);
+        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+            query.eq(ModelCategoryRelationDO::getEntityTypeCode, entityTypeCode);
+        }
+        if (modelIdFilter != null) {
+            query.in(ModelCategoryRelationDO::getModelId, modelIdFilter);
+        }
+        List<ModelCategoryRelationDO> relations = modelCategoryRelationMapper.selectList(query);
+        if (relations.isEmpty()) {
+            return;
+        }
+
+        Map<Long, Integer> modelBestRank = new HashMap<>();
+        Map<Long, Integer> modelBestSort = new HashMap<>();
+        Map<Long, Long> modelBestTie = new HashMap<>();
+        for (ModelCategoryRelationDO relation : relations) {
+            Long modelId = relation.getModelId();
+            Long categoryId = relation.getCategoryId();
+            if (modelId == null || categoryId == null) {
+                continue;
+            }
+            int catRank = categoryRank.getOrDefault(categoryId, DEFAULT_SORT_FALLBACK);
+            int sortKey = relation.getSort() != null ? relation.getSort() : DEFAULT_SORT_FALLBACK;
+            long tieId = relation.getId() != null ? relation.getId() : Long.MAX_VALUE;
+            Integer existingRank = modelBestRank.get(modelId);
+            if (existingRank == null || catRank < existingRank
+                    || (catRank == existingRank && sortKey < modelBestSort.getOrDefault(modelId, DEFAULT_SORT_FALLBACK))) {
+                modelBestRank.put(modelId, catRank);
+                modelBestSort.put(modelId, sortKey);
+                modelBestTie.put(modelId, tieId);
+            }
+        }
+        if (modelBestRank.isEmpty()) {
+            return;
+        }
+
+        List<Long> scopedModelIds = modelBestRank.keySet().stream().toList();
+        List<EntityDO> entities = entityRepository.findByModelIds(scopedModelIds, entityTypeCode);
+        for (EntityDO entity : entities) {
+            Long entityId = entity.getId();
+            Long modelId = entity.getModelId();
+            if (entityId == null || modelId == null) {
+                continue;
+            }
+            Integer rank = modelBestRank.get(modelId);
+            if (rank == null) {
+                continue;
+            }
+            offerCandidate(bestByEntityId, new ScopeCandidate(
+                    entityId,
+                    rank,
+                    modelBestSort.getOrDefault(modelId, DEFAULT_SORT_FALLBACK),
+                    modelBestTie.getOrDefault(modelId, Long.MAX_VALUE),
+                    3));
         }
     }
 

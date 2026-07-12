@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.dal.dataobject.pageconfig;
 
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import cn.iocoder.yudao.framework.mybatis.core.type.JsonbJsonTypeHandler;
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.KeySequence;
@@ -104,9 +104,9 @@ public class PageConfigDO extends TenantBaseDO {
      *   "refreshInterval": number
      * }
      * 
-     * 使用 PostgreSQLJsonbTypeHandler 处理 PostgreSQL 的 JSONB 类型
+     * 使用 JsonbJsonTypeHandler 处理 PostgreSQL 的 JSONB 类型
      */
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(typeHandler = JsonbJsonTypeHandler.class)
     private Map<String, Serializable> config;
 
     /**

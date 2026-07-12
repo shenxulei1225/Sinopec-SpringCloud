@@ -5,7 +5,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
-@EnableFeignClients(basePackages = "cn.iocoder")
+@EnableFeignClients(basePackages = {
+        "cn.iocoder",
+        "cn.cheers.x.module.dynamicbusiness.api"
+})
 public class TwinServerApplication {
 
     public static void main(String[] args) {

@@ -20,9 +20,12 @@ import java.util.List;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
 
 /**
- * 站场管理
+ * 站场管理（读写 {@code fac_site}）。
+ *
+ * @deprecated 已废弃。站场/设施层级改由动态业务 {@code ent_facility}、{@code ent_region} 与分类树维护。
  */
-@Tag(name = "管理后台 - 站场管理")
+@Deprecated
+@Tag(name = "管理后台 - 站场管理（已废弃）")
 @RestController
 @RequestMapping("/site")
 public class SiteController {

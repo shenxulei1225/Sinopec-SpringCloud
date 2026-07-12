@@ -19,9 +19,12 @@ import java.util.List;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
 
 /**
- * 站场类型管理
+ * 站场类型管理（读写 {@code fac_site_type}）。
+ *
+ * @deprecated 已废弃；类型与分类改由动态业务分类体系维护。
  */
-@Tag(name = "管理后台 - 站场类型管理")
+@Deprecated
+@Tag(name = "管理后台 - 站场类型管理（已废弃）")
 @RestController
 @RequestMapping("/site-type")
 public class SiteTypeController {

@@ -6,8 +6,11 @@ import cn.iocoder.yudao.module.facility.management.controller.admin.vo.facility.
 import cn.iocoder.yudao.module.facility.management.dal.dataobject.FacilityDO;
 
 /**
- * 设施服务接口
+ * 设施服务接口（写 {@code fac_facility}）。
+ *
+ * @deprecated 已废弃；写路径请改接动态业务实体命令服务。
  */
+@Deprecated
 public interface FacilityService {
 
     /**

@@ -20,11 +20,13 @@ import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.*;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
 
 /**
- * 设施管理接口
- * <p>
- * 提供设施的 CRUD 操作接口
+ * 设施管理接口（写路径 + 读 {@code fac_facility}）。
+ *
+ * @deprecated 已废弃。设施主数据改由动态业务 {@code ent_facility} / {@code ent_equipment} 维护；
+ *             跨模块读请使用 {@code dynamicbusiness-server} 的 {@link cn.iocoder.yudao.module.facility.management.api.FacilityApi} Facade。
  */
-@Tag(name = "管理后台 - 设施管理")
+@Deprecated
+@Tag(name = "管理后台 - 设施管理（已废弃）")
 @RestController
 @RequestMapping("/facility")
 public class FacilityController {

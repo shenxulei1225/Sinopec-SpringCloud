@@ -287,7 +287,9 @@ public class EntityController {
             - 业务范围：多数场景为指定业务（建议传 entityTypeCode）
             - modelIds / categoryIds 支持重复 query 参数（modelIds=1&modelIds=2）或逗号分隔单参数（modelIds=1,2,3）
             - 多选 ID 较多时建议使用 POST /query-by-scene + JSON body
-            - DATA_MGMT_ENTITIES_BY_CATEGORY_MODEL：数据管理三栏；categoryIds 可空（回退根分类）；modelIds 可选过滤；仅 relation+link（分类范围内）
+            - DATA_MGMT_ENTITIES_BY_CATEGORY_MODEL：数据管理；选中分类节点（含子孙）+ 可选 modelIds
+            - DATA_MGMT_ENTITIES_ALL_IN_CATEGORY_TYPE：数据管理；当前 categoryTypeCode 下全部有关联实体 + 可选 modelIds
+            - DATA_MGMT_ENTITIES_UNCATEGORIZED：数据管理；当前 categoryTypeCode 下未挂接分类的实体 + 可选 modelIds
             """
     )
     @PreAuthorize("@ss.hasPermission('system:entity:query')")

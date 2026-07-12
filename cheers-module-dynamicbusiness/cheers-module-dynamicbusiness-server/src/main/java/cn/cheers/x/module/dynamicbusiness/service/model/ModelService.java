@@ -73,6 +73,11 @@ public interface ModelService {
     List<ModelRespVO> listModelsByEntityType(String entityTypeCode);
 
     /**
+     * 按分类体系查询未挂接任何分类节点的模型（Pattern B 数据管理「未分类」）。
+     */
+    List<ModelRespVO> listUncategorizedModelsByCategoryType(String categoryTypeCode, String entityTypeCode);
+
+    /**
      * 获取跨业务类型的模型列表（不分页，含启用/停用）。
      *
      * 规则：

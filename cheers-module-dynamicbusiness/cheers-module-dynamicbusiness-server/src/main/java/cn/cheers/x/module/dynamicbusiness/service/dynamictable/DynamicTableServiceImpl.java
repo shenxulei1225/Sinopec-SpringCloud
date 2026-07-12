@@ -1102,7 +1102,7 @@ public class DynamicTableServiceImpl implements DynamicTableService {
 %s
                     -- ==================== 扩展字段（EAV 模式） ====================
                     attrs JSONB DEFAULT '{}',
-                    custom_fields TEXT,
+                    custom_fields JSONB DEFAULT '{}',
                     
                     -- ==================== 系统字段 ====================
                     creator VARCHAR(64),
@@ -1122,7 +1122,7 @@ public class DynamicTableServiceImpl implements DynamicTableService {
                 COMMENT ON COLUMN %s.area_id IS '所属区域 ID';
                 COMMENT ON COLUMN %s.parent_id IS '父节点 ID（0 表示根节点）';
                 COMMENT ON COLUMN %s.attrs IS '扩展字段（JSONB）';
-                COMMENT ON COLUMN %s.custom_fields IS '自定义字段（JSON 字符串）';
+                COMMENT ON COLUMN %s.custom_fields IS '自定义字段（JSONB）';
 %s
                 -- 基础索引
                 CREATE INDEX IF NOT EXISTS idx_%s_tenant ON %s(tenant_id);

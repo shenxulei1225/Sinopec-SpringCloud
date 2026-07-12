@@ -19,6 +19,7 @@ import cn.cheers.x.module.dynamicbusiness.service.model.ModelFieldAssignmentServ
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelService;
 import cn.cheers.x.module.dynamicbusiness.service.dynamictable.DynamicTableService;
 import cn.cheers.x.module.dynamicbusiness.util.PhysicalColumnMappingUtils;
+import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,6 +66,9 @@ public class EntityTypeServiceImpl implements EntityTypeService {
 
     @Resource
     private DynamicTableService dynamicTableService;
+
+    @Resource
+    private EntityTypeCategoryBootstrapService entityTypeCategoryBootstrapService;
 
     /**
      * 创建业务类型。
@@ -113,6 +117,8 @@ public class EntityTypeServiceImpl implements EntityTypeService {
             );
         }
 
+        entityTypeCategoryBootstrapService.ensureForEntityTypeCode(entityType.getCode());
+
         return entityType.getId();
     }
 
@@ -153,6 +159,14 @@ public class EntityTypeServiceImpl implements EntityTypeService {
 
         updateBTFromVO(newEntityType, reqVO);
 
+        if (Boolean.TRUE.equals(reqVO.getParentIdSpecified())) {
+            Long newParentId = reqVO.getParentId();
+            if (newParentId != null && isEntityTypeDescendant(newEntityType.getId(), newParentId)) {
+                throw new ServiceException(400, "不能将父级设为自己或子级");
+            }
+            newEntityType.setParentId(newParentId);
+        }
+
         // 验证
         if (!Objects.equals(oldCode, newEntityType.getCode()) && entityTypeMapper.existsByCodeExcludeId(newEntityType.getCode(), newEntityType.getId())) {
             throw new ServiceException(400, "业务类型编码已存在");
@@ -188,7 +202,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
             entityType.setAlias(StringUtils.hasText(reqVO.getAlias()) ? reqVO.getAlias() : null);
         }
         if (reqVO.getAssociationFields() != null) {
-            entityType.setAssociationFields(reqVO.getAssociationFields());
+            entityType.setAssociationFields(normalizeJsonFieldString(reqVO.getAssociationFields()));
         }
         if (reqVO.getParentId() != null) {
             entityType.setParentId(reqVO.getParentId());
@@ -201,7 +215,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
             entityType.setDedicatedTableName(reqVO.getDedicatedTableName());
         }
         if (reqVO.getPhysicalColumnMapping() != null) {
-            entityType.setPhysicalColumnMapping(reqVO.getPhysicalColumnMapping());
+            entityType.setPhysicalColumnMapping(normalizeJsonFieldString(reqVO.getPhysicalColumnMapping()));
         }
         if (reqVO.getEnableRuleEngine() != null) {
             entityType.setEnableRuleEngine(reqVO.getEnableRuleEngine());
@@ -353,6 +367,23 @@ public class EntityTypeServiceImpl implements EntityTypeService {
                     return vo;
                 })
                 .toList();
+    }
+
+    private boolean isEntityTypeDescendant(Long nodeId, Long candidateParentId) {
+        if (nodeId == null || candidateParentId == null) {
+            return false;
+        }
+        if (Objects.equals(nodeId, candidateParentId)) {
+            return true;
+        }
+        EntityTypeDO current = entityTypeMapper.selectById(candidateParentId);
+        while (current != null && current.getParentId() != null) {
+            if (Objects.equals(current.getParentId(), nodeId)) {
+                return true;
+            }
+            current = entityTypeMapper.selectById(current.getParentId());
+        }
+        return false;
     }
 
     /**
@@ -608,12 +639,12 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         entityType.setDescription(reqVO.getDescription());
         entityType.setIcon(reqVO.getIcon());
         entityType.setAlias(reqVO.getAlias());
-        entityType.setAssociationFields(reqVO.getAssociationFields());
+        entityType.setAssociationFields(normalizeJsonFieldString(reqVO.getAssociationFields()));
         entityType.setParentId(reqVO.getParentId());
         // Copy storage config fields
         entityType.setStorageType(reqVO.getStorageType());
         entityType.setDedicatedTableName(reqVO.getDedicatedTableName());
-        entityType.setPhysicalColumnMapping(reqVO.getPhysicalColumnMapping());
+        entityType.setPhysicalColumnMapping(normalizeJsonFieldString(reqVO.getPhysicalColumnMapping()));
         entityType.setEnableRuleEngine(reqVO.getEnableRuleEngine());
     }
 
@@ -662,5 +693,12 @@ public class EntityTypeServiceImpl implements EntityTypeService {
             log.warn("[createRelationFieldForEntityType][关联字段模板创建失败: {}, error={}]",
                     entityType.getCode(), e.getMessage());
         }
+    }
+
+    private String normalizeJsonFieldString(String json) {
+        if (!StringUtils.hasText(json)) {
+            return null;
+        }
+        return JSONUtil.toJsonStr(JSONUtil.parse(json));
     }
 }

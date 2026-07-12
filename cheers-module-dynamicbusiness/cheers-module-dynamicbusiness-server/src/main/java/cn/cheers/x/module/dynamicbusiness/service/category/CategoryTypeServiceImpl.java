@@ -9,6 +9,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryMapper;
+import cn.cheers.x.module.dynamicbusiness.framework.category.utils.CategoryUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -59,14 +60,16 @@ public class CategoryTypeServiceImpl implements CategoryTypeService {
         // 约定：顶层节点 name 使用分类类型名称，parentId=null
         CategoryDO top = new CategoryDO();
         top.setParentId(null);
+        top.setCode(categoryTypeDO.getCategoryTypeCode() + "_root");
         top.setName(categoryTypeDO.getName());
         top.setCategoryTypeCode(categoryTypeDO.getCategoryTypeCode());
         top.setStatus(categoryTypeDO.getStatus() != null ? categoryTypeDO.getStatus() : 1);
         top.setDescription(categoryTypeDO.getDescription());
         top.setSort(1);
         top.setLevel(1);
-        top.setTreePath(categoryTypeDO.getName());
         categoryMapper.insert(top);
+        top.setTreePath(CategoryUtils.buildIdTreePath(null, top.getId()));
+        categoryMapper.updateById(top);
 
         // 回写 topLevelCategoryId
         CategoryTypeDO update = new CategoryTypeDO();

@@ -10,8 +10,8 @@ import cn.iocoder.yudao.module.twin.dal.mysql.TwinMappingHistoryMapper;
 import cn.iocoder.yudao.module.twin.dal.mysql.TwinMappingMapper;
 import cn.iocoder.yudao.framework.common.exception.ServiceException;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.module.facility.management.api.FacilityApi;
-import cn.iocoder.yudao.module.facility.management.api.dto.FacilityRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.entity.EntityRpcApi;
+import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
 import cn.iocoder.yudao.module.scene.platform.api.ActorInstanceApi;
 import cn.iocoder.yudao.module.scene.platform.api.dto.ActorInstanceSimpleRespDTO;
 import jakarta.annotation.Resource;
@@ -39,19 +39,21 @@ public class TwinMappingServiceImpl implements TwinMappingService {
     private static final Integer FACILITY_ACTOR_MAPPING_TYPE = 1;
     private static final Integer ONE_TO_ONE_PRIMARY = 1;
 
+    private static final String ENTITY_TYPE_FACILITY = "facility";
+
     @Resource
     private TwinMappingMapper twinMappingMapper;
     @Resource
     private TwinMappingHistoryMapper twinMappingHistoryMapper;
     @Resource
-    private FacilityApi facilityApi;
+    private EntityRpcApi entityRpcApi;
     @Resource
     private ActorInstanceApi actorInstanceApi;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public TwinMappingRespVO bind(TwinMappingBindReqVO reqVO) {
-        FacilityRespDTO facility = requireFacility(reqVO.getFacilityId());
+        EntityRespDTO facility = requireFacility(reqVO.getFacilityId());
         ActorInstanceSimpleRespDTO actorInstance = requireActorInstance(reqVO.getActorInstanceId());
 
         TwinMappingDO facilityOccupied = twinMappingMapper.selectActiveByFacilityId(reqVO.getFacilityId());
@@ -125,7 +127,7 @@ public class TwinMappingServiceImpl implements TwinMappingService {
         List<TwinMappingDO> mappings = sceneId != null
                 ? twinMappingMapper.selectActiveBySceneId(sceneId)
                 : twinMappingMapper.selectActiveBySceneCode(sceneCode);
-        Map<Long, FacilityRespDTO> facilityMap = listFacilities(mappings.stream().map(TwinMappingDO::getFacilityId).toList());
+        Map<Long, EntityRespDTO> facilityMap = listFacilities(mappings.stream().map(TwinMappingDO::getFacilityId).toList());
         Map<Long, ActorInstanceSimpleRespDTO> actorMap = listActorInstances(mappings.stream().map(TwinMappingDO::getActorInstanceId).toList());
 
         TwinSceneMappingOverviewRespVO overview = new TwinSceneMappingOverviewRespVO();
@@ -180,7 +182,7 @@ public class TwinMappingServiceImpl implements TwinMappingService {
         twinMappingHistoryMapper.insert(history);
     }
 
-    private TwinMappingRespVO buildResp(TwinMappingDO mapping, FacilityRespDTO facility, ActorInstanceSimpleRespDTO actorInstance) {
+    private TwinMappingRespVO buildResp(TwinMappingDO mapping, EntityRespDTO facility, ActorInstanceSimpleRespDTO actorInstance) {
         TwinMappingRespVO vo = new TwinMappingRespVO();
         vo.setId(mapping.getId());
         vo.setMappingCode(mapping.getMappingCode());
@@ -202,8 +204,8 @@ public class TwinMappingServiceImpl implements TwinMappingService {
         return vo;
     }
 
-    private FacilityRespDTO requireFacility(Long facilityId) {
-        CommonResult<FacilityRespDTO> result = facilityApi.getFacility(facilityId);
+    private EntityRespDTO requireFacility(Long facilityId) {
+        CommonResult<EntityRespDTO> result = entityRpcApi.getEntity(facilityId, ENTITY_TYPE_FACILITY);
         if (result == null || !result.isSuccess() || result.getData() == null) {
             throw new ServiceException(400, "设施不存在: " + facilityId);
         }
@@ -218,10 +220,10 @@ public class TwinMappingServiceImpl implements TwinMappingService {
         return result.getData();
     }
 
-    private Map<Long, FacilityRespDTO> listFacilities(List<Long> ids) {
-        CommonResult<List<FacilityRespDTO>> result = facilityApi.getFacilitiesByCodes(ids.stream().map(String::valueOf).toList());
-        List<FacilityRespDTO> data = result == null || !result.isSuccess() || result.getData() == null ? List.of() : result.getData();
-        return data.stream().collect(Collectors.toMap(FacilityRespDTO::getId, Function.identity(), (a, b) -> a));
+    private Map<Long, EntityRespDTO> listFacilities(List<Long> ids) {
+        CommonResult<List<EntityRespDTO>> result = entityRpcApi.listEntitiesByIds(ids, ENTITY_TYPE_FACILITY);
+        List<EntityRespDTO> data = result == null || !result.isSuccess() || result.getData() == null ? List.of() : result.getData();
+        return data.stream().collect(Collectors.toMap(EntityRespDTO::getId, Function.identity(), (a, b) -> a));
     }
 
     private Map<Long, ActorInstanceSimpleRespDTO> listActorInstances(List<Long> ids) {

@@ -123,7 +123,6 @@ get_service_path() {
         ai) echo "yudao-module-ai/yudao-module-ai-server" ;;
         iot) echo "yudao-module-iot/yudao-module-iot-server" ;;
         alarm) echo "yudao-module-alarm/yudao-module-alarm-biz" ;;
-        facility) echo "yudao-module-facility-management/yudao-module-facility-management-server" ;;
         scene) echo "yudao-module-scene-platform/yudao-module-scene-platform-server" ;;
         twin) echo "yudao-module-twin/yudao-module-twin-biz" ;;
         inspection) echo "yudao-module-inspection-task/yudao-module-inspection-task-server" ;;
@@ -159,7 +158,6 @@ get_service_port() {
         ai) echo "58090" ;;
         iot) echo "58091" ;;
         alarm) echo "58097" ;;
-        facility) echo "58092" ;;
         scene) echo "58093" ;;
         twin) echo "58094" ;;
         inspection) echo "58095" ;;
@@ -180,24 +178,24 @@ KNOWN_SERVICES=(
     gateway system infra member bpm pay report mp product promotion trade statistics
     crm erp ai iot alarm dynamic
     platform platform-runtime platform-orchestration platform-policy platform-capability
-    facility scene twin inspection
+    scene twin inspection
 )
 CORE_START_SERVICES=(
     infra system gateway bpm alarm dynamic
     platform platform-runtime platform-orchestration platform-policy platform-capability
-    facility scene twin inspection
+    scene twin inspection
 )
 ALL_START_SERVICES=(
     system infra gateway member bpm pay report mp product promotion trade statistics
     crm erp ai iot alarm dynamic
     platform platform-runtime platform-orchestration platform-policy platform-capability
-    facility scene twin inspection
+    scene twin inspection
 )
 STOP_SERVICES=(
     gateway infra system member bpm pay report mp product promotion trade statistics
     crm erp ai iot alarm dynamic
     platform-orchestration platform-runtime platform-policy platform-capability platform
-    facility scene twin inspection
+    scene twin inspection
 )
 
 # 检查服务是否运行（必须处于 LISTEN，避免误判瞬时连接）
@@ -540,7 +538,7 @@ show_services() {
     echo "  3. gateway   - 网关服务（必需）"
     echo "  4. bpm       - 工作流服务（必需）"
     echo "  5. alarm     - 告警管理服务（必需）"
-    echo "  6. dynamic    - 动态业务服务（facility 等模块依赖）"
+    echo "  6. dynamic    - 动态业务服务（设施/设备等实体，twin 等模块依赖）"
     echo "  7. platform   - 平台资源库（组件/视图，别名 resource，58098）"
     echo "  8. platform-runtime - 平台 L4 运行时（58099）"
     echo "  9. platform-orchestration - 平台编排/排程 run（58104，依赖 runtime）"

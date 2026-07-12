@@ -169,6 +169,20 @@ public class ModelController {
         return success(modelService.listModelsByEntityType(entityTypeCode));
     }
 
+    @GetMapping("/list-uncategorized-by-category-type")
+    @Operation(
+        summary = "按分类体系查询未挂分类的模型",
+        description = "数据管理「未分类」：返回当前 categoryTypeCode 下未绑定任何分类节点的模型列表。"
+    )
+    @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
+    @Parameter(name = "categoryTypeCode", description = "分类体系编码（必填）", required = true, example = "equipment")
+    @PreAuthorize("@ss.hasPermission('system:model:query')")
+    public CommonResult<List<ModelRespVO>> listUncategorizedModelsByCategoryType(
+            @RequestParam("entityTypeCode") String entityTypeCode,
+            @RequestParam("categoryTypeCode") String categoryTypeCode) {
+        return success(modelService.listUncategorizedModelsByCategoryType(categoryTypeCode, entityTypeCode));
+    }
+
     @GetMapping("/list-all")
     @Operation(
         summary = "查询全部业务模型列表（不分页）",

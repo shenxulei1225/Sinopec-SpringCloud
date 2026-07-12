@@ -19,7 +19,9 @@ def run(script: str) -> None:
 def main() -> None:
     run("export_equipment_category_library.py")
     run("export_equipment_models_from_inventory_md.py")
-    print("done: category library + equipment models")
+    run("export_equipment_entities_from_corridor_dump.py")
+    run("export_equipment_category_entity_links.py")
+    print("done: category library + equipment models + equipment entities + category links")
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import cn.iocoder.yudao.framework.mybatis.core.type.JsonbMapTypeHandler;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -43,7 +43,7 @@ public class TwinMappingHistoryDO {
 
     private LocalDateTime occurredAt;
 
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(typeHandler = JsonbMapTypeHandler.class)
     private Map<String, Object> snapshotJson;
 
     private LocalDateTime createTime;

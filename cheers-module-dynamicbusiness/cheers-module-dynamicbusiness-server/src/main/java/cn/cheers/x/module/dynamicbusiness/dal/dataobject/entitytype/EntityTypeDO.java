@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype;
 
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import cn.iocoder.yudao.framework.mybatis.core.type.JsonbStringTypeHandler;
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.*;
@@ -19,7 +19,7 @@ import lombok.*;
  * 
  * @author yudao
  */
-@TableName("dynamic_entity_type")
+@TableName(value = "dynamic_entity_type", autoResultMap = true)
 @KeySequence("dynamic_entity_type_seq")
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -100,7 +100,7 @@ public class EntityTypeDO extends TenantBaseDO {
     /**
      * 可用的关联字段定义(JSON格式)
      */
-    @TableField(value = "association_fields", typeHandler = JacksonTypeHandler.class)
+    @TableField(value = "association_fields", typeHandler = JsonbStringTypeHandler.class)
     private String associationFields;
 
     /**
@@ -126,7 +126,7 @@ public class EntityTypeDO extends TenantBaseDO {
     /**
      * 物理列映射配置(JSON 格式)
      */
-    @TableField(value = "physical_column_mapping", typeHandler = JacksonTypeHandler.class)
+    @TableField(value = "physical_column_mapping", typeHandler = JsonbStringTypeHandler.class)
     private String physicalColumnMapping;
 
     /**

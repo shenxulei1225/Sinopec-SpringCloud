@@ -10,7 +10,7 @@ import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityFieldMapsSupport;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
-import cn.cheers.x.module.dynamicbusiness.framework.mybatis.JsonbMapTypeHandler;
+import cn.iocoder.yudao.framework.mybatis.core.type.JsonbMapTypeHandler;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

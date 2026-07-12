@@ -20,8 +20,12 @@ import java.util.List;
  *
  * <p>使用 FacilityQueryService 实现设施相关的查询逻辑。</p>
  */
+/**
+ * @deprecated 读 Facade 已迁移至 {@code dynamicbusiness-server} 的 {@link cn.cheers.x.module.dynamicbusiness.api.facility.FacilityApiImpl}。
+ */
+@Deprecated
 @Slf4j
-@Service
+// @Service — 已停用，避免与 dynamicbusiness Facade 重复注册
 public class FacilityApiImpl implements FacilityApi {
 
     @Resource

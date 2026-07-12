@@ -6744,12 +6744,93 @@ INSERT INTO dynamic_field (
   code, name, type, unit, description, source, status, max_relations,
   index_strategy, options, provider_code, semantic_type, tenant_id, creator
 ) VALUES (
-  'FLD-TSK-021', '关联路线', 'ENTITY_REF',
-  NULL, '巡检路线主数据（entityTypeCode=route）',
+  'FLD-TSK-021', '拓扑引用', 'STRING',
+  NULL, '已发布站场拓扑图快照 id（topologyRef）；路径规划输入',
+  'SYSTEM', 1,
+  NULL, 'NONE',
+  NULL, NULL,
+  'topology_ref', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  name = EXCLUDED.name,
+  type = EXCLUDED.type,
+  description = EXCLUDED.description,
+  semantic_type = EXCLUDED.semantic_type,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-TSK-024', '所属设施', 'ENTITY_REF',
+  NULL, '任务归属站场/厂区（facilityId）；与拓扑图归属一致',
   'SYSTEM', 1,
   1, 'NONE',
   NULL, NULL,
-  'route_id', 1, 'seed'
+  'facility_id', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  name = EXCLUDED.name,
+  type = EXCLUDED.type,
+  description = EXCLUDED.description,
+  semantic_type = EXCLUDED.semantic_type,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-TSK-025', '停留点列表', 'LONG_TEXT',
+  NULL, '路径规划停点 nodeId 列表（JSON 数组，对应拓扑 Station 节点）',
+  'SYSTEM', 1,
+  NULL, 'NONE',
+  NULL, NULL,
+  'stop_ids', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  name = EXCLUDED.name,
+  type = EXCLUDED.type,
+  description = EXCLUDED.description,
+  semantic_type = EXCLUDED.semantic_type,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-TSK-026', '机动剖面', 'ENUM',
+  NULL, '路径规划机动剖面（Mobility Profile）',
+  'SYSTEM', 1,
+  NULL, 'NONE',
+  '[{"label": "地面机器人", "value": "ROBOT_GROUND"}, {"label": "低空无人机", "value": "UAV_LOW"}, {"label": "人员", "value": "HUMAN"}]', NULL,
+  'mobility_profile_id', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  name = EXCLUDED.name,
+  type = EXCLUDED.type,
+  description = EXCLUDED.description,
+  options = EXCLUDED.options,
+  semantic_type = EXCLUDED.semantic_type,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-TSK-027', '路径规划结果', 'LONG_TEXT',
+  NULL, 'platform-routing 规划输出快照（Planned Route）；由任务服务在预览确认后写入，含有序停点与折线段',
+  'SYSTEM', 1,
+  NULL, 'NONE',
+  NULL, NULL,
+  'planned_route', 1, 'seed'
 )
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
@@ -6800,3 +6881,211 @@ DO UPDATE SET
   semantic_type = EXCLUDED.semantic_type,
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
+
+-- ---------- 巡检排期 patrol_schedule ----------
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-PSC-001', '排期模式', 'ENUM',
+  NULL, 'once=单次；cron=周期',
+  'SYSTEM', 1,
+  NULL, 'NONE',
+  '[{"label": "单次", "value": "once"}, {"label": "周期", "value": "cron"}]', NULL,
+  'schedule_mode', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET name = EXCLUDED.name, type = EXCLUDED.type, options = EXCLUDED.options, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-PSC-002', 'Cron 表达式', 'STRING',
+  NULL, 'mode=cron 时必填',
+  'SYSTEM', 1, NULL, 'NONE', NULL, NULL, 'cron_expr', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-PSC-003', '时区', 'STRING',
+  NULL, '默认 Asia/Shanghai',
+  'SYSTEM', 1, NULL, 'NONE', NULL, NULL, 'timezone', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-PSC-004', '单次开始时间', 'DATETIME',
+  NULL, 'mode=once 时必填',
+  'SYSTEM', 1, NULL, 'NONE', NULL, NULL, 'start_at', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+
+-- ---------- 巡检对象 patrol_object ----------
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-POB-001', '所属设施', 'ENTITY_REF',
+  NULL, '关联 facility id',
+  'SYSTEM', 1, 1, 'NONE', NULL, NULL, 'facility_id', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-POB-002', '关联设备', 'LONG_TEXT',
+  NULL, 'equipment id JSON 数组',
+  'SYSTEM', 1, NULL, 'NONE', NULL, NULL, 'equipment_ids', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-POB-003', '所属分区', 'ENTITY_REF',
+  NULL, '可选 zone id',
+  'SYSTEM', 1, 1, 'NONE', NULL, NULL, 'zone_id', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+
+-- ---------- 巡检点 patrol_point ----------
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-PPT-001', '所属设施', 'ENTITY_REF',
+  NULL, '关联 facility id',
+  'SYSTEM', 1, 1, 'NONE', NULL, NULL, 'facility_id', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-PPT-002', '拓扑版本', 'STRING',
+  NULL, '已发布 topology id',
+  'SYSTEM', 1, NULL, 'NONE', NULL, NULL, 'topology_ref', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-PPT-003', '停留点列表', 'LONG_TEXT',
+  NULL, 'topology Station nodeId JSON 数组',
+  'SYSTEM', 1, NULL, 'NONE', NULL, NULL, 'stop_ids', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-PPT-004', '机动剖面', 'ENUM',
+  NULL, '路径规划机动剖面',
+  'SYSTEM', 1, NULL, 'NONE',
+  '[{"label": "地面机器人", "value": "ROBOT_GROUND"}, {"label": "低空无人机", "value": "UAV_LOW"}, {"label": "人员", "value": "HUMAN"}]', NULL,
+  'mobility_profile_id', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET name = EXCLUDED.name, options = EXCLUDED.options, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+
+-- ---------- 任务 REF + 快照字段 ----------
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-TSK-028', '排期模板', 'ENTITY_REF',
+  NULL, 'patrol_schedule 模板 id',
+  'SYSTEM', 1, 1, 'NONE', NULL, NULL, 'schedule_template_ref', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-TSK-029', '巡检对象', 'ENTITY_REF',
+  NULL, 'patrol_object 模板 id',
+  'SYSTEM', 1, 1, 'NONE', NULL, NULL, 'patrol_object_ref', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-TSK-030', '巡检点', 'ENTITY_REF',
+  NULL, 'patrol_point 模板 id',
+  'SYSTEM', 1, 1, 'NONE', NULL, NULL, 'patrol_point_ref', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-TSK-031', '检查项', 'LONG_TEXT',
+  NULL, 'inspection_item id JSON 数组',
+  'SYSTEM', 1, NULL, 'NONE', NULL, NULL, 'inspection_item_refs', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-TSK-032', '排期快照', 'LONG_TEXT',
+  NULL, '任务启用时从排期模板展开',
+  'SYSTEM', 1, NULL, 'NONE', NULL, NULL, 'schedule_snapshot', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-TSK-033', '检查内容快照', 'LONG_TEXT',
+  NULL, '任务启用时从检查项展开',
+  'SYSTEM', 1, NULL, 'NONE', NULL, NULL, 'content_snapshot', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'FLD-TSK-034', '停留点快照', 'LONG_TEXT',
+  NULL, '任务启用时从巡检点展开',
+  'SYSTEM', 1, NULL, 'NONE', NULL, NULL, 'stop_snapshot', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+

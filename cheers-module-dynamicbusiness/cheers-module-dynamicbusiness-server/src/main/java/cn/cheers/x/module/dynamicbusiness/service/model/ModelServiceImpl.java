@@ -490,6 +490,30 @@ public class ModelServiceImpl implements ModelService {
         return result;
     }
 
+    @Override
+    public List<ModelRespVO> listUncategorizedModelsByCategoryType(String categoryTypeCode, String entityTypeCode) {
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
+            throw new ServiceException(400, "entityTypeCode 不能为空");
+        }
+        if (categoryTypeCode == null || categoryTypeCode.isBlank()) {
+            throw new ServiceException(400, "categoryTypeCode 不能为空");
+        }
+        List<ModelRespVO> allModels = listModelsByEntityType(entityTypeCode);
+        if (allModels.isEmpty()) {
+            return allModels;
+        }
+        List<Long> categorizedModelIds = modelCategoryRelationMapper.selectDistinctModelIdsByCategoryTypeCode(
+                categoryTypeCode, entityTypeCode);
+        Set<Long> categorized = categorizedModelIds == null ? Set.of()
+                : categorizedModelIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+        if (categorized.isEmpty()) {
+            return allModels;
+        }
+        return allModels.stream()
+                .filter(model -> model.getId() != null && !categorized.contains(model.getId()))
+                .toList();
+    }
+
     /**
      * 获取全部业务模型列表（不分页）
      */

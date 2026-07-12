@@ -6,7 +6,7 @@ import cn.iocoder.yudao.framework.tenant.core.aop.TenantIgnore;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import cn.iocoder.yudao.framework.mybatis.core.type.JsonbJsonTypeHandler;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -61,7 +61,7 @@ public class MailTemplateDO extends BaseDO {
     /**
      * 参数数组(自动根据内容生成)
      */
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(typeHandler = JsonbJsonTypeHandler.class)
     private List<String> params;
     /**
      * 状态

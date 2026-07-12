@@ -58,7 +58,7 @@ INSERT INTO dynamic_business (
   code, name, parent_id, node_kind, description, icon, alias, sort, status, tenant_id, creator
 ) VALUES (
   'patrol', '任务管理', NULL,
-  'LEAF', '巡检类任务定义（entityType=task，model=patrol_task）；路线/点位等主数据仍在本门户下',
+  'LEAF', '巡检类任务定义（entityType=task，model=patrol_task）；路径拓扑在 Scene/platform-topology，任务通过 topologyRef 与 stopIds 关联',
   'ep:baseball', '任务',
   0, 'active',
   1, 'seed'
@@ -252,58 +252,6 @@ INSERT INTO dynamic_business (
 ),
   'LEAF', NULL,
   'fa:calendar-check-o', '检查项',
-  0, 'active',
-  1, 'seed'
-)
-ON CONFLICT (code, tenant_id) WHERE deleted = false
-DO UPDATE SET
-  name = EXCLUDED.name,
-  parent_id = EXCLUDED.parent_id,
-  node_kind = EXCLUDED.node_kind,
-  description = EXCLUDED.description,
-  icon = EXCLUDED.icon,
-  alias = EXCLUDED.alias,
-  sort = EXCLUDED.sort,
-  status = EXCLUDED.status,
-  updater = 'seed',
-  update_time = CURRENT_TIMESTAMP;
-
-INSERT INTO dynamic_business (
-  code, name, parent_id, node_kind, description, icon, alias, sort, status, tenant_id, creator
-) VALUES (
-  'inspection_point', '巡检点位', (
-  SELECT pb.id FROM dynamic_business pb
-  WHERE pb.deleted = false AND pb.tenant_id = 1 AND pb.code = 'patrol'
-  LIMIT 1
-),
-  'LEAF', '',
-  'ep:calendar', '点位',
-  0, 'active',
-  1, 'seed'
-)
-ON CONFLICT (code, tenant_id) WHERE deleted = false
-DO UPDATE SET
-  name = EXCLUDED.name,
-  parent_id = EXCLUDED.parent_id,
-  node_kind = EXCLUDED.node_kind,
-  description = EXCLUDED.description,
-  icon = EXCLUDED.icon,
-  alias = EXCLUDED.alias,
-  sort = EXCLUDED.sort,
-  status = EXCLUDED.status,
-  updater = 'seed',
-  update_time = CURRENT_TIMESTAMP;
-
-INSERT INTO dynamic_business (
-  code, name, parent_id, node_kind, description, icon, alias, sort, status, tenant_id, creator
-) VALUES (
-  'route', '路线管理', (
-  SELECT pb.id FROM dynamic_business pb
-  WHERE pb.deleted = false AND pb.tenant_id = 1 AND pb.code = 'patrol'
-  LIMIT 1
-),
-  'LEAF', '',
-  'ep:burger', '路线',
   0, 'active',
   1, 'seed'
 )

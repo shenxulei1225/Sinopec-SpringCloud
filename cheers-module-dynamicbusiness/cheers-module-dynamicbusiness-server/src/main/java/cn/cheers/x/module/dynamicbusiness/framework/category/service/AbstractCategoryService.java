@@ -32,10 +32,12 @@ public abstract class AbstractCategoryService<
     @Transactional(rollbackFor = Exception.class)
     public Long createCategory(DO category) {
         assertCategoryType(category);
-        fillLevelAndPath(category);
+        fillLevelFromParent(category);
         checkLevelLimit(category.getLevel());
         validateUnique(category, true);
         getMapper().insert(category);
+        applyTreePath(category);
+        getMapper().updateById(category);
         evictCache(category.getCategoryTypeCode());
         return category.getId();
     }
@@ -45,9 +47,13 @@ public abstract class AbstractCategoryService<
         DO db = findCategory(id, updateObj.getCategoryTypeCode());
         assertSameCategoryType(db.getCategoryTypeCode(), updateObj.getCategoryTypeCode());
         updateObj.setId(id);
+        boolean parentChanged = !Objects.equals(db.getParentId(), updateObj.getParentId());
         fillLevelAndPathForUpdate(db, updateObj);
         validateUnique(updateObj, false);
         getMapper().updateById(updateObj);
+        if (parentChanged) {
+            updateChildrenPath(updateObj.getId(), updateObj.getTreePath(), updateObj.getLevel(), updateObj.getCategoryTypeCode());
+        }
         evictCache(updateObj.getCategoryTypeCode());
     }
 
@@ -94,7 +100,7 @@ public abstract class AbstractCategoryService<
         DO parent = parentId == null ? null : all.stream().filter(item -> Objects.equals(item.getId(), parentId)).findFirst().orElse(null);
         int newLevel = parent == null ? 1 : Objects.requireNonNullElse(parent.getLevel(), 0) + 1;
         checkLevelLimit(newLevel);
-        String newPath = CategoryUtils.generateTreePath(parent == null ? null : parent.getTreePath(), category.getName());
+        String newPath = CategoryUtils.buildIdTreePath(parent == null ? null : parent.getTreePath(), category.getId());
         category.setParentId(parentId);
         category.setLevel(newLevel);
         category.setTreePath(newPath);
@@ -148,11 +154,10 @@ public abstract class AbstractCategoryService<
         }
     }
 
-    private void fillLevelAndPath(DO category) {
+    private void fillLevelFromParent(DO category) {
         Long parentId = category.getParentId();
         if (parentId == null) {
             category.setLevel(1);
-            category.setTreePath(category.getName());
             category.setParentCode(null);
             return;
         }
@@ -162,18 +167,26 @@ public abstract class AbstractCategoryService<
         }
         assertSameCategoryType(parent.getCategoryTypeCode(), category.getCategoryTypeCode());
         category.setLevel(Objects.requireNonNullElse(parent.getLevel(), 0) + 1);
-        category.setTreePath(CategoryUtils.generateTreePath(parent.getTreePath(), category.getName()));
         category.setParentCode(parent.getCode());
+    }
+
+    private void applyTreePath(DO category) {
+        if (category.getId() == null) {
+            return;
+        }
+        Long parentId = category.getParentId();
+        if (parentId == null) {
+            category.setTreePath(CategoryUtils.buildIdTreePath(null, category.getId()));
+            return;
+        }
+        DO parent = getMapper().selectById(parentId);
+        category.setTreePath(CategoryUtils.buildIdTreePath(parent == null ? null : parent.getTreePath(), category.getId()));
     }
 
     private void fillLevelAndPathForUpdate(DO db, DO updateObj) {
         Long newParentId = updateObj.getParentId();
         if (Objects.equals(db.getParentId(), newParentId)) {
-            if (!Objects.equals(db.getName(), updateObj.getName())) {
-                updateObj.setTreePath(CategoryUtils.generateTreePath(extractParentPath(db.getTreePath()), updateObj.getName()));
-            } else {
-                updateObj.setTreePath(db.getTreePath());
-            }
+            updateObj.setTreePath(db.getTreePath());
             updateObj.setLevel(db.getLevel());
             updateObj.setParentCode(db.getParentCode());
             return;
@@ -187,18 +200,10 @@ public abstract class AbstractCategoryService<
         }
         int level = parent == null ? 1 : Objects.requireNonNullElse(parent.getLevel(), 0) + 1;
         checkLevelLimit(level);
-        String newPath = CategoryUtils.generateTreePath(parent == null ? null : parent.getTreePath(), updateObj.getName());
+        String newPath = CategoryUtils.buildIdTreePath(parent == null ? null : parent.getTreePath(), updateObj.getId());
         updateObj.setLevel(level);
         updateObj.setTreePath(newPath);
         updateObj.setParentCode(parent == null ? null : parent.getCode());
-    }
-
-    private String extractParentPath(String treePath) {
-        if (treePath == null) {
-            return null;
-        }
-        int idx = treePath.lastIndexOf('/');
-        return idx < 0 ? null : treePath.substring(0, idx);
     }
 
     private void validateUnique(DO category, boolean isCreate) {
@@ -249,7 +254,7 @@ public abstract class AbstractCategoryService<
         for (DO child : children) {
             int newLevel = parentLevel + 1;
             checkLevelLimit(newLevel);
-            String newPath = CategoryUtils.generateTreePath(parentPath, child.getName());
+            String newPath = CategoryUtils.buildIdTreePath(parentPath, child.getId());
             child.setLevel(newLevel);
             child.setTreePath(newPath);
             child.setParentCode(parentCode);

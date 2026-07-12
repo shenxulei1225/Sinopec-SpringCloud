@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import cn.cheers.x.module.platform.runtime.framework.mybatis.JsonbStringTypeHandler;
+import cn.iocoder.yudao.framework.mybatis.core.type.JsonbStringTypeHandler;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

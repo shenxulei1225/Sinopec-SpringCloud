@@ -1,12 +1,13 @@
 package cn.cheers.x.module.dynamicbusiness.dal.dataobject.computed;
 
+import cn.iocoder.yudao.framework.mybatis.core.type.JsonbJsonTypeHandler;
+import cn.iocoder.yudao.framework.mybatis.core.type.JsonbMapTypeHandler;
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.*;
 
 import java.util.List;
@@ -99,7 +100,7 @@ public class ComputedFieldDO extends TenantBaseDO {
      * JSON 格式，定义如何关联到当前 Entity
      * 例如：{"relation_field": "department_id", "current_field": "id"}
      */
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(typeHandler = JsonbMapTypeHandler.class)
     private Map<String, Object> relationCondition;
 
     /**
@@ -108,7 +109,7 @@ public class ComputedFieldDO extends TenantBaseDO {
      * JSON 格式，定义额外的筛选条件
      * 例如：[{"field": "status", "operator": "=", "value": "FAULT"}]
      */
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(typeHandler = JsonbJsonTypeHandler.class)
     private List<Map<String, Object>> filterCondition;
 
     // ========== 公式计算配置（compute_type = FORMULA 时使用）==========
@@ -126,7 +127,7 @@ public class ComputedFieldDO extends TenantBaseDO {
      * 
      * JSON 格式，记录公式中引用的所有字段编码
      */
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(typeHandler = JsonbJsonTypeHandler.class)
     private List<String> formulaFields;
 
     // ========== 结果配置 ==========

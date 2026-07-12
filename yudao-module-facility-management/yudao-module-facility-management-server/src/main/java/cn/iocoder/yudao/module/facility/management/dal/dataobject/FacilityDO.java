@@ -1,6 +1,5 @@
 package cn.iocoder.yudao.module.facility.management.dal.dataobject;
 
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -13,6 +12,7 @@ import lombok.EqualsAndHashCode;
  * 设施台账 DO
  *
  * <p>用于记录设施的基本信息，包括设备、仪表、建筑物等。</p>
+ * <p><strong>已废弃</strong>：主数据已迁移至动态业务 {@code ent_facility}；本 DO 仅保留给 legacy 写路径，勿扩展。</p>
  */
 @TableName("fac_facility")
 @KeySequence("fac_facility_seq")

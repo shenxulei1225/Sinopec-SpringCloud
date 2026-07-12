@@ -1,4 +1,4 @@
-package cn.cheers.x.module.platform.topology.framework.mybatis;
+package cn.iocoder.yudao.framework.mybatis.core.type;
 
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;

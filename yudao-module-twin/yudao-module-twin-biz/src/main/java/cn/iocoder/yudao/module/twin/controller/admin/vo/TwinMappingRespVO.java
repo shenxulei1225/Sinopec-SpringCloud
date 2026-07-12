@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.twin.controller.admin.vo;
 
-import cn.iocoder.yudao.module.facility.management.api.dto.FacilityRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
 import cn.iocoder.yudao.module.scene.platform.api.dto.ActorInstanceSimpleRespDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -27,6 +27,6 @@ public class TwinMappingRespVO {
     private Map<String, Object> extJson;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
-    private FacilityRespDTO facility;
+    private EntityRespDTO facility;
     private ActorInstanceSimpleRespDTO actorInstance;
 }

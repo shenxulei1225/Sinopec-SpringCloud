@@ -42,6 +42,12 @@ public enum EntityQueryScene {
     /** 数据管理三栏：分类范围（含子树，空 categoryIds 回退根分类）+ 可选 modelIds 过滤 */
     DATA_MGMT_ENTITIES_BY_CATEGORY_MODEL("DATA_MGMT_ENTITIES_BY_CATEGORY_MODEL", "数据管理：按分类范围查实体（可选模型过滤）"),
 
+    /** 数据管理：当前分类体系下全部有关联的实体（可选模型过滤） */
+    DATA_MGMT_ENTITIES_ALL_IN_CATEGORY_TYPE("DATA_MGMT_ENTITIES_ALL_IN_CATEGORY_TYPE", "数据管理：分类体系下全部关联实体"),
+
+    /** 数据管理：当前分类体系下未挂接分类的实体（可选模型过滤） */
+    DATA_MGMT_ENTITIES_UNCATEGORIZED("DATA_MGMT_ENTITIES_UNCATEGORIZED", "数据管理：未分类实体"),
+
     ;
 
     /**

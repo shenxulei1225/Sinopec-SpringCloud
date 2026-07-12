@@ -498,6 +498,22 @@ public interface ModelCategoryRelationMapper extends BaseMapperX<ModelCategoryRe
                                          @Param("entityTypeCode") String entityTypeCode);
 
     /**
+     * 按分类体系查询已挂接分类的全部 modelId（设备管理「全部分类」模型列/实体列补全路径）。
+     */
+    @Select("""
+            SELECT DISTINCT mcr.model_id
+            FROM dynamic_model_category_relation mcr
+            INNER JOIN dynamic_category c ON c.id = mcr.category_id AND c.deleted = FALSE
+            WHERE c.category_type_code = #{categoryTypeCode}
+              AND mcr.deleted = FALSE
+              AND mcr.entity_type_code = #{entityTypeCode}
+              AND UPPER(c.code) NOT LIKE '%UNCATEGORIZED%'
+            ORDER BY mcr.model_id ASC
+            """)
+    List<Long> selectDistinctModelIdsByCategoryTypeCode(@Param("categoryTypeCode") String categoryTypeCode,
+                                                         @Param("entityTypeCode") String entityTypeCode);
+
+    /**
      * 按分类范围和业务类型分页查询 modelId（兼容保留）。
      */
     @Deprecated

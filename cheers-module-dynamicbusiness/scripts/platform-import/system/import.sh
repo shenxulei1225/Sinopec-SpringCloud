@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 系统共用包 · 仅 seed（建表由 Flyway V1→V2→V3 负责，勿在此重复执行 DDL）
+# 系统共用包 · 仅 seed（建表由 Flyway V1→V2→V3→V4 负责，勿在此重复执行 DDL）
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -24,6 +24,7 @@ run "${SCRIPT_DIR}/seed/dynamic_group.sql"
 run "${SCRIPT_DIR}/seed/dynamic_group_relation.sql"
 run "${SCRIPT_DIR}/seed/dynamic_model.sql"
 run "${SCRIPT_DIR}/seed/dynamic_model_task.sql"
+run "${SCRIPT_DIR}/seed/dynamic_model_patrol.sql"
 run "${SCRIPT_DIR}/seed/dynamic_model_facility.sql"
 run "${SCRIPT_DIR}/seed/dynamic_model_region.sql"
 run "${SCRIPT_DIR}/seed/dynamic_category_equipment.generated.sql"
@@ -31,13 +32,22 @@ run "${SCRIPT_DIR}/seed/dynamic_model_equipment.generated.sql"
 run "${SCRIPT_DIR}/seed/dynamic_model_category_equipment.generated.sql"
 run "${SCRIPT_DIR}/seed/dynamic_category_task.sql"
 run "${SCRIPT_DIR}/seed/dynamic_category_region.sql"
+run "${SCRIPT_DIR}/seed/dynamic_category_patrol.sql"
 run "${SCRIPT_DIR}/seed/dynamic_category.sql"
 run "${SCRIPT_DIR}/seed/dynamic_category_type.sql"
+run "${SCRIPT_DIR}/seed/dynamic_category_tree_path_repair.sql"
 run "${SCRIPT_DIR}/seed/dynamic_business.sql"
+run "${SCRIPT_DIR}/seed/dynamic_business_patrol_mgmt.sql"
 run "${SCRIPT_DIR}/seed/dynamic_business_entry.sql"
 run "${SCRIPT_DIR}/seed/business_capability.sql"
-run "${SCRIPT_DIR}/seed/dynamic_entity_equipment_dev_sample.sql"
+run "${SCRIPT_DIR}/seed/dynamic_entity_equipment.generated.sql"
+run "${SCRIPT_DIR}/seed/dynamic_equipment_category_links.generated.sql"
 run "${SCRIPT_DIR}/seed/dynamic_entity_facility_dev_sample.sql"
+run "${SCRIPT_DIR}/seed/dynamic_seed_cleanup_legacy_patrol.sql"
+run "${SCRIPT_DIR}/seed/dynamic_entity_inspection_item_dev_sample.sql"
+run "${SCRIPT_DIR}/seed/dynamic_entity_patrol_dev_sample.sql"
 run "${SCRIPT_DIR}/seed/dynamic_entity_task_dev_sample.sql"
+run "${SCRIPT_DIR}/seed/dynamic_seed_retire_route_inspection_point.sql"
 
-echo "done: 系统共用 seed（前置：Flyway V1→V2→V3 已执行）"
+
+echo "done: 系统共用 seed（前置：Flyway V1→V2→V3→V4 已执行）"

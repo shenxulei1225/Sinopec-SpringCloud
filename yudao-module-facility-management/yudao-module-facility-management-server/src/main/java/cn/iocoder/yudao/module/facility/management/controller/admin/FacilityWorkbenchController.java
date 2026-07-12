@@ -20,11 +20,12 @@ import java.util.stream.Collectors;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
 
 /**
- * 设施工作台接口
- * <p>
- * 主要为前端 legacy 接口提供支持
+ * 设施工作台接口（legacy，读写 {@code fac_facility}）。
+ *
+ * @deprecated 已废弃。工作台请改接动态业务实体接口；跨模块读走 {@code FacilityApi} Facade（{@code ent_facility}）。
  */
-@Tag(name = "管理后台 - 设施工作台")
+@Deprecated
+@Tag(name = "管理后台 - 设施工作台（已废弃）")
 @RestController
 @RequestMapping("/facility")
 public class FacilityWorkbenchController {

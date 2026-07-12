@@ -158,24 +158,6 @@ INSERT INTO dynamic_entity_type_config (
   entity_type_code, name, storage_type, dedicated_table_name, strategy_bean_name,
   enable_rule_engine, description, status, physical_column_mapping, tenant_id, creator
 ) VALUES (
-  'inspection_point', '点位管理',
-  'DEDICATED', 'ent_inspection_point',
-  NULL, TRUE,
-  NULL, 1,
-  NULL, 1, 'seed'
-)
-ON CONFLICT (entity_type_code, tenant_id) WHERE deleted = false
-DO UPDATE SET
-  storage_type = EXCLUDED.storage_type,
-  dedicated_table_name = EXCLUDED.dedicated_table_name,
-  physical_column_mapping = EXCLUDED.physical_column_mapping,
-  updater = 'seed',
-  update_time = CURRENT_TIMESTAMP;
-
-INSERT INTO dynamic_entity_type_config (
-  entity_type_code, name, storage_type, dedicated_table_name, strategy_bean_name,
-  enable_rule_engine, description, status, physical_column_mapping, tenant_id, creator
-) VALUES (
   'maintenance', '维修管理',
   'DEDICATED', 'ent_maintenance',
   NULL, TRUE,
@@ -194,10 +176,64 @@ INSERT INTO dynamic_entity_type_config (
   entity_type_code, name, storage_type, dedicated_table_name, strategy_bean_name,
   enable_rule_engine, description, status, physical_column_mapping, tenant_id, creator
 ) VALUES (
+  'patrol_schedule', '巡检排期',
+  'DEDICATED', 'ent_patrol_schedule',
+  NULL, TRUE,
+  '排期模板与实例', 1,
+  NULL, 1, 'seed'
+)
+ON CONFLICT (entity_type_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  storage_type = EXCLUDED.storage_type,
+  dedicated_table_name = EXCLUDED.dedicated_table_name,
+  description = EXCLUDED.description,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_entity_type_config (
+  entity_type_code, name, storage_type, dedicated_table_name, strategy_bean_name,
+  enable_rule_engine, description, status, physical_column_mapping, tenant_id, creator
+) VALUES (
+  'patrol_object', '巡检对象',
+  'DEDICATED', 'ent_patrol_object',
+  NULL, TRUE,
+  '巡检对象模板', 1,
+  NULL, 1, 'seed'
+)
+ON CONFLICT (entity_type_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  storage_type = EXCLUDED.storage_type,
+  dedicated_table_name = EXCLUDED.dedicated_table_name,
+  description = EXCLUDED.description,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_entity_type_config (
+  entity_type_code, name, storage_type, dedicated_table_name, strategy_bean_name,
+  enable_rule_engine, description, status, physical_column_mapping, tenant_id, creator
+) VALUES (
+  'patrol_point', '巡检点',
+  'DEDICATED', 'ent_patrol_point',
+  NULL, TRUE,
+  '巡检点模板：topology_ref、stop_ids、mobility_profile_id', 1,
+  NULL, 1, 'seed'
+)
+ON CONFLICT (entity_type_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  storage_type = EXCLUDED.storage_type,
+  dedicated_table_name = EXCLUDED.dedicated_table_name,
+  description = EXCLUDED.description,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_entity_type_config (
+  entity_type_code, name, storage_type, dedicated_table_name, strategy_bean_name,
+  enable_rule_engine, description, status, physical_column_mapping, tenant_id, creator
+) VALUES (
   'patrol', '巡检域',
   'DEDICATED', 'ent_patrol',
   NULL, TRUE,
-  '巡检主数据（路线、点位等）；任务实例见 task', 1,
+  '巡检辅助主数据；任务定义见 task/patrol_task；路径拓扑见 platform-topology', 1,
   NULL, 1, 'seed'
 )
 ON CONFLICT (entity_type_code, tenant_id) WHERE deleted = false
@@ -216,7 +252,7 @@ INSERT INTO dynamic_entity_type_config (
   'task', '任务',
   'DEDICATED', 'ent_task',
   NULL, TRUE,
-  '任务定义实体；patrol_task 模型存排期/巡检内容/资源策略 JSON', 1,
+  '任务定义实体；patrol_task 含排期/巡检内容/资源策略及 topologyRef、stopIds 路径规划引用', 1,
   NULL, 1, 'seed'
 )
 ON CONFLICT (entity_type_code, tenant_id) WHERE deleted = false
@@ -255,24 +291,6 @@ INSERT INTO dynamic_entity_type_config (
   NULL, TRUE,
   'ent_region；树= dynamic_category；实例由分类绑实体产生', 1,
   '{"bbox": {"type": "JSONB", "column": "bbox"}, "region_code": {"type": "VARCHAR", "column": "region_code", "length": 255}, "region_name": {"type": "VARCHAR", "column": "region_name", "length": 255}, "region_type": {"type": "VARCHAR", "column": "region_type", "length": 100}, "boundary_crs": {"type": "VARCHAR", "column": "boundary_crs", "length": 32}, "centroid_lat": {"type": "DECIMAL", "scale": 8, "column": "centroid_lat", "precision": 12}, "centroid_lng": {"type": "DECIMAL", "scale": 8, "column": "centroid_lng", "precision": 12}, "max_height_m": {"type": "DECIMAL", "scale": 3, "column": "max_height_m", "precision": 10}, "min_height_m": {"type": "DECIMAL", "scale": 3, "column": "min_height_m", "precision": 10}, "boundary_status": {"type": "VARCHAR", "column": "boundary_status", "length": 32}, "boundary_geojson": {"type": "JSONB", "column": "boundary_geojson"}}', 1, 'seed'
-)
-ON CONFLICT (entity_type_code, tenant_id) WHERE deleted = false
-DO UPDATE SET
-  storage_type = EXCLUDED.storage_type,
-  dedicated_table_name = EXCLUDED.dedicated_table_name,
-  physical_column_mapping = EXCLUDED.physical_column_mapping,
-  updater = 'seed',
-  update_time = CURRENT_TIMESTAMP;
-
-INSERT INTO dynamic_entity_type_config (
-  entity_type_code, name, storage_type, dedicated_table_name, strategy_bean_name,
-  enable_rule_engine, description, status, physical_column_mapping, tenant_id, creator
-) VALUES (
-  'route', '路线管理',
-  'DEDICATED', 'ent_route',
-  NULL, TRUE,
-  NULL, 1,
-  NULL, 1, 'seed'
 )
 ON CONFLICT (entity_type_code, tenant_id) WHERE deleted = false
 DO UPDATE SET

@@ -126,22 +126,6 @@ INSERT INTO dynamic_entity_type_relation (
   source_entity_type_code, target_entity_type_code, relation_name,
   auto_create_field, default_field_name, tenant_id, creator
 ) VALUES (
-  'inspection_point', 'region',
-  '所属区域', TRUE,
-  '关联区域管理', 1, 'seed'
-)
-ON CONFLICT (source_entity_type_code, target_entity_type_code, tenant_id) WHERE deleted = false
-DO UPDATE SET
-  relation_name = EXCLUDED.relation_name,
-  auto_create_field = EXCLUDED.auto_create_field,
-  default_field_name = EXCLUDED.default_field_name,
-  updater = 'seed',
-  update_time = CURRENT_TIMESTAMP;
-
-INSERT INTO dynamic_entity_type_relation (
-  source_entity_type_code, target_entity_type_code, relation_name,
-  auto_create_field, default_field_name, tenant_id, creator
-) VALUES (
   'region', 'equipment',
   '区域-设备关联', TRUE,
   '所属设备管理', 1, 'seed'
@@ -161,6 +145,134 @@ INSERT INTO dynamic_entity_type_relation (
   'zone', 'equipment',
   '分区-设备', TRUE,
   '所属设备管理', 1, 'seed'
+)
+ON CONFLICT (source_entity_type_code, target_entity_type_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  relation_name = EXCLUDED.relation_name,
+  auto_create_field = EXCLUDED.auto_create_field,
+  default_field_name = EXCLUDED.default_field_name,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_entity_type_relation (
+  source_entity_type_code, target_entity_type_code, relation_name,
+  auto_create_field, default_field_name, tenant_id, creator
+) VALUES (
+  'task', 'facility',
+  '所属设施', TRUE,
+  '所属设施', 1, 'seed'
+)
+ON CONFLICT (source_entity_type_code, target_entity_type_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  relation_name = EXCLUDED.relation_name,
+  auto_create_field = EXCLUDED.auto_create_field,
+  default_field_name = EXCLUDED.default_field_name,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_entity_type_relation (
+  source_entity_type_code, target_entity_type_code, relation_name,
+  auto_create_field, default_field_name, tenant_id, creator
+) VALUES (
+  'task', 'patrol_schedule',
+  '排期模板', TRUE,
+  '排期模板', 1, 'seed'
+)
+ON CONFLICT (source_entity_type_code, target_entity_type_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  relation_name = EXCLUDED.relation_name,
+  auto_create_field = EXCLUDED.auto_create_field,
+  default_field_name = EXCLUDED.default_field_name,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_entity_type_relation (
+  source_entity_type_code, target_entity_type_code, relation_name,
+  auto_create_field, default_field_name, tenant_id, creator
+) VALUES (
+  'task', 'patrol_object',
+  '巡检对象', TRUE,
+  '巡检对象', 1, 'seed'
+)
+ON CONFLICT (source_entity_type_code, target_entity_type_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  relation_name = EXCLUDED.relation_name,
+  auto_create_field = EXCLUDED.auto_create_field,
+  default_field_name = EXCLUDED.default_field_name,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_entity_type_relation (
+  source_entity_type_code, target_entity_type_code, relation_name,
+  auto_create_field, default_field_name, tenant_id, creator
+) VALUES (
+  'task', 'patrol_point',
+  '巡检点', TRUE,
+  '巡检点', 1, 'seed'
+)
+ON CONFLICT (source_entity_type_code, target_entity_type_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  relation_name = EXCLUDED.relation_name,
+  auto_create_field = EXCLUDED.auto_create_field,
+  default_field_name = EXCLUDED.default_field_name,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_entity_type_relation (
+  source_entity_type_code, target_entity_type_code, relation_name,
+  auto_create_field, default_field_name, tenant_id, creator
+) VALUES (
+  'task', 'inspection_item',
+  '检查项', TRUE,
+  '检查项', 1, 'seed'
+)
+ON CONFLICT (source_entity_type_code, target_entity_type_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  relation_name = EXCLUDED.relation_name,
+  auto_create_field = EXCLUDED.auto_create_field,
+  default_field_name = EXCLUDED.default_field_name,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_entity_type_relation (
+  source_entity_type_code, target_entity_type_code, relation_name,
+  auto_create_field, default_field_name, tenant_id, creator
+) VALUES (
+  'patrol_point', 'facility',
+  '所属设施', TRUE,
+  '所属设施', 1, 'seed'
+)
+ON CONFLICT (source_entity_type_code, target_entity_type_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  relation_name = EXCLUDED.relation_name,
+  auto_create_field = EXCLUDED.auto_create_field,
+  default_field_name = EXCLUDED.default_field_name,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_entity_type_relation (
+  source_entity_type_code, target_entity_type_code, relation_name,
+  auto_create_field, default_field_name, tenant_id, creator
+) VALUES (
+  'patrol_object', 'facility',
+  '所属设施', TRUE,
+  '所属设施', 1, 'seed'
+)
+ON CONFLICT (source_entity_type_code, target_entity_type_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  relation_name = EXCLUDED.relation_name,
+  auto_create_field = EXCLUDED.auto_create_field,
+  default_field_name = EXCLUDED.default_field_name,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_entity_type_relation (
+  source_entity_type_code, target_entity_type_code, relation_name,
+  auto_create_field, default_field_name, tenant_id, creator
+) VALUES (
+  'patrol_object', 'equipment',
+  '关联设备', TRUE,
+  '关联设备', 1, 'seed'
 )
 ON CONFLICT (source_entity_type_code, target_entity_type_code, tenant_id) WHERE deleted = false
 DO UPDATE SET

@@ -1,7 +1,8 @@
-package cn.cheers.x.module.dynamicbusiness.framework.mybatis;
+package cn.iocoder.yudao.framework.mybatis.core.type;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.TypeReference;
+import cn.hutool.core.util.StrUtil;
+import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.MappedJdbcTypes;
@@ -26,7 +27,7 @@ public class JsonbMapTypeHandler extends BaseTypeHandler<Map<String, Object>> {
             throws SQLException {
         PGobject json = new PGobject();
         json.setType("jsonb");
-        json.setValue(JSON.toJSONString(parameter));
+        json.setValue(JsonUtils.toJsonString(parameter));
         ps.setObject(i, json);
     }
 
@@ -46,9 +47,9 @@ public class JsonbMapTypeHandler extends BaseTypeHandler<Map<String, Object>> {
     }
 
     public static Map<String, Object> parse(String value) {
-        if (value == null || value.isBlank()) {
+        if (StrUtil.isBlank(value)) {
             return null;
         }
-        return JSON.parseObject(value, TYPE_REF);
+        return JsonUtils.parseObject(value, TYPE_REF);
     }
 }

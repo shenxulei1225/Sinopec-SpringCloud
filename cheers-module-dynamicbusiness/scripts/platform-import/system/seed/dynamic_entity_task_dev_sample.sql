@@ -81,9 +81,13 @@ FROM (
         'FLD-TSK-023', 'POLICY-SET-DAILY-01',
         'FLD-TSK-007', '2026-07-01 08:00:00',
         'FLD-TSK-008', '2026-07-01 12:00:00',
-        'FLD-TSK-018', '{"version":1,"mode":"cron","cron":"0 8 * * 1-5","timezone":"Asia/Shanghai"}',
-        'FLD-TSK-019', '{"version":1,"checkpoints":[{"id":"cp-tank-a1","name":"储罐区外观与标识","required":true},{"id":"cp-tank-a2","name":"防火堤完好性","required":true}]}',
-        'FLD-TSK-020', '{"version":1,"policyMode":"pool","preferredAssigneeRole":"inspector","maxConcurrent":2}'
+        'FLD-TSK-024', '{"entityTypeCode":"facility","id":1}',
+        'FLD-TSK-028', '{"entityTypeCode":"patrol_schedule","id":201}',
+        'FLD-TSK-029', '{"entityTypeCode":"patrol_object","id":301}',
+        'FLD-TSK-030', '{"entityTypeCode":"patrol_point","id":501}',
+        'FLD-TSK-031', '[{"entityTypeCode":"inspection_item","id":101},{"entityTypeCode":"inspection_item","id":102}]',
+        'FLD-TSK-020', '{"version":1,"policyMode":"pool","preferredAssigneeRole":"inspector","maxConcurrent":2}',
+        'FLD-TSK-027', '{"version":1,"topologyRef":"topo_facility001_v1","mobilityProfileId":"ROBOT_GROUND","orderedStopIds":["n_sta_001","n_sta_002"],"totalDistanceMeters":420.5,"segments":[{"fromStopId":"n_sta_001","toStopId":"n_sta_002","distanceMeters":420.5,"polyline":[]}],"plannedAt":"2026-07-11T08:00:00+08:00"}'
       )::text
     ),
     (
@@ -100,8 +104,9 @@ FROM (
         'FLD-TSK-023', 'POLICY-SET-DAILY-02',
         'FLD-TSK-007', '2026-07-05 09:00:00',
         'FLD-TSK-008', '2026-07-05 17:00:00',
-        'FLD-TSK-018', '{"version":1,"mode":"cron","cron":"0 9 * * *","timezone":"Asia/Shanghai"}',
-        'FLD-TSK-019', '{"version":1,"checkpoints":[{"id":"cp-pump-1","name":"泵运行声音与振动","required":true},{"id":"cp-pipe-1","name":"管廊支架与保温","required":false}]}',
+        'FLD-TSK-028', '{"entityTypeCode":"patrol_schedule","id":201}',
+        'FLD-TSK-030', '{"entityTypeCode":"patrol_point","id":502}',
+        'FLD-TSK-031', '[{"entityTypeCode":"inspection_item","id":101}]',
         'FLD-TSK-020', '{"version":1,"policyMode":"fixed","assigneeIds":[1]}'
       )::text
     ),
@@ -116,8 +121,8 @@ FROM (
         'FLD-TSK-004', '待派工',
         'FLD-TSK-005', '紧急',
         'FLD-TSK-022', 'draft',
-        'FLD-TSK-018', '{"version":1,"mode":"once","startAt":"2026-07-12T08:00:00+08:00"}',
-        'FLD-TSK-019', '{"version":1,"checkpoints":[{"id":"cp-valve-1","name":"关键阀门密封与泄漏点","required":true}]}',
+        'FLD-TSK-028', '{"entityTypeCode":"patrol_schedule","id":201}',
+        'FLD-TSK-031', '[{"entityTypeCode":"inspection_item","id":102}]',
         'FLD-TSK-020', '{"version":1,"policyMode":"pool","preferredAssigneeRole":"senior_inspector"}'
       )::text
     ),
@@ -135,8 +140,8 @@ FROM (
         'FLD-TSK-023', 'POLICY-SET-NIGHT-01',
         'FLD-TSK-007', '2026-07-08 22:00:00',
         'FLD-TSK-008', '2026-07-09 02:00:00',
-        'FLD-TSK-018', '{"version":1,"mode":"cron","cron":"0 22 * * 0,3,6","timezone":"Asia/Shanghai"}',
-        'FLD-TSK-019', '{"version":1,"checkpoints":[{"id":"cp-light-1","name":"应急照明回路抽检","required":true}]}',
+        'FLD-TSK-028', '{"entityTypeCode":"patrol_schedule","id":201}',
+        'FLD-TSK-031', '[{"entityTypeCode":"inspection_item","id":101}]',
         'FLD-TSK-020', '{"version":1,"policyMode":"pool","preferredAssigneeRole":"night_shift"}'
       )::text
     ),
@@ -151,8 +156,8 @@ FROM (
         'FLD-TSK-004', '待验收',
         'FLD-TSK-005', '中',
         'FLD-TSK-022', 'enabled',
-        'FLD-TSK-018', '{"version":1,"mode":"cron","cron":"0 10 * * 6,0","timezone":"Asia/Shanghai"}',
-        'FLD-TSK-019', '{"version":1,"checkpoints":[{"id":"cp-fire-1","name":"灭火器压力与有效期","required":true},{"id":"cp-fire-2","name":"消防栓出水试验","required":false}]}',
+        'FLD-TSK-028', '{"entityTypeCode":"patrol_schedule","id":201}',
+        'FLD-TSK-031', '[{"entityTypeCode":"inspection_item","id":101},{"entityTypeCode":"inspection_item","id":102}]',
         'FLD-TSK-020', '{"version":1,"policyMode":"pool","preferredAssigneeRole":"inspector"}'
       )::text
     )

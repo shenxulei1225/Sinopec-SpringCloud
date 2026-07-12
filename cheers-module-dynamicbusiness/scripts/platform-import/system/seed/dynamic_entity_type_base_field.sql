@@ -1211,27 +1211,6 @@ INSERT INTO dynamic_entity_type_base_field (
   entity_type_code, field_code, field_name, data_type, required, default_value,
   description, type_config, sort_order, status, tenant_id, creator
 ) VALUES (
-  'inspection_point', 'REL_REGION',
-  '所属区域', 'REF_Multi',
-  FALSE, NULL,
-  NULL, '{"refField": "F-cc746ce0224145af88d5428d0b03213a", "dataFormat": "labeled", "supportLabels": true, "allowCustomLabels": true}',
-  900, 1,
-  1, 'seed'
-)
-ON CONFLICT (entity_type_code, field_code, tenant_id) WHERE deleted = false
-DO UPDATE SET
-  field_name = EXCLUDED.field_name,
-  data_type = EXCLUDED.data_type,
-  required = EXCLUDED.required,
-  type_config = EXCLUDED.type_config,
-  sort_order = EXCLUDED.sort_order,
-  updater = 'seed',
-  update_time = CURRENT_TIMESTAMP;
-
-INSERT INTO dynamic_entity_type_base_field (
-  entity_type_code, field_code, field_name, data_type, required, default_value,
-  description, type_config, sort_order, status, tenant_id, creator
-) VALUES (
   'maintenance', 'actual_end_time',
   '实际完成时间', 'DATETIME',
   FALSE, NULL,
@@ -2382,3 +2361,21 @@ DO UPDATE SET
   sort_order = EXCLUDED.sort_order,
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_entity_type_base_field (
+  entity_type_code, field_code, field_name, data_type, required, default_value,
+  description, type_config, sort_order, status, tenant_id, creator
+) VALUES
+  ('inspection_item', 'is_template', '是否模板', 'BOOLEAN', FALSE, 'false', 'true=供任务选择的检查项模板', NULL, 0, 1, 1, 'seed'),
+  ('patrol_schedule', 'is_template', '是否模板', 'BOOLEAN', FALSE, 'false', 'true=排期模板', NULL, 0, 1, 1, 'seed'),
+  ('patrol_object', 'is_template', '是否模板', 'BOOLEAN', FALSE, 'false', 'true=巡检对象模板', NULL, 0, 1, 1, 'seed'),
+  ('patrol_point', 'is_template', '是否模板', 'BOOLEAN', FALSE, 'false', 'true=巡检点模板', NULL, 0, 1, 1, 'seed')
+ON CONFLICT (entity_type_code, field_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  field_name = EXCLUDED.field_name,
+  data_type = EXCLUDED.data_type,
+  description = EXCLUDED.description,
+  sort_order = EXCLUDED.sort_order,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+

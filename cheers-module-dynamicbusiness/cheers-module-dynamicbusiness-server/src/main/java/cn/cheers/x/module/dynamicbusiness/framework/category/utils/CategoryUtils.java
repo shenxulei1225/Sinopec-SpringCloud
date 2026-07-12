@@ -98,6 +98,24 @@ public final class CategoryUtils {
         children.forEach(child -> sortChildrenByVO(child, comparator));
     }
 
+    /**
+     * 按分类 id 生成 tree_path（格式 {@code /1/677/282/}），与改名无关。
+     */
+    public static String buildIdTreePath(String parentPath, Long categoryId) {
+        if (categoryId == null) {
+            throw new IllegalArgumentException("categoryId is required");
+        }
+        String segment = categoryId + "/";
+        if (parentPath == null || parentPath.isEmpty()) {
+            return "/" + segment;
+        }
+        return parentPath.endsWith("/") ? parentPath + segment : parentPath + "/" + segment;
+    }
+
+    /**
+     * @deprecated 旧实现按名称拼接，改名会导致子树前缀失效；请用 {@link #buildIdTreePath(String, Long)}。
+     */
+    @Deprecated
     public static String generateTreePath(String parentPath, String name) {
         if (parentPath == null || parentPath.isEmpty()) {
             return name;

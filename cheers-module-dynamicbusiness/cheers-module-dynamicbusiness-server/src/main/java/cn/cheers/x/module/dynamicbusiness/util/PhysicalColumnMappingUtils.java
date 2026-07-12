@@ -83,6 +83,19 @@ public final class PhysicalColumnMappingUtils {
     }
 
     /**
+     * 解析 DO 中已反序列化的物理列映射（String 或 Map）
+     */
+    public static Map<String, PhysicalColumnConfig> parseMapping(Object value) {
+        if (value == null) {
+            return Collections.emptyMap();
+        }
+        if (value instanceof String text) {
+            return parseMapping(text);
+        }
+        return parseMapping(JSONUtil.toJsonStr(value));
+    }
+
+    /**
      * 解析单个列配置
      * 
      * @param configObj JSON 对象

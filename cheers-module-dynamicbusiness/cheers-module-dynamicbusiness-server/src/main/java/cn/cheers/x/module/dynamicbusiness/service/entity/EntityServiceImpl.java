@@ -38,6 +38,7 @@ import cn.cheers.x.module.dynamicbusiness.service.entity.sync.EntitySyncService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryEntityLinkService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryTypeService;
+import cn.cheers.x.module.dynamicbusiness.util.DataMgmtCategoryReservedNodes;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
@@ -396,6 +397,56 @@ public class EntityServiceImpl implements EntityService {
                         applyResultDetail(dataMgmtEntities, detail),
                         detail.getCode());
             }
+
+            /** 数据管理：分类体系下全部有关联实体 + 可选 modelIds */
+            case DATA_MGMT_ENTITIES_ALL_IN_CATEGORY_TYPE: {
+                if (entityTypeCode == null || entityTypeCode.isBlank()) {
+                    throw new ServiceException(400, "DATA_MGMT_ENTITIES_ALL_IN_CATEGORY_TYPE 场景下 entityTypeCode 不能为空");
+                }
+                String dataMgmtAllCategoryTypeCode = (categoryTypeCode == null || categoryTypeCode.isBlank())
+                        ? entityTypeCode : categoryTypeCode;
+                if (shape == EntityQueryResultShape.PAGE) {
+                    PageResult<EntityRespVO> pagedAll = queryDataMgmtEntitiesAllInCategoryType(
+                            dataMgmtAllCategoryTypeCode, entityTypeCode, modelIds,
+                            keyword, filters, effectivePageNo, effectivePageSize, true);
+                    return EntitySceneQueryRespVO.page(applyResultDetail(pagedAll, detail), detail.getCode());
+                }
+                PageResult<EntityRespVO> fullAll = queryDataMgmtEntitiesAllInCategoryType(
+                        dataMgmtAllCategoryTypeCode, entityTypeCode, modelIds,
+                        keyword, filters, null, null, false);
+                List<EntityRespVO> allEntities = fullAll.getList();
+                if (shape == EntityQueryResultShape.TREE) {
+                    return EntitySceneQueryRespVO.tree(
+                            applyResultDetail(EntityTreeBuilder.buildTree(allEntities, EntityTreeBuilder.SortMode.LOCAL_SIBLING_SORT), detail),
+                            detail.getCode());
+                }
+                return EntitySceneQueryRespVO.list(applyResultDetail(allEntities, detail), detail.getCode());
+            }
+
+            /** 数据管理：分类体系下未挂接分类的实体 + 可选 modelIds */
+            case DATA_MGMT_ENTITIES_UNCATEGORIZED: {
+                if (entityTypeCode == null || entityTypeCode.isBlank()) {
+                    throw new ServiceException(400, "DATA_MGMT_ENTITIES_UNCATEGORIZED 场景下 entityTypeCode 不能为空");
+                }
+                String dataMgmtUncatCategoryTypeCode = (categoryTypeCode == null || categoryTypeCode.isBlank())
+                        ? entityTypeCode : categoryTypeCode;
+                if (shape == EntityQueryResultShape.PAGE) {
+                    PageResult<EntityRespVO> pagedUncat = queryDataMgmtEntitiesUncategorized(
+                            dataMgmtUncatCategoryTypeCode, entityTypeCode, modelIds,
+                            keyword, filters, effectivePageNo, effectivePageSize, true);
+                    return EntitySceneQueryRespVO.page(applyResultDetail(pagedUncat, detail), detail.getCode());
+                }
+                PageResult<EntityRespVO> fullUncat = queryDataMgmtEntitiesUncategorized(
+                        dataMgmtUncatCategoryTypeCode, entityTypeCode, modelIds,
+                        keyword, filters, null, null, false);
+                List<EntityRespVO> uncategorizedEntities = fullUncat.getList();
+                if (shape == EntityQueryResultShape.TREE) {
+                    return EntitySceneQueryRespVO.tree(
+                            applyResultDetail(EntityTreeBuilder.buildTree(uncategorizedEntities, EntityTreeBuilder.SortMode.LOCAL_SIBLING_SORT), detail),
+                            detail.getCode());
+                }
+                return EntitySceneQueryRespVO.list(applyResultDetail(uncategorizedEntities, detail), detail.getCode());
+            }
             
                 // 1.2 场景二： Pattern B：按分类查询模型下的实体列表（单/多分类分流），支持搜索功能
             case PATTERN_B_ENTITIES_BY_CATEGORY:
@@ -646,6 +697,97 @@ public class EntityServiceImpl implements EntityService {
                 orderedCandidateEntityIds, entityTypeCode, keyword, filters, pageNo, pageSize);
     }
 
+    /** 保留 primary 顺序，追加 supplemental 中未出现的 id。 */
+    private List<Long> mergeDistinctOrderedEntityIds(List<Long> primary, List<Long> supplemental) {
+        if (supplemental == null || supplemental.isEmpty()) {
+            return primary == null ? new ArrayList<>() : primary;
+        }
+        if (primary == null || primary.isEmpty()) {
+            return new ArrayList<>(supplemental);
+        }
+        LinkedHashSet<Long> merged = new LinkedHashSet<>(primary);
+        merged.addAll(supplemental);
+        return new ArrayList<>(merged);
+    }
+
+    /**
+     * 数据管理：当前分类体系下全部有关联实体（relation ∪ link ∪ 模型挂分类）+ 可选 modelIds 过滤。
+     */
+    private PageResult<EntityRespVO> queryDataMgmtEntitiesAllInCategoryType(String categoryTypeCode,
+                                                                            String entityTypeCode,
+                                                                            List<Long> modelIds,
+                                                                            String keyword,
+                                                                            List<FieldFilterReqVO> filters,
+                                                                            Integer pageNo,
+                                                                            Integer pageSize,
+                                                                            boolean allowDirectPaging) {
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
+            return new PageResult<>(new ArrayList<>(), 0L);
+        }
+        if (categoryTypeCode == null || categoryTypeCode.isBlank()) {
+            return new PageResult<>(new ArrayList<>(), 0L);
+        }
+        List<CategoryDO> categories = categoryMapper.selectByCategoryTypeCode(categoryTypeCode);
+        List<Long> allCategoryIds = DataMgmtCategoryReservedNodes.filterQueryableCategoryIds(categories);
+        if (allCategoryIds.isEmpty()) {
+            return new PageResult<>(new ArrayList<>(), 0L);
+        }
+
+        List<Long> orderedCandidateEntityIds = dataMgmtEntityQueryRepository.listOrderedEntityIdsByCategoryScope(
+                allCategoryIds, entityTypeCode, normalizeModelIds(modelIds));
+        orderedCandidateEntityIds = mergeDistinctOrderedEntityIds(
+                orderedCandidateEntityIds,
+                dataMgmtEntityQueryRepository.listEntityIdsViaModelCategoryInCategoryType(
+                        categoryTypeCode, entityTypeCode, normalizeModelIds(modelIds)));
+
+        if (allowDirectPaging && canPageDirectly(keyword, filters)) {
+            Integer pn = normalizePageNo(pageNo);
+            Integer ps = normalizePageSize(pageSize);
+            return pageByOrderedIds(orderedCandidateEntityIds, entityTypeCode, pn, ps);
+        }
+        return queryEntitiesByOrderedCandidateIds(
+                orderedCandidateEntityIds, entityTypeCode, keyword, filters, pageNo, pageSize);
+    }
+
+    /**
+     * 数据管理：当前分类体系下未挂接任何分类的实体 + 可选 modelIds 过滤。
+     */
+    private PageResult<EntityRespVO> queryDataMgmtEntitiesUncategorized(String categoryTypeCode,
+                                                                        String entityTypeCode,
+                                                                        List<Long> modelIds,
+                                                                        String keyword,
+                                                                        List<FieldFilterReqVO> filters,
+                                                                        Integer pageNo,
+                                                                        Integer pageSize,
+                                                                        boolean allowDirectPaging) {
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
+            return new PageResult<>(new ArrayList<>(), 0L);
+        }
+        if (categoryTypeCode == null || categoryTypeCode.isBlank()) {
+            return new PageResult<>(new ArrayList<>(), 0L);
+        }
+        List<Long> uncategorizedEntityIds = collectDataMgmtUncategorizedEntityIdsByCategoryType(
+                categoryTypeCode, entityTypeCode);
+        List<Long> modelFilter = normalizeModelIds(modelIds);
+        if (modelFilter != null && !modelFilter.isEmpty()) {
+            Set<Long> allowedModelIds = new HashSet<>(modelFilter);
+            List<EntityDO> entities = entityRepository.findByIds(uncategorizedEntityIds, entityTypeCode);
+            uncategorizedEntityIds = entities.stream()
+                    .filter(entity -> entity.getModelId() != null && allowedModelIds.contains(entity.getModelId()))
+                    .map(EntityDO::getId)
+                    .filter(Objects::nonNull)
+                    .toList();
+        }
+
+        if (allowDirectPaging && canPageDirectly(keyword, filters)) {
+            Integer pn = normalizePageNo(pageNo);
+            Integer ps = normalizePageSize(pageSize);
+            return pageByOrderedIds(uncategorizedEntityIds, entityTypeCode, pn, ps);
+        }
+        return queryEntitiesByOrderedCandidateIds(
+                uncategorizedEntityIds, entityTypeCode, keyword, filters, pageNo, pageSize);
+    }
+
     /**
      * 对多个输入分类做“含子树”展开，并按输入顺序稳定合并去重。
      */
@@ -709,54 +851,38 @@ public class EntityServiceImpl implements EntityService {
      *
      * <p><b>顺序规则</b>：分类顺序 -> 模型顺序 -> 实体ID顺序。</p>
      */
+    /**
+     * Pattern B：按分类查实体时，必须在分类范围内取 entity↔category 关联（relation ∪ link），
+     * 再与分类下可用模型交叉过滤；不可仅按 modelId 扫全表实体。
+     */
     private List<Long> collectPatternBCategoryOrderedEntityIds(List<Long> categoryIds, String categoryTypeCode,
                                                                String entityTypeCode) {
-        // Step 1) 参数校验
         if (entityTypeCode == null || entityTypeCode.isBlank()) {
             return new ArrayList<>();
         }
 
-        /** Step 2: 按分类拿到“有顺序的模型ID列表
-        *  按照输入categoryIds 的分类顺序 -> 获取分类内排序的模型列表 orderedModelIds）
-        */
+        List<Long> normalizedCategoryIds = normalizeCategoryIdsOrUseRootCategory(categoryIds, categoryTypeCode);
+        if (normalizedCategoryIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<Long> expandedCategoryIds = expandCategoryIdsWithDescendants(normalizedCategoryIds, categoryTypeCode);
+        if (expandedCategoryIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
         List<Long> orderedModelIds = modelService
                 .queryOrderedModelIdsByCategoriesInBusiness(categoryIds, categoryTypeCode, entityTypeCode, null, null)
                 .getList();
         log.info("[PATTERN_B_TRACE] collectPatternBCategoryOrderedEntityIds model stage: categoryTypeCode={}, entityTypeCode={}, categoryIds={}, orderedModelCount={}",
                 categoryTypeCode, entityTypeCode, categoryIds, orderedModelIds == null ? 0 : orderedModelIds.size());
 
-        if (orderedModelIds.isEmpty()) {
-            return new ArrayList<>();
-        }
+        List<Long> modelFilter = (orderedModelIds == null || orderedModelIds.isEmpty()) ? null : orderedModelIds;
+        List<Long> orderedEntityIds = dataMgmtEntityQueryRepository.listOrderedEntityIdsByCategoryScope(
+                expandedCategoryIds, entityTypeCode, modelFilter);
 
-        // Step 5) 按模型顺序获取候选 entityIds（模型内按实体ID升序稳定排序）
-        List<EntityDO> entities = entityRepository.findByModelIds(orderedModelIds, entityTypeCode);
-        if (entities == null || entities.isEmpty()) {
-            return new ArrayList<>();
-        }
-        Map<Long, List<EntityDO>> entitiesByModelId = entities.stream()
-                .filter(e -> e.getModelId() != null)
-                .collect(Collectors.groupingBy(EntityDO::getModelId));
-
-        List<Long> orderedEntityIds = new ArrayList<>();
-        for (Long modelId : orderedModelIds) {
-            List<EntityDO> modelEntities = entitiesByModelId.get(modelId);
-            if (modelEntities == null || modelEntities.isEmpty()) {
-                continue;
-            }
-            modelEntities.sort(Comparator.comparing(e -> e.getId() == null ? Long.MAX_VALUE : e.getId()));
-            for (EntityDO entity : modelEntities) {
-                if (entity.getId() != null) {
-                    orderedEntityIds.add(entity.getId());
-                }
-            }
-        }
-        if (orderedEntityIds.isEmpty()) {
-            return new ArrayList<>();
-        }
         log.info("[PATTERN_B_TRACE] collectPatternBCategoryOrderedEntityIds entity stage: entityTypeCode={}, orderedEntityCount={}",
-                entityTypeCode, orderedEntityIds.size());
-        return orderedEntityIds;
+                entityTypeCode, orderedEntityIds == null ? 0 : orderedEntityIds.size());
+        return orderedEntityIds == null ? new ArrayList<>() : orderedEntityIds;
     }
 
     /**
@@ -773,6 +899,30 @@ public class EntityServiceImpl implements EntityService {
         return allEntities.stream()
                 .map(EntityDO::getId)
                 .filter(Objects::nonNull)
+                .toList();
+    }
+
+    /**
+     * 数据管理未分类：当前分类体系下未挂接任何分类的实体（全量 − 已分类，覆盖 A/C 直挂与 B 模型挂分类）。
+     */
+    private List<Long> collectDataMgmtUncategorizedEntityIdsByCategoryType(String categoryTypeCode,
+                                                                           String entityTypeCode) {
+        List<Long> allEntityIds = collectAllEntityIdsByEntityType(entityTypeCode);
+        if (allEntityIds.isEmpty()) {
+            return allEntityIds;
+        }
+        PageResult<EntityRespVO> categorized = queryDataMgmtEntitiesAllInCategoryType(
+                categoryTypeCode, entityTypeCode, null, null, null, null, null, false);
+        Set<Long> categorizedIds = categorized.getList() == null ? Set.of()
+                : categorized.getList().stream()
+                .map(EntityRespVO::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (categorizedIds.isEmpty()) {
+            return new ArrayList<>(allEntityIds);
+        }
+        return allEntityIds.stream()
+                .filter(id -> !categorizedIds.contains(id))
                 .toList();
     }
 
