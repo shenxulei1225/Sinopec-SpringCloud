@@ -191,6 +191,10 @@ public interface ErrorCodeConstants {
     ErrorCode BASE_FIELD_VALIDATION_FAILED = new ErrorCode(1_002_031_000, "固定列字段验证失败：{}");
     ErrorCode BASE_FIELD_REQUIRED = new ErrorCode(1_002_031_001, "固定列字段 {} 不能为空");
     ErrorCode BASE_FIELD_FORMAT_ERROR = new ErrorCode(1_002_031_002, "固定列字段 {} 格式错误：{}");
+    ErrorCode BASE_FIELD_LIBRARY_ID_REQUIRED = new ErrorCode(1_002_031_003, "新增固定列字段必须从字段库选择，请提供 libraryFieldId");
+    ErrorCode BASE_FIELD_LIBRARY_NOT_FOUND = new ErrorCode(1_002_031_004, "字段库中不存在该字段");
+    ErrorCode BASE_FIELD_LIBRARY_ENTITY_MISMATCH = new ErrorCode(1_002_031_005, "所选字段库条目不属于当前业务类型：{}");
+    ErrorCode BASE_FIELD_LIBRARY_METADATA_READONLY = new ErrorCode(1_002_031_006, "固定列字段的编码、类型以字段库为准，不可手动修改；显示名称可按业务类型设置别名");
 
     // ========== 关联字段库 1-002-032-000 ==========
     ErrorCode RELATION_FIELD_NOT_EXISTS = new ErrorCode(1_002_032_000, "关联字段不存在");

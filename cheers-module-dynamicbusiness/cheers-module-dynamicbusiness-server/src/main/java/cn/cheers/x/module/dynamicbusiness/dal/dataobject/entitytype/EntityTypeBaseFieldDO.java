@@ -46,12 +46,14 @@ public class EntityTypeBaseFieldDO extends TenantBaseDO {
     private String entityTypeCode;
 
     /**
-     * 字段编码
-     * 
-     * 对应数据库列名,使用驼峰命名
-     * 例如:code, areaId, manufacturer, healthScore
+     * 字段编码（与字段库 dynamic_field.code 一致）
      */
     private String fieldCode;
+
+    /**
+     * 字段库字段 ID（权威关联）
+     */
+    private Long libraryFieldId;
 
     /**
      * 字段显示名称
@@ -74,6 +76,26 @@ public class EntityTypeBaseFieldDO extends TenantBaseDO {
      * - REFERENCE: 引用类型(关联其他模型)
      */
     private String dataType;
+
+    /**
+     * 是否必填
+     */
+    private Boolean required;
+
+    /**
+     * 是否可搜索（列表）
+     */
+    private Boolean isSearchable;
+
+    /**
+     * 是否可筛选（列表）
+     */
+    private Boolean isFilterable;
+
+    /**
+     * 是否可排序（列表）
+     */
+    private Boolean isSortable;
 
     /**
      * 默认值

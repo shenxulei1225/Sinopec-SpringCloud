@@ -158,6 +158,7 @@ public class ModelFieldAssignmentController {
         rulesReqVO.setRequired(reqVO.getRequired());
         rulesReqVO.setIsSearchable(reqVO.getIsSearchable());
         rulesReqVO.setIsSortable(reqVO.getIsSortable());
+        rulesReqVO.setIsFilterable(reqVO.getIsFilterable());
         rulesReqVO.setDefaultValue(reqVO.getDefaultValue());
         rulesReqVO.setValidationRules(reqVO.getValidationRules());
         // 注意：fieldGroupId 已移除，分组关联应通过 ModelFieldGroupAssignmentController 管理

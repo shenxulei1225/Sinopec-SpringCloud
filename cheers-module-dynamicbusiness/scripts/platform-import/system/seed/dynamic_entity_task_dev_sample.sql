@@ -88,7 +88,7 @@ FROM (
         'FLD-TSK-031', '[{"entityTypeCode":"inspection_item","id":101},{"entityTypeCode":"inspection_item","id":102}]',
         'FLD-TSK-020', '{"version":1,"policyMode":"pool","preferredAssigneeRole":"inspector","maxConcurrent":2}',
         'FLD-TSK-027', '{"version":1,"topologyRef":"topo_facility001_v1","mobilityProfileId":"ROBOT_GROUND","orderedStopIds":["n_sta_001","n_sta_002"],"totalDistanceMeters":420.5,"segments":[{"fromStopId":"n_sta_001","toStopId":"n_sta_002","distanceMeters":420.5,"polyline":[]}],"plannedAt":"2026-07-11T08:00:00+08:00"}'
-      )::text
+      )
     ),
     (
       910002,
@@ -108,7 +108,7 @@ FROM (
         'FLD-TSK-030', '{"entityTypeCode":"patrol_point","id":502}',
         'FLD-TSK-031', '[{"entityTypeCode":"inspection_item","id":101}]',
         'FLD-TSK-020', '{"version":1,"policyMode":"fixed","assigneeIds":[1]}'
-      )::text
+      )
     ),
     (
       910003,
@@ -124,7 +124,7 @@ FROM (
         'FLD-TSK-028', '{"entityTypeCode":"patrol_schedule","id":201}',
         'FLD-TSK-031', '[{"entityTypeCode":"inspection_item","id":102}]',
         'FLD-TSK-020', '{"version":1,"policyMode":"pool","preferredAssigneeRole":"senior_inspector"}'
-      )::text
+      )
     ),
     (
       910004,
@@ -143,7 +143,7 @@ FROM (
         'FLD-TSK-028', '{"entityTypeCode":"patrol_schedule","id":201}',
         'FLD-TSK-031', '[{"entityTypeCode":"inspection_item","id":101}]',
         'FLD-TSK-020', '{"version":1,"policyMode":"pool","preferredAssigneeRole":"night_shift"}'
-      )::text
+      )
     ),
     (
       910005,
@@ -159,7 +159,7 @@ FROM (
         'FLD-TSK-028', '{"entityTypeCode":"patrol_schedule","id":201}',
         'FLD-TSK-031', '[{"entityTypeCode":"inspection_item","id":101},{"entityTypeCode":"inspection_item","id":102}]',
         'FLD-TSK-020', '{"version":1,"policyMode":"pool","preferredAssigneeRole":"inspector"}'
-      )::text
+      )
     )
 ) AS v(id, code, name, tree_path, sort, custom_fields)
 JOIN dynamic_model m

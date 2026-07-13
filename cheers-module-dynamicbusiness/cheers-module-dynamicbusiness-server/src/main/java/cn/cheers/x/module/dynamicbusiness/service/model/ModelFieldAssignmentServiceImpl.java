@@ -6,6 +6,7 @@ import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionU
 import static cn.cheers.x.module.dynamicbusiness.enums.ErrorCodeConstants.*;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -28,6 +29,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldAs
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFilterFieldMetaRespVO;
 import cn.cheers.x.module.dynamicbusiness.convert.field.FieldConvert;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
@@ -51,6 +53,7 @@ import cn.cheers.x.module.dynamicbusiness.service.relation.RelationFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.relation.RelationFieldLibraryService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 
 /**
  * 模型字段分配 Service 实现类
@@ -378,27 +381,9 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         }
 
         List<ModelFieldAssignmentRespVO> result = new ArrayList<>();
+        Set<String> coveredBaseLibraryCodes = new HashSet<>();
 
-        // 1. 获取固定列字段（来自业务类型配置,自动继承）
-        // 只有专用存储类型（DEDICATED）才有固定列字段
-        if (model.getEntityTypeCode() != null) {
-            EntityTypeDO entityType = entityTypeMapper.selectByCode(model.getEntityTypeCode());
-            if (entityType != null) {
-                StorageTypeEnum storageType = StorageTypeEnum.getByCode(entityType.getStorageType());
-                if (storageType != null && storageType.isDedicated()) {
-                    // 获取该业务类型的固定列字段
-                    List<EntityTypeBaseFieldRespVO> baseFields = 
-                            entityTypeBaseFieldService.listByEntityTypeCode(model.getEntityTypeCode());
-                    
-                    for (EntityTypeBaseFieldRespVO baseField : baseFields) {
-                        ModelFieldAssignmentRespVO respVO = convertBaseFieldToAssignmentRespVO(baseField, model.getEntityTypeCode());
-                        result.add(respVO);
-                    }
-                }
-            }
-        }
-
-        // 2. 获取用户添加的扩展字段
+        // 1. 模型字段分配（含固定列 BASE 与扩展 CUSTOM / 关联 RELATION）
         List<ModelFieldAssignmentDO> assignments = modelFieldAssignmentMapper.selectByModelId(modelId);
         if (!assignments.isEmpty()) {
             // 查询字段详情
@@ -440,13 +425,25 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 respVO.setDefaultValue(assignment.getDefaultValue());
                 respVO.setValidationRules(assignment.getValidationRules());
                 respVO.setSort(assignment.getSort());
-                // 设置字段来源标识（FR-139, FR-141）
-                respVO.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_CUSTOM);
-                respVO.setEditable(true);   // 扩展字段可编辑
-                respVO.setDeletable(true);  // 扩展字段可删除
-                
+                boolean isBaseAssignment =
+                        ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE.equals(assignment.getFieldSource());
+                if (isBaseAssignment) {
+                    respVO.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE);
+                    // 固定列不可从模型移除，但模型级规则（必填/搜索/排序/筛选）可在此配置
+                    respVO.setEditable(true);
+                    respVO.setDeletable(false);
+                    String registeredFieldCode = registeredFieldCodeForLibrary(model.getEntityTypeCode(), field);
+                    respVO.setFieldCode(registeredFieldCode);
+                    coveredBaseLibraryCodes.add(field.getCode());
+                    applyBaseFieldDisplayAlias(respVO, model.getEntityTypeCode(), registeredFieldCode);
+                } else {
+                    respVO.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_CUSTOM);
+                    respVO.setEditable(true);
+                    respVO.setDeletable(true);
+                }
+
                 // 如果是关联字段（ENTITY_REF 或 ENTITY_REF_MULTI 类型）,填充关联信息
-                if (FieldTypeEnum.isEntityRef(field.getType())) {
+                if (!isBaseAssignment && FieldTypeEnum.isEntityRef(field.getType())) {
                     // 关联字段信息从权威来源获取：RelationFieldLibrary / ModelRelation
                     if (assignment.getRefLibraryId() != null) {
                         // 1. 从 RelationFieldLibrary 查询
@@ -479,6 +476,27 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 }
                 
                 result.add(respVO);
+            }
+        }
+
+        // 2. 兜底：尚未写入模型分配的固定列（专用表自动继承）
+        if (model.getEntityTypeCode() != null) {
+            EntityTypeDO entityType = entityTypeMapper.selectByCode(model.getEntityTypeCode());
+            if (entityType != null) {
+                StorageTypeEnum storageType = StorageTypeEnum.getByCode(entityType.getStorageType());
+                if (storageType != null && storageType.isDedicated()) {
+                    List<EntityTypeBaseFieldRespVO> baseFields =
+                            entityTypeBaseFieldService.listByEntityTypeCode(model.getEntityTypeCode());
+                    for (EntityTypeBaseFieldRespVO baseField : baseFields) {
+                        String libraryCode = baseField.getLibraryFieldCode() != null
+                                ? baseField.getLibraryFieldCode()
+                                : baseField.getFieldCode();
+                        if (libraryCode != null && coveredBaseLibraryCodes.contains(libraryCode)) {
+                            continue;
+                        }
+                        result.add(convertBaseFieldToAssignmentRespVO(baseField, model.getEntityTypeCode()));
+                    }
+                }
             }
         }
 
@@ -523,20 +541,59 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
      * @param sourceEntityTypeCode 源业务类型编码（用于查询关联关系）
      * @return 模型字段分配响应 VO
      */
+    private void applyBaseFieldDisplayAlias(
+            ModelFieldAssignmentRespVO respVO, String entityTypeCode, String physicalFieldCode) {
+        if (respVO == null || respVO.getField() == null || !StringUtils.hasText(entityTypeCode)
+                || !StringUtils.hasText(physicalFieldCode)) {
+            return;
+        }
+        EntityTypeBaseFieldDO baseField =
+                entityTypeBaseFieldService.getBaseFieldByCode(entityTypeCode, physicalFieldCode);
+        if (baseField != null && StringUtils.hasText(baseField.getFieldName())) {
+            respVO.getField().setName(baseField.getFieldName());
+        }
+    }
+
+    private String registeredFieldCodeForLibrary(String entityTypeCode, FieldDO libraryField) {
+        if (libraryField == null || !StringUtils.hasText(entityTypeCode)) {
+            return null;
+        }
+        for (EntityTypeBaseFieldDO baseField : entityTypeBaseFieldService.getBaseFieldsByEntityTypeCode(entityTypeCode)) {
+            if (baseField.getLibraryFieldId() != null
+                    && Objects.equals(baseField.getLibraryFieldId(), libraryField.getId())) {
+                return baseField.getFieldCode();
+            }
+        }
+        return libraryField.getCode();
+    }
+
     private ModelFieldAssignmentRespVO convertBaseFieldToAssignmentRespVO(EntityTypeBaseFieldRespVO baseField, String sourceEntityTypeCode) {
         ModelFieldAssignmentRespVO respVO = new ModelFieldAssignmentRespVO();
-        
-        // 创建一个虚拟的 FieldRespVO 用于兼容现有结构
-        FieldRespVO fieldRespVO = new FieldRespVO();
-        fieldRespVO.setId(baseField.getId()); // 使用固定列字段的 ID
-        fieldRespVO.setCode(baseField.getFieldCode()); // 使用 fieldCode 作为 code
-        fieldRespVO.setName(baseField.getFieldName());
-        fieldRespVO.setType(baseField.getDataType());
-        fieldRespVO.setDescription(baseField.getDescription());
-        fieldRespVO.setSource("BASE"); // 标记为固定列字段来源
-        fieldRespVO.setStatus(baseField.getStatus());
-        fieldRespVO.setCreateTime(baseField.getCreateTime());
-        
+
+        FieldRespVO fieldRespVO;
+        FieldDO libraryField = baseField.getLibraryFieldId() != null
+                ? fieldMapper.selectById(baseField.getLibraryFieldId())
+                : (StringUtils.hasText(baseField.getFieldCode()) ? fieldMapper.selectByCode(baseField.getFieldCode()) : null);
+        if (libraryField != null) {
+            fieldRespVO = FieldConvert.INSTANCE.convert(libraryField);
+            if (StringUtils.hasText(baseField.getFieldName())
+                    && !Objects.equals(baseField.getFieldName(), libraryField.getName())) {
+                fieldRespVO.setName(baseField.getFieldName());
+            }
+        } else {
+            // 字段库尚未补齐时保留虚拟字段，避免接口不可用
+            fieldRespVO = new FieldRespVO();
+            fieldRespVO.setCode(baseField.getFieldCode());
+            fieldRespVO.setName(baseField.getFieldName());
+            fieldRespVO.setType(baseField.getDataType());
+            fieldRespVO.setDescription(baseField.getDescription());
+            fieldRespVO.setSource("BASE");
+            fieldRespVO.setStatus(baseField.getStatus());
+            fieldRespVO.setCreateTime(baseField.getCreateTime());
+            log.warn("[convertBaseFieldToAssignmentRespVO] 固定列未找到字段库记录: entityType={}, fieldCode={}",
+                    sourceEntityTypeCode, baseField.getFieldCode());
+        }
+
         respVO.setField(fieldRespVO);
         respVO.setRequired(baseField.getRequired());
         // 固定列字段的 isSearchable 和 isSortable 使用字段 definition 中的默认值（通常固定列字段都是可查询和可排序的）

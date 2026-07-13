@@ -15,6 +15,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldUpdateR
 import cn.cheers.x.module.dynamicbusiness.convert.field.FieldConvert;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
+import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.event.FieldDefinitionChangedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -34,6 +35,9 @@ import java.util.Set;
 @Slf4j
 public class FieldServiceImpl implements FieldService {
 
+    /** ENTITY_REF 关联目标 entityTypeCode 持久化在 provider_code */
+    private static final String DYNAMIC_ENTITY_PROVIDER_PREFIX = "dynamic-entity:";
+
     @Resource
     private FieldMapper fieldMapper;
 
@@ -52,8 +56,8 @@ public class FieldServiceImpl implements FieldService {
         validateUnit(reqVO.getType(), reqVO.getUnit());
         validateEnumOptions(reqVO.getType(), reqVO.getOptions());
         Long tenantId = getTenantId();
-        checkNameUnique(reqVO.getName(), null, tenantId);
         FieldDO field = FieldConvert.INSTANCE.convert(reqVO);
+        applyEntityRefProvider(field, reqVO.getTargetEntityType());
         // 自动生成 code（code 由系统生成，不通过前端传入）
         String code = generateCode();
         // 确保生成的 code 唯一（虽然概率极低，但为了安全起见）
@@ -88,9 +92,9 @@ public class FieldServiceImpl implements FieldService {
         validateUnit(reqVO.getType(), reqVO.getUnit());
         validateEnumOptions(reqVO.getType(), reqVO.getOptions());
         Long tenantId = getTenantId();
-        checkNameUnique(reqVO.getName(), reqVO.getId(), tenantId);
         String oldType = db.getType();
         FieldDO update = FieldConvert.INSTANCE.convert(reqVO);
+        applyEntityRefProvider(update, reqVO.getTargetEntityType());
         update.setTenantId(tenantId);
         fieldMapper.updateById(update);
         // 清除缓存
@@ -129,19 +133,23 @@ public class FieldServiceImpl implements FieldService {
         // 先尝试从缓存获取
         FieldDO cached = FieldCacheHelper.getCachedField(stringRedisTemplate, id);
         if (cached != null) {
-            return FieldConvert.INSTANCE.convert(cached);
+            FieldRespVO vo = FieldConvert.INSTANCE.convert(cached);
+            enrichEntityRefTarget(vo, cached);
+            return vo;
         }
         // 缓存未命中，从数据库获取
         FieldDO db = getFieldDO(id);
         // 写入缓存
         FieldCacheHelper.cacheField(stringRedisTemplate, db);
-        return FieldConvert.INSTANCE.convert(db);
+        FieldRespVO vo = FieldConvert.INSTANCE.convert(db);
+        enrichEntityRefTarget(vo, db);
+        return vo;
     }
 
     @Override
     public List<FieldRespVO> search(String keyword, String type, String source, Integer status) {
         List<FieldDO> list = fieldMapper.search(keyword, type, source, status);
-        return FieldConvert.INSTANCE.convertList(list);
+        return enrichEntityRefTargetList(FieldConvert.INSTANCE.convertList(list), list);
     }
 
     @Override
@@ -152,7 +160,8 @@ public class FieldServiceImpl implements FieldService {
     @Override
     public PageResult<FieldRespVO> page(FieldPageReqVO reqVO) {
         PageResult<FieldDO> page = fieldMapper.selectPage(reqVO, reqVO.getKeyword(), reqVO.getType(), reqVO.getSource(), reqVO.getStatus());
-        return new PageResult<>(FieldConvert.INSTANCE.convertList(page.getList()), page.getTotal());
+        List<FieldRespVO> list = enrichEntityRefTargetList(FieldConvert.INSTANCE.convertList(page.getList()), page.getList());
+        return new PageResult<>(list, page.getTotal());
     }
 
     @Override
@@ -232,13 +241,6 @@ public class FieldServiceImpl implements FieldService {
                 throw new ServiceException(400, "选项的 value 必须唯一，重复值: " + value);
             }
             values.add(value);
-        }
-    }
-
-    private void checkNameUnique(String name, Long id, Long tenantId) {
-        FieldDO exist = fieldMapper.selectByName(name, tenantId);
-        if (exist != null && !Objects.equals(exist.getId(), id)) {
-            throw new ServiceException(400, "字段名称已存在");
         }
     }
 
@@ -367,6 +369,40 @@ public class FieldServiceImpl implements FieldService {
             log.warn("[publishFieldChangedEvent][发布字段定义变更事件失败: fieldId={}, changeType={}, error={}]", 
                     field.getId(), changeType, e.getMessage());
         }
+    }
+
+    // ================= ENTITY_REF 关联目标 =================
+
+    private void applyEntityRefProvider(FieldDO field, String targetEntityType) {
+        if (field == null || !FieldTypeEnum.isEntityRef(field.getType())) {
+            return;
+        }
+        if (StringUtils.isNotBlank(targetEntityType)) {
+            field.setProviderCode(DYNAMIC_ENTITY_PROVIDER_PREFIX + targetEntityType.trim());
+        }
+    }
+
+    private void enrichEntityRefTarget(FieldRespVO vo, FieldDO field) {
+        if (vo == null || field == null || StringUtils.isNotBlank(vo.getTargetEntityType())) {
+            return;
+        }
+        String providerCode = field.getProviderCode();
+        if (providerCode != null && providerCode.startsWith(DYNAMIC_ENTITY_PROVIDER_PREFIX)) {
+            String code = providerCode.substring(DYNAMIC_ENTITY_PROVIDER_PREFIX.length()).trim();
+            if (!code.isEmpty()) {
+                vo.setTargetEntityType(code);
+            }
+        }
+    }
+
+    private List<FieldRespVO> enrichEntityRefTargetList(List<FieldRespVO> vos, List<FieldDO> fields) {
+        if (vos == null || fields == null || vos.size() != fields.size()) {
+            return vos;
+        }
+        for (int i = 0; i < vos.size(); i++) {
+            enrichEntityRefTarget(vos.get(i), fields.get(i));
+        }
+        return vos;
     }
 }
 

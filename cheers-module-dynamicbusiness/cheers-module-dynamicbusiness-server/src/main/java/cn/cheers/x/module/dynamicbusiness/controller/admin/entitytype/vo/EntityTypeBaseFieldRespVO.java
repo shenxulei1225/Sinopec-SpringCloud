@@ -68,6 +68,15 @@ public class EntityTypeBaseFieldRespVO {
     @Schema(description = "是否必填", example = "true")
     private Boolean required;
 
+    @Schema(description = "是否可搜索", example = "true")
+    private Boolean isSearchable;
+
+    @Schema(description = "是否可筛选", example = "true")
+    private Boolean isFilterable;
+
+    @Schema(description = "是否可排序", example = "true")
+    private Boolean isSortable;
+
     @Schema(description = "创建时间")
     private LocalDateTime createTime;
 
@@ -84,4 +93,13 @@ public class EntityTypeBaseFieldRespVO {
 
     @Schema(description = "是否可删除(固定列字段不可删除)", example = "false")
     private Boolean deletable;
+
+    @Schema(description = "字段库字段 ID", example = "3681")
+    private Long libraryFieldId;
+
+    @Schema(description = "字段库 code", example = "FLD-BASE-facility-address")
+    private String libraryFieldCode;
+
+    @Schema(description = "字段库默认名称", example = "联系电话")
+    private String libraryFieldName;
 }

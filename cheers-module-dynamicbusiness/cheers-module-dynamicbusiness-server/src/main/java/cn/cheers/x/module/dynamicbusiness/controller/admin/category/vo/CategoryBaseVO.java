@@ -50,6 +50,9 @@ public class CategoryBaseVO {
     @Schema(description = "关联的 Model ID，定义该分类节点的字段结构（模式C）", example = "1")
     private Long entityModelId;
 
+    @Schema(description = "绑定的实体 ID（模式C）", example = "1001")
+    private Long entityId;
+
     @Schema(description = "自定义字段（模式C），当 isEntity=true 时使用，格式：{\"field_code\":\"value\"}")
     private Map<String, Object> customFields;
 }

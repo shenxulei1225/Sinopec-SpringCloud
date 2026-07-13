@@ -1,61 +1,87 @@
 -- 开发联调 · 福建管道设施样例（来源：设备分类参考资料/工作范围及技术要求.docx）
--- 西三线 / 海西二期站场；REF_REGION 挂对应管道运营区域节点
--- 幂等：按 code upsert
+-- 管道线路与站场均为 facility；站场 REF_REGION 挂福建省管网（entity id 100024）
+-- 管道 ↔ 站场层级见 dynamic_category_facility_fujian.sql（Pattern C）
+-- 中心站（实施参考）：宁德分输站、安溪分输站、常山分输站、泉港油库、海沧分输站、漳州分输清管站、福州末站、莆田分输清管站、龙岩分输清管站
+-- 幂等：按 id upsert
 
 SET search_path TO dynamicbusiness;
 
 INSERT INTO ent_facility (
-    id,
-    entity_type_code,
-    model_id,
-    name,
-    code,
-    tenant_id,
-    creator,
-    tree_path,
-    sort,
-    status,
-    deleted,
-    region_id,
-    address,
-    longitude,
-    latitude,
-    facility_type,
-    custom_fields
+    id, entity_type_code, model_id, name, code, tenant_id, creator,
+    tree_path, sort, status, deleted, region_id, address, longitude, latitude,
+    facility_type, custom_fields
 )
 OVERRIDING SYSTEM VALUE
 SELECT
-    v.id,
-    'facility',
-    m.id,
-    v.name,
-    v.code,
-    1,
-    'seed',
-    v.tree_path,
-    v.sort,
-    1,
-    false,
-    v.region_id,
-    v.address,
-    v.longitude,
-    v.latitude,
-    v.facility_type,
-    '{}'::jsonb
+    v.id, 'facility', m.id, v.name, v.code, 1, 'seed',
+    v.tree_path, v.sort, 1, false, v.region_id, v.address, v.longitude, v.latitude,
+    v.facility_type, '{}'::jsonb
 FROM (
     VALUES
+        (
+            34,
+            'FAC-FJ-CPY-001',
+            '泉港油库',
+            '/34/',
+            1,
+            'MODEL-FACILITY-REFINED-DEPOT',
+            100024,
+            '福建省',
+            NULL::numeric,
+            NULL::numeric,
+            'refined_depot'
+        ),
+        (
+            35,
+            'FAC-FJ-CPY-002',
+            '兴闽站',
+            '/35/',
+            2,
+            'MODEL-FACILITY-CP-DISTRIBUTION',
+            100024,
+            '福建省',
+            NULL::numeric,
+            NULL::numeric,
+            'cp_distribution'
+        ),
+        (
+            36,
+            'FAC-FJ-CPY-003',
+            '石湖山站',
+            '/36/',
+            3,
+            'MODEL-FACILITY-CP-DISTRIBUTION',
+            100024,
+            '福建省',
+            NULL::numeric,
+            NULL::numeric,
+            'cp_distribution'
+        ),
+        (
+            37,
+            'FAC-FJ-CPY-004',
+            '东孚站',
+            '/37/',
+            4,
+            'MODEL-FACILITY-CP-DISTRIBUTION',
+            100024,
+            '福建省',
+            NULL::numeric,
+            NULL::numeric,
+            'cp_distribution'
+        ),
         (
             3,
             'FAC-FJ-W3-001',
             '福州末站',
             '/3/',
             1,
-            'MODEL-FACILITY-NG-RECEIVING',
-            100114,
+            'MODEL-FACILITY-NG-TERMINAL',
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
-            'ng_receiving'
+            'ng_terminal'
         ),
         (
             4,
@@ -64,7 +90,7 @@ FROM (
             '/4/',
             2,
             'MODEL-FACILITY-NG-DISTRIBUTION',
-            100114,
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
@@ -76,12 +102,12 @@ FROM (
             '莆田分输清管站',
             '/5/',
             3,
-            'MODEL-FACILITY-NG-DISTRIBUTION',
-            100114,
+            'MODEL-FACILITY-NG-DISTRIBUTION-PIGGING',
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
-            'ng_distribution'
+            'ng_distribution_pigging'
         ),
         (
             6,
@@ -89,12 +115,12 @@ FROM (
             '仙游站',
             '/6/',
             4,
-            'MODEL-FACILITY-STATION',
-            100114,
+            'MODEL-FACILITY-NG-DISTRIBUTION',
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
-            'station'
+            'ng_distribution'
         ),
         (
             7,
@@ -102,12 +128,12 @@ FROM (
             '泉州分输清管站',
             '/7/',
             5,
-            'MODEL-FACILITY-NG-DISTRIBUTION',
-            100114,
+            'MODEL-FACILITY-NG-DISTRIBUTION-PIGGING',
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
-            'ng_distribution'
+            'ng_distribution_pigging'
         ),
         (
             8,
@@ -116,7 +142,7 @@ FROM (
             '/8/',
             6,
             'MODEL-FACILITY-NG-DISTRIBUTION',
-            100114,
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
@@ -129,7 +155,7 @@ FROM (
             '/9/',
             7,
             'MODEL-FACILITY-NG-DISTRIBUTION',
-            100114,
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
@@ -141,12 +167,12 @@ FROM (
             '漳州分输清管站',
             '/10/',
             8,
-            'MODEL-FACILITY-NG-DISTRIBUTION',
-            100114,
+            'MODEL-FACILITY-NG-DISTRIBUTION-PIGGING',
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
-            'ng_distribution'
+            'ng_distribution_pigging'
         ),
         (
             11,
@@ -154,12 +180,12 @@ FROM (
             '龙岩分输清管站',
             '/11/',
             9,
-            'MODEL-FACILITY-NG-DISTRIBUTION',
-            100114,
+            'MODEL-FACILITY-NG-DISTRIBUTION-PIGGING',
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
-            'ng_distribution'
+            'ng_distribution_pigging'
         ),
         (
             12,
@@ -167,12 +193,12 @@ FROM (
             '长汀站',
             '/12/',
             10,
-            'MODEL-FACILITY-STATION',
-            100114,
+            'MODEL-FACILITY-NG-DISTRIBUTION',
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
-            'station'
+            'ng_distribution'
         ),
         (
             13,
@@ -180,12 +206,12 @@ FROM (
             '南安站',
             '/13/',
             11,
-            'MODEL-FACILITY-STATION',
-            100114,
+            'MODEL-FACILITY-NG-DISTRIBUTION',
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
-            'station'
+            'ng_distribution'
         ),
         (
             14,
@@ -193,12 +219,12 @@ FROM (
             '东田站',
             '/14/',
             12,
-            'MODEL-FACILITY-STATION',
-            100114,
+            'MODEL-FACILITY-NG-DISTRIBUTION',
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
-            'station'
+            'ng_distribution'
         ),
         (
             15,
@@ -206,12 +232,12 @@ FROM (
             '角美站',
             '/15/',
             13,
-            'MODEL-FACILITY-STATION',
-            100114,
+            'MODEL-FACILITY-NG-DISTRIBUTION',
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
-            'station'
+            'ng_distribution'
         ),
         (
             16,
@@ -220,7 +246,7 @@ FROM (
             '/16/',
             1,
             'MODEL-FACILITY-NG-DISTRIBUTION',
-            100115,
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
@@ -233,7 +259,7 @@ FROM (
             '/17/',
             2,
             'MODEL-FACILITY-NG-DISTRIBUTION',
-            100115,
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
@@ -245,12 +271,12 @@ FROM (
             '诏安末站',
             '/18/',
             3,
-            'MODEL-FACILITY-NG-RECEIVING',
-            100115,
+            'MODEL-FACILITY-NG-TERMINAL',
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
-            'ng_receiving'
+            'ng_terminal'
         ),
         (
             19,
@@ -258,12 +284,12 @@ FROM (
             '天宝站',
             '/19/',
             4,
-            'MODEL-FACILITY-STATION',
-            100115,
+            'MODEL-FACILITY-NG-DISTRIBUTION',
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
-            'station'
+            'ng_distribution'
         ),
         (
             20,
@@ -271,12 +297,12 @@ FROM (
             '南靖站',
             '/20/',
             5,
-            'MODEL-FACILITY-STATION',
-            100115,
+            'MODEL-FACILITY-NG-DISTRIBUTION',
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
-            'station'
+            'ng_distribution'
         ),
         (
             21,
@@ -284,12 +310,12 @@ FROM (
             '龙岩站',
             '/21/',
             6,
-            'MODEL-FACILITY-STATION',
-            100115,
+            'MODEL-FACILITY-NG-DISTRIBUTION',
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
-            'station'
+            'ng_distribution'
         ),
         (
             22,
@@ -297,12 +323,12 @@ FROM (
             '德化站',
             '/22/',
             7,
-            'MODEL-FACILITY-STATION',
-            100115,
+            'MODEL-FACILITY-NG-DISTRIBUTION',
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
-            'station'
+            'ng_distribution'
         ),
         (
             23,
@@ -311,7 +337,7 @@ FROM (
             '/23/',
             8,
             'MODEL-FACILITY-NG-DISTRIBUTION',
-            100115,
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
@@ -324,7 +350,7 @@ FROM (
             '/24/',
             9,
             'MODEL-FACILITY-NG-DISTRIBUTION',
-            100115,
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
@@ -337,7 +363,7 @@ FROM (
             '/25/',
             10,
             'MODEL-FACILITY-NG-DISTRIBUTION',
-            100115,
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
@@ -350,7 +376,7 @@ FROM (
             '/26/',
             11,
             'MODEL-FACILITY-NG-DISTRIBUTION',
-            100115,
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
@@ -362,12 +388,12 @@ FROM (
             '双木洋清管站',
             '/27/',
             12,
-            'MODEL-FACILITY-NG-DISTRIBUTION',
-            100115,
+            'MODEL-FACILITY-NG-PIGGING',
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
-            'ng_distribution'
+            'ng_pigging'
         ),
         (
             28,
@@ -376,7 +402,7 @@ FROM (
             '/28/',
             13,
             'MODEL-FACILITY-NG-DISTRIBUTION',
-            100115,
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
@@ -389,7 +415,7 @@ FROM (
             '/29/',
             14,
             'MODEL-FACILITY-NG-DISTRIBUTION',
-            100115,
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
@@ -401,12 +427,12 @@ FROM (
             '福鼎末站',
             '/30/',
             15,
-            'MODEL-FACILITY-NG-RECEIVING',
-            100115,
+            'MODEL-FACILITY-NG-TERMINAL',
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
-            'ng_receiving'
+            'ng_terminal'
         ),
         (
             31,
@@ -415,7 +441,7 @@ FROM (
             '/31/',
             16,
             'MODEL-FACILITY-NG-DISTRIBUTION',
-            100115,
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
@@ -428,7 +454,7 @@ FROM (
             '/32/',
             17,
             'MODEL-FACILITY-NG-DISTRIBUTION',
-            100115,
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
@@ -441,7 +467,33 @@ FROM (
             '/33/',
             18,
             'MODEL-FACILITY-NG-DISTRIBUTION',
-            100115,
+            100024,
+            '福建省',
+            NULL::numeric,
+            NULL::numeric,
+            'ng_distribution'
+        ),
+        (
+            38,
+            'FAC-FJ-LNGL-001',
+            '程溪分输站',
+            '/38/',
+            1,
+            'MODEL-FACILITY-NG-DISTRIBUTION',
+            100024,
+            '福建省',
+            NULL::numeric,
+            NULL::numeric,
+            'ng_distribution'
+        ),
+        (
+            39,
+            'FAC-FJ-LNGL-002',
+            '港尾分输站',
+            '/39/',
+            2,
+            'MODEL-FACILITY-NG-DISTRIBUTION',
+            100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
@@ -452,30 +504,18 @@ FROM (
     address, longitude, latitude, facility_type
 )
 JOIN dynamic_model m
-  ON m.code = v.model_code
- AND m.entity_type_code = 'facility'
- AND m.deleted = false
+  ON m.code = v.model_code AND m.entity_type_code = 'facility' AND m.deleted = false
 ON CONFLICT (id) DO UPDATE SET
     model_id = EXCLUDED.model_id,
     name = EXCLUDED.name,
     code = EXCLUDED.code,
-    tenant_id = EXCLUDED.tenant_id,
-    tree_path = EXCLUDED.tree_path,
-    sort = EXCLUDED.sort,
-    status = EXCLUDED.status,
-    deleted = false,
     region_id = EXCLUDED.region_id,
-    address = EXCLUDED.address,
-    longitude = EXCLUDED.longitude,
-    latitude = EXCLUDED.latitude,
     facility_type = EXCLUDED.facility_type,
+    deleted = false,
     updater = 'seed',
     update_time = CURRENT_TIMESTAMP;
 
 SELECT setval(
     pg_get_serial_sequence('dynamicbusiness.ent_facility', 'id'),
-    GREATEST(
-        (SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_facility),
-        33
-    )
+    GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_facility), 43)
 );

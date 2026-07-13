@@ -1,6 +1,6 @@
 -- ============================================================================
--- 系统 · region 实体模型（集团 / 省公司 / 作业区 / 管道）
--- 运营区域用于区分组织层级，非省市区行政区划；定稿见 docs/动态业务/地理区域-设施-站内分区定稿.md
+-- 系统 · region 实体模型（集团 / 省公司 / 作业区）
+-- 管道线路已并入 facility（MODEL-FACILITY-PIPELINE-*），见 dynamic_model_facility.sql
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;
@@ -19,10 +19,6 @@ INSERT INTO dynamic_model (
   (
     'MODEL-REGION-OPERATION', '作业区', 'region',
     '省公司下辖作业区；设施 REF_REGION 通常挂此层（对标国家管网省公司—作业区两级管理）', 1, 3, 1, 'seed'
-  ),
-  (
-    'MODEL-REGION-PIPELINE', '管道', 'region',
-    '省公司下辖管道线路（如西三线、海西二期）；站场 REF_REGION 可挂此层', 1, 4, 1, 'seed'
   )
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
@@ -34,7 +30,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
--- 废弃旧「分公司」模型码（改革前四级架构遗留）
+-- 废弃旧「分公司」与误用的 region 管道模型
 UPDATE dynamic_model
 SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
-WHERE deleted = false AND tenant_id = 1 AND code = 'MODEL-REGION-BRANCH';
+WHERE deleted = false AND tenant_id = 1 AND code IN ('MODEL-REGION-BRANCH', 'MODEL-REGION-PIPELINE');

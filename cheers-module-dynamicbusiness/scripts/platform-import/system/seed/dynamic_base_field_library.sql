@@ -1,0 +1,3 @@
+-- 已拆分，请使用：
+--   dynamic_base_field_library_fields.sql
+--   dynamic_base_field_library_assignments.sql

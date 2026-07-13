@@ -21,6 +21,9 @@ public class FieldRulesUpdateReqVO {
     @Schema(description = "是否可排序（如果为 null，则使用字段定义中的默认值）", example = "true")
     private Boolean isSortable;
 
+    @Schema(description = "是否可筛选", example = "true")
+    private Boolean isFilterable;
+
     @Schema(description = "默认值", example = "默认值")
     private String defaultValue;
 

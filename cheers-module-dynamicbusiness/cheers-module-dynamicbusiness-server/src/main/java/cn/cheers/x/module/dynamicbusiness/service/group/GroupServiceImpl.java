@@ -7,10 +7,13 @@ import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.framework.tenant.core.context.TenantContextHolder;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.group.GroupDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.group.GroupRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.group.GroupMapper;
+import cn.cheers.x.module.dynamicbusiness.enums.group.GroupTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.group.GroupRelationMapper;
 import jakarta.annotation.Resource;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -35,6 +38,8 @@ public class GroupServiceImpl implements GroupService {
     private GroupRelationMapper groupRelationMapper;
     @Resource
     private FieldMapper fieldMapper;
+    @Resource
+    private EntityTypeMapper entityTypeMapper;
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
@@ -78,6 +83,7 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public void updateGroup(String groupType, Long id, String name, String description, Long parentId, Integer sort, Integer status) {
         GroupDO existGroup = assertGroup(groupType, id);
+        String oldName = existGroup.getName();
         GroupDO nameGroup = groupMapper.selectByTypeAndName(groupType, name);
         if (nameGroup != null && !nameGroup.getId().equals(id)) {
             throw new ServiceException(400, "分组名称已存在：" + name);
@@ -98,16 +104,22 @@ public class GroupServiceImpl implements GroupService {
                 .build();
         syncGroupParentCode(update);
         groupMapper.updateById(update);
+        if (isEntityTypeGroup(groupType) && name != null && !name.equals(oldName)) {
+            renameEntityTypeGroupName(oldName, name);
+        }
         GroupCacheHelper.evictGroup(stringRedisTemplate, groupType, id);
         GroupCacheHelper.evictTree(stringRedisTemplate, groupType, getTenantId());
     }
 
     @Override
     public void deleteGroup(String groupType, Long id) {
-        assertGroup(groupType, id);
+        GroupDO group = assertGroup(groupType, id);
         List<GroupDO> childGroups = groupMapper.selectByTypeAndParentId(groupType, id);
         if (!childGroups.isEmpty()) {
             throw new ServiceException(400, "分组下有子分组，请先删除子分组");
+        }
+        if (isEntityTypeGroup(groupType)) {
+            clearEntityTypeGroupName(group.getName());
         }
         groupMapper.deleteById(id);
         groupRelationMapper.deleteByTypeAndGroupId(groupType, id);
@@ -300,6 +312,34 @@ public class GroupServiceImpl implements GroupService {
 
     private Long getTenantId() {
         return TenantContextHolder.getTenantId();
+    }
+
+    private boolean isEntityTypeGroup(String groupType) {
+        return GroupTypeEnum.ENTITY_TYPE.getCode().equals(groupType);
+    }
+
+    private void renameEntityTypeGroupName(String oldName, String newName) {
+        List<EntityTypeDO> entityTypes = entityTypeMapper.selectList(new LambdaQueryWrapperX<EntityTypeDO>()
+                .eq(EntityTypeDO::getGroupName, oldName)
+                .eq(EntityTypeDO::getDeleted, false));
+        for (EntityTypeDO entityType : entityTypes) {
+            EntityTypeDO patch = new EntityTypeDO();
+            patch.setId(entityType.getId());
+            patch.setGroupName(newName);
+            entityTypeMapper.updateById(patch);
+        }
+    }
+
+    private void clearEntityTypeGroupName(String groupName) {
+        List<EntityTypeDO> entityTypes = entityTypeMapper.selectList(new LambdaQueryWrapperX<EntityTypeDO>()
+                .eq(EntityTypeDO::getGroupName, groupName)
+                .eq(EntityTypeDO::getDeleted, false));
+        for (EntityTypeDO entityType : entityTypes) {
+            EntityTypeDO patch = new EntityTypeDO();
+            patch.setId(entityType.getId());
+            patch.setGroupName(null);
+            entityTypeMapper.updateById(patch);
+        }
     }
 
     private String generateCode(String prefix) {

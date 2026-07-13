@@ -9,6 +9,9 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelRespVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.group.GroupMapper;
+import cn.cheers.x.module.dynamicbusiness.enums.group.GroupTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.service.group.GroupService;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
@@ -70,6 +73,12 @@ public class EntityTypeServiceImpl implements EntityTypeService {
     @Resource
     private EntityTypeCategoryBootstrapService entityTypeCategoryBootstrapService;
 
+    @Resource
+    private GroupService groupService;
+
+    @Resource
+    private GroupMapper groupMapper;
+
     /**
      * 创建业务类型。
      *
@@ -85,18 +94,11 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         if (entityTypeMapper.existsByCode(reqVO.getCode())) {
             throw new ServiceException(400, "业务类型编码已存在");
         }
-        EntityTypeDO parentEntityType = null;
-        if (reqVO.getParentId() != null) {
-            parentEntityType = entityTypeMapper.selectById(reqVO.getParentId());
-            if (parentEntityType == null) {
-                throw new ServiceException(400, "父级业务类型不存在");
-            }
-        }
-
-        // 2. 创建业务 (包括存储配置)
         EntityTypeDO entityType = new EntityTypeDO();
         copyBaseFields(entityType, reqVO);
         entityType.setTypeLevel(EntityTypeDO.TYPE_LEVEL_USER); //用户创建的业务
+        entityType.setParentId(null);
+        ensureEntityTypeGroupRegistered(entityType.getGroupName());
         entityTypeMapper.insert(entityType);
 
 
@@ -151,7 +153,8 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         newEntityType.setIcon(oldEntityType.getIcon());
         newEntityType.setAlias(oldEntityType.getAlias());
         newEntityType.setAssociationFields(oldEntityType.getAssociationFields());
-        newEntityType.setParentId(oldEntityType.getParentId());
+        newEntityType.setParentId(null);
+        newEntityType.setGroupName(oldEntityType.getGroupName());
         newEntityType.setStorageType(oldEntityType.getStorageType());
         newEntityType.setDedicatedTableName(oldEntityType.getDedicatedTableName());
         newEntityType.setPhysicalColumnMapping(oldEntityType.getPhysicalColumnMapping());
@@ -159,20 +162,14 @@ public class EntityTypeServiceImpl implements EntityTypeService {
 
         updateBTFromVO(newEntityType, reqVO);
 
-        if (Boolean.TRUE.equals(reqVO.getParentIdSpecified())) {
-            Long newParentId = reqVO.getParentId();
-            if (newParentId != null && isEntityTypeDescendant(newEntityType.getId(), newParentId)) {
-                throw new ServiceException(400, "不能将父级设为自己或子级");
-            }
-            newEntityType.setParentId(newParentId);
+        if (Boolean.TRUE.equals(reqVO.getGroupNameSpecified())) {
+            newEntityType.setGroupName(normalizeGroupName(reqVO.getGroupName()));
+            ensureEntityTypeGroupRegistered(newEntityType.getGroupName());
         }
 
         // 验证
         if (!Objects.equals(oldCode, newEntityType.getCode()) && entityTypeMapper.existsByCodeExcludeId(newEntityType.getCode(), newEntityType.getId())) {
             throw new ServiceException(400, "业务类型编码已存在");
-        }
-        if (newEntityType.getParentId() != null && entityTypeMapper.selectById(newEntityType.getParentId()) == null) {
-            throw new ServiceException(400, "父级业务类型不存在");
         }
 
         // 持久化保存
@@ -204,8 +201,9 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         if (reqVO.getAssociationFields() != null) {
             entityType.setAssociationFields(normalizeJsonFieldString(reqVO.getAssociationFields()));
         }
-        if (reqVO.getParentId() != null) {
-            entityType.setParentId(reqVO.getParentId());
+        if (reqVO.getGroupName() != null) {
+            entityType.setGroupName(normalizeGroupName(reqVO.getGroupName()));
+            ensureEntityTypeGroupRegistered(entityType.getGroupName());
         }
         // Update storage config fields
         if (StringUtils.hasText(reqVO.getStorageType())) {
@@ -239,10 +237,6 @@ public class EntityTypeServiceImpl implements EntityTypeService {
 
         if (EntityTypeDO.TYPE_LEVEL_SYSTEM.equals(entityType.getTypeLevel())) {
             throw new ServiceException(403, "系统级业务类型不可删除");
-        }
-
-        if (entityTypeMapper.selectCountByParentId(id) > 0) {
-            throw new ServiceException(400, "请先删除子业务类型");
         }
 
         entityTypeMapper.deleteById(id);
@@ -640,7 +634,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         entityType.setIcon(reqVO.getIcon());
         entityType.setAlias(reqVO.getAlias());
         entityType.setAssociationFields(normalizeJsonFieldString(reqVO.getAssociationFields()));
-        entityType.setParentId(reqVO.getParentId());
+        entityType.setGroupName(normalizeGroupName(reqVO.getGroupName()));
         // Copy storage config fields
         entityType.setStorageType(reqVO.getStorageType());
         entityType.setDedicatedTableName(reqVO.getDedicatedTableName());
@@ -669,6 +663,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         vo.setAssociationFields(entityType.getAssociationFields());
         vo.setTypeLevel(entityType.getTypeLevel());
         vo.setParentId(entityType.getParentId());
+        vo.setGroupName(entityType.getGroupName());
         vo.setCreateTime(entityType.getCreateTime());
         // Copy storage config fields
         vo.setStorageType(entityType.getStorageType());
@@ -693,6 +688,24 @@ public class EntityTypeServiceImpl implements EntityTypeService {
             log.warn("[createRelationFieldForEntityType][关联字段模板创建失败: {}, error={}]",
                     entityType.getCode(), e.getMessage());
         }
+    }
+
+    private void ensureEntityTypeGroupRegistered(String groupName) {
+        String name = normalizeGroupName(groupName);
+        if (name == null) {
+            return;
+        }
+        if (groupMapper.selectByTypeAndName(GroupTypeEnum.ENTITY_TYPE.getCode(), name) != null) {
+            return;
+        }
+        groupService.createGroup(GroupTypeEnum.ENTITY_TYPE.getCode(), name, null, null, null, 1, "ETG");
+    }
+
+    private String normalizeGroupName(String groupName) {
+        if (!StringUtils.hasText(groupName)) {
+            return null;
+        }
+        return groupName.trim();
     }
 
     private String normalizeJsonFieldString(String json) {

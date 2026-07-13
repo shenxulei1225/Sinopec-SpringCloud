@@ -30,6 +30,7 @@ import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldGroupRespVO;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelFieldGroupService;
+import cn.cheers.x.module.dynamicbusiness.framework.field.EntityTypeFieldLabelHelper;
 import cn.cheers.x.module.dynamicbusiness.service.capability.form.ModelCrudFormFieldAssembler;
 import cn.cheers.x.module.dynamicbusiness.service.capability.projection.CapabilityBlockProjectionBuilder;
 import cn.cheers.x.module.dynamicbusiness.service.capability.system.SystemCapabilityCatalog;
@@ -690,6 +691,8 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
      */
     private String buildModelCrudFormJson(Long modelId, String entityTypeCode) {
         CrudFormFieldContext context = loadCrudFormFieldContext(modelId, entityTypeCode);
+        EntityTypeDO entityType = entityTypeMapper.selectByCode(entityTypeCode);
+        Map<String, String> platformFieldLabels = EntityTypeFieldLabelHelper.readLabels(entityType);
         Map<String, Object> root = ModelCrudFormFieldAssembler.buildFormRoot(
                 modelId,
                 entityTypeCode,
@@ -698,7 +701,8 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                 context.fieldById(),
                 context.baseFieldByCode(),
                 context.groups(),
-                context.refResolveContext());
+                context.refResolveContext(),
+                platformFieldLabels);
         return toJson(root);
     }
 

@@ -37,29 +37,37 @@ public class EntityTypeBaseFieldSaveReqVO {
     @Schema(description = "字段ID（更新时必填）", example = "1")
     private Long id;
 
+    @Schema(description = "字段库字段 ID（新增时必填，须从字段库选择，不可手填编码/名称/类型）", example = "3681")
+    private Long libraryFieldId;
+
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
     @NotBlank(message = "业务类型编码不能为空")
     @Size(max = 50, message = "业务类型编码长度不能超过50个字符")
     private String entityTypeCode;
 
-    @Schema(description = "字段编码（对应数据库列名）", requiredMode = Schema.RequiredMode.REQUIRED, example = "code")
-    @NotBlank(message = "字段编码不能为空")
+    @Schema(description = "字段编码（对应数据库列名，新增时由字段库条目推导，勿手填）", example = "code")
     @Size(max = 100, message = "字段编码长度不能超过100个字符")
     private String fieldCode;
 
-    @Schema(description = "字段显示名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "设备编码")
-    @NotBlank(message = "字段显示名称不能为空")
+    @Schema(description = "字段显示名称（新增时由字段库条目推导，勿手填）", example = "设备编码")
     @Size(max = 200, message = "字段显示名称长度不能超过200个字符")
     private String fieldName;
 
-    @Schema(description = "数据类型：TEXT-文本，NUMBER-数字，DATE-日期，DATETIME-日期时间，BOOLEAN-布尔，ENUM-枚举，REFERENCE-引用，REF_Multi-多重引用", 
-            requiredMode = Schema.RequiredMode.REQUIRED, example = "TEXT")
-    @NotBlank(message = "数据类型不能为空")
+    @Schema(description = "数据类型（新增时由字段库条目推导，勿手填）", example = "TEXT")
     @Size(max = 50, message = "数据类型长度不能超过50个字符")
     private String dataType;
 
     @Schema(description = "是否必填", example = "true")
     private Boolean required;
+
+    @Schema(description = "是否可搜索", example = "true")
+    private Boolean isSearchable;
+
+    @Schema(description = "是否可筛选", example = "true")
+    private Boolean isFilterable;
+
+    @Schema(description = "是否可排序", example = "true")
+    private Boolean isSortable;
 
     @Schema(description = "默认值", example = "NORMAL")
     @Size(max = 500, message = "默认值长度不能超过500个字符")

@@ -168,7 +168,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                     .build();
         }
         validateEntityTypeCodeNotBlank(entityTypeCode);
-        relationMapper.deleteByEntityAndCategory(entityId, categoryId, entityTypeCode);
+        markEntitiesExcludedFromCategory(List.of(entityId), categoryId, entityTypeCode);
         log.info("删除实体-分类关联: entityId={}, categoryId={}, entityTypeCode={}", entityId, categoryId, entityTypeCode);
         return EntityCategoryAssociationRespVO.builder()
                 .operationType("DISASSOCIATE")
@@ -446,11 +446,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                     .build();
         }
 
-        int successCount = 0;
-        for (Long entityId : entityIds) {
-            relationMapper.deleteByEntityAndCategory(entityId, categoryId, entityTypeCode);
-            successCount++;
-        }
+        int successCount = markEntitiesExcludedFromCategory(entityIds, categoryId, entityTypeCode);
 
         log.info("批量取消实体与分类的关联: entityIds={}, categoryId={}, entityTypeCode={}", entityIds, categoryId, entityTypeCode);
 
@@ -462,6 +458,37 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                 .failEntityCount(0)
                 .executionTime(System.currentTimeMillis() - startTime)
                 .build();
+    }
+
+    /**
+     * 解除实体与分类关联：删除有效关联；若无有效关联则写入 deleted=true 排除标记，
+     * 防止实体仍通过「型号挂分类」出现在该分类范围内。
+     */
+    private int markEntitiesExcludedFromCategory(List<Long> entityIds, Long categoryId, String entityTypeCode) {
+        int successCount = 0;
+        for (Long entityId : entityIds) {
+            if (entityId == null) {
+                continue;
+            }
+            EntityCategoryRelationDO active = relationMapper.selectByEntityAndCategory(entityId, categoryId, entityTypeCode);
+            if (active != null) {
+                relationMapper.deleteByEntityAndCategory(entityId, categoryId, entityTypeCode);
+            } else {
+                List<EntityCategoryRelationDO> deletedRelations = relationMapper
+                        .selectByEntityAndCategoryIdsIncludingDeleted(entityId, List.of(categoryId), entityTypeCode);
+                if (deletedRelations.isEmpty()) {
+                    relationMapper.insert(EntityCategoryRelationDO.builder()
+                            .entityId(entityId)
+                            .categoryId(categoryId)
+                            .entityTypeCode(entityTypeCode)
+                            .sort(0)
+                            .build());
+                    relationMapper.deleteByEntityAndCategory(entityId, categoryId, entityTypeCode);
+                }
+            }
+            successCount++;
+        }
+        return successCount;
     }
 
 
@@ -1132,27 +1159,8 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
     @Override
     public PageResult<Long> pageEntityIdsByCategoryIdsOnlyDb(List<Long> categoryIds, String entityTypeCode,
                                                                 Integer pageNo, Integer pageSize) {
-        if (categoryIds == null || categoryIds.isEmpty() || entityTypeCode == null || entityTypeCode.isBlank()) {
-            return new PageResult<>(new ArrayList<>(), 0L);
-        }
-        int pn = normalizePageNo(pageNo);
-        int ps = normalizePageSize(pageSize);
-        int offset = (pn - 1) * ps;
-
-        List<Long> pageIds;
-        long total;
-
-        // 单分类不需要 rank，直接走分类内排序分页
-        if (categoryIds.size() == 1) {
-            Long categoryId = categoryIds.get(0);
-            pageIds = relationMapper.selectEntityIdsBySingleCategoryPaged(categoryId, entityTypeCode, offset, ps);
-            total = relationMapper.countEntityIdsBySingleCategory(categoryId, entityTypeCode);
-        } else {
-            pageIds = relationMapper.selectEntityIdsByCategoryIdsRankPaged(categoryIds, entityTypeCode, offset, ps);
-            total = relationMapper.countEntityIdsByCategoryIdsRank(categoryIds, entityTypeCode);
-        }
-
-        return new PageResult<>(pageIds == null ? new ArrayList<>() : pageIds, total);
+        // 与 pageEntityIdsByCategoryIdsOnly 共用 Lambda 查询 + Service 层稳定排序分页，避免 Mapper 写原生 SQL。
+        return pageEntityIdsByCategoryIdsOnly(categoryIds, entityTypeCode, pageNo, pageSize);
     }
 
     @Override

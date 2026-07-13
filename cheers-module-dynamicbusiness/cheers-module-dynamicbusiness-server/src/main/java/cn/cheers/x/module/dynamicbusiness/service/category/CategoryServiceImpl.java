@@ -566,11 +566,10 @@ public class CategoryServiceImpl implements CategoryService {
             }
             
             // 检查是否有模型关联
-            List<ModelCategoryRelationDO> modelRelations = 
+            List<ModelCategoryRelationDO> modelRelations =
                     modelCategoryRelationMapper.selectByCategoryId(id);
-            Long modelCount = modelRelations != null ? (long) modelRelations.size() : 0L;
-            if (modelCount != null && modelCount > 0) {
-                throw new ServiceException(400, "分类存在模型关联，禁止删除（可考虑先解除或级联）");
+            if (modelRelations != null && !modelRelations.isEmpty()) {
+                throw new ServiceException(400, buildCategoryDeleteBlockedByModelsMessage(modelRelations));
             }
         }
         
@@ -593,6 +592,27 @@ public class CategoryServiceImpl implements CategoryService {
         }
         
         core.deleteCategory(id, cascade);
+    }
+
+    private String buildCategoryDeleteBlockedByModelsMessage(List<ModelCategoryRelationDO> modelRelations) {
+        List<Long> modelIds = modelRelations.stream()
+                .map(ModelCategoryRelationDO::getModelId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (modelIds.isEmpty()) {
+            return "该分类下仍有关联模型，暂不能删除";
+        }
+        List<ModelDO> models = modelMapper.selectBatchIds(modelIds);
+        String names = models == null ? "" : models.stream()
+                .filter(Objects::nonNull)
+                .map(ModelDO::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .collect(Collectors.joining("、"));
+        if (names.isBlank()) {
+            return "该分类下仍关联 " + modelIds.size() + " 个模型，暂不能删除";
+        }
+        return "该分类下仍关联模型：" + names + "。删除前需先解除关联，或确认后一并解除关联（不会删除模型）";
     }
     
     /**
@@ -678,6 +698,7 @@ public class CategoryServiceImpl implements CategoryService {
             if (link != null) {
                 vo.setIsEntity(true);
                 vo.setEntityModelId(link.getEntityModelId());
+                vo.setEntityId(link.getEntityId());
             } else if (vo.getIsEntity() == null) {
                 // 兼容：此前接口一直返回 null，这里仅对非实体节点填充 false，避免前端三态判断
                 vo.setIsEntity(false);

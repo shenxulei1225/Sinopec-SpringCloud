@@ -1,7 +1,9 @@
 package cn.cheers.x.module.dynamicbusiness.service.entitytype;
 
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldBatchSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldSaveReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypePlatformFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
 
 import java.util.List;
@@ -131,4 +133,24 @@ public interface EntityTypeBaseFieldService {
      * @return 验证结果，null 表示验证通过，否则返回错误信息
      */
     String validateFieldValue(String entityTypeCode, String fieldCode, Object value);
+
+    /**
+     * 实体通用列（名称、状态等）在该业务类型下的展示信息。
+     */
+    List<EntityTypePlatformFieldRespVO> listPlatformFields(String entityTypeCode);
+
+    /**
+     * 更新实体通用列在该业务类型下的显示别名。
+     */
+    void updatePlatformFieldLabel(String entityTypeCode, String fieldCode, String label);
+
+    /**
+     * 按模型分配信息删除基础字段：优先删注册记录，无注册记录时仍从全部模型移除。
+     */
+    void deleteBaseFieldByAssignment(String entityTypeCode, Long libraryFieldId, String fieldCode);
+
+    /**
+     * 批量保存基础字段配置：一次事务提交，结束时统一刷新能力投影。
+     */
+    void saveBaseFieldBatch(EntityTypeBaseFieldBatchSaveReqVO reqVO);
 }

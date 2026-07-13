@@ -71,12 +71,15 @@ public final class ModelCrudFormFieldAssembler {
             Map<Long, FieldDO> fieldById,
             Map<String, EntityTypeBaseFieldDO> baseFieldByCode,
             List<ModelFieldGroupRespVO> groups,
-            RefResolveContext refResolveContext) {
+            RefResolveContext refResolveContext,
+            Map<String, String> platformFieldLabels) {
         LinkedHashMap<String, Map<String, Object>> fieldItems = new LinkedHashMap<>();
         Set<String> addedCodes = new HashSet<>();
 
-        putIfAbsent(fieldItems, addedCodes, buildBuiltinNameField());
-        putIfAbsent(fieldItems, addedCodes, buildBuiltinStatusField());
+        putIfAbsent(fieldItems, addedCodes, buildBuiltinNameField(
+                resolvePlatformLabel(platformFieldLabels, "name", "名称")));
+        putIfAbsent(fieldItems, addedCodes, buildBuiltinStatusField(
+                resolvePlatformLabel(platformFieldLabels, "status", "状态")));
 
         if (includeBaseFields && baseFieldByCode != null && !baseFieldByCode.isEmpty()) {
             List<EntityTypeBaseFieldDO> sortedBaseFields = new ArrayList<>(baseFieldByCode.values());
@@ -202,8 +205,16 @@ public final class ModelCrudFormFieldAssembler {
         addedCodes.add(code);
     }
 
-    private static Map<String, Object> buildBuiltinNameField() {
-        Map<String, Object> item = baseFieldItem("name", "名称", "TEXT", "input");
+    private static String resolvePlatformLabel(Map<String, String> labels, String fieldCode, String defaultLabel) {
+        if (labels == null || !StringUtils.hasText(fieldCode)) {
+            return defaultLabel;
+        }
+        String alias = labels.get(fieldCode.trim());
+        return StringUtils.hasText(alias) ? alias.trim() : defaultLabel;
+    }
+
+    private static Map<String, Object> buildBuiltinNameField(String label) {
+        Map<String, Object> item = baseFieldItem("name", label, "TEXT", "input");
         item.put("required", true);
         item.put("maxLength", 200);
         item.put("asyncCheckId", ASYNC_CHECK_NAME_UNIQUE);
@@ -214,8 +225,8 @@ public final class ModelCrudFormFieldAssembler {
         return item;
     }
 
-    private static Map<String, Object> buildBuiltinStatusField() {
-        Map<String, Object> item = baseFieldItem("status", "状态", "NUMBER", "select");
+    private static Map<String, Object> buildBuiltinStatusField(String label) {
+        Map<String, Object> item = baseFieldItem("status", label, "NUMBER", "select");
         item.put("required", true);
         item.put("sort", -90);
         item.put("groupName", "基础信息");
@@ -240,6 +251,7 @@ public final class ModelCrudFormFieldAssembler {
         item.put("groupSortOrder", 0);
         applyBaseFieldTypeConfig(item, baseField);
         applyBaseFieldTypeExtensions(item, entityTypeCode, baseField, fieldType);
+        applyDefaultValue(item, baseField.getDefaultValue());
         return item;
     }
 
@@ -300,6 +312,11 @@ public final class ModelCrudFormFieldAssembler {
         applyFieldTypeExtensions(item, entityTypeCode, field, fieldType, assign, refResolveContext);
 
         applyGroupMeta(item, field.getId(), groups);
+        String defaultValue = assign.getDefaultValue();
+        if (!StringUtils.hasText(defaultValue) && baseField != null) {
+            defaultValue = baseField.getDefaultValue();
+        }
+        applyDefaultValue(item, defaultValue);
         return item;
     }
 
@@ -562,6 +579,13 @@ public final class ModelCrudFormFieldAssembler {
         if (value != null) {
             item.put(key, value);
         }
+    }
+
+    private static void applyDefaultValue(Map<String, Object> item, String defaultValue) {
+        if (!StringUtils.hasText(defaultValue)) {
+            return;
+        }
+        item.put("defaultValue", defaultValue.trim());
     }
 
     private static JSONObject parseJsonObject(String json) {

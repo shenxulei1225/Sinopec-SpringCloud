@@ -55,6 +55,35 @@ public class EntityController {
     @Resource
     private EntityDataExportService entityDataExportService;
 
+    @Resource
+    private cn.cheers.x.module.dynamicbusiness.service.entity.modelchange.EntityModelChangeService entityModelChangeService;
+
+    @PostMapping("/change-model/preview")
+    @Operation(
+        summary = "变更模型 - 预览字段迁移",
+        description = "按 fieldCode 交集计算保留/需补填/归档字段，不写入数据库。"
+    )
+    @PreAuthorize("@ss.hasPermission('system:entity:update')")
+    public CommonResult<EntityChangeModelPreviewRespVO> previewChangeModel(
+            @Valid @RequestBody EntityChangeModelPreviewReqVO reqVO) {
+        return success(entityModelChangeService.preview(reqVO));
+    }
+
+    @PostMapping("/change-model")
+    @Operation(
+        summary = "变更模型 - 提交",
+        description = """
+            将实体迁移至目标模型：共有 fieldCode 保留原值；源专有字段写入 _modelChangeArchive。
+            目标必填缺值须通过 patchFields 补填。
+            """
+    )
+    @ApiAccessLog(operateType = UPDATE)
+    @PreAuthorize("@ss.hasPermission('system:entity:update')")
+    public CommonResult<EntityChangeModelCommitRespVO> commitChangeModel(
+            @Valid @RequestBody EntityChangeModelCommitReqVO reqVO) {
+        return success(entityModelChangeService.commit(reqVO));
+    }
+
     @PostMapping("/create")
     @Operation(
         summary = "创建实体",

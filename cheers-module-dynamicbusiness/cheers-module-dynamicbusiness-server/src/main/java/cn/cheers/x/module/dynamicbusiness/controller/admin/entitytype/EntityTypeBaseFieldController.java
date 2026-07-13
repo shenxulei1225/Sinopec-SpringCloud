@@ -1,8 +1,10 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype;
 
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldBatchSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldSaveReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypePlatformFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeBaseFieldService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -45,14 +47,14 @@ public class EntityTypeBaseFieldController {
     private EntityTypeBaseFieldService entityTypeBaseFieldService;
 
     @PostMapping("/create")
-    @Operation(summary = "创建业务类型固定列字段", description = "在指定 EntityType 下新增一个固定列字段定义，作为字段-模型分配时的基础候选字段")
+    @Operation(summary = "创建业务类型固定列字段", description = "须从字段库选择 libraryFieldId；编码/名称/类型以字段库为准，不可手填。创建后自动关联该业务类型下全部模型。")
     @PreAuthorize("@ss.hasPermission('system:entity-type-base-field:create')")
     public CommonResult<Long> createBaseField(@Valid @RequestBody EntityTypeBaseFieldSaveReqVO reqVO) {
         return success(entityTypeBaseFieldService.createBaseField(reqVO));
     }
 
     @PutMapping("/update")
-    @Operation(summary = "更新业务类型固定列字段", description = "修改 EntityType 级别的固定列字段定义，不直接修改各模型已分配字段，仅影响候选基线")
+    @Operation(summary = "更新业务类型固定列字段", description = "可调整显示别名、必填、默认值、排序、状态等；编码/类型以字段库为准。")
     @PreAuthorize("@ss.hasPermission('system:entity-type-base-field:update')")
     public CommonResult<Boolean> updateBaseField(@Valid @RequestBody EntityTypeBaseFieldSaveReqVO reqVO) {
         entityTypeBaseFieldService.updateBaseField(reqVO);
@@ -145,6 +147,44 @@ public class EntityTypeBaseFieldController {
             @RequestParam(value = "value", required = false) String value) {
         String error = entityTypeBaseFieldService.validateFieldValue(entityTypeCode, fieldCode, value);
         return success(error);
+    }
+
+    @GetMapping("/platform-fields")
+    @Operation(summary = "获取实体通用列（系统字段）", description = "返回名称、状态等平台自带字段，不可删除，可设置业务别名")
+    @PreAuthorize("@ss.hasPermission('system:entity-type-base-field:query')")
+    public CommonResult<List<EntityTypePlatformFieldRespVO>> listPlatformFields(
+            @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(entityTypeBaseFieldService.listPlatformFields(entityTypeCode));
+    }
+
+    @PutMapping("/platform-field-label")
+    @Operation(summary = "更新系统字段显示别名", description = "按业务类型设置名称、状态等实体通用列的界面文案")
+    @PreAuthorize("@ss.hasPermission('system:entity-type-base-field:update')")
+    public CommonResult<Boolean> updatePlatformFieldLabel(
+            @RequestParam("entityTypeCode") String entityTypeCode,
+            @RequestParam("fieldCode") String fieldCode,
+            @RequestParam("label") String label) {
+        entityTypeBaseFieldService.updatePlatformFieldLabel(entityTypeCode, fieldCode, label);
+        return success(true);
+    }
+
+    @PutMapping("/save-batch")
+    @Operation(summary = "批量保存业务类型基础字段", description = "一次提交新增/更新/删除与系统字段别名；结束时统一刷新能力投影")
+    @PreAuthorize("@ss.hasPermission('system:entity-type-base-field:update')")
+    public CommonResult<Boolean> saveBaseFieldBatch(@Valid @RequestBody EntityTypeBaseFieldBatchSaveReqVO reqVO) {
+        entityTypeBaseFieldService.saveBaseFieldBatch(reqVO);
+        return success(true);
+    }
+
+    @DeleteMapping("/delete-by-assignment")
+    @Operation(summary = "按模型分配删除基础字段", description = "优先删除注册记录；无注册记录时仍从该类型下全部模型移除")
+    @PreAuthorize("@ss.hasPermission('system:entity-type-base-field:delete')")
+    public CommonResult<Boolean> deleteByAssignment(
+            @RequestParam("entityTypeCode") String entityTypeCode,
+            @RequestParam(value = "libraryFieldId", required = false) Long libraryFieldId,
+            @RequestParam(value = "fieldCode", required = false) String fieldCode) {
+        entityTypeBaseFieldService.deleteBaseFieldByAssignment(entityTypeCode, libraryFieldId, fieldCode);
+        return success(true);
     }
 
     /**

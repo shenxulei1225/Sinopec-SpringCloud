@@ -21,14 +21,14 @@ FROM (
       jsonb_build_object(
         'FLD-INS-001', '储罐区外观与标识',
         'FLD-INS-002', '罐体、管线标识清晰完整，无脱落褪色'
-      )::text
+      )
     ),
     (
       102, 'INS-ITEM-102', '防火堤完好', '/102/', 2,
       jsonb_build_object(
         'FLD-INS-001', '防火堤完好性',
         'FLD-INS-002', '堤体无开裂渗漏，排水阀可正常操作'
-      )::text
+      )
     )
 ) AS v(id, code, name, tree_path, sort, custom_fields)
 JOIN dynamic_model m

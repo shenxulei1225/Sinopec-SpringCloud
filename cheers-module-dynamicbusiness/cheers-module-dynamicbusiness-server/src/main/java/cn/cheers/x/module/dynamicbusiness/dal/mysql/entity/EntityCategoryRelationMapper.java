@@ -3,6 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.dal.mysql.entity;
 import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityCategoryRelationDO;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Mapper;
@@ -12,6 +13,7 @@ import org.apache.ibatis.annotations.Update;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 业务实体与分类关联 Mapper
@@ -54,6 +56,8 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
 
     /**
      * 查询实体在指定分类集合上的关联（包含 deleted=true 记录）。
+     *
+     * <p>须用原生 SQL：{@code @TableLogic} 会拦截 Wrapper 对 deleted=true 的查询。</p>
      */
     @Select("""
             <script>
@@ -69,8 +73,33 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
             </script>
             """)
     List<EntityCategoryRelationDO> selectByEntityAndCategoryIdsIncludingDeleted(@Param("entityId") Long entityId,
-                                                                                    @Param("categoryIds") List<Long> categoryIds,
-                                                                                    @Param("entityTypeCode") String entityTypeCode);
+                                                                                @Param("categoryIds") List<Long> categoryIds,
+                                                                                @Param("entityTypeCode") String entityTypeCode);
+
+    /**
+     * 批量查询「已解除关联」记录（deleted=true），用于模型挂分类路径下的显式排除。
+     *
+     * <p>须用原生 SQL：{@code @TableLogic} 会拦截 Wrapper 对 deleted=true 的查询。</p>
+     */
+    @Select("""
+            <script>
+            SELECT entity_id, category_id
+            FROM dynamic_entity_category_relation
+            WHERE entity_type_code = #{entityTypeCode}
+                AND entity_id IN
+                <foreach collection='entityIds' item='eid' open='(' separator=',' close=')'>
+                    #{eid}
+                </foreach>
+                AND category_id IN
+                <foreach collection='categoryIds' item='cid' open='(' separator=',' close=')'>
+                    #{cid}
+                </foreach>
+                AND deleted = TRUE
+            </script>
+            """)
+    List<EntityCategoryRelationDO> selectExcludedPairsByEntityIdsAndCategoryIds(@Param("entityIds") List<Long> entityIds,
+                                                                                @Param("categoryIds") List<Long> categoryIds,
+                                                                                @Param("entityTypeCode") String entityTypeCode);
 
     /**
      * 根据分类ID查询所有关联（分类内按 sort,id 排序）。
@@ -212,6 +241,8 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
 
     /**
      * 恢复软删除的实体-分类关联（deleted=true -> false）。
+     *
+     * <p>须用原生 SQL：{@code @TableLogic} 会拦截 Wrapper 对 deleted=true 记录的更新。</p>
      */
     @Update("""
             UPDATE dynamic_entity_category_relation
@@ -223,12 +254,14 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
                 AND deleted = TRUE
             """)
     int restoreDeletedRelation(@Param("entityId") Long entityId,
-                                @Param("categoryId") Long categoryId,
-                                @Param("entityTypeCode") String entityTypeCode,
-                                @Param("sort") Integer sort);
+                               @Param("categoryId") Long categoryId,
+                               @Param("entityTypeCode") String entityTypeCode,
+                               @Param("sort") Integer sort);
 
     /**
      * 批量恢复软删除的实体-分类关联（deleted=true -> false）。
+     *
+     * <p>须用原生 SQL：{@code @TableLogic} 会拦截 Wrapper 对 deleted=true 记录的更新。</p>
      */
     @Update("""
             <script>
@@ -245,8 +278,8 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
             </script>
             """)
     int restoreDeletedRelationsBatch(@Param("entityId") Long entityId,
-                                        @Param("categoryIds") List<Long> categoryIds,
-                                        @Param("entityTypeCode") String entityTypeCode);
+                                     @Param("categoryIds") List<Long> categoryIds,
+                                     @Param("entityTypeCode") String entityTypeCode);
 
     /**
      * 更新实体-分类关联的排序值。
@@ -306,19 +339,16 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
     /**
      * 批量查询分类的 max(sort)（用于批量分配 sort）。
      */
-    @Select("""
-            <script>
-            SELECT category_id AS categoryId, COALESCE(MAX(sort), 0) AS maxSort
-            FROM dynamic_entity_category_relation
-            WHERE deleted = FALSE
-            AND category_id IN
-            <foreach collection='categoryIds' item='id' open='(' separator=',' close=')'>
-                #{id}
-            </foreach>
-            GROUP BY category_id
-            </script>
-            """)
-    List<java.util.Map<String, Object>> selectMaxSortByCategoryIds(@Param("categoryIds") List<Long> categoryIds);
+    default List<Map<String, Object>> selectMaxSortByCategoryIds(List<Long> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return selectMaps(new QueryWrapper<EntityCategoryRelationDO>()
+                .select("category_id AS categoryId", "COALESCE(MAX(sort), 0) AS maxSort")
+                .in("category_id", categoryIds)
+                .eq("deleted", false)
+                .groupBy("category_id"));
+    }
 
     /**
      * 根据分类ID列表查询关联（包含排序字段）。
@@ -390,125 +420,6 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
                 .filter(java.util.Objects::nonNull)
                 .toList();
     }
-
-    /**
-     * DB 前置分页（单分类）：按分类内 sort,id 排序后返回当前页 entityId。
-     */
-    @Select("""
-            <script>
-            WITH dedup AS (
-                SELECT r.entity_id,
-                        row_number() OVER (
-                            PARTITION BY r.entity_id
-                            ORDER BY r.sort ASC NULLS LAST, r.id ASC
-                        ) AS rn,
-                        MIN(r.sort) OVER (PARTITION BY r.entity_id) AS min_sort,
-                        MIN(r.id) OVER (PARTITION BY r.entity_id) AS min_id
-                FROM dynamic_entity_category_relation r
-                WHERE r.deleted = FALSE
-                    AND r.category_id = #{categoryId}
-                <if test='entityTypeCode != null and entityTypeCode != ""'>
-                    AND r.entity_type_code = #{entityTypeCode}
-                </if>
-            )
-            SELECT entity_id
-            FROM dedup
-            WHERE rn = 1
-            ORDER BY min_sort ASC NULLS LAST, min_id ASC
-            LIMIT #{limit} OFFSET #{offset}
-            </script>
-            """)
-    List<Long> selectEntityIdsBySingleCategoryPaged(@Param("categoryId") Long categoryId,
-                                                        @Param("entityTypeCode") String entityTypeCode,
-                                                        @Param("offset") int offset,
-                                                        @Param("limit") int limit);
-
-    /**
-     * DB 前置分页（单分类）：统计去重后的总实体数量。
-     */
-    @Select("""
-            <script>
-            SELECT COUNT(DISTINCT r.entity_id)
-            FROM dynamic_entity_category_relation r
-            WHERE r.deleted = FALSE
-                AND r.category_id = #{categoryId}
-            <if test='entityTypeCode != null and entityTypeCode != ""'>
-                AND r.entity_type_code = #{entityTypeCode}
-            </if>
-            </script>
-            """)
-    long countEntityIdsBySingleCategory(@Param("categoryId") Long categoryId,
-                                        @Param("entityTypeCode") String entityTypeCode);
-
-    /**
-     * DB 前置分页（多分类）：按 categoryIds 输入顺序(rank) + 分类内 sort,id 生成稳定顺序，
-     * 去重后返回当前页 entityId。
-     *
-     * <p>注意：本 SQL 使用参数绑定，不拼接用户输入，避免注入风险。</p>
-     */
-    @Select("""
-            <script>
-            WITH input_categories AS (
-                SELECT cid AS category_id, ordinality AS rank
-                FROM unnest(
-                    <foreach collection='categoryIds' item='cid' open='ARRAY[' separator=',' close=']::bigint[]'>
-                        #{cid}
-                    </foreach>
-                ) WITH ORDINALITY AS t(cid, ordinality)
-            ),
-            relations AS (
-                SELECT r.entity_id, r.category_id, r.sort, r.id, ic.rank
-                FROM dynamic_entity_category_relation r
-                JOIN input_categories ic ON ic.category_id = r.category_id
-                WHERE r.deleted = FALSE
-                <if test='entityTypeCode != null and entityTypeCode != ""'>
-                    AND r.entity_type_code = #{entityTypeCode}
-                </if>
-            ),
-            dedup AS (
-                SELECT entity_id, rank, sort, id,
-                        row_number() OVER (
-                            PARTITION BY entity_id
-                            ORDER BY rank ASC, sort ASC NULLS LAST, id ASC
-                        ) AS rn
-                FROM relations
-            )
-            SELECT entity_id
-            FROM dedup
-            WHERE rn = 1
-            ORDER BY rank ASC, sort ASC NULLS LAST, id ASC
-            LIMIT #{limit} OFFSET #{offset}
-            </script>
-            """)
-    List<Long> selectEntityIdsByCategoryIdsRankPaged(@Param("categoryIds") List<Long> categoryIds,
-                                                        @Param("entityTypeCode") String entityTypeCode,
-                                                        @Param("offset") int offset,
-                                                        @Param("limit") int limit);
-
-    /**
-     * DB 前置分页：统计去重后的总实体数量（与 rank 排序规则一致）。
-     */
-    @Select("""
-            <script>
-            WITH input_categories AS (
-                SELECT cid AS category_id
-                FROM unnest(
-                    <foreach collection='categoryIds' item='cid' open='ARRAY[' separator=',' close=']::bigint[]'>
-                        #{cid}
-                    </foreach>
-                ) AS t(cid)
-            )
-            SELECT COUNT(DISTINCT r.entity_id)
-            FROM dynamic_entity_category_relation r
-            JOIN input_categories ic ON ic.category_id = r.category_id
-            WHERE r.deleted = FALSE
-            <if test='entityTypeCode != null and entityTypeCode != ""'>
-                AND r.entity_type_code = #{entityTypeCode}
-            </if>
-            </script>
-            """)
-    long countEntityIdsByCategoryIdsRank(@Param("categoryIds") List<Long> categoryIds,
-                                            @Param("entityTypeCode") String entityTypeCode);
 
     /**
      * 按分类范围和业务类型统计实体关联数量（MyBatis-Plus Wrapper 版）

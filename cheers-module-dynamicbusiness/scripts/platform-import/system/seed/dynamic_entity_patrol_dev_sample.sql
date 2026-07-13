@@ -62,7 +62,7 @@ SELECT
 
     'FLD-PSC-003', 'Asia/Shanghai'
 
-  )::text
+  )
 
 FROM dynamic_model m
 
@@ -124,7 +124,7 @@ SELECT
 
     'FLD-POB-002', '[{"entityTypeCode":"equipment","id":900001},{"entityTypeCode":"equipment","id":900002}]'
 
-  )::text
+  )
 
 FROM dynamic_model m
 
@@ -190,7 +190,7 @@ SELECT
 
     'FLD-PPT-004', 'ROBOT_GROUND'
 
-  )::text
+  )
 
 FROM dynamic_model m
 
@@ -256,7 +256,7 @@ SELECT
 
     'FLD-PPT-004', 'HUMAN'
 
-  )::text
+  )
 
 FROM dynamic_model m
 

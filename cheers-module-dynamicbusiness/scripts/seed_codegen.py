@@ -109,12 +109,14 @@ def render_base_fields(rows: list[dict]) -> str:
         return "-- dynamic_entity_type_base_field: (empty)\n"
     lines = [f"-- dynamic_entity_type_base_field: {len(rows)} row(s), upsert by (entity_type_code, field_code)\n"]
     for row in rows:
+        library_field_id = row.get("library_field_id")
+        library_field_sql = str(library_field_id) if library_field_id is not None else "NULL"
         lines.append(
             f"""INSERT INTO dynamic_entity_type_base_field (
-  entity_type_code, field_code, field_name, data_type, required, default_value,
+  entity_type_code, library_field_id, field_code, field_name, data_type, required, default_value,
   description, type_config, sort_order, status, tenant_id, creator
 ) VALUES (
-  {sql_literal(row["entity_type_code"])}, {sql_literal(row["field_code"])},
+  {sql_literal(row["entity_type_code"])}, {library_field_sql}, {sql_literal(row["field_code"])},
   {sql_literal(row["field_name"])}, {sql_literal(row["data_type"])},
   {sql_literal(row.get("required", False))}, {sql_literal(row.get("default_value"))},
   {sql_literal(row.get("description"))}, {sql_literal(row.get("type_config"))},
@@ -123,6 +125,7 @@ def render_base_fields(rows: list[dict]) -> str:
 )
 ON CONFLICT (entity_type_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
+  library_field_id = EXCLUDED.library_field_id,
   field_name = EXCLUDED.field_name,
   data_type = EXCLUDED.data_type,
   required = EXCLUDED.required,
@@ -163,20 +166,6 @@ DO UPDATE SET
   semantic_type = EXCLUDED.semantic_type,
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
-"""
-        )
-    return "\n".join(lines)
-
-
-def render_field_name_aliases(rows: list[dict]) -> str:
-    if not rows:
-        return "-- base_field_library_name_alias: (empty)\n"
-    lines = [f"-- base_field_library_name_alias: {len(rows)} row(s)\n"]
-    for row in rows:
-        lines.append(
-            f"""INSERT INTO base_field_library_name_alias (base_field_name, library_field_code)
-VALUES ({sql_literal(row["base_field_name"])}, {sql_literal(row["library_field_code"])})
-ON CONFLICT DO NOTHING;
 """
         )
     return "\n".join(lines)

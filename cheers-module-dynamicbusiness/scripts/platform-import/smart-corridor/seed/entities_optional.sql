@@ -22,11 +22,8 @@ SET search_path TO dynamicbusiness;
 
 --
 -- Data for Name: base_field_library_name_alias; Type: TABLE DATA; Schema: dynamicbusiness; Owner: -
+-- (表已由 V10 / dynamic_seed_base_field_schema.sql 删除，跳过 alias 行)
 --
-
-INSERT INTO dynamicbusiness.base_field_library_name_alias (base_field_name, library_field_code) VALUES ('关联设备管理', 'REF-MODEL_c55e44e65d5840c6ad73f0a0eb7e94d9_id');
-INSERT INTO dynamicbusiness.base_field_library_name_alias (base_field_name, library_field_code) VALUES ('关联区域管理', 'F-cc746ce0224145af88d5428d0b03213a');
-
 
 --
 -- Data for Name: ent_billing; Type: TABLE DATA; Schema: dynamicbusiness; Owner: -

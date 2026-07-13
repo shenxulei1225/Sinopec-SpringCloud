@@ -75,9 +75,7 @@ FROM (VALUES
   ('REG-CAT-OP-SW-JJ', 'REG-CAT-PROV-SW', '江津作业区', 100110, 'REG-OP-SW-JJ', 'operation', 'MODEL-REGION-OPERATION', 10),
   ('REG-CAT-OP-SW-NJ', 'REG-CAT-PROV-SW', '内江作业区', 100111, 'REG-OP-SW-NJ', 'operation', 'MODEL-REGION-OPERATION', 11),
   ('REG-CAT-OP-EAST-LY', 'REG-CAT-PROV-EAST', '洛阳作业区', 100112, 'REG-OP-EAST-LY', 'operation', 'MODEL-REGION-OPERATION', 1),
-  ('REG-CAT-OP-EAST-JQ', 'REG-CAT-PROV-EAST', '金桥作业区', 100113, 'REG-OP-EAST-JQ', 'operation', 'MODEL-REGION-OPERATION', 2),
-  ('REG-CAT-PIPE-FJ-W3', 'REG-CAT-PROV-FJ', '西三线', 100114, 'REG-PIPE-FJ-W3', 'pipeline', 'MODEL-REGION-PIPELINE', 1),
-  ('REG-CAT-PIPE-FJ-HX2', 'REG-CAT-PROV-FJ', '海西二期', 100115, 'REG-PIPE-FJ-HX2', 'pipeline', 'MODEL-REGION-PIPELINE', 2)
+  ('REG-CAT-OP-EAST-JQ', 'REG-CAT-PROV-EAST', '金桥作业区', 100113, 'REG-OP-EAST-JQ', 'operation', 'MODEL-REGION-OPERATION', 2)
 ) AS v(
   category_code, parent_code, display_name, entity_id, entity_code,
   region_type, model_code, sort_order
@@ -178,8 +176,17 @@ WHERE tenant_id = 1 AND id IN (100002, 100003) AND deleted = false;
 
 SELECT setval(
   pg_get_serial_sequence('dynamicbusiness.ent_region', 'id'),
-  GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_region), 100115)
+  GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_region), 100113)
 );
+
+-- 清理历史误挂的 region 管道节点（现由 facility Pattern C 承担）
+UPDATE dynamic_category
+SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
+WHERE deleted = false AND tenant_id = 1 AND code LIKE 'REG-CAT-PIPE-%';
+
+UPDATE ent_region
+SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
+WHERE deleted = false AND tenant_id = 1 AND region_type = 'pipeline';
 
 -- Pattern C 自检：除 region_root 外每个分类必须有实体绑定
 DO $$
@@ -191,6 +198,7 @@ BEGIN
     AND c.tenant_id = 1
     AND c.category_type_code = 'region'
     AND c.code <> 'region_root'
+    AND c.code LIKE 'REG-CAT-%'
     AND NOT EXISTS (
       SELECT 1
       FROM dynamic_category_entity_link l

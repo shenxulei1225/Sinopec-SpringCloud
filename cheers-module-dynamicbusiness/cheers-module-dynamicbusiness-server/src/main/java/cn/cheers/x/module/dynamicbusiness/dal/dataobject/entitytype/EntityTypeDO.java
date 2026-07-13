@@ -50,9 +50,15 @@ public class EntityTypeDO extends TenantBaseDO {
     private String name;
 
     /**
-     * 父级业务类型id
+     * 父级业务类型id（历史字段，新数据请使用 groupName 分组）
      */
     private Long parentId;
+
+    /**
+     * 数据类型分组名（仅导航归类，无继承语义）
+     */
+    @TableField(value = "group_name", updateStrategy = FieldStrategy.ALWAYS)
+    private String groupName;
 
     /**
      * 描述

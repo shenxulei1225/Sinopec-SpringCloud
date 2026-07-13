@@ -272,7 +272,7 @@ DO UPDATE SET
   update_time = CURRENT_TIMESTAMP;
 
 INSERT INTO dynamic_entity_type (code, name, parent_id, description, icon, alias, sort, status, type_level, association_fields, storage_type, dedicated_table_name, enable_rule_engine, physical_column_mapping, tenant_id, creator)
-VALUES ('pipeline', '管线', NULL, '管线台账、管线档案管理', 'businessIcon:管线管理.png', '管线', 2, 'active', 'USER', '{}', 'DEDICATED', 'ent_pipeline', FALSE, NULL, 1, '1')
+VALUES ('pipeline', '管线', NULL, '【已废弃】管线已并入 facility（MODEL-FACILITY-PIPELINE-*）；勿新建', 'businessIcon:管线管理.png', '管线', 2, 'inactive', 'USER', '{}', 'DEDICATED', 'ent_pipeline', FALSE, NULL, 1, '1')
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   name = EXCLUDED.name,
@@ -280,7 +280,8 @@ DO UPDATE SET
   icon = EXCLUDED.icon,
   alias = EXCLUDED.alias,
   sort = EXCLUDED.sort,
-  status = EXCLUDED.status,
+  status = 'inactive',
+  deleted = true,
   storage_type = EXCLUDED.storage_type,
   dedicated_table_name = EXCLUDED.dedicated_table_name,
   enable_rule_engine = EXCLUDED.enable_rule_engine,

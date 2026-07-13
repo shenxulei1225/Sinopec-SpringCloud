@@ -3,6 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.dal.repository.entity;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryEntityLinkDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityCategoryRelationDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityCategoryRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelCategoryRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryEntityLinkMapper;
@@ -198,6 +199,7 @@ public class DataMgmtEntityQueryRepository {
         Map<Long, Integer> modelBestRank = new HashMap<>();
         Map<Long, Integer> modelBestSort = new HashMap<>();
         Map<Long, Long> modelBestTie = new HashMap<>();
+        Map<Long, Map<Long, Integer>> modelCategoryRank = new HashMap<>();
         for (ModelCategoryRelationDO relation : relations) {
             Long modelId = relation.getModelId();
             Long categoryId = relation.getCategoryId();
@@ -207,6 +209,9 @@ public class DataMgmtEntityQueryRepository {
             int catRank = categoryRank.getOrDefault(categoryId, DEFAULT_SORT_FALLBACK);
             int sortKey = relation.getSort() != null ? relation.getSort() : DEFAULT_SORT_FALLBACK;
             long tieId = relation.getId() != null ? relation.getId() : Long.MAX_VALUE;
+            modelCategoryRank
+                    .computeIfAbsent(modelId, ignored -> new HashMap<>())
+                    .put(categoryId, catRank);
             Integer existingRank = modelBestRank.get(modelId);
             if (existingRank == null || catRank < existingRank
                     || (catRank == existingRank && sortKey < modelBestSort.getOrDefault(modelId, DEFAULT_SORT_FALLBACK))) {
@@ -232,6 +237,8 @@ public class DataMgmtEntityQueryRepository {
         Set<Long> linkedOrRelatedInScope = resolveEntityIdsBoundInCategories(
                 expandedCategoryIds, entityTypeCode, candidateEntityIds);
         Set<Long> linkedOrRelatedAnywhere = resolveEntityIdsWithCategoryBinding(entityTypeCode, candidateEntityIds);
+        Set<String> excludedEntityCategoryPairs = resolveExcludedEntityCategoryPairs(
+                entityTypeCode, candidateEntityIds, expandedCategoryIds);
 
         for (EntityDO entity : entities) {
             Long entityId = entity.getId();
@@ -243,17 +250,84 @@ public class DataMgmtEntityQueryRepository {
             if (!linkedOrRelatedInScope.contains(entityId) && linkedOrRelatedAnywhere.contains(entityId)) {
                 continue;
             }
-            Integer rank = modelBestRank.get(modelId);
-            if (rank == null) {
+            ScopeCandidate candidate = resolveModelCategoryCandidate(
+                    entityId,
+                    modelId,
+                    modelCategoryRank.get(modelId),
+                    modelBestSort,
+                    modelBestTie,
+                    categoryRank,
+                    excludedEntityCategoryPairs);
+            if (candidate == null) {
                 continue;
             }
-            offerCandidate(bestByEntityId, new ScopeCandidate(
-                    entityId,
-                    rank,
-                    modelBestSort.getOrDefault(modelId, DEFAULT_SORT_FALLBACK),
-                    modelBestTie.getOrDefault(modelId, Long.MAX_VALUE),
-                    3));
+            offerCandidate(bestByEntityId, candidate);
         }
+    }
+
+    /**
+     * 实体已显式解除与某分类的关联（deleted=true）时，不再因型号挂分类而纳入该分类范围。
+     */
+    private Set<String> resolveExcludedEntityCategoryPairs(String entityTypeCode,
+                                                           Set<Long> candidateEntityIds,
+                                                           List<Long> expandedCategoryIds) {
+        if (entityTypeCode == null || entityTypeCode.isBlank()
+                || candidateEntityIds == null || candidateEntityIds.isEmpty()
+                || expandedCategoryIds == null || expandedCategoryIds.isEmpty()) {
+            return Set.of();
+        }
+        List<EntityCategoryRelationDO> excluded = entityCategoryRelationMapper.selectExcludedPairsByEntityIdsAndCategoryIds(
+                candidateEntityIds.stream().toList(),
+                expandedCategoryIds,
+                entityTypeCode);
+        Set<String> pairs = new HashSet<>();
+        for (EntityCategoryRelationDO relation : excluded) {
+            if (relation.getEntityId() != null && relation.getCategoryId() != null) {
+                pairs.add(entityCategoryPairKey(relation.getEntityId(), relation.getCategoryId()));
+            }
+        }
+        return pairs;
+    }
+
+    private ScopeCandidate resolveModelCategoryCandidate(long entityId,
+                                                         long modelId,
+                                                         Map<Long, Integer> categoryRanksForModel,
+                                                         Map<Long, Integer> modelBestSort,
+                                                         Map<Long, Long> modelBestTie,
+                                                         Map<Long, Integer> categoryRank,
+                                                         Set<String> excludedEntityCategoryPairs) {
+        if (categoryRanksForModel == null || categoryRanksForModel.isEmpty()) {
+            return null;
+        }
+        Long bestCategoryId = null;
+        int bestRank = DEFAULT_SORT_FALLBACK;
+        for (Map.Entry<Long, Integer> entry : categoryRanksForModel.entrySet()) {
+            Long categoryId = entry.getKey();
+            if (categoryId == null) {
+                continue;
+            }
+            if (excludedEntityCategoryPairs.contains(entityCategoryPairKey(entityId, categoryId))) {
+                continue;
+            }
+            int rank = entry.getValue() != null ? entry.getValue() : categoryRank.getOrDefault(categoryId, DEFAULT_SORT_FALLBACK);
+            if (bestCategoryId == null || rank < bestRank) {
+                bestCategoryId = categoryId;
+                bestRank = rank;
+            }
+        }
+        if (bestCategoryId == null) {
+            return null;
+        }
+        return new ScopeCandidate(
+                entityId,
+                bestRank,
+                modelBestSort.getOrDefault(modelId, DEFAULT_SORT_FALLBACK),
+                modelBestTie.getOrDefault(modelId, Long.MAX_VALUE),
+                3);
+    }
+
+    private static String entityCategoryPairKey(long entityId, long categoryId) {
+        return entityId + ":" + categoryId;
     }
 
     /** 分类范围内已有 entity↔category 绑定（link ∪ relation）的实体 id。 */

@@ -179,20 +179,35 @@ public class EntityServiceImpl implements EntityService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void update(EntityUpdateReqVO reqVO) {
+        doUpdate(reqVO, false);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateIncludingModelChange(EntityUpdateReqVO reqVO) {
+        doUpdate(reqVO, true);
+    }
+
+    private void doUpdate(EntityUpdateReqVO reqVO, boolean allowModelIdChange) {
         // 1) 读取旧值：用于不存在校验与关系差异计算
         EntityDO oldEntity = entityCoreService.get(reqVO.getId(), EntityFieldMapsSupport.getRequiredEntityTypeCode(reqVO.getBaseFields()));
         if (oldEntity == null) {
             throw new ServiceException(404, ENTITY_NOT_EXISTS);
         }
 
-        Long modelId = EntityFieldMapsSupport.getModelId(reqVO.getBaseFields());
-        if (modelId == null) {
-            modelId = oldEntity.getModelId();
+        Long requestedModelId = EntityFieldMapsSupport.getModelId(reqVO.getBaseFields());
+        if (!allowModelIdChange
+                && requestedModelId != null
+                && oldEntity.getModelId() != null
+                && !Objects.equals(requestedModelId, oldEntity.getModelId())) {
+            throw new ServiceException(400, "请使用「变更模型」接口修改 modelId，避免字段数据丢失");
         }
 
         // 2) 本体更新：仅更新实体表
         EntityDO data = entityBusinessHelper.prepareUpdateEntity(reqVO, oldEntity);
         entityCoreService.update(data);
+
+        Long modelId = data.getModelId() != null ? data.getModelId() : oldEntity.getModelId();
 
         // 3) 关系差异同步：根据新旧 customFields 计算并更新关系表
         ModelDO model = modelMapper.selectById(modelId);
@@ -201,12 +216,19 @@ public class EntityServiceImpl implements EntityService {
         entityRelationSyncService.syncRelationsOnUpdate(data, model, customFieldsMap, oldCustomFieldsMap);
 
         // 4) 缓存失效 + 事件通知：确保读取一致性并通知下游链路
-        entityCacheEvictionService.evictEntityCaches(modelId, EntityFieldMapsSupport.getRequiredEntityTypeCode(reqVO.getBaseFields()));
+        String entityTypeCode = EntityFieldMapsSupport.getRequiredEntityTypeCode(reqVO.getBaseFields());
+        entityCacheEvictionService.evictEntityCaches(modelId, entityTypeCode);
+        if (allowModelIdChange
+                && oldEntity.getModelId() != null
+                && modelId != null
+                && !Objects.equals(oldEntity.getModelId(), modelId)) {
+            entityCacheEvictionService.evictEntityCaches(oldEntity.getModelId(), entityTypeCode);
+        }
         List<String> changedFields = entityBusinessHelper.extractFieldCodes(reqVO.getBaseFields(), reqVO.getCustomFields());
         entityLifecycleEventPublisher.publishEntityUpdatedEvent(
                 modelId,
                 reqVO.getId(),
-                EntityFieldMapsSupport.getRequiredEntityTypeCode(reqVO.getBaseFields()),
+                entityTypeCode,
                 changedFields,
                 data);
     }

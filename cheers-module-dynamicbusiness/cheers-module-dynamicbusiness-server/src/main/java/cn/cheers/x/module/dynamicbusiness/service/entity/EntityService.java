@@ -77,6 +77,11 @@ public interface EntityService {
     void update(EntityUpdateReqVO reqVO);
 
     /**
+     * 变更模型专用写路径：允许修改 modelId（字段迁移由 {@link cn.cheers.x.module.dynamicbusiness.service.entity.modelchange.EntityModelChangeService} 完成）。
+     */
+    void updateIncludingModelChange(EntityUpdateReqVO reqVO);
+
+    /**
      * 删除实体
      *
      * <p>执行验证、删除等业务逻辑。

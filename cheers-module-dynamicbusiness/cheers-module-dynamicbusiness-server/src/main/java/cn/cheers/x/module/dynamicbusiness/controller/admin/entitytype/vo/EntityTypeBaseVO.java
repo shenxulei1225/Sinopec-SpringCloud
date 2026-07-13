@@ -28,8 +28,12 @@ public class EntityTypeBaseVO {
     @Size(max = 100, message = "编码长度不能超过100")
     private String code;
 
-    @Schema(description = "父级业务类型编号", example = "1024")
+    @Schema(description = "父级业务类型编号（历史字段，请改用 groupName）", example = "1024")
     private Long parentId;
+
+    @Schema(description = "数据类型分组名（仅导航归类）", example = "设施类")
+    @Size(max = 100, message = "分组名长度不能超过100")
+    private String groupName;
 
     @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "active")
     @NotNull(message = "状态不能为空")

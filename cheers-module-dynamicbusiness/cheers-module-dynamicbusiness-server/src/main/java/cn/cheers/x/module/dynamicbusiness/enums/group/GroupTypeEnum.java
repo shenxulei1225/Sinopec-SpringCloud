@@ -8,7 +8,9 @@ import lombok.Getter;
 public enum GroupTypeEnum {
 
     FIELD("FIELD"),
-    UNIT("UNIT");
+    UNIT("UNIT"),
+    /** 数据类型侧栏分组（平铺，无继承语义；成员通过 entity_type.group_name 关联） */
+    ENTITY_TYPE("ENTITY_TYPE");
 
     private final String code;
 }
