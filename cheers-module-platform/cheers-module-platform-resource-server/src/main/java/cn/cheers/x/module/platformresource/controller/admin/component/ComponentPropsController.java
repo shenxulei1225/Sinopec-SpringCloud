@@ -27,6 +27,12 @@ public class ComponentPropsController {
         return success(componentPropsService.getPropsList(reqVO));
     }
 
+    @GetMapping("/batch")
+    @Operation(summary = "按 propsId 列表批量获取 Props（逗号分隔或重复参数）")
+    public CommonResult<List<ComponentPropsRespVO>> getPropsBatch(@RequestParam("propsIds") List<Long> propsIds) {
+        return success(componentPropsService.getPropsBatch(propsIds));
+    }
+
     @GetMapping("/{propsId}")
     @Operation(summary = "按 propsId 获取 Props（模板或实例）")
     public CommonResult<ComponentPropsRespVO> getProps(@PathVariable("propsId") Long propsId) {

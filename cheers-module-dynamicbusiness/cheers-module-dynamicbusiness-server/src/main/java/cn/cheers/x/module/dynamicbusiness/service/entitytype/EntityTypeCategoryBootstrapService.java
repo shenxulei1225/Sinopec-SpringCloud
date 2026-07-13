@@ -1,13 +1,18 @@
 package cn.cheers.x.module.dynamicbusiness.service.entitytype;
 
 import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryTypeCreateReqVO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmEntityDimensionDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmEntityDimensionMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.datamgmt.DmDimensionKindEnum;
+import cn.cheers.x.module.dynamicbusiness.enums.entitytype.EntityTypeEntryKindEnum;
+import cn.cheers.x.module.dynamicbusiness.service.category.CategoryService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryTypeService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +37,12 @@ public class EntityTypeCategoryBootstrapService {
     private CategoryTypeService categoryTypeService;
 
     @Resource
+    private CategoryService categoryService;
+
+    @Resource
+    private CategoryTypeMapper categoryTypeMapper;
+
+    @Resource
     private CategoryMapper categoryMapper;
 
     @Resource
@@ -51,6 +62,27 @@ public class EntityTypeCategoryBootstrapService {
     }
 
     private void ensureCategoryType(EntityTypeDO entityType) {
+        if (EntityTypeEntryKindEnum.fromCode(entityType.getEntryKind()).isScoped()) {
+            String baseCode = entityType.getBaseEntityTypeCode();
+            if (!StringUtils.hasText(baseCode)) {
+                log.warn("SCOPED 数据类型 {} 缺少基础数据类型编码，跳过分类 bootstrap", entityType.getCode());
+                return;
+            }
+            EntityTypeDO baseType = entityTypeMapper.selectByCode(baseCode.trim());
+            if (baseType == null) {
+                log.warn("SCOPED 数据类型 {} 的基础类型 {} 不存在，跳过分类 bootstrap",
+                        entityType.getCode(), baseCode);
+                return;
+            }
+            ensureNativeCategoryType(baseType);
+            ensureScopedDomainCategoryFolder(entityType, baseType);
+            return;
+        }
+        ensureNativeCategoryType(entityType);
+    }
+
+    /** NATIVE 数据类型：按 registry code 自动创建默认分类体系。 */
+    private void ensureNativeCategoryType(EntityTypeDO entityType) {
         String code = entityType.getCode();
         if (categoryTypeService.existsByCategoryTypeCode(code, null)) {
             return;
@@ -72,8 +104,45 @@ public class EntityTypeCategoryBootstrapService {
         } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {
-            log.error("[ensureCategoryType] 自动创建分类类型失败, entityTypeCode={}", code, e);
+            log.error("[ensureNativeCategoryType] 自动创建分类类型失败, entityTypeCode={}", code, e);
             throw new ServiceException(500, "自动创建默认分类失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * SCOPED 域入口：在主数据分类根下创建域分组节点（code={registryCode}_dir），
+     * 供该域下子分类挂载，总入口可按域并列统计。
+     */
+    private void ensureScopedDomainCategoryFolder(EntityTypeDO scopedType, EntityTypeDO baseType) {
+        String baseCategoryTypeCode = baseType.getCode().trim();
+        String folderCode = scopedType.getCode().trim() + "_dir";
+        boolean folderExists = categoryMapper.selectByCategoryTypeCode(baseCategoryTypeCode).stream()
+                .anyMatch(item -> folderCode.equals(item.getCode()));
+        if (folderExists) {
+            return;
+        }
+
+        CategoryTypeDO categoryType = categoryTypeMapper.selectByCategoryTypeCode(baseCategoryTypeCode);
+        if (categoryType == null || categoryType.getTopLevelCategoryId() == null) {
+            log.warn("SCOPED 数据类型 {} 的基础分类 {} 未配置顶层节点，跳过域分组创建",
+                    scopedType.getCode(), baseCategoryTypeCode);
+            return;
+        }
+
+        CategoryCreateReqVO req = new CategoryCreateReqVO();
+        req.setCategoryTypeCode(baseCategoryTypeCode);
+        req.setParentId(categoryType.getTopLevelCategoryId());
+        req.setCode(folderCode);
+        req.setName(scopedType.getName());
+        req.setStatus(1);
+        try {
+            categoryService.createCategory(req);
+        } catch (ServiceException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("[ensureScopedDomainCategoryFolder] 创建域分组失败, scoped={}, base={}",
+                    scopedType.getCode(), baseCategoryTypeCode, e);
+            throw new ServiceException(500, "自动创建域分类分组失败：" + e.getMessage());
         }
     }
 

@@ -218,7 +218,7 @@ public class ModelCoreServiceImpl implements ModelCoreService {
      * <p>说明：该方法仅负责主表分页，不负责 includeChildren、多业务合并排序、分类上下文排序等编排。</p>
      */
     @Override
-    public PageResult<ModelDO> pageModels(String entityTypeCode, String keyword, Integer status, Integer pageNo, Integer pageSize) {
-        return modelMapper.selectPage(entityTypeCode, keyword, status, pageNo, pageSize);
+    public PageResult<ModelDO> pageModels(String entityTypeCode, String dataScope, String keyword, Integer status, Integer pageNo, Integer pageSize) {
+        return modelMapper.selectPage(entityTypeCode, dataScope, keyword, status, pageNo, pageSize);
     }
 }

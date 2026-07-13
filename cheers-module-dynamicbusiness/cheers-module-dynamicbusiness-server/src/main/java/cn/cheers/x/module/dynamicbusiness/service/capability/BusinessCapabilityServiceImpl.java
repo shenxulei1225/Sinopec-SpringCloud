@@ -30,8 +30,10 @@ import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldGroupRespVO;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelFieldGroupService;
+import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
 import cn.cheers.x.module.dynamicbusiness.framework.field.EntityTypeFieldLabelHelper;
 import cn.cheers.x.module.dynamicbusiness.service.capability.form.ModelCrudFormFieldAssembler;
+import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.service.capability.projection.CapabilityBlockProjectionBuilder;
 import cn.cheers.x.module.dynamicbusiness.service.capability.system.SystemCapabilityCatalog;
 import cn.cheers.x.module.dynamicbusiness.service.capability.system.SystemCapabilityDefinition;
@@ -249,9 +251,10 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             upsertProjection(code, componentCode, BusinessCategoryConstants.KIND_MODEL, modelProjectionJson, newVersion);
         }
 
-        List<ModelDO> models = modelMapper.selectByEntityTypeCode(code);
+        List<ModelDO> models = listModelsForCrudFormRebuild(code);
         for (ModelDO model : models) {
-            String formJson = buildModelCrudFormJson(model.getId(), code);
+            String formFieldEntityTypeCode = resolveFormFieldEntityTypeCode(code, model);
+            String formJson = buildModelCrudFormJson(model.getId(), formFieldEntityTypeCode);
             upsertModelCrudForm(code, model.getId(), formJson, newVersion);
         }
     }
@@ -315,7 +318,9 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         if (model == null || !StringUtils.hasText(model.getEntityTypeCode())) {
             throw new ServiceException(404, "未找到模型或模型缺少 entityTypeCode，modelId=" + modelId);
         }
-        refreshSingleModelCrudForm(model.getEntityTypeCode().trim(), modelId);
+        String storageCode = model.getEntityTypeCode().trim();
+        refreshSingleModelCrudForm(storageCode, modelId);
+        refreshScopedRegistryCrudFormsForModel(model);
     }
 
     @Override
@@ -893,16 +898,96 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     }
 
     /** 仅刷新单个模型的 CRUD 表单定义（避免全量能力重建）。 */
-    private void refreshSingleModelCrudForm(String entityTypeCode, Long modelId) {
-        ModelDO model = modelMapper.selectById(modelId);
-        if (model == null || !entityTypeCode.equals(model.getEntityTypeCode())) {
-            triggerRebuild(entityTypeCode);
+    private void refreshSingleModelCrudForm(String registryEntityTypeCode, Long modelId) {
+        String registryCode = requireEntityTypeCode(registryEntityTypeCode);
+        ModelCrudFormResolveContext context = resolveModelCrudFormContext(registryCode, modelId);
+        if (context == null) {
+            log.warn("[refreshSingleModelCrudForm][model 与入口不匹配，跳过][registryEntityTypeCode={}][modelId={}]",
+                    registryCode, modelId);
             return;
         }
-        BusinessCapabilityDO existing = businessCapabilityMapper.selectByEntityTypeCode(entityTypeCode);
+        BusinessCapabilityDO existing = businessCapabilityMapper.selectByEntityTypeCode(registryCode);
         long version = existing != null && existing.getVersion() != null ? existing.getVersion() : 1L;
-        String formJson = buildModelCrudFormJson(modelId, entityTypeCode);
-        upsertModelCrudForm(entityTypeCode, modelId, formJson, version);
+        String formJson = buildModelCrudFormJson(modelId, context.formFieldEntityTypeCode());
+        upsertModelCrudForm(registryCode, modelId, formJson, version);
+    }
+
+    /**
+     * 模型字段变更时，同步刷新指向同一 storage + dataScope 的 SCOPED 入口表单定义。
+     */
+    private void refreshScopedRegistryCrudFormsForModel(ModelDO model) {
+        if (model == null || !StringUtils.hasText(model.getEntityTypeCode())) {
+            return;
+        }
+        List<EntityTypeDO> scopedEntries = entityTypeMapper.selectList(new LambdaQueryWrapperX<EntityTypeDO>()
+                .eq(EntityTypeDO::getEntryKind, EntityTypeDO.ENTRY_KIND_SCOPED)
+                .eq(EntityTypeDO::getBaseEntityTypeCode, model.getEntityTypeCode().trim())
+                .eq(EntityTypeDO::getDeleted, false));
+        if (scopedEntries == null || scopedEntries.isEmpty()) {
+            return;
+        }
+        for (EntityTypeDO scopedEntry : scopedEntries) {
+            if (scopedEntry == null || !StringUtils.hasText(scopedEntry.getCode())) {
+                continue;
+            }
+            if (!EntityTypeScopeContext.scopesEqual(scopedEntry.getDataScope(), model.getDataScope())) {
+                continue;
+            }
+            refreshSingleModelCrudForm(scopedEntry.getCode().trim(), model.getId());
+        }
+    }
+
+    /**
+     * 能力重建时列出应生成 CRUD 表单的模型：NATIVE 按 registry；SCOPED 按 storage + dataScope。
+     */
+    private List<ModelDO> listModelsForCrudFormRebuild(String registryEntityTypeCode) {
+        EntityTypeScopeContext scope = loadEntityTypeScope(registryEntityTypeCode);
+        if (scope != null && scope.isScoped()) {
+            return modelMapper.selectByEntityTypeCode(scope.getStorageEntityTypeCode()).stream()
+                    .filter(model -> EntityTypeScopeContext.scopesEqual(model.getDataScope(), scope.getDataScope()))
+                    .toList();
+        }
+        return modelMapper.selectByEntityTypeCode(registryEntityTypeCode);
+    }
+
+    private EntityTypeScopeContext loadEntityTypeScope(String registryEntityTypeCode) {
+        EntityTypeDO entityType = entityTypeMapper.selectByCode(registryEntityTypeCode);
+        return EntityTypeScopeContext.from(entityType);
+    }
+
+    private String resolveFormFieldEntityTypeCode(String registryEntityTypeCode, ModelDO model) {
+        EntityTypeScopeContext scope = loadEntityTypeScope(registryEntityTypeCode);
+        if (scope != null && scope.isScoped()) {
+            return scope.getStorageEntityTypeCode();
+        }
+        return model.getEntityTypeCode();
+    }
+
+    /**
+     * 校验 registry 入口与 modelId 是否匹配，并返回表单字段应使用的 storage entityTypeCode。
+     */
+    private ModelCrudFormResolveContext resolveModelCrudFormContext(String registryEntityTypeCode, Long modelId) {
+        ModelDO model = modelMapper.selectById(modelId);
+        if (model == null || !StringUtils.hasText(model.getEntityTypeCode())) {
+            return null;
+        }
+        EntityTypeScopeContext scope = loadEntityTypeScope(registryEntityTypeCode);
+        if (scope != null && scope.isScoped()) {
+            if (!scope.getStorageEntityTypeCode().equals(model.getEntityTypeCode())) {
+                return null;
+            }
+            if (!EntityTypeScopeContext.scopesEqual(scope.getDataScope(), model.getDataScope())) {
+                return null;
+            }
+            return new ModelCrudFormResolveContext(registryEntityTypeCode, scope.getStorageEntityTypeCode());
+        }
+        if (!registryEntityTypeCode.equals(model.getEntityTypeCode())) {
+            return null;
+        }
+        return new ModelCrudFormResolveContext(registryEntityTypeCode, registryEntityTypeCode);
+    }
+
+    private record ModelCrudFormResolveContext(String registryEntityTypeCode, String formFieldEntityTypeCode) {
     }
 
     private String requireEntityTypeCode(String entityTypeCode) {

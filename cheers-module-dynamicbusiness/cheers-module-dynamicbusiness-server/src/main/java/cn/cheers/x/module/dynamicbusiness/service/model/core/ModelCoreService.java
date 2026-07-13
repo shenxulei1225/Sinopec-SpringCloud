@@ -51,5 +51,5 @@ public interface ModelCoreService {
 
     List<ModelDO> listByIds(List<Long> ids);
 
-    PageResult<ModelDO> pageModels(String entityTypeCode, String keyword, Integer status, Integer pageNo, Integer pageSize);
+    PageResult<ModelDO> pageModels(String entityTypeCode, String dataScope, String keyword, Integer status, Integer pageNo, Integer pageSize);
 }

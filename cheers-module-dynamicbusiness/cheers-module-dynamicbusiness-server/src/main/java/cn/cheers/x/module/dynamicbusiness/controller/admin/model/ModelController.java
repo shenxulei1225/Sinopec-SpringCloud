@@ -149,9 +149,11 @@ public class ModelController {
      */
     public CommonResult<List<ModelRespVO>> findModelsByCategoryInBusiness(
             @RequestParam("categoryId") Long categoryId,
-            @RequestParam("entityTypeCode") String entityTypeCode) {
+            @RequestParam("entityTypeCode") String entityTypeCode,
+            @RequestParam(value = "dataScope", required = false) String dataScope) {
         List<Long> modelIds = modelCategoryRelationService.listModelIdsByCategoryIdWithDescendants(categoryId, entityTypeCode);
-        return success(modelIds.isEmpty() ? List.of() : modelService.getModelsByIds(modelIds));
+        List<ModelRespVO> models = modelIds.isEmpty() ? List.of() : modelService.getModelsByIds(modelIds);
+        return success(modelService.filterModelsByDataScope(models, dataScope));
     }
 
     @GetMapping("/list-by-entity-type")
@@ -163,10 +165,12 @@ public class ModelController {
     @PreAuthorize("@ss.hasPermission('system:model:query')")
     /**
      * 用途：按业务类型查询模型列表。
-     * Service 映射：{@link ModelService#listModelsByEntityType(String)}。
+     * Service 映射：{@link ModelService#listModelsByEntityType(String, String)}。
      */
-    public CommonResult<List<ModelRespVO>> listModelsByEntityType(@RequestParam("entityTypeCode") String entityTypeCode) {
-        return success(modelService.listModelsByEntityType(entityTypeCode));
+    public CommonResult<List<ModelRespVO>> listModelsByEntityType(
+            @RequestParam("entityTypeCode") String entityTypeCode,
+            @RequestParam(value = "dataScope", required = false) String dataScope) {
+        return success(modelService.listModelsByEntityType(entityTypeCode, dataScope));
     }
 
     @GetMapping("/list-uncategorized-by-category-type")
@@ -179,8 +183,9 @@ public class ModelController {
     @PreAuthorize("@ss.hasPermission('system:model:query')")
     public CommonResult<List<ModelRespVO>> listUncategorizedModelsByCategoryType(
             @RequestParam("entityTypeCode") String entityTypeCode,
-            @RequestParam("categoryTypeCode") String categoryTypeCode) {
-        return success(modelService.listUncategorizedModelsByCategoryType(categoryTypeCode, entityTypeCode));
+            @RequestParam("categoryTypeCode") String categoryTypeCode,
+            @RequestParam(value = "dataScope", required = false) String dataScope) {
+        return success(modelService.listUncategorizedModelsByCategoryType(categoryTypeCode, entityTypeCode, dataScope));
     }
 
     @GetMapping("/list-all")

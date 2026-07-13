@@ -12,7 +12,9 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.group.GroupMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.group.GroupTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.service.group.GroupService;
+import cn.cheers.x.module.dynamicbusiness.enums.entitytype.EntityTypeEntryKindEnum;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
@@ -90,22 +92,30 @@ public class EntityTypeServiceImpl implements EntityTypeService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long create(EntityTypeCreateReqVO reqVO) {
+        EntityTypeEntryKindEnum entryKind = EntityTypeEntryKindEnum.fromCode(reqVO.getEntryKind());
+        if (entryKind.isScoped()) {
+            return createScopedEntityType(reqVO);
+        }
+        return createNativeEntityType(reqVO);
+    }
+
+    private Long createNativeEntityType(EntityTypeCreateReqVO reqVO) {
         // 1. 验证业务是否已经存在
         if (entityTypeMapper.existsByCode(reqVO.getCode())) {
             throw new ServiceException(400, "业务类型编码已存在");
         }
         EntityTypeDO entityType = new EntityTypeDO();
         copyBaseFields(entityType, reqVO);
-        entityType.setTypeLevel(EntityTypeDO.TYPE_LEVEL_USER); //用户创建的业务
+        entityType.setTypeLevel(EntityTypeDO.TYPE_LEVEL_USER);
         entityType.setParentId(null);
+        entityType.setEntryKind(EntityTypeDO.ENTRY_KIND_NATIVE);
+        entityType.setBaseEntityTypeCode(null);
+        entityType.setDataScope(null);
         ensureEntityTypeGroupRegistered(entityType.getGroupName());
         entityTypeMapper.insert(entityType);
 
-
-        // 3. 创建业务的关联字段
         createRelationFieldForEntityType(entityType);
 
-        // 4.为专用存储创建专用表
         StorageTypeEnum storageType = StorageTypeEnum.getByCode(entityType.getStorageType());
         if (storageType != null && storageType.isDedicated()) {
             String tableName = StringUtils.hasText(entityType.getDedicatedTableName())
@@ -122,6 +132,61 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         entityTypeCategoryBootstrapService.ensureForEntityTypeCode(entityType.getCode());
 
         return entityType.getId();
+    }
+
+    private Long createScopedEntityType(EntityTypeCreateReqVO reqVO) {
+        if (!StringUtils.hasText(reqVO.getBaseEntityTypeCode())) {
+            throw new ServiceException(400, "SCOPED 数据类型必须指定基础数据类型编码");
+        }
+        if (!StringUtils.hasText(reqVO.getDataScope())) {
+            throw new ServiceException(400, "SCOPED 数据类型必须指定业务域标识");
+        }
+        if (entityTypeMapper.existsByCode(reqVO.getCode())) {
+            throw new ServiceException(400, "业务类型编码已存在");
+        }
+
+        String baseCode = reqVO.getBaseEntityTypeCode().trim();
+        String dataScope = EntityTypeScopeContext.normalizeScope(reqVO.getDataScope());
+        EntityTypeDO baseType = entityTypeMapper.selectByCode(baseCode);
+        if (baseType == null) {
+            throw new ServiceException(404, "基础数据类型不存在：" + baseCode);
+        }
+        if (EntityTypeEntryKindEnum.fromCode(baseType.getEntryKind()).isScoped()) {
+            throw new ServiceException(400, "SCOPED 入口不能基于另一个 SCOPED 入口创建");
+        }
+        if (existsScopedEntry(baseCode, dataScope, null)) {
+            throw new ServiceException(400, "该基础类型下业务域已存在：" + dataScope);
+        }
+
+        EntityTypeDO entityType = new EntityTypeDO();
+        copyBaseFields(entityType, reqVO);
+        entityType.setTypeLevel(EntityTypeDO.TYPE_LEVEL_USER);
+        entityType.setParentId(null);
+        entityType.setEntryKind(EntityTypeDO.ENTRY_KIND_SCOPED);
+        entityType.setBaseEntityTypeCode(baseCode);
+        entityType.setDataScope(dataScope);
+        entityType.setStorageType(baseType.getStorageType());
+        entityType.setDedicatedTableName(baseType.getDedicatedTableName());
+        entityType.setPhysicalColumnMapping(baseType.getPhysicalColumnMapping());
+        entityType.setEnableRuleEngine(baseType.getEnableRuleEngine());
+        ensureEntityTypeGroupRegistered(entityType.getGroupName());
+        entityTypeMapper.insert(entityType);
+
+        entityTypeCategoryBootstrapService.ensureForEntityTypeCode(entityType.getCode());
+
+        return entityType.getId();
+    }
+
+    private boolean existsScopedEntry(String baseEntityTypeCode, String dataScope, Long excludeId) {
+        LambdaQueryWrapperX<EntityTypeDO> query = new LambdaQueryWrapperX<EntityTypeDO>()
+                .eq(EntityTypeDO::getEntryKind, EntityTypeDO.ENTRY_KIND_SCOPED)
+                .eq(EntityTypeDO::getBaseEntityTypeCode, baseEntityTypeCode)
+                .eq(EntityTypeDO::getDataScope, dataScope)
+                .eq(EntityTypeDO::getDeleted, false);
+        if (excludeId != null) {
+            query.ne(EntityTypeDO::getId, excludeId);
+        }
+        return entityTypeMapper.selectCount(query) > 0;
     }
 
     /**
@@ -635,6 +700,13 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         entityType.setAlias(reqVO.getAlias());
         entityType.setAssociationFields(normalizeJsonFieldString(reqVO.getAssociationFields()));
         entityType.setGroupName(normalizeGroupName(reqVO.getGroupName()));
+        entityType.setEntryKind(
+                StringUtils.hasText(reqVO.getEntryKind())
+                        ? EntityTypeEntryKindEnum.fromCode(reqVO.getEntryKind()).getCode()
+                        : EntityTypeDO.ENTRY_KIND_NATIVE);
+        entityType.setBaseEntityTypeCode(
+                StringUtils.hasText(reqVO.getBaseEntityTypeCode()) ? reqVO.getBaseEntityTypeCode().trim() : null);
+        entityType.setDataScope(EntityTypeScopeContext.normalizeScope(reqVO.getDataScope()));
         // Copy storage config fields
         entityType.setStorageType(reqVO.getStorageType());
         entityType.setDedicatedTableName(reqVO.getDedicatedTableName());
@@ -664,6 +736,9 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         vo.setTypeLevel(entityType.getTypeLevel());
         vo.setParentId(entityType.getParentId());
         vo.setGroupName(entityType.getGroupName());
+        vo.setEntryKind(entityType.getEntryKind());
+        vo.setBaseEntityTypeCode(entityType.getBaseEntityTypeCode());
+        vo.setDataScope(entityType.getDataScope());
         vo.setCreateTime(entityType.getCreateTime());
         // Copy storage config fields
         vo.setStorageType(entityType.getStorageType());

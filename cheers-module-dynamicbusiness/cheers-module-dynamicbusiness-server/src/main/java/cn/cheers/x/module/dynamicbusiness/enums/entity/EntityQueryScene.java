@@ -15,7 +15,7 @@ import lombok.Getter;
 public enum EntityQueryScene {
 
     /** 模式A（灵活分类视图）：点击分类查看实体列表 */
-    PATTERN_A_C_ENTITIES_BY_CATEGORY ("PATTERN_A_C_ENTITIES_BY_CATEGORY", "模式A和C（分类视图）：点击分类查看实体列表"),
+    PATTERN_A_C_ENTITIES_BY_CATEGORY("PATTERN_A_C_ENTITIES_BY_CATEGORY", "模式A和C（分类视图）：点击分类查看实体列表"),
 
     /** 模式B：点击分类查看实体汇总列表 */
     PATTERN_B_ENTITIES_BY_CATEGORY("PATTERN_B_ENTITIES_BY_CATEGORY", "模式B：点击分类查看实体汇总列表"),
@@ -34,7 +34,7 @@ public enum EntityQueryScene {
 
 
     /** 模式D：查看单条实体详情（详情内携带跨业务关联关系摘要） */
-    PATTERN_D_ENTITY_DETAILED_INFO ("PATTERN_D_ENTITY_DETAILED_INFO", "模式D：查看实体详情（含跨业务关联信息）"),
+    PATTERN_D_ENTITY_DETAILED_INFO("PATTERN_D_ENTITY_DETAILED_INFO", "模式D：查看实体详情（含跨业务关联信息）"),
 
     /** 通用：以根实体获取子树 */
     ROOT_ENTITY_SUBTREE("ROOT_ENTITY_SUBTREE", "通用：以根实体获取子树"),

@@ -61,6 +61,24 @@ public class EntityTypeDO extends TenantBaseDO {
     private String groupName;
 
     /**
+     * 入口类型：NATIVE=独立数据类型；SCOPED=已有类型的业务域入口
+     */
+    @TableField("entry_kind")
+    private String entryKind;
+
+    /**
+     * SCOPED 时指向的存储数据类型编码（如 task）
+     */
+    @TableField("base_entity_type_code")
+    private String baseEntityTypeCode;
+
+    /**
+     * SCOPED 时的业务域标识（如 巡检）
+     */
+    @TableField("data_scope")
+    private String dataScope;
+
+    /**
      * 描述
      */
     private String description;
@@ -102,6 +120,9 @@ public class EntityTypeDO extends TenantBaseDO {
 
     public static final String TYPE_LEVEL_SYSTEM = "SYSTEM";
     public static final String TYPE_LEVEL_USER = "USER";
+
+    public static final String ENTRY_KIND_NATIVE = "NATIVE";
+    public static final String ENTRY_KIND_SCOPED = "SCOPED";
 
     /**
      * 可用的关联字段定义(JSON格式)

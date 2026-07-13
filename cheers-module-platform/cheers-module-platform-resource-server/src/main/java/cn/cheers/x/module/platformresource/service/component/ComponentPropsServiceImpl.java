@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -36,6 +37,24 @@ public class ComponentPropsServiceImpl implements ComponentPropsService {
     @Override
     public ComponentPropsRespVO getProps(Long propsId) {
         return convertToRespVO(requireProps(propsId));
+    }
+
+    @Override
+    public List<ComponentPropsRespVO> getPropsBatch(List<Long> propsIds) {
+        if (propsIds == null || propsIds.isEmpty()) {
+            return List.of();
+        }
+        List<Long> uniqueIds = propsIds.stream()
+                .filter(Objects::nonNull)
+                .filter(id -> id > 0)
+                .distinct()
+                .collect(Collectors.toList());
+        if (uniqueIds.isEmpty()) {
+            return List.of();
+        }
+        return componentPropsMapper.selectListByIds(uniqueIds).stream()
+                .map(this::convertToRespVO)
+                .collect(Collectors.toList());
     }
 
     @Override

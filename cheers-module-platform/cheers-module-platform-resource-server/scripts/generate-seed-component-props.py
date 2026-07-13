@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import sys
 from pathlib import Path
 
@@ -16,9 +15,9 @@ except ImportError:
     print("Install psycopg2-binary", file=sys.stderr)
     sys.exit(1)
 
-OUT = Path(__file__).resolve().parent.parent / (
-    "cheers-module-platform-resource-server/src/main/resources/db/migration/"
-    "V7__seed_pr_component_props_dynamic.sql"
+OUT = (
+    Path(__file__).resolve().parent.parent
+    / "src/main/resources/db/migration/V7__seed_pr_component_props_dynamic.sql"
 )
 
 # V4 demo ids without data_source; skip unless Mac DB bound a data_source
@@ -72,7 +71,7 @@ def main() -> int:
         "SET search_path TO platformresource;",
         "",
         "-- Mac 开发库导出的组件 props（含 data_source 绑定动态/系统业务）",
-        "-- 生成：cheers-module-platform-resource/scripts/generate-seed-component-props.py",
+        "-- 生成：cheers-module-platform/cheers-module-platform-resource-server/scripts/generate-seed-component-props.py",
         "-- 覆盖 V4 演示模板中已绑定业务数据来源的行（如 equipment + entity）",
         "",
     ]
@@ -88,7 +87,6 @@ def main() -> int:
         props_override = row["props_override"]
         data_source = row["data_source"]
 
-        # Normalize JSON for stable diffs
         try:
             props = json.dumps(json.loads(props), ensure_ascii=False, separators=(",", ":"))
         except json.JSONDecodeError:

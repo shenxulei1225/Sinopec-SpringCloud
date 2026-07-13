@@ -13,6 +13,11 @@
 #   ./start-microservices.sh nacos              # 启动 Nacos
 #   ./start-microservices.sh nacos status       # 查看 Nacos 状态
 #   ./start-microservices.sh nacos stop         # 停止 Nacos
+#   ./start-microservices.sh platform-all       # 仅启动 platform 五件套
+#
+# platform 资源库（platform / resource，58098）模块路径：
+#   cheers-module-platform/cheers-module-platform-resource-server
+# 旧根目录 cheers-module-platform-resource/ 已删除，勿再引用。
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -127,6 +132,7 @@ get_service_path() {
         twin) echo "yudao-module-twin/yudao-module-twin-biz" ;;
         inspection) echo "yudao-module-inspection-task/yudao-module-inspection-task-server" ;;
         dynamic) echo "cheers-module-dynamicbusiness/cheers-module-dynamicbusiness-server" ;;
+        # platform / resource：组件库、视图库（旧根目录 cheers-module-platform-resource 已迁入 cheers-module-platform）
         platform|resource) echo "cheers-module-platform/cheers-module-platform-resource-server" ;;
         platform-runtime|runtime-l4) echo "cheers-module-platform/cheers-module-platform-runtime-server" ;;
         platform-orchestration|orchestration) echo "cheers-module-platform/cheers-module-platform-orchestration-server" ;;
@@ -540,9 +546,12 @@ show_services() {
     echo "  5. alarm     - 告警管理服务（必需）"
     echo "  6. dynamic    - 动态业务服务（设施/设备等实体，twin 等模块依赖）"
     echo "  7. platform   - 平台资源库（组件/视图，别名 resource，58098）"
-    echo "  8. platform-runtime - 平台 L4 运行时（58099）"
-    echo "  9. platform-orchestration - 平台编排/排程 run（58104，依赖 runtime）"
-    echo "     （./start-microservices.sh all 已按 7→8→9 顺序启动上述三项）"
+    echo "     路径: cheers-module-platform/cheers-module-platform-resource-server"
+    echo "  8. platform-policy - 平台策略（58105）"
+    echo "  9. platform-capability - 平台能力映射（58106）"
+    echo "  10. platform-runtime - 平台 L4 运行时（58099）"
+    echo "  11. platform-orchestration - 平台编排/排程 run（58104，依赖 runtime）"
+    echo "     （./start-microservices.sh all / platform-all 已按 7→11 顺序启动 platform 五件套）"
     echo ""
     echo -e "${BLUE}业务服务（按需启动）:${NC}"
     echo "  - member     - 会员服务"

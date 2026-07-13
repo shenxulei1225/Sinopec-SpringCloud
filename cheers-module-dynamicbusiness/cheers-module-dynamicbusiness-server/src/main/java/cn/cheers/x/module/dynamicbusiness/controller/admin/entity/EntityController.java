@@ -12,6 +12,9 @@ import cn.cheers.x.module.dynamicbusiness.enums.entity.EntityQueryResultDetail;
 import cn.cheers.x.module.dynamicbusiness.enums.entity.EntityQueryResultShape;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityDataExportService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelRespVO;
+import cn.cheers.x.module.dynamicbusiness.service.model.ModelService;
+import org.springframework.util.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,6 +30,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
 import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.*;
@@ -51,6 +56,9 @@ public class EntityController {
 
     @Resource
     private EntityService entityService;
+
+    @Resource
+    private ModelService modelService;
 
     @Resource
     private EntityDataExportService entityDataExportService;
@@ -336,10 +344,11 @@ public class EntityController {
             @RequestParam(value = "pageNo", required = false) Integer pageNo,
             @RequestParam(value = "pageSize", required = false) Integer pageSize,
             @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "dataScope", required = false) String dataScope,
             @RequestBody(required = false) List<FieldFilterReqVO> filters) {
         return queryEntitiesInternal(scene, resultShape, resultDetail, categoryTypeCode, entityTypeCode,
                 parseFlexibleIdList(modelIds), parseFlexibleIdList(categoryIds),
-                entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword, filters);
+                entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword, dataScope, filters);
     }
 
     @PostMapping("/query-by-scene")
@@ -357,7 +366,7 @@ public class EntityController {
                 reqVO.getCategoryTypeCode(), reqVO.getEntityTypeCode(),
                 reqVO.getModelIds(), reqVO.getCategoryIds(),
                 reqVO.getEntityId(), reqVO.getRootEntityId(), reqVO.getEntitySourceEntityType(),
-                reqVO.getPageNo(), reqVO.getPageSize(), reqVO.getKeyword(), reqVO.getFieldFilters());
+                reqVO.getPageNo(), reqVO.getPageSize(), reqVO.getKeyword(), reqVO.getDataScope(), reqVO.getFieldFilters());
     }
 
     private CommonResult<EntitySceneQueryRespVO> queryEntitiesInternal(
@@ -374,11 +383,31 @@ public class EntityController {
             Integer pageNo,
             Integer pageSize,
             String keyword,
+            String dataScope,
             List<FieldFilterReqVO> filters) {
+        List<Long> effectiveModelIds = mergeModelIdsByDataScope(entityTypeCode, modelIds, dataScope);
         return success(entityService.queryEntities(scene, EntityQueryResultShape.ofNullable(resultShape).getCode(),
                 EntityQueryResultDetail.ofNullable(resultDetail).getCode(),
                 categoryTypeCode, entityTypeCode,
-                modelIds, categoryIds, entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword, filters));
+                effectiveModelIds, categoryIds, entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword, filters));
+    }
+
+    private List<Long> mergeModelIdsByDataScope(String entityTypeCode, List<Long> modelIds, String dataScope) {
+        if (!StringUtils.hasText(dataScope) || !StringUtils.hasText(entityTypeCode)) {
+            return modelIds;
+        }
+        if (modelIds != null && !modelIds.isEmpty()) {
+            return modelIds;
+        }
+        List<ModelRespVO> scopedModels = modelService.listModelsByEntityType(entityTypeCode.trim(), dataScope.trim());
+        if (scopedModels == null || scopedModels.isEmpty()) {
+            return List.of(-1L);
+        }
+        return scopedModels.stream()
+                .map(ModelRespVO::getId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     /**

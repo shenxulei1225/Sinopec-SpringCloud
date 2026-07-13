@@ -36,6 +36,7 @@ import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.service.dynamictable.DynamicTableService;
 import cn.cheers.x.module.dynamicbusiness.service.model.core.ModelCoreService;
 import cn.cheers.x.module.dynamicbusiness.util.SparseSortUtils;
+import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
 import cn.cheers.x.module.dynamicbusiness.event.ModelCreatedEvent;
 import cn.cheers.x.module.dynamicbusiness.event.RelationTargetCreatedEvent;
 import lombok.extern.slf4j.Slf4j;
@@ -154,6 +155,7 @@ public class ModelServiceImpl implements ModelService {
         // 创建模型（租户插件会自动填充 tenantId）
         ModelDO model = ModelConvert.INSTANCE.convert(reqVO);
         model.setCode(generateCode());
+        model.setDataScope(EntityTypeScopeContext.normalizeScope(reqVO.getDataScope()));
         if (model.getSort() == null) {
             Integer maxSort = modelMapper.selectMaxSortByEntityTypeCode(reqVO.getEntityTypeCode());
             model.setSort(SparseSortUtils.next(maxSort));
@@ -473,32 +475,57 @@ public class ModelServiceImpl implements ModelService {
      */
     @Override
     public List<ModelRespVO> listModelsByEntityType(String entityTypeCode) {
-        // 查询该业务类型下的所有模型
-        List<ModelDO> list = modelCoreService.listByEntityTypeCode(entityTypeCode);
+        return listModelsByEntityType(entityTypeCode, null);
+    }
+
+    @Override
+    public List<ModelRespVO> listModelsByEntityType(String entityTypeCode, String dataScope) {
+        List<ModelDO> list = filterModelDosByDataScope(
+                modelCoreService.listByEntityTypeCode(entityTypeCode), dataScope);
         if (list.isEmpty()) {
             return List.of();
         }
 
-        // 转换为 VO 列表
         List<ModelRespVO> result = ModelConvert.INSTANCE.convertList(list);
-
-        // 查询每个模型关联的所有分类ID（多对多关系）
-        // 说明：该填充逻辑仍保留在 ModelService 内部,避免改变 list-by-entity-type 等接口的返回结构。
-        // 另外,ModelCategoryRelationService.listModelsByCategory 也会负责填充。
         fillModelCategoryIds(result);
-
         return result;
+    }
+
+    private List<ModelDO> filterModelDosByDataScope(List<ModelDO> models, String dataScope) {
+        if (models == null || models.isEmpty() || !org.springframework.util.StringUtils.hasText(dataScope)) {
+            return models == null ? List.of() : models;
+        }
+        String normalized = dataScope.trim();
+        return models.stream()
+                .filter(model -> EntityTypeScopeContext.scopesEqual(model.getDataScope(), normalized))
+                .toList();
+    }
+
+    private List<ModelRespVO> filterModelVosByDataScope(List<ModelRespVO> models, String dataScope) {
+        if (models == null || models.isEmpty() || !org.springframework.util.StringUtils.hasText(dataScope)) {
+            return models == null ? List.of() : models;
+        }
+        String normalized = dataScope.trim();
+        return models.stream()
+                .filter(model -> EntityTypeScopeContext.scopesEqual(model.getDataScope(), normalized))
+                .toList();
     }
 
     @Override
     public List<ModelRespVO> listUncategorizedModelsByCategoryType(String categoryTypeCode, String entityTypeCode) {
+        return listUncategorizedModelsByCategoryType(categoryTypeCode, entityTypeCode, null);
+    }
+
+    @Override
+    public List<ModelRespVO> listUncategorizedModelsByCategoryType(
+            String categoryTypeCode, String entityTypeCode, String dataScope) {
         if (entityTypeCode == null || entityTypeCode.isBlank()) {
             throw new ServiceException(400, "entityTypeCode 不能为空");
         }
         if (categoryTypeCode == null || categoryTypeCode.isBlank()) {
             throw new ServiceException(400, "categoryTypeCode 不能为空");
         }
-        List<ModelRespVO> allModels = listModelsByEntityType(entityTypeCode);
+        List<ModelRespVO> allModels = listModelsByEntityType(entityTypeCode, dataScope);
         if (allModels.isEmpty()) {
             return allModels;
         }
@@ -512,6 +539,11 @@ public class ModelServiceImpl implements ModelService {
         return allModels.stream()
                 .filter(model -> model.getId() != null && !categorized.contains(model.getId()))
                 .toList();
+    }
+
+    @Override
+    public List<ModelRespVO> filterModelsByDataScope(List<ModelRespVO> models, String dataScope) {
+        return filterModelVosByDataScope(models, dataScope);
     }
 
     /**
@@ -644,6 +676,7 @@ public class ModelServiceImpl implements ModelService {
         } else {
             pageResult = modelCoreService.pageModels(
                     reqVO.getEntityTypeCode(),
+                    EntityTypeScopeContext.normalizeScope(reqVO.getDataScope()),
                     reqVO.getKeyword(),
                     status,
                     reqVO.getPageNo(),

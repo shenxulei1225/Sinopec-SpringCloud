@@ -27,8 +27,9 @@
 | V11 | `V11__entity_type_base_field_query_rules.sql` | 基础字段可搜索/可筛选/可排序规则列 |
 | V12 | `V12__entity_type_group_name.sql` | 数据类型 `group_name` 分组列；历史 `parent_id` 子级迁移为同级分组 |
 | V13 | `V13__entity_type_group_registry.sql` | 数据类型分组 seed 到通用 `dynamic_group`（`group_type=ENTITY_TYPE`） |
+| V14 | `V14__entity_type_and_model_data_scope.sql` | 数据类型 NATIVE/SCOPED 入口字段 + 模型 `data_scope` |
 
-下一新增版本应为 **V14**。  
+下一新增版本应为 **V15**。  
 已停用脚本在 `db/backup/flyway-legacy-pre-seed/`，不得放回本目录。
 
 > 上表随发版更新；改版本链时同步更新本节，并遵守通用规范中的历史对齐流程。
@@ -67,6 +68,7 @@ PGPASSWORD=Coolhomer psql -h 127.0.0.1 -U postgres -d sinopec -c \
 
 | 日期 | 说明 |
 |------|------|
+| 2026-07-13 | V14：数据类型 `entry_kind` / `base_entity_type_code` / `data_scope`；模型 `data_scope` |
 | 2026-07-13 | platform-import：`system/import.sh` 结束后清理分类树 Redis 缓存，避免 seed 后仍返回仅根节点的旧树 |
 | 2026-07-13 | V13：数据类型分组复用通用 `dynamic_group`（`group_type=ENTITY_TYPE`），不再单独建表 |
 | 2026-07-13 | V12：数据类型 `group_name` 分组列；历史 `parent_id` 子级迁移为同级分组 |

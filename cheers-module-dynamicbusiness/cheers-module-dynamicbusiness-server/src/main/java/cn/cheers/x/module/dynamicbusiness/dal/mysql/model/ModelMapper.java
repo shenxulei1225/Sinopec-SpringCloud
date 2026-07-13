@@ -71,12 +71,13 @@ public interface ModelMapper extends BaseMapperX<ModelDO> {
         /**
          * 分页查询模型
          */
-        default PageResult<ModelDO> selectPage(String entityTypeCode, String keyword, Integer status, Integer pageNo, Integer pageSize) {
+        default PageResult<ModelDO> selectPage(String entityTypeCode, String dataScope, String keyword, Integer status, Integer pageNo, Integer pageSize) {
                 PageParam pageParam = new PageParam();
                 pageParam.setPageNo(pageNo);
                 pageParam.setPageSize(pageSize);
                 return selectPage(pageParam, new LambdaQueryWrapperX<ModelDO>()
                         .eq(StringUtils.isNotBlank(entityTypeCode), ModelDO::getEntityTypeCode, entityTypeCode)
+                        .eq(StringUtils.isNotBlank(dataScope), ModelDO::getDataScope, dataScope != null ? dataScope.trim() : null)
                         .eq(status != null, ModelDO::getStatus, status)
                         .and(StringUtils.isNotBlank(keyword), q -> q.like(ModelDO::getName, keyword)
                                 .or().like(ModelDO::getDescription, keyword))

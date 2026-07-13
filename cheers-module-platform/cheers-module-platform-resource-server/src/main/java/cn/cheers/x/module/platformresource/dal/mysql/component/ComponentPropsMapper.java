@@ -6,6 +6,8 @@ import cn.cheers.x.module.platformresource.dal.dataobject.component.ComponentPro
 import cn.cheers.x.module.platformresource.service.component.ComponentDataSource;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 @Mapper
@@ -36,5 +38,14 @@ public interface ComponentPropsMapper extends BaseMapperX<ComponentPropsDO> {
 
     default ComponentPropsDO selectByIdNotDeleted(Long id) {
         return selectOne(new LambdaQueryWrapperX<ComponentPropsDO>().eq(ComponentPropsDO::getId, id));
+    }
+
+    default List<ComponentPropsDO> selectListByIds(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return selectList(new LambdaQueryWrapperX<ComponentPropsDO>()
+                .in(ComponentPropsDO::getId, ids)
+                .orderByAsc(ComponentPropsDO::getId));
     }
 }

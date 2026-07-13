@@ -528,14 +528,39 @@ public class EntityServiceImpl implements EntityService {
             }
 
             case PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE: {
+                if (hasEmptyScopeModelIds(modelIds)) {
+                    if (shape == EntityQueryResultShape.PAGE) {
+                        return EntitySceneQueryRespVO.page(
+                                applyResultDetail(new PageResult<>(List.of(), 0L), detail), detail.getCode());
+                    }
+                    if (shape == EntityQueryResultShape.TREE) {
+                        return EntitySceneQueryRespVO.tree(List.of(), detail.getCode());
+                    }
+                    return EntitySceneQueryRespVO.list(List.of(), detail.getCode());
+                }
+                List<Long> normalizedModelIds = normalizeModelIds(modelIds);
                 if (shape == EntityQueryResultShape.TREE) {
+                    if (normalizedModelIds.size() == 1) {
+                        return EntitySceneQueryRespVO.tree(
+                                applyResultDetail(getEntityTreeByModelId(entityTypeCode, normalizedModelIds.get(0)), detail),
+                                detail.getCode());
+                    }
+                    if (!normalizedModelIds.isEmpty()) {
+                        List<Long> scopedEntityIds = collectCandidateEntityIdsByModelIds(normalizedModelIds, entityTypeCode);
+                        PageResult<EntityRespVO> scopedTreePage = queryEntitiesByOrderedCandidateIds(
+                                scopedEntityIds, entityTypeCode, keyword, filters, null, null);
+                        return EntitySceneQueryRespVO.tree(
+                                applyResultDetail(EntityTreeBuilder.buildTree(scopedTreePage.getList(),
+                                        EntityTreeBuilder.SortMode.LOCAL_SIBLING_SORT), detail),
+                                detail.getCode());
+                    }
                     List<EntityRespVO> treeRoots = buildEntityHierarchySubtree(
                             entityTypeCode, null, keyword, filters, detail,
                             effectivePageNo, resolveTreeRootPageSize(pageSize));
                     return EntitySceneQueryRespVO.tree(
                             applyResultDetail(treeRoots, detail), detail.getCode());
                 }
-                List<Long> allEntityIds = collectAllEntityIdsByEntityType(entityTypeCode);
+                List<Long> allEntityIds = collectPatternAbcAllCandidateEntityIds(entityTypeCode, modelIds);
                 PageResult<EntityRespVO> result = queryEntitiesByOrderedCandidateIds(
                         allEntityIds, entityTypeCode, keyword, filters,
                         shape == EntityQueryResultShape.PAGE ? effectivePageNo : null,
@@ -618,6 +643,22 @@ public class EntityServiceImpl implements EntityService {
             return List.of();
         }
         return modelIds.stream().filter(Objects::nonNull).distinct().toList();
+    }
+
+    /** dataScope 下无匹配模型时 Controller 注入 -1L 哨兵，表示应返回空结果。 */
+    private boolean hasEmptyScopeModelIds(List<Long> modelIds) {
+        return modelIds != null && modelIds.stream().anyMatch(id -> id != null && id == -1L);
+    }
+
+    /**
+     * PATTERN_ABC_ALL 候选实体 ID：未限定 modelIds 时整业务类型；限定后仅取这些模型下的实体。
+     */
+    private List<Long> collectPatternAbcAllCandidateEntityIds(String entityTypeCode, List<Long> modelIds) {
+        List<Long> normalizedModelIds = normalizeModelIds(modelIds);
+        if (normalizedModelIds.isEmpty()) {
+            return collectAllEntityIdsByEntityType(entityTypeCode);
+        }
+        return collectCandidateEntityIdsByModelIds(normalizedModelIds, entityTypeCode);
     }
 
     /**

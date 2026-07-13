@@ -255,42 +255,7 @@ WHERE g.deleted = false AND g.tenant_id = 1 AND g.group_type = 'FIELD' AND g.cod
 ON CONFLICT (group_type, group_code, target_code, tenant_id) WHERE deleted = false
 DO UPDATE SET sort = EXCLUDED.sort, updater = 'seed', update_time = CURRENT_TIMESTAMP;
 
--- 模板引用（替代 POC JSON 字段）
-INSERT INTO dynamic_model_field_assignment (
-  model_id, field_id, model_code, field_code,
-  required, is_searchable, is_filterable, is_sortable, sort,
-  target_entity_type, tenant_id, creator
-)
-SELECT m.id, f.id, m.code, f.code, true, false, false, false, 50, 'patrol_schedule', 1, 'seed'
-FROM dynamic_model m
-JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1 AND f.code = 'FLD-TSK-028'
-WHERE m.deleted = false AND m.tenant_id = 1 AND m.code = 'patrol_task'
-ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
-DO UPDATE SET sort = EXCLUDED.sort, required = EXCLUDED.required, target_entity_type = EXCLUDED.target_entity_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
-
-INSERT INTO dynamic_model_field_assignment (
-  model_id, field_id, model_code, field_code,
-  required, is_searchable, is_filterable, is_sortable, sort,
-  target_entity_type, tenant_id, creator
-)
-SELECT m.id, f.id, m.code, f.code, true, false, false, false, 60, 'patrol_object', 1, 'seed'
-FROM dynamic_model m
-JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1 AND f.code = 'FLD-TSK-029'
-WHERE m.deleted = false AND m.tenant_id = 1 AND m.code = 'patrol_task'
-ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
-DO UPDATE SET sort = EXCLUDED.sort, required = EXCLUDED.required, target_entity_type = EXCLUDED.target_entity_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
-
-INSERT INTO dynamic_model_field_assignment (
-  model_id, field_id, model_code, field_code,
-  required, is_searchable, is_filterable, is_sortable, sort,
-  target_entity_type, tenant_id, creator
-)
-SELECT m.id, f.id, m.code, f.code, true, false, false, false, 70, 'patrol_point', 1, 'seed'
-FROM dynamic_model m
-JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1 AND f.code = 'FLD-TSK-030'
-WHERE m.deleted = false AND m.tenant_id = 1 AND m.code = 'patrol_task'
-ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
-DO UPDATE SET sort = EXCLUDED.sort, required = EXCLUDED.required, target_entity_type = EXCLUDED.target_entity_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+-- 巡检域（patrol_*）已废弃；排期/对象/巡检点字段待新方案重建
 
 INSERT INTO dynamic_model_field_assignment (
   model_id, field_id, model_code, field_code,

@@ -53,4 +53,7 @@ public class EntitySceneQueryReqVO extends PageParam {
     @Schema(description = "结构化字段筛选条件")
     private List<FieldFilterReqVO> fieldFilters;
 
+    @Schema(description = "业务域 Scope（可选；未传 modelIds 时按 scope 下全部模型过滤实体）", example = "巡检")
+    private String dataScope;
+
 }

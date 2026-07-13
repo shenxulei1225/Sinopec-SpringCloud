@@ -28,5 +28,8 @@ public class ModelPageReqVO extends PageParam {
 
     @Schema(description = "模型状态（1-启用，0-禁用）", example = "1")
     private Integer status;
+
+    @Schema(description = "业务域 Scope（可选；SCOPED 入口下列表/创建时过滤）", example = "巡检")
+    private String dataScope;
 }
 

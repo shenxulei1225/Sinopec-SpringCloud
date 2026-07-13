@@ -13,6 +13,10 @@
 #   .\start-microservices.ps1 nacos status       # 查看 Nacos 状态
 #   .\start-microservices.ps1 nacos stop         # 停止 Nacos
 #   .\start-microservices.ps1 platform-all       # 仅启动 platform 五件套
+#
+# platform 资源库（platform / resource，58098）模块路径：
+#   cheers-module-platform\cheers-module-platform-resource-server
+# 旧根目录 cheers-module-platform-resource\ 已删除，勿再引用。
 # ============================================================================
 
 param(
@@ -64,6 +68,7 @@ $ServiceConfig = @{
     "twin"       = @{ Path = "yudao-module-twin\yudao-module-twin-biz"; Port = 58094 }
     "inspection" = @{ Path = "yudao-module-inspection-task\yudao-module-inspection-task-server"; Port = 58095 }
     "dynamic"    = @{ Path = "cheers-module-dynamicbusiness\cheers-module-dynamicbusiness-server"; Port = 58096 }
+    # platform / resource：组件库、视图库（旧根目录 cheers-module-platform-resource 已迁入 cheers-module-platform）
     "platform"   = @{ Path = "cheers-module-platform\cheers-module-platform-resource-server"; Port = 58098 }
     "resource"   = @{ Path = "cheers-module-platform\cheers-module-platform-resource-server"; Port = 58098 }
     "platform-runtime" = @{ Path = "cheers-module-platform\cheers-module-platform-runtime-server"; Port = 58099 }
@@ -646,9 +651,12 @@ function Show-Services {
     Write-ColorOutput "  5. alarm     - 告警管理服务（必需）" "White"
     Write-ColorOutput "  6. dynamic   - 动态业务服务（设施/设备等实体，twin 等模块依赖）" "White"
     Write-ColorOutput "  7. platform  - 平台资源库（组件/视图，别名 resource，58098）" "White"
-    Write-ColorOutput "  8. platform-runtime - 平台 L4 运行时（58099）" "White"
-    Write-ColorOutput "  9. platform-orchestration - 平台编排/排程 run（58104，依赖 runtime）" "White"
-    Write-ColorOutput "     （.\start-microservices.ps1 all 已按 7->8->9 顺序启动上述三项）" "Gray"
+    Write-ColorOutput "     路径: cheers-module-platform\cheers-module-platform-resource-server" "Gray"
+    Write-ColorOutput "  8. platform-policy - 平台策略（58105）" "White"
+    Write-ColorOutput "  9. platform-capability - 平台能力映射（58106）" "White"
+    Write-ColorOutput "  10. platform-runtime - 平台 L4 运行时（58099）" "White"
+    Write-ColorOutput "  11. platform-orchestration - 平台编排/排程 run（58104，依赖 runtime）" "White"
+    Write-ColorOutput "     （.\start-microservices.ps1 all / platform-all 已按 7->11 顺序启动 platform 五件套）" "Gray"
     
     Write-ColorOutput "" "White"
     Write-ColorOutput "业务服务（按需启动）:" "Cyan"

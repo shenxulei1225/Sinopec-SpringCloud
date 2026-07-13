@@ -1,6 +1,4 @@
-# cheers-module-platform 聚合模块：编译全平台子模块，以及通过根目录脚本启动/停止 platform 微服务（58098）
-# 旧根目录 cheers-module-platform-resource/build.ps1 已废弃，请使用本脚本或
-# cheers-module-platform-resource-server/build.ps1
+# platform 资源库：编译，以及通过根目录 start-microservices.ps1 启动/停止（58098）
 param(
     [Parameter(Position = 0)]
     [ValidateSet('build', 'start', 'stop', 'restart', 'status')]
@@ -9,7 +7,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ModuleRoot = $PSScriptRoot
-$RepoRoot = Join-Path $ModuleRoot '..'
+$RepoRoot = Join-Path $ModuleRoot '..\..'
 $StartScript = Join-Path $RepoRoot 'start-microservices.ps1'
 $ServiceName = 'platform'
 
@@ -25,14 +23,9 @@ function Invoke-StartScript {
 
 switch ($Action) {
     'build' {
-        Set-Location $RepoRoot
-        Write-Host "Building cheers-module-platform (from repo root)..." -ForegroundColor Cyan
-        mvn install --% -pl cheers-module-platform -am -DskipTests
-        if ($LASTEXITCODE -ne 0) {
-            Set-Location $ModuleRoot
-            Write-Host "Retry: mvn install from cheers-module-platform/ ..." -ForegroundColor Yellow
-            mvn install --% -DskipTests
-        }
+        Set-Location $ModuleRoot
+        Write-Host "Building cheers-module-platform-resource-server ..." -ForegroundColor Cyan
+        mvn clean install --% -DskipTests
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         Write-Host "BUILD SUCCESS" -ForegroundColor Green
     }
