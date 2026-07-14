@@ -1,0 +1,227 @@
+{
+  "fixtureId": "mvp_site_pipeline_portal",
+  "description": "MVP acceptance fixture: 站场网络（SITE）地面分区+门+空中层，道路网络（ROAD）驾车段，外管线网络（PIPELINE）空中巡检，衔接点（Portal）联程 walk→vehicle→UAV",
+  "facilityId": 100,
+  "networks": [
+    {
+      "networkRef": "net_100_site_v1",
+      "networkKind": "SITE",
+      "facilityId": 100,
+      "status": "PUBLISHED",
+      "version": 1,
+      "nodes": [
+        {
+          "nodeId": "site_storage_st",
+          "nodeType": "STATION",
+          "layer": "GROUND",
+          "zoneId": 101,
+          "displayName": "储罐区路径点",
+          "position": { "x": 10.0, "y": 20.0, "z": 0.0 },
+          "payload": { "equipment_id": 9001 }
+        },
+        {
+          "nodeId": "site_zone_door",
+          "nodeType": "DOOR",
+          "layer": "GROUND",
+          "zoneId": 101,
+          "displayName": "储罐区-装车区门",
+          "position": { "x": 30.0, "y": 20.0, "z": 0.0 }
+        },
+        {
+          "nodeId": "site_loading_st",
+          "nodeType": "STATION",
+          "layer": "GROUND",
+          "zoneId": 102,
+          "displayName": "装车区路径点",
+          "position": { "x": 50.0, "y": 20.0, "z": 0.0 },
+          "payload": { "equipment_id": 9002 }
+        },
+        {
+          "nodeId": "site_exit_pe",
+          "nodeType": "PORTAL_ENDPOINT",
+          "layer": "GROUND",
+          "zoneId": 102,
+          "displayName": "站场出口衔接端点",
+          "position": { "x": 70.0, "y": 20.0, "z": 0.0 }
+        },
+        {
+          "nodeId": "site_uav_pad",
+          "nodeType": "STATION",
+          "layer": "AIR",
+          "zoneId": 101,
+          "displayName": "站内无人机起降点",
+          "position": { "x": 15.0, "y": 25.0, "z": 12.0 }
+        }
+      ],
+      "edges": [
+        {
+          "edgeId": "e_site_storage_door",
+          "fromNodeId": "site_storage_st",
+          "toNodeId": "site_zone_door",
+          "layer": "GROUND",
+          "traversability": "BIDIRECTIONAL",
+          "impedanceByProfile": { "person_walk": 15.0, "ground_robot": 18.0 },
+          "allowedProfileIds": ["person_walk", "ground_robot"]
+        },
+        {
+          "edgeId": "e_site_door_loading",
+          "fromNodeId": "site_zone_door",
+          "toNodeId": "site_loading_st",
+          "layer": "GROUND",
+          "traversability": "BIDIRECTIONAL",
+          "impedanceByProfile": { "person_walk": 20.0, "ground_robot": 22.0 },
+          "allowedProfileIds": ["person_walk", "ground_robot"]
+        },
+        {
+          "edgeId": "e_site_loading_exit",
+          "fromNodeId": "site_loading_st",
+          "toNodeId": "site_exit_pe",
+          "layer": "GROUND",
+          "traversability": "BIDIRECTIONAL",
+          "impedanceByProfile": { "person_walk": 10.0, "ground_robot": 12.0 },
+          "allowedProfileIds": ["person_walk", "ground_robot"]
+        },
+        {
+          "edgeId": "e_site_storage_air_loading",
+          "fromNodeId": "site_storage_st",
+          "toNodeId": "site_loading_st",
+          "layer": "AIR",
+          "traversability": "BIDIRECTIONAL",
+          "impedanceByProfile": { "uav_low": 25.0 },
+          "allowedProfileIds": ["uav_low"]
+        },
+        {
+          "edgeId": "e_site_uav_pad_storage",
+          "fromNodeId": "site_uav_pad",
+          "toNodeId": "site_storage_st",
+          "layer": "AIR",
+          "traversability": "BIDIRECTIONAL",
+          "impedanceByProfile": { "uav_low": 8.0 },
+          "allowedProfileIds": ["uav_low"]
+        }
+      ]
+    },
+    {
+      "networkRef": "net_100_road_v1",
+      "networkKind": "ROAD",
+      "facilityId": 100,
+      "scopeId": 100,
+      "status": "PUBLISHED",
+      "version": 1,
+      "nodes": [
+        {
+          "nodeId": "road_entry_pe",
+          "nodeType": "PORTAL_ENDPOINT",
+          "layer": "GROUND",
+          "displayName": "道路入口衔接端点",
+          "position": { "x": 80.0, "y": 20.0, "z": 0.0 }
+        },
+        {
+          "nodeId": "road_junction",
+          "nodeType": "TRAVERSAL",
+          "layer": "GROUND",
+          "displayName": "场外路口",
+          "position": { "x": 120.0, "y": 20.0, "z": 0.0 }
+        },
+        {
+          "nodeId": "road_pipeline_gate",
+          "nodeType": "STATION",
+          "layer": "GROUND",
+          "displayName": "外管线道口",
+          "position": { "x": 200.0, "y": 20.0, "z": 0.0 }
+        }
+      ],
+      "edges": [
+        {
+          "edgeId": "e_road_entry_junction",
+          "fromNodeId": "road_entry_pe",
+          "toNodeId": "road_junction",
+          "layer": "GROUND",
+          "traversability": "BIDIRECTIONAL",
+          "impedanceByProfile": { "ground_vehicle": 30.0 },
+          "allowedProfileIds": ["ground_vehicle"]
+        },
+        {
+          "edgeId": "e_road_junction_gate",
+          "fromNodeId": "road_junction",
+          "toNodeId": "road_pipeline_gate",
+          "layer": "GROUND",
+          "traversability": "BIDIRECTIONAL",
+          "impedanceByProfile": { "ground_vehicle": 80.0 },
+          "allowedProfileIds": ["ground_vehicle"]
+        }
+      ]
+    },
+    {
+      "networkRef": "net_100_pipeline_v1",
+      "networkKind": "PIPELINE",
+      "facilityId": 100,
+      "scopeId": 5001,
+      "status": "PUBLISHED",
+      "version": 1,
+      "nodes": [
+        {
+          "nodeId": "pipe_entry_pe",
+          "nodeType": "PORTAL_ENDPOINT",
+          "layer": "AIR",
+          "displayName": "外管线空中入口",
+          "position": { "x": 210.0, "y": 20.0, "z": 15.0 }
+        },
+        {
+          "nodeId": "pipe_st_alpha",
+          "nodeType": "STATION",
+          "layer": "AIR",
+          "displayName": "外管线路径点 A",
+          "position": { "x": 260.0, "y": 25.0, "z": 18.0 },
+          "payload": { "equipment_id": 9101 }
+        },
+        {
+          "nodeId": "pipe_st_beta",
+          "nodeType": "STATION",
+          "layer": "AIR",
+          "displayName": "外管线路径点 B",
+          "position": { "x": 310.0, "y": 30.0, "z": 20.0 },
+          "payload": { "equipment_id": 9102 }
+        }
+      ],
+      "edges": [
+        {
+          "edgeId": "e_pipe_entry_alpha",
+          "fromNodeId": "pipe_entry_pe",
+          "toNodeId": "pipe_st_alpha",
+          "layer": "AIR",
+          "traversability": "BIDIRECTIONAL",
+          "impedanceByProfile": { "uav_low": 40.0 },
+          "allowedProfileIds": ["uav_low"]
+        },
+        {
+          "edgeId": "e_pipe_alpha_beta",
+          "fromNodeId": "pipe_st_alpha",
+          "toNodeId": "pipe_st_beta",
+          "layer": "AIR",
+          "traversability": "BIDIRECTIONAL",
+          "impedanceByProfile": { "uav_low": 35.0 },
+          "allowedProfileIds": ["uav_low"]
+        }
+      ]
+    }
+  ],
+  "portals": [
+    {
+      "portalId": "portal_site_to_road",
+      "fromNetworkRef": "net_100_site_v1",
+      "fromNodeId": "site_exit_pe",
+      "toNetworkRef": "net_100_road_v1",
+      "toNodeId": "road_entry_pe",
+      "allowedProfileIds": ["person_walk"]
+    },
+    {
+      "portalId": "portal_road_to_pipeline",
+      "fromNetworkRef": "net_100_road_v1",
+      "fromNodeId": "road_pipeline_gate",
+      "toNetworkRef": "net_100_pipeline_v1",
+      "toNodeId": "pipe_entry_pe",
+      "allowedProfileIds": ["ground_vehicle", "person_walk"]
+    }
+  ]
+}
