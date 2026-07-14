@@ -10,6 +10,7 @@ import cn.cheers.x.module.platform.contract.dto.route.RoutePreviewSegmentDTO;
 import cn.cheers.x.module.platform.contract.dto.route.RouteRequestDTO;
 import cn.cheers.x.module.platform.contract.dto.topology.TopologyPointDTO;
 import cn.cheers.x.module.platform.routing.planner.DijkstraPlanner;
+import cn.cheers.x.module.platform.routing.planner.DoorConstraintFilter;
 import cn.cheers.x.module.platform.routing.planner.GraphView;
 import cn.cheers.x.module.platform.routing.planner.ProfileGate;
 import cn.cheers.x.module.platform.routing.planner.ShortestPathResult;
@@ -42,6 +43,8 @@ public class RoutePlanServiceImpl implements RoutePlanService {
     @Resource
     private ProfileGate profileGate;
     @Resource
+    private DoorConstraintFilter doorConstraintFilter;
+    @Resource
     private DijkstraPlanner dijkstraPlanner;
 
     @Override
@@ -71,7 +74,8 @@ public class RoutePlanServiceImpl implements RoutePlanService {
         }
         profileGate.assertAllowed(profile, network);
 
-        GraphView view = GraphView.from(network, profileId);
+        PathNetworkDTO routableNetwork = withFilteredEdges(network, doorConstraintFilter.filter(network, profile));
+        GraphView view = GraphView.from(routableNetwork, profileId);
         List<RoutePreviewSegmentDTO> segments = new ArrayList<>();
         double totalCost = 0D;
         List<String> stops = request.getStopIds();
@@ -147,6 +151,20 @@ public class RoutePlanServiceImpl implements RoutePlanService {
             return (long) cost;
         }
         return Math.round(cost);
+    }
+
+    private static PathNetworkDTO withFilteredEdges(PathNetworkDTO network, List<PathEdgeDTO> edges) {
+        return PathNetworkDTO.builder()
+                .networkRef(network.getNetworkRef())
+                .networkKind(network.getNetworkKind())
+                .facilityId(network.getFacilityId())
+                .scopeId(network.getScopeId())
+                .status(network.getStatus())
+                .version(network.getVersion())
+                .nodes(network.getNodes())
+                .edges(edges)
+                .portals(network.getPortals())
+                .build();
     }
 
     private static RoutePreviewDTO emptyPreview(RouteRequestDTO request) {
