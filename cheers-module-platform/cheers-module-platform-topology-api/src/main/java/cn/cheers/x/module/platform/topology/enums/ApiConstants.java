@@ -7,4 +7,6 @@ public interface ApiConstants {
     String NAME = "platformtopology-server";
 
     String PREFIX = RpcConstants.RPC_API_PREFIX + "/platform/topology";
+
+    String PATH_PREFIX = RpcConstants.RPC_API_PREFIX + "/platform/path";
 }

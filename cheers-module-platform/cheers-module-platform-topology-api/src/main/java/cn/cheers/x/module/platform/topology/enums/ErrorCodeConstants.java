@@ -9,4 +9,6 @@ public interface ErrorCodeConstants {
     ErrorCode LEGACY_TOPOLOGY_DISABLED = new ErrorCode(1_004_055_010, "旧库拓扑导入未启用");
     ErrorCode LEGACY_TOPOLOGY_EMPTY = new ErrorCode(1_004_055_011, "旧库未找到该站场拓扑数据");
     ErrorCode LEGACY_TOPOLOGY_SOURCE_UNAVAILABLE = new ErrorCode(1_004_055_012, "旧库拓扑数据源不可用");
+
+    ErrorCode NETWORK_NOT_FOUND = new ErrorCode(1_004_055_020, "路径网络不存在");
 }

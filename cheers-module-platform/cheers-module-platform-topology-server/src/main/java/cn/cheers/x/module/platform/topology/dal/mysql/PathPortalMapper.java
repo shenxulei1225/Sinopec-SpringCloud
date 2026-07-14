@@ -19,4 +19,24 @@ public interface PathPortalMapper extends BaseMapperX<PathPortalDO> {
         return selectList(new LambdaQueryWrapperX<PathPortalDO>()
                 .eq(PathPortalDO::getToNetworkId, toNetworkId));
     }
+
+    default List<PathPortalDO> selectListByFacilityId(Long facilityId) {
+        String prefix = facilityNetworkPrefix(facilityId);
+        return selectList(new LambdaQueryWrapperX<PathPortalDO>()
+                .and(wrapper -> wrapper.likeRight(PathPortalDO::getFromNetworkId, prefix)
+                        .or()
+                        .likeRight(PathPortalDO::getToNetworkId, prefix)));
+    }
+
+    default int deleteByFacilityId(Long facilityId) {
+        String prefix = facilityNetworkPrefix(facilityId);
+        return delete(new LambdaQueryWrapperX<PathPortalDO>()
+                .and(wrapper -> wrapper.likeRight(PathPortalDO::getFromNetworkId, prefix)
+                        .or()
+                        .likeRight(PathPortalDO::getToNetworkId, prefix)));
+    }
+
+    private static String facilityNetworkPrefix(Long facilityId) {
+        return "net_" + facilityId + "_";
+    }
 }
