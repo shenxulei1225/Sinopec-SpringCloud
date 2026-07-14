@@ -1,6 +1,7 @@
 package cn.cheers.x.module.platform.contract;
 
 import cn.cheers.x.module.platform.contract.dto.network.PathNetworkDTO;
+import cn.cheers.x.module.platform.contract.dto.network.PathNodeDTO;
 import cn.cheers.x.module.platform.contract.enums.NetworkKind;
 import cn.cheers.x.module.platform.contract.enums.NetworkLayer;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,10 @@ class NetworkDtoSmokeTest {
                 .version(1)
                 .build();
         assertEquals(NetworkKind.SITE, n.getNetworkKind());
-        assertEquals(NetworkLayer.GROUND, NetworkLayer.GROUND);
+        PathNodeDTO node = PathNodeDTO.builder()
+                .nodeId("n1")
+                .layer(NetworkLayer.GROUND)
+                .build();
+        assertEquals(NetworkLayer.GROUND, node.getLayer());
     }
 }
