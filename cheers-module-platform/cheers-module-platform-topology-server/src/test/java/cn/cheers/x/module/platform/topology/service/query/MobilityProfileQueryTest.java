@@ -21,6 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
+/**
+ * Service-level mapping test. Tenant filtering is bypassed on {@link MobilityProfileDO}
+ * via {@code @TenantIgnore} so built-in seeds (tenant_id=0) are readable for all tenants.
+ */
 @ExtendWith(MockitoExtension.class)
 class MobilityProfileQueryTest {
 

@@ -1,6 +1,7 @@
 package cn.cheers.x.module.platform.topology.dal.dataobject;
 
 import cn.iocoder.yudao.framework.mybatis.core.type.JsonbStringTypeHandler;
+import cn.iocoder.yudao.framework.tenant.core.aop.TenantIgnore;
 import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -12,7 +13,12 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+/**
+ * Built-in mobility profiles are global reference data (seeded with tenant_id=0).
+ * {@link TenantIgnore} keeps them visible under any request tenant.
+ */
 @TableName(value = "platform_mobility_profile", autoResultMap = true)
+@TenantIgnore
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
