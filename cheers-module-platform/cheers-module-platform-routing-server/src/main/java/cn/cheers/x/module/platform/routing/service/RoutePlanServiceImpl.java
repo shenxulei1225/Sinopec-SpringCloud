@@ -12,12 +12,15 @@ import cn.cheers.x.module.platform.contract.dto.route.RoutePreviewSegmentDTO;
 import cn.cheers.x.module.platform.contract.dto.route.RouteRequestDTO;
 import cn.cheers.x.module.platform.contract.dto.topology.TopologyPointDTO;
 import cn.cheers.x.module.platform.contract.enums.NetworkKind;
+import cn.cheers.x.module.platform.routing.planner.CostMatrix;
 import cn.cheers.x.module.platform.routing.planner.DijkstraPlanner;
 import cn.cheers.x.module.platform.routing.planner.DoorConstraintFilter;
 import cn.cheers.x.module.platform.routing.planner.GraphView;
 import cn.cheers.x.module.platform.routing.planner.PortalGraphAssembler;
 import cn.cheers.x.module.platform.routing.planner.ProfileGate;
 import cn.cheers.x.module.platform.routing.planner.ShortestPathResult;
+import cn.cheers.x.module.platform.routing.planner.StopOrderStrategy;
+import cn.cheers.x.module.platform.routing.planner.StopOrderStrategyRegistry;
 import cn.cheers.x.module.platform.topology.api.MobilityProfileApi;
 import cn.cheers.x.module.platform.topology.api.PathNetworkApi;
 import jakarta.annotation.Resource;
@@ -38,7 +41,6 @@ import java.util.stream.Collectors;
 
 import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_MOBILITY_PROFILE_NOT_FOUND;
 import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_NETWORK_NOT_FOUND;
-import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_STRATEGY_UNSUPPORTED;
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 
 @Service
@@ -59,6 +61,8 @@ public class RoutePlanServiceImpl implements RoutePlanService {
     private DijkstraPlanner dijkstraPlanner;
     @Resource
     private PortalGraphAssembler portalGraphAssembler;
+    @Resource
+    private StopOrderStrategyRegistry stopOrderStrategyRegistry;
 
     @Override
     public RoutePreviewDTO plan(RouteRequestDTO request) {
@@ -84,18 +88,15 @@ public class RoutePlanServiceImpl implements RoutePlanService {
 
         String profileId = resolveDefaultProfileId(request);
         String strategy = resolveStrategy(request);
-        if (!DEFAULT_STRATEGY.equals(strategy)) {
-            throw exception(ROUTE_STRATEGY_UNSUPPORTED);
-        }
 
         MobilityProfileDTO profile = loadProfile(profileId);
         profileGate.assertAllowed(profile, network);
 
         PathNetworkDTO routableNetwork = withFilteredEdges(network, doorConstraintFilter.filter(network, profile));
         GraphView view = GraphView.from(routableNetwork, profileId);
+        List<String> stops = orderStops(request.getStopIds(), strategy, view);
         List<RoutePreviewSegmentDTO> segments = new ArrayList<>();
         double totalCost = 0D;
-        List<String> stops = request.getStopIds();
         for (int i = 0; i < stops.size() - 1; i++) {
             String fromId = stops.get(i);
             String toId = stops.get(i + 1);
@@ -117,9 +118,6 @@ public class RoutePlanServiceImpl implements RoutePlanService {
 
     private RoutePreviewDTO planMultimodal(RouteRequestDTO request) {
         String strategy = resolveStrategy(request);
-        if (!DEFAULT_STRATEGY.equals(strategy)) {
-            throw exception(ROUTE_STRATEGY_UNSUPPORTED);
-        }
 
         List<String> networkRefs = resolveNetworkRefs(request);
         if (networkRefs.size() < 2) {
@@ -153,13 +151,16 @@ public class RoutePlanServiceImpl implements RoutePlanService {
         PortalGraphAssembler.AssembledGraph assembled = portalGraphAssembler.assemble(
                 networks, portals, profileIdByKind, defaultProfileId, profilesById);
 
+        List<String> resolvedStops = request.getStopIds().stream()
+                .map(stopId -> PortalGraphAssembler.resolveStopNodeId(stopId, assembled.networksByRef()))
+                .collect(Collectors.toList());
+        List<String> stops = orderStops(resolvedStops, strategy, assembled.view());
         List<RoutePreviewSegmentDTO> segments = new ArrayList<>();
         double totalCost = 0D;
         boolean usesPortal = false;
-        List<String> stops = request.getStopIds();
         for (int i = 0; i < stops.size() - 1; i++) {
-            String fromId = PortalGraphAssembler.resolveStopNodeId(stops.get(i), assembled.networksByRef());
-            String toId = PortalGraphAssembler.resolveStopNodeId(stops.get(i + 1), assembled.networksByRef());
+            String fromId = stops.get(i);
+            String toId = stops.get(i + 1);
             ShortestPathResult path = dijkstraPlanner.shortestPath(fromId, toId, assembled.view())
                     .withMultimodalNodeMapping();
             if (pathUsesPortal(path, assembled.portalEdgeIds())) {
@@ -234,6 +235,15 @@ public class RoutePlanServiceImpl implements RoutePlanService {
 
     private static String resolveStrategy(RouteRequestDTO request) {
         return StringUtils.hasText(request.getStrategy()) ? request.getStrategy() : DEFAULT_STRATEGY;
+    }
+
+    private List<String> orderStops(List<String> stopIds, String strategy, GraphView view) {
+        if (CollectionUtils.isEmpty(stopIds)) {
+            return List.of();
+        }
+        StopOrderStrategy stopOrderStrategy = stopOrderStrategyRegistry.resolve(strategy);
+        CostMatrix matrix = CostMatrix.from(stopIds, view, dijkstraPlanner);
+        return stopOrderStrategy.order(stopIds, matrix);
     }
 
     private static Map<NetworkKind, String> buildProfileIdByKind(RouteRequestDTO request, String defaultProfileId) {

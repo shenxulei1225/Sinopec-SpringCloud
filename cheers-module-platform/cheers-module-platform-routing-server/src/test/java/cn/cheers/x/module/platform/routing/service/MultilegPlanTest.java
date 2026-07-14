@@ -12,10 +12,14 @@ import cn.cheers.x.module.platform.contract.dto.route.RouteRequestDTO;
 import cn.cheers.x.module.platform.contract.enums.NetworkKind;
 import cn.cheers.x.module.platform.contract.enums.NetworkLayer;
 import cn.cheers.x.module.platform.contract.enums.NodeType;
+import cn.cheers.x.module.platform.routing.planner.AsGivenOrderStrategy;
 import cn.cheers.x.module.platform.routing.planner.DijkstraPlanner;
 import cn.cheers.x.module.platform.routing.planner.DoorConstraintFilter;
+import cn.cheers.x.module.platform.routing.planner.OptimizeOrderStrategy;
 import cn.cheers.x.module.platform.routing.planner.PortalGraphAssembler;
 import cn.cheers.x.module.platform.routing.planner.ProfileGate;
+import cn.cheers.x.module.platform.routing.planner.RefineOrderStrategy;
+import cn.cheers.x.module.platform.routing.planner.StopOrderStrategyRegistry;
 import cn.cheers.x.module.platform.topology.api.MobilityProfileApi;
 import cn.cheers.x.module.platform.topology.api.PathNetworkApi;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
@@ -51,6 +55,11 @@ class MultilegPlanTest {
         ReflectionTestUtils.setField(routePlanService, "profileGate", new ProfileGate());
         ReflectionTestUtils.setField(routePlanService, "doorConstraintFilter", new DoorConstraintFilter());
         ReflectionTestUtils.setField(routePlanService, "dijkstraPlanner", new DijkstraPlanner());
+        ReflectionTestUtils.setField(routePlanService, "stopOrderStrategyRegistry",
+                new StopOrderStrategyRegistry(
+                        new AsGivenOrderStrategy(),
+                        new OptimizeOrderStrategy(),
+                        new RefineOrderStrategy()));
         PortalGraphAssembler portalGraphAssembler = new PortalGraphAssembler();
         ReflectionTestUtils.setField(portalGraphAssembler, "doorConstraintFilter", new DoorConstraintFilter());
         ReflectionTestUtils.setField(routePlanService, "portalGraphAssembler", portalGraphAssembler);
