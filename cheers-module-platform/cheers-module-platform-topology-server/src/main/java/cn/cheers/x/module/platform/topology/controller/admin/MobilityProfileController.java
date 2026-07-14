@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,5 +27,11 @@ public class MobilityProfileController {
     @Operation(summary = "查询内置机动剖面列表")
     public CommonResult<List<MobilityProfileDTO>> listProfiles() {
         return success(mobilityProfileQueryService.listProfiles());
+    }
+
+    @GetMapping("/mobility-profiles/{profileId}")
+    @Operation(summary = "按 profileId 读取机动剖面")
+    public CommonResult<MobilityProfileDTO> getProfile(@PathVariable("profileId") String profileId) {
+        return success(mobilityProfileQueryService.getProfile(profileId));
     }
 }

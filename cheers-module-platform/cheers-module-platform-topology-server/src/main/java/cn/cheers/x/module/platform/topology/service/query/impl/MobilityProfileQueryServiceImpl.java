@@ -1,6 +1,7 @@
 package cn.cheers.x.module.platform.topology.service.query.impl;
 
 import cn.cheers.x.module.platform.contract.dto.network.MobilityProfileDTO;
+import cn.cheers.x.module.platform.topology.dal.dataobject.MobilityProfileDO;
 import cn.cheers.x.module.platform.topology.dal.mysql.MobilityProfileMapper;
 import cn.cheers.x.module.platform.topology.service.convert.MobilityProfileConvert;
 import cn.cheers.x.module.platform.topology.service.query.MobilityProfileQueryService;
@@ -20,5 +21,11 @@ public class MobilityProfileQueryServiceImpl implements MobilityProfileQueryServ
         return mobilityProfileMapper.selectAllActive().stream()
                 .map(MobilityProfileConvert::toDto)
                 .toList();
+    }
+
+    @Override
+    public MobilityProfileDTO getProfile(String profileId) {
+        MobilityProfileDO profile = mobilityProfileMapper.selectById(profileId);
+        return profile == null ? null : MobilityProfileConvert.toDto(profile);
     }
 }

@@ -7,4 +7,6 @@ import java.util.List;
 public interface MobilityProfileQueryService {
 
     List<MobilityProfileDTO> listProfiles();
+
+    MobilityProfileDTO getProfile(String profileId);
 }
