@@ -472,14 +472,4 @@ public class RoutePlanServiceImpl implements RoutePlanService {
                 .build();
     }
 
-    private static RoutePreviewDTO emptyPreview(RouteRequestDTO request) {
-        String networkRef = request != null ? request.resolvedNetworkRef() : null;
-        return RoutePreviewDTO.builder()
-                .contractVersion(ContractVersions.MVP)
-                .networkRef(networkRef)
-                .topologyRef(networkRef)
-                .segments(List.of())
-                .totalDistanceMeters(0L)
-                .build();
-    }
 }
