@@ -26,6 +26,8 @@
         <module>cheers-module-platform-topology-api</module>
         <module>cheers-module-platform-topology-server</module>
         <module>cheers-module-platform-routing-server</module>
+        <module>cheers-module-platform-exchange-api</module>
+        <module>cheers-module-platform-exchange-server</module>
     </modules>
     <artifactId>cheers-module-platform</artifactId>
     <packaging>pom</packaging>

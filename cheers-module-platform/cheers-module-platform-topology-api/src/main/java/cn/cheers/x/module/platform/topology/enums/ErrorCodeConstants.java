@@ -13,4 +13,5 @@ public interface ErrorCodeConstants {
     ErrorCode NETWORK_NOT_FOUND = new ErrorCode(1_004_055_020, "路径网络不存在");
     ErrorCode NETWORK_DRAFT_INVALID = new ErrorCode(1_004_055_021, "路径网络草稿参数无效");
     ErrorCode NETWORK_VALIDATE_FAILED = new ErrorCode(1_004_055_022, "路径网络校验未通过，无法发布");
+    ErrorCode GEOJSON_INVALID = new ErrorCode(1_004_055_030, "GeoJSON 格式无效");
 }
