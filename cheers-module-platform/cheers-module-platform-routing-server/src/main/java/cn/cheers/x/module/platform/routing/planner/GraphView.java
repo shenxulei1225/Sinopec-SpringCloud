@@ -64,6 +64,16 @@ public final class GraphView {
         return new GraphView(nodeMap, edgeMap, adj, mobilityProfileId);
     }
 
+    /**
+     * 由 {@link PortalGraphAssembler} 合并多网后构造的超级图视图。
+     */
+    static GraphView assembled(Map<String, PathNodeDTO> nodes,
+                               Map<String, PathEdgeDTO> edgesById,
+                               Map<String, List<AdjacencyEdge>> adjacency,
+                               String mobilityProfileId) {
+        return new GraphView(nodes, edgesById, adjacency, mobilityProfileId);
+    }
+
     public PathNodeDTO getNode(String nodeId) {
         return nodes.get(nodeId);
     }
@@ -88,7 +98,7 @@ public final class GraphView {
         return allowed.contains(profileId);
     }
 
-    static double resolveWeight(PathEdgeDTO edge, String profileId) {
+    public static double resolveWeight(PathEdgeDTO edge, String profileId) {
         Map<String, Double> impedanceByProfile = edge.getImpedanceByProfile();
         if (impedanceByProfile != null && impedanceByProfile.containsKey(profileId)) {
             return impedanceByProfile.get(profileId);

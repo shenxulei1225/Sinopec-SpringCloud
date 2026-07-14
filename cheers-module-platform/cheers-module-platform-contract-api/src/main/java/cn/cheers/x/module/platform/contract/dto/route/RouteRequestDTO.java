@@ -31,6 +31,8 @@ public class RouteRequestDTO {
     private List<RouteLegDTO> legs;
     private String strategy;
     private String entityTypeCode;
+    /** 设施编号（facilityId）；多网联程时用于加载 Portal，缺省取首张站场网络（SITE）的 facilityId。 */
+    private Long facilityId;
 
     /**
      * 解析有效网络引用：优先 {@link #networkRef}，否则回退 {@link #topologyRef}。
