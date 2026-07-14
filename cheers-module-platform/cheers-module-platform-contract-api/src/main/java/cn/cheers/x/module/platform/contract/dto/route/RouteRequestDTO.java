@@ -17,8 +17,28 @@ import java.util.List;
 public class RouteRequestDTO {
 
     private String contractVersion;
+
+    /**
+     * @deprecated 请使用 {@link #networkRef}；读取时若 networkRef 为空则回退本字段。
+     */
+    @Deprecated
     private String topologyRef;
+
+    private String networkRef;
+    private List<String> networkRefs;
     private List<String> stopIds;
+    private String mobilityProfileId;
+    private List<RouteLegDTO> legs;
     private String strategy;
     private String entityTypeCode;
+
+    /**
+     * 解析有效网络引用：优先 {@link #networkRef}，否则回退 {@link #topologyRef}。
+     */
+    public String resolvedNetworkRef() {
+        if (networkRef != null && !networkRef.isBlank()) {
+            return networkRef;
+        }
+        return topologyRef;
+    }
 }

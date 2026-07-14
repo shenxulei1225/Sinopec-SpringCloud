@@ -17,7 +17,14 @@ import java.util.List;
 public class RoutePreviewDTO {
 
     private String contractVersion;
+
+    /**
+     * @deprecated 请使用 {@link #networkRef}；保留以兼容旧消费方。
+     */
+    @Deprecated
     private String topologyRef;
+
+    private String networkRef;
     private List<RoutePreviewSegmentDTO> segments;
     private Long totalDistanceMeters;
     private String decisionTraceId;
