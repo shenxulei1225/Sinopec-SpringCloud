@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 
 import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_MOBILITY_PROFILE_NOT_FOUND;
 import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_NETWORK_NOT_FOUND;
+import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_REQUEST_INVALID;
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 
 @Service
@@ -67,7 +68,7 @@ public class RoutePlanServiceImpl implements RoutePlanService {
     @Override
     public RoutePreviewDTO plan(RouteRequestDTO request) {
         if (request == null || CollectionUtils.isEmpty(request.getStopIds())) {
-            return emptyPreview(request);
+            throw exception(ROUTE_REQUEST_INVALID);
         }
         if (isMultimodal(request)) {
             return planMultimodal(request);
@@ -77,7 +78,7 @@ public class RoutePlanServiceImpl implements RoutePlanService {
 
     private RoutePreviewDTO planSingleNetwork(RouteRequestDTO request) {
         if (!StringUtils.hasText(request.resolvedNetworkRef())) {
-            return emptyPreview(request);
+            throw exception(ROUTE_REQUEST_INVALID);
         }
 
         String networkRef = request.resolvedNetworkRef();

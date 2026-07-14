@@ -258,11 +258,11 @@ spring:
                 - Path=/admin-api/platform/runtime/**
               filters:
                 - RewritePath=/admin-api/platform/runtime/v3/api-docs, /v3/api-docs
-            ## platformtopology-server 服务
+            ## platformtopology-server 服务（含多网络 Graph / Exchange / 机动剖面）
             - id: platformtopology-admin-api
               uri: grayLb://platformtopology-server
               predicates:
-                - Path=/admin-api/platform/topology/**
+                - Path=/admin-api/platform/topology/**,/admin-api/platform/path/**
               filters:
                 - RewritePath=/admin-api/platform/topology/v3/api-docs, /v3/api-docs
             ## platformrouting-server 服务
