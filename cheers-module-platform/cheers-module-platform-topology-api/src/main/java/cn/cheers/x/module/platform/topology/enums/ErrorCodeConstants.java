@@ -11,4 +11,6 @@ public interface ErrorCodeConstants {
     ErrorCode LEGACY_TOPOLOGY_SOURCE_UNAVAILABLE = new ErrorCode(1_004_055_012, "旧库拓扑数据源不可用");
 
     ErrorCode NETWORK_NOT_FOUND = new ErrorCode(1_004_055_020, "路径网络不存在");
+    ErrorCode NETWORK_DRAFT_INVALID = new ErrorCode(1_004_055_021, "路径网络草稿参数无效");
+    ErrorCode NETWORK_VALIDATE_FAILED = new ErrorCode(1_004_055_022, "路径网络校验未通过，无法发布");
 }

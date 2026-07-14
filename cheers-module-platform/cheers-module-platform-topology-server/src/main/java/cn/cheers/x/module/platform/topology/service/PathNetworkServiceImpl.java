@@ -28,11 +28,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static cn.cheers.x.module.platform.topology.enums.ErrorCodeConstants.NETWORK_DRAFT_INVALID;
 import static cn.cheers.x.module.platform.topology.enums.ErrorCodeConstants.NETWORK_NOT_FOUND;
+import static cn.cheers.x.module.platform.topology.enums.ErrorCodeConstants.NETWORK_VALIDATE_FAILED;
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 
 @Service
 public class PathNetworkServiceImpl implements PathNetworkService {
+
+    // DEFERRED: /platform/topology/** delegation to PathNetworkService — TopologyGraphController unchanged.
 
     @Resource
     private PathNetworkMapper pathNetworkMapper;
@@ -65,7 +69,7 @@ public class PathNetworkServiceImpl implements PathNetworkService {
         Long facilityId = request.getFacilityId();
         NetworkKind networkKind = request.getNetworkKind();
         if (facilityId == null || networkKind == null) {
-            throw exception(NETWORK_NOT_FOUND);
+            throw exception(NETWORK_DRAFT_INVALID);
         }
         String draftId = draftId(facilityId, networkKind);
         PathNetworkDO existing = pathNetworkMapper.selectById(draftId);
@@ -99,6 +103,10 @@ public class PathNetworkServiceImpl implements PathNetworkService {
                 facilityId, networkKind.name());
         if (draft == null) {
             throw exception(NETWORK_NOT_FOUND);
+        }
+        TopologyValidateRespDTO validation = doValidate(toDto(draft));
+        if (!Boolean.TRUE.equals(validation.getPassed())) {
+            throw exception(NETWORK_VALIDATE_FAILED);
         }
         PathNetworkDO latest = pathNetworkMapper.selectLatestPublishedByFacilityIdAndKind(
                 facilityId, networkKind.name());
@@ -161,8 +169,7 @@ public class PathNetworkServiceImpl implements PathNetworkService {
                 issues.add(issue("DOOR_REQUIRES_GROUND", "ERROR",
                         "门节点仅允许地面层", node.getNodeId()));
             }
-            if (node.getNodeType() == NodeType.TRAVERSAL
-                    && node.getZoneId() != null
+            if (node.getNodeType() != NodeType.STATION
                     && StringUtils.hasText(node.getDisplayName())) {
                 issues.add(issue("NODE_NOT_STATION", "WARN",
                         "业务停靠点建议使用 STATION 节点类型", node.getNodeId()));
@@ -172,7 +179,6 @@ public class PathNetworkServiceImpl implements PathNetworkService {
             if (edge == null) {
                 continue;
             }
-            normalizeEdge(edge);
             if (!nodeById.containsKey(edge.getFromNodeId())) {
                 issues.add(issue("EDGE_ENDPOINT_MISSING", "ERROR",
                         "边起点不存在", edge.getEdgeId()));
@@ -181,7 +187,7 @@ public class PathNetworkServiceImpl implements PathNetworkService {
                 issues.add(issue("EDGE_ENDPOINT_MISSING", "ERROR",
                         "边终点不存在", edge.getEdgeId()));
             }
-            if (edge.getLayer() != NetworkLayer.GROUND) {
+            if (edge.getLayer() == NetworkLayer.AIR) {
                 continue;
             }
             PathNodeDTO from = nodeById.get(edge.getFromNodeId());
@@ -221,12 +227,6 @@ public class PathNetworkServiceImpl implements PathNetworkService {
         if (node.getLayer() == null && node.getPayload() != null) {
             Object raw = node.getPayload().get("layer");
             node.setLayer(parseEnum(raw, NetworkLayer.class));
-        }
-    }
-
-    private static void normalizeEdge(PathEdgeDTO edge) {
-        if (edge.getLayer() == null && edge.getTraversability() != null) {
-            edge.setLayer(parseEnum(edge.getTraversability(), NetworkLayer.class));
         }
     }
 

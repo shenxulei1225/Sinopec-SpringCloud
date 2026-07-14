@@ -10,6 +10,8 @@ import cn.cheers.x.module.platform.topology.api.dto.TopologyValidateRespDTO;
 import cn.cheers.x.module.platform.topology.dal.dataobject.PathNetworkDO;
 import cn.cheers.x.module.platform.topology.dal.mysql.PathNetworkMapper;
 import cn.cheers.x.module.platform.topology.dal.mysql.PathPortalMapper;
+import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import com.alibaba.fastjson2.JSON;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,12 +20,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static cn.cheers.x.module.platform.topology.enums.ErrorCodeConstants.NETWORK_VALIDATE_FAILED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class PathNetworkServiceTest {
@@ -52,6 +57,20 @@ class PathNetworkServiceTest {
     }
 
     @Test
+    void validateFailsWhenNullLayerCrossZoneWithoutDoor() {
+        PathNodeDTO nodeA = node("a", NodeType.STATION, NetworkLayer.GROUND, 1L);
+        PathNodeDTO nodeB = node("b", NodeType.STATION, NetworkLayer.GROUND, 2L);
+        PathEdgeDTO edge = edge("e1", "a", "b", null);
+        PathNetworkDTO draft = network(List.of(nodeA, nodeB), List.of(edge));
+
+        TopologyValidateRespDTO resp = pathNetworkService.validate(draft);
+
+        assertFalse(resp.getPassed());
+        assertTrue(resp.getIssues().stream()
+                .anyMatch(issue -> "CROSS_ZONE_NO_DOOR".equals(issue.getCode())));
+    }
+
+    @Test
     void validatePassesWhenGroundCrossZoneWithDoor() {
         PathNodeDTO door = node("door", NodeType.DOOR, NetworkLayer.GROUND, 1L);
         PathNodeDTO station = node("station", NodeType.STATION, NetworkLayer.GROUND, 2L);
@@ -63,6 +82,30 @@ class PathNetworkServiceTest {
         assertTrue(resp.getPassed());
         assertFalse(resp.getIssues().stream()
                 .anyMatch(issue -> "CROSS_ZONE_NO_DOOR".equals(issue.getCode())));
+    }
+
+    @Test
+    void publishRejectsInvalidCrossZoneDraft() {
+        Long facilityId = 42L;
+        NetworkKind kind = NetworkKind.SITE;
+        PathNetworkDO draft = PathNetworkDO.builder()
+                .id("net_42_site_draft")
+                .facilityId(facilityId)
+                .networkKind("SITE")
+                .status("DRAFT")
+                .version(0)
+                .nodes(JSON.toJSONString(List.of(
+                        node("a", NodeType.STATION, NetworkLayer.GROUND, 1L),
+                        node("b", NodeType.STATION, NetworkLayer.GROUND, 2L))))
+                .edges(JSON.toJSONString(List.of(edge("e1", "a", "b", null))))
+                .build();
+        when(pathNetworkMapper.selectDraftByFacilityIdAndKind(facilityId, "SITE")).thenReturn(draft);
+
+        ServiceException ex = assertThrows(ServiceException.class,
+                () -> pathNetworkService.publish(facilityId, kind));
+
+        assertEquals(NETWORK_VALIDATE_FAILED.getCode(), ex.getCode());
+        verify(pathNetworkMapper, never()).insert(any(PathNetworkDO.class));
     }
 
     @Test
