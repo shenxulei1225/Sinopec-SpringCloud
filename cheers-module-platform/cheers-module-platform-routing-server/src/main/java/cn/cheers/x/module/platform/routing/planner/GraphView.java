@@ -91,6 +91,13 @@ public final class GraphView {
     }
 
     private static boolean isEdgeAllowed(PathEdgeDTO edge, String profileId) {
+        String traversability = edge.getTraversability();
+        if (StringUtils.hasText(traversability)) {
+            String normalized = traversability.trim().toUpperCase();
+            if ("BLOCKED".equals(normalized) || "CLOSED".equals(normalized)) {
+                return false;
+            }
+        }
         List<String> allowed = edge.getAllowedProfileIds();
         if (CollectionUtils.isEmpty(allowed)) {
             return true;

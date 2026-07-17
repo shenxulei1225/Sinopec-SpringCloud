@@ -13,6 +13,7 @@ import cn.cheers.x.module.platform.contract.dto.route.RouteRequestDTO;
 import cn.cheers.x.module.platform.contract.dto.topology.TopologyPointDTO;
 import cn.cheers.x.module.platform.contract.enums.NetworkKind;
 import cn.cheers.x.module.platform.routing.planner.CostMatrix;
+import cn.cheers.x.module.platform.routing.planner.DepotTourSupport;
 import cn.cheers.x.module.platform.routing.planner.DijkstraPlanner;
 import cn.cheers.x.module.platform.routing.planner.DoorConstraintFilter;
 import cn.cheers.x.module.platform.routing.planner.GraphView;
@@ -95,7 +96,7 @@ public class RoutePlanServiceImpl implements RoutePlanService {
 
         PathNetworkDTO routableNetwork = withFilteredEdges(network, doorConstraintFilter.filter(network, profile));
         GraphView view = GraphView.from(routableNetwork, profileId);
-        List<String> stops = orderStops(request.getStopIds(), strategy, view);
+        List<String> stops = orderStops(request, strategy, view);
         List<RoutePreviewSegmentDTO> segments = new ArrayList<>();
         double totalCost = 0D;
         for (int i = 0; i < stops.size() - 1; i++) {
@@ -155,7 +156,16 @@ public class RoutePlanServiceImpl implements RoutePlanService {
         List<String> resolvedStops = request.getStopIds().stream()
                 .map(stopId -> PortalGraphAssembler.resolveStopNodeId(stopId, assembled.networksByRef()))
                 .collect(Collectors.toList());
-        List<String> stops = orderStops(resolvedStops, strategy, assembled.view());
+        String resolvedStart = StringUtils.hasText(request.getStartStopId())
+                ? PortalGraphAssembler.resolveStopNodeId(request.getStartStopId(), assembled.networksByRef())
+                : null;
+        RouteRequestDTO orderedRequest = RouteRequestDTO.builder()
+                .stopIds(resolvedStops)
+                .startStopId(resolvedStart)
+                .returnToStart(request.getReturnToStart())
+                .strategy(strategy)
+                .build();
+        List<String> stops = orderStops(orderedRequest, strategy, assembled.view());
         List<RoutePreviewSegmentDTO> segments = new ArrayList<>();
         double totalCost = 0D;
         boolean usesPortal = false;
@@ -238,13 +248,34 @@ public class RoutePlanServiceImpl implements RoutePlanService {
         return StringUtils.hasText(request.getStrategy()) ? request.getStrategy() : DEFAULT_STRATEGY;
     }
 
-    private List<String> orderStops(List<String> stopIds, String strategy, GraphView view) {
+    private List<String> orderStops(RouteRequestDTO request, String strategy, GraphView view) {
+        List<String> stopIds = DepotTourSupport.uniqueStops(request != null ? request.getStopIds() : null);
         if (CollectionUtils.isEmpty(stopIds)) {
             return List.of();
         }
+        String home = request != null && StringUtils.hasText(request.getStartStopId())
+                ? request.getStartStopId().trim() : null;
+        if (home != null && !stopIds.contains(home)) {
+            stopIds = new ArrayList<>(stopIds);
+            stopIds.add(0, home);
+        }
+        boolean returnToStart = home != null
+                && (request.getReturnToStart() == null || Boolean.TRUE.equals(request.getReturnToStart()));
+
         StopOrderStrategy stopOrderStrategy = stopOrderStrategyRegistry.resolve(strategy);
-        CostMatrix matrix = CostMatrix.from(stopIds, view, dijkstraPlanner);
-        return stopOrderStrategy.order(stopIds, matrix);
+        // 排顺序用场景平面距离（图可达前提下），避免区内按跳数来回穿梭
+        CostMatrix matrix = CostMatrix.forOrdering(stopIds, view, dijkstraPlanner);
+
+        if (home == null) {
+            return stopOrderStrategy.order(stopIds, matrix, view);
+        }
+
+        List<String> others = DepotTourSupport.withoutHome(stopIds, home);
+        if (others.isEmpty()) {
+            return returnToStart ? List.of(home, home) : List.of(home);
+        }
+        List<String> middle = stopOrderStrategy.order(others, matrix.submatrix(others), view);
+        return DepotTourSupport.assemble(home, middle, matrix, returnToStart);
     }
 
     private static Map<NetworkKind, String> buildProfileIdByKind(RouteRequestDTO request, String defaultProfileId) {

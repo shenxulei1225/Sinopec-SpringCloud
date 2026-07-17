@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.controller.admin.runtime.vo;
 
+import cn.iocoder.yudao.module.scene.platform.model.Transform;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -31,8 +32,15 @@ public class SceneRuntimePackageRespVO {
     @Schema(description = "场景资源包URL", example = "http://cdn.example.com/scene_001.zip")
     private String resourceUrl;
 
+    @Schema(description = "编排资产清单（供前端按 assetCode 解析 runtimeUrl）")
+    private List<CompositionAssetRespVO> assets;
+
+    @Schema(description = "坐标参考（站心等，只读）")
+    private Map<String, Object> coordinateReference;
+
     @Schema(description = "版本号", example = "1.0.0")
     private String version;
+
 
     @Schema(description = "创建时间")
     private Long createTime;
@@ -53,8 +61,20 @@ public class SceneRuntimePackageRespVO {
         @Schema(description = "实例编码", example = "instance_001")
         private String instanceCode;
 
+        @Schema(description = "实例主键（便于前端拖动更新）")
+        private Long id;
+
+        @Schema(description = "实例显示名")
+        private String instanceName;
+
+        @Schema(description = "渲染资产编码（asset_resource.asset_code）")
+        private String renderAssetCode;
+
         @Schema(description = "模型URL")
         private String modelUrl;
+
+        @Schema(description = "完整位姿（位置/旋转度制 pitch-yaw-roll / 缩放）；画布优先用此字段")
+        private Transform transform;
 
         @Schema(description = "初始位置X")
         private Double initialX;
@@ -131,5 +151,25 @@ public class SceneRuntimePackageRespVO {
 
         @Schema(description = "自定义配置")
         private Map<String, Object> customConfig;
+    }
+
+    @Schema(description = "编排资产项")
+    @Data
+    public static class CompositionAssetRespVO {
+
+        @Schema(description = "资产编码")
+        private String assetCode;
+
+        @Schema(description = "运行时 URL（通常为 GLB）")
+        private String runtimeUrl;
+
+        @Schema(description = "资产类型（scene_asset 分类节点 code）")
+        private String assetType;
+
+        @Schema(description = "源格式")
+        private String format;
+
+        @Schema(description = "转换状态 pending|ready|failed")
+        private String convertStatus;
     }
 }

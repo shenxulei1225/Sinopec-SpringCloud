@@ -71,13 +71,18 @@ public class TenantDatabaseInterceptor implements TenantLineHandler {
         if (tableInfo == null) {
             return true;
         }
-        // 如果继承了 TenantBaseDO 基类，显然不忽略租户
+        // @TenantIgnore 优先：全局参考数据可继承 TenantBaseDO 但仍忽略租户行过滤
+        // （否则注解永远达不到，tenant_id=0 的种子在租户请求下会查不到）
+        TenantIgnore tenantIgnore = tableInfo.getEntityType().getAnnotation(TenantIgnore.class);
+        if (tenantIgnore != null) {
+            return true;
+        }
+        // 继承 TenantBaseDO 且未标忽略：按当前租户过滤
         if (TenantBaseDO.class.isAssignableFrom(tableInfo.getEntityType())) {
             return false;
         }
-        // 如果添加了 @TenantIgnore 注解，则忽略租户
-        TenantIgnore tenantIgnore = tableInfo.getEntityType().getAnnotation(TenantIgnore.class);
-        return tenantIgnore != null;
+        // 仅 BaseDO / 无租户列的表：不注入 tenant_id（否则 asset_resource 等会 500）
+        return true;
     }
 
 }

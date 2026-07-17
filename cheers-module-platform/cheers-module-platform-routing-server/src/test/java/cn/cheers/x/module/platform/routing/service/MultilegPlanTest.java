@@ -55,11 +55,12 @@ class MultilegPlanTest {
         ReflectionTestUtils.setField(routePlanService, "profileGate", new ProfileGate());
         ReflectionTestUtils.setField(routePlanService, "doorConstraintFilter", new DoorConstraintFilter());
         ReflectionTestUtils.setField(routePlanService, "dijkstraPlanner", new DijkstraPlanner());
+        RefineOrderStrategy refineOrderStrategy = new RefineOrderStrategy();
         ReflectionTestUtils.setField(routePlanService, "stopOrderStrategyRegistry",
                 new StopOrderStrategyRegistry(
                         new AsGivenOrderStrategy(),
-                        new OptimizeOrderStrategy(),
-                        new RefineOrderStrategy()));
+                        new OptimizeOrderStrategy(refineOrderStrategy),
+                        refineOrderStrategy));
         PortalGraphAssembler portalGraphAssembler = new PortalGraphAssembler();
         ReflectionTestUtils.setField(portalGraphAssembler, "doorConstraintFilter", new DoorConstraintFilter());
         ReflectionTestUtils.setField(routePlanService, "portalGraphAssembler", portalGraphAssembler);

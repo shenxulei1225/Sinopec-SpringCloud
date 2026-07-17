@@ -184,6 +184,7 @@ yudao:
       - /admin-api/system/auth/**
     ignore-tables:
       - platform_policy_template
+      - platform_mobility_profile
     ignore-caches:
       - user_role_ids
       - permission_menu_ids

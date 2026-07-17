@@ -138,6 +138,24 @@ logging:
 yudao:
   env:
     tag: ${HOSTNAME}
+  scene-platform:
+    asset-upload:
+      local-base-path: ${user.home}/uploads/scene-assets
+      local-base-url:
+    asset-convert:
+      enabled: true
+      work-dir: ${user.home}/uploads/scene-assets/convert-work
+      output-base-url:
+      plugins:
+        # 本机已安装 Assimp（homebrew）时可打开
+        fbx:
+          enabled: true
+          command: "assimp export {input} {output} -fglb2"
+          timeout-seconds: 120
+        obj:
+          enabled: false
+          command: "assimp export {input} {output} -fglb2"
+          timeout-seconds: 120
   captcha:
     enable: false
   security:

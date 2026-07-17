@@ -27,6 +27,15 @@ public class RouteRequestDTO {
     private String networkRef;
     private List<String> networkRefs;
     private List<String> stopIds;
+    /**
+     * 起点 / 充电出发点（depot）。有值时顺序以它为首；
+     * 配合 {@link #returnToStart} 在巡检结束后回到该点。
+     */
+    private String startStopId;
+    /**
+     * 是否回到起点充电。未传且 {@link #startStopId} 有值时默认 true。
+     */
+    private Boolean returnToStart;
     private String mobilityProfileId;
     private List<RouteLegDTO> legs;
     private String strategy;

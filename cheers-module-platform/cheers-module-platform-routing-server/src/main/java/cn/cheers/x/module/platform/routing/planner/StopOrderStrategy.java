@@ -7,6 +7,6 @@ import java.util.List;
  */
 public interface StopOrderStrategy {
 
-    List<String> order(List<String> stopIds, CostMatrix matrix);
+    List<String> order(List<String> stopIds, CostMatrix matrix, GraphView view);
 
 }

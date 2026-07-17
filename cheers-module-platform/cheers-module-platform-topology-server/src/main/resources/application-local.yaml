@@ -152,6 +152,7 @@ yudao:
       - /admin-api/system/auth/**
     ignore-tables:
       - platform_policy_template
+      - platform_mobility_profile
   env:
     tag: ${HOSTNAME}
   captcha:

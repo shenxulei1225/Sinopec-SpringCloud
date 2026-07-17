@@ -9,10 +9,15 @@ import java.util.List;
 @Component
 public class RefineOrderStrategy implements StopOrderStrategy {
 
-    private static final int MAX_ITERATIONS = 50;
+    private static final int MAX_ITERATIONS = 80;
 
     @Override
-    public List<String> order(List<String> stopIds, CostMatrix matrix) {
+    public List<String> order(List<String> stopIds, CostMatrix matrix, GraphView view) {
+        return improve(stopIds, matrix);
+    }
+
+    /** 供优化策略在构造初始序后做 2-opt 精化。 */
+    List<String> improve(List<String> stopIds, CostMatrix matrix) {
         if (CollectionUtils.isEmpty(stopIds) || stopIds.size() <= 2) {
             return List.copyOf(stopIds);
         }

@@ -8,7 +8,7 @@ import java.util.List;
 public class AsGivenOrderStrategy implements StopOrderStrategy {
 
     @Override
-    public List<String> order(List<String> stopIds, CostMatrix matrix) {
+    public List<String> order(List<String> stopIds, CostMatrix matrix, GraphView view) {
         return List.copyOf(stopIds);
     }
 

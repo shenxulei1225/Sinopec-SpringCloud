@@ -3,6 +3,7 @@ package cn.iocoder.yudao.module.scene.platform.controller.admin.asset;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.asset.vo.AssetResourceSaveReqVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.asset.vo.SceneAssetRespVO;
+import cn.iocoder.yudao.module.scene.platform.service.asset.AssetConvertService;
 import cn.iocoder.yudao.module.scene.platform.service.asset.AssetResourceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,7 +17,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -31,6 +34,9 @@ public class AssetResourceController {
     @Resource
     private AssetResourceService assetResourceService;
 
+    @Resource
+    private AssetConvertService assetConvertService;
+
     @GetMapping
     @Operation(summary = "获得资源列表")
     public CommonResult<List<SceneAssetRespVO>> getAssetList() {
@@ -40,6 +46,23 @@ public class AssetResourceController {
     @GetMapping("/{id}")
     @Operation(summary = "获得资源详情")
     public CommonResult<SceneAssetRespVO> getAsset(@PathVariable Long id) {
+        return success(assetResourceService.getAsset(id));
+    }
+
+    @PostMapping("/upload")
+    @Operation(summary = "上传资产文件")
+    public CommonResult<SceneAssetRespVO> uploadAsset(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam String assetCode,
+            @RequestParam String assetName,
+            @RequestParam String assetType) {
+        return success(assetResourceService.uploadAsset(file, assetCode, assetName, assetType));
+    }
+
+    @PostMapping("/{id}/convert")
+    @Operation(summary = "重新转换资产为 GLB")
+    public CommonResult<SceneAssetRespVO> convertAsset(@PathVariable Long id) {
+        assetConvertService.convertToGlb(id);
         return success(assetResourceService.getAsset(id));
     }
 

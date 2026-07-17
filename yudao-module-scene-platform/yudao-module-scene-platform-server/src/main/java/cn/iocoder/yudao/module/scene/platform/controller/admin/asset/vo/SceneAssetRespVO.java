@@ -22,6 +22,12 @@ public class SceneAssetRespVO {
     @Schema(description = "资源 URL")
     private String assetUrl;
 
+    @Schema(description = "预览图 URL")
+    private String previewUrl;
+
+    @Schema(description = "源格式")
+    private String format;
+
     @Schema(description = "元数据 JSON")
     private String metadataJson;
 

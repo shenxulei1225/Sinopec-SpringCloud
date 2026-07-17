@@ -1,5 +1,7 @@
 package cn.cheers.x.module.platform.routing.planner;
 
+import cn.cheers.x.module.platform.contract.dto.network.PathNodeDTO;
+import cn.cheers.x.module.platform.contract.dto.topology.TopologyPointDTO;
 import cn.iocoder.yudao.framework.common.exception.ServiceException;
 import org.springframework.util.CollectionUtils;
 
@@ -10,7 +12,10 @@ import java.util.Map;
 import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_UNREACHABLE;
 
 /**
- * 停靠点两两最短路径代价矩阵（由 {@link DijkstraPlanner} 在 {@link GraphView} 上填充）。
+ * 停靠点两两代价矩阵。
+ * <p>
+ * {@link #from}：图上最短路（用于可达性 / 真实路程）。
+ * {@link #forOrdering}：在图可达前提下，优先用场景水平面距离，避免「跳数相近但平面来回穿」。
  */
 public final class CostMatrix {
 
@@ -41,6 +46,68 @@ public final class CostMatrix {
         return new CostMatrix(stopIds, matrix);
     }
 
+    /**
+     * 排停靠顺序用：图不可达仍为 +∞；否则用场景 XZ 欧氏距离，并用极小图代价破平。
+     * 坐标不足一半时退回纯图代价。
+     */
+    public static CostMatrix forOrdering(List<String> stopIds, GraphView view, DijkstraPlanner planner) {
+        CostMatrix graph = from(stopIds, view, planner);
+        if (CollectionUtils.isEmpty(stopIds)) {
+            return graph;
+        }
+        Map<String, double[]> horizontal = new HashMap<>();
+        for (String stopId : stopIds) {
+            double[] xz = horizontalXZ(view.getNode(stopId));
+            if (xz != null) {
+                horizontal.put(stopId, xz);
+            }
+        }
+        if (horizontal.size() * 2 < stopIds.size()) {
+            return graph;
+        }
+
+        Map<String, Map<String, Double>> matrix = new HashMap<>();
+        for (String from : stopIds) {
+            Map<String, Double> row = new HashMap<>();
+            for (String to : stopIds) {
+                if (from.equals(to)) {
+                    row.put(to, 0D);
+                    continue;
+                }
+                double graphCost = graph.cost(from, to);
+                if (!Double.isFinite(graphCost)) {
+                    row.put(to, Double.POSITIVE_INFINITY);
+                    continue;
+                }
+                double[] a = horizontal.get(from);
+                double[] b = horizontal.get(to);
+                if (a == null || b == null) {
+                    row.put(to, graphCost);
+                    continue;
+                }
+                double dx = a[0] - b[0];
+                double dz = a[1] - b[1];
+                double euclid = Math.hypot(dx, dz);
+                row.put(to, euclid + 1e-6 * graphCost);
+            }
+            matrix.put(from, row);
+        }
+        return new CostMatrix(stopIds, matrix);
+    }
+
+    /** 取子矩阵，供分区内求解。 */
+    public CostMatrix submatrix(List<String> subset) {
+        Map<String, Map<String, Double>> matrix = new HashMap<>();
+        for (String from : subset) {
+            Map<String, Double> row = new HashMap<>();
+            for (String to : subset) {
+                row.put(to, cost(from, to));
+            }
+            matrix.put(from, row);
+        }
+        return new CostMatrix(subset, matrix);
+    }
+
     public List<String> stopIds() {
         return stopIds;
     }
@@ -66,6 +133,18 @@ public final class CostMatrix {
             total += cost(orderedStopIds.get(i), orderedStopIds.get(i + 1));
         }
         return total;
+    }
+
+    /** 场景水平面：X / Z（Y 为高度）。 */
+    static double[] horizontalXZ(PathNodeDTO node) {
+        if (node == null) {
+            return null;
+        }
+        TopologyPointDTO position = node.getPosition();
+        if (position == null || position.getX() == null || position.getZ() == null) {
+            return null;
+        }
+        return new double[]{position.getX(), position.getZ()};
     }
 
     private static double shortestCost(String from, String to, GraphView view, DijkstraPlanner planner) {
