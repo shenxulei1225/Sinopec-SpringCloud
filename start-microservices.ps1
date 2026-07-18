@@ -1,5 +1,6 @@
 ﻿# ============================================================================
 # ZHGL 微服务启动脚本 (Windows PowerShell 版本)
+# 与 start-microservices.sh（Mac）保持同一套路径与套件命令。
 # ============================================================================
 # 使用方法:
 #   .\start-microservices.ps1                    # 显示所有可用服务
@@ -12,12 +13,22 @@
 #   .\start-microservices.ps1 nacos              # 启动 Nacos
 #   .\start-microservices.ps1 nacos status       # 查看 Nacos 状态
 #   .\start-microservices.ps1 nacos stop         # 停止 Nacos
-#   .\start-microservices.ps1 platform-all       # 仅启动 platform 套件（含 topology/routing）
+#   .\start-microservices.ps1 bmp                # 推荐：过程引擎 + 路径规划
+#   .\start-microservices.ps1 bmp-process        # 仅过程引擎（platform 套件）
+#   .\start-microservices.ps1 bmp-path           # 仅路径规划
+#   .\start-microservices.ps1 bmp-scene-3d       # 三维 scene-3d
+#   .\start-microservices.ps1 bmp-gis            # GIS
+#   .\start-microservices.ps1 bmp-alarm          # 告警
+#   .\start-microservices.ps1 bmp-work-order     # 工单
+#   .\start-microservices.ps1 twin-dev           # 孪生联调：dynamic + scene-3d + twin
+#   .\start-microservices.ps1 stop-twin-dev      # 停止 twin-dev
+#   .\start-microservices.ps1 stop-bmp           # 停止 bmp（process+path）
+#   .\start-microservices.ps1 platform-all       # [弃用] 等同 bmp
 #
-# platform 资源库（platform / resource，58098）模块路径：
-#   cheers-business-middle-platform\cheers-resource-server
-# 旧根目录 cheers-business-middle-platform-resource\ 已删除，勿再引用。
-# 路径规划必启：platform-topology（58107）、platform-routing（58108）已纳入 all / platform-all。
+# 业务中台父工程：cheers-business-middle-platform
+# bmp = bmp-process + bmp-path（不含 scene-3d / gis / twin）
+# twin = cheers-twin（整合层；联调请用 twin-dev）
+# dynamic = cheers-dynamicbusiness\cheers-dynamicbusiness-server（勿用旧 cheers-module-dynamicbusiness）
 # ============================================================================
 
 param(
@@ -46,53 +57,64 @@ if (-not (Test-Path $LogDir)) {
     New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
 }
 
-# 服务配置映射
+# 服务配置映射（与 start-microservices.sh 的 get_service_path 保持一致；勿再引用已迁走的 yudao-module-*）
 $ServiceConfig = @{
     "gateway"    = @{ Path = "cheers-gateway"; Port = 58080 }
     "system"     = @{ Path = "cheers-system\cheers-system-server"; Port = 58081 }
     "infra"      = @{ Path = "cheers-infra\cheers-infra-server"; Port = 58082 }
-    "member"     = @{ Path = "yudao-module-member\yudao-module-member-server"; Port = 58087 }
-    "bpm"        = @{ Path = "yudao-module-bpm\yudao-module-bpm-server"; Port = 58083 }
-    "pay"        = @{ Path = "yudao-module-pay\yudao-module-pay-server"; Port = 58085 }
-    "report"     = @{ Path = "yudao-module-report\yudao-module-report-server"; Port = 58084 }
-    "mp"         = @{ Path = "yudao-module-mp\yudao-module-mp-server"; Port = 58086 }
-    "product"    = @{ Path = "yudao-module-mall\yudao-module-product-server"; Port = 58100 }
-    "promotion"  = @{ Path = "yudao-module-mall\yudao-module-promotion-server"; Port = 58101 }
-    "trade"      = @{ Path = "yudao-module-mall\yudao-module-trade-server"; Port = 58102 }
-    "statistics" = @{ Path = "yudao-module-mall\yudao-module-statistics-server"; Port = 58103 }
-    "crm"        = @{ Path = "yudao-module-crm\yudao-module-crm-server"; Port = 58089 }
-    "erp"        = @{ Path = "yudao-module-erp\yudao-module-erp-server"; Port = 58088 }
-    "ai"         = @{ Path = "yudao-module-ai\yudao-module-ai-server"; Port = 58090 }
-    "iot"        = @{ Path = "yudao-module-iot\yudao-module-iot-server"; Port = 58091 }
-    "alarm"      = @{ Path = "yudao-module-alarm\yudao-module-alarm-biz"; Port = 58097 }
+    "member"     = @{ Path = "cheers-member\cheers-member-server"; Port = 58087 }
+    "bpm"        = @{ Path = "cheers-bpm\cheers-bpm-server"; Port = 58083 }
+    "pay"        = @{ Path = "cheers-pay\cheers-pay-server"; Port = 58085 }
+    "report"     = @{ Path = "cheers-report\cheers-report-server"; Port = 58084 }
+    "mp"         = @{ Path = "cheers-mp\cheers-mp-server"; Port = 58086 }
+    "product"    = @{ Path = "cheers-mall\cheers-product-server"; Port = 58100 }
+    "promotion"  = @{ Path = "cheers-mall\cheers-promotion-server"; Port = 58101 }
+    "trade"      = @{ Path = "cheers-mall\cheers-trade-server"; Port = 58102 }
+    "statistics" = @{ Path = "cheers-mall\cheers-statistics-server"; Port = 58103 }
+    "crm"        = @{ Path = "cheers-crm\cheers-crm-server"; Port = 58089 }
+    "erp"        = @{ Path = "cheers-erp\cheers-erp-server"; Port = 58088 }
+    "ai"         = @{ Path = "cheers-ai\cheers-ai-server"; Port = 58090 }
+    "iot"        = @{ Path = "cheers-iot\cheers-iot-server"; Port = 58091 }
+    "alarm"      = @{ Path = "cheers-business-middle-platform\cheers-alarm-server"; Port = 58097 }
+    "bmp-alarm"  = @{ Path = "cheers-business-middle-platform\cheers-alarm-server"; Port = 58097 }
+    "work-order" = @{ Path = "cheers-business-middle-platform\cheers-work-order-server"; Port = 58098 }
+    "bmp-work-order" = @{ Path = "cheers-business-middle-platform\cheers-work-order-server"; Port = 58098 }
     "scene"      = @{ Path = "cheers-business-middle-platform\cheers-scene-3d-server"; Port = 58093 }
     "scene-3d"   = @{ Path = "cheers-business-middle-platform\cheers-scene-3d-server"; Port = 58093 }
     "gis"        = @{ Path = "cheers-business-middle-platform\cheers-gis-server"; Port = 58109 }
+    "bmp-gis"    = @{ Path = "cheers-business-middle-platform\cheers-gis-server"; Port = 58109 }
     "twin"       = @{ Path = "cheers-twin\cheers-twin-server"; Port = 58094 }
     "cheers-twin"= @{ Path = "cheers-twin\cheers-twin-server"; Port = 58094 }
-    "inspection" = @{ Path = "yudao-module-inspection-task\yudao-module-inspection-task-server"; Port = 58095 }
-    "dynamic"    = @{ Path = "cheers-module-dynamicbusiness\cheers-module-dynamicbusiness-server"; Port = 58096 }
-    # platform / resource：组件库、视图库（旧根目录 cheers-business-middle-platform-resource 已迁入 cheers-business-middle-platform）
+    "inspection" = @{ Path = "cheers-inspection-task\cheers-inspection-task-server"; Port = 58095 }
+    "dynamic"    = @{ Path = "cheers-dynamicbusiness\cheers-dynamicbusiness-server"; Port = 58096 }
+    # platform / resource：组件库、视图库
     "platform"   = @{ Path = "cheers-business-middle-platform\cheers-resource-server"; Port = 58098 }
     "resource"   = @{ Path = "cheers-business-middle-platform\cheers-resource-server"; Port = 58098 }
+    "bmp-resource" = @{ Path = "cheers-business-middle-platform\cheers-resource-server"; Port = 58098 }
     "platform-runtime" = @{ Path = "cheers-business-middle-platform\cheers-runtime-server"; Port = 58099 }
     "runtime-l4" = @{ Path = "cheers-business-middle-platform\cheers-runtime-server"; Port = 58099 }
+    "bmp-runtime" = @{ Path = "cheers-business-middle-platform\cheers-runtime-server"; Port = 58099 }
     "platform-orchestration" = @{ Path = "cheers-business-middle-platform\cheers-orchestration-server"; Port = 58104 }
     "orchestration" = @{ Path = "cheers-business-middle-platform\cheers-orchestration-server"; Port = 58104 }
+    "bmp-orchestration" = @{ Path = "cheers-business-middle-platform\cheers-orchestration-server"; Port = 58104 }
     "platform-policy" = @{ Path = "cheers-business-middle-platform\cheers-policy-server"; Port = 58105 }
     "policy"     = @{ Path = "cheers-business-middle-platform\cheers-policy-server"; Port = 58105 }
+    "bmp-policy" = @{ Path = "cheers-business-middle-platform\cheers-policy-server"; Port = 58105 }
     "platform-capability" = @{ Path = "cheers-business-middle-platform\cheers-capability-server"; Port = 58106 }
     "capability" = @{ Path = "cheers-business-middle-platform\cheers-capability-server"; Port = 58106 }
+    "bmp-capability" = @{ Path = "cheers-business-middle-platform\cheers-capability-server"; Port = 58106 }
     "platform-topology" = @{ Path = "cheers-business-middle-platform\cheers-topology-server"; Port = 58107 }
     "topology"   = @{ Path = "cheers-business-middle-platform\cheers-topology-server"; Port = 58107 }
+    "bmp-topology" = @{ Path = "cheers-business-middle-platform\cheers-topology-server"; Port = 58107 }
     "platform-routing" = @{ Path = "cheers-business-middle-platform\cheers-routing-server"; Port = 58108 }
     "routing"    = @{ Path = "cheers-business-middle-platform\cheers-routing-server"; Port = 58108 }
+    "bmp-routing" = @{ Path = "cheers-business-middle-platform\cheers-routing-server"; Port = 58108 }
 }
 
 # 与 start-microservices.sh 保持一致
 $KnownServices = @(
     "gateway", "system", "infra", "member", "bpm", "pay", "report", "mp", "product", "promotion", "trade", "statistics",
-    "crm", "erp", "ai", "iot", "alarm", "dynamic",
+    "crm", "erp", "ai", "iot", "alarm", "work-order", "dynamic",
     "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
     "platform-topology", "platform-routing",
     "scene", "gis", "twin", "inspection"
@@ -107,7 +129,7 @@ $CoreServices = @(
 
 $AllServices = @(
     "system", "infra", "gateway", "member", "bpm", "pay", "report", "mp", "product", "promotion", "trade", "statistics",
-    "crm", "erp", "ai", "iot", "alarm", "dynamic",
+    "crm", "erp", "ai", "iot", "alarm", "work-order", "dynamic",
     "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
     "platform-topology", "platform-routing",
     "scene", "gis", "twin", "inspection"
@@ -115,16 +137,25 @@ $AllServices = @(
 
 $StopServices = @(
     "gateway", "infra", "system", "member", "bpm", "pay", "report", "mp", "product", "promotion", "trade", "statistics",
-    "crm", "erp", "ai", "iot", "alarm", "dynamic",
+    "crm", "erp", "ai", "iot", "alarm", "work-order", "dynamic",
     "platform-routing", "platform-topology",
     "platform-orchestration", "platform-runtime", "platform-policy", "platform-capability", "platform",
     "scene", "gis", "twin", "inspection"
 )
 
-$PlatformAllServices = @(
-    "platform", "platform-policy", "platform-capability", "platform-runtime", "platform-orchestration",
-    "platform-topology", "platform-routing"
+# 与 Mac start-microservices.sh 套件一致
+$BmpProcessServices = @(
+    "platform", "platform-policy", "platform-capability", "platform-runtime", "platform-orchestration"
 )
+$BmpPathServices = @("platform-topology", "platform-routing")
+$BmpCoreServices = $BmpProcessServices + $BmpPathServices
+$BmpScene3dServices = @("scene-3d")
+$BmpGisServices = @("gis")
+$BmpAlarmServices = @("alarm")
+$BmpWorkOrderServices = @("work-order")
+$TwinDevServices = @("dynamic", "scene-3d", "twin")
+# [弃用别名] platform-all ≡ bmp
+$PlatformAllServices = $BmpCoreServices
 
 # 颜色输出函数
 function Write-ColorOutput {
@@ -149,9 +180,25 @@ function Test-PortInUse {
     param([int]$Port)
     # 只判断监听状态，避免 TIME_WAIT/CLOSE_WAIT 等导致误判，也更快
     $connection = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
-    if ($null -eq $connection) { return $false }
-    if ($connection -is [Array]) { return $connection.Count -gt 0 }
-    return $true
+    if ($null -ne $connection) {
+        if ($connection -is [Array]) { return $connection.Count -gt 0 }
+        return $true
+    }
+    # 非管理员 / Get-NetTCPConnection 不可用时的兜底，避免误判「未运行」后又抢端口失败
+    try {
+        $client = New-Object System.Net.Sockets.TcpClient
+        $iar = $client.BeginConnect('127.0.0.1', $Port, $null, $null)
+        $connected = $iar.AsyncWaitHandle.WaitOne(300)
+        if ($connected) {
+            try { $client.EndConnect($iar) } catch { }
+            $client.Close()
+            return $true
+        }
+        $client.Close()
+    } catch {
+        # ignore
+    }
+    return $false
 }
 
 # 获取占用端口(监听)的进程ID
@@ -404,9 +451,12 @@ function Start-SingleService {
     $mavenCommand = "mvn spring-boot:run `"-Dspring-boot.run.profiles=local`" `"-Dfile.encoding=UTF-8`" `"-Dsun.jnu.encoding=UTF-8`""
     $workingDirectory = $servicePath
 
-    if ($ServiceName -eq "alarm") {
-        $workingDirectory = $ScriptDir
-        $mavenCommand = "mvn -f yudao-module-alarm\yudao-module-alarm-biz\pom.xml org.springframework.boot:spring-boot-maven-plugin:3.5.9:run `"-Dspring-boot.run.mainClass=cn.iocoder.yudao.module.alarm.AlarmServerApplication`" `"-Dspring-boot.run.profiles=local`" `"-Dfile.encoding=UTF-8`" `"-Dsun.jnu.encoding=UTF-8`""
+    # 启动前校验 pom，避免落到已迁走/空壳目录时只看到健康检查超时
+    $pomFile = Join-Path $workingDirectory "pom.xml"
+    if (-not (Test-Path $pomFile)) {
+        Write-Error "服务目录缺少 pom.xml: $pomFile"
+        Write-ColorOutput "   请确认路径已与 start-microservices.sh 对齐（cheers-*），勿使用旧的 yudao-module-*" "Yellow"
+        return $false
     }
     
     if ($ShowLogs) {
@@ -654,12 +704,17 @@ function Show-Services {
     Write-ColorOutput "  .\start-microservices.ps1 all                # 启动所有核心服务" "White"
     Write-ColorOutput "  .\start-microservices.ps1 all -f             # 启动所有核心服务（显示日志）" "White"
     Write-ColorOutput "  .\start-microservices.ps1 all-services       # 启动所有服务包括业务服务" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 platform-all       # 仅启动 platform 套件（含 topology/routing）" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 bmp                # 过程引擎 + 路径规划（推荐）" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 bmp-process        # 仅过程引擎（platform 五件套）" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 twin-dev           # 孪生联调：dynamic + scene-3d + twin" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 platform-all       # [弃用] 等同 bmp" "White"
     Write-ColorOutput "  .\start-microservices.ps1 <服务名>            # 启动单个服务" "White"
     Write-ColorOutput "  .\start-microservices.ps1 status             # 查看服务状态" "White"
     Write-ColorOutput "  .\start-microservices.ps1 logs <服务名>       # 查看服务日志" "White"
     Write-ColorOutput "  .\start-microservices.ps1 stop <服务名>       # 停止服务" "White"
     Write-ColorOutput "  .\start-microservices.ps1 stop-all           # 停止所有服务" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 stop-twin-dev      # 停止 twin-dev" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 stop-bmp           # 停止 bmp" "White"
     Write-ColorOutput "  .\start-microservices.ps1 nacos              # 启动 Nacos" "White"
     Write-ColorOutput "  .\start-microservices.ps1 nacos status       # 查看 Nacos 状态" "White"
     Write-ColorOutput "  .\start-microservices.ps1 nacos stop         # 停止 Nacos" "White"
@@ -677,9 +732,10 @@ function Show-Services {
     Write-ColorOutput "  3. gateway   - 网关服务（必需）" "White"
     Write-ColorOutput "  4. bpm       - 工作流服务（必需）" "White"
     Write-ColorOutput "  5. alarm     - 告警管理服务（必需）" "White"
-    Write-ColorOutput "  6. dynamic   - 动态业务服务（设施/设备等实体，twin 等模块依赖）" "White"
-    Write-ColorOutput "  7. platform  - 平台资源库（组件/视图，别名 resource，58098）" "White"
+    Write-ColorOutput "  6. dynamic   - 动态业务（cheers-dynamicbusiness\cheers-dynamicbusiness-server，58096）" "White"
+    Write-ColorOutput "  7. platform  - 平台资源库（cheers-resource-server，别名 resource，58098）" "White"
     Write-ColorOutput "     路径: cheers-business-middle-platform\cheers-resource-server" "Gray"
+    Write-ColorOutput "     套件: .\start-microservices.ps1 bmp / twin-dev（与 Mac .sh 一致）" "Gray"
     Write-ColorOutput "  8. platform-policy - 平台策略（58105）" "White"
     Write-ColorOutput "  9. platform-capability - 平台能力映射（58106）" "White"
     Write-ColorOutput "  10. platform-runtime - 平台 L4 运行时（58099）" "White"
@@ -925,22 +981,57 @@ function Show-Logs {
     Get-Content $logFile -Wait -Tail 50 -Encoding UTF8
 }
 
-function Start-PlatformAll {
-    param([bool]$ShowLogs = $false)
+function Start-SuiteServices {
+    param(
+        [string[]]$Services,
+        [bool]$ShowLogs = $false
+    )
+    foreach ($svc in $Services) {
+        Start-SingleService -ServiceName $svc -ShowLogs $ShowLogs | Out-Null
+        if (-not $ShowLogs) {
+            Start-Sleep -Seconds 3
+        }
+    }
+}
 
+function Stop-SuiteServices {
+    param([string[]]$Services)
+    $stoppedCount = 0
+    foreach ($svc in $Services) {
+        if (Test-ServiceRunning -ServiceName $svc) {
+            if (Stop-SingleService -ServiceName $svc) {
+                $stoppedCount++
+            }
+        }
+    }
+    Write-ColorOutput "" "White"
+    if ($stoppedCount -gt 0) {
+        Write-Success "套件已停止 $stoppedCount 个服务"
+    } else {
+        Write-Warning "套件内没有运行中的服务"
+    }
+}
+
+function Start-BmpSuite {
+    param(
+        [bool]$ShowLogs = $false,
+        [string]$Label = "业务中台核心套件 (bmp = process + path)"
+    )
     if (-not (Start-Nacos)) {
         Write-Error "Nacos 启动失败,无法继续"
         return
     }
     Check-Redis
     Write-ColorOutput "" "White"
+    Write-ColorOutput "[START] $Label，共 $($BmpCoreServices.Count) 个" "Cyan"
+    Write-ColorOutput "" "White"
+    Start-SuiteServices -Services $BmpCoreServices -ShowLogs $ShowLogs
+}
 
-    foreach ($svc in $PlatformAllServices) {
-        Start-SingleService -ServiceName $svc -ShowLogs $ShowLogs | Out-Null
-        if (-not $ShowLogs) {
-            Start-Sleep -Seconds 3
-        }
-    }
+function Start-PlatformAll {
+    param([bool]$ShowLogs = $false)
+    Write-Warning "platform-all 已弃用：请改用 .\start-microservices.ps1 bmp"
+    Start-BmpSuite -ShowLogs $ShowLogs
 }
 
 function Invoke-NacosCommand {
@@ -980,8 +1071,98 @@ switch ($Command.ToLower()) {
     "all-services" {
         Start-AllServices -ShowLogs $f.IsPresent | Out-Null
     }
+    "bmp" {
+        Start-BmpSuite -ShowLogs $f.IsPresent | Out-Null
+    }
+    "bmp-all" {
+        Start-BmpSuite -ShowLogs $f.IsPresent | Out-Null
+    }
     "platform-all" {
         Start-PlatformAll -ShowLogs $f.IsPresent | Out-Null
+    }
+    "bmp-process" {
+        if (-not (Start-Nacos)) { Write-Error "Nacos 启动失败,无法继续"; exit 1 }
+        Check-Redis
+        Write-ColorOutput "[START] 业务中台 · 过程引擎套件 (bmp-process)" "Cyan"
+        Start-SuiteServices -Services $BmpProcessServices -ShowLogs $f.IsPresent
+    }
+    "bmp-path" {
+        if (-not (Start-Nacos)) { Write-Error "Nacos 启动失败,无法继续"; exit 1 }
+        Check-Redis
+        Write-ColorOutput "[START] 业务中台 · 路径规划套件 (bmp-path)" "Cyan"
+        Start-SuiteServices -Services $BmpPathServices -ShowLogs $f.IsPresent
+    }
+    "bmp-scene-3d" {
+        if (-not (Start-Nacos)) { Write-Error "Nacos 启动失败,无法继续"; exit 1 }
+        Check-Redis
+        Write-ColorOutput "[START] 业务中台 · 三维服务 (bmp-scene-3d)" "Cyan"
+        Start-SuiteServices -Services $BmpScene3dServices -ShowLogs $f.IsPresent
+    }
+    "bmp-gis" {
+        if (-not (Start-Nacos)) { Write-Error "Nacos 启动失败,无法继续"; exit 1 }
+        Check-Redis
+        Write-ColorOutput "[START] 业务中台 · GIS (bmp-gis)" "Cyan"
+        Start-SuiteServices -Services $BmpGisServices -ShowLogs $f.IsPresent
+    }
+    "bmp-alarm" {
+        if (-not (Start-Nacos)) { Write-Error "Nacos 启动失败,无法继续"; exit 1 }
+        Check-Redis
+        Write-ColorOutput "[START] 业务中台 · 告警标准服务 (bmp-alarm)" "Cyan"
+        Start-SuiteServices -Services $BmpAlarmServices -ShowLogs $f.IsPresent
+    }
+    "bmp-work-order" {
+        if (-not (Start-Nacos)) { Write-Error "Nacos 启动失败,无法继续"; exit 1 }
+        Check-Redis
+        Write-ColorOutput "[START] 业务中台 · 工单标准服务 (bmp-work-order)" "Cyan"
+        Start-SuiteServices -Services $BmpWorkOrderServices -ShowLogs $f.IsPresent
+    }
+    "bmp-station-dev" {
+        if (-not (Start-Nacos)) { Write-Error "Nacos 启动失败,无法继续"; exit 1 }
+        Check-Redis
+        Write-ColorOutput "[START] 站场联调：bmp-path + bmp-scene-3d" "Cyan"
+        Start-SuiteServices -Services ($BmpPathServices + $BmpScene3dServices) -ShowLogs $f.IsPresent
+    }
+    "twin-dev" {
+        if (-not (Start-Nacos)) { Write-Error "Nacos 启动失败,无法继续"; exit 1 }
+        Check-Redis
+        Write-ColorOutput "[START] 孪生整合联调 (twin-dev)：dynamic + scene-3d + twin" "Cyan"
+        Start-SuiteServices -Services $TwinDevServices -ShowLogs $f.IsPresent
+    }
+    "stop-bmp" {
+        Write-ColorOutput "[STOP] 停止 bmp（process + path）" "Cyan"
+        Stop-SuiteServices -Services $BmpCoreServices
+    }
+    "stop-bmp-all" {
+        Write-ColorOutput "[STOP] 停止 bmp（process + path）" "Cyan"
+        Stop-SuiteServices -Services $BmpCoreServices
+    }
+    "stop-bmp-process" {
+        Write-ColorOutput "[STOP] 停止 bmp-process" "Cyan"
+        Stop-SuiteServices -Services $BmpProcessServices
+    }
+    "stop-bmp-path" {
+        Write-ColorOutput "[STOP] 停止 bmp-path" "Cyan"
+        Stop-SuiteServices -Services $BmpPathServices
+    }
+    "stop-bmp-scene-3d" {
+        Write-ColorOutput "[STOP] 停止 bmp-scene-3d" "Cyan"
+        Stop-SuiteServices -Services $BmpScene3dServices
+    }
+    "stop-bmp-gis" {
+        Write-ColorOutput "[STOP] 停止 bmp-gis" "Cyan"
+        Stop-SuiteServices -Services $BmpGisServices
+    }
+    "stop-bmp-alarm" {
+        Write-ColorOutput "[STOP] 停止 bmp-alarm" "Cyan"
+        Stop-SuiteServices -Services $BmpAlarmServices
+    }
+    "stop-bmp-work-order" {
+        Write-ColorOutput "[STOP] 停止 bmp-work-order" "Cyan"
+        Stop-SuiteServices -Services $BmpWorkOrderServices
+    }
+    "stop-twin-dev" {
+        Write-ColorOutput "[STOP] 停止 twin-dev" "Cyan"
+        Stop-SuiteServices -Services $TwinDevServices
     }
     "status" {
         Show-Status
