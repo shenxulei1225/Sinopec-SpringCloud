@@ -21,6 +21,8 @@ import cn.cheers.x.module.platform.policy.api.dto.PolicySnapshotRespDTO;
 import cn.cheers.x.module.platform.runtime.api.RuntimePersistApi;
 import cn.cheers.x.module.platform.runtime.api.dto.RuntimePersistReqDTO;
 import cn.cheers.x.module.platform.scheduling.engine.SchedulingEngine;
+import cn.cheers.x.workorder.api.WorkOrderApi;
+import cn.cheers.x.workorder.api.dto.WorkOrderCreateReqDTO;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -34,6 +36,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_DISPATCH_STANDARD_REQUIRED;
 import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_RUN_MAPPING_PROFILE_REQUIRED;
 import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_RUN_ORCHESTRATION_UNKNOWN;
 import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_RUN_SCHEDULING_SPEC_REQUIRED;
@@ -53,6 +56,8 @@ public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationSe
     private ProcessCapabilityBindingApi processCapabilityBindingApi;
     @Resource
     private MappingProfileApi mappingProfileApi;
+    @Resource
+    private WorkOrderApi workOrderApi;
 
     @Override
     public ScheduleRunResponse runSchedule(ScheduleRunRequest request, Long siteId) {
@@ -89,7 +94,7 @@ public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationSe
                 .siteId(siteId)
                 .build()).checkError();
 
-        return ScheduleRunResponse.builder()
+        ScheduleRunResponse response = ScheduleRunResponse.builder()
                 .contractVersion(ContractVersions.MVP)
                 .runtimeJobId(runtimeJobId)
                 .status(RuntimeJobStatus.SCHEDULED)
@@ -97,6 +102,28 @@ public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationSe
                 .decisionTraceId(null)
                 .plainSummary(buildSummary(slots, ctx.schedulingSpec()))
                 .build();
+
+        if (Boolean.TRUE.equals(request.getDispatchWorkOrders())) {
+            Long standardId = request.getFieldWorkStandardId();
+            if (standardId == null) {
+                throw exception(SCHEDULE_DISPATCH_STANDARD_REQUIRED);
+            }
+            String scope = StringUtils.hasText(request.getScope()) ? request.getScope() : "inspection";
+            List<Long> woIds = new ArrayList<>();
+            for (ScheduleSlotDTO slot : slots) {
+                WorkOrderCreateReqDTO dto = new WorkOrderCreateReqDTO();
+                dto.setScope(scope);
+                dto.setTitle("WO-" + slot.getSlotId());
+                dto.setStandardId(standardId);
+                dto.setRuntimeJobId(runtimeJobId);
+                dto.setScheduleSlotId(slot.getSlotId());
+                dto.setBusinessKey(slot.getWorkId());
+                woIds.add(workOrderApi.create(dto).getCheckedData());
+            }
+            response.setWorkOrderIds(woIds);
+        }
+
+        return response;
     }
 
     private void validateBasic(ScheduleRunRequest request) {

@@ -24,4 +24,6 @@ public class ScheduleRunResponse {
     private List<ScheduleSlotDTO> slots;
     private String decisionTraceId;
     private String plainSummary;
+    /** 派工生成的工单 ID 列表；未派工时为 null */
+    private List<Long> workOrderIds;
 }

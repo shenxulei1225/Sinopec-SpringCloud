@@ -52,6 +52,11 @@
         </dependency>
         <dependency>
             <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-work-order-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.cheers.x</groupId>
             <artifactId>cheers-infra-api</artifactId>
             <version>${revision}</version>
         </dependency>

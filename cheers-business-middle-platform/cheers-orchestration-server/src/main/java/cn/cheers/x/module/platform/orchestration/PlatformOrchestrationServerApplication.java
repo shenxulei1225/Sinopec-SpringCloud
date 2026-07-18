@@ -13,7 +13,8 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
         "cn.cheers.x.infra.api",
         "cn.cheers.x.module.platform.runtime.api",
         "cn.cheers.x.module.platform.policy.api",
-        "cn.cheers.x.module.platform.capability.api"
+        "cn.cheers.x.module.platform.capability.api",
+        "cn.cheers.x.workorder.api"
 })
 public class PlatformOrchestrationServerApplication {
 
