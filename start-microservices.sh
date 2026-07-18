@@ -178,7 +178,7 @@ get_service_port() {
         ai) echo "58090" ;;
         iot) echo "58091" ;;
         alarm|bmp-alarm) echo "58097" ;;
-        work-order|bmp-work-order) echo "58099" ;;
+        work-order|bmp-work-order) echo "58110" ;;
         scene|scene-3d) echo "58093" ;;
         gis|bmp-gis) echo "58109" ;;
         twin|cheers-twin) echo "58094" ;;

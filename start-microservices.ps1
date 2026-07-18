@@ -77,8 +77,8 @@ $ServiceConfig = @{
     "iot"        = @{ Path = "cheers-iot\cheers-iot-server"; Port = 58091 }
     "alarm"      = @{ Path = "cheers-business-middle-platform\cheers-alarm-server"; Port = 58097 }
     "bmp-alarm"  = @{ Path = "cheers-business-middle-platform\cheers-alarm-server"; Port = 58097 }
-    "work-order" = @{ Path = "cheers-business-middle-platform\cheers-work-order-server"; Port = 58099 }
-    "bmp-work-order" = @{ Path = "cheers-business-middle-platform\cheers-work-order-server"; Port = 58099 }
+    "work-order" = @{ Path = "cheers-business-middle-platform\cheers-work-order-server"; Port = 58110 }
+    "bmp-work-order" = @{ Path = "cheers-business-middle-platform\cheers-work-order-server"; Port = 58110 }
     "scene"      = @{ Path = "cheers-business-middle-platform\cheers-scene-3d-server"; Port = 58093 }
     "scene-3d"   = @{ Path = "cheers-business-middle-platform\cheers-scene-3d-server"; Port = 58093 }
     "gis"        = @{ Path = "cheers-business-middle-platform\cheers-gis-server"; Port = 58109 }
