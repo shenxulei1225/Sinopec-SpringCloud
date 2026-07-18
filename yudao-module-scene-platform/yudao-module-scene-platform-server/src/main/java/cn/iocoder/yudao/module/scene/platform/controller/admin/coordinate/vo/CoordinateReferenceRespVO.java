@@ -13,6 +13,15 @@ public class CoordinateReferenceRespVO {
     @Schema(description = "场景编码")
     private String sceneCode;
 
+    @Schema(description = "原点经度（WGS84）")
+    private java.math.BigDecimal originLng;
+
+    @Schema(description = "原点纬度（WGS84）")
+    private java.math.BigDecimal originLat;
+
+    @Schema(description = "原点高度（米）")
+    private java.math.BigDecimal originHeight;
+
     @Schema(description = "地理坐标系")
     private CoordinateCrsCatalogRespVO geographicCrsCatalog;
 

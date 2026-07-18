@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>cn.iocoder.cloud</groupId>
+        <artifactId>yudao</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <modules>
+        <module>cheers-module-business-middle-platform-contract-api</module>
+        <module>cheers-module-business-middle-platform-runtime-api</module>
+        <module>cheers-module-business-middle-platform-runtime-server</module>
+        <module>cheers-module-business-middle-platform-scheduling-api</module>
+        <module>cheers-module-business-middle-platform-scheduling-server</module>
+        <module>cheers-module-business-middle-platform-orchestration-api</module>
+        <module>cheers-module-business-middle-platform-orchestration-server</module>
+        <module>cheers-module-business-middle-platform-resource-api</module>
+        <module>cheers-module-business-middle-platform-resource-server</module>
+        <module>cheers-module-business-middle-platform-policy-api</module>
+        <module>cheers-module-business-middle-platform-policy-server</module>
+        <module>cheers-module-business-middle-platform-capability-api</module>
+        <module>cheers-module-business-middle-platform-capability-server</module>
+        <module>cheers-module-business-middle-platform-topology-api</module>
+        <module>cheers-module-business-middle-platform-topology-server</module>
+        <module>cheers-module-business-middle-platform-routing-server</module>
+        <module>cheers-module-business-middle-platform-exchange-api</module>
+        <module>cheers-module-business-middle-platform-exchange-server</module>
+    </modules>
+    <artifactId>cheers-module-business-middle-platform</artifactId>
+    <packaging>pom</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        业务中台（business-middle-platform）父模块：标准契约、L4 运行时、L3 引擎、资源库、路径（topology/routing）等。
+    </description>
+
+</project>

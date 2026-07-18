@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOTS = [
     Path("/Users/kevin/Documents/Sinopec/Sinopec-SpringCloud/cheers-module-dynamicbusiness"),
-    Path("/Users/kevin/Documents/Sinopec/Sinopec-SpringCloud/cheers-module-platform"),
+    Path("/Users/kevin/Documents/Sinopec/Sinopec-SpringCloud/cheers-module-business-middle-platform"),
     Path("/Users/kevin/Documents/Sinopec/ecs-react"),
     Path("/Users/kevin/Documents/Sinopec/docs"),
 ]

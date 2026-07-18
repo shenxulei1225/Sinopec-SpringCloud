@@ -15,8 +15,8 @@
 #   .\start-microservices.ps1 platform-all       # 仅启动 platform 套件（含 topology/routing）
 #
 # platform 资源库（platform / resource，58098）模块路径：
-#   cheers-module-platform\cheers-module-platform-resource-server
-# 旧根目录 cheers-module-platform-resource\ 已删除，勿再引用。
+#   cheers-module-business-middle-platform\cheers-module-business-middle-platform-resource-server
+# 旧根目录 cheers-module-business-middle-platform-resource\ 已删除，勿再引用。
 # 路径规划必启：platform-topology（58107）、platform-routing（58108）已纳入 all / platform-all。
 # ============================================================================
 
@@ -69,21 +69,21 @@ $ServiceConfig = @{
     "twin"       = @{ Path = "yudao-module-twin\yudao-module-twin-biz"; Port = 58094 }
     "inspection" = @{ Path = "yudao-module-inspection-task\yudao-module-inspection-task-server"; Port = 58095 }
     "dynamic"    = @{ Path = "cheers-module-dynamicbusiness\cheers-module-dynamicbusiness-server"; Port = 58096 }
-    # platform / resource：组件库、视图库（旧根目录 cheers-module-platform-resource 已迁入 cheers-module-platform）
-    "platform"   = @{ Path = "cheers-module-platform\cheers-module-platform-resource-server"; Port = 58098 }
-    "resource"   = @{ Path = "cheers-module-platform\cheers-module-platform-resource-server"; Port = 58098 }
-    "platform-runtime" = @{ Path = "cheers-module-platform\cheers-module-platform-runtime-server"; Port = 58099 }
-    "runtime-l4" = @{ Path = "cheers-module-platform\cheers-module-platform-runtime-server"; Port = 58099 }
-    "platform-orchestration" = @{ Path = "cheers-module-platform\cheers-module-platform-orchestration-server"; Port = 58104 }
-    "orchestration" = @{ Path = "cheers-module-platform\cheers-module-platform-orchestration-server"; Port = 58104 }
-    "platform-policy" = @{ Path = "cheers-module-platform\cheers-module-platform-policy-server"; Port = 58105 }
-    "policy"     = @{ Path = "cheers-module-platform\cheers-module-platform-policy-server"; Port = 58105 }
-    "platform-capability" = @{ Path = "cheers-module-platform\cheers-module-platform-capability-server"; Port = 58106 }
-    "capability" = @{ Path = "cheers-module-platform\cheers-module-platform-capability-server"; Port = 58106 }
-    "platform-topology" = @{ Path = "cheers-module-platform\cheers-module-platform-topology-server"; Port = 58107 }
-    "topology"   = @{ Path = "cheers-module-platform\cheers-module-platform-topology-server"; Port = 58107 }
-    "platform-routing" = @{ Path = "cheers-module-platform\cheers-module-platform-routing-server"; Port = 58108 }
-    "routing"    = @{ Path = "cheers-module-platform\cheers-module-platform-routing-server"; Port = 58108 }
+    # platform / resource：组件库、视图库（旧根目录 cheers-module-business-middle-platform-resource 已迁入 cheers-module-business-middle-platform）
+    "platform"   = @{ Path = "cheers-module-business-middle-platform\cheers-module-business-middle-platform-resource-server"; Port = 58098 }
+    "resource"   = @{ Path = "cheers-module-business-middle-platform\cheers-module-business-middle-platform-resource-server"; Port = 58098 }
+    "platform-runtime" = @{ Path = "cheers-module-business-middle-platform\cheers-module-business-middle-platform-runtime-server"; Port = 58099 }
+    "runtime-l4" = @{ Path = "cheers-module-business-middle-platform\cheers-module-business-middle-platform-runtime-server"; Port = 58099 }
+    "platform-orchestration" = @{ Path = "cheers-module-business-middle-platform\cheers-module-business-middle-platform-orchestration-server"; Port = 58104 }
+    "orchestration" = @{ Path = "cheers-module-business-middle-platform\cheers-module-business-middle-platform-orchestration-server"; Port = 58104 }
+    "platform-policy" = @{ Path = "cheers-module-business-middle-platform\cheers-module-business-middle-platform-policy-server"; Port = 58105 }
+    "policy"     = @{ Path = "cheers-module-business-middle-platform\cheers-module-business-middle-platform-policy-server"; Port = 58105 }
+    "platform-capability" = @{ Path = "cheers-module-business-middle-platform\cheers-module-business-middle-platform-capability-server"; Port = 58106 }
+    "capability" = @{ Path = "cheers-module-business-middle-platform\cheers-module-business-middle-platform-capability-server"; Port = 58106 }
+    "platform-topology" = @{ Path = "cheers-module-business-middle-platform\cheers-module-business-middle-platform-topology-server"; Port = 58107 }
+    "topology"   = @{ Path = "cheers-module-business-middle-platform\cheers-module-business-middle-platform-topology-server"; Port = 58107 }
+    "platform-routing" = @{ Path = "cheers-module-business-middle-platform\cheers-module-business-middle-platform-routing-server"; Port = 58108 }
+    "routing"    = @{ Path = "cheers-module-business-middle-platform\cheers-module-business-middle-platform-routing-server"; Port = 58108 }
 }
 
 # 与 start-microservices.sh 保持一致
@@ -380,7 +380,7 @@ function Start-SingleService {
 
     # topology/routing 依赖本仓 SNAPSHOT API，首次启动前先 install 到本地仓库，避免 Unable to find instance 实为编译失败未起来
     if ($ServiceName -in @("topology", "platform-topology", "routing", "platform-routing")) {
-        $platformRoot = Join-Path $ScriptDir "cheers-module-platform"
+        $platformRoot = Join-Path $ScriptDir "cheers-module-business-middle-platform"
         $artifactId = Split-Path $config.Path -Leaf
         Write-Info "安装 $artifactId 及依赖到本地 Maven（-am install -DskipTests）..."
         Push-Location $platformRoot
@@ -676,7 +676,7 @@ function Show-Services {
     Write-ColorOutput "  5. alarm     - 告警管理服务（必需）" "White"
     Write-ColorOutput "  6. dynamic   - 动态业务服务（设施/设备等实体，twin 等模块依赖）" "White"
     Write-ColorOutput "  7. platform  - 平台资源库（组件/视图，别名 resource，58098）" "White"
-    Write-ColorOutput "     路径: cheers-module-platform\cheers-module-platform-resource-server" "Gray"
+    Write-ColorOutput "     路径: cheers-module-business-middle-platform\cheers-module-business-middle-platform-resource-server" "Gray"
     Write-ColorOutput "  8. platform-policy - 平台策略（58105）" "White"
     Write-ColorOutput "  9. platform-capability - 平台能力映射（58106）" "White"
     Write-ColorOutput "  10. platform-runtime - 平台 L4 运行时（58099）" "White"

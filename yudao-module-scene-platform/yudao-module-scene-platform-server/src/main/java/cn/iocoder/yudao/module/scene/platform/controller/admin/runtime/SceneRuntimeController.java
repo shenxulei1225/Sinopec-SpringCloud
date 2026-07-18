@@ -163,10 +163,17 @@ public class SceneRuntimeController {
             }
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("sceneCode", ref.getSceneCode());
+            map.put("originLng", ref.getOriginLng());
+            map.put("originLat", ref.getOriginLat());
+            map.put("originHeight", ref.getOriginHeight());
+            // 前端历史字段名（与 originLng/Lat 同值）
+            map.put("originLongitude", ref.getOriginLng());
+            map.put("originLatitude", ref.getOriginLat());
             map.put("crsCode", ref.getCrsCode());
             map.put("crsName", ref.getCrsName());
             map.put("crsType", ref.getCrsType());
             map.put("metadataJson", ref.getMetadataJson());
+            map.put("configured", ref.getOriginLng() != null && ref.getOriginLat() != null);
             return map;
         } catch (Exception ignored) {
             return Collections.emptyMap();

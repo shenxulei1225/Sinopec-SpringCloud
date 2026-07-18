@@ -43,7 +43,7 @@ public class CoordinateReferenceServiceImpl implements CoordinateReferenceServic
         if (reference == null) {
             throw ServiceExceptionUtil.exception(NOT_FOUND, "场景坐标参考不存在");
         }
-        return buildResp(reference);
+        return buildResp(scene.getSceneCode(), reference);
     }
 
     @Override
@@ -201,12 +201,20 @@ public class CoordinateReferenceServiceImpl implements CoordinateReferenceServic
         target.setTransformConfigJson(reqVO.getTransformConfigJson());
     }
 
-    private CoordinateReferenceRespVO buildResp(CoordinateReferenceDO reference) {
+    private CoordinateReferenceRespVO buildResp(String sceneCode, CoordinateReferenceDO reference) {
         CoordinateReferenceRespVO respVO = BeanUtils.toBean(reference, CoordinateReferenceRespVO.class);
+        respVO.setSceneCode(sceneCode);
         CoordinateCrsCatalogRespVO geographicCatalog = coordinateCrsCatalogService.getByCrsCode(reference.getGeographicCrsCode());
         CoordinateCrsCatalogRespVO projectedCatalog = coordinateCrsCatalogService.getByCrsCode(reference.getProjectedCrsCode());
         respVO.setGeographicCrsCatalog(geographicCatalog);
         respVO.setProjectedCrsCatalog(projectedCatalog);
+        if (hasText(reference.getGeographicCrsCode())) {
+            respVO.setCrsCode(reference.getGeographicCrsCode());
+            if (geographicCatalog != null) {
+                respVO.setCrsName(geographicCatalog.getCrsName());
+                respVO.setCrsType(geographicCatalog.getCrsType());
+            }
+        }
         if (hasText(reference.getTransformProfileCode())) {
             CoordinateTransformProfileRespVO profile = coordinateTransformProfileService.getProfile(reference.getTransformProfileCode());
             respVO.setTransformProfile(profile);
