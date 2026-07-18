@@ -32,7 +32,7 @@
         <module>yudao-module-inspection-task</module>
         <!-- 实时状态流 Runtime -->
         <module>yudao-module-nats</module>
-        <module>yudao-module-twin</module>
+        <module>cheers-twin</module>
         <module>cheers-module-dynamicbusiness</module>
         <module>cheers-business-middle-platform</module>
     </modules>

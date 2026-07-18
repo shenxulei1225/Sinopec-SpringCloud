@@ -9,14 +9,18 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <modules>
-        <module>yudao-module-twin-api</module>
-        <module>yudao-module-twin-biz</module>
-    </modules>
-
-    <artifactId>yudao-module-twin</artifactId>
+    <groupId>cn.cheers.x</groupId>
+    <artifactId>cheers-twin</artifactId>
     <packaging>pom</packaging>
 
     <name>${project.artifactId}</name>
-    <description>数字孪生 Twin - Facility ↔ ActorInstance 映射</description>
+    <description>
+        数字孪生整合层（Twin）：物理业务实体与三维等 BMP 标准服务之上的编排；
+        当前实现 Facility ↔ ActorInstance 映射。不并入业务中台标准服务清单。
+    </description>
+
+    <modules>
+        <module>cheers-twin-api</module>
+        <module>cheers-twin-server</module>
+    </modules>
 </project>

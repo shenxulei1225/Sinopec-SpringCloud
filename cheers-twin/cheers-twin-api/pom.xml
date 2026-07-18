@@ -3,17 +3,18 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <groupId>cn.iocoder.cloud</groupId>
-        <artifactId>yudao-module-twin</artifactId>
+        <groupId>cn.cheers.x</groupId>
+        <artifactId>cheers-twin</artifactId>
         <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>yudao-module-twin-api</artifactId>
+    <artifactId>cheers-twin-api</artifactId>
     <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
-    <description>数字孪生 Twin API</description>
+    <description>数字孪生整合层 Twin API</description>
 
     <dependencies>
         <dependency>

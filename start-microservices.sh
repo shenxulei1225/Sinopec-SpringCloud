@@ -136,7 +136,7 @@ get_service_path() {
         alarm) echo "yudao-module-alarm/yudao-module-alarm-biz" ;;
         scene|scene-3d) echo "cheers-business-middle-platform/cheers-scene-3d-server" ;;
         gis|bmp-gis) echo "cheers-business-middle-platform/cheers-gis-server" ;;
-        twin) echo "yudao-module-twin/yudao-module-twin-biz" ;;
+        twin) echo "cheers-twin/cheers-twin-server" ;;
         inspection) echo "yudao-module-inspection-task/yudao-module-inspection-task-server" ;;
         dynamic) echo "cheers-module-dynamicbusiness/cheers-module-dynamicbusiness-server" ;;
         # 业务中台 BMP：资源库（旧名 platform / resource）
