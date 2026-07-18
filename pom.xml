@@ -9,13 +9,13 @@
     <packaging>pom</packaging>
     <modules>
         <module>yudao-dependencies</module>
-        <module>yudao-gateway</module>
+        <module>cheers-gateway</module>
         <module>yudao-framework</module>
         <!-- Server 主项目 -->
         <module>yudao-server</module>
         <!--  各种 module 拓展 -->
-        <module>yudao-module-system</module>
-        <module>yudao-module-infra</module>
+        <module>cheers-system</module>
+        <module>cheers-infra</module>
         <module>yudao-module-member</module>
         <module>yudao-module-bpm</module>
         <module>yudao-module-pay</module>

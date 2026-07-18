@@ -8,17 +8,15 @@
         <version>${revision}</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <modules>
-        <module>yudao-module-system-api</module>
-        <module>yudao-module-system-server</module>
-    </modules>
-    <artifactId>yudao-module-system</artifactId>
+    <groupId>cn.cheers.x</groupId>
+    <artifactId>cheers-infra</artifactId>
     <packaging>pom</packaging>
-
+    <modules>
+        <module>cheers-infra-api</module>
+        <module>cheers-infra-server</module>
+    </modules>
     <name>${project.artifactId}</name>
     <description>
-        system 模块下，我们放通用业务，支撑上层的核心业务。
-        例如说：用户、部门、权限、数据字典等等
+        infra 模块：基础设施运维与管理，以及研发工具（定时任务、文件、代码生成等）。
     </description>
-
 </project>

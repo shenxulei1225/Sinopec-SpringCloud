@@ -27,8 +27,8 @@
 
         <!-- 依赖服务 -->
         <dependency>
-            <groupId>cn.iocoder.cloud</groupId>
-            <artifactId>yudao-module-system-api</artifactId>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-system-api</artifactId>
             <version>${revision}</version>
         </dependency>
         <dependency>

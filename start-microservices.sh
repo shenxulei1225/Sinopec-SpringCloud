@@ -121,9 +121,9 @@ check_redis() {
 # 获取服务路径
 get_service_path() {
     case "$1" in
-        gateway) echo "yudao-gateway" ;;
-        system) echo "yudao-module-system/yudao-module-system-server" ;;
-        infra) echo "yudao-module-infra/yudao-module-infra-server" ;;
+        gateway|cheers-gateway) echo "cheers-gateway" ;;
+        system|cheers-system) echo "cheers-system/cheers-system-server" ;;
+        infra|cheers-infra) echo "cheers-infra/cheers-infra-server" ;;
         member) echo "yudao-module-member/yudao-module-member-server" ;;
         bpm) echo "yudao-module-bpm/yudao-module-bpm-server" ;;
         pay) echo "yudao-module-pay/yudao-module-pay-server" ;;

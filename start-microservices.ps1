@@ -48,9 +48,9 @@ if (-not (Test-Path $LogDir)) {
 
 # 服务配置映射
 $ServiceConfig = @{
-    "gateway"    = @{ Path = "yudao-gateway"; Port = 58080 }
-    "system"     = @{ Path = "yudao-module-system\yudao-module-system-server"; Port = 58081 }
-    "infra"      = @{ Path = "yudao-module-infra\yudao-module-infra-server"; Port = 58082 }
+    "gateway"    = @{ Path = "cheers-gateway"; Port = 58080 }
+    "system"     = @{ Path = "cheers-system\cheers-system-server"; Port = 58081 }
+    "infra"      = @{ Path = "cheers-infra\cheers-infra-server"; Port = 58082 }
     "member"     = @{ Path = "yudao-module-member\yudao-module-member-server"; Port = 58087 }
     "bpm"        = @{ Path = "yudao-module-bpm\yudao-module-bpm-server"; Port = 58083 }
     "pay"        = @{ Path = "yudao-module-pay\yudao-module-pay-server"; Port = 58085 }
@@ -95,14 +95,14 @@ $KnownServices = @(
     "crm", "erp", "ai", "iot", "alarm", "dynamic",
     "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
     "platform-topology", "platform-routing",
-    "scene", "twin", "inspection"
+    "scene", "gis", "twin", "inspection"
 )
 
 $CoreServices = @(
     "infra", "system", "gateway", "bpm", "alarm", "dynamic",
     "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
     "platform-topology", "platform-routing",
-    "scene", "twin", "inspection"
+    "scene", "gis", "twin", "inspection"
 )
 
 $AllServices = @(
@@ -110,7 +110,7 @@ $AllServices = @(
     "crm", "erp", "ai", "iot", "alarm", "dynamic",
     "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
     "platform-topology", "platform-routing",
-    "scene", "twin", "inspection"
+    "scene", "gis", "twin", "inspection"
 )
 
 $StopServices = @(
@@ -118,7 +118,7 @@ $StopServices = @(
     "crm", "erp", "ai", "iot", "alarm", "dynamic",
     "platform-routing", "platform-topology",
     "platform-orchestration", "platform-runtime", "platform-policy", "platform-capability", "platform",
-    "scene", "twin", "inspection"
+    "scene", "gis", "twin", "inspection"
 )
 
 $PlatformAllServices = @(

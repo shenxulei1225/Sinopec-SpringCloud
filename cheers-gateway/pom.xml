@@ -8,7 +8,8 @@
         <version>${revision}</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>yudao-gateway</artifactId>
+    <groupId>cn.cheers.x</groupId>
+    <artifactId>cheers-gateway</artifactId>
     <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
@@ -18,8 +19,8 @@
     <dependencies>
         <!-- 业务组件 -->
         <dependency>
-            <groupId>cn.iocoder.cloud</groupId>
-            <artifactId>yudao-module-system-api</artifactId>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-system-api</artifactId>
             <version>${revision}</version>
             <exclusions>
                 <exclusion>

@@ -32,19 +32,19 @@
             <version>${revision}</version>
         </dependency>
         <dependency>
-            <groupId>cn.iocoder.cloud</groupId>
-            <artifactId>yudao-module-infra-api</artifactId>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-infra-api</artifactId>
             <version>${revision}</version>
         </dependency>
         <dependency>
-            <groupId>cn.iocoder.cloud</groupId>
-            <artifactId>yudao-module-system-api</artifactId>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-system-api</artifactId>
             <version>${revision}</version>
         </dependency>
         <!-- System SaveReqVO 反射扫描（rebuild/system 写表单 schema） -->
         <dependency>
-            <groupId>cn.iocoder.cloud</groupId>
-            <artifactId>yudao-module-system-server</artifactId>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-system-server</artifactId>
             <version>${revision}</version>
             <exclusions>
                 <!-- 仅需要 VO 类，不引入 system-server 的微信/社交 Starter（避免 wx appid 未配置导致启动失败） -->
