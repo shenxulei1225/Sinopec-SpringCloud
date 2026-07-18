@@ -35,7 +35,7 @@
         <module>yudao-module-nats</module>
         <module>yudao-module-twin</module>
         <module>cheers-module-dynamicbusiness</module>
-        <module>cheers-module-business-middle-platform</module>
+        <module>cheers-business-middle-platform</module>
     </modules>
 
     <name>${project.artifactId}</name>

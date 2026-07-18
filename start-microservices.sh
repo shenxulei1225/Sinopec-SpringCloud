@@ -22,7 +22,7 @@
 #   ./start-microservices.sh stop-bmp-process|stop-bmp-path|stop-bmp-scene-3d
 #   ./start-microservices.sh platform-all      # [弃用] 等同 bmp
 #
-# 业务中台父工程：cheers-module-business-middle-platform
+# 业务中台父工程：cheers-business-middle-platform
 # bmp = bmp-process + bmp-path（resource/policy/capability/runtime/orchestration + topology/routing）
 # ============================================================================
 
@@ -139,13 +139,13 @@ get_service_path() {
         inspection) echo "yudao-module-inspection-task/yudao-module-inspection-task-server" ;;
         dynamic) echo "cheers-module-dynamicbusiness/cheers-module-dynamicbusiness-server" ;;
         # 业务中台 BMP：资源库（旧名 platform / resource）
-        platform|resource|bmp-resource) echo "cheers-module-business-middle-platform/cheers-module-business-middle-platform-resource-server" ;;
-        platform-runtime|runtime-l4|bmp-runtime) echo "cheers-module-business-middle-platform/cheers-module-business-middle-platform-runtime-server" ;;
-        platform-orchestration|orchestration|bmp-orchestration) echo "cheers-module-business-middle-platform/cheers-module-business-middle-platform-orchestration-server" ;;
-        platform-policy|policy|bmp-policy) echo "cheers-module-business-middle-platform/cheers-module-business-middle-platform-policy-server" ;;
-        platform-capability|capability|bmp-capability) echo "cheers-module-business-middle-platform/cheers-module-business-middle-platform-capability-server" ;;
-        platform-topology|topology|bmp-topology) echo "cheers-module-business-middle-platform/cheers-module-business-middle-platform-topology-server" ;;
-        platform-routing|routing|bmp-routing) echo "cheers-module-business-middle-platform/cheers-module-business-middle-platform-routing-server" ;;
+        platform|resource|bmp-resource) echo "cheers-business-middle-platform/cheers-resource-server" ;;
+        platform-runtime|runtime-l4|bmp-runtime) echo "cheers-business-middle-platform/cheers-runtime-server" ;;
+        platform-orchestration|orchestration|bmp-orchestration) echo "cheers-business-middle-platform/cheers-orchestration-server" ;;
+        platform-policy|policy|bmp-policy) echo "cheers-business-middle-platform/cheers-policy-server" ;;
+        platform-capability|capability|bmp-capability) echo "cheers-business-middle-platform/cheers-capability-server" ;;
+        platform-topology|topology|bmp-topology) echo "cheers-business-middle-platform/cheers-topology-server" ;;
+        platform-routing|routing|bmp-routing) echo "cheers-business-middle-platform/cheers-routing-server" ;;
         *) echo "" ;;
     esac
 }
@@ -281,7 +281,7 @@ start_service() {
             artifact_id=$(basename "$service_path")
             echo -e "${BLUE}   安装 ${artifact_id} 及依赖到本地 Maven（-am install -DskipTests）...${NC}"
             (
-                cd "$SCRIPT_DIR/cheers-module-business-middle-platform" || exit 1
+                cd "$SCRIPT_DIR/cheers-business-middle-platform" || exit 1
                 mvn -pl "$artifact_id" -am install -DskipTests -q
             )
             if [ $? -ne 0 ]; then
@@ -582,7 +582,7 @@ show_services() {
     echo "  5. alarm     - 告警管理服务（必需）"
     echo "  6. dynamic    - 动态业务服务（设施/设备等实体，twin 等模块依赖）"
     echo "  7. platform   - 平台资源库（组件/视图，别名 resource，58098）"
-    echo "     路径: cheers-module-business-middle-platform/cheers-module-business-middle-platform-resource-server"
+    echo "     路径: cheers-business-middle-platform/cheers-resource-server"
     echo "  8. platform-policy - 平台策略（58105）"
     echo "  9. platform-capability - 平台能力映射（58106）"
     echo "  10. platform-runtime - 平台 L4 运行时（58099）"
