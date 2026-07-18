@@ -21,7 +21,7 @@ import org.springframework.context.annotation.Bean;
         "jakarta.servlet.Filter"
 })
 @EnableConfigurationProperties(TracerProperties.class)
-@ConditionalOnProperty(prefix = "yudao.tracer", value = "enable", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "cheers.tracer", value = "enable", matchIfMissing = true)
 public class YudaoTracerAutoConfiguration {
 
     // TODO @芋艿：skywalking 不兼容最新的 opentracing 版本。同时，opentracing 也停止了维护，尬住了！后续换 opentelemetry 即可！

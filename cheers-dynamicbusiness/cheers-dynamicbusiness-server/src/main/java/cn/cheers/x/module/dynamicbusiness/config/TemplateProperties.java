@@ -15,7 +15,7 @@ import jakarta.validation.constraints.NotBlank;
  * @author yudao
  */
 @Component
-@ConfigurationProperties(prefix = "yudao.template")
+@ConfigurationProperties(prefix = "cheers.template")
 @Validated
 @Data
 public class TemplateProperties {

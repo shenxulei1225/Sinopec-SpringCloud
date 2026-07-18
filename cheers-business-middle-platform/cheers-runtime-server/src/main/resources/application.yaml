@@ -61,9 +61,9 @@ logging:
     cn.cheers.x.module.platform.runtime.dal.mysql: INFO
     org.springframework.context.support.PostProcessorRegistrationDelegate: ERROR
 
---- #################### 芋道相关配置 ####################
+--- #################### Cheers 相关配置 ####################
 
-yudao:
+cheers:
   tenant:
     enable: true
     ignore-urls:
@@ -112,7 +112,7 @@ mybatis-plus:
       logic-delete-value: true # 逻辑已删除值（PostgreSQL 使用布尔 true）
       logic-not-delete-value: false # 逻辑未删除值（PostgreSQL 使用布尔 false）
     banner: false # 关闭控制台的 Banner 打印
-  type-aliases-package: ${yudao.info.base-package}.dal.dataobject
+  type-aliases-package: ${cheers.info.base-package}.dal.dataobject
   encryptor:
     password: XDV71a+xqStEA3WH # 加解密的秘钥,可使用 https://www.imaegoo.com/2020/aes-key-generator/ 网站生成
 
@@ -158,9 +158,9 @@ aj:
     req-check-minute-limit: 60 # check 接口一分钟内请求数限制
     req-verify-minute-limit: 60 # verify 接口一分钟内请求数限制
 
---- #################### 芋道相关配置 ####################
+--- #################### Cheers 相关配置 ####################
 
-yudao:
+cheers:
   info:
     version: 1.0.0
     base-package: cn.cheers.x.module.platform.runtime
@@ -181,7 +181,7 @@ yudao:
   swagger:
     title: 管理后台
     description: 提供管理员管理的所有功能
-    version: ${yudao.info.version}
+    version: ${cheers.info.version}
   tenant:
     enable: true
     ignore-urls:

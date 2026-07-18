@@ -10,7 +10,7 @@ import org.springframework.validation.annotation.Validated;
  *
  * 
  */
-@ConfigurationProperties("yudao.iot.message-bus")
+@ConfigurationProperties("cheers.iot.message-bus")
 @Data
 @Validated
 public class IotMessageBusProperties {

@@ -49,10 +49,10 @@ public class AssetConvertServiceImpl implements AssetConvertService {
     @Resource
     private AssetConvertProperties convertProperties;
 
-    @Value("${yudao.scene-platform.asset-upload.local-base-path:}")
+    @Value("${cheers.scene-platform.asset-upload.local-base-path:}")
     private String localBasePath;
 
-    @Value("${yudao.scene-platform.asset-upload.local-base-url:}")
+    @Value("${cheers.scene-platform.asset-upload.local-base-url:}")
     private String localBaseUrl;
 
     @Override
@@ -115,7 +115,7 @@ public class AssetConvertServiceImpl implements AssetConvertService {
             if ("fbx".equals(format)) {
                 metadata.put(METADATA_CONVERT_STATUS, STATUS_PENDING);
                 metadata.put(METADATA_CONVERT_MESSAGE,
-                        "FBX 需安装并启用外部转换插件（如 Assimp/Blender），见 yudao.scene-platform.asset-convert.plugins.fbx");
+                        "FBX 需安装并启用外部转换插件（如 Assimp/Blender），见 cheers.scene-platform.asset-convert.plugins.fbx");
             } else {
                 metadata.put(METADATA_CONVERT_STATUS, STATUS_FAILED);
                 metadata.put(METADATA_CONVERT_MESSAGE,

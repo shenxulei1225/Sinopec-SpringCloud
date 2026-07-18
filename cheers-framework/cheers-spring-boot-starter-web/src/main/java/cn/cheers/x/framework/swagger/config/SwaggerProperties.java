@@ -10,7 +10,7 @@ import jakarta.validation.constraints.NotEmpty;
  *
  * 
  */
-@ConfigurationProperties("yudao.swagger")
+@ConfigurationProperties("cheers.swagger")
 @Data
 public class SwaggerProperties {
 

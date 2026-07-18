@@ -118,9 +118,9 @@ xxl:
       logpath: ${user.home}/logs/xxl-job/${spring.application.name}
     accessToken: default_token
 
---- #################### 芋道相关配置 ####################
+--- #################### Cheers 相关配置 ####################
 
-yudao:
+cheers:
   info:
     version: 1.0.0
     base-package: cn.iocoder.yudao.module.alarm
@@ -134,7 +134,7 @@ yudao:
   swagger:
     title: 告警管理
     description: 提供告警管理的所有功能
-    version: ${yudao.info.version}
+    version: ${cheers.info.version}
   tenant:
     enable: true
     ignore-urls:

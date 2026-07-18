@@ -48,7 +48,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "yudao.entity.search.type", havingValue = "postgresql", matchIfMissing = true)
+@ConditionalOnProperty(name = "cheers.entity.search.type", havingValue = "postgresql", matchIfMissing = true)
 public class PostgresQueryEngine implements QueryEngine {
 
     private final JdbcTemplate jdbcTemplate;

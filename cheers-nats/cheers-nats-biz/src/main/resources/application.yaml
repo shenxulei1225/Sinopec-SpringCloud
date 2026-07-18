@@ -5,7 +5,7 @@ spring:
   application:
     name: cheers-nats
 
-yudao:
+cheers:
   nats:
     enabled: true
     server: nats://127.0.0.1:4222

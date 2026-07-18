@@ -75,7 +75,7 @@ public class AiAutoConfiguration {
     // ========== 各种 AI Client 创建 ==========
 
     @Bean
-    @ConditionalOnProperty(value = "yudao.ai.gemini.enable", havingValue = "true")
+    @ConditionalOnProperty(value = "cheers.ai.gemini.enable", havingValue = "true")
     public GeminiChatModel geminiChatModel(YudaoAiProperties yudaoAiProperties) {
         YudaoAiProperties.Gemini properties = yudaoAiProperties.getGemini();
         return buildGeminiChatClient(properties);
@@ -103,7 +103,7 @@ public class AiAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = "yudao.ai.doubao.enable", havingValue = "true")
+    @ConditionalOnProperty(value = "cheers.ai.doubao.enable", havingValue = "true")
     public DouBaoChatModel douBaoChatClient(YudaoAiProperties yudaoAiProperties) {
         YudaoAiProperties.DouBao properties = yudaoAiProperties.getDoubao();
         return buildDouBaoChatClient(properties);
@@ -131,7 +131,7 @@ public class AiAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = "yudao.ai.siliconflow.enable", havingValue = "true")
+    @ConditionalOnProperty(value = "cheers.ai.siliconflow.enable", havingValue = "true")
     public SiliconFlowChatModel siliconFlowChatClient(YudaoAiProperties yudaoAiProperties) {
         YudaoAiProperties.SiliconFlow properties = yudaoAiProperties.getSiliconflow();
         return buildSiliconFlowChatClient(properties);
@@ -158,7 +158,7 @@ public class AiAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = "yudao.ai.hunyuan.enable", havingValue = "true")
+    @ConditionalOnProperty(value = "cheers.ai.hunyuan.enable", havingValue = "true")
     public HunYuanChatModel hunYuanChatClient(YudaoAiProperties yudaoAiProperties) {
         YudaoAiProperties.HunYuan properties = yudaoAiProperties.getHunyuan();
         return buildHunYuanChatClient(properties);
@@ -193,7 +193,7 @@ public class AiAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = "yudao.ai.xinghuo.enable", havingValue = "true")
+    @ConditionalOnProperty(value = "cheers.ai.xinghuo.enable", havingValue = "true")
     public XingHuoChatModel xingHuoChatClient(YudaoAiProperties yudaoAiProperties) {
         YudaoAiProperties.XingHuo properties = yudaoAiProperties.getXinghuo();
         return buildXingHuoChatClient(properties);
@@ -225,7 +225,7 @@ public class AiAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = "yudao.ai.baichuan.enable", havingValue = "true")
+    @ConditionalOnProperty(value = "cheers.ai.baichuan.enable", havingValue = "true")
     public BaiChuanChatModel baiChuanChatClient(YudaoAiProperties yudaoAiProperties) {
         YudaoAiProperties.BaiChuan properties = yudaoAiProperties.getBaichuan();
         return buildBaiChuanChatClient(properties);
@@ -252,14 +252,14 @@ public class AiAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = "yudao.ai.midjourney.enable", havingValue = "true")
+    @ConditionalOnProperty(value = "cheers.ai.midjourney.enable", havingValue = "true")
     public MidjourneyApi midjourneyApi(YudaoAiProperties yudaoAiProperties) {
         YudaoAiProperties.Midjourney config = yudaoAiProperties.getMidjourney();
         return new MidjourneyApi(config.getBaseUrl(), config.getApiKey(), config.getNotifyUrl());
     }
 
     @Bean
-    @ConditionalOnProperty(value = "yudao.ai.suno.enable", havingValue = "true")
+    @ConditionalOnProperty(value = "cheers.ai.suno.enable", havingValue = "true")
     public SunoApi sunoApi(YudaoAiProperties yudaoAiProperties) {
         return new SunoApi(yudaoAiProperties.getSuno().getBaseUrl());
     }
@@ -305,7 +305,7 @@ public class AiAutoConfiguration {
     // ========== Web Search 相关 ==========
 
     @Bean
-    @ConditionalOnProperty(value = "yudao.ai.web-search.enable", havingValue = "true")
+    @ConditionalOnProperty(value = "cheers.ai.web-search.enable", havingValue = "true")
     public AiWebSearchClient webSearchClient(YudaoAiProperties yudaoAiProperties) {
         return new AiBoChaWebSearchClient(yudaoAiProperties.getWebSearch().getApiKey());
     }

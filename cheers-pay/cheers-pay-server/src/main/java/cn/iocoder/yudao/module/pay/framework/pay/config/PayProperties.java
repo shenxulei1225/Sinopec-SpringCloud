@@ -7,7 +7,7 @@ import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.constraints.NotEmpty;
 
-@ConfigurationProperties(prefix = "yudao.pay")
+@ConfigurationProperties(prefix = "cheers.pay")
 @Validated
 @Data
 public class PayProperties {

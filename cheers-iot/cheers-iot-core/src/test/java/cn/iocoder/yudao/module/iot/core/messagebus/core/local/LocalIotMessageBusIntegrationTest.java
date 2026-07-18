@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(classes = LocalIotMessageBusIntegrationTest.class)
 @Import(IotMessageBusAutoConfiguration.class)
 @TestPropertySource(properties = {
-    "yudao.iot.message-bus.type=local"
+    "cheers.iot.message-bus.type=local"
 })
 @Slf4j
 public class LocalIotMessageBusIntegrationTest {

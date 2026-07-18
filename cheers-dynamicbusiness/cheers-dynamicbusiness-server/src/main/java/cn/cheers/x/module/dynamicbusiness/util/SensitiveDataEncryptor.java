@@ -26,7 +26,7 @@ public class SensitiveDataEncryptor {
     private static final String ALGORITHM = "AES/GCM/NoPadding";
     private static final int GCM_IV_LENGTH = 12;
     private static final int GCM_TAG_LENGTH = 16;
-    private static final String KEY_PROPERTY_NAME = "yudao.sensitive-data.encrypt-key";
+    private static final String KEY_PROPERTY_NAME = "cheers.sensitive-data.encrypt-key";
     private static final String DEFAULT_KEY = "default-sensitive-data-encrypt-key-32bytes!!"; // 32 bytes for AES-256
 
     private static final AtomicBoolean DEFAULT_KEY_WARNED = new AtomicBoolean(false);
@@ -144,7 +144,7 @@ public class SensitiveDataEncryptor {
         String keyStr = SpringUtil.getProperty(KEY_PROPERTY_NAME, DEFAULT_KEY);
         if (DEFAULT_KEY.equals(keyStr)) {
             if (DEFAULT_KEY_WARNED.compareAndSet(false, true)) {
-                log.warn("使用默认加密密钥，生产环境请配置 yudao.sensitive-data.encrypt-key");
+                log.warn("使用默认加密密钥，生产环境请配置 cheers.sensitive-data.encrypt-key");
             }
         }
         // AES-256需要32字节密钥

@@ -11,8 +11,8 @@ import org.apache.rocketmq.spring.core.RocketMQListener;
  * 
  */
 @RocketMQMessageListener( // 重点：添加 @RocketMQMessageListener 注解，声明消费的 topic
-        topic = "${yudao.websocket.sender-rocketmq.topic}",
-        consumerGroup = "${yudao.websocket.sender-rocketmq.consumer-group}",
+        topic = "${cheers.websocket.sender-rocketmq.topic}",
+        consumerGroup = "${cheers.websocket.sender-rocketmq.consumer-group}",
         messageModel = MessageModel.BROADCASTING // 设置为广播模式，保证每个实例都能收到消息
 )
 @RequiredArgsConstructor

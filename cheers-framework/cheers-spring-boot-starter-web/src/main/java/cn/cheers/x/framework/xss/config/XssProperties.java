@@ -12,7 +12,7 @@ import java.util.List;
  *
  * 
  */
-@ConfigurationProperties(prefix = "yudao.xss")
+@ConfigurationProperties(prefix = "cheers.xss")
 @Validated
 @Data
 public class XssProperties {

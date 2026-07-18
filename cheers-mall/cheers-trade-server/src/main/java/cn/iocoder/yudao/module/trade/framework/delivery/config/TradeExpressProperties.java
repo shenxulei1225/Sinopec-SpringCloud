@@ -16,7 +16,7 @@ import jakarta.validation.constraints.NotEmpty;
  * @author jason
  */
 @Component
-@ConfigurationProperties(prefix = "yudao.trade.express")
+@ConfigurationProperties(prefix = "cheers.trade.express")
 @Data
 @Validated
 public class TradeExpressProperties {

@@ -76,7 +76,7 @@ mybatis-plus:
       logic-delete-value: true # 逻辑已删除值(适配 PostgreSQL boolean 字段)
       logic-not-delete-value: false # 逻辑未删除值(适配 PostgreSQL boolean 字段)
     banner: false # 关闭控制台的 Banner 打印
-  type-aliases-package: ${yudao.info.base-package}.module.*.dal.dataobject
+  type-aliases-package: ${cheers.info.base-package}.module.*.dal.dataobject
   encryptor:
     password: XDV71a+xqStEA3WH # 加解密的秘钥，可使用 https://www.imaegoo.com/2020/aes-key-generator/ 网站生成
 
@@ -171,7 +171,7 @@ spring:
         annotation-scanner:
           enabled: false # TODO @芋艿：有 bug https://github.com/spring-projects/spring-ai/issues/4917 需要官方修复
 
-yudao:
+cheers:
   ai:
     gemini: # 谷歌 Gemini
       enable: true
@@ -212,9 +212,9 @@ yudao:
       enable: true
       api-key: sk-40500e52840f4d24b956d0b1d80d9abe
 
---- #################### 芋道相关配置 ####################
+--- #################### Cheers 相关配置 ####################
 
-yudao:
+cheers:
   info:
     version: 1.0.0
     base-package: cn.iocoder.yudao.module.ai
@@ -228,7 +228,7 @@ yudao:
   swagger:
     title: 管理后台
     description: 提供管理员管理的所有功能
-    version: ${yudao.info.version}
+    version: ${cheers.info.version}
   tenant: # 多租户相关配置项
     enable: true
 

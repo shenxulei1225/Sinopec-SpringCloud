@@ -9,7 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author fansili
  * @since 1.0
  */
-@ConfigurationProperties(prefix = "yudao.ai")
+@ConfigurationProperties(prefix = "cheers.ai")
 @Data
 public class YudaoAiProperties {
 

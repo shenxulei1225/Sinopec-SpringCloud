@@ -28,7 +28,7 @@ import static cn.cheers.x.module.dynamicbusiness.enums.ExtendFieldQueryErrorCode
  * </ul>
  *
  * <h3>配置方式</h3>
- * <p>通过 yudao.entity.search.type 配置项指定默认引擎类型：</p>
+ * <p>通过 cheers.entity.search.type 配置项指定默认引擎类型：</p>
  * <ul>
  *   <li>postgresql - PostgreSQL JSONB + 索引表方案（默认）</li>
  *   <li>mysql - MySQL 索引表方案</li>
@@ -39,7 +39,7 @@ import static cn.cheers.x.module.dynamicbusiness.enums.ExtendFieldQueryErrorCode
  * <ul>
  *   <li>FR-001: 系统必须提供统一的扩展字段查询服务接口，屏蔽底层查询引擎差异</li>
  *   <li>FR-002: 系统必须支持通过配置切换查询引擎（postgresql、mysql、es）</li>
- *   <li>BR-ENG-001: 查询引擎通过配置 yudao.entity.search.type 切换</li>
+ *   <li>BR-ENG-001: 查询引擎通过配置 cheers.entity.search.type 切换</li>
  *   <li>BR-ENG-002: 支持 postgresql、mysql、es 三种配置值</li>
  * </ul>
  *
@@ -60,7 +60,7 @@ public class QueryEngineRouter {
      * 配置的引擎类型
      * 默认使用 postgresql
      */
-    @Value("${yudao.entity.search.type:postgresql}")
+    @Value("${cheers.entity.search.type:postgresql}")
     private String configuredEngineType;
 
     /**

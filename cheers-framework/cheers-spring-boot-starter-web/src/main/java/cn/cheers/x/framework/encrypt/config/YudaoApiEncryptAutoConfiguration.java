@@ -17,7 +17,7 @@ import static cn.cheers.x.framework.web.config.YudaoWebAutoConfiguration.createF
 @AutoConfiguration
 @Slf4j
 @EnableConfigurationProperties(ApiEncryptProperties.class)
-@ConditionalOnProperty(prefix = "yudao.api-encrypt", name = "enable", havingValue = "true")
+@ConditionalOnProperty(prefix = "cheers.api-encrypt", name = "enable", havingValue = "true")
 public class YudaoApiEncryptAutoConfiguration {
 
     @Bean

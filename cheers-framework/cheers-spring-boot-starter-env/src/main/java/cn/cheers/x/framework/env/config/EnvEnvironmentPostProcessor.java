@@ -13,7 +13,7 @@ import static cn.cheers.x.framework.env.core.util.EnvUtils.HOST_NAME_VALUE;
 
 /**
  * 多环境的 {@link EnvEnvironmentPostProcessor} 实现类
- * 将 yudao.env.tag 设置到 nacos 等组件对应的 tag 配置项，当且仅当它们不存在时
+ * 将 cheers.env.tag 设置到 nacos 等组件对应的 tag 配置项，当且仅当它们不存在时
  *
  * 
  */
@@ -32,7 +32,7 @@ public class EnvEnvironmentPostProcessor implements EnvironmentPostProcessor {
             environment.getSystemProperties().put(hostNameKey, EnvUtils.getHostName());
         }
 
-        // 1.1 如果没有 yudao.env.tag 配置项，则不进行配置项的修改
+        // 1.1 如果没有 cheers.env.tag 配置项，则不进行配置项的修改
         String tag = EnvUtils.getTag(environment);
         if (StrUtil.isEmpty(tag)) {
             return;

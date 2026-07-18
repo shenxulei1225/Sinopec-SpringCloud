@@ -11,7 +11,7 @@ import org.springframework.validation.annotation.Validated;
  *
  * 
  */
-@ConfigurationProperties(prefix = "yudao.api-encrypt")
+@ConfigurationProperties(prefix = "cheers.api-encrypt")
 @Validated
 @Data
 public class ApiEncryptProperties {

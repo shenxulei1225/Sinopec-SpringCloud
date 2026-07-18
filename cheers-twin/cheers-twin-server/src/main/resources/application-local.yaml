@@ -109,7 +109,7 @@ logging:
   level:
     cn.iocoder.yudao.module.twin.dal.mysql: debug
 
-yudao:
+cheers:
   env:
     tag: ${HOSTNAME}
   captcha:

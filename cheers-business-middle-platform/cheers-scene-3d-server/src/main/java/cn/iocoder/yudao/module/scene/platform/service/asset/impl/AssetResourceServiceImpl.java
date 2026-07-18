@@ -48,10 +48,10 @@ public class AssetResourceServiceImpl implements AssetResourceService {
     /**
      * 本地 profile 可选：不依赖 infra 文件服务时写入此目录，并返回 {@link #localBaseUrl} 前缀 URL。
      */
-    @Value("${yudao.scene-platform.asset-upload.local-base-path:}")
+    @Value("${cheers.scene-platform.asset-upload.local-base-path:}")
     private String localBasePath;
 
-    @Value("${yudao.scene-platform.asset-upload.local-base-url:}")
+    @Value("${cheers.scene-platform.asset-upload.local-base-url:}")
     private String localBaseUrl;
 
     @Override

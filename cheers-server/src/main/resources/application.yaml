@@ -91,7 +91,7 @@ mybatis-plus:
       logic-delete-value: true # 逻辑已删除值(适配 PostgreSQL boolean 字段)
       logic-not-delete-value: false # 逻辑未删除值(适配 PostgreSQL boolean 字段)
     banner: false # 关闭控制台的 Banner 打印
-  type-aliases-package: ${yudao.info.base-package}.module.*.dal.dataobject
+  type-aliases-package: ${cheers.info.base-package}.module.*.dal.dataobject
   encryptor:
     password: XDV71a+xqStEA3WH # 加解密的秘钥，可使用 https://www.imaegoo.com/2020/aes-key-generator/ 网站生成
 
@@ -238,7 +238,7 @@ spring:
         annotation-scanner:
           enabled: false # TODO @芋艿：有 bug https://github.com/spring-projects/spring-ai/issues/4917 需要官方修复
 
-yudao:
+cheers:
   ai:
     gemini: # 谷歌 Gemini
       enable: true
@@ -279,9 +279,9 @@ yudao:
       enable: true
       api-key: sk-40500e52840f4d24b956d0b1d80d9abe
 
---- #################### 芋道相关配置 ####################
+--- #################### Cheers 相关配置 ####################
 
-yudao:
+cheers:
   info:
     version: 1.0.0
     base-package: cn.iocoder.yudao
@@ -319,13 +319,13 @@ yudao:
   swagger:
     title: 芋道快速开发平台
     description: 提供管理后台、用户 App 的所有功能
-    version: ${yudao.info.version}
-    url: ${yudao.web.admin-ui.url}
+    version: ${cheers.info.version}
+    url: ${cheers.web.admin-ui.url}
     email: xingyu4j@vip.qq.com
     license: MIT
     license-url: https://gitee.com/zhijiantianya/ruoyi-vue-pro/blob/master/LICENSE
   codegen:
-    base-package: ${yudao.info.base-package}
+    base-package: ${cheers.info.base-package}
     db-schemas: ${spring.datasource.dynamic.datasource.master.name}
     front-type: 20 # 前端模版的类型，参见 CodegenFrontTypeEnum 枚举类
     vo-type: 10 # VO 的类型，参见 CodegenVOTypeEnum 枚举类

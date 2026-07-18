@@ -46,7 +46,7 @@ public class IotMessageBusAutoConfiguration {
     // ==================== Local 实现 ====================
 
     @Configuration
-    @ConditionalOnProperty(prefix = "yudao.iot.message-bus", name = "type", havingValue = "local", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "cheers.iot.message-bus", name = "type", havingValue = "local", matchIfMissing = true)
     public static class IotLocalMessageBusConfiguration {
 
         @Bean
@@ -60,7 +60,7 @@ public class IotMessageBusAutoConfiguration {
     // ==================== RocketMQ 实现 ====================
 
     @Configuration
-    @ConditionalOnProperty(prefix = "yudao.iot.message-bus", name = "type", havingValue = "rocketmq")
+    @ConditionalOnProperty(prefix = "cheers.iot.message-bus", name = "type", havingValue = "rocketmq")
     @ConditionalOnClass(RocketMQTemplate.class)
     public static class IotRocketMQMessageBusConfiguration {
 
@@ -81,7 +81,7 @@ public class IotMessageBusAutoConfiguration {
      * @see cn.cheers.x.framework.mq.redis.config.YudaoRedisMQConsumerAutoConfiguration
      */
     @Configuration
-    @ConditionalOnProperty(prefix = "yudao.iot.message-bus", name = "type", havingValue = "redis")
+    @ConditionalOnProperty(prefix = "cheers.iot.message-bus", name = "type", havingValue = "redis")
     @ConditionalOnClass(RedisTemplate.class)
     public static class IotRedisMessageBusConfiguration {
 

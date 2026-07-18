@@ -128,9 +128,9 @@ logging:
     cn.iocoder.yudao.module.scene.platform.dal.mysql: debug
     org.springframework.context.support.PostProcessorRegistrationDelegate: ERROR
 
---- #################### 芋道相关配置 ####################
+--- #################### Cheers 相关配置 ####################
 
-yudao:
+cheers:
   env:
     tag: ${HOSTNAME}
   scene-platform:

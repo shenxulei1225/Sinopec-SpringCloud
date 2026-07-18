@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(prefix = "yudao.trade.order", value = "status-sync-to-wxa-enable")
+@ConditionalOnProperty(prefix = "cheers.trade.order", value = "status-sync-to-wxa-enable")
 public class TradeStatusSyncToWxaOrderHandler implements TradeOrderHandler {
 
     @Resource

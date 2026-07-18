@@ -57,9 +57,9 @@ logging:
     cn.cheers.x.module.platform.capability.dal.mysql: INFO
     org.springframework.context.support.PostProcessorRegistrationDelegate: ERROR
 
---- #################### 芋道相关配置 ####################
+--- #################### Cheers 相关配置 ####################
 
-yudao:
+cheers:
   tenant:
     enable: true
     ignore-urls:
@@ -104,7 +104,7 @@ mybatis-plus:
       logic-delete-value: true
       logic-not-delete-value: false
     banner: false
-  type-aliases-package: ${yudao.info.base-package}.dal.dataobject
+  type-aliases-package: ${cheers.info.base-package}.dal.dataobject
   encryptor:
     password: XDV71a+xqStEA3WH
 
@@ -150,9 +150,9 @@ aj:
     req-check-minute-limit: 60
     req-verify-minute-limit: 60
 
---- #################### 芋道相关配置 ####################
+--- #################### Cheers 相关配置 ####################
 
-yudao:
+cheers:
   info:
     version: 1.0.0
     base-package: cn.cheers.x.module.platform.capability
@@ -171,7 +171,7 @@ yudao:
   swagger:
     title: 管理后台
     description: 提供管理员管理的所有功能
-    version: ${yudao.info.version}
+    version: ${cheers.info.version}
   tenant:
     enable: true
     ignore-urls:

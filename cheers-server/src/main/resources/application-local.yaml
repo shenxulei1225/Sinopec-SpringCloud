@@ -159,9 +159,9 @@ wx:
       key-prefix: wa
       http-client-type: HttpClient
 
---- #################### 芋道相关配置 ####################
+--- #################### Cheers 相关配置 ####################
 
-yudao:
+cheers:
   captcha:
     enable: false
   security:

@@ -9,7 +9,7 @@ import org.springframework.validation.annotation.Validated;
  *
  * @author Wanwan
  */
-@ConfigurationProperties("yudao.cache")
+@ConfigurationProperties("cheers.cache")
 @Data
 @Validated
 public class YudaoCacheProperties {

@@ -13,9 +13,9 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
  *
  * 
  */
-@SuppressWarnings("SpringComponentScan") // 忽略 IDEA 无法识别 ${yudao.info.base-package}
-@EnableFeignClients(basePackages = "${yudao.info.base-package}")
-@SpringBootApplication(scanBasePackages = {"${yudao.info.base-package}.server", "${yudao.info.base-package}.module"})
+@SuppressWarnings("SpringComponentScan") // 忽略 IDEA 无法识别 ${cheers.info.base-package}
+@EnableFeignClients(basePackages = "${cheers.info.base-package}")
+@SpringBootApplication(scanBasePackages = {"${cheers.info.base-package}.server", "${cheers.info.base-package}.module"})
 public class YudaoServerApplication {
 
     public static void main(String[] args) {

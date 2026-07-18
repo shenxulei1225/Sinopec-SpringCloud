@@ -9,7 +9,7 @@ import java.util.Map;
 
 @Data
 @Component
-@ConfigurationProperties(prefix = "yudao.scene-platform.asset-convert")
+@ConfigurationProperties(prefix = "cheers.scene-platform.asset-convert")
 public class AssetConvertProperties {
 
     private boolean enabled = true;

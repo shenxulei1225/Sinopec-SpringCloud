@@ -20,7 +20,7 @@ import org.springframework.validation.annotation.Validated;
 import java.time.Duration;
 import java.util.List;
 
-@ConfigurationProperties(prefix = "yudao.iot.gateway")
+@ConfigurationProperties(prefix = "cheers.iot.gateway")
 @Validated
 @Data
 public class IotGatewayProperties {

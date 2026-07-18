@@ -125,7 +125,7 @@ logging:
     cn.cheers.x.module.platform.policy.dal.mysql: info
     org.springframework.context.support.PostProcessorRegistrationDelegate: ERROR
 
---- #################### 芋道相关配置 ####################
+--- #################### Cheers 相关配置 ####################
 
 platform:
   topology:
@@ -137,7 +137,7 @@ platform:
       weight-table: bs_check_point_weight
       site-column: dept_id
 
-yudao:
+cheers:
   api-encrypt:
     enable: false
   tenant:

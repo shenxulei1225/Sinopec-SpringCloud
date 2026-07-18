@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(classes = RocketMQIotMessageBusTest.class)
 @Import({RocketMQAutoConfiguration.class, IotMessageBusAutoConfiguration.class})
 @TestPropertySource(properties = {
-    "yudao.iot.message-bus.type=rocketmq",
+    "cheers.iot.message-bus.type=rocketmq",
     "rocketmq.name-server=127.0.0.1:9876",
     "rocketmq.producer.group=test-rocketmq-group",
     "rocketmq.producer.send-message-timeout=10000"

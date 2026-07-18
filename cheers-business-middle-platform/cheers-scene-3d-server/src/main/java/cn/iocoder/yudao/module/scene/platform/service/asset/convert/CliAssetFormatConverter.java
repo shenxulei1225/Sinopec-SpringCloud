@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 外部命令插件：按格式读取 yudao.scene-platform.asset-convert.plugins.*。
+ * 外部命令插件：按格式读取 cheers.scene-platform.asset-convert.plugins.*。
  */
 @Component
 public class CliAssetFormatConverter implements AssetFormatConverter {

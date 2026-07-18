@@ -64,7 +64,7 @@ public class AlarmWebSocketConfig {
     /**
      * 配置说明：
      * 
-     * 1. WebSocket 连接路径：/ws（由 yudao.websocket.path 配置）
+     * 1. WebSocket 连接路径：/ws（由 cheers.websocket.path 配置）
      * 2. 认证方式：通过 URL 参数传递 token，如 ws://localhost:8080/ws?token=xxx
      * 3. 消息格式：JSON 格式，包含 type 和 content 两个字段
      * 4. 推送范围：默认推送给所有管理后台用户（UserTypeEnum.ADMIN）

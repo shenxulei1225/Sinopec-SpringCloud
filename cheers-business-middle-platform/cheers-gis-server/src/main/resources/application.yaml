@@ -63,7 +63,7 @@ mybatis-plus:
       logic-delete-value: true # 逻辑已删除值(适配 PostgreSQL boolean 字段)
       logic-not-delete-value: false # 逻辑未删除值(适配 PostgreSQL boolean 字段)
     banner: false
-  type-aliases-package: ${yudao.info.base-package}.dal.dataobject
+  type-aliases-package: ${cheers.info.base-package}.dal.dataobject
   encryptor:
     password: XDV71a+xqStEA3WH
 
@@ -108,9 +108,9 @@ xxl:
       logpath: ${user.home}/logs/xxl-job/${spring.application.name}
     accessToken: default_token
 
---- #################### 芋道相关配置 ####################
+--- #################### Cheers 相关配置 ####################
 
-yudao:
+cheers:
   info:
     version: 1.0.0
     base-package: cn.iocoder.yudao.module.scene.platform
@@ -124,7 +124,7 @@ yudao:
   swagger:
     title: GIS 管理后台
     description: 提供坐标/CRS/图层相关管理功能
-    version: ${yudao.info.version}
+    version: ${cheers.info.version}
   tenant:
     enable: true
     ignore-urls:

@@ -125,9 +125,9 @@ logging:
     cn.cheers.x.module.platform.orchestration: info
     org.springframework.context.support.PostProcessorRegistrationDelegate: ERROR
 
---- #################### 芋道相关配置 ####################
+--- #################### Cheers 相关配置 ####################
 
-yudao:
+cheers:
   # 本地前端已传 isEncrypt=false；关闭全局 API 加解密，避免与 X-Api-Encrypt 行为混淆
   api-encrypt:
     enable: false

@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * NATS 配置属性
  */
 @Data
-@ConfigurationProperties(prefix = "yudao.nats")
+@ConfigurationProperties(prefix = "cheers.nats")
 public class NatsProperties {
 
     /**

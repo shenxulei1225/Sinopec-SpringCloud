@@ -23,7 +23,7 @@ import jakarta.validation.constraints.NotNull;
  * 
  * <h3>业务规则</h3>
  * <ul>
- *   <li>BR-ENG-001: 查询引擎通过配置 yudao.entity.search.type 切换</li>
+ *   <li>BR-ENG-001: 查询引擎通过配置 cheers.entity.search.type 切换</li>
  *   <li>BR-QRY-002: 单次查询最多返回 1000 条记录</li>
  *   <li>BR-QRY-003: 查询条件最多 10 个</li>
  *   <li>BR-QRY-004: 统计查询超时时间 30 秒</li>
@@ -50,7 +50,7 @@ import jakarta.validation.constraints.NotNull;
 @Data
 @Component
 @Validated
-@ConfigurationProperties(prefix = "yudao.entity.search")
+@ConfigurationProperties(prefix = "cheers.entity.search")
 public class EntitySearchProperties {
 
     /**

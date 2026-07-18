@@ -12,7 +12,7 @@ import java.util.Set;
  *
  * 
  */
-@ConfigurationProperties(prefix = "yudao.tenant")
+@ConfigurationProperties(prefix = "cheers.tenant")
 @Data
 public class TenantProperties {
 

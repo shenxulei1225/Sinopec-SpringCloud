@@ -85,7 +85,7 @@ xxl:
       logpath: ${user.home}/logs/xxl-job/${spring.application.name}
     accessToken: default_token
 
-yudao:
+cheers:
   info:
     version: 1.0.0
     base-package: cn.iocoder.yudao.module.twin
@@ -95,7 +95,7 @@ yudao:
   swagger:
     title: Twin 管理后台
     description: Facility ↔ ActorInstance 映射管理
-    version: ${yudao.info.version}
+    version: ${cheers.info.version}
   tenant:
     enable: true
 

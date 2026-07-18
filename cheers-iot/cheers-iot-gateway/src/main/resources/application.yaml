@@ -24,7 +24,7 @@ rocketmq:
 
 --- #################### IoT 网关相关配置 ####################
 
-yudao:
+cheers:
   iot:
     # 消息总线配置
     message-bus:
