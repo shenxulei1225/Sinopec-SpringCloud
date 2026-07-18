@@ -16,14 +16,18 @@
 #   ./start-microservices.sh bmp              # 推荐：过程引擎 + 路径规划（7 个服务）
 #   ./start-microservices.sh bmp-process       # 仅过程引擎（5）
 #   ./start-microservices.sh bmp-path          # 仅路径规划（2）
-#   ./start-microservices.sh bmp-scene-3d      # 三维 scene
+#   ./start-microservices.sh bmp-scene-3d      # 三维 scene-3d
+#   ./start-microservices.sh bmp-gis           # GIS
 #   ./start-microservices.sh bmp-station-dev   # path + scene-3d
+#   ./start-microservices.sh twin-dev          # 孪生联调：dynamic + scene-3d + twin
 #   ./start-microservices.sh stop-bmp          # 停止 bmp（process+path）
-#   ./start-microservices.sh stop-bmp-process|stop-bmp-path|stop-bmp-scene-3d
+#   ./start-microservices.sh stop-bmp-process|stop-bmp-path|stop-bmp-scene-3d|stop-bmp-gis
+#   ./start-microservices.sh stop-twin-dev     # 停止 twin-dev
 #   ./start-microservices.sh platform-all      # [弃用] 等同 bmp
 #
 # 业务中台父工程：cheers-business-middle-platform
-# bmp = bmp-process + bmp-path（resource/policy/capability/runtime/orchestration + topology/routing）
+# bmp = bmp-process + bmp-path（不含 scene-3d / gis / twin）
+# twin = cheers-twin（整合层，在 BMP 与 dynamic 之上；不进 bmp 标准套件）
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -136,7 +140,7 @@ get_service_path() {
         alarm) echo "yudao-module-alarm/yudao-module-alarm-biz" ;;
         scene|scene-3d) echo "cheers-business-middle-platform/cheers-scene-3d-server" ;;
         gis|bmp-gis) echo "cheers-business-middle-platform/cheers-gis-server" ;;
-        twin) echo "cheers-twin/cheers-twin-server" ;;
+        twin|cheers-twin) echo "cheers-twin/cheers-twin-server" ;;
         inspection) echo "yudao-module-inspection-task/yudao-module-inspection-task-server" ;;
         dynamic) echo "cheers-module-dynamicbusiness/cheers-module-dynamicbusiness-server" ;;
         # 业务中台 BMP：资源库（旧名 platform / resource）
@@ -173,7 +177,7 @@ get_service_port() {
         alarm) echo "58097" ;;
         scene|scene-3d) echo "58093" ;;
         gis|bmp-gis) echo "58109" ;;
-        twin) echo "58094" ;;
+        twin|cheers-twin) echo "58094" ;;
         inspection) echo "58095" ;;
         dynamic) echo "58096" ;;
         platform|resource|bmp-resource) echo "58098" ;;
@@ -558,8 +562,10 @@ show_services() {
     echo "  ./start-microservices.sh bmp-scene-3d          # 三维（scene-3d）"
     echo "  ./start-microservices.sh bmp-gis               # GIS（坐标/CRS）"
     echo "  ./start-microservices.sh bmp-station-dev       # path + scene-3d"
+    echo "  ./start-microservices.sh twin-dev              # 孪生联调：dynamic + scene-3d + twin"
     echo "  ./start-microservices.sh stop-bmp              # 停止 bmp（process+path）"
     echo "  ./start-microservices.sh stop-bmp-process|stop-bmp-path|stop-bmp-scene-3d|stop-bmp-gis"
+    echo "  ./start-microservices.sh stop-twin-dev         # 停止 twin-dev"
     echo "  ./start-microservices.sh platform-all           # [弃用] → bmp"
     echo "  ./start-microservices.sh status             # 查看服务状态"
     echo "  ./start-microservices.sh logs               # 查看所有运行中服务的日志"
@@ -787,6 +793,8 @@ BMP_PATH_SERVICES=(platform-topology platform-routing)
 BMP_CORE_SERVICES=("${BMP_PROCESS_SERVICES[@]}" "${BMP_PATH_SERVICES[@]}")
 BMP_SCENE_3D_SERVICES=(scene-3d)
 BMP_GIS_SERVICES=(gis)
+# 孪生整合层联调（不入 bmp）：设施实体 + 三维 + Twin 映射
+TWIN_DEV_SERVICES=(dynamic scene-3d twin)
 
 start_suite_services() {
     local show_logs=${1:-false}
@@ -887,6 +895,17 @@ main() {
             echo -e "${BLUE}🚀 站场联调：bmp-path + bmp-scene-3d${NC}"
             echo ""
             start_suite_services "$show_logs" "${BMP_PATH_SERVICES[@]}" "${BMP_SCENE_3D_SERVICES[@]}"
+            ;;
+        "twin-dev")
+            check_nacos
+            check_redis
+            echo -e "${BLUE}🚀 孪生整合联调 (twin-dev)：dynamic + scene-3d + twin${NC}"
+            echo ""
+            start_suite_services "$show_logs" "${TWIN_DEV_SERVICES[@]}"
+            ;;
+        "stop-twin-dev")
+            echo -e "${BLUE}🛑 停止 twin-dev${NC}"
+            stop_suite_services "${TWIN_DEV_SERVICES[@]}"
             ;;
         "stop-bmp"|"stop-bmp-all")
             echo -e "${BLUE}🛑 停止 bmp（process + path）${NC}"

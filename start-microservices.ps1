@@ -69,6 +69,7 @@ $ServiceConfig = @{
     "scene-3d"   = @{ Path = "cheers-business-middle-platform\cheers-scene-3d-server"; Port = 58093 }
     "gis"        = @{ Path = "cheers-business-middle-platform\cheers-gis-server"; Port = 58109 }
     "twin"       = @{ Path = "cheers-twin\cheers-twin-server"; Port = 58094 }
+    "cheers-twin"= @{ Path = "cheers-twin\cheers-twin-server"; Port = 58094 }
     "inspection" = @{ Path = "yudao-module-inspection-task\yudao-module-inspection-task-server"; Port = 58095 }
     "dynamic"    = @{ Path = "cheers-module-dynamicbusiness\cheers-module-dynamicbusiness-server"; Port = 58096 }
     # platform / resource：组件库、视图库（旧根目录 cheers-business-middle-platform-resource 已迁入 cheers-business-middle-platform）
