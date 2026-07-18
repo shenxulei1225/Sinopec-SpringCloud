@@ -35,6 +35,8 @@
         <module>cheers-gis-server</module>
         <module>cheers-alarm-api</module>
         <module>cheers-alarm-server</module>
+        <module>cheers-work-order-api</module>
+        <module>cheers-work-order-server</module>
     </modules>
     <artifactId>cheers-business-middle-platform</artifactId>
     <packaging>pom</packaging>

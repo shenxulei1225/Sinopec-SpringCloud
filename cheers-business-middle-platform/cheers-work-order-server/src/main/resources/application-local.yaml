@@ -1,0 +1,55 @@
+--- #################### 数据库相关配置 ####################
+spring:
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    table: flyway_schema_history_work_order
+  datasource:
+    druid:
+      web-stat-filter:
+        enabled: true
+      stat-view-servlet:
+        enabled: true
+        allow:
+        url-pattern: /druid/*
+        login-username:
+        login-password:
+      filter:
+        stat:
+          enabled: true
+          log-slow-sql: true
+          slow-sql-millis: 100
+          merge-sql: true
+        wall:
+          config:
+            multi-statement-allow: true
+    dynamic:
+      druid:
+        initial-size: 1
+        min-idle: 1
+        max-active: 20
+        max-wait: 60000
+        time-between-eviction-runs-millis: 60000
+        min-evictable-idle-time-millis: 600000
+        max-evictable-idle-time-millis: 1800000
+        validation-query: SELECT 1
+        driver-class-name: org.postgresql.Driver
+        test-while-idle: true
+        test-on-borrow: false
+        test-on-return: false
+        pool-prepared-statements: true
+        max-pool-prepared-statement-per-connection-size: 20
+      primary: master
+      datasource:
+        master:
+          url: jdbc:postgresql://127.0.0.1:5432/sinopec?currentSchema=work_order
+          username: postgres
+          password: Coolhomer
+          driver-class-name: org.postgresql.Driver
+        slave:
+          lazy: true
+          url: jdbc:postgresql://127.0.0.1:5432/sinopec?currentSchema=work_order
+          username: postgres
+          password: Coolhomer
+          driver-class-name: org.postgresql.Driver

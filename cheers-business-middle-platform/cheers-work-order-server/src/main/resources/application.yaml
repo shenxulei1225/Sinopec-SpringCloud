@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: work-order-server
+
+  profiles:
+    active: local
+
+server:
+  port: 58098
