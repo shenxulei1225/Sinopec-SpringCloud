@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.promotion.dal.dataobject.kefu;
 
-import cn.iocoder.yudao.framework.common.enums.UserTypeEnum;
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.common.enums.UserTypeEnum;
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
 import cn.iocoder.yudao.module.promotion.enums.kefu.KeFuMessageContentTypeEnum;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableId;

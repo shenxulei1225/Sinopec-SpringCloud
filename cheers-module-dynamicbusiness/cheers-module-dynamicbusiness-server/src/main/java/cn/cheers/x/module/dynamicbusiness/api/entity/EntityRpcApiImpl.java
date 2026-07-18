@@ -2,14 +2,14 @@ package cn.cheers.x.module.dynamicbusiness.api.entity;
 
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityRpcFacadeService;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 动态业务通用实体读 RPC 实现。

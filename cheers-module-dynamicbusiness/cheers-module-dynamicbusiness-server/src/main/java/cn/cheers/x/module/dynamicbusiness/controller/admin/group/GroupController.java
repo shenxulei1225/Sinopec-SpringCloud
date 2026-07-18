@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.group;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.group.vo.*;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.group.GroupDO;
 import cn.cheers.x.module.dynamicbusiness.service.group.GroupService;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 通用分组")
 @RestController

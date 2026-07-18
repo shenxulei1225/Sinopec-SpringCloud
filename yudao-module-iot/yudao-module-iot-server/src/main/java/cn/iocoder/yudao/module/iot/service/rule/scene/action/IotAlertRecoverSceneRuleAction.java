@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertList;
 
 /**
  * IoT 告警恢复的 {@link IotSceneRuleAction} 实现类

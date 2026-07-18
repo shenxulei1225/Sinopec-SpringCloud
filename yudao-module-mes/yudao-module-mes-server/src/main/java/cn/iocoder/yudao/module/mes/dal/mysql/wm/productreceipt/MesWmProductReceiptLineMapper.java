@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.mes.dal.mysql.wm.productreceipt;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
-import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.mes.controller.admin.wm.productreceipt.vo.line.MesWmProductReceiptLinePageReqVO;
 import cn.iocoder.yudao.module.mes.dal.dataobject.wm.productreceipt.MesWmProductReceiptLineDO;
 import org.apache.ibatis.annotations.Mapper;

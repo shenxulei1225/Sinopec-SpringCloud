@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.scene.platform.controller.admin.runtime;
 
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.util.json.JsonUtils;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.actor.vo.ActorInstanceRespVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.component.vo.SceneComponentRespVO;
 import cn.cheers.x.gis.api.CoordinateReferenceApi;
@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 场景运行时")
 @RestController("sceneRuntimePackageController")

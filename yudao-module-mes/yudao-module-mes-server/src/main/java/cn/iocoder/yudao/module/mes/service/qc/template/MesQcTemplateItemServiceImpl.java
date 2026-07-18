@@ -2,9 +2,9 @@ package cn.iocoder.yudao.module.mes.service.qc.template;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjUtil;
-import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.enums.CommonStatusEnum;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.mes.controller.admin.qc.template.vo.item.MesQcTemplateItemPageReqVO;
 import cn.iocoder.yudao.module.mes.controller.admin.qc.template.vo.item.MesQcTemplateItemSaveReqVO;
 import cn.iocoder.yudao.module.mes.dal.dataobject.qc.template.MesQcTemplateDO;
@@ -18,9 +18,9 @@ import org.springframework.validation.annotation.Validated;
 import java.util.List;
 import java.util.Objects;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertSet;
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.findFirst;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertSet;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.findFirst;
 import static cn.iocoder.yudao.module.mes.enums.ErrorCodeConstants.*;
 
 /**

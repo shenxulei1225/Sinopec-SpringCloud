@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.promotion.convert.diy;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.promotion.controller.admin.diy.vo.page.*;
 import cn.iocoder.yudao.module.promotion.dal.dataobject.diy.DiyPageDO;
 import org.mapstruct.Mapper;

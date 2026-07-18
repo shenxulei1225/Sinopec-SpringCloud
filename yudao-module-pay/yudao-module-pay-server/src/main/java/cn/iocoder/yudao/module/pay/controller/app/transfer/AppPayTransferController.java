@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.pay.controller.app.transfer;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.pay.service.transfer.PayTransferService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "用户 APP - 转账单")
 @RestController

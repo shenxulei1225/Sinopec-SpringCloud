@@ -1,10 +1,10 @@
 package cn.iocoder.yudao.module.iot.core.messagebus.config;
 
-import cn.iocoder.yudao.framework.mq.redis.core.RedisMQTemplate;
-import cn.iocoder.yudao.framework.mq.redis.core.job.RedisPendingMessageResendJob;
-import cn.iocoder.yudao.framework.mq.redis.core.job.RedisStreamMessageCleanupJob;
-import cn.iocoder.yudao.framework.mq.redis.core.stream.AbstractRedisStreamMessage;
-import cn.iocoder.yudao.framework.mq.redis.core.stream.AbstractRedisStreamMessageListener;
+import cn.cheers.x.framework.mq.redis.core.RedisMQTemplate;
+import cn.cheers.x.framework.mq.redis.core.job.RedisPendingMessageResendJob;
+import cn.cheers.x.framework.mq.redis.core.job.RedisStreamMessageCleanupJob;
+import cn.cheers.x.framework.mq.redis.core.stream.AbstractRedisStreamMessage;
+import cn.cheers.x.framework.mq.redis.core.stream.AbstractRedisStreamMessageListener;
 import cn.iocoder.yudao.module.iot.core.messagebus.core.IotMessageBus;
 import cn.iocoder.yudao.module.iot.core.messagebus.core.local.IotLocalMessageBus;
 import cn.iocoder.yudao.module.iot.core.messagebus.core.redis.IotRedisMessageBus;
@@ -26,7 +26,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertList;
 
 /**
  * IoT 消息总线自动配置
@@ -78,7 +78,7 @@ public class IotMessageBusAutoConfiguration {
     /**
      * 特殊：由于 YudaoRedisMQConsumerAutoConfiguration 关于 Redis stream 的消费是动态注册，所以这里只能拷贝相关的逻辑！！！
      *
-     * @see cn.iocoder.yudao.framework.mq.redis.config.YudaoRedisMQConsumerAutoConfiguration
+     * @see cn.cheers.x.framework.mq.redis.config.YudaoRedisMQConsumerAutoConfiguration
      */
     @Configuration
     @ConditionalOnProperty(prefix = "yudao.iot.message-bus", name = "type", havingValue = "redis")

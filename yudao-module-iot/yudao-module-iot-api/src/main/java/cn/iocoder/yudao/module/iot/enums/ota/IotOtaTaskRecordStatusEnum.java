@@ -2,8 +2,8 @@ package cn.iocoder.yudao.module.iot.enums.ota;
 
 
 import cn.hutool.core.util.ArrayUtil;
-import cn.iocoder.yudao.framework.common.core.ArrayValuable;
-import cn.iocoder.yudao.framework.common.util.collection.SetUtils;
+import cn.cheers.x.framework.common.core.ArrayValuable;
+import cn.cheers.x.framework.common.util.collection.SetUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

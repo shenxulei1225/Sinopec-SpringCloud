@@ -1,11 +1,11 @@
 package cn.iocoder.yudao.module.bpm.framework.flowable.core.candidate.strategy.dept;
 
 import cn.hutool.core.lang.Assert;
-import cn.iocoder.yudao.framework.common.util.number.NumberUtils;
+import cn.cheers.x.framework.common.util.number.NumberUtils;
 import cn.iocoder.yudao.module.bpm.framework.flowable.core.candidate.BpmTaskCandidateStrategy;
 import cn.iocoder.yudao.module.bpm.framework.flowable.core.enums.BpmTaskCandidateStrategyEnum;
 import cn.iocoder.yudao.module.bpm.service.task.BpmProcessInstanceService;
-import cn.iocoder.yudao.module.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
 import jakarta.annotation.Resource;
 import org.flowable.bpmn.model.BpmnModel;
 import org.flowable.engine.delegate.DelegateExecution;

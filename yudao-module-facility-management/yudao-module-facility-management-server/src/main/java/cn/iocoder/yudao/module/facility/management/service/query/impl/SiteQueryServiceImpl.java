@@ -51,7 +51,7 @@ public class SiteQueryServiceImpl implements SiteQueryService {
     public List<SiteView> searchSites(String siteName, String siteCode, Long parentId, Integer nodeType, Integer status) {
         // 预加载所有站场类型
         Map<Long, String> siteTypeNameMap = buildSiteTypeNameMap();
-        return siteMapper.selectList(new cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX<SiteDO>()
+        return siteMapper.selectList(new cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX<SiteDO>()
                 .likeIfPresent(SiteDO::getSiteName, siteName)
                 .likeIfPresent(SiteDO::getSiteCode, siteCode)
                 .eqIfPresent(SiteDO::getParentId, parentId)

@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.pay.service.wallet;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageParam;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.pay.controller.app.wallet.vo.recharge.AppPayWalletRechargeCreateReqVO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.wallet.PayWalletRechargeDO;
 

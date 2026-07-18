@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.statistics.dal.mysql.infra;
 
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

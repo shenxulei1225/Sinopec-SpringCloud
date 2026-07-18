@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.mes.dal.dataobject.cal.team;
 
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
 import cn.iocoder.yudao.module.mes.dal.dataobject.cal.plan.MesCalPlanDO;
 import cn.iocoder.yudao.module.mes.dal.dataobject.cal.plan.MesCalPlanShiftDO;
 import com.baomidou.mybatisplus.annotation.KeySequence;

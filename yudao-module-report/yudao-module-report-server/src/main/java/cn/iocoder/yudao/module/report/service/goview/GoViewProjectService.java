@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.report.service.goview;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageParam;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.report.controller.admin.goview.vo.project.GoViewProjectCreateReqVO;
 import cn.iocoder.yudao.module.report.controller.admin.goview.vo.project.GoViewProjectUpdateReqVO;
 import cn.iocoder.yudao.module.report.dal.dataobject.goview.GoViewProjectDO;

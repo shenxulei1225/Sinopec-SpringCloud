@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.pay.service.wallet;
 
 import cn.hutool.core.util.ObjectUtil;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.pay.controller.admin.wallet.vo.transaction.PayWalletTransactionPageReqVO;
 import cn.iocoder.yudao.module.pay.controller.app.wallet.vo.transaction.AppPayWalletTransactionPageReqVO;
 import cn.iocoder.yudao.module.pay.controller.app.wallet.vo.transaction.AppPayWalletTransactionSummaryRespVO;

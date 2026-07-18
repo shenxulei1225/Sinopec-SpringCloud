@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.member.service.group;
 
-import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.enums.CommonStatusEnum;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.member.controller.admin.group.vo.MemberGroupCreateReqVO;
 import cn.iocoder.yudao.module.member.controller.admin.group.vo.MemberGroupPageReqVO;
 import cn.iocoder.yudao.module.member.controller.admin.group.vo.MemberGroupUpdateReqVO;

@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.mes.controller.admin.md.item;
 
-import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.enums.CommonStatusEnum;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.mes.controller.admin.md.item.vo.type.MesMdItemTypeListReqVO;
 import cn.iocoder.yudao.module.mes.controller.admin.md.item.vo.type.MesMdItemTypeRespVO;
 import cn.iocoder.yudao.module.mes.controller.admin.md.item.vo.type.MesMdItemTypeSaveReqVO;
@@ -19,8 +19,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertList;
 
 @Tag(name = "管理后台 - MES 物料产品分类")
 @RestController

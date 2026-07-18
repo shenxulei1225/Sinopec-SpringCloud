@@ -2,8 +2,8 @@ package cn.iocoder.yudao.module.iot.service.rule.data.action;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.Assert;
-import cn.iocoder.yudao.framework.common.util.http.HttpUtils;
-import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
+import cn.cheers.x.framework.common.util.http.HttpUtils;
+import cn.cheers.x.framework.common.util.json.JsonUtils;
 import cn.iocoder.yudao.module.iot.core.mq.message.IotDeviceMessage;
 import cn.iocoder.yudao.module.iot.dal.dataobject.rule.IotDataSinkDO;
 import cn.iocoder.yudao.module.iot.dal.dataobject.rule.config.IotDataSinkHttpConfig;
@@ -18,7 +18,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.HashMap;
 import java.util.Map;
 
-import static cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.HEADER_TENANT_ID;
+import static cn.cheers.x.framework.web.core.util.WebFrameworkUtils.HEADER_TENANT_ID;
 
 /**
  * HTTP 的 {@link IotDataRuleAction} 实现类

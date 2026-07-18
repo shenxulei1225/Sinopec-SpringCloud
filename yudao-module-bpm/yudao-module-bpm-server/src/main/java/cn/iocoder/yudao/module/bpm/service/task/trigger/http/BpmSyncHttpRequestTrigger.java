@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.bpm.service.task.trigger.http;
 
-import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
+import cn.cheers.x.framework.common.util.json.JsonUtils;
 import cn.iocoder.yudao.module.bpm.controller.admin.definition.vo.model.simple.BpmSimpleModelNodeVO.TriggerSetting.HttpRequestTriggerSetting;
 import cn.iocoder.yudao.module.bpm.enums.definition.BpmTriggerTypeEnum;
 import cn.iocoder.yudao.module.bpm.framework.flowable.core.util.BpmHttpRequestUtils;

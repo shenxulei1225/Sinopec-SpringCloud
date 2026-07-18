@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.inspection.inspection_content.service.item.impl;
 
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.inspection.inspection_content.controller.admin.vo.item.InspectionItemRespVO;
 import cn.iocoder.yudao.module.inspection.inspection_content.dal.dataobject.item.InspectionItemDO;
 import cn.iocoder.yudao.module.inspection.inspection_content.dal.mysql.item.InspectionItemMapper;

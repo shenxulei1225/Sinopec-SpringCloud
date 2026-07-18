@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.facility.management.controller.admin;
 
-import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.apilog.core.annotation.ApiAccessLog;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.facility.management.controller.admin.vo.facility.*;
 import cn.iocoder.yudao.module.facility.management.dal.dataobject.FacilityDO;
 import cn.iocoder.yudao.module.facility.management.service.facility.FacilityService;
@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.format.DateTimeFormatter;
 
-import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.*;
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.*;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 设施管理接口（写路径 + 读 {@code fac_facility}）。

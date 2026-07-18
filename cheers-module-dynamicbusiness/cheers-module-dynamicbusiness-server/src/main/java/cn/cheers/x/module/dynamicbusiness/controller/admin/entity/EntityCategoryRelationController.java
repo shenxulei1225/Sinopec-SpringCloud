@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.entity;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.BatchEntityCategoryAssociationReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.BatchEntityCategoryAssociationRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCategoryAssociationRespVO;
@@ -16,7 +16,7 @@ import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 管理后台 - 实体-分类关联 API Controller

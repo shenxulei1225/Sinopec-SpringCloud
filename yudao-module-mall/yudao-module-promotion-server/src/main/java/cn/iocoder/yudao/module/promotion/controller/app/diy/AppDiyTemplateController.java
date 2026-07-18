@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.promotion.controller.app.diy;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.promotion.controller.app.diy.vo.AppDiyTemplatePropertyRespVO;
 import cn.iocoder.yudao.module.promotion.convert.diy.DiyTemplateConvert;
 import cn.iocoder.yudao.module.promotion.dal.dataobject.diy.DiyPageDO;
@@ -21,8 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.findFirst;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.findFirst;
 
 @Tag(name = "用户 APP - 装修模板")
 @RestController

@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.iot.controller.admin.ota;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.iot.controller.admin.ota.vo.task.IotOtaTaskCreateReqVO;
 import cn.iocoder.yudao.module.iot.controller.admin.ota.vo.task.IotOtaTaskPageReqVO;
 import cn.iocoder.yudao.module.iot.controller.admin.ota.vo.task.IotOtaTaskRespVO;
@@ -17,7 +17,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - IoT OTA 升级任务")
 @RestController

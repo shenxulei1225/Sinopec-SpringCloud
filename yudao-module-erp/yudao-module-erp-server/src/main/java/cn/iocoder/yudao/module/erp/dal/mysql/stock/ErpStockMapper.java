@@ -2,9 +2,9 @@ package cn.iocoder.yudao.module.erp.dal.mysql.stock;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
-import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.erp.controller.admin.stock.vo.stock.ErpStockPageReqVO;
 import cn.iocoder.yudao.module.erp.dal.dataobject.stock.ErpStockDO;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;

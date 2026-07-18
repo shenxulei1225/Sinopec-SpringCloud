@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.mes.enums;
 
-import cn.iocoder.yudao.framework.common.exception.ErrorCode;
+import cn.cheers.x.framework.common.exception.ErrorCode;
 
 /**
  * MES 错误码枚举类

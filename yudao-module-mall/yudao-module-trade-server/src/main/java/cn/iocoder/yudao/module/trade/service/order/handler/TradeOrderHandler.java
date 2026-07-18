@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.trade.service.order.handler;
 
-import cn.iocoder.yudao.framework.common.util.collection.CollectionUtils;
+import cn.cheers.x.framework.common.util.collection.CollectionUtils;
 import cn.iocoder.yudao.module.trade.dal.dataobject.order.TradeOrderDO;
 import cn.iocoder.yudao.module.trade.dal.dataobject.order.TradeOrderItemDO;
 import cn.iocoder.yudao.module.trade.enums.order.TradeOrderItemAfterSaleStatusEnum;

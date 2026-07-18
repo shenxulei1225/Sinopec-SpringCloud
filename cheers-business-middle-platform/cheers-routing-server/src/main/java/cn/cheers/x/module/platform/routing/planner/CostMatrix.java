@@ -2,7 +2,7 @@ package cn.cheers.x.module.platform.routing.planner;
 
 import cn.cheers.x.module.platform.contract.dto.network.PathNodeDTO;
 import cn.cheers.x.module.platform.contract.dto.topology.TopologyPointDTO;
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;

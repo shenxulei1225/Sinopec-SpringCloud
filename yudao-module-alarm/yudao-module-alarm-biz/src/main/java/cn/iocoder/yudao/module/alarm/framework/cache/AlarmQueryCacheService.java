@@ -3,7 +3,7 @@ package cn.iocoder.yudao.module.alarm.framework.cache;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.alarm.AlarmRespVO;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.alarm.AlarmDetailRespVO;
 import cn.iocoder.yudao.module.alarm.dal.dataobject.AlarmRuleDO;

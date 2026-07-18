@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.trade.controller.admin.delivery;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.trade.controller.admin.delivery.vo.expresstemplate.*;
 import cn.iocoder.yudao.module.trade.convert.delivery.DeliveryExpressTemplateConvert;
 import cn.iocoder.yudao.module.trade.dal.dataobject.delivery.DeliveryExpressTemplateDO;
@@ -18,7 +18,7 @@ import jakarta.validation.Valid;
 import java.util.Collection;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 快递运费模板")
 @RestController

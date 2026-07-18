@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.relation;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageParam;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.relation.vo.bidirectional.*;
 
 import java.util.List;

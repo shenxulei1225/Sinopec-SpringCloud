@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.iot.controller.admin.product.vo.category;
 
-import cn.iocoder.yudao.framework.excel.core.annotations.DictFormat;
-import cn.iocoder.yudao.module.system.enums.DictTypeConstants;
+import cn.cheers.x.framework.excel.core.annotations.DictFormat;
+import cn.cheers.x.system.enums.DictTypeConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 

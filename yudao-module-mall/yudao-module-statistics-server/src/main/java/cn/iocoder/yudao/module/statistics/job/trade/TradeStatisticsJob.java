@@ -4,7 +4,7 @@ import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.tenant.core.job.TenantJob;
+import cn.cheers.x.framework.tenant.core.job.TenantJob;
 import cn.iocoder.yudao.module.statistics.service.trade.TradeStatisticsService;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import org.springframework.stereotype.Component;

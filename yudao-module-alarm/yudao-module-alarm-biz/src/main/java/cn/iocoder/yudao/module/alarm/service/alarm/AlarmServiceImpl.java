@@ -2,8 +2,8 @@ package cn.iocoder.yudao.module.alarm.service.alarm;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.alarm.*;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.type.AlarmTypeCategoryVO;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.type.AlarmTypeEntityVO;
@@ -24,8 +24,8 @@ import cn.iocoder.yudao.module.alarm.framework.cache.AlarmQueryCacheService;
 import cn.iocoder.yudao.module.alarm.service.audit.AlarmAuditService;
 import cn.iocoder.yudao.module.alarm.service.notify.NotificationService;
 import cn.iocoder.yudao.module.alarm.service.type.AlarmTypeService;
-import cn.iocoder.yudao.module.system.api.user.AdminUserApi;
-import cn.iocoder.yudao.module.system.api.user.dto.AdminUserRespDTO;
+import cn.cheers.x.system.api.user.AdminUserApi;
+import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -43,8 +43,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
 import static cn.iocoder.yudao.module.alarm.enums.ErrorCodeConstants.*;
 
 /**
@@ -584,7 +584,7 @@ public class AlarmServiceImpl implements AlarmService {
             return null;
         }
         try {
-            cn.iocoder.yudao.framework.common.pojo.CommonResult<AdminUserRespDTO> result = adminUserApi.getUser(userId);
+            cn.cheers.x.framework.common.pojo.CommonResult<AdminUserRespDTO> result = adminUserApi.getUser(userId);
             if (result != null && result.isSuccess() && result.getData() != null) {
                 return result.getData().getNickname();
             }
@@ -769,7 +769,7 @@ public class AlarmServiceImpl implements AlarmService {
             
             // 查询该级别下超时未确认且未升级的告警
             List<AlarmDO> alarmsToEscalate = alarmMapper.selectList(
-                    new cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX<AlarmDO>()
+                    new cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX<AlarmDO>()
                             .eq(AlarmDO::getAlarmStatus, AlarmStatusEnum.PENDING.getStatus())
                             .eq(AlarmDO::getAlarmLevel, levelEnum.getLevel())
                             .le(AlarmDO::getCreateTime, timeoutThreshold)

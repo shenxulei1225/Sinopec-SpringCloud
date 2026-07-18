@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.pay.controller.admin.channel;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.pay.controller.admin.channel.vo.PayChannelCreateReqVO;
 import cn.iocoder.yudao.module.pay.controller.admin.channel.vo.PayChannelRespVO;
 import cn.iocoder.yudao.module.pay.controller.admin.channel.vo.PayChannelUpdateReqVO;
@@ -19,8 +19,8 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Set;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertSet;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertSet;
 
 @Tag(name = "管理后台 - 支付渠道")
 @RestController

@@ -1,6 +1,6 @@
 package cn.cheers.x.module.platform.runtime.api;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.platform.runtime.api.dto.RuntimePersistReqDTO;
 import cn.cheers.x.module.platform.runtime.enums.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;

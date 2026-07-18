@@ -6,8 +6,8 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication(scanBasePackages = {"cn.cheers.x.module.platform.runtime"})
 @EnableFeignClients(basePackages = {
-        "cn.iocoder.yudao.module.system.api",
-        "cn.iocoder.yudao.module.infra.api"
+        "cn.cheers.x.system.api",
+        "cn.cheers.x.infra.api"
 })
 public class PlatformRuntimeServerApplication {
 

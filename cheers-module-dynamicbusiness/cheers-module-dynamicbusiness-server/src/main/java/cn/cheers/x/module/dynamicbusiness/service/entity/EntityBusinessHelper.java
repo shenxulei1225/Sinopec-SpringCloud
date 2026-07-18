@@ -1,8 +1,8 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity;
 
-import cn.iocoder.yudao.framework.tenant.core.context.TenantContextHolder;
+import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
 
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityConvert;
@@ -10,7 +10,7 @@ import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityFieldMapsSupport;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
-import cn.iocoder.yudao.framework.mybatis.core.type.JsonbMapTypeHandler;
+import cn.cheers.x.framework.mybatis.core.type.JsonbMapTypeHandler;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

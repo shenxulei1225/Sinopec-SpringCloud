@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.convert.entity;
 
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.ServiceException;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.ai.framework.ai.core.model.wenduoduo.api;
 
-import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
+import cn.cheers.x.framework.common.util.json.JsonUtils;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.extern.slf4j.Slf4j;

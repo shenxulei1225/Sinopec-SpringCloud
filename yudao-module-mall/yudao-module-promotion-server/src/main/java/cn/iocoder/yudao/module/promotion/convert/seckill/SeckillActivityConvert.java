@@ -1,9 +1,9 @@
 package cn.iocoder.yudao.module.promotion.convert.seckill;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.util.collection.CollectionUtils;
-import cn.iocoder.yudao.framework.common.util.collection.MapUtils;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.util.collection.CollectionUtils;
+import cn.cheers.x.framework.common.util.collection.MapUtils;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.product.api.spu.dto.ProductSpuRespDTO;
 import cn.iocoder.yudao.module.promotion.api.seckill.dto.SeckillValidateJoinRespDTO;
 import cn.iocoder.yudao.module.promotion.controller.admin.seckill.vo.activity.SeckillActivityCreateReqVO;
@@ -27,8 +27,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.*;
-import static cn.iocoder.yudao.framework.common.util.collection.MapUtils.findAndThen;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.*;
+import static cn.cheers.x.framework.common.util.collection.MapUtils.findAndThen;
 
 /**
  * 秒杀活动 Convert

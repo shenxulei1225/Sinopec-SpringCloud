@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.page;
 
 import cn.hutool.core.util.ObjUtil;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.page.vo.PagePageReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.page.vo.PageSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.convert.page.PageConvert;
@@ -13,7 +13,7 @@ import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.cheers.x.module.dynamicbusiness.enums.ErrorCodeConstants.PAGE_CONFIG_NOT_EXISTS;
 import static cn.cheers.x.module.dynamicbusiness.enums.ErrorCodeConstants.PAGE_CONFIG_PAGE_CODE_EXISTS;
 

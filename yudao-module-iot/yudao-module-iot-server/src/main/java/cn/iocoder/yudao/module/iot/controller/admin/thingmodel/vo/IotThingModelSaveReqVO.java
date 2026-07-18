@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.iot.controller.admin.thingmodel.vo;
 
-import cn.iocoder.yudao.framework.common.validation.InEnum;
+import cn.cheers.x.framework.common.validation.InEnum;
 import cn.iocoder.yudao.module.iot.dal.dataobject.thingmodel.model.ThingModelEvent;
 import cn.iocoder.yudao.module.iot.dal.dataobject.thingmodel.model.ThingModelProperty;
 import cn.iocoder.yudao.module.iot.dal.dataobject.thingmodel.model.ThingModelService;

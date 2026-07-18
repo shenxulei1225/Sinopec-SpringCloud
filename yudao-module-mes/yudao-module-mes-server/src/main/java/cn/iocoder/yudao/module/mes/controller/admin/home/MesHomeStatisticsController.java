@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.mes.controller.admin.home;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.mes.controller.admin.home.vo.MesHomeProductionTrendRespVO;
 import cn.iocoder.yudao.module.mes.controller.admin.home.vo.MesHomeSummaryRespVO;
 import cn.iocoder.yudao.module.mes.controller.admin.home.vo.MesHomeWorkOrderStatusRespVO;
@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - MES 首页统计")
 @RestController

@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.dal.mysql.entity;
 
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.service.entity.dto.EntityAggregationCountDTO;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.bpm.framework.flowable.core.candidate.strategy.user;
 
-import cn.iocoder.yudao.framework.common.util.collection.SetUtils;
+import cn.cheers.x.framework.common.util.collection.SetUtils;
 import cn.iocoder.yudao.module.bpm.framework.flowable.core.candidate.BpmTaskCandidateStrategy;
 import cn.iocoder.yudao.module.bpm.framework.flowable.core.enums.BpmTaskCandidateStrategyEnum;
 import cn.iocoder.yudao.module.bpm.service.task.BpmProcessInstanceService;

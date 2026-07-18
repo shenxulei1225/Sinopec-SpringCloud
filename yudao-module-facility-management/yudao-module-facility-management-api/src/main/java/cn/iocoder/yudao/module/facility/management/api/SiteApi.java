@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.facility.management.api;
 
 import cn.iocoder.yudao.module.facility.management.api.dto.SiteRespDTO;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;

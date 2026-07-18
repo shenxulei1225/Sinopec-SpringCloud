@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.erp.dal.mysql.purchase;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
-import cn.iocoder.yudao.framework.mybatis.core.query.MPJLambdaWrapperX;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.query.MPJLambdaWrapperX;
 import cn.iocoder.yudao.module.erp.controller.admin.purchase.vo.order.ErpPurchaseOrderPageReqVO;
 import cn.iocoder.yudao.module.erp.dal.dataobject.purchase.ErpPurchaseOrderDO;
 import cn.iocoder.yudao.module.erp.dal.dataobject.purchase.ErpPurchaseOrderItemDO;

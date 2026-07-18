@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.promotion.service.banner;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.promotion.controller.admin.banner.vo.BannerCreateReqVO;
 import cn.iocoder.yudao.module.promotion.controller.admin.banner.vo.BannerPageReqVO;
 import cn.iocoder.yudao.module.promotion.controller.admin.banner.vo.BannerUpdateReqVO;
@@ -13,7 +13,7 @@ import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.promotion.enums.ErrorCodeConstants.BANNER_NOT_EXISTS;
 
 /**

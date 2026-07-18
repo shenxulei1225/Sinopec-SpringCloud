@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.pagetemplate;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.pagetemplate.vo.PageTemplateVO;
 import cn.cheers.x.module.dynamicbusiness.service.pagetemplate.PageTemplateService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 管理后台 - 页面模板 Controller

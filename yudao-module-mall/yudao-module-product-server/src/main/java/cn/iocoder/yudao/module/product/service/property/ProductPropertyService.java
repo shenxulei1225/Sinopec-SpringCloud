@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.product.service.property;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.product.controller.admin.property.vo.property.ProductPropertyPageReqVO;
 import cn.iocoder.yudao.module.product.controller.admin.property.vo.property.ProductPropertySaveReqVO;
 import cn.iocoder.yudao.module.product.dal.dataobject.property.ProductPropertyDO;

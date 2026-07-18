@@ -3,7 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.service.reference.provider.impl;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import cn.iocoder.yudao.framework.common.util.http.HttpUtils;
+import cn.cheers.x.framework.common.util.http.HttpUtils;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.reference.vo.ReferenceCandidateRespVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.reference.ReferenceProviderDO;
 import cn.cheers.x.module.dynamicbusiness.service.reference.provider.ReferenceBatchGetReq;

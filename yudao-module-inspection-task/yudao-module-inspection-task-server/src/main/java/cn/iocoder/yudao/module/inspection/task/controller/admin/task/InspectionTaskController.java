@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.inspection.task.controller.admin.task;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.inspection.task.controller.admin.vo.task.*;
 import cn.iocoder.yudao.module.inspection.task.service.query.InspectionTaskQueryService;
 import cn.iocoder.yudao.module.inspection.task.service.task.InspectionTaskService;
@@ -13,7 +13,7 @@ import jakarta.validation.Valid;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 管理后台 - 巡检任务 Controller。

@@ -1,31 +1,31 @@
 package cn.iocoder.yudao.module.member.service.auth;
 
 import cn.hutool.core.lang.Assert;
-import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
-import cn.iocoder.yudao.framework.common.enums.TerminalEnum;
-import cn.iocoder.yudao.framework.common.enums.UserTypeEnum;
-import cn.iocoder.yudao.framework.common.util.monitor.TracerUtils;
-import cn.iocoder.yudao.framework.common.util.servlet.ServletUtils;
+import cn.cheers.x.framework.common.enums.CommonStatusEnum;
+import cn.cheers.x.framework.common.enums.TerminalEnum;
+import cn.cheers.x.framework.common.enums.UserTypeEnum;
+import cn.cheers.x.framework.common.util.monitor.TracerUtils;
+import cn.cheers.x.framework.common.util.servlet.ServletUtils;
 import cn.iocoder.yudao.module.member.controller.app.auth.vo.*;
 import cn.iocoder.yudao.module.member.convert.auth.AuthConvert;
 import cn.iocoder.yudao.module.member.dal.dataobject.user.MemberUserDO;
 import cn.iocoder.yudao.module.member.service.user.MemberUserService;
-import cn.iocoder.yudao.module.system.api.logger.LoginLogApi;
-import cn.iocoder.yudao.module.system.api.logger.dto.LoginLogCreateReqDTO;
-import cn.iocoder.yudao.framework.common.biz.system.oauth2.OAuth2TokenCommonApi;
-import cn.iocoder.yudao.framework.common.biz.system.oauth2.dto.OAuth2AccessTokenCreateReqDTO;
-import cn.iocoder.yudao.framework.common.biz.system.oauth2.dto.OAuth2AccessTokenRespDTO;
-import cn.iocoder.yudao.module.system.api.sms.SmsCodeApi;
-import cn.iocoder.yudao.module.system.api.social.SocialClientApi;
-import cn.iocoder.yudao.module.system.api.social.SocialUserApi;
-import cn.iocoder.yudao.module.system.api.social.dto.SocialUserBindReqDTO;
-import cn.iocoder.yudao.module.system.api.social.dto.SocialUserRespDTO;
-import cn.iocoder.yudao.module.system.api.social.dto.SocialWxPhoneNumberInfoRespDTO;
-import cn.iocoder.yudao.module.system.enums.logger.LoginLogTypeEnum;
-import cn.iocoder.yudao.module.system.enums.logger.LoginResultEnum;
-import cn.iocoder.yudao.module.system.enums.oauth2.OAuth2ClientConstants;
-import cn.iocoder.yudao.module.system.enums.sms.SmsSceneEnum;
-import cn.iocoder.yudao.module.system.enums.social.SocialTypeEnum;
+import cn.cheers.x.system.api.logger.LoginLogApi;
+import cn.cheers.x.system.api.logger.dto.LoginLogCreateReqDTO;
+import cn.cheers.x.framework.common.biz.system.oauth2.OAuth2TokenCommonApi;
+import cn.cheers.x.framework.common.biz.system.oauth2.dto.OAuth2AccessTokenCreateReqDTO;
+import cn.cheers.x.framework.common.biz.system.oauth2.dto.OAuth2AccessTokenRespDTO;
+import cn.cheers.x.system.api.sms.SmsCodeApi;
+import cn.cheers.x.system.api.social.SocialClientApi;
+import cn.cheers.x.system.api.social.SocialUserApi;
+import cn.cheers.x.system.api.social.dto.SocialUserBindReqDTO;
+import cn.cheers.x.system.api.social.dto.SocialUserRespDTO;
+import cn.cheers.x.system.api.social.dto.SocialWxPhoneNumberInfoRespDTO;
+import cn.cheers.x.system.enums.logger.LoginLogTypeEnum;
+import cn.cheers.x.system.enums.logger.LoginResultEnum;
+import cn.cheers.x.system.enums.oauth2.OAuth2ClientConstants;
+import cn.cheers.x.system.enums.sms.SmsSceneEnum;
+import cn.cheers.x.system.enums.social.SocialTypeEnum;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,9 +33,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.iocoder.yudao.framework.common.util.servlet.ServletUtils.getClientIP;
-import static cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getTerminal;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.util.servlet.ServletUtils.getClientIP;
+import static cn.cheers.x.framework.web.core.util.WebFrameworkUtils.getTerminal;
 import static cn.iocoder.yudao.module.member.enums.ErrorCodeConstants.*;
 
 /**

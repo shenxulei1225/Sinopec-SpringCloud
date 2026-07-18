@@ -1,10 +1,10 @@
 package cn.iocoder.yudao.module.crm.controller.admin.product.vo.product;
 
-import cn.iocoder.yudao.framework.excel.core.annotations.DictFormat;
-import cn.iocoder.yudao.framework.excel.core.convert.DictConvert;
+import cn.cheers.x.framework.excel.core.annotations.DictFormat;
+import cn.cheers.x.framework.excel.core.convert.DictConvert;
 import cn.iocoder.yudao.module.crm.dal.dataobject.product.CrmProductCategoryDO;
 import cn.iocoder.yudao.module.crm.enums.DictTypeConstants;
-import cn.iocoder.yudao.module.system.api.user.AdminUserApi;
+import cn.cheers.x.system.api.user.AdminUserApi;
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
 import com.fhs.core.trans.anno.Trans;

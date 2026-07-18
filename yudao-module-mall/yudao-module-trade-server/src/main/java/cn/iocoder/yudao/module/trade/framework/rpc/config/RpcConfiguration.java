@@ -21,10 +21,10 @@ import cn.iocoder.yudao.module.promotion.api.discount.DiscountActivityApi;
 import cn.iocoder.yudao.module.promotion.api.point.PointActivityApi;
 import cn.iocoder.yudao.module.promotion.api.reward.RewardActivityApi;
 import cn.iocoder.yudao.module.promotion.api.seckill.SeckillActivityApi;
-import cn.iocoder.yudao.module.system.api.notify.NotifyMessageSendApi;
-import cn.iocoder.yudao.module.system.api.social.SocialClientApi;
-import cn.iocoder.yudao.module.system.api.social.SocialUserApi;
-import cn.iocoder.yudao.module.system.api.user.AdminUserApi;
+import cn.cheers.x.system.api.notify.NotifyMessageSendApi;
+import cn.cheers.x.system.api.social.SocialClientApi;
+import cn.cheers.x.system.api.social.SocialUserApi;
+import cn.cheers.x.system.api.user.AdminUserApi;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Configuration;
 

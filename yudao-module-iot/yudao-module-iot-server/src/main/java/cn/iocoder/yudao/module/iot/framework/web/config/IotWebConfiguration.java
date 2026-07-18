@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.iot.framework.web.config;
 
-import cn.iocoder.yudao.framework.swagger.config.YudaoSwaggerAutoConfiguration;
+import cn.cheers.x.framework.swagger.config.YudaoSwaggerAutoConfiguration;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

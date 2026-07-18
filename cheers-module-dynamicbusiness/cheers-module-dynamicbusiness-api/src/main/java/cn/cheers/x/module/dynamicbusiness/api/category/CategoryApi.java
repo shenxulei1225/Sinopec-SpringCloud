@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.api.category;
 
-import cn.iocoder.yudao.framework.common.biz.system.category.CategoryCommonApi;
+import cn.cheers.x.framework.common.biz.system.category.CategoryCommonApi;
 import cn.cheers.x.module.dynamicbusiness.enums.ApiConstants;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.cloud.openfeign.FeignClient;

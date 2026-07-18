@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity.query.exception;
 
-import cn.iocoder.yudao.framework.common.exception.ErrorCode;
+import cn.cheers.x.framework.common.exception.ErrorCode;
 
 /**
  * Entity 查询异常基类

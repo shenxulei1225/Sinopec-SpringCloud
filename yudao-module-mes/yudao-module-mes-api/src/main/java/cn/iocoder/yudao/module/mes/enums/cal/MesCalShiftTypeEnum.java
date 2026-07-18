@@ -2,7 +2,7 @@ package cn.iocoder.yudao.module.mes.enums.cal;
 
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.lang.Pair;
-import cn.iocoder.yudao.framework.common.core.ArrayValuable;
+import cn.cheers.x.framework.common.core.ArrayValuable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

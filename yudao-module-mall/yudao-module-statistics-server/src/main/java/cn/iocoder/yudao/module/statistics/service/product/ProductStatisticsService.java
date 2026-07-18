@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.statistics.service.product;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.pojo.SortablePageParam;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.SortablePageParam;
 import cn.iocoder.yudao.module.statistics.controller.admin.common.vo.DataComparisonRespVO;
 import cn.iocoder.yudao.module.statistics.controller.admin.product.vo.ProductStatisticsReqVO;
 import cn.iocoder.yudao.module.statistics.controller.admin.product.vo.ProductStatisticsRespVO;

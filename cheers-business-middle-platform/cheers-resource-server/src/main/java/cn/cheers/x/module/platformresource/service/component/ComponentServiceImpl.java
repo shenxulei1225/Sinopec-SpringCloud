@@ -1,6 +1,6 @@
 package cn.cheers.x.module.platformresource.service.component;
 
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.cheers.x.module.platformresource.controller.admin.component.vo.ComponentCreateReqVO;
 import cn.cheers.x.module.platformresource.controller.admin.component.vo.ComponentRespVO;
 import cn.cheers.x.module.platformresource.controller.admin.component.vo.ComponentUpdateReqVO;
@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.cheers.x.module.platformresource.enums.ErrorCodeConstants.*;
 
 @Service

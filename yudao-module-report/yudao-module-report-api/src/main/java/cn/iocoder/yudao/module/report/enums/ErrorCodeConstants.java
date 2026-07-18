@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.report.enums;
 
-import cn.iocoder.yudao.framework.common.exception.ErrorCode;
+import cn.cheers.x.framework.common.exception.ErrorCode;
 
 /**
  * Report 错误码枚举类

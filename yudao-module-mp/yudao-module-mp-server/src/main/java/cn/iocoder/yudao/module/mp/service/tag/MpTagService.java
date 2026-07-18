@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.mp.service.tag;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.mp.controller.admin.tag.vo.MpTagCreateReqVO;
 import cn.iocoder.yudao.module.mp.controller.admin.tag.vo.MpTagPageReqVO;
 import cn.iocoder.yudao.module.mp.controller.admin.tag.vo.MpTagUpdateReqVO;

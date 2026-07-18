@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.iot.service.rule.scene.matcher;
 
 import cn.hutool.extra.spring.SpringUtil;
-import cn.iocoder.yudao.framework.common.util.spring.SpringExpressionUtils;
+import cn.cheers.x.framework.common.util.spring.SpringExpressionUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.mes.service.qc.oqc;
 
-import cn.iocoder.yudao.framework.test.core.ut.BaseDbUnitTest;
+import cn.cheers.x.framework.test.core.ut.BaseDbUnitTest;
 import cn.iocoder.yudao.module.mes.dal.dataobject.qc.oqc.MesQcOqcDO;
 import cn.iocoder.yudao.module.mes.dal.mysql.qc.oqc.MesQcOqcMapper;
 import cn.iocoder.yudao.module.mes.enums.MesBizTypeConstants;
@@ -12,15 +12,15 @@ import cn.iocoder.yudao.module.mes.service.qc.template.MesQcTemplateItemService;
 import cn.iocoder.yudao.module.mes.service.wm.productsales.MesWmProductSalesLineService;
 import cn.iocoder.yudao.module.mes.service.wm.productsales.MesWmProductSalesService;
 import cn.iocoder.yudao.module.mes.service.qc.indicatorresult.MesQcIndicatorResultService;
-import cn.iocoder.yudao.module.system.api.user.AdminUserApi;
+import cn.cheers.x.system.api.user.AdminUserApi;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import static cn.iocoder.yudao.framework.test.core.util.AssertUtils.assertServiceException;
-import static cn.iocoder.yudao.framework.test.core.util.RandomUtils.randomLongId;
-import static cn.iocoder.yudao.framework.test.core.util.RandomUtils.randomPojo;
+import static cn.cheers.x.framework.test.core.util.AssertUtils.assertServiceException;
+import static cn.cheers.x.framework.test.core.util.RandomUtils.randomLongId;
+import static cn.cheers.x.framework.test.core.util.RandomUtils.randomPojo;
 import static cn.iocoder.yudao.module.mes.enums.ErrorCodeConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;

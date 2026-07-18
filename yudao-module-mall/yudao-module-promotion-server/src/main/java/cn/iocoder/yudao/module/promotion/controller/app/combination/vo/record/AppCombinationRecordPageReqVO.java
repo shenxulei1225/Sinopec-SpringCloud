@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.promotion.controller.app.combination.vo.record;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
-import cn.iocoder.yudao.framework.common.validation.InEnum;
+import cn.cheers.x.framework.common.pojo.PageParam;
+import cn.cheers.x.framework.common.validation.InEnum;
 import cn.iocoder.yudao.module.promotion.enums.combination.CombinationRecordStatusEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;

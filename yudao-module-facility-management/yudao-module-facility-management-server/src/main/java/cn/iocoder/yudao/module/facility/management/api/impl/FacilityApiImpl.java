@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.facility.management.api.impl;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.facility.management.api.FacilityApi;
 import cn.iocoder.yudao.module.facility.management.api.dto.FacilityPageReqDTO;
 import cn.iocoder.yudao.module.facility.management.api.dto.FacilityRespDTO;

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.crm.dal.dataobject.customer;
 
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
 import cn.iocoder.yudao.module.crm.enums.DictTypeConstants;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -94,7 +94,7 @@ public class CrmCustomerDO extends BaseDO {
     /**
      * 所在地
      *
-     * 关联 {@link cn.iocoder.yudao.framework.ip.core.Area#getId()} 字段
+     * 关联 {@link cn.cheers.x.framework.ip.core.Area#getId()} 字段
      */
     private Integer areaId;
     /**

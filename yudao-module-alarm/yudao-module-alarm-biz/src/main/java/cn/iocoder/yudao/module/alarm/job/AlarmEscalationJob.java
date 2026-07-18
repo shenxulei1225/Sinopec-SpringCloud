@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.alarm.job;
 
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.tenant.core.util.TenantUtils;
+import cn.cheers.x.framework.tenant.core.util.TenantUtils;
 import cn.iocoder.yudao.module.alarm.service.alarm.AlarmService;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import jakarta.annotation.Resource;

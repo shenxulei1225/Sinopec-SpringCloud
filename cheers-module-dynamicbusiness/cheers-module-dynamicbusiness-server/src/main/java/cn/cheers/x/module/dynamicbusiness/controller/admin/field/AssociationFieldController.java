@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.field;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.AssociationTargetRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldRespVO;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 管理后台 - 业务关联字段(REF_Multi)接口

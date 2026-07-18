@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.product.convert.spu;
 
-import cn.iocoder.yudao.framework.common.util.collection.CollectionUtils;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.util.collection.CollectionUtils;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.product.controller.admin.spu.vo.ProductSkuRespVO;
 import cn.iocoder.yudao.module.product.controller.admin.spu.vo.ProductSpuPageReqVO;
 import cn.iocoder.yudao.module.product.controller.admin.spu.vo.ProductSpuRespVO;
@@ -14,7 +14,7 @@ import org.mapstruct.factory.Mappers;
 import java.util.List;
 import java.util.Map;
 
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertMultiMap;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertMultiMap;
 
 /**
  * 商品 SPU Convert

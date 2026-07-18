@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.facility.management.service.facility.impl;
 
 import cn.cheers.x.module.dynamicbusiness.api.category.CategoryApi;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.facility.management.controller.admin.vo.facility.FacilityCreateReqVO;
 import cn.iocoder.yudao.module.facility.management.controller.admin.vo.facility.FacilitySpatialSaveReqVO;
 import cn.iocoder.yudao.module.facility.management.controller.admin.vo.facility.FacilityUpdateReqVO;
@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.facility.management.enums.ErrorCodeConstants.*;
 
 /**

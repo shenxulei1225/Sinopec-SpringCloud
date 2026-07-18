@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.trade.enums.order;
 
 import cn.hutool.core.util.ObjectUtil;
-import cn.iocoder.yudao.framework.common.core.ArrayValuable;
+import cn.cheers.x.framework.common.core.ArrayValuable;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

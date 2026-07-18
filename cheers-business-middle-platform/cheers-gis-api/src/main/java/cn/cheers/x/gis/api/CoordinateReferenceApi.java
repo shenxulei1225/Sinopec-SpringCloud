@@ -2,7 +2,7 @@ package cn.cheers.x.gis.api;
 
 import cn.cheers.x.gis.api.dto.CoordinateReferenceRespDTO;
 import cn.cheers.x.gis.enums.GisApiConstants;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.cloud.openfeign.FeignClient;

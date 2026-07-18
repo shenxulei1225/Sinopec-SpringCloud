@@ -13,7 +13,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMa
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.relation.RelationFieldLibraryMapper;
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
@@ -335,7 +335,7 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
         }
 
         // 2) 去重校验：同 source + fieldCode + target 的有效关联不重复写入
-        EntityRelationDO existing = entityRelationMapper.selectOne(new cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX<EntityRelationDO>()
+        EntityRelationDO existing = entityRelationMapper.selectOne(new cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX<EntityRelationDO>()
                 .eq(EntityRelationDO::getSourceEntityId, entity.getId())
                 .eq(EntityRelationDO::getFieldCode, fieldInfo.getFieldCode())
                 .eq(EntityRelationDO::getTargetEntityId, targetEntityId)

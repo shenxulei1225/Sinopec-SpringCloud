@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.dal.mysql.dynamictable;
 
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.dynamictable.DynamicTableAuditLogDO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.apache.ibatis.annotations.Mapper;

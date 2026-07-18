@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.service.asset.impl;
 
-import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
+import cn.cheers.x.framework.common.util.json.JsonUtils;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.asset.AssetResourceDO;
 import cn.iocoder.yudao.module.scene.platform.dal.mysql.asset.AssetResourceMapper;
 import cn.iocoder.yudao.module.scene.platform.service.asset.convert.AssetConvertProperties;

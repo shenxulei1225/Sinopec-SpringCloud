@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.member.service.level;
 
-import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
+import cn.cheers.x.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.module.member.controller.admin.level.vo.level.MemberLevelCreateReqVO;
 import cn.iocoder.yudao.module.member.controller.admin.level.vo.level.MemberLevelListReqVO;
 import cn.iocoder.yudao.module.member.controller.admin.level.vo.level.MemberLevelUpdateReqVO;

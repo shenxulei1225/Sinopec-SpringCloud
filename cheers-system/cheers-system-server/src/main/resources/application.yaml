@@ -150,7 +150,7 @@ aj:
 yudao:
   info:
     version: 1.0.0
-    base-package: cn.iocoder.yudao.module.system
+    base-package: cn.cheers.x.system
   web:
     admin-ui:
       url: http://dashboard.yudao.iocoder.cn # Admin 管理后台 UI 的地址

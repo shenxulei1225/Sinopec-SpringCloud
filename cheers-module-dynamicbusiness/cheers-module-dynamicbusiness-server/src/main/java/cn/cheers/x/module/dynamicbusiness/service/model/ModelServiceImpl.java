@@ -1,10 +1,10 @@
 package cn.cheers.x.module.dynamicbusiness.service.model;
 
-import cn.iocoder.yudao.framework.tenant.core.context.TenantContextHolder;
+import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
 
 import cn.hutool.core.util.IdUtil;
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCreateReqVO;
@@ -32,7 +32,7 @@ import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeBaseField
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryTypeService;
-import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.service.dynamictable.DynamicTableService;
 import cn.cheers.x.module.dynamicbusiness.service.model.core.ModelCoreService;
 import cn.cheers.x.module.dynamicbusiness.util.SparseSortUtils;

@@ -1,9 +1,9 @@
 package cn.iocoder.yudao.module.member.controller.app.auth.vo;
 
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.common.validation.InEnum;
-import cn.iocoder.yudao.framework.common.validation.Mobile;
-import cn.iocoder.yudao.module.system.enums.social.SocialTypeEnum;
+import cn.cheers.x.framework.common.validation.InEnum;
+import cn.cheers.x.framework.common.validation.Mobile;
+import cn.cheers.x.system.enums.social.SocialTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

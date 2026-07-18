@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.ai.enums.model;
 
-import cn.iocoder.yudao.framework.common.core.ArrayValuable;
+import cn.cheers.x.framework.common.core.ArrayValuable;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

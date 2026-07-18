@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.promotion.convert.article;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.promotion.controller.admin.article.vo.category.ArticleCategoryCreateReqVO;
 import cn.iocoder.yudao.module.promotion.controller.admin.article.vo.category.ArticleCategoryRespVO;
 import cn.iocoder.yudao.module.promotion.controller.admin.article.vo.category.ArticleCategorySimpleRespVO;

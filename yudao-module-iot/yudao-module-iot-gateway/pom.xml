@@ -62,8 +62,8 @@
 
         <!-- 测试相关 -->
         <dependency>
-            <groupId>cn.iocoder.cloud</groupId>
-            <artifactId>yudao-spring-boot-starter-test</artifactId>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

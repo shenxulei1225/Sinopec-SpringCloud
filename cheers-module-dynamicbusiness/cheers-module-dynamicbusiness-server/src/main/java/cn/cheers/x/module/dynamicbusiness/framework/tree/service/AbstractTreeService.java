@@ -3,8 +3,8 @@ package cn.cheers.x.module.dynamicbusiness.framework.tree.service;
 import cn.cheers.x.module.dynamicbusiness.framework.tree.core.TreeContract;
 import cn.cheers.x.module.dynamicbusiness.framework.tree.mapper.FrameworkTreeMapper;
 import cn.cheers.x.module.dynamicbusiness.framework.tree.utils.TreeUtils;
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
-import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
+import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.transaction.annotation.Transactional;
 

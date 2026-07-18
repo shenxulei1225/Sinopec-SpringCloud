@@ -3,7 +3,7 @@ package cn.iocoder.yudao.module.iot.service.rule.scene.timer;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
+import cn.cheers.x.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.module.iot.dal.dataobject.rule.IotSceneRuleDO;
 import cn.iocoder.yudao.module.iot.enums.rule.IotSceneRuleTriggerTypeEnum;
 import cn.iocoder.yudao.module.iot.framework.job.core.IotSchedulerManager;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.filterList;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.filterList;
 
 /**
  * IoT 场景规则定时触发器处理器：负责管理定时触发器的注册、更新、删除等操作

@@ -15,7 +15,7 @@ import org.mockito.InjectMocks;
 
 import static cn.iocoder.yudao.module.pay.enums.order.PayOrderStatusEnum.CLOSED;
 import static cn.iocoder.yudao.module.pay.enums.order.PayOrderStatusEnum.WAITING;
-import static cn.iocoder.yudao.framework.test.core.util.RandomUtils.*;
+import static cn.cheers.x.framework.test.core.util.RandomUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.argThat;

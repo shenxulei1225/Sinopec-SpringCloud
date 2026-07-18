@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.trade.controller.app.brokerage.vo.withdraw;
 
-import cn.iocoder.yudao.framework.common.util.validation.ValidationUtils;
-import cn.iocoder.yudao.framework.common.validation.InEnum;
+import cn.cheers.x.framework.common.util.validation.ValidationUtils;
+import cn.cheers.x.framework.common.validation.InEnum;
 import cn.iocoder.yudao.module.pay.enums.PayChannelEnum;
 import cn.iocoder.yudao.module.trade.enums.brokerage.BrokerageWithdrawTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;

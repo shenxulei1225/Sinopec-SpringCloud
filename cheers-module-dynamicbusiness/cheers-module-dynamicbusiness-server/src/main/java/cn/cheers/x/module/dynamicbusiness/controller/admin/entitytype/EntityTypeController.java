@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype;
 
-import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.apilog.core.annotation.ApiAccessLog;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.*;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
@@ -18,8 +18,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.*;
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.*;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 业务类型 Controller

@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.model;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.BatchModelCategoryAssociationRespVO;
 import cn.cheers.x.module.dynamicbusiness.service.model.relation.ModelCategoryRelationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.annotation.Resource;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 管理后台 - 模型-分类关联 API Controller

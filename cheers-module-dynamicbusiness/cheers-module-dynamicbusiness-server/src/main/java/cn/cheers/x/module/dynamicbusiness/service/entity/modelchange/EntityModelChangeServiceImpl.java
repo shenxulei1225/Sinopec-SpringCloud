@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity.modelchange;
 
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityChangeModelCommitReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityChangeModelCommitRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityChangeModelFieldItemVO;
@@ -559,7 +559,7 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
         Map<Long, FieldDO> fieldById = new HashMap<>();
         if (!fieldIds.isEmpty()) {
             for (FieldDO field : fieldMapper.selectList(
-                    new cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX<FieldDO>()
+                    new cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX<FieldDO>()
                             .in(FieldDO::getId, fieldIds)
                             .eq(FieldDO::getDeleted, false))) {
                 if (field != null && field.getId() != null) {

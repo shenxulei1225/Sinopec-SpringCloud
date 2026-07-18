@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.group.vo;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import cn.cheers.x.framework.common.pojo.PageParam;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

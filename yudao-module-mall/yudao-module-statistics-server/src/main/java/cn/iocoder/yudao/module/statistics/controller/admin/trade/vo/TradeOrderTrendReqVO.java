@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.statistics.controller.admin.trade.vo;
 
-import cn.iocoder.yudao.framework.common.validation.InEnum;
+import cn.cheers.x.framework.common.validation.InEnum;
 import cn.iocoder.yudao.module.statistics.enums.TimeRangeTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -9,7 +9,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
-import static cn.iocoder.yudao.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
+import static cn.cheers.x.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 
 @Schema(description = "管理后台 - 交易订单量趋势统计 Request VO")
 @Data

@@ -1,6 +1,6 @@
 package cn.cheers.x.module.platformresource.controller.admin.component;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.platformresource.controller.admin.component.vo.ComponentCreateReqVO;
 import cn.cheers.x.module.platformresource.controller.admin.component.vo.ComponentRespVO;
 import cn.cheers.x.module.platformresource.controller.admin.component.vo.ComponentUpdateReqVO;
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 组件库")
 @RestController

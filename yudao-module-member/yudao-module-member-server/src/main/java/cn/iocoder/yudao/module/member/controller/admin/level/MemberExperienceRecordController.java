@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.member.controller.admin.level;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.member.controller.admin.level.vo.experience.MemberExperienceRecordPageReqVO;
 import cn.iocoder.yudao.module.member.controller.admin.level.vo.experience.MemberExperienceRecordRespVO;
 import cn.iocoder.yudao.module.member.convert.level.MemberExperienceRecordConvert;
@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 会员经验记录")
 @RestController

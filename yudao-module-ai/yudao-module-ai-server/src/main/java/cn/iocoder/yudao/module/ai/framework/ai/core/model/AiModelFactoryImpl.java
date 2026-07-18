@@ -8,7 +8,7 @@ import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.spring.SpringUtil;
-import cn.iocoder.yudao.framework.common.util.spring.SpringUtils;
+import cn.cheers.x.framework.common.util.spring.SpringUtils;
 import cn.iocoder.yudao.module.ai.enums.model.AiPlatformEnum;
 import cn.iocoder.yudao.module.ai.framework.ai.config.AiAutoConfiguration;
 import cn.iocoder.yudao.module.ai.framework.ai.config.YudaoAiProperties;
@@ -130,7 +130,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertList;
 import static org.springframework.ai.retry.RetryUtils.DEFAULT_RETRY_TEMPLATE;
 
 /**

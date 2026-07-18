@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.mes.dal.dataobject.md.workstation;
 
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
 import cn.iocoder.yudao.module.mes.dal.dataobject.pro.process.MesProProcessDO;
 import cn.iocoder.yudao.module.mes.dal.dataobject.wm.warehouse.MesWmWarehouseAreaDO;
 import cn.iocoder.yudao.module.mes.dal.dataobject.wm.warehouse.MesWmWarehouseDO;
@@ -75,7 +75,7 @@ public class MesMdWorkstationDO extends BaseDO {
     /**
      * 状态
      *
-     * 枚举 {@link cn.iocoder.yudao.framework.common.enums.CommonStatusEnum}
+     * 枚举 {@link cn.cheers.x.framework.common.enums.CommonStatusEnum}
      */
     private Integer status;
     /**

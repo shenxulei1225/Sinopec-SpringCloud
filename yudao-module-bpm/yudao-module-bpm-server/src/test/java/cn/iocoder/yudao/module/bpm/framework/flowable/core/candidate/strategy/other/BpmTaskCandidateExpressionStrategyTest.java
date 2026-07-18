@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.bpm.framework.flowable.core.candidate.strategy.other;
 
-import cn.iocoder.yudao.framework.test.core.ut.BaseMockitoUnitTest;
+import cn.cheers.x.framework.test.core.ut.BaseMockitoUnitTest;
 import cn.iocoder.yudao.module.bpm.framework.flowable.core.util.FlowableUtils;
 import org.flowable.engine.delegate.DelegateExecution;
 import org.junit.jupiter.api.Disabled;
@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static cn.iocoder.yudao.framework.common.util.collection.SetUtils.asSet;
+import static cn.cheers.x.framework.common.util.collection.SetUtils.asSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;

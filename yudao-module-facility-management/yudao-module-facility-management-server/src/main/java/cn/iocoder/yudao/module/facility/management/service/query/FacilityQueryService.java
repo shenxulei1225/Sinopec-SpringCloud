@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.facility.management.service.query;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.facility.management.controller.admin.vo.facility.FacilityPageReqVO;
 import cn.iocoder.yudao.module.facility.management.controller.admin.vo.facility.FacilitySearchReqVO;
 import cn.iocoder.yudao.module.facility.management.controller.admin.vo.facility.FacilityCategoryTreeResponse;

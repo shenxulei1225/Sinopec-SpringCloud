@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.iot.controller.admin.alert;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.iot.controller.admin.alert.vo.recrod.IotAlertRecordPageReqVO;
 import cn.iocoder.yudao.module.iot.controller.admin.alert.vo.recrod.IotAlertRecordProcessReqVO;
 import cn.iocoder.yudao.module.iot.controller.admin.alert.vo.recrod.IotAlertRecordRespVO;
@@ -17,7 +17,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 import static java.util.Collections.singleton;
 
 @Tag(name = "管理后台 - IoT 告警记录")

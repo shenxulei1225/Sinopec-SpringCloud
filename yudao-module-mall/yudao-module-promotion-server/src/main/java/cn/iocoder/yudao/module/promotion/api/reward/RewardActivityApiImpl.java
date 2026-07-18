@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.promotion.api.reward;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.promotion.api.reward.dto.RewardActivityMatchRespDTO;
 import cn.iocoder.yudao.module.promotion.service.reward.RewardActivityService;
 import org.springframework.validation.annotation.Validated;
@@ -10,7 +10,7 @@ import jakarta.annotation.Resource;
 import java.util.Collection;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 满减送活动 API 实现类

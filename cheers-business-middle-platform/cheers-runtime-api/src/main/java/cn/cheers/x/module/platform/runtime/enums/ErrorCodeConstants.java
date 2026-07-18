@@ -1,6 +1,6 @@
 package cn.cheers.x.module.platform.runtime.enums;
 
-import cn.iocoder.yudao.framework.common.exception.ErrorCode;
+import cn.cheers.x.framework.common.exception.ErrorCode;
 
 /**
  * platform-runtime 错误码（1-004-051-000 段）

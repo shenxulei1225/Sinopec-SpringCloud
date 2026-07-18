@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.pay.enums;
 
-import cn.iocoder.yudao.framework.common.exception.ErrorCode;
+import cn.cheers.x.framework.common.exception.ErrorCode;
 
 /**
  * Pay 错误码 Core 枚举类

@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Set;
 
 import static cn.cheers.x.module.platform.topology.enums.ErrorCodeConstants.TOPOLOGY_GRAPH_NOT_FOUND;
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 
 @Service
 public class TopologyGraphServiceImpl implements TopologyGraphService {

@@ -3,10 +3,10 @@ package cn.iocoder.yudao.module.bpm.framework.flowable.core.candidate.strategy.d
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.Assert;
 import cn.iocoder.yudao.module.bpm.framework.flowable.core.candidate.BpmTaskCandidateStrategy;
-import cn.iocoder.yudao.module.system.api.dept.DeptApi;
-import cn.iocoder.yudao.module.system.api.dept.dto.DeptRespDTO;
-import cn.iocoder.yudao.module.system.api.user.AdminUserApi;
-import cn.iocoder.yudao.module.system.api.user.dto.AdminUserRespDTO;
+import cn.cheers.x.system.api.dept.DeptApi;
+import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.system.api.user.AdminUserApi;
+import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import jakarta.annotation.Resource;
 
 import java.util.HashSet;

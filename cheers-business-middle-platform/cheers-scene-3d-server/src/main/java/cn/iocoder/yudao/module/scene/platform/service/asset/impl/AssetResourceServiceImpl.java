@@ -2,10 +2,10 @@ package cn.iocoder.yudao.module.scene.platform.service.asset.impl;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
-import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
-import cn.iocoder.yudao.module.infra.api.file.FileApi;
+import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
+import cn.cheers.x.framework.common.util.json.JsonUtils;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
+import cn.cheers.x.infra.api.file.FileApi;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.asset.vo.AssetResourceSaveReqVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.asset.vo.SceneAssetRespVO;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.asset.AssetResourceDO;
@@ -27,8 +27,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants.BAD_REQUEST;
-import static cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants.NOT_FOUND;
+import static cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConstants.BAD_REQUEST;
+import static cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConstants.NOT_FOUND;
 
 @Service
 public class AssetResourceServiceImpl implements AssetResourceService {

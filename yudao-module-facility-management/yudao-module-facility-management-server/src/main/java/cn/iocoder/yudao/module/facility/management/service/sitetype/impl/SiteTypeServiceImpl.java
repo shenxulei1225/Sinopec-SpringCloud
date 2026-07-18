@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.facility.management.service.sitetype.impl;
 
-import cn.iocoder.yudao.framework.common.util.object.ObjectUtils;
+import cn.cheers.x.framework.common.util.object.ObjectUtils;
 import cn.iocoder.yudao.module.facility.management.controller.admin.vo.site.SiteTypeCreateReqVO;
 import cn.iocoder.yudao.module.facility.management.controller.admin.vo.site.SiteTypeUpdateReqVO;
 import cn.iocoder.yudao.module.facility.management.dal.dataobject.SiteTypeDO;
@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.facility.management.enums.ErrorCodeConstants.*;
 
 /**

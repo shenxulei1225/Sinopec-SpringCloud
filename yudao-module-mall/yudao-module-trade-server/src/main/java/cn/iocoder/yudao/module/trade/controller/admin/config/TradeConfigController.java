@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.trade.controller.admin.config;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.trade.controller.admin.config.vo.TradeConfigRespVO;
 import cn.iocoder.yudao.module.trade.controller.admin.config.vo.TradeConfigSaveReqVO;
 import cn.iocoder.yudao.module.trade.convert.config.TradeConfigConvert;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 交易中心配置")
 @RestController

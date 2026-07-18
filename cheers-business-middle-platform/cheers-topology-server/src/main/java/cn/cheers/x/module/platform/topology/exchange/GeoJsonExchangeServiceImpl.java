@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static cn.cheers.x.module.platform.topology.enums.ErrorCodeConstants.GEOJSON_INVALID;
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 
 @Service
 public class GeoJsonExchangeServiceImpl implements GeoJsonExchangeService {

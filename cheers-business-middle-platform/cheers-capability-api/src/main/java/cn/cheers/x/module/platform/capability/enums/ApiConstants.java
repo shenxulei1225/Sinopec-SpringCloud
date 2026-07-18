@@ -1,6 +1,6 @@
 package cn.cheers.x.module.platform.capability.enums;
 
-import cn.iocoder.yudao.framework.common.enums.RpcConstants;
+import cn.cheers.x.framework.common.enums.RpcConstants;
 
 public interface ApiConstants {
 

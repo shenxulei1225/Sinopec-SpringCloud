@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity.validation.exception;
 
-import cn.iocoder.yudao.framework.common.exception.ErrorCode;
+import cn.cheers.x.framework.common.exception.ErrorCode;
 
 /**
  * Entity 验证异常基类

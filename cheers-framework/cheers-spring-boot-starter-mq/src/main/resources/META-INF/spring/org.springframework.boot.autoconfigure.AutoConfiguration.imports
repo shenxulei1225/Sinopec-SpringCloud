@@ -1,0 +1,3 @@
+cn.cheers.x.framework.mq.redis.config.YudaoRedisMQProducerAutoConfiguration
+cn.cheers.x.framework.mq.redis.config.YudaoRedisMQConsumerAutoConfiguration
+cn.cheers.x.framework.mq.rabbitmq.config.YudaoRabbitMQAutoConfiguration

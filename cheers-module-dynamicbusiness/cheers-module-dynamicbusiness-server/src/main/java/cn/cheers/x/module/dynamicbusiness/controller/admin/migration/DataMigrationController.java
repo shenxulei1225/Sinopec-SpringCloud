@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.migration;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.service.migration.DataMigrationService;
 import cn.cheers.x.module.dynamicbusiness.service.migration.vo.MigrationResultVO;
 import cn.cheers.x.module.dynamicbusiness.service.migration.vo.MigrationStatusVO;
@@ -12,7 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 数据迁移 Controller

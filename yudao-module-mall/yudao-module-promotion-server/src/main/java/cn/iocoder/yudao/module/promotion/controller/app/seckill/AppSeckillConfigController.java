@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.promotion.controller.app.seckill;
 
-import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.enums.CommonStatusEnum;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.promotion.controller.app.seckill.vo.config.AppSeckillConfigRespVO;
 import cn.iocoder.yudao.module.promotion.convert.seckill.SeckillConfigConvert;
 import cn.iocoder.yudao.module.promotion.dal.dataobject.seckill.SeckillConfigDO;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "用户 App - 秒杀时间段")
 @RestController

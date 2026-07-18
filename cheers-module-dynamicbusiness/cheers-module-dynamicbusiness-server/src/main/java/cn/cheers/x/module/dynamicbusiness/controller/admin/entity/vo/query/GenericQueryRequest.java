@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.query;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import cn.cheers.x.framework.common.pojo.PageParam;
 import cn.cheers.x.module.dynamicbusiness.service.entity.query.enums.LogicType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.pay.dal.mysql.order;
 
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.module.pay.dal.dataobject.order.PayOrderExtensionDO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.apache.ibatis.annotations.Mapper;

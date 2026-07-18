@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.bpm.framework.flowable.core.candidate.strategy.form;
 
 import cn.hutool.core.lang.Assert;
-import cn.iocoder.yudao.framework.common.util.collection.CollectionUtils;
+import cn.cheers.x.framework.common.util.collection.CollectionUtils;
 import cn.iocoder.yudao.module.bpm.framework.flowable.core.candidate.BpmTaskCandidateStrategy;
 import cn.iocoder.yudao.module.bpm.framework.flowable.core.candidate.strategy.user.BpmTaskCandidateUserStrategy;
 import cn.iocoder.yudao.module.bpm.framework.flowable.core.enums.BpmTaskCandidateStrategyEnum;

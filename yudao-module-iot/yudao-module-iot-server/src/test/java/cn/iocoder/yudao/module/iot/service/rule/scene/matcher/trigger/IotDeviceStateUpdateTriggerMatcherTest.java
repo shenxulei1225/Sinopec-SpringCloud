@@ -11,7 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import static cn.iocoder.yudao.framework.test.core.util.RandomUtils.randomLongId;
+import static cn.cheers.x.framework.test.core.util.RandomUtils.randomLongId;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**

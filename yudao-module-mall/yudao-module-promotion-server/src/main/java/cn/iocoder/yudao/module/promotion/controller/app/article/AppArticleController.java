@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.promotion.controller.app.article;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.promotion.controller.app.article.vo.article.AppArticlePageReqVO;
 import cn.iocoder.yudao.module.promotion.controller.app.article.vo.article.AppArticleRespVO;
 import cn.iocoder.yudao.module.promotion.convert.article.ArticleConvert;
@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.annotation.Resource;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "用户 APP - 文章")
 @RestController

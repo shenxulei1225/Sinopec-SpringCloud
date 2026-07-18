@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.mes.service.cal.team;
 
 import cn.hutool.core.collection.ListUtil;
-import cn.iocoder.yudao.framework.test.core.ut.BaseDbUnitTest;
+import cn.cheers.x.framework.test.core.ut.BaseDbUnitTest;
 import cn.iocoder.yudao.module.mes.dal.dataobject.cal.plan.MesCalPlanDO;
 import cn.iocoder.yudao.module.mes.dal.dataobject.cal.plan.MesCalPlanShiftDO;
 import cn.iocoder.yudao.module.mes.dal.dataobject.cal.plan.MesCalPlanTeamDO;

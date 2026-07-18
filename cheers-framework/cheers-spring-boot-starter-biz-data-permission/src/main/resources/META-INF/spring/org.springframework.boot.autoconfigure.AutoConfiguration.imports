@@ -1,0 +1,3 @@
+cn.cheers.x.framework.datapermission.config.YudaoDataPermissionAutoConfiguration
+cn.cheers.x.framework.datapermission.config.YudaoDeptDataPermissionAutoConfiguration
+cn.cheers.x.framework.datapermission.config.YudaoDataPermissionRpcAutoConfiguration

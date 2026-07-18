@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.scene.platform.service.library.scene.impl;
 
-import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.scene.vo.SceneRespVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.scene.vo.SceneSaveReqVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.scene.vo.SceneCopyReqVO;
@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants.NOT_FOUND;
+import static cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConstants.NOT_FOUND;
 
 @Service
 public class SceneLibraryServiceImpl implements SceneLibraryService {

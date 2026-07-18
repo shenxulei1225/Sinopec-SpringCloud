@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.member.convert.level;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.member.controller.admin.level.vo.experience.MemberExperienceRecordRespVO;
 import cn.iocoder.yudao.module.member.controller.app.level.vo.experience.AppMemberExperienceRecordRespVO;
 import cn.iocoder.yudao.module.member.dal.dataobject.level.MemberExperienceRecordDO;

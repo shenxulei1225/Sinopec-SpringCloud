@@ -2,8 +2,8 @@ package cn.iocoder.yudao.module.mp.controller.admin.open;
 
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.tenant.core.aop.TenantIgnore;
-import cn.iocoder.yudao.framework.tenant.core.util.TenantUtils;
+import cn.cheers.x.framework.tenant.core.aop.TenantIgnore;
+import cn.cheers.x.framework.tenant.core.util.TenantUtils;
 import cn.iocoder.yudao.module.mp.controller.admin.open.vo.MpOpenCheckSignatureReqVO;
 import cn.iocoder.yudao.module.mp.controller.admin.open.vo.MpOpenHandleMessageReqVO;
 import cn.iocoder.yudao.module.mp.dal.dataobject.account.MpAccountDO;

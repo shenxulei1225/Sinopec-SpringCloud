@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.pay.dal.dataobject.demo;
 
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.transfer.PayTransferDO;
 import cn.iocoder.yudao.module.pay.enums.demo.PayDemoWithdrawStatusEnum;
 import cn.iocoder.yudao.module.pay.enums.demo.PayDemoWithdrawTypeEnum;

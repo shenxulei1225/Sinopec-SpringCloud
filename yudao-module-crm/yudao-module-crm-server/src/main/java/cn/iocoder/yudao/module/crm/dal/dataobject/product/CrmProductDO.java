@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.crm.dal.dataobject.product;
 
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
 import cn.iocoder.yudao.module.crm.enums.DictTypeConstants;
 import cn.iocoder.yudao.module.crm.enums.product.CrmProductStatusEnum;
 import com.baomidou.mybatisplus.annotation.KeySequence;

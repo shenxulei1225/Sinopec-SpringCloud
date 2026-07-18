@@ -1,8 +1,8 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.page;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.page.vo.PagePageReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.page.vo.PageRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.page.vo.PageSaveReqVO;
@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 页面管理", description = "页面元数据与 A2UI 配置管理")
 @RestController

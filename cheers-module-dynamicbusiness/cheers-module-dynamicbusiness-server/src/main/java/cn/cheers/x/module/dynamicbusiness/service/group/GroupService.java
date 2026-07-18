@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.group;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageParam;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.group.GroupDO;
 
 import java.util.List;

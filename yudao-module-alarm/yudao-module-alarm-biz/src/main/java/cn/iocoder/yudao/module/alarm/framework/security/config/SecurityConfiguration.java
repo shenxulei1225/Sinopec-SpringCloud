@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.alarm.framework.security.config;
 
-import cn.iocoder.yudao.framework.security.config.AuthorizeRequestsCustomizer;
+import cn.cheers.x.framework.security.config.AuthorizeRequestsCustomizer;
 import cn.iocoder.yudao.module.alarm.enums.ApiConstants;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

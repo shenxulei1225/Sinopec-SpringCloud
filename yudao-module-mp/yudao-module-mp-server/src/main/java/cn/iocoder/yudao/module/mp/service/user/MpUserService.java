@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.mp.service.user;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.mp.controller.admin.user.vo.MpUserPageReqVO;
 import cn.iocoder.yudao.module.mp.controller.admin.user.vo.MpUserUpdateReqVO;
 import cn.iocoder.yudao.module.mp.dal.dataobject.user.MpUserDO;
@@ -9,7 +9,7 @@ import me.chanjar.weixin.mp.bean.result.WxMpUser;
 import java.util.Collection;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.mp.enums.ErrorCodeConstants.USER_NOT_EXISTS;
 
 /**

@@ -3,12 +3,12 @@ package cn.iocoder.yudao.module.twin.api;
 import cn.iocoder.yudao.module.twin.api.dto.TwinMappingRespDTO;
 import cn.iocoder.yudao.module.twin.controller.admin.vo.TwinMappingRespVO;
 import cn.iocoder.yudao.module.twin.service.TwinMappingService;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @RestController
 @Validated

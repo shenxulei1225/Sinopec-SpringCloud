@@ -15,12 +15,12 @@
     <description>GIS 标准服务 API（坐标/CRS/图层；自 scene-platform 拆出）</description>
     <dependencies>
         <dependency>
-            <groupId>cn.iocoder.cloud</groupId>
-            <artifactId>yudao-common</artifactId>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>cn.iocoder.cloud</groupId>
-            <artifactId>yudao-spring-boot-starter-web</artifactId>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.cloud</groupId>

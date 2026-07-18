@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.controller.admin.actor;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.scene.vo.ActorRuntimeReqVO;
 import cn.iocoder.yudao.module.scene.platform.model.Transform;
 import cn.iocoder.yudao.module.scene.platform.model.Vector3;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - Actor 运行时管理")
 @RestController

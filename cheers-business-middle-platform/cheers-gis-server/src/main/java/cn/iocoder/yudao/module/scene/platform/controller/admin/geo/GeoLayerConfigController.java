@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.controller.admin.geo;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.geo.vo.GeoLayerDetailRespVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.geo.vo.GeoLayerRespVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.geo.vo.GeoLayerSaveReqVO;
@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - GEO 图层配置")
 @RestController

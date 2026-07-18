@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.crm.controller.admin.contact.vo;
 
-import cn.iocoder.yudao.framework.common.validation.Mobile;
-import cn.iocoder.yudao.framework.common.validation.Telephone;
+import cn.cheers.x.framework.common.validation.Mobile;
+import cn.cheers.x.framework.common.validation.Telephone;
 import cn.iocoder.yudao.module.crm.framework.operatelog.core.*;
 import com.mzt.logapi.starter.annotation.DiffLogField;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -12,7 +12,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 
-import static cn.iocoder.yudao.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY;
+import static cn.cheers.x.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY;
 
 @Schema(description = "管理后台 - CRM 联系人创建/更新 Request VO")
 @Data

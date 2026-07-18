@@ -2,8 +2,8 @@ package cn.iocoder.yudao.module.ai.util;
 
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
-import cn.iocoder.yudao.framework.tenant.core.context.TenantContextHolder;
+import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
+import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
 import cn.iocoder.yudao.module.ai.enums.model.AiPlatformEnum;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import org.springaicommunity.moonshot.MoonshotChatOptions;

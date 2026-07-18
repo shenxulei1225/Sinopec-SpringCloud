@@ -1,9 +1,9 @@
 package cn.iocoder.yudao.module.pay.service.app;
 
 import cn.hutool.core.util.RandomUtil;
-import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.test.core.ut.BaseDbUnitTest;
+import cn.cheers.x.framework.common.enums.CommonStatusEnum;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.test.core.ut.BaseDbUnitTest;
 import cn.iocoder.yudao.module.pay.controller.admin.app.vo.PayAppCreateReqVO;
 import cn.iocoder.yudao.module.pay.controller.admin.app.vo.PayAppPageReqVO;
 import cn.iocoder.yudao.module.pay.controller.admin.app.vo.PayAppUpdateReqVO;
@@ -19,12 +19,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.Map;
 
-import static cn.iocoder.yudao.framework.common.util.date.LocalDateTimeUtils.buildBetweenTime;
-import static cn.iocoder.yudao.framework.common.util.date.LocalDateTimeUtils.buildTime;
-import static cn.iocoder.yudao.framework.common.util.object.ObjectUtils.cloneIgnoreId;
-import static cn.iocoder.yudao.framework.test.core.util.AssertUtils.assertPojoEquals;
-import static cn.iocoder.yudao.framework.test.core.util.AssertUtils.assertServiceException;
-import static cn.iocoder.yudao.framework.test.core.util.RandomUtils.*;
+import static cn.cheers.x.framework.common.util.date.LocalDateTimeUtils.buildBetweenTime;
+import static cn.cheers.x.framework.common.util.date.LocalDateTimeUtils.buildTime;
+import static cn.cheers.x.framework.common.util.object.ObjectUtils.cloneIgnoreId;
+import static cn.cheers.x.framework.test.core.util.AssertUtils.assertPojoEquals;
+import static cn.cheers.x.framework.test.core.util.AssertUtils.assertServiceException;
+import static cn.cheers.x.framework.test.core.util.RandomUtils.*;
 import static cn.iocoder.yudao.module.pay.enums.ErrorCodeConstants.*;
 import static java.util.Collections.singleton;
 import static org.junit.jupiter.api.Assertions.*;

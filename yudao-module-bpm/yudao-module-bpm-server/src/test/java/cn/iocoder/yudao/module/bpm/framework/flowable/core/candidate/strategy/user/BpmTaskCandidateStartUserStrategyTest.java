@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.bpm.framework.flowable.core.candidate.strategy.user;
 
-import cn.iocoder.yudao.framework.test.core.ut.BaseMockitoUnitTest;
+import cn.cheers.x.framework.test.core.ut.BaseMockitoUnitTest;
 import cn.iocoder.yudao.module.bpm.service.task.BpmProcessInstanceService;
 import org.assertj.core.util.Sets;
 import org.flowable.engine.delegate.DelegateExecution;

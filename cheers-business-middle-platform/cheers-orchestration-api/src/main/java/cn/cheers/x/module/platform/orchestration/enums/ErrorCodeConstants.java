@@ -1,6 +1,6 @@
 package cn.cheers.x.module.platform.orchestration.enums;
 
-import cn.iocoder.yudao.framework.common.exception.ErrorCode;
+import cn.cheers.x.framework.common.exception.ErrorCode;
 
 /**
  * platform-orchestration 错误码（1-004-052-000 段）

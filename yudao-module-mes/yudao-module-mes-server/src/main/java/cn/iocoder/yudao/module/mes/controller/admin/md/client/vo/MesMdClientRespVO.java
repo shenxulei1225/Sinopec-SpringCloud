@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.mes.controller.admin.md.client.vo;
 
-import cn.iocoder.yudao.framework.excel.core.annotations.DictFormat;
-import cn.iocoder.yudao.framework.excel.core.convert.DictConvert;
+import cn.cheers.x.framework.excel.core.annotations.DictFormat;
+import cn.cheers.x.framework.excel.core.convert.DictConvert;
 import cn.iocoder.yudao.module.mes.enums.DictTypeConstants;
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
@@ -93,7 +93,7 @@ public class MesMdClientRespVO {
 
     @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "0")
     @ExcelProperty(value = "状态", converter = DictConvert.class)
-    @DictFormat(cn.iocoder.yudao.module.system.enums.DictTypeConstants.COMMON_STATUS)
+    @DictFormat(cn.cheers.x.system.enums.DictTypeConstants.COMMON_STATUS)
     private Integer status;
 
     @Schema(description = "备注", example = "备注")

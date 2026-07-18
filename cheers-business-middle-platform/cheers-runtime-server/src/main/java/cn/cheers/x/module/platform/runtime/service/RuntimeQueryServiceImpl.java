@@ -7,7 +7,7 @@ import cn.cheers.x.module.platform.runtime.dal.dataobject.RuntimeJobDO;
 import cn.cheers.x.module.platform.runtime.dal.dataobject.ScheduleSlotDO;
 import cn.cheers.x.module.platform.runtime.dal.mysql.RuntimeJobMapper;
 import cn.cheers.x.module.platform.runtime.dal.mysql.ScheduleSlotMapper;
-import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
@@ -15,7 +15,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 import static cn.cheers.x.module.platform.runtime.enums.ErrorCodeConstants.RUNTIME_JOB_NOT_EXISTS;
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 
 @Service
 public class RuntimeQueryServiceImpl implements RuntimeQueryService {

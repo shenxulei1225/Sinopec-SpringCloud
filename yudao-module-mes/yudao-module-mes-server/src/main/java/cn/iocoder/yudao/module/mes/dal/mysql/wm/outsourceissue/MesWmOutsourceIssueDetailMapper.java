@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.mes.dal.mysql.wm.outsourceissue;
 
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.module.mes.dal.dataobject.wm.outsourceissue.MesWmOutsourceIssueDetailDO;
 import org.apache.ibatis.annotations.Mapper;
 

@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.crm.service.customer.bo;
 
-import cn.iocoder.yudao.framework.common.validation.Mobile;
-import cn.iocoder.yudao.framework.common.validation.Telephone;
+import cn.cheers.x.framework.common.validation.Mobile;
+import cn.cheers.x.framework.common.validation.Telephone;
 import cn.iocoder.yudao.module.crm.enums.DictTypeConstants;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
@@ -97,7 +97,7 @@ public class CrmCustomerCreateReqBO {
     /**
      * 所在地
      *
-     * 关联 {@link cn.iocoder.yudao.framework.ip.core.Area#getId()} 字段
+     * 关联 {@link cn.cheers.x.framework.ip.core.Area#getId()} 字段
      */
     private Integer areaId;
     /**

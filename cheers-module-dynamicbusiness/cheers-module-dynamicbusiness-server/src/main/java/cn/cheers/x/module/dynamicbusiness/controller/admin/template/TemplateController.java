@@ -1,8 +1,8 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.template;
 
-import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.apilog.core.annotation.ApiAccessLog;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.template.vo.TemplateCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.template.vo.TemplateFieldAssignmentReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.template.vo.TemplateFieldAssignmentRespVO;
@@ -21,8 +21,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.*;
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.*;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 管理后台 - 字段模板 Controller

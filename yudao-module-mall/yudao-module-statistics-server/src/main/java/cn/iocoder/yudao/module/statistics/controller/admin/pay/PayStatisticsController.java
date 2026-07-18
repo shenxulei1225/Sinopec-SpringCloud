@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.statistics.controller.admin.pay;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.statistics.controller.admin.pay.vo.PaySummaryRespVO;
 import cn.iocoder.yudao.module.statistics.convert.pay.PayStatisticsConvert;
 import cn.iocoder.yudao.module.statistics.service.pay.PayWalletStatisticsService;
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.annotation.Resource;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 支付统计")
 @RestController

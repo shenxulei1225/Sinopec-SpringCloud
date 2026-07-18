@@ -5,7 +5,7 @@ import cn.iocoder.yudao.module.bpm.framework.flowable.core.behavior.BpmActivityB
 import cn.iocoder.yudao.module.bpm.framework.flowable.core.candidate.BpmTaskCandidateInvoker;
 import cn.iocoder.yudao.module.bpm.framework.flowable.core.candidate.BpmTaskCandidateStrategy;
 import cn.iocoder.yudao.module.bpm.framework.flowable.core.event.BpmProcessInstanceEventPublisher;
-import cn.iocoder.yudao.module.system.api.user.AdminUserApi;
+import cn.cheers.x.system.api.user.AdminUserApi;
 import org.flowable.common.engine.api.delegate.FlowableFunctionDelegate;
 import org.flowable.common.engine.api.delegate.event.FlowableEventListener;
 import org.flowable.spring.SpringProcessEngineConfiguration;

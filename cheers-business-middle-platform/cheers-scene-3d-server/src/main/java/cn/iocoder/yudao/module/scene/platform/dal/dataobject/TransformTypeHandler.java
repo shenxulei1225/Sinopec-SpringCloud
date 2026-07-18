@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.dal.dataobject;
 
-import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
+import cn.cheers.x.framework.common.util.json.JsonUtils;
 import cn.iocoder.yudao.module.scene.platform.model.Transform;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;

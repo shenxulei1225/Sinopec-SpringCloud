@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.trade.controller.admin.config.vo;
 
-import cn.iocoder.yudao.framework.common.validation.InEnum;
+import cn.cheers.x.framework.common.validation.InEnum;
 import cn.iocoder.yudao.module.trade.enums.brokerage.BrokerageBindModeEnum;
 import cn.iocoder.yudao.module.trade.enums.brokerage.BrokerageEnabledConditionEnum;
 import cn.iocoder.yudao.module.trade.enums.brokerage.BrokerageWithdrawTypeEnum;

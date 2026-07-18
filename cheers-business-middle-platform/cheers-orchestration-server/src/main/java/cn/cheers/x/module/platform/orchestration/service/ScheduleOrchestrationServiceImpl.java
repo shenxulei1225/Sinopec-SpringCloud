@@ -21,7 +21,7 @@ import cn.cheers.x.module.platform.policy.api.dto.PolicySnapshotRespDTO;
 import cn.cheers.x.module.platform.runtime.api.RuntimePersistApi;
 import cn.cheers.x.module.platform.runtime.api.dto.RuntimePersistReqDTO;
 import cn.cheers.x.module.platform.scheduling.engine.SchedulingEngine;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -38,7 +38,7 @@ import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants
 import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_RUN_ORCHESTRATION_UNKNOWN;
 import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_RUN_SCHEDULING_SPEC_REQUIRED;
 import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_RUN_WORK_OR_SOURCE_REQUIRED;
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 
 @Service
 public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationService {

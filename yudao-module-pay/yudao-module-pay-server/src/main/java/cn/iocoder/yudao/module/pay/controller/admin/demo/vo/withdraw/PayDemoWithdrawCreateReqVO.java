@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.pay.controller.admin.demo.vo.withdraw;
 
 import cn.hutool.core.util.ObjectUtil;
-import cn.iocoder.yudao.framework.common.validation.InEnum;
+import cn.cheers.x.framework.common.validation.InEnum;
 import cn.iocoder.yudao.module.pay.enums.demo.PayDemoWithdrawTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;

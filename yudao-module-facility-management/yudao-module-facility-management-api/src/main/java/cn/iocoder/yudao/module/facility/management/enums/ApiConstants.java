@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.facility.management.enums;
 
-import cn.iocoder.yudao.framework.common.enums.RpcConstants;
+import cn.cheers.x.framework.common.enums.RpcConstants;
 
 /**
  * 设施管理域 API 常量。

@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.product.controller.admin.spu.vo;
 
-import cn.iocoder.yudao.framework.excel.core.annotations.DictFormat;
-import cn.iocoder.yudao.framework.excel.core.convert.DictConvert;
-import cn.iocoder.yudao.framework.excel.core.convert.MoneyConvert;
+import cn.cheers.x.framework.excel.core.annotations.DictFormat;
+import cn.cheers.x.framework.excel.core.convert.DictConvert;
+import cn.cheers.x.framework.excel.core.convert.MoneyConvert;
 import cn.iocoder.yudao.module.product.enums.DictTypeConstants;
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;

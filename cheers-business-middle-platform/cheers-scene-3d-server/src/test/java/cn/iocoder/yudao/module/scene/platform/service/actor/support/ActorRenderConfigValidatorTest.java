@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.service.actor.support;
 
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.actor.ActorInstanceComponentDO;
 import cn.iocoder.yudao.module.scene.platform.model.render.ActorRenderConfig;
 import org.junit.jupiter.api.BeforeEach;

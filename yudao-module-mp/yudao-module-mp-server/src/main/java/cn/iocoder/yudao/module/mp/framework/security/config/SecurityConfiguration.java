@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.mp.framework.security.config;
 
-import cn.iocoder.yudao.framework.security.config.AuthorizeRequestsCustomizer;
-import cn.iocoder.yudao.module.system.enums.ApiConstants;
+import cn.cheers.x.framework.security.config.AuthorizeRequestsCustomizer;
+import cn.cheers.x.system.enums.ApiConstants;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;

@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity.query;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.service.entity.query.dto.AggregateResult;
 import cn.cheers.x.module.dynamicbusiness.service.entity.query.dto.FieldAggregateRequest;
@@ -63,7 +63,7 @@ public interface EntityFieldQueryService {
      *
      * @param request 查询请求，包含模型ID、查询条件、排序和分页参数
      * @return 分页查询结果
-     * @throws cn.iocoder.yudao.framework.common.exception.ServiceException 
+     * @throws cn.cheers.x.framework.common.exception.ServiceException 
      *         如果 Model 不存在、字段不可查询、条件数量超限等
      */
     PageResult<EntityDO> query(FieldQueryRequest request);
@@ -85,7 +85,7 @@ public interface EntityFieldQueryService {
      *
      * @param request 聚合请求，包含模型ID、聚合类型、聚合字段和分组字段
      * @return 聚合结果
-     * @throws cn.iocoder.yudao.framework.common.exception.ServiceException 
+     * @throws cn.cheers.x.framework.common.exception.ServiceException 
      *         如果 Model 不存在、字段不可查询、聚合类型不支持等
      */
     AggregateResult aggregate(FieldAggregateRequest request);
@@ -97,7 +97,7 @@ public interface EntityFieldQueryService {
      *
      * @param request 查询请求，包含模型ID和查询条件
      * @return 满足条件的记录数
-     * @throws cn.iocoder.yudao.framework.common.exception.ServiceException 
+     * @throws cn.cheers.x.framework.common.exception.ServiceException 
      *         如果 Model 不存在、字段不可查询等
      */
     Long count(FieldQueryRequest request);
@@ -119,7 +119,7 @@ public interface EntityFieldQueryService {
      *
      * @param modelId 模型ID
      * @return 可查询字段列表
-     * @throws cn.iocoder.yudao.framework.common.exception.ServiceException 
+     * @throws cn.cheers.x.framework.common.exception.ServiceException 
      *         如果 Model 不存在
      */
     List<SearchableFieldVO> getSearchableFields(Long modelId);
@@ -129,7 +129,7 @@ public interface EntityFieldQueryService {
      *
      * @param modelCode 模型编码
      * @return 可查询字段列表
-     * @throws cn.iocoder.yudao.framework.common.exception.ServiceException 
+     * @throws cn.cheers.x.framework.common.exception.ServiceException 
      *         如果 Model 不存在
      */
     List<SearchableFieldVO> getSearchableFieldsByModelCode(String modelCode);
@@ -147,7 +147,7 @@ public interface EntityFieldQueryService {
      * </ul>
      *
      * @param request 查询请求
-     * @throws cn.iocoder.yudao.framework.common.exception.ServiceException 
+     * @throws cn.cheers.x.framework.common.exception.ServiceException 
      *         如果验证失败
      */
     void validateQueryRequest(FieldQueryRequest request);
@@ -156,7 +156,7 @@ public interface EntityFieldQueryService {
      * 验证聚合请求
      *
      * @param request 聚合请求
-     * @throws cn.iocoder.yudao.framework.common.exception.ServiceException 
+     * @throws cn.cheers.x.framework.common.exception.ServiceException 
      *         如果验证失败
      */
     void validateAggregateRequest(FieldAggregateRequest request);

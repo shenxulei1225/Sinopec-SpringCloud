@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import static cn.hutool.core.date.DatePattern.NORM_DATETIME_PATTERN;
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertList;
 
 /**
  * 工具：列出指定目录的文件列表

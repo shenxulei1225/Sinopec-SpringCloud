@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.pay.controller.admin.wallet;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.pay.controller.admin.wallet.vo.transaction.PayWalletTransactionPageReqVO;
 import cn.iocoder.yudao.module.pay.controller.admin.wallet.vo.transaction.PayWalletTransactionRespVO;
 import cn.iocoder.yudao.module.pay.convert.wallet.PayWalletTransactionConvert;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 钱包余额明细")
 @RestController

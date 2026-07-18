@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.mes.dal.dataobject.qc.template;
 
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
-import cn.iocoder.yudao.framework.mybatis.core.type.IntegerListTypeHandler;
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.mybatis.core.type.IntegerListTypeHandler;
 import cn.iocoder.yudao.module.mes.enums.DictTypeConstants;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -49,7 +49,7 @@ public class MesQcTemplateDO extends BaseDO {
     /**
      * 状态
      *
-     * 枚举 {@link cn.iocoder.yudao.framework.common.enums.CommonStatusEnum}
+     * 枚举 {@link cn.cheers.x.framework.common.enums.CommonStatusEnum}
      */
     private Integer status;
     /**

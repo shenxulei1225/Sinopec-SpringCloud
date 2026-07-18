@@ -3,7 +3,7 @@ package cn.cheers.x.module.platform.capability.api;
 import cn.cheers.x.module.platform.capability.api.dto.ResolveWorkItemsReqDTO;
 import cn.cheers.x.module.platform.capability.enums.ApiConstants;
 import cn.cheers.x.module.platform.contract.dto.work.WorkItemDTO;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.cloud.openfeign.FeignClient;

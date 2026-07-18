@@ -1,8 +1,8 @@
 package cn.cheers.x.module.dynamicbusiness.dal.mysql.template;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
-import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.template.vo.TemplatePageReqVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.template.TemplateDO;
 import org.apache.ibatis.annotations.Mapper;

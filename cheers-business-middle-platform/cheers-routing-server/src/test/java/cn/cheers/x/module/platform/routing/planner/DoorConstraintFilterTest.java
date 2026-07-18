@@ -7,7 +7,7 @@ import cn.cheers.x.module.platform.contract.dto.network.PathNodeDTO;
 import cn.cheers.x.module.platform.contract.enums.NetworkKind;
 import cn.cheers.x.module.platform.contract.enums.NetworkLayer;
 import cn.cheers.x.module.platform.contract.enums.NodeType;
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.iot.service.rule.action.databridge;
 
-import cn.iocoder.yudao.framework.test.core.ut.BaseMockitoUnitTest;
+import cn.cheers.x.framework.test.core.ut.BaseMockitoUnitTest;
 import cn.iocoder.yudao.module.iot.core.mq.message.IotDeviceMessage;
 import cn.iocoder.yudao.module.iot.dal.dataobject.rule.IotDataSinkDO;
 import cn.iocoder.yudao.module.iot.dal.dataobject.rule.config.*;

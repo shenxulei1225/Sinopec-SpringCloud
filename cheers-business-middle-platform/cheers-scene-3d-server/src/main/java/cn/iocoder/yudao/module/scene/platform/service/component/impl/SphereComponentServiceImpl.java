@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.scene.platform.service.component.impl;
 
-import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.component.SphereComponentDO;
 import cn.iocoder.yudao.module.scene.platform.dal.mysql.component.SphereComponentMapper;
 import cn.iocoder.yudao.module.scene.platform.service.component.SphereComponentService;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants.NOT_FOUND;
+import static cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConstants.NOT_FOUND;
 
 @Service
 public class SphereComponentServiceImpl implements SphereComponentService {

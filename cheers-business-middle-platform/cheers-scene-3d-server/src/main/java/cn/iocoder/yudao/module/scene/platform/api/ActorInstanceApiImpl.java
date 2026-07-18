@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.scene.platform.api;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.scene.platform.api.dto.ActorInstanceRuntimeRespDTO;
 import cn.iocoder.yudao.module.scene.platform.api.dto.ActorInstanceSimpleRespDTO;
 import cn.iocoder.yudao.module.scene.platform.api.dto.ActorInstanceTransformUpdateReqDTO;
@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Comparator;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @RestController
 @Validated

@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 import static cn.cheers.x.module.platform.policy.enums.ErrorCodeConstants.POLICY_SNAPSHOT_NOT_FOUND;
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 
 @Service
 public class PolicySnapshotServiceImpl implements PolicySnapshotService {

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.facility.management.controller.admin;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.facility.management.controller.admin.vo.site.SiteCreateReqVO;
 import cn.iocoder.yudao.module.facility.management.controller.admin.vo.site.SiteUpdateReqVO;
 import cn.iocoder.yudao.module.facility.management.controller.admin.vo.site.SiteRespVO;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 站场管理（读写 {@code fac_site}）。

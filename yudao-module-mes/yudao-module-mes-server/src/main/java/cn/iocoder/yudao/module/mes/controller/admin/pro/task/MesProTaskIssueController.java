@@ -2,9 +2,9 @@ package cn.iocoder.yudao.module.mes.controller.admin.pro.task;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.mes.controller.admin.pro.task.vo.MesProTaskIssuePageReqVO;
 import cn.iocoder.yudao.module.mes.controller.admin.pro.task.vo.MesProTaskIssueRespVO;
 import cn.iocoder.yudao.module.mes.controller.admin.pro.task.vo.MesProTaskIssueSaveReqVO;
@@ -27,9 +27,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertSet;
-import static cn.iocoder.yudao.framework.common.util.collection.MapUtils.findAndThen;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertSet;
+import static cn.cheers.x.framework.common.util.collection.MapUtils.findAndThen;
 
 // TODO @芋艿：【对齐】前端没地方调用，这里只先写后端代码；
 @Tag(name = "管理后台 - MES 生产任务投料")
@@ -110,7 +110,7 @@ public class MesProTaskIssueController {
         Map<Long, MesMdUnitMeasureDO> unitMap = unitMeasureService.getUnitMeasureMap(
                 convertSet(list, MesProTaskIssueDO::getUnitMeasureId));
         // 拼接 VO
-        return cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList(list, issue -> {
+        return cn.cheers.x.framework.common.util.collection.CollectionUtils.convertList(list, issue -> {
             MesProTaskIssueRespVO vo = BeanUtils.toBean(issue, MesProTaskIssueRespVO.class);
             findAndThen(itemMap, issue.getItemId(), item ->
                     vo.setItemCode(item.getCode()).setItemName(item.getName()).setItemSpecification(item.getSpecification()));

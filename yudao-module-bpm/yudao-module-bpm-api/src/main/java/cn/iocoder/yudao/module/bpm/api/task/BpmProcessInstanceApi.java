@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.bpm.api.task;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.bpm.api.task.dto.BpmProcessInstanceCreateReqDTO;
 import cn.iocoder.yudao.module.bpm.enums.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;

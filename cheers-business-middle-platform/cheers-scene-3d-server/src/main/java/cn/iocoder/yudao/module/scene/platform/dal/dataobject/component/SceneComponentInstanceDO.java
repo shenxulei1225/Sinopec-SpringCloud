@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.dal.dataobject.component;
 
-import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
+import cn.cheers.x.framework.tenant.core.db.TenantBaseDO;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.JsonStringTypeHandler;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;

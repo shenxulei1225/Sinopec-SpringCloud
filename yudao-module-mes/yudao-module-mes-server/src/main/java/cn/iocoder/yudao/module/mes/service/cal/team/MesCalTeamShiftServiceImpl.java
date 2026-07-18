@@ -11,7 +11,7 @@ import cn.iocoder.yudao.module.mes.enums.cal.MesCalShiftTypeEnum;
 import cn.iocoder.yudao.module.mes.service.cal.plan.MesCalPlanService;
 import cn.iocoder.yudao.module.mes.service.cal.plan.MesCalPlanShiftService;
 import cn.iocoder.yudao.module.mes.service.cal.plan.MesCalPlanTeamService;
-import cn.iocoder.yudao.framework.common.util.date.LocalDateTimeUtils;
+import cn.cheers.x.framework.common.util.date.LocalDateTimeUtils;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -24,7 +24,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.mes.enums.ErrorCodeConstants.CAL_TEAM_SHIFT_GENERATE_SHIFT_NOT_ENOUGH;
 import static cn.iocoder.yudao.module.mes.enums.ErrorCodeConstants.CAL_TEAM_SHIFT_GENERATE_TEAM_NOT_ENOUGH;
 

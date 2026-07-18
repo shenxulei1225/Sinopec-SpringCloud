@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.product.convert.favorite;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.util.collection.CollectionUtils;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.util.collection.CollectionUtils;
 import cn.iocoder.yudao.module.product.controller.admin.favorite.vo.ProductFavoriteRespVO;
 import cn.iocoder.yudao.module.product.controller.app.favorite.vo.AppFavoriteRespVO;
 import cn.iocoder.yudao.module.product.dal.dataobject.favorite.ProductFavoriteDO;
@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertMap;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertMap;
 
 @Mapper
 public interface ProductFavoriteConvert {

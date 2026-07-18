@@ -4,7 +4,7 @@ import cn.hutool.core.lang.Assert;
 import cn.hutool.json.JSONObject;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
-import cn.iocoder.yudao.framework.common.util.date.LocalDateTimeUtils;
+import cn.cheers.x.framework.common.util.date.LocalDateTimeUtils;
 import cn.iocoder.yudao.module.iot.core.topic.IotDeviceIdentity;
 import cn.iocoder.yudao.module.iot.core.util.IotDeviceAuthUtils;
 import cn.iocoder.yudao.module.iot.gateway.config.IotGatewayProperties;
@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.iot.gateway.enums.ErrorCodeConstants.DEVICE_TOKEN_EXPIRED;
 
 /**

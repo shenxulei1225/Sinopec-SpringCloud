@@ -31,7 +31,7 @@ import java.util.UUID;
 import static cn.cheers.x.module.platform.topology.enums.ErrorCodeConstants.NETWORK_DRAFT_INVALID;
 import static cn.cheers.x.module.platform.topology.enums.ErrorCodeConstants.NETWORK_NOT_FOUND;
 import static cn.cheers.x.module.platform.topology.enums.ErrorCodeConstants.NETWORK_VALIDATE_FAILED;
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 
 @Service
 public class PathNetworkServiceImpl implements PathNetworkService {

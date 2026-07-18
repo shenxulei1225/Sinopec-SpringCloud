@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.alarm.controller.admin;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.rule.*;
 import cn.iocoder.yudao.module.alarm.convert.AlarmRuleConvert;
 import cn.iocoder.yudao.module.alarm.dal.dataobject.AlarmRuleDO;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 管理后台 - 告警规则管理 Controller

@@ -2,10 +2,10 @@ package cn.iocoder.yudao.module.statistics.service.member;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.util.ObjectUtil;
-import cn.iocoder.yudao.framework.common.enums.UserTypeEnum;
-import cn.iocoder.yudao.framework.ip.core.Area;
-import cn.iocoder.yudao.framework.ip.core.enums.AreaTypeEnum;
-import cn.iocoder.yudao.framework.ip.core.utils.AreaUtils;
+import cn.cheers.x.framework.common.enums.UserTypeEnum;
+import cn.cheers.x.framework.ip.core.Area;
+import cn.cheers.x.framework.ip.core.enums.AreaTypeEnum;
+import cn.cheers.x.framework.ip.core.utils.AreaUtils;
 import cn.iocoder.yudao.module.statistics.controller.admin.common.vo.DataComparisonRespVO;
 import cn.iocoder.yudao.module.statistics.controller.admin.member.vo.*;
 import cn.iocoder.yudao.module.statistics.convert.member.MemberStatisticsConvert;
@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertMap;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertMap;
 
 /**
  * 会员信息的统计 Service 实现类

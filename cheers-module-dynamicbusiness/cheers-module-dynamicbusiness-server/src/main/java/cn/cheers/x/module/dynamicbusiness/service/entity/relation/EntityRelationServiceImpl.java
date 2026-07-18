@@ -1,9 +1,9 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity.relation;
 
-import cn.iocoder.yudao.framework.tenant.core.context.TenantContextHolder;
+import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
 
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
-import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
+import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRelationCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRelationRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRelationUpdateReqVO;

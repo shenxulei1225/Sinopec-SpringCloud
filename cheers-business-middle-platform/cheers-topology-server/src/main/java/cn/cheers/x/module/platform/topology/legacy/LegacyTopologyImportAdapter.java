@@ -23,7 +23,7 @@ import java.util.Set;
 import static cn.cheers.x.module.platform.topology.enums.ErrorCodeConstants.LEGACY_TOPOLOGY_DISABLED;
 import static cn.cheers.x.module.platform.topology.enums.ErrorCodeConstants.LEGACY_TOPOLOGY_EMPTY;
 import static cn.cheers.x.module.platform.topology.enums.ErrorCodeConstants.LEGACY_TOPOLOGY_SOURCE_UNAVAILABLE;
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 
 /**
  * 从旧库 bs_check_point* 读取并转换为拓扑图草稿结构。

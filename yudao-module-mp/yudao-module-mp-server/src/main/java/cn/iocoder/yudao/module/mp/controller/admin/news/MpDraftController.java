@@ -1,10 +1,10 @@
 package cn.iocoder.yudao.module.mp.controller.admin.news;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.util.collection.CollectionUtils;
-import cn.iocoder.yudao.framework.common.util.object.PageUtils;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.util.collection.CollectionUtils;
+import cn.cheers.x.framework.common.util.object.PageUtils;
 import cn.iocoder.yudao.module.mp.controller.admin.news.vo.MpDraftPageReqVO;
 import cn.iocoder.yudao.module.mp.dal.dataobject.material.MpMaterialDO;
 import cn.iocoder.yudao.module.mp.framework.mp.core.MpServiceFactory;
@@ -26,9 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
-import static cn.iocoder.yudao.framework.common.util.collection.MapUtils.findAndThen;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.util.collection.MapUtils.findAndThen;
 import static cn.iocoder.yudao.module.mp.enums.ErrorCodeConstants.*;
 
 @Tag(name = "管理后台 - 公众号草稿")

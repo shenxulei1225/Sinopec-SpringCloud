@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.iot.controller.admin.product.vo.product;
 
-import cn.iocoder.yudao.framework.common.validation.InEnum;
+import cn.cheers.x.framework.common.validation.InEnum;
 import cn.iocoder.yudao.module.iot.core.enums.IotProtocolTypeEnum;
 import cn.iocoder.yudao.module.iot.core.enums.IotSerializeTypeEnum;
 import cn.iocoder.yudao.module.iot.enums.product.IotNetTypeEnum;

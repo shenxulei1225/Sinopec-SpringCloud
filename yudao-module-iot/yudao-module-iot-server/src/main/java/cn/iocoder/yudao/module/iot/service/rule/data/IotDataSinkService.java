@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.iot.service.rule.data;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.iot.controller.admin.rule.vo.data.sink.IotDataSinkPageReqVO;
 import cn.iocoder.yudao.module.iot.controller.admin.rule.vo.data.sink.IotDataSinkSaveReqVO;
 import cn.iocoder.yudao.module.iot.dal.dataobject.rule.IotDataSinkDO;

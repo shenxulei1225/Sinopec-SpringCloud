@@ -1,7 +1,7 @@
 // cspell:ignore spawnable
 package cn.iocoder.yudao.module.scene.platform.dal.dataobject.component;
 
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.JsonStringTypeHandler;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.facility.management.api.impl;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.facility.management.api.SiteApi;
 import cn.iocoder.yudao.module.facility.management.api.dto.SiteRespDTO;
 import cn.iocoder.yudao.module.facility.management.service.query.SiteQueryService;

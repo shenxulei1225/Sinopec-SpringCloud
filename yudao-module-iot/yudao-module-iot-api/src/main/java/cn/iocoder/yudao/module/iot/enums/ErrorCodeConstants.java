@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.iot.enums;
 
-import cn.iocoder.yudao.framework.common.exception.ErrorCode;
+import cn.cheers.x.framework.common.exception.ErrorCode;
 
 /**
  * iot 错误码枚举类

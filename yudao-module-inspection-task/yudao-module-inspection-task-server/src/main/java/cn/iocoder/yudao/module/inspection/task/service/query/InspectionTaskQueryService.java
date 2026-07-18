@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.inspection.task.service.query;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.inspection.task.controller.admin.vo.task.InspectionTaskRespVO;
 import cn.iocoder.yudao.module.inspection.task.controller.admin.vo.task.InspectionTaskSimpleRespVO;
 import cn.iocoder.yudao.module.inspection.task.controller.admin.vo.task.InspectionTaskPageReqVO;

@@ -1,10 +1,10 @@
 package cn.iocoder.yudao.module.bpm.service.definition;
 
-import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.test.core.ut.BaseDbUnitTest;
-import cn.iocoder.yudao.framework.test.core.util.AssertUtils;
-import cn.iocoder.yudao.framework.test.core.util.RandomUtils;
+import cn.cheers.x.framework.common.enums.CommonStatusEnum;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.test.core.ut.BaseDbUnitTest;
+import cn.cheers.x.framework.test.core.util.AssertUtils;
+import cn.cheers.x.framework.test.core.util.RandomUtils;
 import cn.iocoder.yudao.module.bpm.controller.admin.definition.vo.group.BpmUserGroupSaveReqVO;
 import cn.iocoder.yudao.module.bpm.controller.admin.definition.vo.group.BpmUserGroupPageReqVO;
 import cn.iocoder.yudao.module.bpm.dal.dataobject.definition.BpmUserGroupDO;
@@ -17,8 +17,8 @@ import jakarta.annotation.Resource;
 
 import java.time.LocalDateTime;
 
-import static cn.iocoder.yudao.framework.common.util.date.LocalDateTimeUtils.buildTime;
-import static cn.iocoder.yudao.framework.common.util.object.ObjectUtils.cloneIgnoreId;
+import static cn.cheers.x.framework.common.util.date.LocalDateTimeUtils.buildTime;
+import static cn.cheers.x.framework.common.util.object.ObjectUtils.cloneIgnoreId;
 import static cn.iocoder.yudao.module.bpm.enums.ErrorCodeConstants.USER_GROUP_NOT_EXISTS;
 
 /**

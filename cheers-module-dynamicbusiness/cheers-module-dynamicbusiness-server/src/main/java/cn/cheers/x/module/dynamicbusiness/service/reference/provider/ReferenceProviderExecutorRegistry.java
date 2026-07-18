@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.reference.provider;
 
-import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
+import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.reference.ReferenceProviderDO;
 import org.springframework.stereotype.Component;
 

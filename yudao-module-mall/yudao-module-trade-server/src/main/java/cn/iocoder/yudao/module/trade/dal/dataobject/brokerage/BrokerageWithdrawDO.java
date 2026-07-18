@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.trade.dal.dataobject.brokerage;
 
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
 import cn.iocoder.yudao.module.trade.enums.brokerage.BrokerageWithdrawStatusEnum;
 import cn.iocoder.yudao.module.trade.enums.brokerage.BrokerageWithdrawTypeEnum;
 import com.baomidou.mybatisplus.annotation.KeySequence;

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.erp.dal.mysql.stock;
 
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.module.erp.dal.dataobject.stock.ErpStockInItemDO;
 import org.apache.ibatis.annotations.Mapper;
 

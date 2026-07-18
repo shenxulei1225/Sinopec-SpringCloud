@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.inspection.task.dal.dataobject.task;
 
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
 import cn.iocoder.yudao.module.inspection.task.model.task.InspectionContent;
 import cn.iocoder.yudao.module.inspection.task.model.task.ResourcePolicy;
 import com.baomidou.mybatisplus.annotation.TableField;

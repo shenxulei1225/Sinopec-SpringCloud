@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.crm.controller.admin.statistics;
 
 import cn.hutool.extra.spring.SpringUtil;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.crm.controller.admin.business.CrmBusinessController;
 import cn.iocoder.yudao.module.crm.controller.admin.business.vo.business.CrmBusinessRespVO;
 import cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.funnel.*;
@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - CRM 销售漏斗")
 @RestController

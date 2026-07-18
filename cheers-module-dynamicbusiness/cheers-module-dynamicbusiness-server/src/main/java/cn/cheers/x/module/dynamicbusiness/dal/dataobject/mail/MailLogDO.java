@@ -1,15 +1,15 @@
 package cn.cheers.x.module.dynamicbusiness.dal.dataobject.mail;
 
-import cn.iocoder.yudao.framework.common.enums.UserTypeEnum;
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
-import cn.iocoder.yudao.framework.mybatis.core.type.StringListTypeHandler;
-import cn.iocoder.yudao.framework.tenant.core.aop.TenantIgnore;
+import cn.cheers.x.framework.common.enums.UserTypeEnum;
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.mybatis.core.type.StringListTypeHandler;
+import cn.cheers.x.framework.tenant.core.aop.TenantIgnore;
 import cn.cheers.x.module.dynamicbusiness.enums.mail.MailSendStatusEnum;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import cn.iocoder.yudao.framework.mybatis.core.type.JsonbJsonTypeHandler;
-import cn.iocoder.yudao.framework.mybatis.core.type.JsonbMapTypeHandler;
+import cn.cheers.x.framework.mybatis.core.type.JsonbJsonTypeHandler;
+import cn.cheers.x.framework.mybatis.core.type.JsonbMapTypeHandler;
 import lombok.*;
 
 import java.io.Serializable;

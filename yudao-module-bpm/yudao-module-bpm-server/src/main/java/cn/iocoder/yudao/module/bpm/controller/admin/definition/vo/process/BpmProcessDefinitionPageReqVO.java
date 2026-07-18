@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.bpm.controller.admin.definition.vo.process;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import cn.cheers.x.framework.common.pojo.PageParam;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 

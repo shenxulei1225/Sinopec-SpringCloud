@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.promotion.convert.article;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.promotion.controller.admin.article.vo.article.ArticleCreateReqVO;
 import cn.iocoder.yudao.module.promotion.controller.admin.article.vo.article.ArticleRespVO;
 import cn.iocoder.yudao.module.promotion.controller.admin.article.vo.article.ArticleUpdateReqVO;

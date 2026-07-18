@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.member.controller.app.user.vo;
 
-import cn.iocoder.yudao.framework.common.validation.Mobile;
+import cn.cheers.x.framework.common.validation.Mobile;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

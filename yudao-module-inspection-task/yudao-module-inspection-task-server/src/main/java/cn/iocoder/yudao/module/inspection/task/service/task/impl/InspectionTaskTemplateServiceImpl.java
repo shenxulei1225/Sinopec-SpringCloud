@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.inspection.task.service.task.impl;
 
-import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.inspection.task.controller.admin.vo.template.InspectionTaskTemplateCreateReqVO;
 import cn.iocoder.yudao.module.inspection.task.controller.admin.vo.template.InspectionTaskTemplateSaveFromTaskReqVO;
 import cn.iocoder.yudao.module.inspection.task.controller.admin.vo.template.InspectionTaskTemplateUpdateReqVO;
@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
 
-import static cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants.BAD_REQUEST;
+import static cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConstants.BAD_REQUEST;
 
 @Service
 @RequiredArgsConstructor

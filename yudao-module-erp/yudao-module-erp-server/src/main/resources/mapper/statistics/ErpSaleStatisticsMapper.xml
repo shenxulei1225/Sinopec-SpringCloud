@@ -10,8 +10,8 @@
                <if test="endTime != null">
                    AND out_time &lt; #{endTime}
                </if>
-               <if test="@cn.iocoder.yudao.framework.tenant.core.context.TenantContextHolder@getTenantId() != null">
-                   AND tenant_id = ${@cn.iocoder.yudao.framework.tenant.core.context.TenantContextHolder@getTenantId()}
+               <if test="@cn.cheers.x.framework.tenant.core.context.TenantContextHolder@getTenantId() != null">
+                   AND tenant_id = ${@cn.cheers.x.framework.tenant.core.context.TenantContextHolder@getTenantId()}
                </if>
                AND deleted = 0) -
             (SELECT IFNULL(SUM(total_price), 0)
@@ -20,8 +20,8 @@
                 <if test="endTime != null">
                     AND return_time &lt; #{endTime}
                 </if>
-                <if test="@cn.iocoder.yudao.framework.tenant.core.context.TenantContextHolder@getTenantId() != null">
-                    AND tenant_id = ${@cn.iocoder.yudao.framework.tenant.core.context.TenantContextHolder@getTenantId()}
+                <if test="@cn.cheers.x.framework.tenant.core.context.TenantContextHolder@getTenantId() != null">
+                    AND tenant_id = ${@cn.cheers.x.framework.tenant.core.context.TenantContextHolder@getTenantId()}
                 </if>
                 AND deleted = 0)
     </select>

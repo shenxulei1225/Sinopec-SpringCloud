@@ -5,7 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.linkage.*;
 import cn.iocoder.yudao.module.alarm.convert.LinkageRuleConvert;
 import cn.iocoder.yudao.module.alarm.dal.dataobject.AlarmDO;
@@ -33,7 +33,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.alarm.enums.ErrorCodeConstants.*;
 
 /**

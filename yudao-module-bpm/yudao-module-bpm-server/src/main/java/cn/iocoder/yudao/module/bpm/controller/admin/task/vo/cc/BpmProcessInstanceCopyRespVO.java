@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.bpm.controller.admin.task.vo.cc;
 
-import cn.iocoder.yudao.framework.common.core.KeyValue;
+import cn.cheers.x.framework.common.core.KeyValue;
 import cn.iocoder.yudao.module.bpm.controller.admin.base.user.UserSimpleBaseVO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;

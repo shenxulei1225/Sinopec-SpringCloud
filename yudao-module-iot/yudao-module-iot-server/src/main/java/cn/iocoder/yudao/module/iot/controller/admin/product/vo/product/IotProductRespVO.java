@@ -2,8 +2,8 @@ package cn.iocoder.yudao.module.iot.controller.admin.product.vo.product;
 
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
-import cn.iocoder.yudao.framework.excel.core.annotations.DictFormat;
-import cn.iocoder.yudao.framework.excel.core.convert.DictConvert;
+import cn.cheers.x.framework.excel.core.annotations.DictFormat;
+import cn.cheers.x.framework.excel.core.convert.DictConvert;
 import cn.iocoder.yudao.module.iot.enums.DictTypeConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;

@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.mp.controller.admin.account;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.mp.controller.admin.account.vo.*;
 import cn.iocoder.yudao.module.mp.convert.account.MpAccountConvert;
 import cn.iocoder.yudao.module.mp.dal.dataobject.account.MpAccountDO;
@@ -17,7 +17,7 @@ import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 公众号账号")
 @RestController

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.pay.dal.dataobject.notify;
 
-import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
+import cn.cheers.x.framework.tenant.core.db.TenantBaseDO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.app.PayAppDO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.order.PayOrderDO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.refund.PayRefundDO;

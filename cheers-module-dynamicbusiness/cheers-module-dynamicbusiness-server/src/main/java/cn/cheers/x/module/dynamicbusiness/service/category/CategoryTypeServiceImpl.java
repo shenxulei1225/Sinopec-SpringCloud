@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.category;
 
-import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryTypeCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryTypeRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryTypeUpdateReqVO;

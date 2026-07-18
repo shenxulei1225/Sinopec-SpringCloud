@@ -93,7 +93,7 @@ public class InvalidParentRefException extends EntityValidationException {
     private InvalidParentRefException(Long entityId, Long modelId, Long invalidParentId,
                                       String currentModelCode, String targetModelCode,
                                       FailureType failureType,
-                                      cn.iocoder.yudao.framework.common.exception.ErrorCode errorCode, 
+                                      cn.cheers.x.framework.common.exception.ErrorCode errorCode, 
                                       Object... args) {
         super(errorCode, entityId, modelId, args);
         this.invalidParentId = invalidParentId;

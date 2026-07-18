@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.iot.dal.dataobject.ota;
 
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
 import cn.iocoder.yudao.module.iot.enums.ota.IotOtaTaskDeviceScopeEnum;
 import cn.iocoder.yudao.module.iot.enums.ota.IotOtaTaskStatusEnum;
 import com.baomidou.mybatisplus.annotation.KeySequence;

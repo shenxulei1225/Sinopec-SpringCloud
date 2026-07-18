@@ -2,7 +2,7 @@ package cn.iocoder.yudao.module.member.service.group;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.member.controller.admin.group.vo.MemberGroupCreateReqVO;
 import cn.iocoder.yudao.module.member.controller.admin.group.vo.MemberGroupPageReqVO;
 import cn.iocoder.yudao.module.member.controller.admin.group.vo.MemberGroupUpdateReqVO;
@@ -17,7 +17,7 @@ import jakarta.annotation.Resource;
 import java.util.Collection;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.member.enums.ErrorCodeConstants.GROUP_HAS_USER;
 import static cn.iocoder.yudao.module.member.enums.ErrorCodeConstants.GROUP_NOT_EXISTS;
 

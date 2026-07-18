@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.trade.convert.delivery;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.util.collection.CollectionUtils;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.util.collection.CollectionUtils;
 import cn.iocoder.yudao.module.trade.controller.admin.delivery.vo.expresstemplate.*;
 import cn.iocoder.yudao.module.trade.dal.dataobject.delivery.DeliveryExpressTemplateChargeDO;
 import cn.iocoder.yudao.module.trade.dal.dataobject.delivery.DeliveryExpressTemplateDO;
@@ -14,8 +14,8 @@ import org.mapstruct.factory.Mappers;
 import java.util.List;
 import java.util.Map;
 
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertMultiMap;
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.findFirst;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertMultiMap;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.findFirst;
 
 @Mapper
 public interface DeliveryExpressTemplateConvert {

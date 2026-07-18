@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.business;
 
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.business.vo.*;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.business.BusinessDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.business.BusinessEntryDO;

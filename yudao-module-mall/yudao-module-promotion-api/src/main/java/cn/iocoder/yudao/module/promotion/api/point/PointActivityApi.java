@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.promotion.api.point;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.promotion.api.point.dto.PointValidateJoinRespDTO;
 import cn.iocoder.yudao.module.promotion.enums.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;

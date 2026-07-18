@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.crm.service.statistics;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.funnel.*;
 import cn.iocoder.yudao.module.crm.dal.dataobject.business.CrmBusinessDO;
 

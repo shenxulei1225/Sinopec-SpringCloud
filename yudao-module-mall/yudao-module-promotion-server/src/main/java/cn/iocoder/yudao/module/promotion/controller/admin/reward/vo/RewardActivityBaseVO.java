@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.promotion.controller.admin.reward.vo;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.iocoder.yudao.framework.common.validation.InEnum;
+import cn.cheers.x.framework.common.validation.InEnum;
 import cn.iocoder.yudao.module.promotion.enums.common.PromotionConditionTypeEnum;
 import cn.iocoder.yudao.module.promotion.enums.common.PromotionProductScopeEnum;
 import com.fasterxml.jackson.annotation.JsonIgnore;

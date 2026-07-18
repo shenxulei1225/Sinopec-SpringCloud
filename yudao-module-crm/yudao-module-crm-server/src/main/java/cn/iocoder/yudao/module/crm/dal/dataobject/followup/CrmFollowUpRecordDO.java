@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.crm.dal.dataobject.followup;
 
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
-import cn.iocoder.yudao.framework.mybatis.core.type.LongListTypeHandler;
-import cn.iocoder.yudao.framework.mybatis.core.type.StringListTypeHandler;
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.mybatis.core.type.LongListTypeHandler;
+import cn.cheers.x.framework.mybatis.core.type.StringListTypeHandler;
 import cn.iocoder.yudao.module.crm.dal.dataobject.business.CrmBusinessDO;
 import cn.iocoder.yudao.module.crm.dal.dataobject.contact.CrmContactDO;
 import cn.iocoder.yudao.module.crm.enums.DictTypeConstants;

@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.iot.core.messagebus.core.redis;
 
 import cn.hutool.core.util.TypeUtil;
-import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
+import cn.cheers.x.framework.common.util.json.JsonUtils;
 import cn.iocoder.yudao.module.iot.core.messagebus.core.IotMessageBus;
 import cn.iocoder.yudao.module.iot.core.messagebus.core.IotMessageSubscriber;
 import jakarta.annotation.PostConstruct;
@@ -16,8 +16,8 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.mq.redis.config.YudaoRedisMQConsumerAutoConfiguration.buildConsumerName;
-import static cn.iocoder.yudao.framework.mq.redis.config.YudaoRedisMQConsumerAutoConfiguration.checkRedisVersion;
+import static cn.cheers.x.framework.mq.redis.config.YudaoRedisMQConsumerAutoConfiguration.buildConsumerName;
+import static cn.cheers.x.framework.mq.redis.config.YudaoRedisMQConsumerAutoConfiguration.checkRedisVersion;
 
 /**
  * Redis 的 {@link IotMessageBus} 实现类

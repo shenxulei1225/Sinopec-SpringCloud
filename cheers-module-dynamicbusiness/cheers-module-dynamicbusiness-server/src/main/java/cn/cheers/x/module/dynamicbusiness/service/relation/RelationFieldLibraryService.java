@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.relation;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.relation.vo.RelationFieldLibraryCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.relation.vo.RelationFieldLibraryPageReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.relation.vo.RelationFieldLibraryRespVO;

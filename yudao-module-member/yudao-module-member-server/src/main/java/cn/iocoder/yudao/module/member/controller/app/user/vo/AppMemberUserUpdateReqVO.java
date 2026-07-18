@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.member.controller.app.user.vo;
 
-import cn.iocoder.yudao.framework.common.validation.InEnum;
-import cn.iocoder.yudao.module.system.enums.common.SexEnum;
+import cn.cheers.x.framework.common.validation.InEnum;
+import cn.cheers.x.system.enums.common.SexEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.hibernate.validator.constraints.URL;

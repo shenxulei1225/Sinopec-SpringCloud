@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.crm.controller.admin.clue.vo;
 
-import cn.iocoder.yudao.framework.excel.core.annotations.DictFormat;
-import cn.iocoder.yudao.framework.excel.core.convert.DictConvert;
-import cn.iocoder.yudao.module.infra.enums.DictTypeConstants;
+import cn.cheers.x.framework.excel.core.annotations.DictFormat;
+import cn.cheers.x.framework.excel.core.convert.DictConvert;
+import cn.cheers.x.infra.enums.DictTypeConstants;
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
 import io.swagger.v3.oas.annotations.media.Schema;

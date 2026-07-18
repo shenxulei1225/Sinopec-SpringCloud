@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.bpm.controller.admin.definition.vo.model.simple;
 
-import cn.iocoder.yudao.framework.common.core.KeyValue;
-import cn.iocoder.yudao.framework.common.validation.InEnum;
+import cn.cheers.x.framework.common.core.KeyValue;
+import cn.cheers.x.framework.common.validation.InEnum;
 import cn.iocoder.yudao.module.bpm.enums.definition.*;
 import cn.iocoder.yudao.module.bpm.framework.flowable.core.enums.BpmTaskCandidateStrategyEnum;
 import com.fasterxml.jackson.annotation.JsonIgnore;

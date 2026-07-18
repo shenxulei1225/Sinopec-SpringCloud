@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.statistics.dal.mysql.member;
 
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.module.statistics.controller.admin.member.vo.MemberRegisterCountRespVO;
 import cn.iocoder.yudao.module.statistics.controller.admin.member.vo.MemberSexStatisticsRespVO;
 import cn.iocoder.yudao.module.statistics.controller.admin.member.vo.MemberTerminalStatisticsRespVO;

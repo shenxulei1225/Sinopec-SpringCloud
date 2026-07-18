@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.framework.tree.mapper;
 
 import cn.cheers.x.module.dynamicbusiness.framework.tree.core.TreeContract;
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;

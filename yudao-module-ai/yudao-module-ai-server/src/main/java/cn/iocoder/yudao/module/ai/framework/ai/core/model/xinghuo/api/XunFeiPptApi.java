@@ -3,7 +3,7 @@ package cn.iocoder.yudao.module.ai.framework.ai.core.model.xinghuo.api;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.digest.HmacAlgorithm;
-import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
+import cn.cheers.x.framework.common.util.json.JsonUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;

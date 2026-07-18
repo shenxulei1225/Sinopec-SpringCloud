@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.crm.controller.admin.contract.vo.contract;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
-import cn.iocoder.yudao.framework.common.validation.InEnum;
+import cn.cheers.x.framework.common.pojo.PageParam;
+import cn.cheers.x.framework.common.validation.InEnum;
 import cn.iocoder.yudao.module.crm.enums.common.CrmAuditStatusEnum;
 import cn.iocoder.yudao.module.crm.enums.common.CrmSceneTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;

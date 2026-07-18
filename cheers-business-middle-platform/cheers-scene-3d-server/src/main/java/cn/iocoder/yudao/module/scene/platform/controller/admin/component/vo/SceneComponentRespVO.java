@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.controller.admin.component.vo;
 
-import cn.iocoder.yudao.framework.common.core.ArrayValuable;
+import cn.cheers.x.framework.common.core.ArrayValuable;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.component.SceneComponentDO;
 import cn.iocoder.yudao.module.scene.platform.model.Transform;
 import io.swagger.v3.oas.annotations.media.Schema;

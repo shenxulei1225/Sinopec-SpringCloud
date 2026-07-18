@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.alarm.convert;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.alarm.*;
 import cn.iocoder.yudao.module.alarm.dal.dataobject.AlarmAttachmentDO;
 import cn.iocoder.yudao.module.alarm.dal.dataobject.AlarmDO;

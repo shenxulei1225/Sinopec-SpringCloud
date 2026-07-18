@@ -2,8 +2,8 @@ package cn.cheers.x.module.dynamicbusiness.service.capability.system;
 
 import cn.cheers.x.module.dynamicbusiness.service.capability.BusinessCapabilityService;
 import cn.hutool.core.collection.CollUtil;
-import cn.iocoder.yudao.framework.tenant.core.service.TenantFrameworkService;
-import cn.iocoder.yudao.framework.tenant.core.util.TenantUtils;
+import cn.cheers.x.framework.tenant.core.service.TenantFrameworkService;
+import cn.cheers.x.framework.tenant.core.util.TenantUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;

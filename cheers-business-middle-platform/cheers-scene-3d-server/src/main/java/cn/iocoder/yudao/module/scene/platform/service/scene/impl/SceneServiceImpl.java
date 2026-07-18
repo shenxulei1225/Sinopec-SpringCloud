@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.service.scene.impl;
 
-import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.actor.vo.ActorInstanceComponentTreeNodeRespVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.actor.vo.ActorInstanceComponentTreeRespVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.actor.vo.ActorInstanceRespVO;
@@ -37,7 +37,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.scene.platform.enums.ErrorCodeConstants.SCENE_NOT_EXISTS;
 
 /**

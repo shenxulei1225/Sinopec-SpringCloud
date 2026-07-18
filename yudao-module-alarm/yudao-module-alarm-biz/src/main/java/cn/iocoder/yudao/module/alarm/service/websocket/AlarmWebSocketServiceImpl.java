@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.alarm.service.websocket;
 
-import cn.iocoder.yudao.framework.common.enums.UserTypeEnum;
+import cn.cheers.x.framework.common.enums.UserTypeEnum;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.websocket.AlarmWebSocketMessage;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.websocket.LinkageExecutionWebSocketMessage;
 import cn.iocoder.yudao.module.alarm.dal.dataobject.AlarmDO;
@@ -8,7 +8,7 @@ import cn.iocoder.yudao.module.alarm.dal.dataobject.LinkageExecutionDO;
 import cn.iocoder.yudao.module.alarm.enums.LinkageActionTypeEnum;
 import cn.iocoder.yudao.module.alarm.enums.LinkageExecutionStatusEnum;
 import cn.iocoder.yudao.module.alarm.enums.WebSocketMessageTypeConstants;
-import cn.iocoder.yudao.module.infra.api.websocket.WebSocketSenderApi;
+import cn.cheers.x.infra.api.websocket.WebSocketSenderApi;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;

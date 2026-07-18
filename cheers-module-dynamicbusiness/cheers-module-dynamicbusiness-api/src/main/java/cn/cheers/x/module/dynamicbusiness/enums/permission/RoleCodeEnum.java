@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.enums.permission;
 
-import cn.iocoder.yudao.framework.common.util.object.ObjectUtils;
+import cn.cheers.x.framework.common.util.object.ObjectUtils;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

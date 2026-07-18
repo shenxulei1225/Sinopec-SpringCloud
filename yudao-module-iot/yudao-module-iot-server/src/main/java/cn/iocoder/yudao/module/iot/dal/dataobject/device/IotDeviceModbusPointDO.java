@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.iot.dal.dataobject.device;
 
-import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
+import cn.cheers.x.framework.tenant.core.db.TenantBaseDO;
 import cn.iocoder.yudao.module.iot.core.enums.modbus.IotModbusByteOrderEnum;
 import cn.iocoder.yudao.module.iot.core.enums.modbus.IotModbusRawDataTypeEnum;
 import cn.iocoder.yudao.module.iot.dal.dataobject.thingmodel.IotThingModelDO;
@@ -96,7 +96,7 @@ public class IotDeviceModbusPointDO extends TenantBaseDO {
     /**
      * 状态
      *
-     * 枚举 {@link cn.iocoder.yudao.framework.common.enums.CommonStatusEnum}
+     * 枚举 {@link cn.cheers.x.framework.common.enums.CommonStatusEnum}
      */
     private Integer status;
 

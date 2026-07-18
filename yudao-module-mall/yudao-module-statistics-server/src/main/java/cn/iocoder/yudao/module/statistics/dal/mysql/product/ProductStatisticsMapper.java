@@ -1,10 +1,10 @@
 package cn.iocoder.yudao.module.statistics.dal.mysql.product;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.pojo.SortablePageParam;
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
-import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.iocoder.yudao.framework.mybatis.core.query.MPJLambdaWrapperX;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.SortablePageParam;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.cheers.x.framework.mybatis.core.query.MPJLambdaWrapperX;
 import cn.iocoder.yudao.module.statistics.controller.admin.product.vo.ProductStatisticsReqVO;
 import cn.iocoder.yudao.module.statistics.controller.admin.product.vo.ProductStatisticsRespVO;
 import cn.iocoder.yudao.module.statistics.dal.dataobject.product.ProductStatisticsDO;
@@ -15,7 +15,7 @@ import org.apache.ibatis.annotations.Param;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.mybatis.core.util.MyBatisUtils.toUnderlineCase;
+import static cn.cheers.x.framework.mybatis.core.util.MyBatisUtils.toUnderlineCase;
 
 /**
  * 商品统计 Mapper

@@ -1,11 +1,11 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.ip;
 
 import cn.hutool.core.lang.Assert;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
-import cn.iocoder.yudao.framework.ip.core.Area;
-import cn.iocoder.yudao.framework.ip.core.utils.AreaUtils;
-import cn.iocoder.yudao.framework.ip.core.utils.IPUtils;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.ip.core.Area;
+import cn.cheers.x.framework.ip.core.utils.AreaUtils;
+import cn.cheers.x.framework.ip.core.utils.IPUtils;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.ip.vo.AreaNodeRespVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 地区")
 @RestController

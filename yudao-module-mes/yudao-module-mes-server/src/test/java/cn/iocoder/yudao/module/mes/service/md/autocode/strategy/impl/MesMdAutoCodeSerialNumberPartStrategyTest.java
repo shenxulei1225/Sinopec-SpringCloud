@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.mes.service.md.autocode.strategy.impl;
 
-import cn.iocoder.yudao.framework.test.core.ut.BaseRedisUnitTest;
+import cn.cheers.x.framework.test.core.ut.BaseRedisUnitTest;
 import cn.iocoder.yudao.module.mes.dal.dataobject.md.autocode.MesMdAutoCodePartDO;
 import cn.iocoder.yudao.module.mes.dal.dataobject.md.autocode.MesMdAutoCodeRuleDO;
 import cn.iocoder.yudao.module.mes.dal.redis.md.autocode.MesMdAutoCodeRedisDAO;

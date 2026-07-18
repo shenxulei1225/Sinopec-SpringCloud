@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.member.controller.admin.signin;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.member.controller.admin.signin.vo.config.MemberSignInConfigCreateReqVO;
 import cn.iocoder.yudao.module.member.controller.admin.signin.vo.config.MemberSignInConfigRespVO;
 import cn.iocoder.yudao.module.member.controller.admin.signin.vo.config.MemberSignInConfigUpdateReqVO;
@@ -18,7 +18,7 @@ import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 // TODO 芋艿：url
 @Tag(name = "管理后台 - 签到规则")

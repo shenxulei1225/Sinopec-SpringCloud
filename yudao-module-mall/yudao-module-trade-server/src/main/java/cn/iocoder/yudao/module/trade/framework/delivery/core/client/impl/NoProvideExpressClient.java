@@ -6,7 +6,7 @@ import cn.iocoder.yudao.module.trade.framework.delivery.core.client.dto.ExpressT
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.trade.enums.ErrorCodeConstants.EXPRESS_CLIENT_NOT_PROVIDE;
 
 /**

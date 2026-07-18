@@ -1,8 +1,8 @@
 package cn.cheers.x.module.dynamicbusiness.service.reference;
 
-import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
-import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
+import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.reference.vo.ReferenceCandidateRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.reference.vo.ReferenceProviderCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.reference.vo.ReferenceProviderRespVO;

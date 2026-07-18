@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.controller.admin.scene;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.scene.vo.SceneLoadRespVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.scene.vo.ScenePageReqVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.scene.vo.SceneRespVO;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 场景管理 Controller

@@ -4,12 +4,12 @@ import cn.cheers.x.module.platform.policy.api.dto.PolicyResolveForRunReqDTO;
 import cn.cheers.x.module.platform.policy.api.dto.PolicyRunContextDTO;
 import cn.cheers.x.module.platform.policy.api.dto.PolicySnapshotRespDTO;
 import cn.cheers.x.module.platform.policy.service.PolicySnapshotService;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @RestController
 @Validated

@@ -22,7 +22,7 @@ import cn.cheers.x.module.platform.routing.planner.RefineOrderStrategy;
 import cn.cheers.x.module.platform.routing.planner.StopOrderStrategyRegistry;
 import cn.cheers.x.module.platform.topology.api.MobilityProfileApi;
 import cn.cheers.x.module.platform.topology.api.PathNetworkApi;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

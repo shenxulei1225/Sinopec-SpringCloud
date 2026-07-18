@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.entity;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryPermissionCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryPermissionRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.*;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 业务实体权限管理 Controller

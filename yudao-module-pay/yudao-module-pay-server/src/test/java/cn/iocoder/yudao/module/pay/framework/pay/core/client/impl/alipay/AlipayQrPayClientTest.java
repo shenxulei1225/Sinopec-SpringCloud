@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.alipay;
 
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
-import cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants;
-import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
+import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConstants;
+import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.dto.order.PayOrderRespDTO;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.dto.order.PayOrderUnifiedReqDTO;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.exception.PayClientException;
@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.InjectMocks;
 
-import static cn.iocoder.yudao.framework.test.core.util.RandomUtils.*;
+import static cn.cheers.x.framework.test.core.util.RandomUtils.*;
 import static cn.iocoder.yudao.module.pay.enums.order.PayOrderStatusEnum.CLOSED;
 import static cn.iocoder.yudao.module.pay.enums.order.PayOrderStatusEnum.WAITING;
 import static org.junit.jupiter.api.Assertions.*;

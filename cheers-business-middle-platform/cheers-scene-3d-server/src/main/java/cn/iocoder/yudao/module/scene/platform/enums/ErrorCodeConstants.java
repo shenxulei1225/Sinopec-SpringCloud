@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.enums;
 
-import cn.iocoder.yudao.framework.common.exception.ErrorCode;
+import cn.cheers.x.framework.common.exception.ErrorCode;
 
 /**
  * 场景平台错误码

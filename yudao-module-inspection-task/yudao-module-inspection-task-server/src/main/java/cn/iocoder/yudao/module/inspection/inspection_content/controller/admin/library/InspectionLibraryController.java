@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.inspection.inspection_content.controller.admin.library;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.inspection.inspection_content.controller.admin.library.vo.*;
 import cn.iocoder.yudao.module.inspection.inspection_content.service.collection.InspectionObjectCollectionQueryService;
 import cn.iocoder.yudao.module.inspection.inspection_content.service.library.InspectionLibraryService;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 巡检对象库 Controller。

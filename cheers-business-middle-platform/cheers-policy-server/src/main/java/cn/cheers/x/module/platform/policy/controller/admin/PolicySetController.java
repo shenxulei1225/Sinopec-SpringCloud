@@ -3,7 +3,7 @@ package cn.cheers.x.module.platform.policy.controller.admin;
 import cn.cheers.x.module.platform.policy.api.dto.InstantiatePolicySetReqDTO;
 import cn.cheers.x.module.platform.policy.api.dto.PolicySetRespDTO;
 import cn.cheers.x.module.platform.policy.service.PolicySetService;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 平台策略集")
 @RestController

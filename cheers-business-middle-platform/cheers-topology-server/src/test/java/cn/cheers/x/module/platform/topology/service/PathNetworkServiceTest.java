@@ -10,7 +10,7 @@ import cn.cheers.x.module.platform.topology.api.dto.TopologyValidateRespDTO;
 import cn.cheers.x.module.platform.topology.dal.dataobject.PathNetworkDO;
 import cn.cheers.x.module.platform.topology.dal.mysql.PathNetworkMapper;
 import cn.cheers.x.module.platform.topology.dal.mysql.PathPortalMapper;
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import com.alibaba.fastjson2.JSON;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -2,7 +2,7 @@ package cn.iocoder.yudao.module.ai.controller.admin.model.vo.model;
 
 import lombok.*;
 import io.swagger.v3.oas.annotations.media.Schema;
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import cn.cheers.x.framework.common.pojo.PageParam;
 
 @Schema(description = "管理后台 - API 模型分页 Request VO")
 @Data

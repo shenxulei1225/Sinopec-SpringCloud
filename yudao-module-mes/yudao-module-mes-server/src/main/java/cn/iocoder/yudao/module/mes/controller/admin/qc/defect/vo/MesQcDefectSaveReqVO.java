@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.mes.controller.admin.qc.defect.vo;
 
-import cn.iocoder.yudao.framework.common.validation.InEnum;
+import cn.cheers.x.framework.common.validation.InEnum;
 import cn.iocoder.yudao.module.mes.enums.qc.MesQcDefectLevelEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;

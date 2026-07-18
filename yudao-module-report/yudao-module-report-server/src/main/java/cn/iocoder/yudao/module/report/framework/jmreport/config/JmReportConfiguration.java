@@ -1,11 +1,11 @@
 package cn.iocoder.yudao.module.report.framework.jmreport.config;
 
-import cn.iocoder.yudao.framework.common.biz.system.permission.PermissionCommonApi;
-import cn.iocoder.yudao.framework.security.config.SecurityProperties;
+import cn.cheers.x.framework.common.biz.system.permission.PermissionCommonApi;
+import cn.cheers.x.framework.security.config.SecurityProperties;
 import cn.iocoder.yudao.module.report.framework.jmreport.core.service.JmOnlDragExternalServiceImpl;
 import cn.iocoder.yudao.module.report.framework.jmreport.core.service.JmReportTokenServiceImpl;
-import cn.iocoder.yudao.framework.common.biz.system.oauth2.OAuth2TokenCommonApi;
-import cn.iocoder.yudao.module.system.api.permission.PermissionApi;
+import cn.cheers.x.framework.common.biz.system.oauth2.OAuth2TokenCommonApi;
+import cn.cheers.x.system.api.permission.PermissionApi;
 import org.jeecg.modules.jmreport.api.JmReportTokenServiceI;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;

@@ -10,7 +10,7 @@
     <modules>
         <module>yudao-dependencies</module>
         <module>cheers-gateway</module>
-        <module>yudao-framework</module>
+        <module>cheers-framework</module>
         <!-- Server 主项目 -->
         <module>yudao-server</module>
         <!--  各种 module 拓展 -->

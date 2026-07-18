@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.inspection.inspection_content.service.collection.impl;
 
-import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
+import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import cn.iocoder.yudao.module.inspection.inspection_content.controller.admin.vo.collection.InspectionObjectCollectionCreateReqVO;
 import cn.iocoder.yudao.module.inspection.inspection_content.controller.admin.vo.collection.InspectionObjectCollectionUpdateReqVO;
 import cn.iocoder.yudao.module.inspection.inspection_content.dal.dataobject.collection.InspectionObjectCollectionDO;
@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants.*;
+import static cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConstants.*;
 
 /**
  * 巡检对象集合服务实现。

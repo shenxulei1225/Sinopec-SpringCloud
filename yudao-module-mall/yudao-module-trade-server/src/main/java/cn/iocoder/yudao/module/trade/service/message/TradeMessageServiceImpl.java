@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.trade.service.message;
 
-import cn.iocoder.yudao.module.system.api.notify.NotifyMessageSendApi;
-import cn.iocoder.yudao.module.system.api.notify.dto.NotifySendSingleToUserReqDTO;
+import cn.cheers.x.system.api.notify.NotifyMessageSendApi;
+import cn.cheers.x.system.api.notify.dto.NotifySendSingleToUserReqDTO;
 import cn.iocoder.yudao.module.trade.enums.MessageTemplateConstants;
 import cn.iocoder.yudao.module.trade.service.message.bo.TradeOrderMessageWhenDeliveryOrderReqBO;
 import org.springframework.stereotype.Service;

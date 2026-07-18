@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.model.relation;
 
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import org.springframework.stereotype.Service;
 
 @Service

@@ -147,7 +147,7 @@ public class InvalidEntityRefException extends EntityValidationException {
     private InvalidEntityRefException(Long entityId, Long modelId, String fieldCode, String fieldName,
                                       Long invalidRefId, String targetModelCode, List<String> allowedModelCodes,
                                       FailureType failureType,
-                                      cn.iocoder.yudao.framework.common.exception.ErrorCode errorCode, 
+                                      cn.cheers.x.framework.common.exception.ErrorCode errorCode, 
                                       Object... args) {
         super(errorCode, entityId, modelId, args);
         this.fieldCode = fieldCode;

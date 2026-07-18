@@ -3,7 +3,7 @@ package cn.iocoder.yudao.module.inspection.inspection_content.service.source.imp
 import cn.cheers.x.module.dynamicbusiness.api.entity.EntityRpcApi;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRpcDtoSupport;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.inspection.inspection_content.service.source.ObjectSourceAdapter;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;

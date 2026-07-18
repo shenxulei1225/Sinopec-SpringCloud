@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.alarm.enums;
 
 import cn.hutool.core.util.ArrayUtil;
-import cn.iocoder.yudao.framework.common.core.ArrayValuable;
+import cn.cheers.x.framework.common.core.ArrayValuable;
 
 import java.util.Arrays;
 

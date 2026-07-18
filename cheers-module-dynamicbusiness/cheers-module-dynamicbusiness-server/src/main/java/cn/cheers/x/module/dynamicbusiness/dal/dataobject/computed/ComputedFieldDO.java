@@ -1,8 +1,8 @@
 package cn.cheers.x.module.dynamicbusiness.dal.dataobject.computed;
 
-import cn.iocoder.yudao.framework.mybatis.core.type.JsonbJsonTypeHandler;
-import cn.iocoder.yudao.framework.mybatis.core.type.JsonbMapTypeHandler;
-import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
+import cn.cheers.x.framework.mybatis.core.type.JsonbJsonTypeHandler;
+import cn.cheers.x.framework.mybatis.core.type.JsonbMapTypeHandler;
+import cn.cheers.x.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableField;

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.iot.controller.admin.device.vo.modbus;
 
-import cn.iocoder.yudao.framework.common.validation.InEnum;
+import cn.cheers.x.framework.common.validation.InEnum;
 import cn.iocoder.yudao.module.iot.core.enums.modbus.IotModbusFrameFormatEnum;
 import cn.iocoder.yudao.module.iot.core.enums.modbus.IotModbusModeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;

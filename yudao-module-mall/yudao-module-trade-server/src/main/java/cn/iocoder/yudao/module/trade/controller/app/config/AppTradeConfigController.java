@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.trade.controller.app.config;
 
 import cn.hutool.core.util.ObjUtil;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.trade.controller.app.config.vo.AppTradeConfigRespVO;
 import cn.iocoder.yudao.module.trade.convert.config.TradeConfigConvert;
 import cn.iocoder.yudao.module.trade.dal.dataobject.config.TradeConfigDO;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.annotation.Resource;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "用户 App - 交易配置")
 @RestController

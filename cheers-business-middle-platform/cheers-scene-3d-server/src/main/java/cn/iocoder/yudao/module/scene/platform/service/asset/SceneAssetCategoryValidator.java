@@ -7,7 +7,7 @@ public interface SceneAssetCategoryValidator {
 
     /**
      * @param assetType 分类节点 code（通常大写，如 BUILDING）
-     * @throws cn.iocoder.yudao.framework.common.exception.ServiceException 无效或不存在时
+     * @throws cn.cheers.x.framework.common.exception.ServiceException 无效或不存在时
      */
     void validateAssetTypeCode(String assetType);
 }

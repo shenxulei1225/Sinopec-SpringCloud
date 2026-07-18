@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.computed;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.computed.vo.ComputedFieldCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.computed.vo.ComputedFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.computed.vo.ComputedFieldUpdateReqVO;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 计算字段 Controller

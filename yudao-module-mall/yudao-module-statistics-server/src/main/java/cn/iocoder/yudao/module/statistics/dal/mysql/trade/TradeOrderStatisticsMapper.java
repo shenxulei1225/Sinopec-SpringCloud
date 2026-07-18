@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.statistics.dal.mysql.trade;
 
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.module.statistics.controller.admin.trade.vo.TradeOrderSummaryRespVO;
 import cn.iocoder.yudao.module.statistics.controller.admin.trade.vo.TradeOrderTrendRespVO;
 import cn.iocoder.yudao.module.statistics.dal.dataobject.trade.TradeStatisticsDO;

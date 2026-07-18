@@ -8,8 +8,8 @@ import cn.iocoder.yudao.module.twin.controller.admin.vo.TwinSceneMappingOverview
 import cn.iocoder.yudao.module.twin.dal.dataobject.TwinMappingHistoryDO;
 import cn.iocoder.yudao.module.twin.dal.mysql.TwinMappingHistoryMapper;
 import cn.iocoder.yudao.module.twin.dal.mysql.TwinMappingMapper;
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.api.entity.EntityRpcApi;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
 import cn.iocoder.yudao.module.scene.platform.api.ActorInstanceApi;

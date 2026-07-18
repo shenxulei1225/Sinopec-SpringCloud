@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.iot.core.messagebus.core.rocketmq;
 
 import cn.hutool.core.util.TypeUtil;
-import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
+import cn.cheers.x.framework.common.util.json.JsonUtils;
 import cn.iocoder.yudao.module.iot.core.messagebus.core.IotMessageBus;
 import cn.iocoder.yudao.module.iot.core.messagebus.core.IotMessageSubscriber;
 import jakarta.annotation.PreDestroy;

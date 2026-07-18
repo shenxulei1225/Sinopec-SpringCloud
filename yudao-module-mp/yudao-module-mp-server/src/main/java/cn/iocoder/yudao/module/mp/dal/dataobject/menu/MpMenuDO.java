@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.mp.dal.dataobject.menu;
 
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
 import cn.iocoder.yudao.module.mp.dal.dataobject.account.MpAccountDO;
 import cn.iocoder.yudao.module.mp.dal.dataobject.message.MpMessageDO;
 import com.baomidou.mybatisplus.annotation.KeySequence;

@@ -2,8 +2,8 @@ package cn.iocoder.yudao.module.scene.platform.service.asset.impl;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
-import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
+import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
+import cn.cheers.x.framework.common.util.json.JsonUtils;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.asset.AssetResourceDO;
 import cn.iocoder.yudao.module.scene.platform.dal.mysql.asset.AssetResourceMapper;
 import cn.iocoder.yudao.module.scene.platform.service.asset.AssetConvertService;
@@ -26,7 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-import static cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants.NOT_FOUND;
+import static cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConstants.NOT_FOUND;
 
 @Service
 public class AssetConvertServiceImpl implements AssetConvertService {

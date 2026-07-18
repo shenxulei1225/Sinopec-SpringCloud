@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.mes.dal.dataobject.wm.transfer;
 
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
 import cn.iocoder.yudao.module.mes.enums.wm.MesWmTransferStatusEnum;
 import cn.iocoder.yudao.module.mes.enums.wm.MesWmTransferTypeEnum;
 import com.baomidou.mybatisplus.annotation.KeySequence;

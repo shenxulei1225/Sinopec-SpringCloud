@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.inspection.task.service.schedule.impl;
 
-import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
+import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import cn.iocoder.yudao.module.inspection.task.dal.dataobject.schedule.InspectionTaskSchedulePlanDO;
 import cn.iocoder.yudao.module.inspection.task.dal.mysql.schedule.InspectionTaskSchedulePlanMapper;
 import cn.iocoder.yudao.module.inspection.task.service.schedule.InspectionTaskSchedulePlanService;
@@ -12,7 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants.BAD_REQUEST;
+import static cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConstants.BAD_REQUEST;
 
 /**
  * 巡检任务编排批次 Service 实现类。

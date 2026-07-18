@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.promotion.api.coupon.dto;
 
-import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
+import cn.cheers.x.framework.common.enums.CommonStatusEnum;
 import lombok.Data;
 
 /**

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.product.service.brand;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.product.controller.admin.brand.vo.ProductBrandCreateReqVO;
 import cn.iocoder.yudao.module.product.controller.admin.brand.vo.ProductBrandListReqVO;
 import cn.iocoder.yudao.module.product.controller.admin.brand.vo.ProductBrandPageReqVO;

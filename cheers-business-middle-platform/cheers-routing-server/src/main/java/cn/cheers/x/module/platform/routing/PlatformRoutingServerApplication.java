@@ -7,8 +7,8 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @SpringBootApplication(scanBasePackages = {"cn.cheers.x.module.platform.routing"})
 @EnableFeignClients(basePackages = {
         "cn.cheers.x.module.platform.topology.api",
-        "cn.iocoder.yudao.module.system.api",
-        "cn.iocoder.yudao.module.infra.api"
+        "cn.cheers.x.system.api",
+        "cn.cheers.x.infra.api"
 })
 public class PlatformRoutingServerApplication {
 

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.pay.api.wallet.dto;
 
-import cn.iocoder.yudao.framework.common.enums.UserTypeEnum;
+import cn.cheers.x.framework.common.enums.UserTypeEnum;
 import lombok.Data;
 
 /**

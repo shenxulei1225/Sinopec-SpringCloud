@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.cheers.x.module.dynamicbusiness.enums.ExtendFieldQueryErrorCodeConstants.ENGINE_NOT_AVAILABLE;
 
 /**
@@ -106,7 +106,7 @@ public class QueryEngineRouter {
      * 获取当前查询引擎
      *
      * @return 当前使用的查询引擎
-     * @throws cn.iocoder.yudao.framework.common.exception.ServiceException 如果没有可用引擎
+     * @throws cn.cheers.x.framework.common.exception.ServiceException 如果没有可用引擎
      */
     public QueryEngine getEngine() {
         if (currentEngine == null) {
@@ -132,7 +132,7 @@ public class QueryEngineRouter {
      * 切换后的新请求将使用新引擎处理。</p>
      *
      * @param newEngineType 新的引擎类型
-     * @throws cn.iocoder.yudao.framework.common.exception.ServiceException 如果引擎类型不存在或不可用
+     * @throws cn.cheers.x.framework.common.exception.ServiceException 如果引擎类型不存在或不可用
      */
     public void switchEngine(String newEngineType) {
         String normalizedType = normalizeEngineType(newEngineType);

@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.promotion.convert.bargain;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.util.collection.MapUtils;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.util.collection.MapUtils;
 import cn.iocoder.yudao.module.member.api.user.dto.MemberUserRespDTO;
 import cn.iocoder.yudao.module.promotion.controller.admin.bargain.vo.help.BargainHelpRespVO;
 import cn.iocoder.yudao.module.promotion.controller.app.bargain.vo.help.AppBargainHelpRespVO;

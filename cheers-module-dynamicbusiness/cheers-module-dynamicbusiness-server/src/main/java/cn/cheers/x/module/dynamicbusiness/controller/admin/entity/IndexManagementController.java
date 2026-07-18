@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.entity;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.index.*;
 import cn.cheers.x.module.dynamicbusiness.service.entity.index.IndexRebuildService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.sync.EntitySyncService;
@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 管理后台 - 索引管理 Controller

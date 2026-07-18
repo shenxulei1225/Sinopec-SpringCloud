@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.unit;
 
-import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.apilog.core.annotation.ApiAccessLog;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.UnitCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.unit.UnitDO;
 import cn.cheers.x.module.dynamicbusiness.service.unit.UnitService;
@@ -16,10 +16,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.CREATE;
-import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.DELETE;
-import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.UPDATE;
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.CREATE;
+import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.DELETE;
+import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.UPDATE;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 单位管理")
 @RestController

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.inspection.task.dal.mysql.schedule;
 
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.module.inspection.task.dal.dataobject.schedule.InspectionTaskScheduleResourceDO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;

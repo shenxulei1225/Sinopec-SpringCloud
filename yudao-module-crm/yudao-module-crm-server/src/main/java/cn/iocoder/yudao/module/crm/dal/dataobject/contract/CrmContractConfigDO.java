@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.crm.dal.dataobject.contract;
 
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.*;
 

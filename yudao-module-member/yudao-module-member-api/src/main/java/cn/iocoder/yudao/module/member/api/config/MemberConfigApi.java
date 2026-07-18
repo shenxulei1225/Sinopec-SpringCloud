@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.member.api.config;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.member.api.config.dto.MemberConfigRespDTO;
 import cn.iocoder.yudao.module.member.enums.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;

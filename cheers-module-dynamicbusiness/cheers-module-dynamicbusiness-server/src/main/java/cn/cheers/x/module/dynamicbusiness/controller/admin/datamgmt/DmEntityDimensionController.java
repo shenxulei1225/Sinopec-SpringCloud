@@ -3,8 +3,8 @@ package cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmEntityDimensionRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmEntityDimensionSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.service.datamgmt.DmEntityDimensionService;
-import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.apilog.core.annotation.ApiAccessLog;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.UPDATE;
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.UPDATE;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 数据管理浏览维度")
 @RestController

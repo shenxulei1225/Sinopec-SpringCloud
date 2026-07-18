@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.iot.controller.admin.device.vo.device;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
-import cn.iocoder.yudao.framework.common.validation.InEnum;
+import cn.cheers.x.framework.common.pojo.PageParam;
+import cn.cheers.x.framework.common.validation.InEnum;
 import cn.iocoder.yudao.module.iot.core.enums.device.IotDeviceStateEnum;
 import cn.iocoder.yudao.module.iot.enums.product.IotProductDeviceTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;

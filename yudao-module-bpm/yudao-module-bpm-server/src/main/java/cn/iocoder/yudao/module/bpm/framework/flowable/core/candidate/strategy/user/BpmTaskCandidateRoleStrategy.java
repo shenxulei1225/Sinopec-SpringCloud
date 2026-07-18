@@ -1,10 +1,10 @@
 package cn.iocoder.yudao.module.bpm.framework.flowable.core.candidate.strategy.user;
 
-import cn.iocoder.yudao.framework.common.util.string.StrUtils;
+import cn.cheers.x.framework.common.util.string.StrUtils;
 import cn.iocoder.yudao.module.bpm.framework.flowable.core.candidate.BpmTaskCandidateStrategy;
 import cn.iocoder.yudao.module.bpm.framework.flowable.core.enums.BpmTaskCandidateStrategyEnum;
-import cn.iocoder.yudao.module.system.api.permission.PermissionApi;
-import cn.iocoder.yudao.module.system.api.permission.RoleApi;
+import cn.cheers.x.system.api.permission.PermissionApi;
+import cn.cheers.x.system.api.permission.RoleApi;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
 

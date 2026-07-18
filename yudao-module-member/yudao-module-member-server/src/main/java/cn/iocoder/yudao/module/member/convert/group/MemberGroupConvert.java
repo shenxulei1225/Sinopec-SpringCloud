@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.member.convert.group;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.member.controller.admin.group.vo.MemberGroupCreateReqVO;
 import cn.iocoder.yudao.module.member.controller.admin.group.vo.MemberGroupRespVO;
 import cn.iocoder.yudao.module.member.controller.admin.group.vo.MemberGroupSimpleRespVO;

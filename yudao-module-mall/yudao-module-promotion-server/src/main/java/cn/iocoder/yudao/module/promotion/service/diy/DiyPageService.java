@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.promotion.service.diy;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.promotion.controller.admin.diy.vo.page.DiyPageCreateReqVO;
 import cn.iocoder.yudao.module.promotion.controller.admin.diy.vo.page.DiyPagePageReqVO;
 import cn.iocoder.yudao.module.promotion.controller.admin.diy.vo.page.DiyPagePropertyUpdateRequestVO;

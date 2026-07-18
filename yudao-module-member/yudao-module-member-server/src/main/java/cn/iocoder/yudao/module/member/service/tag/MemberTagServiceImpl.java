@@ -3,7 +3,7 @@ package cn.iocoder.yudao.module.member.service.tag;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.member.controller.admin.tag.vo.MemberTagCreateReqVO;
 import cn.iocoder.yudao.module.member.controller.admin.tag.vo.MemberTagPageReqVO;
 import cn.iocoder.yudao.module.member.controller.admin.tag.vo.MemberTagUpdateReqVO;
@@ -18,7 +18,7 @@ import jakarta.annotation.Resource;
 import java.util.Collection;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.member.enums.ErrorCodeConstants.*;
 
 /**

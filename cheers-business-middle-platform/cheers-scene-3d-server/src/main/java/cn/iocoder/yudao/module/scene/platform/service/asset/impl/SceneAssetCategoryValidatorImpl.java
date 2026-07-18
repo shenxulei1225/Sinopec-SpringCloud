@@ -1,14 +1,14 @@
 package cn.iocoder.yudao.module.scene.platform.service.asset.impl;
 
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
+import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import cn.iocoder.yudao.module.scene.platform.enums.SceneAssetCategoryCodes;
 import cn.iocoder.yudao.module.scene.platform.service.asset.SceneAssetCategoryValidator;
 import jakarta.annotation.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
-import static cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants.BAD_REQUEST;
+import static cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConstants.BAD_REQUEST;
 import static cn.iocoder.yudao.module.scene.platform.enums.ErrorCodeConstants.SCENE_ASSET_CATEGORY_INVALID;
 
 /**

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.trade.service.config;
 
-import cn.iocoder.yudao.framework.common.util.collection.CollectionUtils;
+import cn.cheers.x.framework.common.util.collection.CollectionUtils;
 import cn.iocoder.yudao.module.trade.controller.admin.config.vo.TradeConfigSaveReqVO;
 import cn.iocoder.yudao.module.trade.convert.config.TradeConfigConvert;
 import cn.iocoder.yudao.module.trade.dal.dataobject.config.TradeConfigDO;

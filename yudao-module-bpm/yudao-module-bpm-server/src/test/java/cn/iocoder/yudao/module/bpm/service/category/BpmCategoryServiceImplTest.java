@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.bpm.service.category;
 
-import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.test.core.ut.BaseDbUnitTest;
+import cn.cheers.x.framework.common.enums.CommonStatusEnum;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.test.core.ut.BaseDbUnitTest;
 import cn.iocoder.yudao.module.bpm.controller.admin.definition.vo.category.BpmCategoryPageReqVO;
 import cn.iocoder.yudao.module.bpm.controller.admin.definition.vo.category.BpmCategorySaveReqVO;
 import cn.iocoder.yudao.module.bpm.dal.dataobject.definition.BpmCategoryDO;
@@ -14,12 +14,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import static cn.iocoder.yudao.framework.common.util.date.LocalDateTimeUtils.buildBetweenTime;
-import static cn.iocoder.yudao.framework.common.util.date.LocalDateTimeUtils.buildTime;
-import static cn.iocoder.yudao.framework.common.util.object.ObjectUtils.cloneIgnoreId;
-import static cn.iocoder.yudao.framework.test.core.util.AssertUtils.assertPojoEquals;
-import static cn.iocoder.yudao.framework.test.core.util.AssertUtils.assertServiceException;
-import static cn.iocoder.yudao.framework.test.core.util.RandomUtils.*;
+import static cn.cheers.x.framework.common.util.date.LocalDateTimeUtils.buildBetweenTime;
+import static cn.cheers.x.framework.common.util.date.LocalDateTimeUtils.buildTime;
+import static cn.cheers.x.framework.common.util.object.ObjectUtils.cloneIgnoreId;
+import static cn.cheers.x.framework.test.core.util.AssertUtils.assertPojoEquals;
+import static cn.cheers.x.framework.test.core.util.AssertUtils.assertServiceException;
+import static cn.cheers.x.framework.test.core.util.RandomUtils.*;
 import static cn.iocoder.yudao.module.bpm.enums.ErrorCodeConstants.CATEGORY_NOT_EXISTS;
 import static org.junit.jupiter.api.Assertions.*;
 

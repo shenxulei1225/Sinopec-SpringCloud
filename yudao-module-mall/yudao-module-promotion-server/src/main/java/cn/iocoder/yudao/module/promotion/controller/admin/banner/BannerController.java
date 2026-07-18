@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.promotion.controller.admin.banner;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.promotion.controller.admin.banner.vo.BannerCreateReqVO;
 import cn.iocoder.yudao.module.promotion.controller.admin.banner.vo.BannerPageReqVO;
 import cn.iocoder.yudao.module.promotion.controller.admin.banner.vo.BannerRespVO;
@@ -18,7 +18,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - Banner 管理")
 @RestController

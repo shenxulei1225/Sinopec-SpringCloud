@@ -17,8 +17,8 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
         "cn.cheers.x.module.dynamicbusiness"
 })
 @EnableFeignClients(basePackages = {
-        "cn.iocoder.yudao.module.system.api",
-        "cn.iocoder.yudao.module.infra.api"
+        "cn.cheers.x.system.api",
+        "cn.cheers.x.infra.api"
 })
 public class SystemServerApplication {
 

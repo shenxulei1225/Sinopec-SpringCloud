@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.crm.controller.admin.contact.vo;
 
-import cn.iocoder.yudao.framework.excel.core.annotations.DictFormat;
-import cn.iocoder.yudao.framework.excel.core.convert.DictConvert;
-import cn.iocoder.yudao.module.infra.enums.DictTypeConstants;
+import cn.cheers.x.framework.excel.core.annotations.DictFormat;
+import cn.cheers.x.framework.excel.core.convert.DictConvert;
+import cn.cheers.x.infra.enums.DictTypeConstants;
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -83,7 +83,7 @@ public class CrmContactRespVO {
 
     @Schema(description = "性别")
     @ExcelProperty(value = "性别", converter = DictConvert.class, order = 3)
-    @DictFormat(cn.iocoder.yudao.module.system.enums.DictTypeConstants.USER_SEX)
+    @DictFormat(cn.cheers.x.system.enums.DictTypeConstants.USER_SEX)
     private Integer sex;
 
     @Schema(description = "是否关键决策人")

@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.drag;
 
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.drag.vo.DragExecuteReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.drag.vo.DragExecuteRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryDragReqVO;

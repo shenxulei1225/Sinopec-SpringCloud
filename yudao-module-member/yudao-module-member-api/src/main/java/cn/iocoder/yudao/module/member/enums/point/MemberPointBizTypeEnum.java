@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.member.enums.point;
 
 import cn.hutool.core.util.EnumUtil;
-import cn.iocoder.yudao.framework.common.core.ArrayValuable;
+import cn.cheers.x.framework.common.core.ArrayValuable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

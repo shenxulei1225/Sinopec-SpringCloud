@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.iot.gateway.serialize.json;
 
 import cn.hutool.core.lang.Assert;
-import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
+import cn.cheers.x.framework.common.util.json.JsonUtils;
 import cn.iocoder.yudao.module.iot.core.enums.IotSerializeTypeEnum;
 import cn.iocoder.yudao.module.iot.core.mq.message.IotDeviceMessage;
 import cn.iocoder.yudao.module.iot.gateway.serialize.IotMessageSerializer;

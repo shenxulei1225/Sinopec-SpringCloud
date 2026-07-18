@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.PriorityQueue;
 
 import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_UNREACHABLE;
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 
 @Component
 public class DijkstraPlanner {

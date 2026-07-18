@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.alarm.service;
 
-import cn.iocoder.yudao.framework.test.core.ut.BaseDbUnitTest;
+import cn.cheers.x.framework.test.core.ut.BaseDbUnitTest;
 import cn.iocoder.yudao.module.alarm.config.AlarmTestConfiguration;
 import cn.iocoder.yudao.module.alarm.config.AlarmTestDataBuilder;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.alarm.*;

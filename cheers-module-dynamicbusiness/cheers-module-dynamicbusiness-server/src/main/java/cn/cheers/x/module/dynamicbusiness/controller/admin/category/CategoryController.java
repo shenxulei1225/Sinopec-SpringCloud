@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.category;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.*;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,11 +14,11 @@ import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import java.util.List;
 
-import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
-import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.CREATE;
-import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.UPDATE;
-import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.DELETE;
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import cn.cheers.x.framework.apilog.core.annotation.ApiAccessLog;
+import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.CREATE;
+import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.UPDATE;
+import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.DELETE;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 管理后台 - 分类管理 Controller

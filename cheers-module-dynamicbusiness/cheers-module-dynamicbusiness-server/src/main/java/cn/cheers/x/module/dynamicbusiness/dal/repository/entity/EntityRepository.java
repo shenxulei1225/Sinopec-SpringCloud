@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.dal.repository.entity;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 
 import java.util.List;

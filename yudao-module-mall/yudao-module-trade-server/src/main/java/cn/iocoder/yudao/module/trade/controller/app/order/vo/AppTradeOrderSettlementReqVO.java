@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.trade.controller.app.order.vo;
 
 import cn.hutool.core.util.ObjUtil;
-import cn.iocoder.yudao.framework.common.validation.InEnum;
-import cn.iocoder.yudao.framework.common.validation.Mobile;
+import cn.cheers.x.framework.common.validation.InEnum;
+import cn.cheers.x.framework.common.validation.Mobile;
 import cn.iocoder.yudao.module.trade.enums.delivery.DeliveryTypeEnum;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;

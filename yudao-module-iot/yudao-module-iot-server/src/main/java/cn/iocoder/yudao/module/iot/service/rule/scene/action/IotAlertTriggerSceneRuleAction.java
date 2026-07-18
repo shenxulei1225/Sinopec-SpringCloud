@@ -1,16 +1,16 @@
 package cn.iocoder.yudao.module.iot.service.rule.scene.action;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
+import cn.cheers.x.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.module.iot.core.mq.message.IotDeviceMessage;
 import cn.iocoder.yudao.module.iot.dal.dataobject.alert.IotAlertConfigDO;
 import cn.iocoder.yudao.module.iot.dal.dataobject.rule.IotSceneRuleDO;
 import cn.iocoder.yudao.module.iot.enums.rule.IotSceneRuleActionTypeEnum;
 import cn.iocoder.yudao.module.iot.service.alert.IotAlertConfigService;
 import cn.iocoder.yudao.module.iot.service.alert.IotAlertRecordService;
-import cn.iocoder.yudao.module.system.api.mail.MailSendApi;
-import cn.iocoder.yudao.module.system.api.notify.NotifyMessageSendApi;
-import cn.iocoder.yudao.module.system.api.sms.SmsSendApi;
+import cn.cheers.x.system.api.mail.MailSendApi;
+import cn.cheers.x.system.api.notify.NotifyMessageSendApi;
+import cn.cheers.x.system.api.sms.SmsSendApi;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
 

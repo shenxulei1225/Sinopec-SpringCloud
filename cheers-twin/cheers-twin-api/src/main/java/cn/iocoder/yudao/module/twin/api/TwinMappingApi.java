@@ -2,7 +2,7 @@ package cn.iocoder.yudao.module.twin.api;
 
 import cn.iocoder.yudao.module.twin.api.dto.TwinMappingRespDTO;
 import cn.iocoder.yudao.module.twin.enums.ApiConstants;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.cloud.openfeign.FeignClient;

@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.category;
 
 import cn.hutool.core.util.IdUtil;
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryBatchDeleteRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryDeleteReqVO;

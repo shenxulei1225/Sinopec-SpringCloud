@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.pay.framework.pay.core.client.impl;
 
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
-import cn.iocoder.yudao.framework.common.util.validation.ValidationUtils;
+import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.util.validation.ValidationUtils;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.PayClient;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.PayClientConfig;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.dto.order.PayOrderRespDTO;
@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 
-import static cn.iocoder.yudao.framework.common.util.json.JsonUtils.toJsonString;
+import static cn.cheers.x.framework.common.util.json.JsonUtils.toJsonString;
 
 /**
  * 支付客户端的抽象类，提供模板方法，减少子类的冗余代码

@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.event.listener;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.iocoder.yudao.framework.tenant.core.util.TenantUtils;
+import cn.cheers.x.framework.tenant.core.util.TenantUtils;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.relation.RelationFieldLibraryDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.relation.RelationFieldLibraryMapper;
 import cn.cheers.x.module.dynamicbusiness.event.RelationTargetCreatedEvent;

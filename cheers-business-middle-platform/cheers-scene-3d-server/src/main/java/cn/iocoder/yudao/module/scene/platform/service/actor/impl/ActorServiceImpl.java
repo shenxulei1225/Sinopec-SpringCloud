@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.scene.platform.service.actor.impl;
 
-import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.actor.ActorDO;
 import cn.iocoder.yudao.module.scene.platform.dal.mysql.actor.ActorMapper;
 import cn.iocoder.yudao.module.scene.platform.model.ComponentTree;
@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
-import static cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants.NOT_FOUND;
+import static cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConstants.NOT_FOUND;
 
 @Service
 public class ActorServiceImpl implements ActorService {

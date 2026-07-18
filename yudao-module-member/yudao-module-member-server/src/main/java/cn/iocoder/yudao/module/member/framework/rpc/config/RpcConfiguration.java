@@ -1,9 +1,9 @@
 package cn.iocoder.yudao.module.member.framework.rpc.config;
 
-import cn.iocoder.yudao.module.system.api.logger.LoginLogApi;
-import cn.iocoder.yudao.module.system.api.sms.SmsCodeApi;
-import cn.iocoder.yudao.module.system.api.social.SocialClientApi;
-import cn.iocoder.yudao.module.system.api.social.SocialUserApi;
+import cn.cheers.x.system.api.logger.LoginLogApi;
+import cn.cheers.x.system.api.sms.SmsCodeApi;
+import cn.cheers.x.system.api.social.SocialClientApi;
+import cn.cheers.x.system.api.social.SocialUserApi;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Configuration;
 

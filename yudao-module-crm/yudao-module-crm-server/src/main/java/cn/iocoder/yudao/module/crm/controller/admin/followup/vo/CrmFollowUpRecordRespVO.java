@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.crm.controller.admin.followup.vo;
 
-import cn.iocoder.yudao.framework.excel.core.annotations.DictFormat;
+import cn.cheers.x.framework.excel.core.annotations.DictFormat;
 import cn.iocoder.yudao.module.crm.controller.admin.business.vo.business.CrmBusinessRespVO;
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;

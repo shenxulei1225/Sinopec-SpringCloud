@@ -1,0 +1,2 @@
+org.springframework.boot.env.EnvironmentPostProcessor=\
+    cn.cheers.x.framework.env.config.EnvEnvironmentPostProcessor

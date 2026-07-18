@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.pay.api.wallet;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.pay.api.wallet.dto.PayWalletAddBalanceReqDTO;
 import cn.iocoder.yudao.module.pay.api.wallet.dto.PayWalletRespDTO;
 import cn.iocoder.yudao.module.pay.enums.ApiConstants;

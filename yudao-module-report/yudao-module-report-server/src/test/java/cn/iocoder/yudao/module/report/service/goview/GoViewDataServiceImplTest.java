@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.report.service.goview;
 
-import cn.iocoder.yudao.framework.test.core.ut.BaseDbUnitTest;
+import cn.cheers.x.framework.test.core.ut.BaseDbUnitTest;
 import cn.iocoder.yudao.module.report.controller.admin.goview.vo.data.GoViewDataRespVO;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;

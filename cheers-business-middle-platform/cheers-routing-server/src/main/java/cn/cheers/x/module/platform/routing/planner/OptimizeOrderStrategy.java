@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_TOO_MANY_STOPS;
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 
 /**
  * 优化访问顺序：分区扫完再换区；区内外用场景距离（可达）+ Held-Karp / 最近邻+2-opt。

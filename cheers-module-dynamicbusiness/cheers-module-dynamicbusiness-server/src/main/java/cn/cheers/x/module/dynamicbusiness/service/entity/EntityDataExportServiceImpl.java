@@ -1,10 +1,10 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity;
 
-import cn.iocoder.yudao.framework.tenant.core.context.TenantContextHolder;
+import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityExportExcelVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityExportReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityImportExcelVO;

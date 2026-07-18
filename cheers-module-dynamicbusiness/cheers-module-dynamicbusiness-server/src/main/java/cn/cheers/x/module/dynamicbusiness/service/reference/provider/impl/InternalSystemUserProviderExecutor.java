@@ -6,9 +6,9 @@ import cn.cheers.x.module.dynamicbusiness.service.reference.provider.ReferenceBa
 import cn.cheers.x.module.dynamicbusiness.service.reference.provider.ReferenceProviderExecutor;
 import cn.cheers.x.module.dynamicbusiness.service.reference.provider.ReferenceValidateReq;
 import cn.cheers.x.module.dynamicbusiness.service.reference.provider.ReferenceValidationResult;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.module.system.api.user.AdminUserApi;
-import cn.iocoder.yudao.module.system.api.user.dto.AdminUserRespDTO;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.system.api.user.AdminUserApi;
+import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.mes.dal.mysql.md.workstation;
 
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.module.mes.dal.dataobject.md.workstation.MesMdWorkstationMachineDO;
 import org.apache.ibatis.annotations.Mapper;
 

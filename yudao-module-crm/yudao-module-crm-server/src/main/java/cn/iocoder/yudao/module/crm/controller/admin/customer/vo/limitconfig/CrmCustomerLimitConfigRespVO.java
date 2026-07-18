@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.crm.controller.admin.customer.vo.limitconfig;
 
-import cn.iocoder.yudao.module.system.api.dept.dto.DeptRespDTO;
-import cn.iocoder.yudao.module.system.api.user.dto.AdminUserRespDTO;
+import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 

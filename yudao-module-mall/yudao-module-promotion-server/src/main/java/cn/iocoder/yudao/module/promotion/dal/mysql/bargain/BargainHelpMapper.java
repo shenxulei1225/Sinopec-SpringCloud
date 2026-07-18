@@ -2,10 +2,10 @@ package cn.iocoder.yudao.module.promotion.dal.mysql.bargain;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.util.collection.CollectionUtils;
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
-import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.util.collection.CollectionUtils;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.promotion.controller.admin.bargain.vo.help.BargainHelpPageReqVO;
 import cn.iocoder.yudao.module.promotion.dal.dataobject.bargain.BargainHelpDO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;

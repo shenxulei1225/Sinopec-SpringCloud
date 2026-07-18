@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.trade.controller.app.cart;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.trade.controller.app.cart.vo.*;
 import cn.iocoder.yudao.module.trade.service.cart.CartService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,8 +15,8 @@ import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
-import static cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
 
 @Tag(name = "用户 App - 购物车")
 @RestController

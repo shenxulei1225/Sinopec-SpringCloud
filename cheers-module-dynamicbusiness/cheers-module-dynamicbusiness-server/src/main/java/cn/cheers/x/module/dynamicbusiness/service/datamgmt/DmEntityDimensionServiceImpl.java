@@ -7,7 +7,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmEntityDimens
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmEntityDimensionMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.datamgmt.DmDimensionKindEnum;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeCategoryBootstrapService;
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;

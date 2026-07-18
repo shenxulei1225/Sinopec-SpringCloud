@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.crm.controller.admin.statistics;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.customer.*;
 import cn.iocoder.yudao.module.crm.service.statistics.CrmStatisticsCustomerService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - CRM 客户统计")
 @RestController

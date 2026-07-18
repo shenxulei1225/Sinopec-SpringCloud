@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity;
 
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.*;
 import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityDoVoHelper;
 import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityFieldMapsSupport;

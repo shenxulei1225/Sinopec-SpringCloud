@@ -8,7 +8,7 @@ import lombok.Data;
 
 import java.time.LocalDate;
 
-import static cn.iocoder.yudao.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY;
+import static cn.cheers.x.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY;
 
 @Schema(description = "管理后台 - 商品统计 Response VO")
 @Data

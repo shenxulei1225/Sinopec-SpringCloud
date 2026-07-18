@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.iot.core.mq.message;
 
-import cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants;
+import cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConstants;
 import cn.iocoder.yudao.module.iot.core.enums.IotDeviceMessageMethodEnum;
 import cn.iocoder.yudao.module.iot.core.enums.device.IotDeviceStateEnum;
 import cn.iocoder.yudao.module.iot.core.topic.state.IotDeviceStateUpdateReqDTO;

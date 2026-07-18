@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity;
 
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryPermissionCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryPermissionRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.*;
@@ -13,9 +13,9 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryPermissionM
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityAccessPermissionMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityFieldPermissionMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityOperationPermissionMapper;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.module.system.api.permission.RoleApi;
-import cn.iocoder.yudao.module.system.api.permission.dto.RoleRespDTO;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.system.api.permission.RoleApi;
+import cn.cheers.x.system.api.permission.dto.RoleRespDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;

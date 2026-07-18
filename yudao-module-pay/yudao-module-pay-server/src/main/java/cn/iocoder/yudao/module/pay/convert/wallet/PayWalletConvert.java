@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.pay.convert.wallet;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.pay.controller.admin.wallet.vo.wallet.PayWalletRespVO;
 import cn.iocoder.yudao.module.pay.controller.app.wallet.vo.wallet.AppPayWalletRespVO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.wallet.PayWalletDO;

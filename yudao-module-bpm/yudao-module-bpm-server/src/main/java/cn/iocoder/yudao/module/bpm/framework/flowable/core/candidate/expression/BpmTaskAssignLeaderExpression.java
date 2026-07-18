@@ -1,11 +1,11 @@
 package cn.iocoder.yudao.module.bpm.framework.flowable.core.candidate.expression;
 
-import cn.iocoder.yudao.framework.common.util.number.NumberUtils;
+import cn.cheers.x.framework.common.util.number.NumberUtils;
 import cn.iocoder.yudao.module.bpm.service.task.BpmProcessInstanceService;
-import cn.iocoder.yudao.module.system.api.dept.DeptApi;
-import cn.iocoder.yudao.module.system.api.dept.dto.DeptRespDTO;
-import cn.iocoder.yudao.module.system.api.user.AdminUserApi;
-import cn.iocoder.yudao.module.system.api.user.dto.AdminUserRespDTO;
+import cn.cheers.x.system.api.dept.DeptApi;
+import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.system.api.user.AdminUserApi;
+import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import org.flowable.engine.delegate.DelegateExecution;
 import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Component;
@@ -14,7 +14,7 @@ import org.springframework.util.Assert;
 import jakarta.annotation.Resource;
 import java.util.Set;
 
-import static cn.iocoder.yudao.framework.common.util.collection.SetUtils.asSet;
+import static cn.cheers.x.framework.common.util.collection.SetUtils.asSet;
 import static java.util.Collections.emptySet;
 
 /**

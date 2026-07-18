@@ -1,6 +1,6 @@
 package cn.cheers.x.gis.enums;
 
-import cn.iocoder.yudao.framework.common.enums.RpcConstants;
+import cn.cheers.x.framework.common.enums.RpcConstants;
 
 /**
  * GIS RPC 常量。Nacos 服务名与 spring.application.name 对齐。

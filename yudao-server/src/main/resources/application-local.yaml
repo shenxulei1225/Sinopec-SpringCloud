@@ -120,14 +120,14 @@ logging:
     name: ${user.home}/logs/${spring.application.name}.log
   level:
     cn.iocoder.yudao.module.bpm.dal.mysql: debug
-    cn.iocoder.yudao.module.infra.dal.mysql: debug
-    cn.iocoder.yudao.module.infra.dal.mysql.logger.ApiErrorLogMapper: INFO
-    cn.iocoder.yudao.module.infra.dal.mysql.job.JobLogMapper: INFO
-    cn.iocoder.yudao.module.infra.dal.mysql.file.FileConfigMapper: INFO
+    cn.cheers.x.infra.dal.mysql: debug
+    cn.cheers.x.infra.dal.mysql.logger.ApiErrorLogMapper: INFO
+    cn.cheers.x.infra.dal.mysql.job.JobLogMapper: INFO
+    cn.cheers.x.infra.dal.mysql.file.FileConfigMapper: INFO
     cn.iocoder.yudao.module.pay.dal.mysql: debug
     cn.iocoder.yudao.module.pay.dal.mysql.notify.PayNotifyTaskMapper: INFO
-    cn.iocoder.yudao.module.system.dal.mysql: debug
-    cn.iocoder.yudao.module.system.dal.mysql.sms.SmsChannelMapper: INFO
+    cn.cheers.x.system.dal.mysql: debug
+    cn.cheers.x.system.dal.mysql.sms.SmsChannelMapper: INFO
     cn.iocoder.yudao.module.tool.dal.mysql: debug
     cn.iocoder.yudao.module.member.dal.mysql: debug
     cn.iocoder.yudao.module.trade.dal.mysql: debug

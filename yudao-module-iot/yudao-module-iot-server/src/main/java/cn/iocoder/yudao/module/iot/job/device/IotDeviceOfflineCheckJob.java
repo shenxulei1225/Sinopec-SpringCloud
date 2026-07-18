@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.iot.job.device;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
-import cn.iocoder.yudao.framework.tenant.core.job.TenantJob;
+import cn.cheers.x.framework.common.util.json.JsonUtils;
+import cn.cheers.x.framework.tenant.core.job.TenantJob;
 import cn.iocoder.yudao.module.iot.core.enums.device.IotDeviceStateEnum;
 import cn.iocoder.yudao.module.iot.core.mq.message.IotDeviceMessage;
 import cn.iocoder.yudao.module.iot.dal.dataobject.device.IotDeviceDO;

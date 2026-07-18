@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.member.api.config;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.member.api.config.dto.MemberConfigRespDTO;
 import cn.iocoder.yudao.module.member.convert.config.MemberConfigConvert;
 import cn.iocoder.yudao.module.member.service.config.MemberConfigService;
@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.annotation.Resource;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 用户配置 API 实现类

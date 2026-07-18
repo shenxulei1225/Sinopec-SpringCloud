@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.service.scene;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.scene.vo.SceneLayerRespVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.scene.vo.SceneLayerSaveReqVO;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.actor.ActorInstanceDO;

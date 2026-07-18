@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.crm.dal.mysql.contract;
 
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
-import cn.iocoder.yudao.framework.mybatis.core.query.QueryWrapperX;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.query.QueryWrapperX;
 import cn.iocoder.yudao.module.crm.dal.dataobject.contract.CrmContractConfigDO;
 import org.apache.ibatis.annotations.Mapper;
 

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.inspection.inspection_content.convert;
 
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.inspection.inspection_content.controller.admin.vo.point.InspectionExecutionPointItemRespVO;
 import cn.iocoder.yudao.module.inspection.inspection_content.service.point.model.InspectionExecutionPointItemView;
 

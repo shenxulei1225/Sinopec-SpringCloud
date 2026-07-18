@@ -3,7 +3,7 @@ package cn.cheers.x.module.platform.capability.controller.admin;
 import cn.cheers.x.module.platform.capability.api.dto.ProcessCapabilityBindingRespDTO;
 import cn.cheers.x.module.platform.capability.api.dto.ProcessCapabilityBindingSaveReqDTO;
 import cn.cheers.x.module.platform.capability.service.ProcessCapabilityBindingService;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 过程能力绑定")
 @RestController

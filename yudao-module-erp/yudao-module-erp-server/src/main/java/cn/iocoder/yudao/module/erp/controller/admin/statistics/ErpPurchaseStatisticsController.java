@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.erp.controller.admin.statistics;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.util.date.LocalDateTimeUtils;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.util.date.LocalDateTimeUtils;
 import cn.iocoder.yudao.module.erp.controller.admin.statistics.vo.purchase.ErpPurchaseSummaryRespVO;
 import cn.iocoder.yudao.module.erp.controller.admin.statistics.vo.purchase.ErpPurchaseTimeSummaryRespVO;
 import cn.iocoder.yudao.module.erp.service.statistics.ErpPurchaseStatisticsService;
@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static cn.hutool.core.date.DatePattern.NORM_MONTH_PATTERN;
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - ERP 采购统计")
 @RestController

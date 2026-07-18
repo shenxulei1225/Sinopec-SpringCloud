@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity.query;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
 
 import java.util.List;

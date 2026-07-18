@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.dal.dataobject.actor;
 
-import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
+import cn.cheers.x.framework.tenant.core.db.TenantBaseDO;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.JsonStringTypeHandler;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.TransformTypeHandler;
 import cn.iocoder.yudao.module.scene.platform.model.Transform;

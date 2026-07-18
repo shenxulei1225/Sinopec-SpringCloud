@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.model.relation;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.BatchModelCategoryAssociationRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCategoryAssociationRespVO;
 

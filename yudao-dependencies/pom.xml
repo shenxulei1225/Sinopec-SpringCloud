@@ -136,18 +136,18 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>cn.iocoder.cloud</groupId>
-                <artifactId>yudao-spring-boot-starter-biz-tenant</artifactId>
+                <groupId>cn.cheers.x</groupId>
+                <artifactId>cheers-spring-boot-starter-biz-tenant</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>cn.iocoder.cloud</groupId>
-                <artifactId>yudao-spring-boot-starter-biz-data-permission</artifactId>
+                <groupId>cn.cheers.x</groupId>
+                <artifactId>cheers-spring-boot-starter-biz-data-permission</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>cn.iocoder.cloud</groupId>
-                <artifactId>yudao-spring-boot-starter-biz-ip</artifactId>
+                <groupId>cn.cheers.x</groupId>
+                <artifactId>cheers-spring-boot-starter-biz-ip</artifactId>
                 <version>${revision}</version>
             </dependency>
 
@@ -160,27 +160,27 @@
             </dependency>
 
             <dependency>
-                <groupId>cn.iocoder.cloud</groupId>
-                <artifactId>yudao-spring-boot-starter-env</artifactId>
+                <groupId>cn.cheers.x</groupId>
+                <artifactId>cheers-spring-boot-starter-env</artifactId>
                 <version>${revision}</version>
             </dependency>
 
             <!-- Web 相关 -->
             <dependency>
-                <groupId>cn.iocoder.cloud</groupId>
-                <artifactId>yudao-spring-boot-starter-web</artifactId>
+                <groupId>cn.cheers.x</groupId>
+                <artifactId>cheers-spring-boot-starter-web</artifactId>
                 <version>${revision}</version>
             </dependency>
 
             <dependency>
-                <groupId>cn.iocoder.cloud</groupId>
-                <artifactId>yudao-spring-boot-starter-security</artifactId>
+                <groupId>cn.cheers.x</groupId>
+                <artifactId>cheers-spring-boot-starter-security</artifactId>
                 <version>${revision}</version>
             </dependency>
 
             <dependency>
-                <groupId>cn.iocoder.cloud</groupId>
-                <artifactId>yudao-spring-boot-starter-websocket</artifactId>
+                <groupId>cn.cheers.x</groupId>
+                <artifactId>cheers-spring-boot-starter-websocket</artifactId>
                 <version>${revision}</version>
             </dependency>
 
@@ -213,8 +213,8 @@
 
             <!-- DB 相关 -->
             <dependency>
-                <groupId>cn.iocoder.cloud</groupId>
-                <artifactId>yudao-spring-boot-starter-mybatis</artifactId>
+                <groupId>cn.cheers.x</groupId>
+                <artifactId>cheers-spring-boot-starter-mybatis</artifactId>
                 <version>${revision}</version>
             </dependency>
 
@@ -293,8 +293,8 @@
             </dependency>
 
             <dependency>
-                <groupId>cn.iocoder.cloud</groupId>
-                <artifactId>yudao-spring-boot-starter-redis</artifactId>
+                <groupId>cn.cheers.x</groupId>
+                <artifactId>cheers-spring-boot-starter-redis</artifactId>
                 <version>${revision}</version>
             </dependency>
 
@@ -330,8 +330,8 @@
 
             <!-- RPC 远程调用相关 -->
             <dependency>
-                <groupId>cn.iocoder.cloud</groupId>
-                <artifactId>yudao-spring-boot-starter-rpc</artifactId>
+                <groupId>cn.cheers.x</groupId>
+                <artifactId>cheers-spring-boot-starter-rpc</artifactId>
                 <version>${revision}</version>
             </dependency>
 
@@ -359,15 +359,15 @@
                 <version>${xxl-job.version}</version>
             </dependency>
             <dependency>
-                <groupId>cn.iocoder.cloud</groupId>
-                <artifactId>yudao-spring-boot-starter-job</artifactId>
+                <groupId>cn.cheers.x</groupId>
+                <artifactId>cheers-spring-boot-starter-job</artifactId>
                 <version>${revision}</version>
             </dependency>
 
             <!-- 消息队列相关 -->
             <dependency>
-                <groupId>cn.iocoder.cloud</groupId>
-                <artifactId>yudao-spring-boot-starter-mq</artifactId>
+                <groupId>cn.cheers.x</groupId>
+                <artifactId>cheers-spring-boot-starter-mq</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
@@ -378,8 +378,8 @@
 
             <!-- 服务保障相关 -->
             <dependency>
-                <groupId>cn.iocoder.cloud</groupId>
-                <artifactId>yudao-spring-boot-starter-protection</artifactId>
+                <groupId>cn.cheers.x</groupId>
+                <artifactId>cheers-spring-boot-starter-protection</artifactId>
                 <version>${revision}</version>
             </dependency>
 
@@ -397,8 +397,8 @@
 
             <!-- 监控相关 -->
             <dependency>
-                <groupId>cn.iocoder.cloud</groupId>
-                <artifactId>yudao-spring-boot-starter-monitor</artifactId>
+                <groupId>cn.cheers.x</groupId>
+                <artifactId>cheers-spring-boot-starter-monitor</artifactId>
                 <version>${revision}</version>
             </dependency>
 
@@ -456,8 +456,8 @@
 
             <!-- Test 测试相关 -->
             <dependency>
-                <groupId>cn.iocoder.cloud</groupId>
-                <artifactId>yudao-spring-boot-starter-test</artifactId>
+                <groupId>cn.cheers.x</groupId>
+                <artifactId>cheers-spring-boot-starter-test</artifactId>
                 <version>${revision}</version>
                 <scope>test</scope>
             </dependency>
@@ -511,14 +511,14 @@
 
             <!-- 工具类相关 -->
             <dependency>
-                <groupId>cn.iocoder.cloud</groupId>
-                <artifactId>yudao-common</artifactId>
+                <groupId>cn.cheers.x</groupId>
+                <artifactId>cheers-common</artifactId>
                 <version>${revision}</version>
             </dependency>
 
             <dependency>
-                <groupId>cn.iocoder.cloud</groupId>
-                <artifactId>yudao-spring-boot-starter-excel</artifactId>
+                <groupId>cn.cheers.x</groupId>
+                <artifactId>cheers-spring-boot-starter-excel</artifactId>
                 <version>${revision}</version>
             </dependency>
 

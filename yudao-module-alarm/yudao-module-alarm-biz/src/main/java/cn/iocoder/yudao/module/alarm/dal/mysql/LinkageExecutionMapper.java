@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.alarm.dal.mysql;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
-import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.linkage.LinkageExecutionPageReqVO;
 import cn.iocoder.yudao.module.alarm.dal.dataobject.LinkageExecutionDO;
 import cn.iocoder.yudao.module.alarm.enums.LinkageExecutionStatusEnum;

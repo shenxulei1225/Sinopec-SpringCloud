@@ -26,7 +26,7 @@ import jakarta.annotation.Resource;
 import jakarta.validation.Validator;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.mp.enums.ErrorCodeConstants.MENU_DELETE_FAIL;
 import static cn.iocoder.yudao.module.mp.enums.ErrorCodeConstants.MENU_SAVE_FAIL;
 

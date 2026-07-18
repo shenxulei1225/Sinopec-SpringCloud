@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.page;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.page.vo.PagePageReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.page.vo.PageSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.page.PageDO;

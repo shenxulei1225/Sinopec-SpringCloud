@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity.query;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.query.AggregateResultVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.query.GenericAggregateRequest;
@@ -54,7 +54,7 @@ public interface GenericEntityQueryService {
      *
      * @param request 通用查询请求
      * @return 分页查询结果
-     * @throws cn.iocoder.yudao.framework.common.exception.ServiceException 
+     * @throws cn.cheers.x.framework.common.exception.ServiceException 
      *         如果 Model 不存在、字段不可查询、条件数量超限等
      */
     PageResult<EntityRespVO> query(GenericQueryRequest request);
@@ -67,7 +67,7 @@ public interface GenericEntityQueryService {
      *
      * @param request 通用聚合请求
      * @return 聚合结果
-     * @throws cn.iocoder.yudao.framework.common.exception.ServiceException 
+     * @throws cn.cheers.x.framework.common.exception.ServiceException 
      *         如果 Model 不存在、字段不可查询、聚合类型不支持等
      */
     AggregateResultVO aggregate(GenericAggregateRequest request);
@@ -99,7 +99,7 @@ public interface GenericEntityQueryService {
      *
      * @param modelCode Model 编码
      * @return 可查询字段列表
-     * @throws cn.iocoder.yudao.framework.common.exception.ServiceException 
+     * @throws cn.cheers.x.framework.common.exception.ServiceException 
      *         如果 Model 不存在
      */
     List<SearchableFieldRespVO> getSearchableFields(String modelCode);
@@ -117,7 +117,7 @@ public interface GenericEntityQueryService {
      * </ul>
      *
      * @param request 通用查询请求
-     * @throws cn.iocoder.yudao.framework.common.exception.ServiceException 
+     * @throws cn.cheers.x.framework.common.exception.ServiceException 
      *         如果验证失败
      */
     void validateRequest(GenericQueryRequest request);
@@ -126,7 +126,7 @@ public interface GenericEntityQueryService {
      * 验证通用聚合请求
      *
      * @param request 通用聚合请求
-     * @throws cn.iocoder.yudao.framework.common.exception.ServiceException 
+     * @throws cn.cheers.x.framework.common.exception.ServiceException 
      *         如果验证失败
      */
     void validateRequest(GenericAggregateRequest request);

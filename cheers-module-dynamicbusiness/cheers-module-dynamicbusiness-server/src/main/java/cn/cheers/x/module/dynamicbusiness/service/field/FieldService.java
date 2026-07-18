@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.field;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldPageReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldRespVO;

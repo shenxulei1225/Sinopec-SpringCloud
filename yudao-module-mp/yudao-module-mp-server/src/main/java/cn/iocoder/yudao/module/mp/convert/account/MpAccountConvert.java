@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.mp.convert.account;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.mp.controller.admin.account.vo.MpAccountCreateReqVO;
 import cn.iocoder.yudao.module.mp.controller.admin.account.vo.MpAccountRespVO;
 import cn.iocoder.yudao.module.mp.controller.admin.account.vo.MpAccountSimpleRespVO;

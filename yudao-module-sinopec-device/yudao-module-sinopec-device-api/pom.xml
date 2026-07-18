@@ -17,8 +17,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>cn.iocoder.cloud</groupId>
-            <artifactId>yudao-common</artifactId>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-common</artifactId>
         </dependency>
 
         <dependency>

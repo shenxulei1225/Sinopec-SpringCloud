@@ -1,6 +1,6 @@
 package cn.cheers.x.module.platform.topology.enums;
 
-import cn.iocoder.yudao.framework.common.exception.ErrorCode;
+import cn.cheers.x.framework.common.exception.ErrorCode;
 
 public interface ErrorCodeConstants {
 

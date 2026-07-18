@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.facility.management.api.dto;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import cn.cheers.x.framework.common.pojo.PageParam;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

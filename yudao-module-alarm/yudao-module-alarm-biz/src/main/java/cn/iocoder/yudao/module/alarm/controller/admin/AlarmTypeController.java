@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.alarm.controller.admin;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.type.AlarmTypeCategoryVO;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.type.AlarmTypeEntityVO;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.type.AlarmTypeModelVO;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 管理后台 - 告警类型管理 Controller

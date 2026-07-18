@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.service.scene.impl;
 
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.scene.vo.FacilitySceneBindingRespVO;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.scene.FacilitySceneBindingDO;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.scene.SceneDO;

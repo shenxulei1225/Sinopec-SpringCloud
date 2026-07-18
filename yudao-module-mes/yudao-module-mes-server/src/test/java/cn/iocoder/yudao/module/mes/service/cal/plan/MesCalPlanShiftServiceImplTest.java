@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.mes.service.cal.plan;
 
-import cn.iocoder.yudao.framework.test.core.ut.BaseDbUnitTest;
+import cn.cheers.x.framework.test.core.ut.BaseDbUnitTest;
 import cn.iocoder.yudao.module.mes.dal.dataobject.cal.plan.MesCalPlanShiftDO;
 import cn.iocoder.yudao.module.mes.dal.mysql.cal.plan.MesCalPlanShiftMapper;
 import cn.iocoder.yudao.module.mes.enums.cal.MesCalShiftTypeEnum;

@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.dal.mysql.category;
 
 import cn.cheers.x.module.dynamicbusiness.framework.category.mapper.FrameworkCategoryMapper;
-import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryDO;
 import org.apache.commons.lang3.StringUtils;
 

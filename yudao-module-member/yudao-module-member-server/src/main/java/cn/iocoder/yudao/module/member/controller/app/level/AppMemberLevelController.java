@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.member.controller.app.level;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.member.controller.app.level.vo.level.AppMemberLevelRespVO;
 import cn.iocoder.yudao.module.member.convert.level.MemberLevelConvert;
 import cn.iocoder.yudao.module.member.dal.dataobject.level.MemberLevelDO;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.annotation.Resource;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "用户 App - 会员等级")
 @RestController

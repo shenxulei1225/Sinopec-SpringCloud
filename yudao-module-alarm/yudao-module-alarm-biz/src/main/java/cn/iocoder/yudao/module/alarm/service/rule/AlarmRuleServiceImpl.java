@@ -2,7 +2,7 @@ package cn.iocoder.yudao.module.alarm.service.rule;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.rule.*;
 import cn.iocoder.yudao.module.alarm.convert.AlarmRuleConvert;
 import cn.iocoder.yudao.module.alarm.dal.dataobject.AlarmRuleDO;
@@ -28,7 +28,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.alarm.enums.ErrorCodeConstants.*;
 
 /**

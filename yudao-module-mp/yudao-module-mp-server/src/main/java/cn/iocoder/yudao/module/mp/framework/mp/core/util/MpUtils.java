@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.mp.framework.mp.core.util;
 
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.common.util.validation.ValidationUtils;
+import cn.cheers.x.framework.common.util.validation.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.api.WxConsts;
 

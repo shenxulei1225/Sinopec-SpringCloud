@@ -1,9 +1,9 @@
 package cn.iocoder.yudao.module.crm.controller.admin.customer.vo.customer;
 
-import cn.iocoder.yudao.framework.excel.core.annotations.DictFormat;
-import cn.iocoder.yudao.framework.excel.core.annotations.ExcelColumnSelect;
-import cn.iocoder.yudao.framework.excel.core.convert.AreaConvert;
-import cn.iocoder.yudao.framework.excel.core.convert.DictConvert;
+import cn.cheers.x.framework.excel.core.annotations.DictFormat;
+import cn.cheers.x.framework.excel.core.annotations.ExcelColumnSelect;
+import cn.cheers.x.framework.excel.core.convert.AreaConvert;
+import cn.cheers.x.framework.excel.core.convert.DictConvert;
 import cn.iocoder.yudao.module.crm.framework.excel.core.AreaExcelColumnSelectFunction;
 import cn.idev.excel.annotation.ExcelProperty;
 import lombok.AllArgsConstructor;

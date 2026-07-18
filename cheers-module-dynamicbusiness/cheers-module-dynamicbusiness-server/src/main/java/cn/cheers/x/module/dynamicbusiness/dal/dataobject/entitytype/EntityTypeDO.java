@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype;
 
-import cn.iocoder.yudao.framework.mybatis.core.type.JsonbStringTypeHandler;
-import cn.iocoder.yudao.framework.tenant.core.db.TenantBaseDO;
+import cn.cheers.x.framework.mybatis.core.type.JsonbStringTypeHandler;
+import cn.cheers.x.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.*;
 

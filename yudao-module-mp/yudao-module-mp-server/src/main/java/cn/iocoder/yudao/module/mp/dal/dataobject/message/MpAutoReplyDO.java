@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.mp.dal.dataobject.message;
 
-import cn.iocoder.yudao.framework.common.util.collection.SetUtils;
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.common.util.collection.SetUtils;
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
 import cn.iocoder.yudao.module.mp.dal.dataobject.account.MpAccountDO;
 import cn.iocoder.yudao.module.mp.enums.message.MpAutoReplyMatchEnum;
 import cn.iocoder.yudao.module.mp.enums.message.MpAutoReplyTypeEnum;

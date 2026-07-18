@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.promotion.enums;
 
-import cn.iocoder.yudao.framework.common.enums.RpcConstants;
+import cn.cheers.x.framework.common.enums.RpcConstants;
 
 /**
  * API 相关的枚举

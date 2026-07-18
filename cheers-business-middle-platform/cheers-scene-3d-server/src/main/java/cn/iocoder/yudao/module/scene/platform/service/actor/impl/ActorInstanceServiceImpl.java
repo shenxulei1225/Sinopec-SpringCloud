@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.scene.platform.service.actor.impl;
 
-import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.actor.vo.ActorInstanceSpawnReqVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.actor.vo.ComponentTreeNodeVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.actor.vo.ComponentTreeVO;
@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants.NOT_FOUND;
+import static cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConstants.NOT_FOUND;
 
 @Service
 public class ActorInstanceServiceImpl implements ActorInstanceService {

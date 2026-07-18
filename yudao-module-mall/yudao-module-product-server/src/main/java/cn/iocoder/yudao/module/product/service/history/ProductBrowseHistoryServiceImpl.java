@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.product.service.history;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.product.controller.admin.history.vo.ProductBrowseHistoryPageReqVO;
 import cn.iocoder.yudao.module.product.dal.dataobject.history.ProductBrowseHistoryDO;
 import cn.iocoder.yudao.module.product.dal.mysql.history.ProductBrowseHistoryMapper;

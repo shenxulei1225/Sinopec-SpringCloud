@@ -1,12 +1,12 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.field;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldPageReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldStatusUpdateReqVO;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.service.field.FieldService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -19,11 +19,11 @@ import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import java.util.List;
 
-import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
-import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.CREATE;
-import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.UPDATE;
-import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.DELETE;
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import cn.cheers.x.framework.apilog.core.annotation.ApiAccessLog;
+import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.CREATE;
+import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.UPDATE;
+import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.DELETE;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 管理后台 - 字段管理 Controller

@@ -65,8 +65,8 @@
 
         <!-- 监控相关 -->
         <dependency>
-            <groupId>cn.iocoder.cloud</groupId>
-            <artifactId>yudao-spring-boot-starter-monitor</artifactId>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-spring-boot-starter-monitor</artifactId>
         </dependency>
 
         <!-- 工具类相关 -->

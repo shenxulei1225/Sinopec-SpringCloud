@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.promotion.job.combination;
 
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.common.core.KeyValue;
-import cn.iocoder.yudao.framework.tenant.core.job.TenantJob;
+import cn.cheers.x.framework.common.core.KeyValue;
+import cn.cheers.x.framework.tenant.core.job.TenantJob;
 import cn.iocoder.yudao.module.promotion.service.combination.CombinationRecordService;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import org.springframework.stereotype.Component;

@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.pay.service.demo;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageParam;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.pay.controller.admin.demo.vo.withdraw.PayDemoWithdrawCreateReqVO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.demo.PayDemoWithdrawDO;
 

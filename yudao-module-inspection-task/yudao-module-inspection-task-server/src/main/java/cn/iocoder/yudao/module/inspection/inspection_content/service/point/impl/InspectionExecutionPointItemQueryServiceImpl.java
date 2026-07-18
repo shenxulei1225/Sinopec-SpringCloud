@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.inspection.inspection_content.service.point.impl;
 
-import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.inspection.inspection_content.controller.admin.vo.point.InspectionExecutionPointItemPageReqVO;
 import cn.iocoder.yudao.module.inspection.inspection_content.dal.dataobject.point.InspectionExecutionPointItemDO;
 import cn.iocoder.yudao.module.inspection.inspection_content.dal.mysql.point.InspectionExecutionPointItemMapper;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants.NOT_FOUND;
+import static cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConstants.NOT_FOUND;
 
 /**
  * 点位检查项查询服务实现。

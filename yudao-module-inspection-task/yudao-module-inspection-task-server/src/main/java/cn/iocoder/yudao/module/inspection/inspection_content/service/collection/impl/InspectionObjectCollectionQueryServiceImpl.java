@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.inspection.inspection_content.service.collection.impl;
 
-import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
-import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.inspection.inspection_content.controller.admin.vo.collection.InspectionObjectCollectionPageReqVO;
 import cn.iocoder.yudao.module.inspection.inspection_content.controller.admin.vo.collection.InspectionObjectCollectionRespVO;
 import cn.iocoder.yudao.module.inspection.inspection_content.dal.dataobject.collection.InspectionObjectCollectionDO;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.stream.Collectors;
 
-import static cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants.NOT_FOUND;
+import static cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConstants.NOT_FOUND;
 
 /**
  * 巡检对象集合查询服务实现。

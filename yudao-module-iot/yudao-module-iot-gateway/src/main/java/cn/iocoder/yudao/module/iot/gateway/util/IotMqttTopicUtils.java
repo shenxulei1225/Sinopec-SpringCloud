@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.iot.gateway.util;
 
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants;
+import cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConstants;
 import cn.iocoder.yudao.module.iot.core.mq.message.IotDeviceMessage;
 
 /**

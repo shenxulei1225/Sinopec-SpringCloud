@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.pay.api.wallet;
 
 import cn.hutool.core.lang.Assert;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.pay.api.wallet.dto.PayWalletAddBalanceReqDTO;
 import cn.iocoder.yudao.module.pay.api.wallet.dto.PayWalletRespDTO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.wallet.PayWalletDO;
@@ -12,7 +12,7 @@ import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.*;
+import static cn.cheers.x.framework.common.pojo.CommonResult.*;
 
 /**
  * 钱包 API 实现类

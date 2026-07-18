@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.alarm.convert;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.rule.*;
 import cn.iocoder.yudao.module.alarm.dal.dataobject.AlarmRuleDO;
 import org.mapstruct.Mapper;

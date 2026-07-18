@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.bpm.framework.flowable.core.candidate.expression;
 
-import cn.iocoder.yudao.framework.common.util.collection.SetUtils;
-import cn.iocoder.yudao.framework.common.util.number.NumberUtils;
+import cn.cheers.x.framework.common.util.collection.SetUtils;
+import cn.cheers.x.framework.common.util.number.NumberUtils;
 import cn.iocoder.yudao.module.bpm.service.task.BpmProcessInstanceService;
 import jakarta.annotation.Resource;
 import org.flowable.engine.impl.persistence.entity.ExecutionEntityImpl;

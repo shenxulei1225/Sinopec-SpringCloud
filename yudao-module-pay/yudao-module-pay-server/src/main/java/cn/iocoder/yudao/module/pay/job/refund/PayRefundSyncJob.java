@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.pay.job.refund;
 
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.tenant.core.job.TenantJob;
+import cn.cheers.x.framework.tenant.core.job.TenantJob;
 import cn.iocoder.yudao.module.pay.service.refund.PayRefundService;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import jakarta.annotation.Resource;

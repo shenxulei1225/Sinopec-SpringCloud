@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.controller.admin.component;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.component.vo.CapsuleComponentSaveReqVO;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.component.CapsuleComponentDO;
 import cn.iocoder.yudao.module.scene.platform.service.component.CapsuleComponentService;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - Capsule 组件")
 @RestController

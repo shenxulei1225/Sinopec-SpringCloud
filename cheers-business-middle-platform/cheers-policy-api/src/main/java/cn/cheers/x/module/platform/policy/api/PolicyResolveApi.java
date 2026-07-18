@@ -4,7 +4,7 @@ import cn.cheers.x.module.platform.policy.api.dto.PolicyResolveForRunReqDTO;
 import cn.cheers.x.module.platform.policy.api.dto.PolicyRunContextDTO;
 import cn.cheers.x.module.platform.policy.api.dto.PolicySnapshotRespDTO;
 import cn.cheers.x.module.platform.policy.enums.ApiConstants;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.trade.controller.admin.aftersale.vo;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
-import cn.iocoder.yudao.framework.common.validation.InEnum;
+import cn.cheers.x.framework.common.pojo.PageParam;
+import cn.cheers.x.framework.common.validation.InEnum;
 import cn.iocoder.yudao.module.trade.enums.aftersale.AfterSaleStatusEnum;
 import cn.iocoder.yudao.module.trade.enums.aftersale.AfterSaleTypeEnum;
 import cn.iocoder.yudao.module.trade.enums.aftersale.AfterSaleWayEnum;
@@ -13,7 +13,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 
-import static cn.iocoder.yudao.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
+import static cn.cheers.x.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 
 @Schema(description = "管理后台 - 交易售后分页 Request VO")
 @Data

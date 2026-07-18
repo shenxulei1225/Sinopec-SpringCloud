@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.promotion.controller.app.banner;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.promotion.controller.app.banner.vo.AppBannerRespVO;
 import cn.iocoder.yudao.module.promotion.convert.banner.BannerConvert;
 import cn.iocoder.yudao.module.promotion.dal.dataobject.banner.BannerDO;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.annotation.Resource;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @RestController
 @RequestMapping("/promotion/banner")

@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.promotion.controller.app.diy;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.promotion.controller.app.diy.vo.AppDiyPagePropertyRespVO;
 import cn.iocoder.yudao.module.promotion.dal.dataobject.diy.DiyPageDO;
 import cn.iocoder.yudao.module.promotion.service.diy.DiyPageService;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "用户 APP - 装修页面")
 @RestController

@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.member.service.user;
 
-import cn.iocoder.yudao.framework.common.enums.TerminalEnum;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.validation.Mobile;
+import cn.cheers.x.framework.common.enums.TerminalEnum;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.validation.Mobile;
 import cn.iocoder.yudao.module.member.controller.admin.user.vo.MemberUserPageReqVO;
 import cn.iocoder.yudao.module.member.controller.admin.user.vo.MemberUserUpdateReqVO;
 import cn.iocoder.yudao.module.member.controller.app.user.vo.*;

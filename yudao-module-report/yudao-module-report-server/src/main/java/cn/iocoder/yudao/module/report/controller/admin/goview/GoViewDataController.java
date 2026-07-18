@@ -2,7 +2,7 @@ package cn.iocoder.yudao.module.report.controller.admin.goview;
 
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.RandomUtil;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.report.controller.admin.goview.vo.data.GoViewDataGetBySqlReqVO;
 import cn.iocoder.yudao.module.report.controller.admin.goview.vo.data.GoViewDataRespVO;
 import cn.iocoder.yudao.module.report.service.goview.GoViewDataService;
@@ -20,7 +20,7 @@ import jakarta.validation.Valid;
 
 import java.util.*;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - GoView 数据", description = "提供 SQL、HTTP 等数据查询的能力")
 @RestController

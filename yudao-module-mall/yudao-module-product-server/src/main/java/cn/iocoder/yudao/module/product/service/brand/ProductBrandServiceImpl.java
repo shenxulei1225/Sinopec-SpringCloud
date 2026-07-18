@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.product.service.brand;
 
-import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.enums.CommonStatusEnum;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.product.controller.admin.brand.vo.ProductBrandCreateReqVO;
 import cn.iocoder.yudao.module.product.controller.admin.brand.vo.ProductBrandListReqVO;
 import cn.iocoder.yudao.module.product.controller.admin.brand.vo.ProductBrandPageReqVO;
@@ -17,7 +17,7 @@ import jakarta.annotation.Resource;
 import java.util.Collection;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.product.enums.ErrorCodeConstants.*;
 
 /**

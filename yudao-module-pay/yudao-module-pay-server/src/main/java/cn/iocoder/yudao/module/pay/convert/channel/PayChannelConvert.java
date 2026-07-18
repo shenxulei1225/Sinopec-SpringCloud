@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.pay.convert.channel;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.pay.controller.admin.channel.vo.PayChannelCreateReqVO;
 import cn.iocoder.yudao.module.pay.controller.admin.channel.vo.PayChannelRespVO;
 import cn.iocoder.yudao.module.pay.controller.admin.channel.vo.PayChannelUpdateReqVO;
@@ -20,7 +20,7 @@ public interface PayChannelConvert {
     @Mapping(target = "config",ignore = true)
     PayChannelDO convert(PayChannelUpdateReqVO bean);
 
-    @Mapping(target = "config",expression = "java(cn.iocoder.yudao.framework.common.util.json.JsonUtils.toJsonString(bean.getConfig()))")
+    @Mapping(target = "config",expression = "java(cn.cheers.x.framework.common.util.json.JsonUtils.toJsonString(bean.getConfig()))")
     PayChannelRespVO convert(PayChannelDO bean);
 
     PageResult<PayChannelRespVO> convertPage(PageResult<PayChannelDO> page);

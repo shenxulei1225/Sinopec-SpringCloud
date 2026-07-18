@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.event.listener;
 
-import cn.iocoder.yudao.framework.tenant.core.util.TenantUtils;
+import cn.cheers.x.framework.tenant.core.util.TenantUtils;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityMapper;

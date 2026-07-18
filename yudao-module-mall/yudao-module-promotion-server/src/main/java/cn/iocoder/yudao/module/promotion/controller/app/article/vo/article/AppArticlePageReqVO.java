@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.promotion.controller.app.article.vo.article;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import cn.cheers.x.framework.common.pojo.PageParam;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 

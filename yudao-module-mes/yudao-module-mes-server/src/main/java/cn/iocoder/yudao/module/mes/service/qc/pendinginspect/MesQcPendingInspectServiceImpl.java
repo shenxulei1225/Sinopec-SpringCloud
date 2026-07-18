@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.mes.service.qc.pendinginspect;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.mybatis.core.util.MyBatisUtils;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.mybatis.core.util.MyBatisUtils;
 import cn.iocoder.yudao.module.mes.controller.admin.qc.pendinginspect.vo.MesQcPendingInspectPageReqVO;
 import cn.iocoder.yudao.module.mes.controller.admin.qc.pendinginspect.vo.MesQcPendingInspectRespVO;
 import cn.iocoder.yudao.module.mes.dal.mysql.qc.pendinginspect.MesQcPendingInspectMapper;

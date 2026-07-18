@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.controller.admin.actor;
 
-import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
+import cn.cheers.x.framework.common.util.json.JsonUtils;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.actor.ActorInstanceDO;
 import cn.iocoder.yudao.module.scene.platform.model.Transform;
 import io.swagger.v3.oas.annotations.media.Schema;

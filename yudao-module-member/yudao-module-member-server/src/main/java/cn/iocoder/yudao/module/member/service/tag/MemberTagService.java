@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.member.service.tag;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.member.controller.admin.tag.vo.MemberTagCreateReqVO;
 import cn.iocoder.yudao.module.member.controller.admin.tag.vo.MemberTagPageReqVO;
 import cn.iocoder.yudao.module.member.controller.admin.tag.vo.MemberTagUpdateReqVO;

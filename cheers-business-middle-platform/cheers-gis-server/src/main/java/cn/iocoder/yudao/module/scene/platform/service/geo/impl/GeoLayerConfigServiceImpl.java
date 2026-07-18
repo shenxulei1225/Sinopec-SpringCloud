@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.service.geo.impl;
 
-import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
+import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.geo.vo.GeoLayerDetailRespVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.geo.vo.GeoLayerRespVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.geo.vo.GeoLayerSaveReqVO;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants.BAD_REQUEST;
+import static cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConstants.BAD_REQUEST;
 
 /**
  * 临时关闭 GEO 图层实现，避免阻塞当前 facility ↔ actorInstance 主线联调。

@@ -1,11 +1,11 @@
 package cn.iocoder.yudao.module.ai.tool.function;
 
 import cn.iocoder.yudao.module.ai.util.AiUtils;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
-import cn.iocoder.yudao.framework.security.core.LoginUser;
-import cn.iocoder.yudao.framework.tenant.core.util.TenantUtils;
-import cn.iocoder.yudao.module.system.api.user.AdminUserApi;
-import cn.iocoder.yudao.module.system.api.user.dto.AdminUserRespDTO;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.security.core.LoginUser;
+import cn.cheers.x.framework.tenant.core.util.TenantUtils;
+import cn.cheers.x.system.api.user.AdminUserApi;
+import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;

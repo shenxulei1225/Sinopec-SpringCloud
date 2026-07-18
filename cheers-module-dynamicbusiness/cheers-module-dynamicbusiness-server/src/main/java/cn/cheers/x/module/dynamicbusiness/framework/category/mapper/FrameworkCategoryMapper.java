@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.framework.category.mapper;
 
 import cn.cheers.x.module.dynamicbusiness.framework.category.core.CategoryContract;
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

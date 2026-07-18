@@ -1,10 +1,10 @@
 package cn.iocoder.yudao.module.alarm.service.websocket;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.iocoder.yudao.framework.common.enums.UserTypeEnum;
+import cn.cheers.x.framework.common.enums.UserTypeEnum;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.websocket.AlarmWebSocketMessage;
 import cn.iocoder.yudao.module.alarm.enums.WebSocketMessageTypeConstants;
-import cn.iocoder.yudao.module.infra.api.websocket.WebSocketSenderApi;
+import cn.cheers.x.infra.api.websocket.WebSocketSenderApi;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;

@@ -1,0 +1,2 @@
+cn.cheers.x.framework.redis.config.YudaoRedisAutoConfiguration
+cn.cheers.x.framework.redis.config.YudaoCacheAutoConfiguration

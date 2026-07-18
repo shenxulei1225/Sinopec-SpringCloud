@@ -3,7 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.service.capability.system;
 import cn.cheers.x.module.dynamicbusiness.service.capability.projection.CapabilityBlockProjectionBuilder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.ServiceException;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

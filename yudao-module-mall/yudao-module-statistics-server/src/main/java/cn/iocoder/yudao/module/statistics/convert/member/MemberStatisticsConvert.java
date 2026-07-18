@@ -2,8 +2,8 @@ package cn.iocoder.yudao.module.statistics.convert.member;
 
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ObjUtil;
-import cn.iocoder.yudao.framework.common.util.collection.CollectionUtils;
-import cn.iocoder.yudao.framework.ip.core.Area;
+import cn.cheers.x.framework.common.util.collection.CollectionUtils;
+import cn.cheers.x.framework.ip.core.Area;
 import cn.iocoder.yudao.module.statistics.controller.admin.common.vo.DataComparisonRespVO;
 import cn.iocoder.yudao.module.statistics.controller.admin.member.vo.MemberAnalyseDataRespVO;
 import cn.iocoder.yudao.module.statistics.controller.admin.member.vo.MemberAnalyseRespVO;

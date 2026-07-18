@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.mes.service.pro.task;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.mes.controller.admin.pro.task.vo.MesProTaskIssuePageReqVO;
 import cn.iocoder.yudao.module.mes.controller.admin.pro.task.vo.MesProTaskIssueSaveReqVO;
 import cn.iocoder.yudao.module.mes.dal.dataobject.pro.task.MesProTaskIssueDO;

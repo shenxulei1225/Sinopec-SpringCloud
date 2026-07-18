@@ -1,12 +1,12 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.entity;
 
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.excel.core.util.ExcelUtils;
+import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.excel.core.util.ExcelUtils;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.*;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONException;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.enums.entity.EntityQueryScene;
 import cn.cheers.x.module.dynamicbusiness.enums.entity.EntityQueryResultDetail;
 import cn.cheers.x.module.dynamicbusiness.enums.entity.EntityQueryResultShape;
@@ -33,9 +33,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
-import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.*;
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import cn.cheers.x.framework.apilog.core.annotation.ApiAccessLog;
+import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.*;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
  * 管理后台 - 实体 Controller

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.bpm.convert.message;
 
-import cn.iocoder.yudao.module.system.api.sms.dto.send.SmsSendSingleToUserReqDTO;
+import cn.cheers.x.system.api.sms.dto.send.SmsSendSingleToUserReqDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;

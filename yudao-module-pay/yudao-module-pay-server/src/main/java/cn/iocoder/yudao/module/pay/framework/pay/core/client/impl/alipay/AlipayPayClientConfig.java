@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.alipay;
 
-import cn.iocoder.yudao.framework.common.util.validation.ValidationUtils;
+import cn.cheers.x.framework.common.util.validation.ValidationUtils;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.PayClientConfig;
 import lombok.Data;
 

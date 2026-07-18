@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.mes.dal.mysql.wm.productsales;
 
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.module.mes.dal.dataobject.wm.productsales.MesWmProductSalesLineDO;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.apache.ibatis.annotations.Mapper;
@@ -23,9 +23,9 @@ public interface MesWmProductSalesLineMapper extends BaseMapperX<MesWmProductSal
         delete(MesWmProductSalesLineDO::getSalesId, salesId);
     }
 
-    default cn.iocoder.yudao.framework.common.pojo.PageResult<MesWmProductSalesLineDO> selectPage(
+    default cn.cheers.x.framework.common.pojo.PageResult<MesWmProductSalesLineDO> selectPage(
             cn.iocoder.yudao.module.mes.controller.admin.wm.productsales.vo.line.MesWmProductSalesLinePageReqVO reqVO) {
-        return selectPage(reqVO, new cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX<MesWmProductSalesLineDO>()
+        return selectPage(reqVO, new cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX<MesWmProductSalesLineDO>()
                 .eqIfPresent(MesWmProductSalesLineDO::getSalesId, reqVO.getSalesId())
                 .inIfPresent(MesWmProductSalesLineDO::getSalesId, reqVO.getSalesIds())
                 .orderByDesc(MesWmProductSalesLineDO::getId));

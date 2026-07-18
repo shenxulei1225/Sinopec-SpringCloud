@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.trade.service.price.calculator;
 
 import cn.hutool.core.util.BooleanUtil;
-import cn.iocoder.yudao.framework.common.util.number.MoneyUtils;
+import cn.cheers.x.framework.common.util.number.MoneyUtils;
 import cn.iocoder.yudao.module.member.api.config.MemberConfigApi;
 import cn.iocoder.yudao.module.member.api.config.dto.MemberConfigRespDTO;
 import cn.iocoder.yudao.module.trade.service.price.bo.TradePriceCalculateReqBO;
@@ -14,7 +14,7 @@ import jakarta.annotation.Resource;
 import java.util.List;
 import java.util.Optional;
 
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.filterList;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.filterList;
 
 /**
  * 赠送积分的 {@link TradePriceCalculator} 实现类

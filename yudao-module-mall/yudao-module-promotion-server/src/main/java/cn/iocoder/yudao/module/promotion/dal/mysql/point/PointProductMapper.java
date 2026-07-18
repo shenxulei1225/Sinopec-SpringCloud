@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.promotion.dal.mysql.point;
 
 import cn.hutool.core.lang.Assert;
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.module.promotion.dal.dataobject.point.PointProductDO;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.apache.ibatis.annotations.Mapper;

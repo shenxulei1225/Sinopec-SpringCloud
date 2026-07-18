@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity.query.dto;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import cn.cheers.x.framework.common.pojo.PageParam;
 import cn.cheers.x.module.dynamicbusiness.service.entity.query.enums.LogicType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

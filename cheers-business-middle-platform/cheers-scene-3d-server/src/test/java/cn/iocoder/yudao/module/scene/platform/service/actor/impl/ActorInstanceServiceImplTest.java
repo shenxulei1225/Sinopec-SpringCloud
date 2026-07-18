@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.service.actor.impl;
 
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.actor.vo.ActorInstanceSpawnReqVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.actor.vo.ComponentTreeNodeVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.actor.vo.ComponentTreeVO;

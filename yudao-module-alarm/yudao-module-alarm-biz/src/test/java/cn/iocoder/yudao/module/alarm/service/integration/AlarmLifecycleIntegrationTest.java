@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.alarm.service.integration;
 
-import cn.iocoder.yudao.framework.test.core.ut.BaseDbUnitTest;
+import cn.cheers.x.framework.test.core.ut.BaseDbUnitTest;
 import cn.iocoder.yudao.module.alarm.config.AlarmTestConfiguration;
 import cn.iocoder.yudao.module.alarm.config.AlarmTestDataBuilder;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.alarm.*;
@@ -111,7 +111,7 @@ public class AlarmLifecycleIntegrationTest extends BaseDbUnitTest {
         
         // 验证审计日志（创建）
         List<AlarmAuditLogDO> createLogs = alarmAuditLogMapper.selectList(
-            new cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX<AlarmAuditLogDO>()
+            new cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX<AlarmAuditLogDO>()
                 .eq(AlarmAuditLogDO::getAlarmId, alarmId)
                 .eq(AlarmAuditLogDO::getOperationType, AlarmAuditOperationTypeEnum.CREATE.getType())
         );
@@ -129,7 +129,7 @@ public class AlarmLifecycleIntegrationTest extends BaseDbUnitTest {
         
         // 验证审计日志（确认）
         List<AlarmAuditLogDO> acknowledgeLogs = alarmAuditLogMapper.selectList(
-            new cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX<AlarmAuditLogDO>()
+            new cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX<AlarmAuditLogDO>()
                 .eq(AlarmAuditLogDO::getAlarmId, alarmId)
                 .eq(AlarmAuditLogDO::getOperationType, AlarmAuditOperationTypeEnum.ACKNOWLEDGE.getType())
         );
@@ -148,7 +148,7 @@ public class AlarmLifecycleIntegrationTest extends BaseDbUnitTest {
         
         // 验证审计日志（处理）
         List<AlarmAuditLogDO> handleLogs = alarmAuditLogMapper.selectList(
-            new cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX<AlarmAuditLogDO>()
+            new cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX<AlarmAuditLogDO>()
                 .eq(AlarmAuditLogDO::getAlarmId, alarmId)
                 .eq(AlarmAuditLogDO::getOperationType, AlarmAuditOperationTypeEnum.HANDLE.getType())
         );
@@ -169,7 +169,7 @@ public class AlarmLifecycleIntegrationTest extends BaseDbUnitTest {
         
         // 验证审计日志（关闭）
         List<AlarmAuditLogDO> closeLogs = alarmAuditLogMapper.selectList(
-            new cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX<AlarmAuditLogDO>()
+            new cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX<AlarmAuditLogDO>()
                 .eq(AlarmAuditLogDO::getAlarmId, alarmId)
                 .eq(AlarmAuditLogDO::getOperationType, AlarmAuditOperationTypeEnum.CLOSE.getType())
         );
@@ -177,7 +177,7 @@ public class AlarmLifecycleIntegrationTest extends BaseDbUnitTest {
         
         // ========== 验证完整审计日志链 ==========
         List<AlarmAuditLogDO> allLogs = alarmAuditLogMapper.selectList(
-            new cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX<AlarmAuditLogDO>()
+            new cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX<AlarmAuditLogDO>()
                 .eq(AlarmAuditLogDO::getAlarmId, alarmId)
                 .orderByAsc(AlarmAuditLogDO::getOperationTime)
         );

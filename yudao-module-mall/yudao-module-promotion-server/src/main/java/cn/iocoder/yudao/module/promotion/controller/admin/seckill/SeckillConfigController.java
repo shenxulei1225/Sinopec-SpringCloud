@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.promotion.controller.admin.seckill;
 
-import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.enums.CommonStatusEnum;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.promotion.controller.admin.seckill.vo.config.*;
 import cn.iocoder.yudao.module.promotion.convert.seckill.SeckillConfigConvert;
 import cn.iocoder.yudao.module.promotion.dal.dataobject.seckill.SeckillConfigDO;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 秒杀时段")
 @RestController

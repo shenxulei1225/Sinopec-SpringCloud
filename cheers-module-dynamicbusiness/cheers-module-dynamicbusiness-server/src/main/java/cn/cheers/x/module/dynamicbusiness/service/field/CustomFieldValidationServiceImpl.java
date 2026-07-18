@@ -2,7 +2,7 @@ package cn.cheers.x.module.dynamicbusiness.service.field;
 
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONUtil;
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;

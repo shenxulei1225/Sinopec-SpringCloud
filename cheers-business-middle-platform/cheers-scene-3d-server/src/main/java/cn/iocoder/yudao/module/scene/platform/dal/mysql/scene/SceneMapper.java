@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.scene.platform.dal.mysql.scene;
 
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
-import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.scene.vo.ScenePageReqVO;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.scene.SceneDO;
 import com.baomidou.mybatisplus.core.metadata.IPage;

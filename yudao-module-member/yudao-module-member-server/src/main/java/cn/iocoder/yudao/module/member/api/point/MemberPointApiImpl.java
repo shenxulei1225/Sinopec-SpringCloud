@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.member.api.point;
 
 import cn.hutool.core.lang.Assert;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.member.enums.point.MemberPointBizTypeEnum;
 import cn.iocoder.yudao.module.member.service.point.MemberPointRecordService;
 import org.springframework.validation.annotation.Validated;
@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.annotation.Resource;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 import static cn.iocoder.yudao.module.member.enums.ErrorCodeConstants.POINT_RECORD_BIZ_NOT_SUPPORT;
 
 /**

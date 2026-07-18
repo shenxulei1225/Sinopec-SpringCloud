@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 import jakarta.annotation.Resource;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.getSumValue;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.getSumValue;
 
 /**
  * 会员积分、等级的 {@link TradeOrderHandler} 实现类

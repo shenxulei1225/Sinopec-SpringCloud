@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.controller.admin.component;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.component.vo.StaticMeshComponentRespVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.component.vo.StaticMeshComponentSaveReqVO;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.component.StaticMeshComponentDO;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - Static Mesh 组件")
 @RestController

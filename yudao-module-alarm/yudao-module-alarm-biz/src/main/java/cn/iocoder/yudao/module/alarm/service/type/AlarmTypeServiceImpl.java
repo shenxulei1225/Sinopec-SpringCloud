@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.alarm.service.type;
 
-import cn.iocoder.yudao.framework.common.biz.system.category.CategoryCommonApi;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.biz.system.category.CategoryCommonApi;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.type.AlarmTypeCategoryVO;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.type.AlarmTypeEntityVO;
 import cn.iocoder.yudao.module.alarm.controller.admin.vo.type.AlarmTypeModelVO;

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.controller.admin.coordinate;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.coordinate.vo.CoordinateConvertReqVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.coordinate.vo.CoordinateConvertRespVO;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.coordinate.vo.CoordinatePreviewRespVO;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 坐标转换")
 @RestController

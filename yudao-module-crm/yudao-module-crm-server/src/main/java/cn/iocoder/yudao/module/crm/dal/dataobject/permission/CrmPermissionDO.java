@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.crm.dal.dataobject.permission;
 
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
 import cn.iocoder.yudao.module.crm.enums.common.CrmBizTypeEnum;
 import cn.iocoder.yudao.module.crm.enums.permission.CrmPermissionLevelEnum;
 import com.baomidou.mybatisplus.annotation.KeySequence;

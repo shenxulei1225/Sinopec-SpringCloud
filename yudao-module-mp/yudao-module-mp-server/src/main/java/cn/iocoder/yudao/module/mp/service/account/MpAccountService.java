@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.mp.service.account;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.mp.controller.admin.account.vo.MpAccountCreateReqVO;
 import cn.iocoder.yudao.module.mp.controller.admin.account.vo.MpAccountPageReqVO;
 import cn.iocoder.yudao.module.mp.controller.admin.account.vo.MpAccountUpdateReqVO;
@@ -9,7 +9,7 @@ import cn.iocoder.yudao.module.mp.dal.dataobject.account.MpAccountDO;
 import jakarta.validation.Valid;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.mp.enums.ErrorCodeConstants.ACCOUNT_NOT_EXISTS;
 
 /**

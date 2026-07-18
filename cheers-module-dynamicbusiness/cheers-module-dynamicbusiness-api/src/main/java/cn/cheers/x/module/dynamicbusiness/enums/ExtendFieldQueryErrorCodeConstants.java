@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.enums;
 
-import cn.iocoder.yudao.framework.common.exception.ErrorCode;
+import cn.cheers.x.framework.common.exception.ErrorCode;
 
 /**
  * 扩展字段查询服务错误码枚举类

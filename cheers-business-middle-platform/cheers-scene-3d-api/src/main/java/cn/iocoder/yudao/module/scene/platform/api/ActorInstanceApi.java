@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.api;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.scene.platform.api.dto.ActorInstanceRuntimeRespDTO;
 import cn.iocoder.yudao.module.scene.platform.api.dto.ActorInstanceSimpleRespDTO;
 import cn.iocoder.yudao.module.scene.platform.api.dto.ActorInstanceTransformUpdateReqDTO;

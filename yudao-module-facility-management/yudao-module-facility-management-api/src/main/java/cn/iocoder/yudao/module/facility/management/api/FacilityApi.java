@@ -2,8 +2,8 @@ package cn.iocoder.yudao.module.facility.management.api;
 
 import cn.iocoder.yudao.module.facility.management.api.dto.FacilityPageReqDTO;
 import cn.iocoder.yudao.module.facility.management.api.dto.FacilityRespDTO;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.facility.management.enums.ApiConstants;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;

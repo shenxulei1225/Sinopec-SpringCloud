@@ -1,6 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.model.core;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 
 import java.util.List;

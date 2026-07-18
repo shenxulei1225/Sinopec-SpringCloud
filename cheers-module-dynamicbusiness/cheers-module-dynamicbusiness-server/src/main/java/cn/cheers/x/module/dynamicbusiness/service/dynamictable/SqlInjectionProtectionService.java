@@ -36,7 +36,7 @@ public interface SqlInjectionProtectionService {
      * 验证表名并抛出异常
      * 
      * @param tableName 表名
-     * @throws cn.iocoder.yudao.framework.common.exception.ServiceException 如果表名不合法
+     * @throws cn.cheers.x.framework.common.exception.ServiceException 如果表名不合法
      */
     void validateTableName(String tableName);
 
@@ -89,7 +89,7 @@ public interface SqlInjectionProtectionService {
      * 
      * @param tableName 表名
      * @param columnName 列名
-     * @throws cn.iocoder.yudao.framework.common.exception.ServiceException 如果列名不合法
+     * @throws cn.cheers.x.framework.common.exception.ServiceException 如果列名不合法
      */
     void validateColumnName(String tableName, String columnName);
 
@@ -98,7 +98,7 @@ public interface SqlInjectionProtectionService {
      * 
      * @param tableName 表名
      * @param columnNames 列名列表
-     * @throws cn.iocoder.yudao.framework.common.exception.ServiceException 如果任一列名不合法
+     * @throws cn.cheers.x.framework.common.exception.ServiceException 如果任一列名不合法
      */
     void validateColumnNames(String tableName, List<String> columnNames);
 

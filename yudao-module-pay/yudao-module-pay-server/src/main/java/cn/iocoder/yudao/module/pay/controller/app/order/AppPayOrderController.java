@@ -2,8 +2,8 @@ package cn.iocoder.yudao.module.pay.controller.app.order;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjUtil;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.pay.controller.admin.order.vo.PayOrderRespVO;
 import cn.iocoder.yudao.module.pay.controller.admin.order.vo.PayOrderSubmitRespVO;
 import cn.iocoder.yudao.module.pay.controller.app.order.vo.AppPayOrderSubmitReqVO;
@@ -27,10 +27,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Objects;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
-import static cn.iocoder.yudao.framework.common.util.servlet.ServletUtils.getClientIP;
-import static cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserId;
-import static cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.util.servlet.ServletUtils.getClientIP;
+import static cn.cheers.x.framework.web.core.util.WebFrameworkUtils.getLoginUserId;
+import static cn.cheers.x.framework.web.core.util.WebFrameworkUtils.getLoginUserType;
 
 @Tag(name = "用户 APP - 支付订单")
 @RestController

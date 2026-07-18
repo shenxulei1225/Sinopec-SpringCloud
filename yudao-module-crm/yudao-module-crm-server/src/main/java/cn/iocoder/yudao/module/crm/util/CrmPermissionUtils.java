@@ -2,22 +2,22 @@ package cn.iocoder.yudao.module.crm.util;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.extra.spring.SpringUtil;
-import cn.iocoder.yudao.framework.common.biz.system.permission.PermissionCommonApi;
+import cn.cheers.x.framework.common.biz.system.permission.PermissionCommonApi;
 import cn.iocoder.yudao.module.crm.dal.dataobject.permission.CrmPermissionDO;
 import cn.iocoder.yudao.module.crm.enums.common.CrmBizTypeEnum;
 import cn.iocoder.yudao.module.crm.enums.common.CrmSceneTypeEnum;
 import cn.iocoder.yudao.module.crm.enums.permission.CrmPermissionLevelEnum;
-import cn.iocoder.yudao.module.system.api.user.AdminUserApi;
-import cn.iocoder.yudao.module.system.api.user.dto.AdminUserRespDTO;
-import cn.iocoder.yudao.module.system.enums.permission.RoleCodeEnum;
+import cn.cheers.x.system.api.user.AdminUserApi;
+import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
+import cn.cheers.x.system.enums.permission.RoleCodeEnum;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.github.yulichang.autoconfigure.MybatisPlusJoinProperties;
 import com.github.yulichang.wrapper.MPJLambdaWrapper;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertSet;
-import static cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertSet;
+import static cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
 
 /**
  * 数据权限工具类

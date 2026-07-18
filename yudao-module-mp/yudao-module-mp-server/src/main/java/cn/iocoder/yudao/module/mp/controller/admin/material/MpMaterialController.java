@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.mp.controller.admin.material;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.mp.controller.admin.material.vo.*;
 import cn.iocoder.yudao.module.mp.convert.material.MpMaterialConvert;
 import cn.iocoder.yudao.module.mp.dal.dataobject.material.MpMaterialDO;
@@ -17,7 +17,7 @@ import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import java.io.IOException;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 公众号素材")
 @RestController

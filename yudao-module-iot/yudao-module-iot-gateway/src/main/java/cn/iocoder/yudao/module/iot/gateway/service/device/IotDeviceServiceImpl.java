@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.iot.gateway.service.device;
 
 import cn.hutool.core.lang.Assert;
-import cn.iocoder.yudao.framework.common.core.KeyValue;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.core.KeyValue;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.iot.core.biz.IotDeviceCommonApi;
 import cn.iocoder.yudao.module.iot.core.biz.dto.IotDeviceGetReqDTO;
 import cn.iocoder.yudao.module.iot.core.biz.dto.IotDeviceRespDTO;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 
-import static cn.iocoder.yudao.framework.common.util.cache.CacheUtils.buildAsyncReloadingCache;
+import static cn.cheers.x.framework.common.util.cache.CacheUtils.buildAsyncReloadingCache;
 
 /**
  * IoT 设备信息 Service 实现类

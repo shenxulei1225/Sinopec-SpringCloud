@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.dal.mysql.unit;
 
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
-import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.unit.UnitDO;
 import org.apache.ibatis.annotations.Mapper;
 

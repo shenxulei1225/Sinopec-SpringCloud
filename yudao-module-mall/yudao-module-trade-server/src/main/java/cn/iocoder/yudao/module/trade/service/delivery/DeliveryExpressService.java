@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.trade.service.delivery;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.trade.controller.admin.delivery.vo.express.DeliveryExpressCreateReqVO;
 import cn.iocoder.yudao.module.trade.controller.admin.delivery.vo.express.DeliveryExpressExportReqVO;
 import cn.iocoder.yudao.module.trade.controller.admin.delivery.vo.express.DeliveryExpressPageReqVO;

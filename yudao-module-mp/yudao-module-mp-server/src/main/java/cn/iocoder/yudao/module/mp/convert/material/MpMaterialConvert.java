@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.mp.convert.material;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.mp.controller.admin.material.vo.MpMaterialRespVO;
 import cn.iocoder.yudao.module.mp.controller.admin.material.vo.MpMaterialUploadRespVO;
 import cn.iocoder.yudao.module.mp.dal.dataobject.account.MpAccountDO;

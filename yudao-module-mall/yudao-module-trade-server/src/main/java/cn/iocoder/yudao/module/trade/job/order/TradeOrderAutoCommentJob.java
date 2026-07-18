@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.trade.job.order;
 
-import cn.iocoder.yudao.framework.tenant.core.job.TenantJob;
+import cn.cheers.x.framework.tenant.core.job.TenantJob;
 import cn.iocoder.yudao.module.trade.service.order.TradeOrderUpdateService;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import org.springframework.stereotype.Component;

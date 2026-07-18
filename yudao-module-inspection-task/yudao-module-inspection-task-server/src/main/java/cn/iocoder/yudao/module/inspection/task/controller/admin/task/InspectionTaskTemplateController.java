@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.inspection.task.controller.admin.task;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.inspection.task.controller.admin.vo.template.InspectionTaskTemplateCreateReqVO;
 import cn.iocoder.yudao.module.inspection.task.controller.admin.vo.template.InspectionTaskTemplateSaveFromTaskReqVO;
 import cn.iocoder.yudao.module.inspection.task.controller.admin.vo.template.InspectionTaskTemplateUpdateReqVO;
@@ -13,7 +13,7 @@ import jakarta.validation.Valid;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 巡检任务模板")
 @RestController

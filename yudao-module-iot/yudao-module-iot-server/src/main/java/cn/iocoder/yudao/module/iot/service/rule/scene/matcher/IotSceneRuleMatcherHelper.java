@@ -3,9 +3,9 @@ package cn.iocoder.yudao.module.iot.service.rule.scene.matcher;
 import cn.hutool.core.text.CharPool;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.common.util.number.NumberUtils;
-import cn.iocoder.yudao.framework.common.util.object.ObjectUtils;
-import cn.iocoder.yudao.framework.common.util.spring.SpringExpressionUtils;
+import cn.cheers.x.framework.common.util.number.NumberUtils;
+import cn.cheers.x.framework.common.util.object.ObjectUtils;
+import cn.cheers.x.framework.common.util.spring.SpringExpressionUtils;
 import cn.iocoder.yudao.module.iot.core.mq.message.IotDeviceMessage;
 import cn.iocoder.yudao.module.iot.dal.dataobject.rule.IotSceneRuleDO;
 import cn.iocoder.yudao.module.iot.enums.rule.IotSceneRuleConditionOperatorEnum;
@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertList;
 
 /**
  * IoT 场景规则匹配器工具类：提供通用的条件评估逻辑和工具方法，供触发器和条件匹配器使用

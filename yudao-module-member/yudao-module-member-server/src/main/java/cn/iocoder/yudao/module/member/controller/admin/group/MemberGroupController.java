@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.member.controller.admin.group;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.member.controller.admin.group.vo.*;
 import cn.iocoder.yudao.module.member.convert.group.MemberGroupConvert;
 import cn.iocoder.yudao.module.member.dal.dataobject.group.MemberGroupDO;
@@ -17,7 +17,7 @@ import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 
 @Tag(name = "管理后台 - 用户分组")

@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.dal.mysql.component;
 
-import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.component.MeshComponentDO;
 import org.apache.ibatis.annotations.Mapper;
 

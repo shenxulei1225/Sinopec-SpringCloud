@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.mes.controller.admin.md.vendor.vo;
 
 import cn.idev.excel.annotation.ExcelProperty;
-import cn.iocoder.yudao.framework.excel.core.annotations.DictFormat;
-import cn.iocoder.yudao.framework.excel.core.convert.DictConvert;
+import cn.cheers.x.framework.excel.core.annotations.DictFormat;
+import cn.cheers.x.framework.excel.core.convert.DictConvert;
 import cn.iocoder.yudao.module.mes.enums.DictTypeConstants;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -71,7 +71,7 @@ public class MesMdVendorImportExcelVO {
     private String creditCode;
 
     @ExcelProperty(value = "状态", converter = DictConvert.class)
-    @DictFormat(cn.iocoder.yudao.module.system.enums.DictTypeConstants.COMMON_STATUS)
+    @DictFormat(cn.cheers.x.system.enums.DictTypeConstants.COMMON_STATUS)
     private Integer status;
 
 }

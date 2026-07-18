@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.ai.dal.dataobject.model;
 
-import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
 import cn.iocoder.yudao.module.ai.tool.function.DirectoryListToolFunction;
 import cn.iocoder.yudao.module.ai.tool.function.WeatherQueryToolFunction;
 import com.baomidou.mybatisplus.annotation.KeySequence;
@@ -41,7 +41,7 @@ public class AiToolDO extends BaseDO {
     /**
      * 状态
      *
-     * 枚举 {@link cn.iocoder.yudao.framework.common.enums.CommonStatusEnum}
+     * 枚举 {@link cn.cheers.x.framework.common.enums.CommonStatusEnum}
      */
     private Integer status;
 

@@ -1,6 +1,6 @@
 package cn.cheers.x.module.platformresource.controller.admin.view;
 
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.platformresource.controller.admin.view.vo.*;
 import cn.cheers.x.module.platformresource.service.view.ViewConfigService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 视图配置")
 @RestController

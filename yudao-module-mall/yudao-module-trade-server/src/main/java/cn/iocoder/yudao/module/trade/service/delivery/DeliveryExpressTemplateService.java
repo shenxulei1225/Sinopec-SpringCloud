@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.trade.service.delivery;
 
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.trade.controller.admin.delivery.vo.expresstemplate.DeliveryExpressTemplateCreateReqVO;
 import cn.iocoder.yudao.module.trade.controller.admin.delivery.vo.expresstemplate.DeliveryExpressTemplateDetailRespVO;
 import cn.iocoder.yudao.module.trade.controller.admin.delivery.vo.expresstemplate.DeliveryExpressTemplatePageReqVO;
@@ -76,7 +76,7 @@ public interface DeliveryExpressTemplateService {
     /**
      * 校验快递运费模板
      *
-     * 如果校验不通过，抛出 {@link cn.iocoder.yudao.framework.common.exception.ServiceException} 异常
+     * 如果校验不通过，抛出 {@link cn.cheers.x.framework.common.exception.ServiceException} 异常
      *
      * @param templateId 模板编号
      * @return 快递运费模板

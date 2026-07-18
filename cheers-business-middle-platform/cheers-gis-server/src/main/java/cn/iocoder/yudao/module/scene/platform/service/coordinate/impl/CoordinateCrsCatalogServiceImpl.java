@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.scene.platform.service.coordinate.impl;
 
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.scene.platform.controller.admin.coordinate.vo.CoordinateCrsCatalogRespVO;
 import cn.iocoder.yudao.module.scene.platform.dal.dataobject.coordinate.CoordinateCrsCatalogDO;
 import cn.iocoder.yudao.module.scene.platform.dal.mysql.coordinate.CoordinateCrsCatalogMapper;

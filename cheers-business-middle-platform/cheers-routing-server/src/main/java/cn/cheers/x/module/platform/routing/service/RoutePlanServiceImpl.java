@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_MOBILITY_PROFILE_NOT_FOUND;
 import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_NETWORK_NOT_FOUND;
 import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_REQUEST_INVALID;
-import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 
 @Service
 public class RoutePlanServiceImpl implements RoutePlanService {

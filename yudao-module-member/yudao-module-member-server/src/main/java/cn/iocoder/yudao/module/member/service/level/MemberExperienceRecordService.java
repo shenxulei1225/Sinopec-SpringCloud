@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.member.service.level;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
-import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.pojo.PageParam;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.member.controller.admin.level.vo.experience.MemberExperienceRecordPageReqVO;
 import cn.iocoder.yudao.module.member.dal.dataobject.level.MemberExperienceRecordDO;
 import cn.iocoder.yudao.module.member.enums.MemberExperienceBizTypeEnum;

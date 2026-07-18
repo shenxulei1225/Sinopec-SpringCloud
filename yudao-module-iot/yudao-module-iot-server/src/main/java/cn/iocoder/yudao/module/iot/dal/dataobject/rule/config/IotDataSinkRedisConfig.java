@@ -1,6 +1,6 @@
 package cn.iocoder.yudao.module.iot.dal.dataobject.rule.config;
 
-import cn.iocoder.yudao.framework.common.validation.InEnum;
+import cn.cheers.x.framework.common.validation.InEnum;
 import cn.iocoder.yudao.module.iot.enums.rule.IotRedisDataStructureEnum;
 import lombok.Data;
 

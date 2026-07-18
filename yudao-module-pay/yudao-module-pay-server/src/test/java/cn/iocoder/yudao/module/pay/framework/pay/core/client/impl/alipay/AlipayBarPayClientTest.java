@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.alipay;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
-import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.iocoder.yudao.module.pay.enums.order.PayOrderStatusEnum;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.dto.order.PayOrderRespDTO;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.dto.order.PayOrderUnifiedReqDTO;
@@ -22,7 +22,7 @@ import java.util.Map;
 
 import static cn.iocoder.yudao.module.pay.enums.order.PayOrderStatusEnum.CLOSED;
 import static cn.iocoder.yudao.module.pay.enums.order.PayOrderStatusEnum.WAITING;
-import static cn.iocoder.yudao.framework.test.core.util.RandomUtils.*;
+import static cn.cheers.x.framework.test.core.util.RandomUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.when;
