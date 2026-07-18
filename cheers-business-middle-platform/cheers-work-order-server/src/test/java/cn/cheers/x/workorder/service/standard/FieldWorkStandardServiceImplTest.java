@@ -91,6 +91,23 @@ class FieldWorkStandardServiceImplTest {
     }
 
     @Test
+    @DisplayName("publish：已发布源记录不可再次发布")
+    void publishStandard_fromPublished_throws() {
+        FieldWorkStandardDO published = FieldWorkStandardDO.builder()
+                .id(10L)
+                .code("pump-monthly")
+                .name("离心泵月检")
+                .scope("inspection")
+                .versionNo(2)
+                .stepsJson("[{\"code\":\"s1\",\"title\":\"外观检查\",\"required\":true,\"controlType\":\"checkbox\"}]")
+                .status(FieldWorkStandardStatusEnum.PUBLISHED.getStatus())
+                .build();
+        when(fieldWorkStandardMapper.selectById(10L)).thenReturn(published);
+
+        assertThrows(ServiceException.class, () -> fieldWorkStandardService.publishStandard(10L));
+    }
+
+    @Test
     @DisplayName("publish：源记录不存在时抛错")
     void publishStandard_notExists() {
         when(fieldWorkStandardMapper.selectById(99L)).thenReturn(null);

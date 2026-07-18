@@ -13,5 +13,6 @@ public interface ErrorCodeConstants {
     ErrorCode FIELD_WORK_STANDARD_NOT_EXISTS = new ErrorCode(1_021_000_000, "现场作业标准不存在");
     ErrorCode FIELD_WORK_STANDARD_PUBLISHED_IMMUTABLE = new ErrorCode(1_021_000_001, "已发布的现场作业标准不可修改");
     ErrorCode FIELD_WORK_STANDARD_STEPS_EMPTY = new ErrorCode(1_021_000_002, "现场作业标准步骤不能为空");
+    ErrorCode FIELD_WORK_STANDARD_PUBLISH_NOT_DRAFT = new ErrorCode(1_021_000_003, "仅草稿状态的现场作业标准可发布");
 
 }

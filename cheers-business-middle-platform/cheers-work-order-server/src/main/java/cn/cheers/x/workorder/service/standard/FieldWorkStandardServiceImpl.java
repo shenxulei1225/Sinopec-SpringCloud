@@ -23,6 +23,7 @@ import java.util.List;
 
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.cheers.x.workorder.enums.ErrorCodeConstants.FIELD_WORK_STANDARD_NOT_EXISTS;
+import static cn.cheers.x.workorder.enums.ErrorCodeConstants.FIELD_WORK_STANDARD_PUBLISH_NOT_DRAFT;
 import static cn.cheers.x.workorder.enums.ErrorCodeConstants.FIELD_WORK_STANDARD_PUBLISHED_IMMUTABLE;
 import static cn.cheers.x.workorder.enums.ErrorCodeConstants.FIELD_WORK_STANDARD_STEPS_EMPTY;
 
@@ -93,6 +94,9 @@ public class FieldWorkStandardServiceImpl implements FieldWorkStandardService {
     @Transactional(rollbackFor = Exception.class)
     public Long publishStandard(Long id) {
         FieldWorkStandardDO draft = validateExists(id);
+        if (!FieldWorkStandardStatusEnum.DRAFT.getStatus().equals(draft.getStatus())) {
+            throw exception(FIELD_WORK_STANDARD_PUBLISH_NOT_DRAFT);
+        }
         List<FieldWorkStandardStepVO> steps = parseSteps(draft.getStepsJson());
         validateStepsNotEmpty(steps);
 
