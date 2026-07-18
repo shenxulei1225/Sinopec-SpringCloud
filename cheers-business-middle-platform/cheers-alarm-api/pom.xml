@@ -4,8 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>cn.cheers.x</groupId>
-        <artifactId>cheers-alarm</artifactId>
+        <artifactId>cheers-business-middle-platform</artifactId>
         <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>cheers-alarm-api</artifactId>
@@ -13,8 +14,7 @@
 
     <name>${project.artifactId}</name>
     <description>
-        alarm 模块 API，暴露给其它模块调用。
-        包含：告警相关的枚举常量、DTO、API接口定义
+        告警标准服务 API（业务中台）：枚举、DTO、远程契约
     </description>
 
     <dependencies>

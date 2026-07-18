@@ -4,17 +4,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>cn.cheers.x</groupId>
-        <artifactId>cheers-alarm</artifactId>
+        <artifactId>cheers-business-middle-platform</artifactId>
         <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>cheers-alarm-biz</artifactId>
+    <artifactId>cheers-alarm-server</artifactId>
     <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
     <description>
-        alarm 模块业务实现，提供告警管理的核心功能。
-        包括：告警触发、告警处理、联动控制、告警规则配置、告警统计等
+        告警标准服务实现（业务中台）：记录生命周期、规则匹配、联动执行
     </description>
 
     <dependencies>

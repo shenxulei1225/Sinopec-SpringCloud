@@ -33,13 +33,15 @@
         <module>cheers-scene-3d-server</module>
         <module>cheers-gis-api</module>
         <module>cheers-gis-server</module>
+        <module>cheers-alarm-api</module>
+        <module>cheers-alarm-server</module>
     </modules>
     <artifactId>cheers-business-middle-platform</artifactId>
     <packaging>pom</packaging>
 
     <name>${project.artifactId}</name>
     <description>
-        业务中台（business-middle-platform）父模块：过程引擎、路径、三维 scene-3d、GIS 等标准服务。
+        业务中台（business-middle-platform）父模块：过程引擎、路径、三维 scene-3d、GIS、告警等标准服务。
     </description>
 
 </project>

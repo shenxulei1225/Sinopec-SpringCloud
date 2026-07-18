@@ -25,7 +25,6 @@
         <module>cheers-crm</module>
         <module>cheers-erp</module>
         <module>cheers-iot</module>
-        <module>cheers-alarm</module>
         <module>cheers-mes</module>
         <module>cheers-ai</module>
         <module>cheers-sinopec-device</module>

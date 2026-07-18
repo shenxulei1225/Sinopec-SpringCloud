@@ -18,10 +18,11 @@
 #   ./start-microservices.sh bmp-path          # 仅路径规划（2）
 #   ./start-microservices.sh bmp-scene-3d      # 三维 scene-3d
 #   ./start-microservices.sh bmp-gis           # GIS
+#   ./start-microservices.sh bmp-alarm         # 告警标准服务
 #   ./start-microservices.sh bmp-station-dev   # path + scene-3d
 #   ./start-microservices.sh twin-dev          # 孪生联调：dynamic + scene-3d + twin
 #   ./start-microservices.sh stop-bmp          # 停止 bmp（process+path）
-#   ./start-microservices.sh stop-bmp-process|stop-bmp-path|stop-bmp-scene-3d|stop-bmp-gis
+#   ./start-microservices.sh stop-bmp-process|stop-bmp-path|stop-bmp-scene-3d|stop-bmp-gis|stop-bmp-alarm
 #   ./start-microservices.sh stop-twin-dev     # 停止 twin-dev
 #   ./start-microservices.sh platform-all      # [弃用] 等同 bmp
 #
@@ -137,7 +138,7 @@ get_service_path() {
         erp) echo "cheers-erp/cheers-erp-server" ;;
         ai) echo "cheers-ai/cheers-ai-server" ;;
         iot) echo "cheers-iot/cheers-iot-server" ;;
-        alarm) echo "cheers-alarm/cheers-alarm-biz" ;;
+        alarm|bmp-alarm) echo "cheers-business-middle-platform/cheers-alarm-server" ;;
         scene|scene-3d) echo "cheers-business-middle-platform/cheers-scene-3d-server" ;;
         gis|bmp-gis) echo "cheers-business-middle-platform/cheers-gis-server" ;;
         twin|cheers-twin) echo "cheers-twin/cheers-twin-server" ;;
@@ -174,7 +175,7 @@ get_service_port() {
         erp) echo "58088" ;;
         ai) echo "58090" ;;
         iot) echo "58091" ;;
-        alarm) echo "58097" ;;
+        alarm|bmp-alarm) echo "58097" ;;
         scene|scene-3d) echo "58093" ;;
         gis|bmp-gis) echo "58109" ;;
         twin|cheers-twin) echo "58094" ;;
@@ -561,10 +562,11 @@ show_services() {
     echo "  ./start-microservices.sh bmp-path              # 仅路径规划（2）"
     echo "  ./start-microservices.sh bmp-scene-3d          # 三维（scene-3d）"
     echo "  ./start-microservices.sh bmp-gis               # GIS（坐标/CRS）"
+    echo "  ./start-microservices.sh bmp-alarm             # 告警标准服务"
     echo "  ./start-microservices.sh bmp-station-dev       # path + scene-3d"
     echo "  ./start-microservices.sh twin-dev              # 孪生联调：dynamic + scene-3d + twin"
     echo "  ./start-microservices.sh stop-bmp              # 停止 bmp（process+path）"
-    echo "  ./start-microservices.sh stop-bmp-process|stop-bmp-path|stop-bmp-scene-3d|stop-bmp-gis"
+    echo "  ./start-microservices.sh stop-bmp-process|stop-bmp-path|stop-bmp-scene-3d|stop-bmp-gis|stop-bmp-alarm"
     echo "  ./start-microservices.sh stop-twin-dev         # 停止 twin-dev"
     echo "  ./start-microservices.sh platform-all           # [弃用] → bmp"
     echo "  ./start-microservices.sh status             # 查看服务状态"
@@ -793,6 +795,7 @@ BMP_PATH_SERVICES=(platform-topology platform-routing)
 BMP_CORE_SERVICES=("${BMP_PROCESS_SERVICES[@]}" "${BMP_PATH_SERVICES[@]}")
 BMP_SCENE_3D_SERVICES=(scene-3d)
 BMP_GIS_SERVICES=(gis)
+BMP_ALARM_SERVICES=(alarm)
 # 孪生整合层联调（不入 bmp）：设施实体 + 三维 + Twin 映射
 TWIN_DEV_SERVICES=(dynamic scene-3d twin)
 
@@ -881,6 +884,17 @@ main() {
         "stop-bmp-gis")
             echo -e "${BLUE}🛑 停止 bmp-gis${NC}"
             stop_suite_services "${BMP_GIS_SERVICES[@]}"
+            ;;
+        "bmp-alarm")
+            check_nacos
+            check_redis
+            echo -e "${BLUE}🚀 业务中台 · 告警标准服务 (bmp-alarm)${NC}"
+            echo ""
+            start_suite_services "$show_logs" "${BMP_ALARM_SERVICES[@]}"
+            ;;
+        "stop-bmp-alarm")
+            echo -e "${BLUE}🛑 停止 bmp-alarm${NC}"
+            stop_suite_services "${BMP_ALARM_SERVICES[@]}"
             ;;
         "bmp-scene-3d")
             check_nacos
