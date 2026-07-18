@@ -96,6 +96,9 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         if (entryKind.isScoped()) {
             return createScopedEntityType(reqVO);
         }
+        if (entryKind.isCategory()) {
+            return createCategoryEntityType(reqVO);
+        }
         return createNativeEntityType(reqVO);
     }
 
@@ -136,10 +139,10 @@ public class EntityTypeServiceImpl implements EntityTypeService {
 
     private Long createScopedEntityType(EntityTypeCreateReqVO reqVO) {
         if (!StringUtils.hasText(reqVO.getBaseEntityTypeCode())) {
-            throw new ServiceException(400, "SCOPED 数据类型必须指定基础数据类型编码");
+            throw new ServiceException(400, "分域数据必须指定基础数据类型编码");
         }
         if (!StringUtils.hasText(reqVO.getDataScope())) {
-            throw new ServiceException(400, "SCOPED 数据类型必须指定业务域标识");
+            throw new ServiceException(400, "分域数据必须指定业务域标识");
         }
         if (entityTypeMapper.existsByCode(reqVO.getCode())) {
             throw new ServiceException(400, "业务类型编码已存在");
@@ -147,13 +150,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
 
         String baseCode = reqVO.getBaseEntityTypeCode().trim();
         String dataScope = EntityTypeScopeContext.normalizeScope(reqVO.getDataScope());
-        EntityTypeDO baseType = entityTypeMapper.selectByCode(baseCode);
-        if (baseType == null) {
-            throw new ServiceException(404, "基础数据类型不存在：" + baseCode);
-        }
-        if (EntityTypeEntryKindEnum.fromCode(baseType.getEntryKind()).isScoped()) {
-            throw new ServiceException(400, "SCOPED 入口不能基于另一个 SCOPED 入口创建");
-        }
+        EntityTypeDO baseType = requireNativeBaseEntityType(baseCode, "分域数据");
         if (existsScopedEntry(baseCode, dataScope, null)) {
             throw new ServiceException(400, "该基础类型下业务域已存在：" + dataScope);
         }
@@ -165,16 +162,59 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         entityType.setEntryKind(EntityTypeDO.ENTRY_KIND_SCOPED);
         entityType.setBaseEntityTypeCode(baseCode);
         entityType.setDataScope(dataScope);
-        entityType.setStorageType(baseType.getStorageType());
-        entityType.setDedicatedTableName(baseType.getDedicatedTableName());
-        entityType.setPhysicalColumnMapping(baseType.getPhysicalColumnMapping());
-        entityType.setEnableRuleEngine(baseType.getEnableRuleEngine());
+        inheritStorageFromBase(entityType, baseType);
         ensureEntityTypeGroupRegistered(entityType.getGroupName());
         entityTypeMapper.insert(entityType);
 
         entityTypeCategoryBootstrapService.ensureForEntityTypeCode(entityType.getCode());
 
         return entityType.getId();
+    }
+
+    private Long createCategoryEntityType(EntityTypeCreateReqVO reqVO) {
+        if (!StringUtils.hasText(reqVO.getBaseEntityTypeCode())) {
+            throw new ServiceException(400, "分类数据必须指定基础数据类型编码");
+        }
+        if (entityTypeMapper.existsByCode(reqVO.getCode())) {
+            throw new ServiceException(400, "业务类型编码已存在");
+        }
+
+        String baseCode = reqVO.getBaseEntityTypeCode().trim();
+        EntityTypeDO baseType = requireNativeBaseEntityType(baseCode, "分类数据");
+
+        EntityTypeDO entityType = new EntityTypeDO();
+        copyBaseFields(entityType, reqVO);
+        entityType.setTypeLevel(EntityTypeDO.TYPE_LEVEL_USER);
+        entityType.setParentId(null);
+        entityType.setEntryKind(EntityTypeDO.ENTRY_KIND_CATEGORY);
+        entityType.setBaseEntityTypeCode(baseCode);
+        entityType.setDataScope(null);
+        inheritStorageFromBase(entityType, baseType);
+        ensureEntityTypeGroupRegistered(entityType.getGroupName());
+        entityTypeMapper.insert(entityType);
+
+        entityTypeCategoryBootstrapService.ensureForEntityTypeCode(entityType.getCode());
+
+        return entityType.getId();
+    }
+
+    private EntityTypeDO requireNativeBaseEntityType(String baseCode, String productKindLabel) {
+        EntityTypeDO baseType = entityTypeMapper.selectByCode(baseCode);
+        if (baseType == null) {
+            throw new ServiceException(404, "基础数据类型不存在：" + baseCode);
+        }
+        EntityTypeEntryKindEnum baseKind = EntityTypeEntryKindEnum.fromCode(baseType.getEntryKind());
+        if (baseKind.reusesBaseStorage()) {
+            throw new ServiceException(400, productKindLabel + "不能基于分域数据或分类数据创建，请选择独立数据");
+        }
+        return baseType;
+    }
+
+    private void inheritStorageFromBase(EntityTypeDO entityType, EntityTypeDO baseType) {
+        entityType.setStorageType(baseType.getStorageType());
+        entityType.setDedicatedTableName(baseType.getDedicatedTableName());
+        entityType.setPhysicalColumnMapping(baseType.getPhysicalColumnMapping());
+        entityType.setEnableRuleEngine(baseType.getEnableRuleEngine());
     }
 
     private boolean existsScopedEntry(String baseEntityTypeCode, String dataScope, Long excludeId) {

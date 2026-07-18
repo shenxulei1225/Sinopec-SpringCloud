@@ -62,15 +62,20 @@ public class EntityTypeCategoryBootstrapService {
     }
 
     private void ensureCategoryType(EntityTypeDO entityType) {
-        if (EntityTypeEntryKindEnum.fromCode(entityType.getEntryKind()).isScoped()) {
+        EntityTypeEntryKindEnum kind = EntityTypeEntryKindEnum.fromCode(entityType.getEntryKind());
+        // 分类数据：不自动建分类种类 / 域分组；由本入口「选用分类」配置。
+        if (kind.isCategory()) {
+            return;
+        }
+        if (kind.isScoped()) {
             String baseCode = entityType.getBaseEntityTypeCode();
             if (!StringUtils.hasText(baseCode)) {
-                log.warn("SCOPED 数据类型 {} 缺少基础数据类型编码，跳过分类 bootstrap", entityType.getCode());
+                log.warn("分域数据 {} 缺少基础数据类型编码，跳过分类 bootstrap", entityType.getCode());
                 return;
             }
             EntityTypeDO baseType = entityTypeMapper.selectByCode(baseCode.trim());
             if (baseType == null) {
-                log.warn("SCOPED 数据类型 {} 的基础类型 {} 不存在，跳过分类 bootstrap",
+                log.warn("分域数据 {} 的基础类型 {} 不存在，跳过分类 bootstrap",
                         entityType.getCode(), baseCode);
                 return;
             }

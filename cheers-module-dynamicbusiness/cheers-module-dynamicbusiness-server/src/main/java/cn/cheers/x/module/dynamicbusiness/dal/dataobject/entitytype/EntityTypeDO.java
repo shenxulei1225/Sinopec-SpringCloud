@@ -61,19 +61,19 @@ public class EntityTypeDO extends TenantBaseDO {
     private String groupName;
 
     /**
-     * 入口类型：NATIVE=独立数据类型；SCOPED=已有类型的业务域入口
+     * 入口类型：NATIVE=独立数据；SCOPED=分域数据；CATEGORY=分类数据
      */
     @TableField("entry_kind")
     private String entryKind;
 
     /**
-     * SCOPED 时指向的存储数据类型编码（如 task）
+     * 分域/分类数据时指向的存储数据类型编码（如 task、equipment）
      */
     @TableField("base_entity_type_code")
     private String baseEntityTypeCode;
 
     /**
-     * SCOPED 时的业务域标识（如 巡检）
+     * 分域数据时的业务域标识（如 巡检）；分类数据为空
      */
     @TableField("data_scope")
     private String dataScope;
@@ -123,6 +123,7 @@ public class EntityTypeDO extends TenantBaseDO {
 
     public static final String ENTRY_KIND_NATIVE = "NATIVE";
     public static final String ENTRY_KIND_SCOPED = "SCOPED";
+    public static final String ENTRY_KIND_CATEGORY = "CATEGORY";
 
     /**
      * 可用的关联字段定义(JSON格式)

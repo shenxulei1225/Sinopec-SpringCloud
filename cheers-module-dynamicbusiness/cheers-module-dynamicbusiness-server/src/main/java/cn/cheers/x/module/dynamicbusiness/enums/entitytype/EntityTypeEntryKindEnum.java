@@ -5,13 +5,16 @@ import lombok.Getter;
 
 /**
  * 数据类型侧边栏入口类型。
+ * <p>
+ * 产品文案：NATIVE=独立数据，SCOPED=分域数据，CATEGORY=分类数据。
  */
 @Getter
 @AllArgsConstructor
 public enum EntityTypeEntryKindEnum {
 
     NATIVE("NATIVE"),
-    SCOPED("SCOPED");
+    SCOPED("SCOPED"),
+    CATEGORY("CATEGORY");
 
     private final String code;
 
@@ -29,5 +32,14 @@ public enum EntityTypeEntryKindEnum {
 
     public boolean isScoped() {
         return this == SCOPED;
+    }
+
+    public boolean isCategory() {
+        return this == CATEGORY;
+    }
+
+    /** 分域数据与分类数据均复用基础类型的存储表。 */
+    public boolean reusesBaseStorage() {
+        return this == SCOPED || this == CATEGORY;
     }
 }

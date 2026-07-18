@@ -17,18 +17,21 @@ public class EntityTypeScopeContext {
     String storageEntityTypeCode;
     String dataScope;
     boolean scoped;
+    /** 分类数据入口：复用基础类型存储，不按业务域过滤。 */
+    boolean categoryLinked;
 
     public static EntityTypeScopeContext from(EntityTypeDO entityType) {
         if (entityType == null) {
             return null;
         }
         EntityTypeEntryKindEnum kind = EntityTypeEntryKindEnum.fromCode(entityType.getEntryKind());
-        if (kind.isScoped() && StringUtils.hasText(entityType.getBaseEntityTypeCode())) {
+        if (kind.reusesBaseStorage() && StringUtils.hasText(entityType.getBaseEntityTypeCode())) {
             return EntityTypeScopeContext.builder()
                     .registryCode(entityType.getCode())
                     .storageEntityTypeCode(entityType.getBaseEntityTypeCode().trim())
-                    .dataScope(normalizeScope(entityType.getDataScope()))
-                    .scoped(true)
+                    .dataScope(kind.isScoped() ? normalizeScope(entityType.getDataScope()) : null)
+                    .scoped(kind.isScoped())
+                    .categoryLinked(kind.isCategory())
                     .build();
         }
         return EntityTypeScopeContext.builder()
@@ -36,6 +39,7 @@ public class EntityTypeScopeContext {
                 .storageEntityTypeCode(entityType.getCode())
                 .dataScope(null)
                 .scoped(false)
+                .categoryLinked(false)
                 .build();
     }
 
