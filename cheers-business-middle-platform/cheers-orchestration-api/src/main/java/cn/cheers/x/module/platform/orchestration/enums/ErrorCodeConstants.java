@@ -12,5 +12,6 @@ public interface ErrorCodeConstants {
     ErrorCode SCHEDULE_RUN_SCHEDULING_SPEC_REQUIRED = new ErrorCode(1_004_052_002, "排程运行缺少 schedulingSpec");
     ErrorCode SCHEDULE_RUN_WORK_OR_SOURCE_REQUIRED = new ErrorCode(1_004_052_003, "排程运行缺少作业项或 L1 实例引用");
     ErrorCode SCHEDULE_RUN_MAPPING_PROFILE_REQUIRED = new ErrorCode(1_004_052_004, "排程运行缺少已发布的映射配置");
+    ErrorCode SCHEDULE_DISPATCH_STANDARD_REQUIRED = new ErrorCode(1_004_052_005, "派工生成工单时必须指定现场作业标准 ID");
 
 }

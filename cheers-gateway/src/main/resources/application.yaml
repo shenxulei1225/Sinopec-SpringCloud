@@ -223,6 +223,13 @@ spring:
                 - Path=/admin-api/inspection-task/**
               filters:
                 - RewritePath=/admin-api/inspection-task/v3/api-docs, /v3/api-docs # 配置，保证转发到 /v3/api-docs
+            ## work-order-server 服务
+            - id: work-order-admin-api # 路由的编号
+              uri: grayLb://work-order-server
+              predicates: # 断言，作为路由的匹配条件，对应 RouteDefinition 数组
+                - Path=/admin-api/work-order/**
+              filters:
+                - RewritePath=/admin-api/work-order/v3/api-docs, /v3/api-docs # 配置，保证转发到 /v3/api-docs
             ## platformresource-server 服务
             - id: platformresource-admin-api
               uri: grayLb://platformresource-server
@@ -350,6 +357,9 @@ knife4j:
       - name: inspection-task-server
         service-name: inspection-task-server
         url: /admin-api/inspection-task/v3/api-docs
+      - name: work-order-server
+        service-name: work-order-server
+        url: /admin-api/work-order/v3/api-docs
       - name: platformresource-server
         service-name: platformresource-server
         url: /admin-api/platformresource/v3/api-docs

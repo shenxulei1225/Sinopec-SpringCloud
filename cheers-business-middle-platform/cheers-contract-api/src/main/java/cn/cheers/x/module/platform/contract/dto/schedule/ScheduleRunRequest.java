@@ -28,4 +28,14 @@ public class ScheduleRunRequest {
     /** Phase 2：已发布策略集 id；与 schedulingSpec 二选一，run 时解析为快照 */
     private String policySetId;
     private String policySnapshotId;
+
+    /**
+     * 排程落库成功后是否派工生成工单；默认 false。
+     */
+    @Builder.Default
+    private Boolean dispatchWorkOrders = false;
+    /** 业务域范围（scope），如 inspection */
+    private String scope;
+    /** 现场作业标准 ID；派工时显式传入（完整绑定引擎波次 2） */
+    private Long fieldWorkStandardId;
 }
