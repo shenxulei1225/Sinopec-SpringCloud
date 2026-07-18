@@ -5,6 +5,7 @@ import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.workorder.controller.admin.vo.standard.FieldWorkStandardPageReqVO;
 import cn.cheers.x.workorder.dal.dataobject.FieldWorkStandardDO;
+import cn.cheers.x.workorder.enums.FieldWorkStandardStatusEnum;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
@@ -40,6 +41,20 @@ public interface FieldWorkStandardMapper extends BaseMapperX<FieldWorkStandardDO
                 .orderByDesc(FieldWorkStandardDO::getVersionNo)
                 .last("LIMIT 1"));
         return latest == null ? null : latest.getVersionNo();
+    }
+
+    /**
+     * 查询指定编码下最新已发布版本；无记录时返回 null
+     *
+     * @param code 标准编码
+     * @return 最新已发布标准，或 null
+     */
+    default FieldWorkStandardDO selectLatestPublishedByCode(String code) {
+        return selectOne(new LambdaQueryWrapperX<FieldWorkStandardDO>()
+                .eq(FieldWorkStandardDO::getCode, code)
+                .eq(FieldWorkStandardDO::getStatus, FieldWorkStandardStatusEnum.PUBLISHED.getStatus())
+                .orderByDesc(FieldWorkStandardDO::getVersionNo)
+                .last("LIMIT 1"));
     }
 
     /**

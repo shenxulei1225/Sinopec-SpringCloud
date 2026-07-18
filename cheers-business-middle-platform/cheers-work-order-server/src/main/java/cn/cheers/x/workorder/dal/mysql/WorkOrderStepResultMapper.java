@@ -27,4 +27,17 @@ public interface WorkOrderStepResultMapper extends BaseMapperX<WorkOrderStepResu
                 .orderByAsc(WorkOrderStepResultDO::getStepOrder));
     }
 
+    /**
+     * 按工单 ID 与步骤编码查询步骤结果
+     *
+     * @param workOrderId 工单 ID
+     * @param stepCode    步骤编码
+     * @return 步骤结果
+     */
+    default WorkOrderStepResultDO selectByWorkOrderIdAndStepCode(Long workOrderId, String stepCode) {
+        return selectOne(new LambdaQueryWrapperX<WorkOrderStepResultDO>()
+                .eq(WorkOrderStepResultDO::getWorkOrderId, workOrderId)
+                .eq(WorkOrderStepResultDO::getStepCode, stepCode));
+    }
+
 }
