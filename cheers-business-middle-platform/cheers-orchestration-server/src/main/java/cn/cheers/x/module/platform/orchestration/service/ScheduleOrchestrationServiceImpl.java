@@ -62,6 +62,7 @@ public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationSe
     @Override
     public ScheduleRunResponse runSchedule(ScheduleRunRequest request, Long siteId) {
         validateBasic(request);
+        validateDispatchPreconditions(request);
         RunContext ctx = resolveRunContext(request);
         List<WorkItemDTO> workItems = resolveWorkItems(request);
 
@@ -105,9 +106,6 @@ public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationSe
 
         if (Boolean.TRUE.equals(request.getDispatchWorkOrders())) {
             Long standardId = request.getFieldWorkStandardId();
-            if (standardId == null) {
-                throw exception(SCHEDULE_DISPATCH_STANDARD_REQUIRED);
-            }
             String scope = StringUtils.hasText(request.getScope()) ? request.getScope() : "inspection";
             List<Long> woIds = new ArrayList<>();
             for (ScheduleSlotDTO slot : slots) {
@@ -134,6 +132,16 @@ public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationSe
         boolean hasSourceInstances = !CollectionUtils.isEmpty(request.getSourceInstances());
         if (!hasWorkItems && !hasSourceInstances) {
             throw exception(SCHEDULE_RUN_WORK_OR_SOURCE_REQUIRED);
+        }
+    }
+
+    /**
+     * 派工前置校验：必须在 runtime 落库之前完成，避免“已 persist 却因缺标准失败”。
+     */
+    private void validateDispatchPreconditions(ScheduleRunRequest request) {
+        if (Boolean.TRUE.equals(request.getDispatchWorkOrders())
+                && request.getFieldWorkStandardId() == null) {
+            throw exception(SCHEDULE_DISPATCH_STANDARD_REQUIRED);
         }
     }
 
