@@ -1,7 +1,9 @@
 package cn.cheers.x.workorder.dal.mysql;
 
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.cheers.x.workorder.controller.admin.vo.standard.FieldWorkStandardPageReqVO;
 import cn.cheers.x.workorder.dal.dataobject.FieldWorkStandardDO;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -24,6 +26,35 @@ public interface FieldWorkStandardMapper extends BaseMapperX<FieldWorkStandardDO
         return selectOne(new LambdaQueryWrapperX<FieldWorkStandardDO>()
                 .eq(FieldWorkStandardDO::getCode, code)
                 .eq(FieldWorkStandardDO::getVersionNo, versionNo));
+    }
+
+    /**
+     * 查询指定编码下的最大版本号；无记录时返回 null
+     *
+     * @param code 标准编码
+     * @return 最大版本号，或 null
+     */
+    default Integer selectMaxVersionNoByCode(String code) {
+        FieldWorkStandardDO latest = selectOne(new LambdaQueryWrapperX<FieldWorkStandardDO>()
+                .eq(FieldWorkStandardDO::getCode, code)
+                .orderByDesc(FieldWorkStandardDO::getVersionNo)
+                .last("LIMIT 1"));
+        return latest == null ? null : latest.getVersionNo();
+    }
+
+    /**
+     * 分页查询现场作业标准
+     *
+     * @param reqVO 查询条件
+     * @return 分页结果
+     */
+    default PageResult<FieldWorkStandardDO> selectPage(FieldWorkStandardPageReqVO reqVO) {
+        return selectPage(reqVO, new LambdaQueryWrapperX<FieldWorkStandardDO>()
+                .eqIfPresent(FieldWorkStandardDO::getCode, reqVO.getCode())
+                .likeIfPresent(FieldWorkStandardDO::getName, reqVO.getName())
+                .eqIfPresent(FieldWorkStandardDO::getScope, reqVO.getScope())
+                .eqIfPresent(FieldWorkStandardDO::getStatus, reqVO.getStatus())
+                .orderByDesc(FieldWorkStandardDO::getId));
     }
 
 }

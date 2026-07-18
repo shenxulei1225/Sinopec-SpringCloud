@@ -76,6 +76,13 @@
             <artifactId>cheers-spring-boot-starter-rpc</artifactId>
         </dependency>
 
+        <!-- Test -->
+        <dependency>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
