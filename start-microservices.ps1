@@ -65,7 +65,9 @@ $ServiceConfig = @{
     "ai"         = @{ Path = "yudao-module-ai\yudao-module-ai-server"; Port = 58090 }
     "iot"        = @{ Path = "yudao-module-iot\yudao-module-iot-server"; Port = 58091 }
     "alarm"      = @{ Path = "yudao-module-alarm\yudao-module-alarm-biz"; Port = 58097 }
-    "scene"      = @{ Path = "yudao-module-scene-platform\yudao-module-scene-platform-server"; Port = 58093 }
+    "scene"      = @{ Path = "cheers-business-middle-platform\cheers-scene-3d-server"; Port = 58093 }
+    "scene-3d"   = @{ Path = "cheers-business-middle-platform\cheers-scene-3d-server"; Port = 58093 }
+    "gis"        = @{ Path = "cheers-business-middle-platform\cheers-gis-server"; Port = 58109 }
     "twin"       = @{ Path = "yudao-module-twin\yudao-module-twin-biz"; Port = 58094 }
     "inspection" = @{ Path = "yudao-module-inspection-task\yudao-module-inspection-task-server"; Port = 58095 }
     "dynamic"    = @{ Path = "cheers-module-dynamicbusiness\cheers-module-dynamicbusiness-server"; Port = 58096 }

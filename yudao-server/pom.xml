@@ -121,8 +121,8 @@
             <version>${revision}</version>
         </dependency>
         <dependency>
-            <groupId>cn.iocoder.cloud</groupId>
-            <artifactId>yudao-module-scene-platform-server</artifactId>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-scene-3d-server</artifactId>
             <version>${revision}</version>
         </dependency>
 

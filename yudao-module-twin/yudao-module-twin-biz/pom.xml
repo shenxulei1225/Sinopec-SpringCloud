@@ -31,8 +31,8 @@
             <version>${revision}</version>
         </dependency>
         <dependency>
-            <groupId>cn.iocoder.cloud</groupId>
-            <artifactId>yudao-module-scene-platform-api</artifactId>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-scene-3d-api</artifactId>
             <version>${revision}</version>
         </dependency>
         <dependency>

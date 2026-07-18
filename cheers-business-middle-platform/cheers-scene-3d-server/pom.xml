@@ -3,27 +3,32 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>yudao-module-inspection-task</artifactId>
-        <groupId>cn.iocoder.cloud</groupId>
+        <groupId>cn.cheers.x</groupId>
+        <artifactId>cheers-business-middle-platform</artifactId>
         <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>yudao-module-inspection-task-server</artifactId>
+    <artifactId>cheers-scene-3d-server</artifactId>
     <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
-    <description>巡检任务域 Server</description>
+    <description>三维场景平台 Server（scene/actor/asset/runtime）；坐标域见 cheers-gis-server</description>
 
     <dependencies>
         <dependency>
             <groupId>cn.iocoder.cloud</groupId>
             <artifactId>yudao-spring-boot-starter-env</artifactId>
         </dependency>
-
         <dependency>
-            <groupId>cn.iocoder.cloud</groupId>
-            <artifactId>yudao-module-inspection-task-api</artifactId>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-scene-3d-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-gis-api</artifactId>
             <version>${revision}</version>
         </dependency>
         <dependency>
@@ -38,38 +43,16 @@
         </dependency>
         <dependency>
             <groupId>cn.iocoder.cloud</groupId>
-            <artifactId>cheers-module-dynamicbusiness-api</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        <dependency>
-            <groupId>cn.iocoder.cloud</groupId>
-            <artifactId>yudao-module-sinopec-device-api</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        <dependency>
-            <groupId>cn.cheers.x</groupId>
-            <artifactId>cheers-scene-3d-api</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        <dependency>
-            <groupId>cn.iocoder.cloud</groupId>
-            <artifactId>yudao-module-twin-api</artifactId>
-            <version>${revision}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>cn.iocoder.cloud</groupId>
             <artifactId>yudao-spring-boot-starter-security</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>cn.iocoder.cloud</groupId>
-            <artifactId>yudao-spring-boot-starter-biz-tenant</artifactId>
         </dependency>
         <dependency>
             <groupId>cn.iocoder.cloud</groupId>
             <artifactId>yudao-spring-boot-starter-mybatis</artifactId>
         </dependency>
-        <!-- Flyway 数据库迁移 -->
+        <dependency>
+            <groupId>cn.iocoder.cloud</groupId>
+            <artifactId>yudao-spring-boot-starter-biz-tenant</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
@@ -84,7 +67,6 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
         </dependency>
-
         <dependency>
             <groupId>cn.iocoder.cloud</groupId>
             <artifactId>yudao-spring-boot-starter-redis</artifactId>
@@ -103,8 +85,25 @@
         </dependency>
         <dependency>
             <groupId>cn.iocoder.cloud</groupId>
+            <artifactId>yudao-spring-boot-starter-websocket</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.iocoder.cloud</groupId>
             <artifactId>yudao-spring-boot-starter-test</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

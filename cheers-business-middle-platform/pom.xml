@@ -29,13 +29,17 @@
         <module>cheers-routing-server</module>
         <module>cheers-exchange-api</module>
         <module>cheers-exchange-server</module>
+        <module>cheers-scene-3d-api</module>
+        <module>cheers-scene-3d-server</module>
+        <module>cheers-gis-api</module>
+        <module>cheers-gis-server</module>
     </modules>
     <artifactId>cheers-business-middle-platform</artifactId>
     <packaging>pom</packaging>
 
     <name>${project.artifactId}</name>
     <description>
-        业务中台（business-middle-platform）父模块：标准契约、L4 运行时、L3 引擎、资源库、路径（topology/routing）等。
+        业务中台（business-middle-platform）父模块：过程引擎、路径、三维 scene-3d、GIS 等标准服务。
     </description>
 
 </project>

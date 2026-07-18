@@ -134,7 +134,8 @@ get_service_path() {
         ai) echo "yudao-module-ai/yudao-module-ai-server" ;;
         iot) echo "yudao-module-iot/yudao-module-iot-server" ;;
         alarm) echo "yudao-module-alarm/yudao-module-alarm-biz" ;;
-        scene) echo "yudao-module-scene-platform/yudao-module-scene-platform-server" ;;
+        scene|scene-3d) echo "cheers-business-middle-platform/cheers-scene-3d-server" ;;
+        gis|bmp-gis) echo "cheers-business-middle-platform/cheers-gis-server" ;;
         twin) echo "yudao-module-twin/yudao-module-twin-biz" ;;
         inspection) echo "yudao-module-inspection-task/yudao-module-inspection-task-server" ;;
         dynamic) echo "cheers-module-dynamicbusiness/cheers-module-dynamicbusiness-server" ;;
@@ -170,7 +171,8 @@ get_service_port() {
         ai) echo "58090" ;;
         iot) echo "58091" ;;
         alarm) echo "58097" ;;
-        scene) echo "58093" ;;
+        scene|scene-3d) echo "58093" ;;
+        gis|bmp-gis) echo "58109" ;;
         twin) echo "58094" ;;
         inspection) echo "58095" ;;
         dynamic) echo "58096" ;;
@@ -191,30 +193,28 @@ KNOWN_SERVICES=(
     crm erp ai iot alarm dynamic
     platform platform-runtime platform-orchestration platform-policy platform-capability
     platform-topology platform-routing
-    scene twin inspection
+    scene gis twin inspection
 )
 CORE_START_SERVICES=(
     infra system gateway bpm alarm dynamic
     platform platform-runtime platform-orchestration platform-policy platform-capability
     platform-topology platform-routing
-    scene twin inspection
+    scene gis twin inspection
 )
 ALL_START_SERVICES=(
     system infra gateway member bpm pay report mp product promotion trade statistics
     crm erp ai iot alarm dynamic
     platform platform-runtime platform-orchestration platform-policy platform-capability
     platform-topology platform-routing
-    scene twin inspection
+    scene gis twin inspection
 )
 STOP_SERVICES=(
     gateway infra system member bpm pay report mp product promotion trade statistics
     crm erp ai iot alarm dynamic
     platform-routing platform-topology
     platform-orchestration platform-runtime platform-policy platform-capability platform
-    scene twin inspection
+    scene gis twin inspection
 )
-
-# 检查服务是否运行（必须处于 LISTEN，避免误判瞬时连接）
 is_service_running() {
     local service_name=$1
     local port=$(get_service_port "$service_name")
@@ -555,10 +555,11 @@ show_services() {
     echo "  ./start-microservices.sh bmp                   # 推荐：业务中台 process+path（7）"
     echo "  ./start-microservices.sh bmp-process           # 仅过程引擎（5）"
     echo "  ./start-microservices.sh bmp-path              # 仅路径规划（2）"
-    echo "  ./start-microservices.sh bmp-scene-3d          # 三维（scene）"
+    echo "  ./start-microservices.sh bmp-scene-3d          # 三维（scene-3d）"
+    echo "  ./start-microservices.sh bmp-gis               # GIS（坐标/CRS）"
     echo "  ./start-microservices.sh bmp-station-dev       # path + scene-3d"
     echo "  ./start-microservices.sh stop-bmp              # 停止 bmp（process+path）"
-    echo "  ./start-microservices.sh stop-bmp-process|stop-bmp-path|stop-bmp-scene-3d"
+    echo "  ./start-microservices.sh stop-bmp-process|stop-bmp-path|stop-bmp-scene-3d|stop-bmp-gis"
     echo "  ./start-microservices.sh platform-all           # [弃用] → bmp"
     echo "  ./start-microservices.sh status             # 查看服务状态"
     echo "  ./start-microservices.sh logs               # 查看所有运行中服务的日志"
@@ -784,7 +785,8 @@ BMP_PROCESS_SERVICES=(platform platform-policy platform-capability platform-runt
 BMP_PATH_SERVICES=(platform-topology platform-routing)
 # bmp / bmp-all = 过程引擎 + 路径规划（不含 scene）
 BMP_CORE_SERVICES=("${BMP_PROCESS_SERVICES[@]}" "${BMP_PATH_SERVICES[@]}")
-BMP_SCENE_3D_SERVICES=(scene)
+BMP_SCENE_3D_SERVICES=(scene-3d)
+BMP_GIS_SERVICES=(gis)
 
 start_suite_services() {
     local show_logs=${1:-false}
@@ -860,6 +862,17 @@ main() {
             echo -e "${BLUE}🚀 业务中台 · 路径规划套件 (bmp-path)${NC}"
             echo ""
             start_suite_services "$show_logs" "${BMP_PATH_SERVICES[@]}"
+            ;;
+        "bmp-gis")
+            check_nacos
+            check_redis
+            echo -e "${BLUE}🚀 业务中台 · GIS (bmp-gis)${NC}"
+            echo ""
+            start_suite_services "$show_logs" "${BMP_GIS_SERVICES[@]}"
+            ;;
+        "stop-bmp-gis")
+            echo -e "${BLUE}🛑 停止 bmp-gis${NC}"
+            stop_suite_services "${BMP_GIS_SERVICES[@]}"
             ;;
         "bmp-scene-3d")
             check_nacos
