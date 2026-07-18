@@ -12,11 +12,12 @@
 #   .\start-microservices.ps1 nacos              # 启动 Nacos
 #   .\start-microservices.ps1 nacos status       # 查看 Nacos 状态
 #   .\start-microservices.ps1 nacos stop         # 停止 Nacos
-#   .\start-microservices.ps1 platform-all       # 仅启动 platform 五件套
+#   .\start-microservices.ps1 platform-all       # 仅启动 platform 套件（含 topology/routing）
 #
 # platform 资源库（platform / resource，58098）模块路径：
 #   cheers-module-platform\cheers-module-platform-resource-server
 # 旧根目录 cheers-module-platform-resource\ 已删除，勿再引用。
+# 路径规划必启：platform-topology（58107）、platform-routing（58108）已纳入 all / platform-all。
 # ============================================================================
 
 param(
@@ -90,12 +91,14 @@ $KnownServices = @(
     "gateway", "system", "infra", "member", "bpm", "pay", "report", "mp", "product", "promotion", "trade", "statistics",
     "crm", "erp", "ai", "iot", "alarm", "dynamic",
     "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
+    "platform-topology", "platform-routing",
     "scene", "twin", "inspection"
 )
 
 $CoreServices = @(
     "infra", "system", "gateway", "bpm", "alarm", "dynamic",
     "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
+    "platform-topology", "platform-routing",
     "scene", "twin", "inspection"
 )
 
@@ -103,18 +106,21 @@ $AllServices = @(
     "system", "infra", "gateway", "member", "bpm", "pay", "report", "mp", "product", "promotion", "trade", "statistics",
     "crm", "erp", "ai", "iot", "alarm", "dynamic",
     "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
+    "platform-topology", "platform-routing",
     "scene", "twin", "inspection"
 )
 
 $StopServices = @(
     "gateway", "infra", "system", "member", "bpm", "pay", "report", "mp", "product", "promotion", "trade", "statistics",
     "crm", "erp", "ai", "iot", "alarm", "dynamic",
+    "platform-routing", "platform-topology",
     "platform-orchestration", "platform-runtime", "platform-policy", "platform-capability", "platform",
     "scene", "twin", "inspection"
 )
 
 $PlatformAllServices = @(
-    "platform", "platform-policy", "platform-capability", "platform-runtime", "platform-orchestration"
+    "platform", "platform-policy", "platform-capability", "platform-runtime", "platform-orchestration",
+    "platform-topology", "platform-routing"
 )
 
 # 颜色输出函数
@@ -371,6 +377,25 @@ function Start-SingleService {
     Write-ColorOutput "[START] 启动服务: $ServiceName" "Cyan"
     Write-ColorOutput "   路径: $servicePath" "White"
     Write-ColorOutput "" "White"
+
+    # topology/routing 依赖本仓 SNAPSHOT API，首次启动前先 install 到本地仓库，避免 Unable to find instance 实为编译失败未起来
+    if ($ServiceName -in @("topology", "platform-topology", "routing", "platform-routing")) {
+        $platformRoot = Join-Path $ScriptDir "cheers-module-platform"
+        $artifactId = Split-Path $config.Path -Leaf
+        Write-Info "安装 $artifactId 及依赖到本地 Maven（-am install -DskipTests）..."
+        Push-Location $platformRoot
+        try {
+            & mvn -pl $artifactId -am install -DskipTests -q
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "依赖安装失败（exit=$LASTEXITCODE），仍尝试启动；若失败请查看日志"
+            } else {
+                Write-Success "依赖已就绪"
+            }
+        } finally {
+            Pop-Location
+        }
+        Write-ColorOutput "" "White"
+    }
     
     $logFile = Join-Path $LogDir "$ServiceName-server.log"
     $mavenCommand = "mvn spring-boot:run `"-Dspring-boot.run.profiles=local`" `"-Dfile.encoding=UTF-8`" `"-Dsun.jnu.encoding=UTF-8`""
@@ -626,7 +651,7 @@ function Show-Services {
     Write-ColorOutput "  .\start-microservices.ps1 all                # 启动所有核心服务" "White"
     Write-ColorOutput "  .\start-microservices.ps1 all -f             # 启动所有核心服务（显示日志）" "White"
     Write-ColorOutput "  .\start-microservices.ps1 all-services       # 启动所有服务包括业务服务" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 platform-all       # 仅启动 platform 五件套" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 platform-all       # 仅启动 platform 套件（含 topology/routing）" "White"
     Write-ColorOutput "  .\start-microservices.ps1 <服务名>            # 启动单个服务" "White"
     Write-ColorOutput "  .\start-microservices.ps1 status             # 查看服务状态" "White"
     Write-ColorOutput "  .\start-microservices.ps1 logs <服务名>       # 查看服务日志" "White"
@@ -656,7 +681,9 @@ function Show-Services {
     Write-ColorOutput "  9. platform-capability - 平台能力映射（58106）" "White"
     Write-ColorOutput "  10. platform-runtime - 平台 L4 运行时（58099）" "White"
     Write-ColorOutput "  11. platform-orchestration - 平台编排/排程 run（58104，依赖 runtime）" "White"
-    Write-ColorOutput "     （.\start-microservices.ps1 all / platform-all 已按 7->11 顺序启动 platform 五件套）" "Gray"
+    Write-ColorOutput "  12. platform-topology - 站场拓扑/路网（58107，路径规划必需）" "White"
+    Write-ColorOutput "  13. platform-routing - 路径规划引擎（58108，试走/算路必需）" "White"
+    Write-ColorOutput "     （.\start-microservices.ps1 all / platform-all 已按 7->13 顺序启动 platform 套件）" "Gray"
     
     Write-ColorOutput "" "White"
     Write-ColorOutput "业务服务（按需启动）:" "Cyan"

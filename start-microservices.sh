@@ -13,11 +13,12 @@
 #   ./start-microservices.sh nacos              # 启动 Nacos
 #   ./start-microservices.sh nacos status       # 查看 Nacos 状态
 #   ./start-microservices.sh nacos stop         # 停止 Nacos
-#   ./start-microservices.sh platform-all       # 仅启动 platform 五件套
+#   ./start-microservices.sh platform-all       # 仅启动 platform 套件（含 topology/routing）
 #
 # platform 资源库（platform / resource，58098）模块路径：
 #   cheers-module-platform/cheers-module-platform-resource-server
 # 旧根目录 cheers-module-platform-resource/ 已删除，勿再引用。
+# 路径规划必启：platform-topology（58107）、platform-routing（58108）已纳入 all / platform-all。
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -179,27 +180,31 @@ get_service_port() {
     esac
 }
 
-# 服务列表（platform 三件套：resource 58098 → runtime 58099 → orchestration 58104）
+# 服务列表（platform：resource → policy/capability → runtime → orchestration → topology → routing）
 KNOWN_SERVICES=(
     gateway system infra member bpm pay report mp product promotion trade statistics
     crm erp ai iot alarm dynamic
     platform platform-runtime platform-orchestration platform-policy platform-capability
+    platform-topology platform-routing
     scene twin inspection
 )
 CORE_START_SERVICES=(
     infra system gateway bpm alarm dynamic
     platform platform-runtime platform-orchestration platform-policy platform-capability
+    platform-topology platform-routing
     scene twin inspection
 )
 ALL_START_SERVICES=(
     system infra gateway member bpm pay report mp product promotion trade statistics
     crm erp ai iot alarm dynamic
     platform platform-runtime platform-orchestration platform-policy platform-capability
+    platform-topology platform-routing
     scene twin inspection
 )
 STOP_SERVICES=(
     gateway infra system member bpm pay report mp product promotion trade statistics
     crm erp ai iot alarm dynamic
+    platform-routing platform-topology
     platform-orchestration platform-runtime platform-policy platform-capability platform
     scene twin inspection
 )
@@ -263,6 +268,25 @@ start_service() {
     echo -e "${BLUE}🚀 启动服务: $service_name${NC}"
     echo -e "   路径: $service_path"
     echo ""
+
+    # topology/routing 依赖本仓 SNAPSHOT API，首次启动前先 install，避免服务未起来被网关报 Unable to find instance
+    case "$service_name" in
+        topology|platform-topology|routing|platform-routing)
+            local artifact_id
+            artifact_id=$(basename "$service_path")
+            echo -e "${BLUE}   安装 ${artifact_id} 及依赖到本地 Maven（-am install -DskipTests）...${NC}"
+            (
+                cd "$SCRIPT_DIR/cheers-module-platform" || exit 1
+                mvn -pl "$artifact_id" -am install -DskipTests -q
+            )
+            if [ $? -ne 0 ]; then
+                echo -e "${YELLOW}⚠️  依赖安装失败，仍尝试启动；若失败请查看日志${NC}"
+            else
+                echo -e "${GREEN}✅ 依赖已就绪${NC}"
+            fi
+            echo ""
+            ;;
+    esac
     
     # 确保日志目录存在
     mkdir -p "$SCRIPT_DIR/logs"
@@ -523,7 +547,7 @@ show_services() {
     echo "  ./start-microservices.sh all-services -f    # 启动所有服务包括业务服务（显示日志）"
     echo "  ./start-microservices.sh <服务名>            # 启动单个服务（后台运行）"
     echo "  ./start-microservices.sh <服务名> -f         # 启动单个服务（显示日志）"
-    echo "  ./start-microservices.sh platform-all           # 仅启动 platform 五件套（58098/58105/58106/58099/58104）"
+    echo "  ./start-microservices.sh platform-all           # 仅启动 platform 套件（含 topology 58107 / routing 58108）"
     echo "  ./start-microservices.sh status             # 查看服务状态"
     echo "  ./start-microservices.sh logs               # 查看所有运行中服务的日志"
     echo "  ./start-microservices.sh logs <服务名>       # 实时查看指定服务的日志"
@@ -551,7 +575,9 @@ show_services() {
     echo "  9. platform-capability - 平台能力映射（58106）"
     echo "  10. platform-runtime - 平台 L4 运行时（58099）"
     echo "  11. platform-orchestration - 平台编排/排程 run（58104，依赖 runtime）"
-    echo "     （./start-microservices.sh all / platform-all 已按 7→11 顺序启动 platform 五件套）"
+    echo "  12. platform-topology - 站场拓扑/路网（58107，路径规划必需）"
+    echo "  13. platform-routing - 路径规划引擎（58108，试走/算路必需）"
+    echo "     （./start-microservices.sh all / platform-all 已按 7→13 顺序启动 platform 套件）"
     echo ""
     echo -e "${BLUE}业务服务（按需启动）:${NC}"
     echo "  - member     - 会员服务"
@@ -766,7 +792,7 @@ main() {
             check_nacos
             check_redis
             echo ""
-            for svc in platform platform-policy platform-capability platform-runtime platform-orchestration; do
+            for svc in platform platform-policy platform-capability platform-runtime platform-orchestration platform-topology platform-routing; do
                 start_service "$svc" "$show_logs" || true
                 if [ "$show_logs" != "true" ]; then
                     sleep 3
