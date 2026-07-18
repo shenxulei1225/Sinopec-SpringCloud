@@ -5,5 +5,8 @@ spring:
   profiles:
     active: local
 
+  main:
+    allow-bean-definition-overriding: true # 允许 Bean 覆盖，例如说 Feign 等会存在重复定义的服务
+
 server:
   port: 58098

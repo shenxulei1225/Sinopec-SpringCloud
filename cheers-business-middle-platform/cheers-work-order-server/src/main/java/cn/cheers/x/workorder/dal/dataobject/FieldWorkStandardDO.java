@@ -1,7 +1,9 @@
 package cn.cheers.x.workorder.dal.dataobject;
 
 import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
+import cn.cheers.x.framework.mybatis.core.type.JsonbStringTypeHandler;
 import com.baomidou.mybatisplus.annotation.KeySequence;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
@@ -11,7 +13,7 @@ import lombok.*;
  *
  * @author 工单标准服务
  */
-@TableName("wo_field_work_standard")
+@TableName(value = "wo_field_work_standard", autoResultMap = true)
 @KeySequence("wo_field_work_standard_seq")
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -50,6 +52,7 @@ public class FieldWorkStandardDO extends BaseDO {
     /**
      * 步骤定义（JSON）
      */
+    @TableField(typeHandler = JsonbStringTypeHandler.class)
     private String stepsJson;
 
     /**

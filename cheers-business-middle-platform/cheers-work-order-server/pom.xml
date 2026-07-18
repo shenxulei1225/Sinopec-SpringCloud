@@ -70,6 +70,12 @@
             <artifactId>lombok</artifactId>
         </dependency>
 
+        <!-- RPC 远程调用相关 -->
+        <dependency>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-spring-boot-starter-rpc</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>
