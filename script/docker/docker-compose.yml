@@ -1,12 +1,12 @@
 version: '3'
 services:
-  yudao-gateway:
-    image: yudao-gateway
-    container_name: yudao-gateway
+  cheers-gateway:
+    image: cheers-gateway
+    container_name: cheers-gateway
     environment:
       - TZ=Asia/Shanghai # 配置程序默认时区为上海（中国标准时间）
       - JAVA_TOOL_OPTIONS=-javaagent:/data/skywalking/skywalking-agent/skywalking-agent.jar # 配置skywalking
-      - SW_AGENT_NAME=yudao-gateway
+      - SW_AGENT_NAME=cheers-gateway
       - SW_AGENT_TRACE_IGNORE_PATH=Redisson/PING,/actuator/**,/admin/**
       - SW_AGENT_COLLECTOR_BACKEND_SERVICES=[YOUR_SKYWALKING_ADDR] # 请替换 your.skywalking.addr 为你的 skywalking 地址
       - SPRING_PROFILES_ACTIVE=test # 指定程序运行环境
@@ -20,12 +20,12 @@ services:
     restart: always
     network_mode: host # 以主机网络环境运行
   yudao-system:
-    image: yudao-module-system-biz
+    image: cheers-system-biz
     container_name: yudao-system
     environment:
       - TZ=Asia/Shanghai # 配置程序默认时区为上海（中国标准时间）
       - JAVA_TOOL_OPTIONS=-javaagent:/data/skywalking/skywalking-agent/skywalking-agent.jar # 配置skywalking
-      - SW_AGENT_NAME=yudao-gateway
+      - SW_AGENT_NAME=cheers-gateway
       - SW_AGENT_TRACE_IGNORE_PATH=Redisson/PING,/actuator/**,/admin/**
       - SW_AGENT_COLLECTOR_BACKEND_SERVICES=[YOUR_SKYWALKING_ADDR] # 请替换 your.skywalking.addr 为你的 skywalking 地址
       - SPRING_PROFILES_ACTIVE=test # 指定程序运行环境
@@ -45,12 +45,12 @@ services:
     restart: always
     network_mode: host
   yudao-infra:
-    image: yudao-module-infra-biz
+    image: cheers-infra-biz
     container_name: yudao-infra
     environment:
       - TZ=Asia/Shanghai # 配置程序默认时区为上海（中国标准时间）
       - JAVA_TOOL_OPTIONS=-javaagent:/data/skywalking/skywalking-agent/skywalking-agent.jar # 配置skywalking
-      - SW_AGENT_NAME=yudao-gateway
+      - SW_AGENT_NAME=cheers-gateway
       - SW_AGENT_TRACE_IGNORE_PATH=Redisson/PING,/actuator/**,/admin/**
       - SW_AGENT_COLLECTOR_BACKEND_SERVICES=[YOUR_SKYWALKING_ADDR] # 请替换 your.skywalking.addr 为你的 skywalking 地址
       - SPRING_PROFILES_ACTIVE=test # 指定程序运行环境
@@ -73,12 +73,12 @@ services:
       yudao-system:
         condition: service_healthy
   yudao-report:
-    image: yudao-module-report-biz
+    image: cheers-report-biz
     container_name: yudao-report
     environment:
       - TZ=Asia/Shanghai # 配置程序默认时区为上海（中国标准时间）
       - JAVA_TOOL_OPTIONS=-javaagent:/data/skywalking/skywalking-agent/skywalking-agent.jar # 配置skywalking
-      - SW_AGENT_NAME=yudao-gateway
+      - SW_AGENT_NAME=cheers-gateway
       - SW_AGENT_TRACE_IGNORE_PATH=Redisson/PING,/actuator/**,/admin/**
       - SW_AGENT_COLLECTOR_BACKEND_SERVICES=[YOUR_SKYWALKING_ADDR] # 请替换 your.skywalking.addr 为你的 skywalking 地址
       - SPRING_PROFILES_ACTIVE=test # 指定程序运行环境
@@ -95,12 +95,12 @@ services:
       yudao-infra:
         condition: service_healthy
   yudao-bpm:
-    image: yudao-module-bpm-biz
+    image: cheers-bpm-biz
     container_name: yudao-bpm
     environment:
       - TZ=Asia/Shanghai # 配置程序默认时区为上海（中国标准时间）
       - JAVA_TOOL_OPTIONS=-javaagent:/data/skywalking/skywalking-agent/skywalking-agent.jar # 配置skywalking
-      - SW_AGENT_NAME=yudao-gateway
+      - SW_AGENT_NAME=cheers-gateway
       - SW_AGENT_TRACE_IGNORE_PATH=Redisson/PING,/actuator/**,/admin/**
       - SW_AGENT_COLLECTOR_BACKEND_SERVICES=[YOUR_SKYWALKING_ADDR] # 请替换 your.skywalking.addr 为你的 skywalking 地址
       - SPRING_PROFILES_ACTIVE=test # 指定程序运行环境
@@ -117,12 +117,12 @@ services:
       yudao-infra:
         condition: service_healthy
   yudao-pay:
-    image: yudao-module-pay-biz
+    image: cheers-pay-biz
     container_name: yudao-pay
     environment:
       - TZ=Asia/Shanghai # 配置程序默认时区为上海（中国标准时间）
       - JAVA_TOOL_OPTIONS=-javaagent:/data/skywalking/skywalking-agent/skywalking-agent.jar # 配置skywalking
-      - SW_AGENT_NAME=yudao-gateway
+      - SW_AGENT_NAME=cheers-gateway
       - SW_AGENT_TRACE_IGNORE_PATH=Redisson/PING,/actuator/**,/admin/**
       - SW_AGENT_COLLECTOR_BACKEND_SERVICES=[YOUR_SKYWALKING_ADDR] # 请替换 your.skywalking.addr 为你的 skywalking 地址
       - SPRING_PROFILES_ACTIVE=test # 指定程序运行环境
@@ -139,12 +139,12 @@ services:
       yudao-infra:
         condition: service_healthy
   yudao-mp:
-    image: yudao-module-mp-biz
+    image: cheers-mp-biz
     container_name: yudao-mp
     environment:
       - TZ=Asia/Shanghai # 配置程序默认时区为上海（中国标准时间）
       - JAVA_TOOL_OPTIONS=-javaagent:/data/skywalking/skywalking-agent/skywalking-agent.jar # 配置skywalking
-      - SW_AGENT_NAME=yudao-gateway
+      - SW_AGENT_NAME=cheers-gateway
       - SW_AGENT_TRACE_IGNORE_PATH=Redisson/PING,/actuator/**,/admin/**
       - SW_AGENT_COLLECTOR_BACKEND_SERVICES=[YOUR_SKYWALKING_ADDR] # 请替换 your.skywalking.addr 为你的 skywalking 地址
       - SPRING_PROFILES_ACTIVE=test # 指定程序运行环境

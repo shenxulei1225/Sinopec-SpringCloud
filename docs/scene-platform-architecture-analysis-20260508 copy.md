@@ -1,7 +1,7 @@
 # Scene-Platform 场景管理与前后端渲染协议分析（更新版）
 
 > 更新日期: 2026-05-11
-> 分析范围: `yudao-module-scene-platform` 当前代码、`sinopec-ecs-vue3` Three.js 实现场景、既有架构文档差异修正
+> 分析范围: `cheers-scene-3d` 当前代码、`sinopec-ecs-vue3` Three.js 实现场景、既有架构文档差异修正
 > 目的: 统一当前 Scene / ActorInstance / ComponentTree / Asset / 前后端接口认知，为 3D 场景加载与渲染落地提供最新基线
 
 ---

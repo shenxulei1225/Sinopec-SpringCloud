@@ -1,4 +1,4 @@
-package cn.iocoder.cloud.yudao.module.scene.platform.service;
+package cn.cheers.x.yudao.module.scene.platform.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

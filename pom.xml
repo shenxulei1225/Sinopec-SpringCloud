@@ -3,37 +3,37 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>cn.iocoder.cloud</groupId>
-    <artifactId>yudao</artifactId>
+    <groupId>cn.cheers.x</groupId>
+    <artifactId>cheers</artifactId>
     <version>${revision}</version>
     <packaging>pom</packaging>
     <modules>
-        <module>yudao-dependencies</module>
+        <module>cheers-dependencies</module>
         <module>cheers-gateway</module>
         <module>cheers-framework</module>
         <!-- Server 主项目 -->
-        <module>yudao-server</module>
+        <module>cheers-server</module>
         <!--  各种 module 拓展 -->
         <module>cheers-system</module>
         <module>cheers-infra</module>
-        <module>yudao-module-member</module>
-        <module>yudao-module-bpm</module>
-        <module>yudao-module-pay</module>
-        <module>yudao-module-report</module>
-        <module>yudao-module-mp</module>
-        <module>yudao-module-mall</module>
-        <module>yudao-module-crm</module>
-        <module>yudao-module-erp</module>
-        <module>yudao-module-iot</module>
-        <module>yudao-module-alarm</module>
-        <module>yudao-module-mes</module>
-        <module>yudao-module-ai</module>
-        <module>yudao-module-sinopec-device</module>
-        <module>yudao-module-inspection-task</module>
+        <module>cheers-member</module>
+        <module>cheers-bpm</module>
+        <module>cheers-pay</module>
+        <module>cheers-report</module>
+        <module>cheers-mp</module>
+        <module>cheers-mall</module>
+        <module>cheers-crm</module>
+        <module>cheers-erp</module>
+        <module>cheers-iot</module>
+        <module>cheers-alarm</module>
+        <module>cheers-mes</module>
+        <module>cheers-ai</module>
+        <module>cheers-sinopec-device</module>
+        <module>cheers-inspection-task</module>
         <!-- 实时状态流 Runtime -->
-        <module>yudao-module-nats</module>
+        <module>cheers-nats</module>
         <module>cheers-twin</module>
-        <module>cheers-module-dynamicbusiness</module>
+        <module>cheers-dynamicbusiness</module>
         <module>cheers-business-middle-platform</module>
     </modules>
 
@@ -60,8 +60,8 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>cn.iocoder.cloud</groupId>
-                <artifactId>yudao-dependencies</artifactId>
+                <groupId>cn.cheers.x</groupId>
+                <artifactId>cheers-dependencies</artifactId>
                 <version>${revision}</version>
                 <type>pom</type>
                 <scope>import</scope>

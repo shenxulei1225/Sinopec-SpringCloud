@@ -74,3 +74,6 @@ screenshot
 .firebase
 sessionStore
 __pycache__/
+
+# IDE Eclipse output (stale package copies)
+**/bin/

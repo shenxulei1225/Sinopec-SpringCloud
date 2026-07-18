@@ -115,7 +115,7 @@
 
         <!-- 服务保障相关 TODO 芋艿：暂时去掉 -->
 <!--        <dependency>-->
-<!--            <groupId>cn.iocoder.cloud</groupId>-->
+<!--            <groupId>cn.cheers.x</groupId>-->
 <!--            <artifactId>cheers-spring-boot-starter-protection</artifactId>-->
 <!--        </dependency>-->
 

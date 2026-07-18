@@ -47,7 +47,7 @@
 ![架构图](/.image/common/yudao-cloud-architecture.png)
 
 * Java 后端：`master` 分支为 JDK 8 + Spring Boot 2.7，`master-jdk17` 分支为 JDK 17/21 + Spring Boot 3.2
-* 管理后台的电脑端：Vue3 提供 [element-plus](https://gitee.com/yudaocode/yudao-ui-admin-vue3)、[vben(ant-design-vue)](https://gitee.com/yudaocode/yudao-ui-admin-vben) 两个版本，Vue2 提供 [element-ui](https://gitee.com/zhijiantianya/ruoyi-vue-pro/tree/master/yudao-ui-admin) 版本
+* 管理后台的电脑端：Vue3 提供 [element-plus](https://gitee.com/yudaocode/cheers-ui-admin-vue3)、[vben(ant-design-vue)](https://gitee.com/yudaocode/cheers-ui-admin-vben) 两个版本，Vue2 提供 [element-ui](https://gitee.com/zhijiantianya/ruoyi-vue-pro/tree/master/cheers-ui-admin) 版本
 * 管理后台的移动端：采用 [uni-app](https://github.com/dcloudio/uni-app) 方案，一份代码多终端适配，同时支持 APP、小程序、H5！
 * 后端采用 Spring Cloud Alibaba 微服务架构，注册中心 + 配置中心 Nacos，定时任务 XXL-Job，服务保障 Sentinel，服务网关 Gateway，分布式事务 Seata
 * 数据库可使用 MySQL、Oracle、PostgreSQL、SQL Server、MariaDB、国产达梦 DM、TiDB 等，基于 MyBatis Plus、Redis + Redisson 操作
@@ -80,12 +80,12 @@
 
 | 项目                                                                         | Star                                                                                                                                                                                                                                                                                                                     | 简介                                     |
 |----------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------|
-| [yudao-ui-admin-vue3](https://gitee.com/yudaocode/yudao-ui-admin-vue3)     | [![Gitee star](https://gitee.com/yudaocode/yudao-ui-admin-vue3/badge/star.svg?theme=white)](https://gitee.com/yudaocode/yudao-ui-admin-vue3) [![GitHub stars](https://img.shields.io/github/stars/yudaocode/yudao-ui-admin-vue3.svg?style=social&label=Stars)](https://github.com/yudaocode/yudao-ui-admin-vue3)         | 基于 Vue3 + element-plus 实现的管理后台         |
-| [yudao-ui-admin-vben](https://gitee.com/yudaocode/yudao-ui-admin-vben)     | [![Gitee star](https://gitee.com/yudaocode/yudao-ui-admin-vben/badge/star.svg?theme=white)](https://gitee.com/yudaocode/yudao-ui-admin-vben) [![GitHub stars](https://img.shields.io/github/stars/yudaocode/yudao-ui-admin-vben.svg?style=social&label=Stars)](https://github.com/yudaocode/yudao-ui-admin-vben)         | 基于 Vue3 + vben(ant-design-vue) 实现的管理后台 |
+| [cheers-ui-admin-vue3](https://gitee.com/yudaocode/cheers-ui-admin-vue3)     | [![Gitee star](https://gitee.com/yudaocode/cheers-ui-admin-vue3/badge/star.svg?theme=white)](https://gitee.com/yudaocode/cheers-ui-admin-vue3) [![GitHub stars](https://img.shields.io/github/stars/yudaocode/cheers-ui-admin-vue3.svg?style=social&label=Stars)](https://github.com/yudaocode/cheers-ui-admin-vue3)         | 基于 Vue3 + element-plus 实现的管理后台         |
+| [cheers-ui-admin-vben](https://gitee.com/yudaocode/cheers-ui-admin-vben)     | [![Gitee star](https://gitee.com/yudaocode/cheers-ui-admin-vben/badge/star.svg?theme=white)](https://gitee.com/yudaocode/cheers-ui-admin-vben) [![GitHub stars](https://img.shields.io/github/stars/yudaocode/cheers-ui-admin-vben.svg?style=social&label=Stars)](https://github.com/yudaocode/cheers-ui-admin-vben)         | 基于 Vue3 + vben(ant-design-vue) 实现的管理后台 |
 | [yudao-mall-uniapp](https://gitee.com/yudaocode/yudao-mall-uniapp)         | [![Gitee star](https://gitee.com/yudaocode/yudao-mall-uniapp/badge/star.svg?theme=white)](https://gitee.com/yudaocode/yudao-mall-uniapp) [![GitHub stars](https://img.shields.io/github/stars/yudaocode/yudao-mall-uniapp.svg?style=social&label=Stars)](https://github.com/yudaocode/yudao-mall-uniapp)                 | 基于 uni-app 实现的商城小程序                    |
-| [yudao-ui-admin-vue2](https://gitee.com/yudaocode/yudao-ui-admin-vue2)     | [![Gitee star](https://gitee.com/yudaocode/yudao-ui-admin-vue2/badge/star.svg?theme=white)](https://gitee.com/yudaocode/yudao-ui-admin-vue2) [![GitHub stars](https://img.shields.io/github/stars/yudaocode/yudao-ui-admin-vue2.svg?style=social&label=Stars)](https://github.com/yudaocode/yudao-ui-admin-vue2)         | 基于 Vue2 + element-ui 实现的管理后台           |
-| [yudao-ui-admin-uniapp](https://gitee.com/yudaocode/yudao-ui-admin-uniapp) | [![Gitee star](https://gitee.com/yudaocode/yudao-ui-admin-uniapp/badge/star.svg?theme=white)](https://gitee.com/yudaocode/yudao-ui-admin-uniapp) [![GitHub stars](https://img.shields.io/github/stars/yudaocode/yudao-ui-admin-uniapp.svg?style=social&label=Stars)](https://github.com/yudaocode/yudao-ui-admin-uniapp) | 基于 Vue2 + element-ui 实现的管理后台           |
-| [yudao-ui-go-view](https://gitee.com/yudaocode/yudao-ui-go-view)           | [![Gitee star](https://gitee.com/yudaocode/yudao-ui-go-view/badge/star.svg?theme=white)](https://gitee.com/yudaocode/yudao-ui-go-view) [![GitHub stars](https://img.shields.io/github/stars/yudaocode/yudao-ui-go-view.svg?style=social&label=Stars)](https://github.com/yudaocode/yudao-ui-go-view)                     | 基于 Vue3 + naive-ui 实现的大屏报表             |
+| [cheers-ui-admin-vue2](https://gitee.com/yudaocode/cheers-ui-admin-vue2)     | [![Gitee star](https://gitee.com/yudaocode/cheers-ui-admin-vue2/badge/star.svg?theme=white)](https://gitee.com/yudaocode/cheers-ui-admin-vue2) [![GitHub stars](https://img.shields.io/github/stars/yudaocode/cheers-ui-admin-vue2.svg?style=social&label=Stars)](https://github.com/yudaocode/cheers-ui-admin-vue2)         | 基于 Vue2 + element-ui 实现的管理后台           |
+| [cheers-ui-admin-uniapp](https://gitee.com/yudaocode/cheers-ui-admin-uniapp) | [![Gitee star](https://gitee.com/yudaocode/cheers-ui-admin-uniapp/badge/star.svg?theme=white)](https://gitee.com/yudaocode/cheers-ui-admin-uniapp) [![GitHub stars](https://img.shields.io/github/stars/yudaocode/cheers-ui-admin-uniapp.svg?style=social&label=Stars)](https://github.com/yudaocode/cheers-ui-admin-uniapp) | 基于 Vue2 + element-ui 实现的管理后台           |
+| [cheers-ui-go-view](https://gitee.com/yudaocode/cheers-ui-go-view)           | [![Gitee star](https://gitee.com/yudaocode/cheers-ui-go-view/badge/star.svg?theme=white)](https://gitee.com/yudaocode/cheers-ui-go-view) [![GitHub stars](https://img.shields.io/github/stars/yudaocode/cheers-ui-go-view.svg?style=social&label=Stars)](https://github.com/yudaocode/cheers-ui-go-view)                     | 基于 Vue3 + naive-ui 实现的大屏报表             |
 
 ## 😎 开源协议
 
@@ -309,22 +309,22 @@
 
 | 项目                    | 说明                 |
 |-----------------------|--------------------|
-| `yudao-dependencies`  | Maven 依赖版本管理       |
+| `cheers-dependencies`  | Maven 依赖版本管理       |
 | `cheers-framework`     | Java 框架拓展          |
-| `yudao-server`        | 管理后台 + 用户 APP 的服务端 |
-| `yudao-module-system` | 系统功能的 Module 模块    |
-| `yudao-module-member` | 会员中心的 Module 模块    |
-| `yudao-module-infra`  | 基础设施的 Module 模块    |
-| `yudao-module-bpm`    | 工作流程的 Module 模块    |
-| `yudao-module-pay`    | 支付系统的 Module 模块    |
-| `yudao-module-mall`   | 商城系统的 Module 模块    |
-| `yudao-module-erp`    | ERP 系统的 Module 模块  |
-| `yudao-module-crm`    | CRM 系统的 Module 模块  |
-| `yudao-module-mes`    | MES 系统的 Module 模块  |
-| `yudao-module-ai`     | AI 大模型的 Module 模块  |
-| `yudao-module-iot`    | IoT 物联网的 Module 模块 |
-| `yudao-module-mp`     | 微信公众号的 Module 模块   |
-| `yudao-module-report` | 大屏报表 Module 模块     |
+| `cheers-server`        | 管理后台 + 用户 APP 的服务端 |
+| `cheers-system` | 系统功能的 Module 模块    |
+| `cheers-member` | 会员中心的 Module 模块    |
+| `cheers-infra`  | 基础设施的 Module 模块    |
+| `cheers-bpm`    | 工作流程的 Module 模块    |
+| `cheers-pay`    | 支付系统的 Module 模块    |
+| `cheers-mall`   | 商城系统的 Module 模块    |
+| `cheers-erp`    | ERP 系统的 Module 模块  |
+| `cheers-crm`    | CRM 系统的 Module 模块  |
+| `cheers-mes`    | MES 系统的 Module 模块  |
+| `cheers-ai`     | AI 大模型的 Module 模块  |
+| `cheers-iot`    | IoT 物联网的 Module 模块 |
+| `cheers-mp`     | 微信公众号的 Module 模块   |
+| `cheers-report` | 大屏报表 Module 模块     |
 
 ### 框架
 

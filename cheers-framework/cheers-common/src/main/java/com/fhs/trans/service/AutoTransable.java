@@ -9,7 +9,7 @@ import java.util.List;
  * 只有实现了这个接口的才能自动翻译
  *
  * 为什么要赋值粘贴到 cheers-common 包下？
- * 因为 AutoTransable 属于 easy-trans-service 下，无法方便的在 yudao-module-xxx-api 模块下使用
+ * 因为 AutoTransable 属于 easy-trans-service 下，无法方便的在 cheers-xxx-api 模块下使用
  *
  * @author jackwang
  * @since  2020-05-19 10:26:15

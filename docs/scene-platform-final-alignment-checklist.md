@@ -92,9 +92,9 @@
 
 已经新增：
 
-- `yudao-module-scene-platform`
-- `yudao-module-scene-platform-api`
-- `yudao-module-scene-platform-server`
+- `cheers-scene-3d`
+- `cheers-scene-3d-api`
+- `cheers-scene-3d-server`
 
 ### 4.2 根工程接入
 
