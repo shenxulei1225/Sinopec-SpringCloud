@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="cn.iocoder.yudao.module.statistics.dal.mysql.trade.TradeOrderStatisticsMapper">
+<mapper namespace="cn.cheers.x.statistics.dal.mysql.trade.TradeOrderStatisticsMapper">
 
     <select id="selectSummaryListByAreaId"
-            resultType="cn.iocoder.yudao.module.statistics.service.member.bo.MemberAreaStatisticsRespBO">
+            resultType="cn.cheers.x.statistics.service.member.bo.MemberAreaStatisticsRespBO">
         SELECT receiver_area_id                                AS areaId,
                (SELECT COUNT(DISTINCT s.user_id)
                 FROM trade_order AS s
@@ -62,7 +62,7 @@
     </select>
 
     <select id="selectListByPayTimeBetweenAndGroupByDay"
-            resultType="cn.iocoder.yudao.module.statistics.controller.admin.trade.vo.TradeOrderTrendRespVO">
+            resultType="cn.cheers.x.statistics.controller.admin.trade.vo.TradeOrderTrendRespVO">
         SELECT DATE_FORMAT(pay_time, '%Y-%m-%d') AS date,
                COUNT(1)                          AS orderPayCount,
                SUM(pay_price)                    AS orderPayPrice
@@ -74,7 +74,7 @@
     </select>
 
     <select id="selectListByPayTimeBetweenAndGroupByMonth"
-            resultType="cn.iocoder.yudao.module.statistics.controller.admin.trade.vo.TradeOrderTrendRespVO">
+            resultType="cn.cheers.x.statistics.controller.admin.trade.vo.TradeOrderTrendRespVO">
         SELECT DATE_FORMAT(pay_time, '%Y-%m') AS date,
                COUNT(1)                       AS order_pay_count,
                SUM(pay_price)                 AS order_pay_price
@@ -94,7 +94,7 @@
     </select>
 
     <select id="selectPaySummaryByPayStatusAndPayTimeBetween"
-            resultType="cn.iocoder.yudao.module.statistics.controller.admin.trade.vo.TradeOrderSummaryRespVO">
+            resultType="cn.cheers.x.statistics.controller.admin.trade.vo.TradeOrderSummaryRespVO">
         SELECT IFNULL(SUM(pay_price), 0) AS order_pay_price,
                COUNT(1)                  AS order_pay_count
         FROM trade_order

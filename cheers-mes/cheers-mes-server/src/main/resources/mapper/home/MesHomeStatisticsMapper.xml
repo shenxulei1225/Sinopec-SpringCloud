@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="cn.iocoder.yudao.module.mes.dal.mysql.home.MesHomeStatisticsMapper">
+<mapper namespace="cn.cheers.x.mes.dal.mysql.home.MesHomeStatisticsMapper">
 
     <!-- 按状态统计工单数量 -->
     <select id="selectWorkOrderCountGroupByStatus" resultType="java.util.Map">
@@ -17,7 +17,7 @@
                IFNULL(SUM(unqualified_quantity), 0)  AS unqualifiedQuantity
         FROM mes_pro_feedback
         WHERE deleted = 0
-          AND status = ${@cn.iocoder.yudao.module.mes.enums.pro.MesProFeedbackStatusEnum@FINISHED.status}
+          AND status = ${@cn.cheers.x.mes.enums.pro.MesProFeedbackStatusEnum@FINISHED.status}
           AND feedback_time >= #{beginTime}
           <if test="endTime != null">
               AND feedback_time &lt; #{endTime}
@@ -37,7 +37,7 @@
         SELECT COUNT(*)
         FROM mes_pro_andon_record
         WHERE deleted = 0
-          AND status = ${@cn.iocoder.yudao.module.mes.enums.pro.MesProAndonStatusEnum@ACTIVE.status}
+          AND status = ${@cn.cheers.x.mes.enums.pro.MesProAndonStatusEnum@ACTIVE.status}
     </select>
 
     <!-- 统计未完成维修工单数（草稿 0、维修中 1、待验收 2） -->
@@ -45,9 +45,9 @@
         SELECT COUNT(*)
         FROM mes_dv_repair
         WHERE deleted = 0
-          AND status IN (${@cn.iocoder.yudao.module.mes.enums.dv.MesDvRepairStatusEnum@PREPARE.status},
-                        ${@cn.iocoder.yudao.module.mes.enums.dv.MesDvRepairStatusEnum@CONFIRMED.status},
-                        ${@cn.iocoder.yudao.module.mes.enums.dv.MesDvRepairStatusEnum@APPROVING.status})
+          AND status IN (${@cn.cheers.x.mes.enums.dv.MesDvRepairStatusEnum@PREPARE.status},
+                        ${@cn.cheers.x.mes.enums.dv.MesDvRepairStatusEnum@CONFIRMED.status},
+                        ${@cn.cheers.x.mes.enums.dv.MesDvRepairStatusEnum@APPROVING.status})
     </select>
 
     <!-- 按天聚合报工产量 -->
@@ -58,7 +58,7 @@
                IFNULL(SUM(unqualified_quantity), 0)      AS unqualifiedQuantity
         FROM mes_pro_feedback
         WHERE deleted = 0
-          AND status = ${@cn.iocoder.yudao.module.mes.enums.pro.MesProFeedbackStatusEnum@FINISHED.status}
+          AND status = ${@cn.cheers.x.mes.enums.pro.MesProFeedbackStatusEnum@FINISHED.status}
           AND feedback_time >= #{beginTime}
           <if test="endTime != null">
               AND feedback_time &lt; #{endTime}

@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="cn.iocoder.yudao.module.iot.dal.tdengine.IotDeviceMessageMapper">
+<mapper namespace="cn.cheers.x.iot.dal.tdengine.IotDeviceMessageMapper">
 
     <update id="createSTable">
         CREATE STABLE IF NOT EXISTS device_message (
@@ -44,7 +44,7 @@
         )
     </insert>
 
-    <select id="selectPage" resultType="cn.iocoder.yudao.module.iot.dal.dataobject.device.IotDeviceMessageDO">
+    <select id="selectPage" resultType="cn.cheers.x.iot.dal.dataobject.device.IotDeviceMessageDO">
         SELECT ts, id, report_time, tenant_id, server_id,
                upstream, reply, identifier, request_id, method, 
                params, data, code, msg
@@ -66,7 +66,7 @@
         ORDER BY ts DESC
     </select>
 
-    <select id="selectListByRequestIdsAndReply" resultType="cn.iocoder.yudao.module.iot.dal.dataobject.device.IotDeviceMessageDO">
+    <select id="selectListByRequestIdsAndReply" resultType="cn.cheers.x.iot.dal.dataobject.device.IotDeviceMessageDO">
         SELECT ts, id, report_time, tenant_id, server_id,
                upstream, reply, identifier, request_id, method, 
                params, data, code, msg

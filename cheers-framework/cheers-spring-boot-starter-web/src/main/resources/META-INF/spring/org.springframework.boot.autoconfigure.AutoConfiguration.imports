@@ -1,8 +1,8 @@
-cn.cheers.x.framework.apilog.config.YudaoApiLogAutoConfiguration
-cn.cheers.x.framework.jackson.config.YudaoJacksonAutoConfiguration
-cn.cheers.x.framework.swagger.config.YudaoSwaggerAutoConfiguration
-cn.cheers.x.framework.web.config.YudaoWebAutoConfiguration
-cn.cheers.x.framework.apilog.config.YudaoApiLogRpcAutoConfiguration
-cn.cheers.x.framework.xss.config.YudaoXssAutoConfiguration
-cn.cheers.x.framework.banner.config.YudaoBannerAutoConfiguration
-cn.cheers.x.framework.encrypt.config.YudaoApiEncryptAutoConfiguration
+cn.cheers.x.framework.apilog.config.CheersApiLogAutoConfiguration
+cn.cheers.x.framework.jackson.config.CheersJacksonAutoConfiguration
+cn.cheers.x.framework.swagger.config.CheersSwaggerAutoConfiguration
+cn.cheers.x.framework.web.config.CheersWebAutoConfiguration
+cn.cheers.x.framework.apilog.config.CheersApiLogRpcAutoConfiguration
+cn.cheers.x.framework.xss.config.CheersXssAutoConfiguration
+cn.cheers.x.framework.banner.config.CheersBannerAutoConfiguration
+cn.cheers.x.framework.encrypt.config.CheersApiEncryptAutoConfiguration

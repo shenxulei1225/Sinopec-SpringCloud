@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="cn.iocoder.yudao.module.statistics.dal.mysql.member.MemberStatisticsMapper">
+<mapper namespace="cn.cheers.x.statistics.dal.mysql.member.MemberStatisticsMapper">
 
     <select id="selectSummaryListByAreaId"
-            resultType="cn.iocoder.yudao.module.statistics.service.member.bo.MemberAreaStatisticsRespBO">
+            resultType="cn.cheers.x.statistics.service.member.bo.MemberAreaStatisticsRespBO">
         SELECT area_id, COUNT(1) AS userCount
         FROM member_user
         WHERE deleted = FALSE
@@ -11,7 +11,7 @@
     </select>
 
     <select id="selectSummaryListBySex"
-            resultType="cn.iocoder.yudao.module.statistics.controller.admin.member.vo.MemberSexStatisticsRespVO">
+            resultType="cn.cheers.x.statistics.controller.admin.member.vo.MemberSexStatisticsRespVO">
         SELECT sex, COUNT(1) AS userCount
         FROM member_user
         WHERE deleted = FALSE
@@ -19,7 +19,7 @@
     </select>
 
     <select id="selectSummaryListByRegisterTerminal"
-                         resultType="cn.iocoder.yudao.module.statistics.controller.admin.member.vo.MemberTerminalStatisticsRespVO">
+                         resultType="cn.cheers.x.statistics.controller.admin.member.vo.MemberTerminalStatisticsRespVO">
         SELECT register_terminal as terminal, COUNT(1) AS userCount
         FROM member_user
         WHERE deleted = FALSE
@@ -39,7 +39,7 @@
     </select>
 
     <select id="selectListByCreateTimeBetween"
-            resultType="cn.iocoder.yudao.module.statistics.controller.admin.member.vo.MemberRegisterCountRespVO">
+            resultType="cn.cheers.x.statistics.controller.admin.member.vo.MemberRegisterCountRespVO">
         SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS date,
                count(1)                             AS count
         FROM member_user

@@ -1,9 +1,9 @@
 package cn.cheers.x.framework.test.core.ut;
 
 import cn.hutool.extra.spring.SpringUtil;
-import cn.cheers.x.framework.datasource.config.YudaoDataSourceAutoConfiguration;
-import cn.cheers.x.framework.mybatis.config.YudaoMybatisAutoConfiguration;
-import cn.cheers.x.framework.redis.config.YudaoRedisAutoConfiguration;
+import cn.cheers.x.framework.datasource.config.CheersDataSourceAutoConfiguration;
+import cn.cheers.x.framework.mybatis.config.CheersMybatisAutoConfiguration;
+import cn.cheers.x.framework.redis.config.CheersRedisAutoConfiguration;
 import cn.cheers.x.framework.test.config.RedisTestConfiguration;
 import cn.cheers.x.framework.test.config.SqlInitializationTestConfiguration;
 import com.alibaba.druid.spring.boot3.autoconfigure.DruidDataSourceAutoConfigure;
@@ -31,18 +31,18 @@ public class BaseDbAndRedisUnitTest {
 
     @Import({
             // DB 配置类
-            YudaoDataSourceAutoConfiguration.class, // 自己的 DB 配置类
+            CheersDataSourceAutoConfiguration.class, // 自己的 DB 配置类
             DataSourceAutoConfiguration.class, // Spring DB 自动配置类
             DataSourceTransactionManagerAutoConfiguration.class, // Spring 事务自动配置类
             DruidDataSourceAutoConfigure.class, // Druid 自动配置类
             SqlInitializationTestConfiguration.class, // SQL 初始化
             // MyBatis 配置类
-            YudaoMybatisAutoConfiguration.class, // 自己的 MyBatis 配置类
+            CheersMybatisAutoConfiguration.class, // 自己的 MyBatis 配置类
             MybatisPlusAutoConfiguration.class, // MyBatis 的自动配置类
 
             // Redis 配置类
             RedisTestConfiguration.class, // Redis 测试配置类，用于启动 RedisServer
-            YudaoRedisAutoConfiguration.class, // 自己的 Redis 配置类
+            CheersRedisAutoConfiguration.class, // 自己的 Redis 配置类
             RedisAutoConfiguration.class, // Spring Redis 自动配置类
             RedissonAutoConfiguration.class, // Redisson 自动配置类
 

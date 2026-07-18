@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Primary;
  * <p>显式定义 {@link MybatisPlusInterceptor} Bean，并在其中注册 Entity 动态表名拦截器。</p>
  *
  * <p>通过使用相同的 Bean 名称 "mybatisPlusInterceptor" 并配合框架层的
- * <p>通过 {@link Primary} 覆盖框架 {@code YudaoMybatisAutoConfiguration} 中的同名 Bean，
+ * <p>通过 {@link Primary} 覆盖框架 {@code CheersMybatisAutoConfiguration} 中的同名 Bean，
  * 确保 Entity 动态表名拦截器（DEDICATED → ent_{code}）一定生效。</p>
  */
 @Configuration

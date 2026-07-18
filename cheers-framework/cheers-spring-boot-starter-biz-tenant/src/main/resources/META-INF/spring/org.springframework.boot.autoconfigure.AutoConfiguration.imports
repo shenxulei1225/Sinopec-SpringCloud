@@ -1,2 +1,2 @@
-cn.cheers.x.framework.tenant.config.YudaoTenantRpcAutoConfiguration
-cn.cheers.x.framework.tenant.config.YudaoTenantAutoConfiguration
+cn.cheers.x.framework.tenant.config.CheersTenantRpcAutoConfiguration
+cn.cheers.x.framework.tenant.config.CheersTenantAutoConfiguration

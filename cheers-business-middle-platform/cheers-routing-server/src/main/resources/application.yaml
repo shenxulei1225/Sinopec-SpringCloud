@@ -158,7 +158,7 @@ cheers:
     base-package: cn.cheers.x.module.platform.routing
   web:
     admin-ui:
-      url: http://dashboard.yudao.iocoder.cn
+      url: http://dashboard.local
   xss:
     enable: false
     exclude-urls:

@@ -134,7 +134,7 @@ cheers:
     base-package: cn.cheers.x.infra
   web:
     admin-ui:
-      url: http://dashboard.yudao.iocoder.cn # Admin 管理后台 UI 的地址
+      url: http://dashboard.local # Admin 管理后台 UI 的地址
   xss:
     enable: false
     exclude-urls: # 如下两个 url，仅仅是为了演示，去掉配置也没关系
@@ -158,7 +158,7 @@ cheers:
     description: 提供管理员管理的所有功能
     version: ${cheers.info.version}
   codegen:
-    base-package: cn.iocoder.yudao
+    base-package: cn.cheers.x
     db-schemas: ${spring.datasource.dynamic.datasource.master.name}
     front-type: 20 # 前端模版的类型，参见 CodegenFrontTypeEnum 枚举类
     vo-type: 10 # VO 的类型，参见 CodegenVOTypeEnum 枚举类

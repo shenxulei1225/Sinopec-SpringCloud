@@ -1,0 +1,33 @@
+package cn.cheers.x.member.convert.tag;
+
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.member.controller.admin.tag.vo.MemberTagCreateReqVO;
+import cn.cheers.x.member.controller.admin.tag.vo.MemberTagRespVO;
+import cn.cheers.x.member.controller.admin.tag.vo.MemberTagUpdateReqVO;
+import cn.cheers.x.member.dal.dataobject.tag.MemberTagDO;
+import org.mapstruct.Mapper;
+import org.mapstruct.factory.Mappers;
+
+import java.util.List;
+
+/**
+ * 会员标签 Convert
+ *
+ * 
+ */
+@Mapper
+public interface MemberTagConvert {
+
+    MemberTagConvert INSTANCE = Mappers.getMapper(MemberTagConvert.class);
+
+    MemberTagDO convert(MemberTagCreateReqVO bean);
+
+    MemberTagDO convert(MemberTagUpdateReqVO bean);
+
+    MemberTagRespVO convert(MemberTagDO bean);
+
+    List<MemberTagRespVO> convertList(List<MemberTagDO> list);
+
+    PageResult<MemberTagRespVO> convertPage(PageResult<MemberTagDO> page);
+
+}

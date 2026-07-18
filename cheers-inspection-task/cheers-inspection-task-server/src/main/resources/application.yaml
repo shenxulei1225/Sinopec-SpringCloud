@@ -100,10 +100,10 @@ xxl:
 cheers:
   info:
     version: 1.0.0
-    base-package: cn.iocoder.yudao.module.inspection.task
+    base-package: cn.cheers.x.inspection.task
   web:
     admin-ui:
-      url: http://dashboard.yudao.iocoder.cn # Admin 管理后台 UI 的地址
+      url: http://dashboard.local # Admin 管理后台 UI 的地址
   xss:
     enable: false
     exclude-urls:

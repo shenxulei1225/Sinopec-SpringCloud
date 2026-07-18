@@ -1,2 +1,2 @@
-cn.cheers.x.framework.quartz.config.YudaoXxlJobAutoConfiguration
-cn.cheers.x.framework.quartz.config.YudaoAsyncAutoConfiguration
+cn.cheers.x.framework.quartz.config.CheersXxlJobAutoConfiguration
+cn.cheers.x.framework.quartz.config.CheersAsyncAutoConfiguration

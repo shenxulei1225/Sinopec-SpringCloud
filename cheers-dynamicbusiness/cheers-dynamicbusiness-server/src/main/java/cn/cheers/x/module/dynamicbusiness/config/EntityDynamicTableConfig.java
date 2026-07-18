@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * 兜底：框架 {@code YudaoMybatisAutoConfiguration} 在 bean 覆盖后仅注册分页插件，
+ * 兜底：框架 {@code CheersMybatisAutoConfiguration} 在 bean 覆盖后仅注册分页插件，
  * 导致 DEDICATED 业务（如 equipment → ent_equipment）仍查 dynamic_entity。
  *
  * <p>主定义见 {@link SystemMybatisPlusConfig}；本类在最终 Bean 初始化后重建拦截器链并置于最前。</p>

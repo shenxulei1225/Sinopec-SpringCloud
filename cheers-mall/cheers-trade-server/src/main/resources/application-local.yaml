@@ -126,7 +126,7 @@ spring:
 logging:
   level:
     # 配置自己写的 MyBatis Mapper 打印日志
-    cn.iocoder.yudao.module.trade.dal.mysql: debug
+    cn.cheers.x.trade.dal.mysql: debug
     org.springframework.context.support.PostProcessorRegistrationDelegate: ERROR # TODO 芋艿：先禁用，Spring Boot 3.X 存在部分错误的 WARN 提示
 
 --- #################### Cheers 相关配置 ####################

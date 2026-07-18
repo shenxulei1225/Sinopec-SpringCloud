@@ -146,7 +146,7 @@ spring:
 # 日志文件配置
 logging:
   level:
-    cn.iocoder.yudao.module.alarm.dal.mysql: debug
+    cn.cheers.x.alarm.dal.mysql: debug
     org.springframework.context.support.PostProcessorRegistrationDelegate: ERROR
 
 --- #################### Cheers 相关配置 ####################

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="cn.iocoder.yudao.module.trade.dal.mysql.brokerage.BrokerageUserMapper">
+<mapper namespace="cn.cheers.x.trade.dal.mysql.brokerage.BrokerageUserMapper">
 
     <select id="selectSummaryPageByUserId"
-            resultType="cn.iocoder.yudao.module.trade.controller.app.brokerage.vo.user.AppBrokerageUserChildSummaryRespVO">
+            resultType="cn.cheers.x.trade.controller.app.brokerage.vo.user.AppBrokerageUserChildSummaryRespVO">
 
         SELECT bu.id, bu.bind_user_time AS brokerageTime,
         (SELECT SUM(price) FROM trade_brokerage_record r

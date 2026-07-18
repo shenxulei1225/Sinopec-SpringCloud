@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="cn.iocoder.yudao.module.crm.dal.mysql.statistics.CrmStatisticsPortraitMapper">
+<mapper namespace="cn.cheers.x.crm.dal.mysql.statistics.CrmStatisticsPortraitMapper">
 
     <select id="selectSummaryListGroupByAreaId"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerAreaRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerAreaRespVO">
         SELECT area_id, COUNT(*) AS customerCount, SUM(deal_status) AS dealCount
         FROM crm_customer
         WHERE deleted = 0 AND area_id IS NOT NULL
@@ -17,7 +17,7 @@
     </select>
 
     <select id="selectCustomerIndustryListGroupByIndustryId"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerIndustryRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerIndustryRespVO">
         SELECT industry_id, COUNT(*) AS customerCount, SUM(deal_status) AS dealCount
         FROM crm_customer
         WHERE deleted = 0 AND industry_id IS NOT NULL
@@ -31,7 +31,7 @@
     </select>
 
     <select id="selectCustomerSourceListGroupBySource"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerSourceRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerSourceRespVO">
         SELECT source, COUNT(*) AS customerCount, SUM(deal_status) AS dealCount
         FROM crm_customer
         WHERE deleted = 0 AND source IS NOT NULL
@@ -45,7 +45,7 @@
     </select>
 
     <select id="selectCustomerLevelListGroupByLevel"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerLevelRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.portrait.CrmStatisticCustomerLevelRespVO">
         SELECT level, COUNT(*) AS customerCount, SUM(deal_status) AS dealCount
         FROM crm_customer
         WHERE deleted = 0 AND level IS NOT NULL

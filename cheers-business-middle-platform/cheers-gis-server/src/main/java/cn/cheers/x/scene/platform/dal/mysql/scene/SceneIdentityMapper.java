@@ -1,0 +1,13 @@
+package cn.cheers.x.scene.platform.dal.mysql.scene;
+
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.scene.platform.dal.dataobject.scene.SceneIdentityDO;
+import org.apache.ibatis.annotations.Mapper;
+
+@Mapper
+public interface SceneIdentityMapper extends BaseMapperX<SceneIdentityDO> {
+
+    default SceneIdentityDO selectBySceneCode(String sceneCode) {
+        return selectOne(SceneIdentityDO::getSceneCode, sceneCode);
+    }
+}

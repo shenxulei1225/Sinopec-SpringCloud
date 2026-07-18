@@ -39,7 +39,7 @@
 
 路径：
 
-`cheers-scene-3d-server/src/main/java/cn/iocoder/yudao/module/scene/platform/controller/admin/actor/vo/ActorInstanceComponentTreeRespVO.java`
+`cheers-scene-3d-server/src/main/java/cn/cheers/x/scene/platform/controller/admin/actor/vo/ActorInstanceComponentTreeRespVO.java`
 
 职责：
 
@@ -50,7 +50,7 @@
 
 路径：
 
-`cheers-scene-3d-server/src/main/java/cn/iocoder/yudao/module/scene/platform/controller/admin/actor/vo/ActorInstanceComponentTreeNodeRespVO.java`
+`cheers-scene-3d-server/src/main/java/cn/cheers/x/scene/platform/controller/admin/actor/vo/ActorInstanceComponentTreeNodeRespVO.java`
 
 职责：
 

@@ -2,11 +2,11 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="cn.iocoder.yudao.module.sinopec.device.dal.mapper.DeviceDetailsMapper">
+<mapper namespace="cn.cheers.x.sinopec.device.dal.mapper.DeviceDetailsMapper">
 
     <select id="selectListBySiteId"
             parameterType="java.lang.Integer"
-            resultType="cn.iocoder.yudao.module.sinopec.device.dal.dataobject.DeviceDetailsDO">
+            resultType="cn.cheers.x.sinopec.device.dal.dataobject.DeviceDetailsDO">
         SELECT
             id,
             site_id AS siteId,
@@ -28,7 +28,7 @@
 
     <select id="selectByEquipmentSerialNo"
             parameterType="java.lang.String"
-            resultType="cn.iocoder.yudao.module.sinopec.device.dal.dataobject.DeviceDetailsDO">
+            resultType="cn.cheers.x.sinopec.device.dal.dataobject.DeviceDetailsDO">
         SELECT
             id,
             site_id AS siteId,

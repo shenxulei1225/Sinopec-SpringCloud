@@ -1,0 +1,27 @@
+package cn.cheers.x.crm.job.customer;
+
+import cn.cheers.x.framework.tenant.core.job.TenantJob;
+import cn.cheers.x.crm.service.customer.CrmCustomerService;
+import com.xxl.job.core.handler.annotation.XxlJob;
+import jakarta.annotation.Resource;
+import org.springframework.stereotype.Component;
+
+/**
+ * 客户自动掉入公海 Job
+ *
+ * 
+ */
+@Component
+public class CrmCustomerAutoPutPoolJob {
+
+    @Resource
+    private CrmCustomerService customerService;
+
+    @XxlJob("customerAutoPutPoolJob")
+    @TenantJob
+    public String execute() {
+        int count = customerService.autoPutCustomerPool();
+        return String.format("掉入公海客户 %s 个", count);
+    }
+
+}

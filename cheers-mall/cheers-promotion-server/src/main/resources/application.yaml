@@ -107,10 +107,10 @@ xxl:
 cheers:
   info:
     version: 1.0.0
-    base-package: cn.iocoder.yudao.module.promotion
+    base-package: cn.cheers.x.promotion
   web:
     admin-ui:
-      url: http://dashboard.yudao.iocoder.cn # Admin 管理后台 UI 的地址
+      url: http://dashboard.local # Admin 管理后台 UI 的地址
   xss:
     enable: false
     exclude-urls: # 如下 url，仅仅是为了演示，去掉配置也没关系

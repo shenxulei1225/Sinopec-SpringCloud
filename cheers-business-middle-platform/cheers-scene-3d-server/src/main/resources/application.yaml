@@ -113,10 +113,10 @@ xxl:
 cheers:
   info:
     version: 1.0.0
-    base-package: cn.iocoder.yudao.module.scene.platform
+    base-package: cn.cheers.x.scene.platform
   web:
     admin-ui:
-      url: http://dashboard.yudao.iocoder.cn
+      url: http://dashboard.local
   xss:
     enable: false
     exclude-urls:

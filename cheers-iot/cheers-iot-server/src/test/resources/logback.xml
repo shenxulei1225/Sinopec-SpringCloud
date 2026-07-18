@@ -11,22 +11,22 @@
     </appender>
 
     <!-- 设置特定包的日志级别 -->
-    <logger name="cn.iocoder.yudao.module.iot.service.rule.scene.matcher" level="DEBUG" additivity="false">
+    <logger name="cn.cheers.x.iot.service.rule.scene.matcher" level="DEBUG" additivity="false">
         <appender-ref ref="CONSOLE"/>
     </logger>
 
     <!-- 设置 IotSceneRuleMatcherManager 的日志级别 -->
-    <logger name="cn.iocoder.yudao.module.iot.service.rule.scene.matcher.IotSceneRuleMatcherManager" level="INFO"
+    <logger name="cn.cheers.x.iot.service.rule.scene.matcher.IotSceneRuleMatcherManager" level="INFO"
             additivity="false">
         <appender-ref ref="CONSOLE"/>
     </logger>
 
     <!-- 设置所有匹配器的日志级别 -->
-    <logger name="cn.iocoder.yudao.module.iot.service.rule.scene.matcher.condition" level="DEBUG" additivity="false">
+    <logger name="cn.cheers.x.iot.service.rule.scene.matcher.condition" level="DEBUG" additivity="false">
         <appender-ref ref="CONSOLE"/>
     </logger>
 
-    <logger name="cn.iocoder.yudao.module.iot.service.rule.scene.matcher.trigger" level="DEBUG" additivity="false">
+    <logger name="cn.cheers.x.iot.service.rule.scene.matcher.trigger" level="DEBUG" additivity="false">
         <appender-ref ref="CONSOLE"/>
     </logger>
 

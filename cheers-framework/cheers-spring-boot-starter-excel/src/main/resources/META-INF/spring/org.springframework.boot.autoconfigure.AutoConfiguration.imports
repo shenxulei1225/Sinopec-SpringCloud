@@ -1,2 +1,2 @@
-cn.cheers.x.framework.dict.config.YudaoDictRpcAutoConfiguration
-cn.cheers.x.framework.dict.config.YudaoDictAutoConfiguration
+cn.cheers.x.framework.dict.config.CheersDictRpcAutoConfiguration
+cn.cheers.x.framework.dict.config.CheersDictAutoConfiguration

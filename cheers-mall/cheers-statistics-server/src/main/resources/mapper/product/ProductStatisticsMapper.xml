@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="cn.iocoder.yudao.module.statistics.dal.mysql.product.ProductStatisticsMapper">
+<mapper namespace="cn.cheers.x.statistics.dal.mysql.product.ProductStatisticsMapper">
 
     <select id="selectStatisticsResultPageByTimeBetween"
-            resultType="cn.iocoder.yudao.module.statistics.dal.dataobject.product.ProductStatisticsDO">
+            resultType="cn.cheers.x.statistics.dal.dataobject.product.ProductStatisticsDO">
         SELECT spu.id                                                       AS spuId
              -- 浏览量：一个用户可以有多次
              , (SELECT COUNT(1)

@@ -1,0 +1,32 @@
+package cn.cheers.x.promotion.dal.mysql.article;
+
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
+import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.cheers.x.promotion.controller.admin.article.vo.category.ArticleCategoryPageReqVO;
+import cn.cheers.x.promotion.dal.dataobject.article.ArticleCategoryDO;
+import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
+
+/**
+ * 文章分类 Mapper
+ *
+ * @author HUIHUI
+ */
+@Mapper
+public interface ArticleCategoryMapper extends BaseMapperX<ArticleCategoryDO> {
+
+    default PageResult<ArticleCategoryDO> selectPage(ArticleCategoryPageReqVO reqVO) {
+        return selectPage(reqVO, new LambdaQueryWrapperX<ArticleCategoryDO>()
+                .likeIfPresent(ArticleCategoryDO::getName, reqVO.getName())
+                .eqIfPresent(ArticleCategoryDO::getStatus, reqVO.getStatus())
+                .betweenIfPresent(ArticleCategoryDO::getCreateTime, reqVO.getCreateTime())
+                .orderByDesc(ArticleCategoryDO::getSort));
+    }
+
+    default List<ArticleCategoryDO> selectListByStatus(Integer status) {
+        return selectList(ArticleCategoryDO::getStatus, status);
+    }
+
+}

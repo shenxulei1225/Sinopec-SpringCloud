@@ -242,7 +242,7 @@
 建议 `scene-platform-server` 的 Java 包结构逐步调整为：
 
 ```text
-cn.iocoder.yudao.module.scene.platform
+cn.cheers.x.scene.platform
   controller
     admin
       scene

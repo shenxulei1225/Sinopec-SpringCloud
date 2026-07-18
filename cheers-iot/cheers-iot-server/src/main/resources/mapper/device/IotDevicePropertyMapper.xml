@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="cn.iocoder.yudao.module.iot.dal.tdengine.IotDevicePropertyMapper">
+<mapper namespace="cn.cheers.x.iot.dal.tdengine.IotDevicePropertyMapper">
 
-    <select id="getProductPropertySTableFieldList" resultType="cn.iocoder.yudao.module.iot.framework.tdengine.core.TDengineTableField">
+    <select id="getProductPropertySTableFieldList" resultType="cn.cheers.x.iot.framework.tdengine.core.TDengineTableField">
         DESCRIBE product_property_${productId}
     </select>
 
@@ -67,7 +67,7 @@
     </select>
 
     <select id="selectListByHistory"
-            resultType="cn.iocoder.yudao.module.iot.controller.admin.device.vo.property.IotDevicePropertyRespVO">
+            resultType="cn.cheers.x.iot.controller.admin.device.vo.property.IotDevicePropertyRespVO">
         SELECT ${@cn.hutool.core.util.StrUtil@toUnderlineCase(reqVO.identifier)} AS `value`, ts AS update_time
         FROM device_property_${reqVO.deviceId}
         WHERE ${@cn.hutool.core.util.StrUtil@toUnderlineCase(reqVO.identifier)} IS NOT NULL

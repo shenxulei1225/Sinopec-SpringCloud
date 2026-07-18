@@ -1,3 +1,3 @@
-cn.cheers.x.framework.datasource.config.YudaoDataSourceAutoConfiguration
-cn.cheers.x.framework.mybatis.config.YudaoMybatisAutoConfiguration
-cn.cheers.x.framework.translate.config.YudaoTranslateAutoConfiguration
+cn.cheers.x.framework.datasource.config.CheersDataSourceAutoConfiguration
+cn.cheers.x.framework.mybatis.config.CheersMybatisAutoConfiguration
+cn.cheers.x.framework.translate.config.CheersTranslateAutoConfiguration

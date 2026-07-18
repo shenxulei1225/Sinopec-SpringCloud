@@ -130,7 +130,7 @@ spring:
 
 logging:
   level:
-    cn.iocoder.yudao.module.scene.platform.dal.mysql: debug
+    cn.cheers.x.scene.platform.dal.mysql: debug
     org.springframework.context.support.PostProcessorRegistrationDelegate: ERROR
 
 --- #################### Cheers 相关配置 ####################

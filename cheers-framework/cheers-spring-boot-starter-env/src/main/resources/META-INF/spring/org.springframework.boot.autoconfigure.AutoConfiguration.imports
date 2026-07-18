@@ -1,2 +1,2 @@
-cn.cheers.x.framework.env.config.YudaoEnvWebAutoConfiguration
-cn.cheers.x.framework.env.config.YudaoEnvRpcAutoConfiguration
+cn.cheers.x.framework.env.config.CheersEnvWebAutoConfiguration
+cn.cheers.x.framework.env.config.CheersEnvRpcAutoConfiguration

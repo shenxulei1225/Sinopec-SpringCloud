@@ -1,0 +1,10 @@
+package cn.cheers.x.erp.framework.rpc.config;
+
+import cn.cheers.x.system.api.user.AdminUserApi;
+import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration(value = "erpRpcConfiguration", proxyBeanMethods = false)
+@EnableFeignClients(clients = AdminUserApi.class)
+public class RpcConfiguration {
+}

@@ -9,9 +9,9 @@ import org.mybatis.spring.annotation.MapperScan;
  */
 @SpringBootApplication(scanBasePackages = {
         "cn.cheers.x.gis",
-        "cn.iocoder.yudao.module.scene.platform"
+        "cn.cheers.x.scene.platform"
 })
-@MapperScan("cn.iocoder.yudao.module.scene.platform.dal.mysql")
+@MapperScan("cn.cheers.x.scene.platform.dal.mysql")
 public class GisServerApplication {
 
     public static void main(String[] args) {

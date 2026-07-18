@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="cn.iocoder.yudao.module.crm.dal.mysql.statistics.CrmStatisticsCustomerMapper">
+<mapper namespace="cn.cheers.x.crm.dal.mysql.statistics.CrmStatisticsCustomerMapper">
 
     <select id="selectCustomerCreateCountGroupByDate"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByDateRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByDateRespVO">
         SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS time,
                COUNT(*) AS customerCreateCount
           FROM crm_customer
@@ -17,14 +17,14 @@
     </select>
 
     <select id="selectCustomerDealCountGroupByDate"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByDateRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByDateRespVO">
         SELECT DATE_FORMAT(customer.create_time, '%Y-%m-%d')    AS time,
                COUNT(DISTINCT customer.id)                      AS customer_deal_count
           FROM crm_customer AS customer
                 LEFT JOIN crm_contract AS contract ON contract.customer_id = customer.id
          WHERE customer.deleted = 0
            AND contract.deleted = 0
-           AND contract.audit_status = ${@cn.iocoder.yudao.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+           AND contract.audit_status = ${@cn.cheers.x.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
            AND customer.owner_user_id IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
@@ -34,7 +34,7 @@
     </select>
 
     <select id="selectCustomerCreateCountGroupByUser"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByUserRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByUserRespVO">
         SELECT owner_user_id,
                COUNT(*) AS customer_create_count
           FROM crm_customer
@@ -48,14 +48,14 @@
     </select>
 
     <select id="selectCustomerDealCountGroupByUser"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByUserRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByUserRespVO">
         SELECT customer.owner_user_id,
                COUNT(DISTINCT customer.id) AS customer_deal_count
           FROM crm_customer AS customer
                 LEFT JOIN crm_contract AS contract ON contract.customer_id = customer.id
          WHERE customer.deleted = 0
            AND contract.deleted = 0
-           AND contract.audit_status = ${@cn.iocoder.yudao.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+           AND contract.audit_status = ${@cn.cheers.x.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
            AND customer.owner_user_id IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
@@ -65,12 +65,12 @@
     </select>
 
     <select id="selectContractPriceGroupByUser"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByUserRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByUserRespVO">
         SELECT owner_user_id,
                IFNULL(SUM(total_price), 0) AS contract_price
           FROM crm_contract
          WHERE deleted = 0
-           AND audit_status = ${@cn.iocoder.yudao.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+           AND audit_status = ${@cn.cheers.x.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
            AND owner_user_id in
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
@@ -80,12 +80,12 @@
     </select>
 
     <select id="selectReceivablePriceGroupByUser"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByUserRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerSummaryByUserRespVO">
         SELECT owner_user_id,
                IFNULL(SUM(price), 0) AS receivable_price
           FROM crm_receivable
          WHERE deleted = 0
-           AND audit_status = ${@cn.iocoder.yudao.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+           AND audit_status = ${@cn.cheers.x.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
            AND owner_user_id IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
@@ -95,7 +95,7 @@
     </select>
 
     <select id="selectFollowUpRecordCountGroupByDate"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsFollowUpSummaryByDateRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.customer.CrmStatisticsFollowUpSummaryByDateRespVO">
         SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS time,
                COUNT(*) AS follow_up_record_count
           FROM crm_follow_up_record
@@ -104,12 +104,12 @@
                     #{userId}
                 </foreach>
            AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
-           AND biz_type = ${@cn.iocoder.yudao.module.crm.enums.common.CrmBizTypeEnum@CRM_CUSTOMER.type}
+           AND biz_type = ${@cn.cheers.x.crm.enums.common.CrmBizTypeEnum@CRM_CUSTOMER.type}
          GROUP BY time
     </select>
 
     <select id="selectFollowUpCustomerCountGroupByDate"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsFollowUpSummaryByDateRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.customer.CrmStatisticsFollowUpSummaryByDateRespVO">
         SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS time,
                COUNT(DISTINCT biz_id) AS follow_up_customer_count
           FROM crm_follow_up_record
@@ -118,12 +118,12 @@
                     #{userId}
                 </foreach>
            AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
-           AND biz_type = ${@cn.iocoder.yudao.module.crm.enums.common.CrmBizTypeEnum@CRM_CUSTOMER.type}
+           AND biz_type = ${@cn.cheers.x.crm.enums.common.CrmBizTypeEnum@CRM_CUSTOMER.type}
          GROUP BY time
     </select>
 
     <select id="selectFollowUpRecordCountGroupByUser"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsFollowUpSummaryByUserRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.customer.CrmStatisticsFollowUpSummaryByUserRespVO">
         SELECT creator as owner_user_id,
                COUNT(*) AS follow_up_record_count
           FROM crm_follow_up_record
@@ -132,12 +132,12 @@
                     #{userId}
                 </foreach>
            AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
-           AND biz_type = ${@cn.iocoder.yudao.module.crm.enums.common.CrmBizTypeEnum@CRM_CUSTOMER.type}
+           AND biz_type = ${@cn.cheers.x.crm.enums.common.CrmBizTypeEnum@CRM_CUSTOMER.type}
          GROUP BY creator
     </select>
 
     <select id="selectFollowUpCustomerCountGroupByUser"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsFollowUpSummaryByUserRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.customer.CrmStatisticsFollowUpSummaryByUserRespVO">
         SELECT
             creator as owner_user_id,
             COUNT(DISTINCT biz_id) AS follow_up_customer_count
@@ -147,12 +147,12 @@
                 #{userId}
             </foreach>
         AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
-        AND biz_type = ${@cn.iocoder.yudao.module.crm.enums.common.CrmBizTypeEnum@CRM_CUSTOMER.type}
+        AND biz_type = ${@cn.cheers.x.crm.enums.common.CrmBizTypeEnum@CRM_CUSTOMER.type}
         GROUP BY creator
     </select>
 
     <select id="selectFollowUpRecordCountGroupByType"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsFollowUpSummaryByTypeRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.customer.CrmStatisticsFollowUpSummaryByTypeRespVO">
         SELECT type AS follow_up_type,
                COUNT(*) AS follow_up_record_count
           FROM crm_follow_up_record
@@ -161,12 +161,12 @@
                     #{userId}
                 </foreach>
            AND create_time BETWEEN #{times[0],javaType=java.time.LocalDateTime} AND #{times[1],javaType=java.time.LocalDateTime}
-           AND biz_type = ${@cn.iocoder.yudao.module.crm.enums.common.CrmBizTypeEnum@CRM_CUSTOMER.type}
+           AND biz_type = ${@cn.cheers.x.crm.enums.common.CrmBizTypeEnum@CRM_CUSTOMER.type}
          GROUP BY follow_up_type
     </select>
 
     <select id="selectContractSummary"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerContractSummaryRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerContractSummaryRespVO">
         SELECT customer.name AS customer_name,
                customer.industry_id,
                customer.source,
@@ -181,7 +181,7 @@
                 INNER JOIN crm_contract AS contract ON customer.id = contract.customer_id
                 LEFT JOIN crm_receivable AS receivable ON contract.id = receivable.contract_id
          WHERE customer.deleted = 0 AND contract.deleted = 0 AND receivable.deleted = 0
-           AND contract.audit_status = ${@cn.iocoder.yudao.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+           AND contract.audit_status = ${@cn.cheers.x.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
            AND customer.owner_user_id IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
@@ -191,13 +191,13 @@
 
     <!-- TIMESTAMPDIFF 用于求差值；AVG 求平均；TRUNCATE 去掉小数点、只保留整数 -->
     <select id="selectCustomerDealCycleGroupByDate"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByDateRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByDateRespVO">
         SELECT DATE_FORMAT(contract.order_date, '%Y-%m-%d') AS time,
                IFNULL(TRUNCATE(AVG(TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date)), 1), 0) AS customer_deal_cycle
           FROM crm_customer AS customer
                 LEFT JOIN crm_contract AS contract ON contract.customer_id = customer.id
          WHERE customer.deleted = 0 AND contract.deleted = 0
-           AND contract.audit_status = ${@cn.iocoder.yudao.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+           AND contract.audit_status = ${@cn.cheers.x.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
            AND customer.owner_user_id IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
@@ -207,13 +207,13 @@
     </select>
 
     <select id="selectCustomerDealCycleGroupByUser"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByUserRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByUserRespVO">
         SELECT customer.owner_user_id,
                IFNULL(TRUNCATE(AVG(TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date)), 1), 0) AS customer_deal_cycle
           FROM crm_customer AS customer
                 LEFT JOIN crm_contract AS contract ON contract.customer_id = customer.id
          WHERE customer.deleted = 0 AND contract.deleted = 0
-           AND contract.audit_status = ${@cn.iocoder.yudao.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+           AND contract.audit_status = ${@cn.cheers.x.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
            AND customer.owner_user_id IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
@@ -223,7 +223,7 @@
     </select>
 
     <select id="selectCustomerDealCycleGroupByAreaId"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByAreaRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByAreaRespVO">
         SELECT customer.area_id AS area_id,
                IFNULL(TRUNCATE(AVG(TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date)), 1), 0) AS customer_deal_cycle,
                COUNT(DISTINCT customer.id) AS customer_deal_count
@@ -231,7 +231,7 @@
                 LEFT JOIN crm_contract AS contract ON customer.id = contract.customer_id
         WHERE customer.deleted = 0
           AND contract.deleted = 0
-          AND contract.audit_status = ${@cn.iocoder.yudao.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+          AND contract.audit_status = ${@cn.cheers.x.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
           AND customer.owner_user_id IN
                 <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                     #{userId}
@@ -242,7 +242,7 @@
     </select>
 
     <select id="selectCustomerDealCycleGroupByProductId"
-            resultType="cn.iocoder.yudao.module.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByProductRespVO">
+            resultType="cn.cheers.x.crm.controller.admin.statistics.vo.customer.CrmStatisticsCustomerDealCycleByProductRespVO">
         SELECT product.name                                                                                 AS product_name,
                IFNULL(TRUNCATE(AVG(TIMESTAMPDIFF(DAY, customer.create_time, contract.order_date)), 1), 0)   AS customer_deal_cycle,
                COUNT(DISTINCT customer.id)                                                                  AS customer_deal_count
@@ -254,7 +254,7 @@
            AND contract.deleted = 0
            AND contract_product.deleted = 0
            AND product.deleted = 0
-           AND contract.audit_status = ${@cn.iocoder.yudao.module.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
+           AND contract.audit_status = ${@cn.cheers.x.crm.enums.common.CrmAuditStatusEnum@APPROVE.status}
            AND customer.owner_user_id IN
                  <foreach collection="userIds" item="userId" open="(" close=")" separator=",">
                      #{userId}

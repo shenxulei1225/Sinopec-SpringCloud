@@ -1,5 +1,5 @@
-cn.cheers.x.framework.security.config.YudaoSecurityRpcAutoConfiguration
-cn.cheers.x.framework.security.config.YudaoSecurityAutoConfiguration
-cn.cheers.x.framework.security.config.YudaoWebSecurityConfigurerAdapter
-cn.cheers.x.framework.operatelog.config.YudaoOperateLogConfiguration
-cn.cheers.x.framework.operatelog.config.YudaoOperateLogRpcAutoConfiguration
+cn.cheers.x.framework.security.config.CheersSecurityRpcAutoConfiguration
+cn.cheers.x.framework.security.config.CheersSecurityAutoConfiguration
+cn.cheers.x.framework.security.config.CheersWebSecurityConfigurerAdapter
+cn.cheers.x.framework.operatelog.config.CheersOperateLogConfiguration
+cn.cheers.x.framework.operatelog.config.CheersOperateLogRpcAutoConfiguration

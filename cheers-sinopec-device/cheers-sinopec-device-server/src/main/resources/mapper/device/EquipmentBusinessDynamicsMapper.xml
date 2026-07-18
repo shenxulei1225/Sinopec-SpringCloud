@@ -2,11 +2,11 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="cn.iocoder.yudao.module.sinopec.device.dal.mapper.EquipmentBusinessDynamicsMapper">
+<mapper namespace="cn.cheers.x.sinopec.device.dal.mapper.EquipmentBusinessDynamicsMapper">
 
     <select id="selectListBySiteId"
             parameterType="java.lang.Integer"
-            resultType="cn.iocoder.yudao.module.sinopec.device.dal.dataobject.EquipmentBusinessDynamicsDO">
+            resultType="cn.cheers.x.sinopec.device.dal.dataobject.EquipmentBusinessDynamicsDO">
         SELECT
             id,
             site_id AS siteId,

@@ -1,2 +1,2 @@
-cn.cheers.x.framework.tracer.config.YudaoTracerAutoConfiguration
-cn.cheers.x.framework.tracer.config.YudaoMetricsAutoConfiguration
+cn.cheers.x.framework.tracer.config.CheersTracerAutoConfiguration
+cn.cheers.x.framework.tracer.config.CheersMetricsAutoConfiguration

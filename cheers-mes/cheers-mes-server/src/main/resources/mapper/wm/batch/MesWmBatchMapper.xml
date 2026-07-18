@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="cn.iocoder.yudao.module.mes.dal.mysql.wm.batch.MesWmBatchMapper">
+<mapper namespace="cn.cheers.x.mes.dal.mysql.wm.batch.MesWmBatchMapper">
 
-    <resultMap id="BatchTraceResult" type="cn.iocoder.yudao.module.mes.dal.dataobject.wm.batch.MesWmBatchDO">
+    <resultMap id="BatchTraceResult" type="cn.cheers.x.mes.dal.dataobject.wm.batch.MesWmBatchDO">
         <id property="id" column="batch_id"/>
         <result property="code" column="batch_code"/>
         <result property="workOrderId" column="work_order_id"/>

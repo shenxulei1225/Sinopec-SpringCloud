@@ -119,25 +119,25 @@ logging:
   file:
     name: ${user.home}/logs/${spring.application.name}.log
   level:
-    cn.iocoder.yudao.module.bpm.dal.mysql: debug
+    cn.cheers.x.bpm.dal.mysql: debug
     cn.cheers.x.infra.dal.mysql: debug
     cn.cheers.x.infra.dal.mysql.logger.ApiErrorLogMapper: INFO
     cn.cheers.x.infra.dal.mysql.job.JobLogMapper: INFO
     cn.cheers.x.infra.dal.mysql.file.FileConfigMapper: INFO
-    cn.iocoder.yudao.module.pay.dal.mysql: debug
-    cn.iocoder.yudao.module.pay.dal.mysql.notify.PayNotifyTaskMapper: INFO
+    cn.cheers.x.pay.dal.mysql: debug
+    cn.cheers.x.pay.dal.mysql.notify.PayNotifyTaskMapper: INFO
     cn.cheers.x.system.dal.mysql: debug
     cn.cheers.x.system.dal.mysql.sms.SmsChannelMapper: INFO
-    cn.iocoder.yudao.module.tool.dal.mysql: debug
-    cn.iocoder.yudao.module.member.dal.mysql: debug
-    cn.iocoder.yudao.module.trade.dal.mysql: debug
-    cn.iocoder.yudao.module.promotion.dal.mysql: debug
-    cn.iocoder.yudao.module.statistics.dal.mysql: debug
-    cn.iocoder.yudao.module.crm.dal.mysql: debug
-    cn.iocoder.yudao.module.erp.dal.mysql: debug
-    cn.iocoder.yudao.module.iot.dal.mysql: debug
-    cn.iocoder.yudao.module.iot.dal.tdengine: DEBUG
-    cn.iocoder.yudao.module.ai.dal.mysql: debug
+    cn.cheers.x.tool.dal.mysql: debug
+    cn.cheers.x.member.dal.mysql: debug
+    cn.cheers.x.trade.dal.mysql: debug
+    cn.cheers.x.promotion.dal.mysql: debug
+    cn.cheers.x.statistics.dal.mysql: debug
+    cn.cheers.x.crm.dal.mysql: debug
+    cn.cheers.x.erp.dal.mysql: debug
+    cn.cheers.x.iot.dal.mysql: debug
+    cn.cheers.x.iot.dal.tdengine: DEBUG
+    cn.cheers.x.ai.dal.mysql: debug
     org.springframework.context.support.PostProcessorRegistrationDelegate: ERROR
 
 debug: false
