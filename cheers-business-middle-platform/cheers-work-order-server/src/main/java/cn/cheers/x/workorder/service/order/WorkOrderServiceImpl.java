@@ -1,8 +1,11 @@
 package cn.cheers.x.workorder.service.order;
 
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.framework.common.util.json.JsonUtils;
 import cn.cheers.x.framework.common.util.object.BeanUtils;
+import cn.cheers.x.maintenance.api.MaintenanceApi;
+import cn.cheers.x.maintenance.api.dto.FieldWorkStandardRespDTO;
 import cn.cheers.x.workorder.api.dto.WorkOrderCreateReqDTO;
 import cn.cheers.x.workorder.controller.admin.vo.order.WorkOrderPageReqVO;
 import cn.cheers.x.workorder.controller.admin.vo.order.WorkOrderRespVO;
@@ -61,6 +64,8 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     private WorkOrderStepResultMapper workOrderStepResultMapper;
     @Resource
     private FieldWorkStandardMapper fieldWorkStandardMapper;
+    @Resource
+    private MaintenanceApi maintenanceApi;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -169,25 +174,54 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         log.info("[cancel][id={}, woNo={}]", id, workOrder.getWoNo());
     }
 
+    /**
+     * 优先从维护手册服务取已发布标准；本地表仅作波次 1 兼容回退。
+     */
     private FieldWorkStandardDO resolvePublishedStandard(WorkOrderCreateReqDTO reqDTO) {
-        FieldWorkStandardDO standard;
         if (reqDTO.getStandardId() != null) {
-            standard = fieldWorkStandardMapper.selectById(reqDTO.getStandardId());
+            FieldWorkStandardDO fromMaintenance = tryLoadFromMaintenance(reqDTO.getStandardId());
+            if (fromMaintenance != null) {
+                return fromMaintenance;
+            }
+            FieldWorkStandardDO standard = fieldWorkStandardMapper.selectById(reqDTO.getStandardId());
             if (standard == null) {
                 throw exception(FIELD_WORK_STANDARD_NOT_EXISTS);
             }
-        } else if (StringUtils.hasText(reqDTO.getStandardCode())) {
-            standard = fieldWorkStandardMapper.selectLatestPublishedByCode(reqDTO.getStandardCode());
+            if (!FieldWorkStandardStatusEnum.PUBLISHED.getStatus().equals(standard.getStatus())) {
+                throw exception(WORK_ORDER_STANDARD_NOT_PUBLISHED);
+            }
+            return standard;
+        }
+        if (StringUtils.hasText(reqDTO.getStandardCode())) {
+            FieldWorkStandardDO standard = fieldWorkStandardMapper.selectLatestPublishedByCode(reqDTO.getStandardCode());
             if (standard == null) {
                 throw exception(FIELD_WORK_STANDARD_NOT_EXISTS);
             }
-        } else {
-            throw exception(WORK_ORDER_STANDARD_REQUIRED);
+            if (!FieldWorkStandardStatusEnum.PUBLISHED.getStatus().equals(standard.getStatus())) {
+                throw exception(WORK_ORDER_STANDARD_NOT_PUBLISHED);
+            }
+            return standard;
         }
-        if (!FieldWorkStandardStatusEnum.PUBLISHED.getStatus().equals(standard.getStatus())) {
-            throw exception(WORK_ORDER_STANDARD_NOT_PUBLISHED);
+        throw exception(WORK_ORDER_STANDARD_REQUIRED);
+    }
+
+    private FieldWorkStandardDO tryLoadFromMaintenance(Long standardId) {
+        try {
+            CommonResult<FieldWorkStandardRespDTO> result = maintenanceApi.getPublishedStandard(standardId);
+            FieldWorkStandardRespDTO dto = result.getCheckedData();
+            FieldWorkStandardDO standard = new FieldWorkStandardDO();
+            standard.setId(dto.getId());
+            standard.setCode(dto.getCode());
+            standard.setName(dto.getName());
+            standard.setVersionNo(dto.getVersionNo());
+            standard.setScope(dto.getScope());
+            standard.setStepsJson(dto.getStepsJson());
+            standard.setStatus(dto.getStatus());
+            return standard;
+        } catch (Exception ex) {
+            log.debug("[tryLoadFromMaintenance][id={} fallback local] {}", standardId, ex.getMessage());
+            return null;
         }
-        return standard;
     }
 
     /**

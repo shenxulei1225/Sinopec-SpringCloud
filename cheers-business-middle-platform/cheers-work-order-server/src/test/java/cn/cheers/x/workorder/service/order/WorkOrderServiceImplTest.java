@@ -1,6 +1,7 @@
 package cn.cheers.x.workorder.service.order;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.maintenance.api.MaintenanceApi;
 import cn.cheers.x.workorder.api.dto.WorkOrderCreateReqDTO;
 import cn.cheers.x.workorder.controller.admin.vo.order.WorkOrderStepCompleteReqVO;
 import cn.cheers.x.workorder.dal.dataobject.FieldWorkStandardDO;
@@ -45,6 +46,8 @@ class WorkOrderServiceImplTest {
     private WorkOrderStepResultMapper workOrderStepResultMapper;
     @Mock
     private FieldWorkStandardMapper fieldWorkStandardMapper;
+    @Mock
+    private MaintenanceApi maintenanceApi;
 
     @InjectMocks
     private WorkOrderServiceImpl workOrderService;

@@ -24,6 +24,11 @@
             <artifactId>cheers-work-order-api</artifactId>
             <version>${revision}</version>
         </dependency>
+        <dependency>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-maintenance-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
 
         <!-- 业务组件 -->
         <dependency>

@@ -1,0 +1,20 @@
+package cn.cheers.x.maintenance.enums;
+
+import cn.cheers.x.framework.common.exception.ErrorCode;
+
+/**
+ * 维护手册服务错误码（1-022 段，紧邻 work-order 1-021）
+ */
+public interface ErrorCodeConstants {
+
+    ErrorCode FIELD_WORK_STANDARD_NOT_EXISTS = new ErrorCode(1_022_000_000, "现场作业标准不存在");
+    ErrorCode FIELD_WORK_STANDARD_PUBLISHED_IMMUTABLE = new ErrorCode(1_022_000_001, "已发布的现场作业标准不可修改");
+    ErrorCode FIELD_WORK_STANDARD_STEPS_EMPTY = new ErrorCode(1_022_000_002, "现场作业标准步骤不能为空");
+    ErrorCode FIELD_WORK_STANDARD_PUBLISH_NOT_DRAFT = new ErrorCode(1_022_000_003, "仅草稿状态的现场作业标准可发布");
+    ErrorCode FIELD_WORK_STANDARD_NOT_PUBLISHED = new ErrorCode(1_022_000_004, "现场作业标准未发布");
+
+    ErrorCode HANDBOOK_NOT_EXISTS = new ErrorCode(1_022_001_000, "维护手册不存在");
+    ErrorCode HANDBOOK_PUBLISHED_IMMUTABLE = new ErrorCode(1_022_001_001, "已发布的维护手册不可修改");
+    ErrorCode HANDBOOK_PUBLISH_NOT_DRAFT = new ErrorCode(1_022_001_002, "仅草稿状态的维护手册可发布");
+    ErrorCode HANDBOOK_STANDARD_NOT_PUBLISHED = new ErrorCode(1_022_001_003, "发布手册要求关联已发布的现场作业标准");
+}

@@ -25,9 +25,12 @@ import org.springframework.web.bind.annotation.RestController;
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
- * 管理后台 - 现场作业标准
+ * 管理后台 - 现场作业标准（波次 2：作者面迁至 /maintenance/standards，本控制器保留兼容）
+ *
+ * @deprecated 新写入请使用 maintenance-server
  */
-@Tag(name = "管理后台 - 现场作业标准")
+@Deprecated
+@Tag(name = "管理后台 - 现场作业标准（兼容）")
 @RestController
 @RequestMapping("/work-order/standards")
 @Validated
