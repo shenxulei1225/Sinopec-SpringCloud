@@ -36,6 +36,12 @@ public class ScheduleRunRequest {
     private Boolean dispatchWorkOrders = false;
     /** 业务域范围（scope），如 inspection */
     private String scope;
-    /** 现场作业标准 ID；派工时显式传入（完整绑定引擎波次 2） */
+    /** 现场作业标准 ID；显式传入时优先于绑定解析 */
     private Long fieldWorkStandardId;
+    /** 绑定解析用：资产 id（可空） */
+    private Long assetId;
+    /** 绑定解析用：资产类型编码（可空） */
+    private String assetTypeCode;
+    /** 绑定解析用：频率编码（可空） */
+    private String frequencyCode;
 }

@@ -21,6 +21,8 @@ import cn.cheers.x.module.platform.policy.api.dto.PolicySnapshotRespDTO;
 import cn.cheers.x.module.platform.runtime.api.RuntimePersistApi;
 import cn.cheers.x.module.platform.runtime.api.dto.RuntimePersistReqDTO;
 import cn.cheers.x.module.platform.scheduling.engine.SchedulingEngine;
+import cn.cheers.x.maintenance.api.MaintenanceApi;
+import cn.cheers.x.maintenance.api.dto.BindingResolveReqDTO;
 import cn.cheers.x.workorder.api.WorkOrderApi;
 import cn.cheers.x.workorder.api.dto.WorkOrderCreateReqDTO;
 import cn.cheers.x.framework.common.pojo.CommonResult;
@@ -58,6 +60,8 @@ public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationSe
     private MappingProfileApi mappingProfileApi;
     @Resource
     private WorkOrderApi workOrderApi;
+    @Resource
+    private MaintenanceApi maintenanceApi;
 
     @Override
     public ScheduleRunResponse runSchedule(ScheduleRunRequest request, Long siteId) {
@@ -105,14 +109,17 @@ public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationSe
                 .build();
 
         if (Boolean.TRUE.equals(request.getDispatchWorkOrders())) {
-            Long standardId = request.getFieldWorkStandardId();
             String scope = StringUtils.hasText(request.getScope()) ? request.getScope() : "inspection";
+            Long standardId = resolveDispatchStandardId(request, scope);
             List<Long> woIds = new ArrayList<>();
             for (ScheduleSlotDTO slot : slots) {
                 WorkOrderCreateReqDTO dto = new WorkOrderCreateReqDTO();
                 dto.setScope(scope);
                 dto.setTitle("WO-" + slot.getSlotId());
                 dto.setStandardId(standardId);
+                dto.setAssetId(request.getAssetId());
+                dto.setAssetTypeCode(request.getAssetTypeCode());
+                dto.setFrequencyCode(request.getFrequencyCode());
                 dto.setRuntimeJobId(runtimeJobId);
                 dto.setScheduleSlotId(slot.getSlotId());
                 dto.setBusinessKey(slot.getWorkId());
@@ -137,12 +144,32 @@ public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationSe
 
     /**
      * 派工前置校验：必须在 runtime 落库之前完成，避免“已 persist 却因缺标准失败”。
+     * 显式标准 id，或具备可绑定解析的 scope（绑定失败将在派工阶段抛出）。
      */
     private void validateDispatchPreconditions(ScheduleRunRequest request) {
-        if (Boolean.TRUE.equals(request.getDispatchWorkOrders())
-                && request.getFieldWorkStandardId() == null) {
+        if (!Boolean.TRUE.equals(request.getDispatchWorkOrders())) {
+            return;
+        }
+        if (request.getFieldWorkStandardId() != null) {
+            return;
+        }
+        if (!StringUtils.hasText(request.getScope())) {
             throw exception(SCHEDULE_DISPATCH_STANDARD_REQUIRED);
         }
+        // 预解析：无显式标准时必须能绑定成功，否则在 persist 前失败
+        resolveDispatchStandardId(request, request.getScope());
+    }
+
+    private Long resolveDispatchStandardId(ScheduleRunRequest request, String scope) {
+        if (request.getFieldWorkStandardId() != null) {
+            return request.getFieldWorkStandardId();
+        }
+        return maintenanceApi.resolveBinding(BindingResolveReqDTO.builder()
+                .assetId(request.getAssetId())
+                .assetTypeCode(request.getAssetTypeCode())
+                .frequencyCode(request.getFrequencyCode())
+                .scope(scope)
+                .build()).getCheckedData().getFieldStandardId();
     }
 
     private List<WorkItemDTO> resolveWorkItems(ScheduleRunRequest request) {
