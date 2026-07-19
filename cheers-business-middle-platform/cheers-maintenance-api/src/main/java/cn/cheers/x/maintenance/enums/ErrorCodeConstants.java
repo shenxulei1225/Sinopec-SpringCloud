@@ -17,4 +17,10 @@ public interface ErrorCodeConstants {
     ErrorCode HANDBOOK_PUBLISHED_IMMUTABLE = new ErrorCode(1_022_001_001, "已发布的维护手册不可修改");
     ErrorCode HANDBOOK_PUBLISH_NOT_DRAFT = new ErrorCode(1_022_001_002, "仅草稿状态的维护手册可发布");
     ErrorCode HANDBOOK_STANDARD_NOT_PUBLISHED = new ErrorCode(1_022_001_003, "发布手册要求关联已发布的现场作业标准");
+
+    ErrorCode BINDING_RULE_NOT_EXISTS = new ErrorCode(1_022_002_000, "绑定规则不存在");
+    ErrorCode BINDING_RULE_NOT_FOUND = new ErrorCode(1_022_002_001, "未匹配到绑定规则");
+    ErrorCode BINDING_RULE_PUBLISH_NOT_DRAFT = new ErrorCode(1_022_002_002, "仅草稿状态的绑定规则可发布");
+    ErrorCode BINDING_RULE_PUBLISHED_IMMUTABLE = new ErrorCode(1_022_002_003, "已发布的绑定规则不可修改");
 }
+

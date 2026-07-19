@@ -1,10 +1,13 @@
 package cn.cheers.x.maintenance.api;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.maintenance.api.dto.BindingResolveReqDTO;
+import cn.cheers.x.maintenance.api.dto.BindingResolveRespDTO;
 import cn.cheers.x.maintenance.api.dto.FieldWorkStandardRespDTO;
 import cn.cheers.x.maintenance.dal.dataobject.FieldWorkStandardDO;
 import cn.cheers.x.maintenance.dal.mysql.FieldWorkStandardMapper;
 import cn.cheers.x.maintenance.enums.FieldWorkStandardStatusEnum;
+import cn.cheers.x.maintenance.service.binding.BindingRuleService;
 import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,8 +21,8 @@ import static cn.cheers.x.maintenance.enums.ErrorCodeConstants.FIELD_WORK_STANDA
 @Validated
 public class MaintenanceApiImpl implements MaintenanceApi {
 
-    @Resource
-    private FieldWorkStandardMapper fieldWorkStandardMapper;
+    @Resource private FieldWorkStandardMapper fieldWorkStandardMapper;
+    @Resource private BindingRuleService bindingRuleService;
 
     @Override
     public CommonResult<FieldWorkStandardRespDTO> getPublishedStandard(Long id) {
@@ -39,5 +42,10 @@ public class MaintenanceApiImpl implements MaintenanceApi {
         dto.setStepsJson(standard.getStepsJson());
         dto.setStatus(standard.getStatus());
         return success(dto);
+    }
+
+    @Override
+    public CommonResult<BindingResolveRespDTO> resolveBinding(BindingResolveReqDTO req) {
+        return success(bindingRuleService.resolve(req));
     }
 }
