@@ -20,6 +20,7 @@
 #   .\start-microservices.ps1 bmp-gis            # GIS
 #   .\start-microservices.ps1 bmp-alarm          # 告警
 #   .\start-microservices.ps1 bmp-work-order     # 工单
+#   .\start-microservices.ps1 bmp-maintenance    # 维护手册
 #   .\start-microservices.ps1 twin-dev           # 孪生联调：dynamic + scene-3d + twin
 #   .\start-microservices.ps1 stop-twin-dev      # 停止 twin-dev
 #   .\start-microservices.ps1 stop-bmp           # 停止 bmp（process+path）
@@ -79,6 +80,8 @@ $ServiceConfig = @{
     "bmp-alarm"  = @{ Path = "cheers-business-middle-platform\cheers-alarm-server"; Port = 58097 }
     "work-order" = @{ Path = "cheers-business-middle-platform\cheers-work-order-server"; Port = 58110 }
     "bmp-work-order" = @{ Path = "cheers-business-middle-platform\cheers-work-order-server"; Port = 58110 }
+    "maintenance" = @{ Path = "cheers-business-middle-platform\cheers-maintenance-server"; Port = 58111 }
+    "bmp-maintenance" = @{ Path = "cheers-business-middle-platform\cheers-maintenance-server"; Port = 58111 }
     "scene"      = @{ Path = "cheers-business-middle-platform\cheers-scene-3d-server"; Port = 58093 }
     "scene-3d"   = @{ Path = "cheers-business-middle-platform\cheers-scene-3d-server"; Port = 58093 }
     "gis"        = @{ Path = "cheers-business-middle-platform\cheers-gis-server"; Port = 58109 }
@@ -153,6 +156,7 @@ $BmpScene3dServices = @("scene-3d")
 $BmpGisServices = @("gis")
 $BmpAlarmServices = @("alarm")
 $BmpWorkOrderServices = @("work-order")
+$BmpMaintenanceServices = @("maintenance")
 $TwinDevServices = @("dynamic", "scene-3d", "twin")
 # [弃用别名] platform-all ≡ bmp
 $PlatformAllServices = $BmpCoreServices
@@ -1116,6 +1120,12 @@ switch ($Command.ToLower()) {
         Write-ColorOutput "[START] 业务中台 · 工单标准服务 (bmp-work-order)" "Cyan"
         Start-SuiteServices -Services $BmpWorkOrderServices -ShowLogs $f.IsPresent
     }
+    "bmp-maintenance" {
+        if (-not (Start-Nacos)) { Write-Error "Nacos 启动失败,无法继续"; exit 1 }
+        Check-Redis
+        Write-ColorOutput "[START] 业务中台 · 维护手册服务 (bmp-maintenance)" "Cyan"
+        Start-SuiteServices -Services $BmpMaintenanceServices -ShowLogs $f.IsPresent
+    }
     "bmp-station-dev" {
         if (-not (Start-Nacos)) { Write-Error "Nacos 启动失败,无法继续"; exit 1 }
         Check-Redis
@@ -1159,6 +1169,10 @@ switch ($Command.ToLower()) {
     "stop-bmp-work-order" {
         Write-ColorOutput "[STOP] 停止 bmp-work-order" "Cyan"
         Stop-SuiteServices -Services $BmpWorkOrderServices
+    }
+    "stop-bmp-maintenance" {
+        Write-ColorOutput "[STOP] 停止 bmp-maintenance" "Cyan"
+        Stop-SuiteServices -Services $BmpMaintenanceServices
     }
     "stop-twin-dev" {
         Write-ColorOutput "[STOP] 停止 twin-dev" "Cyan"

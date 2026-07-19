@@ -141,6 +141,7 @@ get_service_path() {
         iot) echo "cheers-iot/cheers-iot-server" ;;
         alarm|bmp-alarm) echo "cheers-business-middle-platform/cheers-alarm-server" ;;
         work-order|bmp-work-order) echo "cheers-business-middle-platform/cheers-work-order-server" ;;
+        maintenance|bmp-maintenance) echo "cheers-business-middle-platform/cheers-maintenance-server" ;;
         scene|scene-3d) echo "cheers-business-middle-platform/cheers-scene-3d-server" ;;
         gis|bmp-gis) echo "cheers-business-middle-platform/cheers-gis-server" ;;
         twin|cheers-twin) echo "cheers-twin/cheers-twin-server" ;;
@@ -179,6 +180,7 @@ get_service_port() {
         iot) echo "58091" ;;
         alarm|bmp-alarm) echo "58097" ;;
         work-order|bmp-work-order) echo "58110" ;;
+        maintenance|bmp-maintenance) echo "58111" ;;
         scene|scene-3d) echo "58093" ;;
         gis|bmp-gis) echo "58109" ;;
         twin|cheers-twin) echo "58094" ;;

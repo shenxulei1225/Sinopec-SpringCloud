@@ -230,6 +230,13 @@ spring:
                 - Path=/admin-api/work-order/**
               filters:
                 - RewritePath=/admin-api/work-order/v3/api-docs, /v3/api-docs # 配置，保证转发到 /v3/api-docs
+            ## maintenance-server 服务（维护手册 / 绑定 / 日历 / 故障主流程）
+            - id: maintenance-admin-api
+              uri: grayLb://maintenance-server
+              predicates:
+                - Path=/admin-api/maintenance/**
+              filters:
+                - RewritePath=/admin-api/maintenance/v3/api-docs, /v3/api-docs
             ## platformresource-server 服务
             - id: platformresource-admin-api
               uri: grayLb://platformresource-server
@@ -360,6 +367,9 @@ knife4j:
       - name: work-order-server
         service-name: work-order-server
         url: /admin-api/work-order/v3/api-docs
+      - name: maintenance-server
+        service-name: maintenance-server
+        url: /admin-api/maintenance/v3/api-docs
       - name: platformresource-server
         service-name: platformresource-server
         url: /admin-api/platformresource/v3/api-docs

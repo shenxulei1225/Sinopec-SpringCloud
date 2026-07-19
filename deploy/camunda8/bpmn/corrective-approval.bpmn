@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  id="Definitions_corrective"
+                  targetNamespace="http://cheers.x/maintenance">
+  <bpmn:process id="corrective-approval" name="故障维修审批" isExecutable="true">
+    <bpmn:startEvent id="Start" name="报修提交"/>
+    <bpmn:sequenceFlow id="Flow1" sourceRef="Start" targetRef="ApproveTask"/>
+    <bpmn:userTask id="ApproveTask" name="维修审批">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition assignee="demo"/>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow2" sourceRef="ApproveTask" targetRef="NotifyResult"/>
+    <bpmn:serviceTask id="NotifyResult" name="回写主单">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="corrective-approval-result"/>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow3" sourceRef="NotifyResult" targetRef="End"/>
+    <bpmn:endEvent id="End" name="结束"/>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="corrective-approval">
+      <bpmndi:BPMNShape id="Start_di" bpmnElement="Start">
+        <dc:Bounds x="180" y="100" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ApproveTask_di" bpmnElement="ApproveTask">
+        <dc:Bounds x="270" y="78" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NotifyResult_di" bpmnElement="NotifyResult">
+        <dc:Bounds x="430" y="78" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_di" bpmnElement="End">
+        <dc:Bounds x="590" y="100" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

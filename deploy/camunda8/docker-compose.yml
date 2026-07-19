@@ -1,0 +1,23 @@
+# Camunda 8 Run — local smoke for Wave 2 corrective approval
+# Docs: deploy/camunda8/README.md
+services:
+  camunda:
+    image: camunda/camunda:8.6.9
+    container_name: camunda8-run
+    ports:
+      - "26500:26500"   # Zeebe gRPC
+      - "8088:8080"     # Operate (mapped)
+      - "8089:8082"     # Tasklist (mapped; adjust if image differs)
+    environment:
+      - CAMUNDA_OPERATE_BASEPATH=/
+    volumes:
+      - camunda8-data:/camunda
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+volumes:
+  camunda8-data:
