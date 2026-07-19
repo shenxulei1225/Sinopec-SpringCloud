@@ -432,8 +432,12 @@ function Start-SingleService {
     Write-ColorOutput "   路径: $servicePath" "White"
     Write-ColorOutput "" "White"
 
-    # topology/routing 依赖本仓 SNAPSHOT API，首次启动前先 install 到本地仓库，避免 Unable to find instance 实为编译失败未起来
-    if ($ServiceName -in @("topology", "platform-topology", "routing", "platform-routing")) {
+    # 本仓 SNAPSHOT API 需先 install 到本地仓库；否则 spring-boot:run 会去远程找 jar 并立刻失败（日志里像“没起来”）
+    if ($ServiceName -in @(
+            "topology", "platform-topology", "routing", "platform-routing",
+            "maintenance", "bmp-maintenance",
+            "work-order", "bmp-work-order"
+        )) {
         $platformRoot = Join-Path $ScriptDir "cheers-business-middle-platform"
         $artifactId = Split-Path $config.Path -Leaf
         Write-Info "安装 $artifactId 及依赖到本地 Maven（-am install -DskipTests）..."
