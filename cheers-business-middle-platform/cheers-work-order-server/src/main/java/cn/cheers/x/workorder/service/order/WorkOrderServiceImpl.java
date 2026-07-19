@@ -92,6 +92,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         workOrder.setScheduleSlotId(reqDTO.getScheduleSlotId());
         workOrder.setBusinessKey(reqDTO.getBusinessKey());
         workOrder.setAssigneeUserId(reqDTO.getAssigneeUserId());
+        workOrder.setCorrectiveCaseId(reqDTO.getCorrectiveCaseId());
         workOrderMapper.insert(workOrder);
 
         int order = 1;

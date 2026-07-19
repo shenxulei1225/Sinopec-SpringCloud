@@ -56,4 +56,6 @@ public class WorkOrderCreateReqDTO {
     @Schema(description = "指派人用户 ID", example = "1")
     private Long assigneeUserId;
 
+    private Long correctiveCaseId;
+
 }

@@ -95,6 +95,8 @@ public class WorkOrderDO extends BaseDO {
      */
     private Long assigneeUserId;
 
+    private Long correctiveCaseId;
+
     /**
      * 工单标题
      */

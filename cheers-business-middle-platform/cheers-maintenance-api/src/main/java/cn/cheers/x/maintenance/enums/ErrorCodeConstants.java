@@ -28,6 +28,12 @@ public interface ErrorCodeConstants {
     ErrorCode CALENDAR_ENTRY_NOT_EXISTS = new ErrorCode(1_022_003_002, "日历条目不存在");
     ErrorCode CALENDAR_SCHEDULING_SPEC_REQUIRED = new ErrorCode(1_022_003_003, "未配置日历触发所需的排程规格");
     ErrorCode CALENDAR_STATUS_INVALID = new ErrorCode(1_022_003_004, "日历条目状态不允许触发");
+
+    ErrorCode CORRECTIVE_CASE_NOT_EXISTS = new ErrorCode(1_022_004_000, "故障维修主单不存在");
+    ErrorCode CORRECTIVE_STATUS_INVALID = new ErrorCode(1_022_004_001, "故障主单当前状态不允许该操作");
+    ErrorCode CORRECTIVE_WORK_ORDER_REQUIRED = new ErrorCode(1_022_004_002, "故障主单尚未派工生成工单");
+    ErrorCode CORRECTIVE_WORK_ORDER_NOT_COMPLETED = new ErrorCode(1_022_004_003, "工单未完工，不能关闭主单");
 }
+
 
 
