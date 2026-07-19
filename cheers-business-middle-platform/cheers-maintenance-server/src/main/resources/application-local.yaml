@@ -104,3 +104,10 @@ cheers:
     mock-enable: true
   access-log:
     enable: true
+
+
+maintenance:
+  calendar:
+    scheduling-mode: once
+    conflict-strategy: none
+    orchestration-ref: orch.standard_expand_solve_persist_v1

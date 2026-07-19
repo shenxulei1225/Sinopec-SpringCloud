@@ -22,5 +22,12 @@ public interface ErrorCodeConstants {
     ErrorCode BINDING_RULE_NOT_FOUND = new ErrorCode(1_022_002_001, "未匹配到绑定规则");
     ErrorCode BINDING_RULE_PUBLISH_NOT_DRAFT = new ErrorCode(1_022_002_002, "仅草稿状态的绑定规则可发布");
     ErrorCode BINDING_RULE_PUBLISHED_IMMUTABLE = new ErrorCode(1_022_002_003, "已发布的绑定规则不可修改");
+
+    ErrorCode CALENDAR_HANDBOOK_NOT_PUBLISHED = new ErrorCode(1_022_003_000, "日历展开要求已发布的维护手册");
+    ErrorCode CALENDAR_FREQUENCY_UNSUPPORTED = new ErrorCode(1_022_003_001, "不支持的频率编码");
+    ErrorCode CALENDAR_ENTRY_NOT_EXISTS = new ErrorCode(1_022_003_002, "日历条目不存在");
+    ErrorCode CALENDAR_SCHEDULING_SPEC_REQUIRED = new ErrorCode(1_022_003_003, "未配置日历触发所需的排程规格");
+    ErrorCode CALENDAR_STATUS_INVALID = new ErrorCode(1_022_003_004, "日历条目状态不允许触发");
 }
+
 
