@@ -11,5 +11,19 @@ import java.util.List;
  */
 public interface SchedulingEngine {
 
-    List<ScheduleSlotDTO> solve(List<WorkItemDTO> workItems, SchedulingSpecDTO schedulingSpec, String runtimeJobId);
+    /**
+     * 求解计划点；已占用计划点默认为空。
+     */
+    default List<ScheduleSlotDTO> solve(List<WorkItemDTO> workItems, SchedulingSpecDTO schedulingSpec,
+                                        String runtimeJobId) {
+        return solve(workItems, schedulingSpec, runtimeJobId, List.of());
+    }
+
+    /**
+     * 求解计划点，并合并已占用计划点到资源时间轴。
+     *
+     * @param occupiedSlots 已占用计划点（可空）
+     */
+    List<ScheduleSlotDTO> solve(List<WorkItemDTO> workItems, SchedulingSpecDTO schedulingSpec,
+                                String runtimeJobId, List<ScheduleSlotDTO> occupiedSlots);
 }

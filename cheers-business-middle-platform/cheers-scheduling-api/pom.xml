@@ -21,6 +21,10 @@
             <artifactId>cheers-contract-api</artifactId>
             <version>${revision}</version>
         </dependency>
+        <dependency>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-common</artifactId>
+        </dependency>
     </dependencies>
 
 </project>
