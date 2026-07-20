@@ -1,65 +1,23 @@
 package cn.cheers.x.module.platform.orchestration.service;
 
-import cn.cheers.x.module.platform.capability.api.MappingProfileApi;
-import cn.cheers.x.module.platform.capability.api.ProcessCapabilityBindingApi;
-import cn.cheers.x.module.platform.capability.api.dto.ProcessCapabilityBindingRespDTO;
-import cn.cheers.x.module.platform.capability.api.dto.ResolveWorkItemsReqDTO;
-import cn.cheers.x.module.platform.contract.dto.work.SourceInstanceRefDTO;
-import cn.cheers.x.module.platform.contract.ContractVersions;
-import cn.cheers.x.module.platform.contract.dto.runtime.RuntimeJobDTO;
-import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunRequest;
-import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunResponse;
-import cn.cheers.x.module.platform.contract.dto.schedule.SchedulingSpecDTO;
-import cn.cheers.x.module.platform.contract.dto.slot.ScheduleSlotDTO;
-import cn.cheers.x.module.platform.contract.dto.work.WorkItemDTO;
-import cn.cheers.x.module.platform.contract.enums.RuntimeJobStatus;
-import cn.cheers.x.module.platform.orchestration.enums.OrchestrationRefs;
-import cn.cheers.x.module.platform.policy.api.PolicyResolveApi;
-import cn.cheers.x.module.platform.policy.api.dto.PolicyResolveForRunReqDTO;
-import cn.cheers.x.module.platform.policy.api.dto.PolicyRunContextDTO;
-import cn.cheers.x.module.platform.policy.api.dto.PolicySnapshotRespDTO;
-import cn.cheers.x.module.platform.runtime.api.RuntimePersistApi;
-import cn.cheers.x.module.platform.runtime.api.dto.RuntimePersistReqDTO;
-import cn.cheers.x.module.platform.scheduling.engine.SchedulingEngine;
 import cn.cheers.x.maintenance.api.MaintenanceApi;
 import cn.cheers.x.maintenance.api.dto.BindingResolveReqDTO;
-import cn.cheers.x.workorder.api.WorkOrderApi;
-import cn.cheers.x.workorder.api.dto.WorkOrderCreateReqDTO;
-import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunRequest;
+import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunResponse;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_DISPATCH_STANDARD_REQUIRED;
-import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_RUN_MAPPING_PROFILE_REQUIRED;
-import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_RUN_ORCHESTRATION_UNKNOWN;
-import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_RUN_SCHEDULING_SPEC_REQUIRED;
-import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_RUN_WORK_OR_SOURCE_REQUIRED;
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_DISPATCH_STANDARD_REQUIRED;
+import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_RUN_WORK_OR_SOURCE_REQUIRED;
 
 @Service
 public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationService {
 
     @Resource
-    private SchedulingEngine schedulingEngine;
-    @Resource
-    private RuntimePersistApi runtimePersistApi;
-    @Resource
-    private PolicyResolveApi policyResolveApi;
-    @Resource
-    private ProcessCapabilityBindingApi processCapabilityBindingApi;
-    @Resource
-    private MappingProfileApi mappingProfileApi;
-    @Resource
-    private WorkOrderApi workOrderApi;
+    private OrchestrationRunner orchestrationRunner;
     @Resource
     private MaintenanceApi maintenanceApi;
 
@@ -67,68 +25,7 @@ public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationSe
     public ScheduleRunResponse runSchedule(ScheduleRunRequest request, Long siteId) {
         validateBasic(request);
         validateDispatchPreconditions(request);
-        RunContext ctx = resolveRunContext(request);
-        List<WorkItemDTO> workItems = resolveWorkItems(request);
-
-        // validate 阶段：MVP 跳过
-        List<WorkItemDTO> expanded = expand(workItems);
-
-        String runtimeJobId = UUID.randomUUID().toString();
-        List<ScheduleSlotDTO> slots = schedulingEngine.solve(expanded, ctx.schedulingSpec(), runtimeJobId);
-        if (StringUtils.hasText(ctx.policySnapshotId())) {
-            for (ScheduleSlotDTO slot : slots) {
-                slot.setPolicySnapshotId(ctx.policySnapshotId());
-            }
-        }
-
-        RuntimeJobDTO job = RuntimeJobDTO.builder()
-                .contractVersion(ContractVersions.MVP)
-                .runtimeJobId(runtimeJobId)
-                .entityTypeCode(request.getEntityTypeCode())
-                .triggerAction("schedule.run")
-                .status(RuntimeJobStatus.SCHEDULED)
-                .sourceWorkIds(expanded.stream().map(WorkItemDTO::getWorkId).collect(Collectors.toList()))
-                .policySnapshotId(ctx.policySnapshotId())
-                .orchestrationRef(ctx.orchestrationRef())
-                .createdAt(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(OffsetDateTime.now()))
-                .build();
-
-        runtimePersistApi.persist(RuntimePersistReqDTO.builder()
-                .job(job)
-                .slots(slots)
-                .siteId(siteId)
-                .build()).checkError();
-
-        ScheduleRunResponse response = ScheduleRunResponse.builder()
-                .contractVersion(ContractVersions.MVP)
-                .runtimeJobId(runtimeJobId)
-                .status(RuntimeJobStatus.SCHEDULED)
-                .slots(slots)
-                .decisionTraceId(null)
-                .plainSummary(buildSummary(slots, ctx.schedulingSpec()))
-                .build();
-
-        if (Boolean.TRUE.equals(request.getDispatchWorkOrders())) {
-            String scope = StringUtils.hasText(request.getScope()) ? request.getScope() : "inspection";
-            Long standardId = resolveDispatchStandardId(request, scope);
-            List<Long> woIds = new ArrayList<>();
-            for (ScheduleSlotDTO slot : slots) {
-                WorkOrderCreateReqDTO dto = new WorkOrderCreateReqDTO();
-                dto.setScope(scope);
-                dto.setTitle("WO-" + slot.getSlotId());
-                dto.setStandardId(standardId);
-                dto.setAssetId(request.getAssetId());
-                dto.setAssetTypeCode(request.getAssetTypeCode());
-                dto.setFrequencyCode(request.getFrequencyCode());
-                dto.setRuntimeJobId(runtimeJobId);
-                dto.setScheduleSlotId(slot.getSlotId());
-                dto.setBusinessKey(slot.getWorkId());
-                woIds.add(workOrderApi.create(dto).getCheckedData());
-            }
-            response.setWorkOrderIds(woIds);
-        }
-
-        return response;
+        return orchestrationRunner.run(request, siteId);
     }
 
     private void validateBasic(ScheduleRunRequest request) {
@@ -156,7 +53,6 @@ public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationSe
         if (!StringUtils.hasText(request.getScope())) {
             throw exception(SCHEDULE_DISPATCH_STANDARD_REQUIRED);
         }
-        // 预解析：无显式标准时必须能绑定成功，否则在 persist 前失败
         resolveDispatchStandardId(request, request.getScope());
     }
 
@@ -170,113 +66,5 @@ public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationSe
                 .frequencyCode(request.getFrequencyCode())
                 .scope(scope)
                 .build()).getCheckedData().getFieldStandardId();
-    }
-
-    private List<WorkItemDTO> resolveWorkItems(ScheduleRunRequest request) {
-        if (!CollectionUtils.isEmpty(request.getWorkItems())) {
-            return request.getWorkItems();
-        }
-        ProcessCapabilityBindingRespDTO binding = getPublishedBindingQuietly(request.getEntityTypeCode());
-        String mappingProfileId = firstMappingProfileId(binding);
-        if (!StringUtils.hasText(mappingProfileId)) {
-            throw exception(SCHEDULE_RUN_MAPPING_PROFILE_REQUIRED);
-        }
-        List<ResolveWorkItemsReqDTO.SourceInstanceInputDTO> instances = request.getSourceInstances().stream()
-                .map(this::toSourceInstanceInput)
-                .collect(Collectors.toList());
-        return mappingProfileApi.resolveWorkItems(mappingProfileId, ResolveWorkItemsReqDTO.builder()
-                .entityTypeCode(request.getEntityTypeCode())
-                .instances(instances)
-                .build()).getCheckedData();
-    }
-
-    private ResolveWorkItemsReqDTO.SourceInstanceInputDTO toSourceInstanceInput(SourceInstanceRefDTO ref) {
-        return ResolveWorkItemsReqDTO.SourceInstanceInputDTO.builder()
-                .sourceInstanceId(ref.getSourceInstanceId())
-                .customFields(ref.getCustomFields())
-                .build();
-    }
-
-    private String firstMappingProfileId(ProcessCapabilityBindingRespDTO binding) {
-        if (binding == null || CollectionUtils.isEmpty(binding.getMappingProfileIds())) {
-            return null;
-        }
-        return binding.getMappingProfileIds().get(0);
-    }
-
-    private RunContext resolveRunContext(ScheduleRunRequest request) {
-        ProcessCapabilityBindingRespDTO binding = getPublishedBindingQuietly(request.getEntityTypeCode());
-
-        String orchestrationRef = request.getOrchestrationRef();
-        if (!StringUtils.hasText(orchestrationRef) && binding != null) {
-            orchestrationRef = binding.getOrchestrationRef();
-        }
-        orchestrationRef = resolveOrchestrationRef(orchestrationRef);
-        if (!OrchestrationRefs.STANDARD_EXPAND_SOLVE_PERSIST_V1.equals(orchestrationRef)) {
-            throw exception(SCHEDULE_RUN_ORCHESTRATION_UNKNOWN);
-        }
-
-        SchedulingSpecDTO schedulingSpec = request.getSchedulingSpec();
-        String policySnapshotId = request.getPolicySnapshotId();
-        String policySetId = request.getPolicySetId();
-
-        if (!StringUtils.hasText(policySetId) && binding != null && StringUtils.hasText(binding.getPolicySetId())) {
-            policySetId = binding.getPolicySetId();
-        }
-
-        if (schedulingSpec == null && StringUtils.hasText(policySnapshotId)) {
-            PolicySnapshotRespDTO snapshot = policyResolveApi.getSnapshot(policySnapshotId).getCheckedData();
-            schedulingSpec = snapshot.getSchedulingSpec();
-        } else if (schedulingSpec == null && StringUtils.hasText(policySetId)) {
-            PolicyRunContextDTO runContext = policyResolveApi.resolveForRun(PolicyResolveForRunReqDTO.builder()
-                    .policySetId(policySetId)
-                    .entityTypeCode(request.getEntityTypeCode())
-                    .build()).getCheckedData();
-            schedulingSpec = runContext.getSchedulingSpec();
-            policySnapshotId = runContext.getPolicySnapshotId();
-        }
-
-        if (schedulingSpec == null) {
-            throw exception(SCHEDULE_RUN_SCHEDULING_SPEC_REQUIRED);
-        }
-        return new RunContext(orchestrationRef, schedulingSpec, policySnapshotId);
-    }
-
-    private ProcessCapabilityBindingRespDTO getPublishedBindingQuietly(String entityTypeCode) {
-        if (!StringUtils.hasText(entityTypeCode)) {
-            return null;
-        }
-        try {
-            CommonResult<ProcessCapabilityBindingRespDTO> result =
-                    processCapabilityBindingApi.getPublishedBinding(entityTypeCode);
-            if (result == null || !result.isSuccess() || result.getData() == null) {
-                return null;
-            }
-            return result.getData();
-        } catch (Exception ignored) {
-            // 绑定未发布或 capability 服务尚未注册时，不阻断 Phase 1 直传 schedulingSpec 路径
-            return null;
-        }
-    }
-
-    private String resolveOrchestrationRef(String ref) {
-        if (StringUtils.hasText(ref)) {
-            return ref;
-        }
-        return OrchestrationRefs.STANDARD_EXPAND_SOLVE_PERSIST_V1;
-    }
-
-    private List<WorkItemDTO> expand(List<WorkItemDTO> workItems) {
-        return new ArrayList<>(workItems);
-    }
-
-    private String buildSummary(List<ScheduleSlotDTO> slots, SchedulingSpecDTO schedulingSpec) {
-        String mode = schedulingSpec.getMode() != null ? schedulingSpec.getMode() : "once";
-        String strategy = schedulingSpec.getConflictStrategy() != null
-                ? schedulingSpec.getConflictStrategy() : "none";
-        return "已生成 " + slots.size() + " 个计划点，周期 " + mode + "，冲突策略 " + strategy;
-    }
-
-    private record RunContext(String orchestrationRef, SchedulingSpecDTO schedulingSpec, String policySnapshotId) {
     }
 }

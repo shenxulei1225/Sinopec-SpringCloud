@@ -14,19 +14,22 @@ import cn.cheers.x.module.platform.contract.dto.slot.ScheduleSlotDTO;
 import cn.cheers.x.module.platform.contract.dto.work.WorkItemDTO;
 import cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants;
 import cn.cheers.x.module.platform.orchestration.enums.OrchestrationRefs;
+import cn.cheers.x.module.platform.orchestration.phase.PhaseHandlerRegistry;
+import cn.cheers.x.module.platform.orchestration.template.OrchestrationTemplateRegistry;
 import cn.cheers.x.module.platform.policy.api.PolicyResolveApi;
 import cn.cheers.x.module.platform.runtime.api.RuntimePersistApi;
 import cn.cheers.x.module.platform.runtime.api.dto.RuntimePersistReqDTO;
 import cn.cheers.x.module.platform.scheduling.engine.SchedulingEngine;
 import cn.cheers.x.workorder.api.WorkOrderApi;
 import cn.cheers.x.workorder.api.dto.WorkOrderCreateReqDTO;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 
@@ -51,8 +54,25 @@ class ScheduleOrchestrationServiceImplTest {
     @Mock private WorkOrderApi workOrderApi;
     @Mock private MaintenanceApi maintenanceApi;
 
-    @InjectMocks
     private ScheduleOrchestrationServiceImpl scheduleOrchestrationService;
+
+    @BeforeEach
+    void setUp() {
+        OrchestrationRunner runner = new OrchestrationRunner();
+        ReflectionTestUtils.setField(runner, "schedulingEngine", schedulingEngine);
+        ReflectionTestUtils.setField(runner, "runtimePersistApi", runtimePersistApi);
+        ReflectionTestUtils.setField(runner, "policyResolveApi", policyResolveApi);
+        ReflectionTestUtils.setField(runner, "processCapabilityBindingApi", processCapabilityBindingApi);
+        ReflectionTestUtils.setField(runner, "mappingProfileApi", mappingProfileApi);
+        ReflectionTestUtils.setField(runner, "workOrderApi", workOrderApi);
+        ReflectionTestUtils.setField(runner, "maintenanceApi", maintenanceApi);
+        ReflectionTestUtils.setField(runner, "templateRegistry", new OrchestrationTemplateRegistry());
+        ReflectionTestUtils.setField(runner, "phaseHandlerRegistry", new PhaseHandlerRegistry(List.of()));
+
+        scheduleOrchestrationService = new ScheduleOrchestrationServiceImpl();
+        ReflectionTestUtils.setField(scheduleOrchestrationService, "orchestrationRunner", runner);
+        ReflectionTestUtils.setField(scheduleOrchestrationService, "maintenanceApi", maintenanceApi);
+    }
 
     @Test
     @DisplayName("dispatch=true 无显式标准且无 scope：persist 前失败")
@@ -79,7 +99,7 @@ class ScheduleOrchestrationServiceImplTest {
         request.setFieldWorkStandardId(3L);
         request.setScope("inspection");
 
-        when(schedulingEngine.solve(anyList(), any(), anyString()))
+        when(schedulingEngine.solve(anyList(), any(), anyString(), anyList()))
                 .thenReturn(List.of(ScheduleSlotDTO.builder().slotId("slot-1").workId("work-1").build()));
         when(runtimePersistApi.persist(any(RuntimePersistReqDTO.class))).thenReturn(CommonResult.success(null));
         when(workOrderApi.create(any())).thenReturn(CommonResult.success(100L));
@@ -105,7 +125,7 @@ class ScheduleOrchestrationServiceImplTest {
 
         when(maintenanceApi.resolveBinding(any(BindingResolveReqDTO.class)))
                 .thenReturn(CommonResult.success(BindingResolveRespDTO.builder().fieldStandardId(9L).build()));
-        when(schedulingEngine.solve(anyList(), any(), anyString()))
+        when(schedulingEngine.solve(anyList(), any(), anyString(), anyList()))
                 .thenReturn(List.of(ScheduleSlotDTO.builder().slotId("slot-1").workId("work-1").build()));
         when(runtimePersistApi.persist(any(RuntimePersistReqDTO.class))).thenReturn(CommonResult.success(null));
         when(workOrderApi.create(any())).thenReturn(CommonResult.success(200L));
@@ -123,7 +143,7 @@ class ScheduleOrchestrationServiceImplTest {
         ScheduleRunRequest request = baseRequest();
         request.setDispatchWorkOrders(false);
 
-        when(schedulingEngine.solve(anyList(), any(), anyString()))
+        when(schedulingEngine.solve(anyList(), any(), anyString(), anyList()))
                 .thenReturn(List.of(ScheduleSlotDTO.builder().slotId("slot-1").workId("work-1").build()));
         when(runtimePersistApi.persist(any(RuntimePersistReqDTO.class))).thenReturn(CommonResult.success(null));
 
@@ -138,7 +158,7 @@ class ScheduleOrchestrationServiceImplTest {
         return ScheduleRunRequest.builder()
                 .orchestrationRef(OrchestrationRefs.STANDARD_EXPAND_SOLVE_PERSIST_V1)
                 .schedulingSpec(SchedulingSpecDTO.builder().mode("once").conflictStrategy("none").build())
-                .workItems(List.of(WorkItemDTO.builder().workId("work-1").build()))
+                .workItems(List.of(WorkItemDTO.builder().workId("work-1").durationEstimateMinutes(30).build()))
                 .build();
     }
 }

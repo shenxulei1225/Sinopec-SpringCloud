@@ -44,4 +44,9 @@ public class ScheduleRunRequest {
     private String assetTypeCode;
     /** 绑定解析用：频率编码（可空） */
     private String frequencyCode;
+
+    /** 干跑：跑阶段但不 persist / 不 dispatch */
+    private Boolean dryRun;
+    /** 跑完该阶段后停止（含该阶段），阶段名枚举字符串 */
+    private String stopAfterPhase;
 }
