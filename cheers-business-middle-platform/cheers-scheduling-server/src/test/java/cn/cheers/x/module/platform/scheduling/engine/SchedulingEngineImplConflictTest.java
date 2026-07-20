@@ -2,6 +2,7 @@ package cn.cheers.x.module.platform.scheduling.engine;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.platform.contract.dto.schedule.SchedulingSpecDTO;
+import cn.cheers.x.module.platform.scheduling.enums.ErrorCodeConstants;
 import cn.cheers.x.module.platform.contract.dto.slot.ScheduleSlotDTO;
 import cn.cheers.x.module.platform.contract.dto.work.ResourceRequirementDTO;
 import cn.cheers.x.module.platform.contract.dto.work.WorkItemDTO;
@@ -119,6 +120,39 @@ class SchedulingEngineImplConflictTest {
 
         assertThrows(ServiceException.class,
                 () -> engine.solve(works, spec, "job-1"));
+    }
+
+    @Test
+    @DisplayName("unknown conflictStrategy 抛出无效策略错误")
+    void solve_unknownConflictStrategy_throws() {
+        List<WorkItemDTO> works = List.of(work("w1", 60, null, "robot-1"));
+        SchedulingSpecDTO spec = onceSpec("bogus_strategy");
+
+        ServiceException ex = assertThrows(ServiceException.class,
+                () -> engine.solve(works, spec, "job-1"));
+        assertEquals(ErrorCodeConstants.SCHEDULING_INVALID_CONFLICT_STRATEGY.getCode(), ex.getCode());
+    }
+
+    @Test
+    @DisplayName("blank conflictStrategy 默认 defer_slot（向后兼容）")
+    void solve_blankConflictStrategy_defaultsToDeferSlot() {
+        List<WorkItemDTO> works = List.of(
+                work("w1", 60, null, "robot-1"),
+                work("w2", 60, null, "robot-1"));
+        SchedulingSpecDTO spec = SchedulingSpecDTO.builder()
+                .mode("once")
+                .horizonStart("2026-07-21")
+                .horizonEnd("2026-07-21")
+                .conflictStrategy("  ")
+                .build();
+
+        List<ScheduleSlotDTO> slots = engine.solve(works, spec, "job-1");
+
+        assertEquals(2, slots.size());
+        Map<String, ScheduleSlotDTO> byWork = byWorkId(slots);
+        OffsetDateTime end1 = OffsetDateTime.parse(byWork.get("w1").getPlannedEnd());
+        OffsetDateTime start2 = OffsetDateTime.parse(byWork.get("w2").getPlannedStart());
+        assertFalse(start2.isBefore(end1));
     }
 
     @Test

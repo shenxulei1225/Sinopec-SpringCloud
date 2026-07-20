@@ -27,6 +27,7 @@ import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.e
 import static cn.cheers.x.module.platform.scheduling.enums.ErrorCodeConstants.SCHEDULING_BATCH_REJECTED;
 import static cn.cheers.x.module.platform.scheduling.enums.ErrorCodeConstants.SCHEDULING_CANNOT_PLACE;
 import static cn.cheers.x.module.platform.scheduling.enums.ErrorCodeConstants.SCHEDULING_DURATION_REQUIRED;
+import static cn.cheers.x.module.platform.scheduling.enums.ErrorCodeConstants.SCHEDULING_INVALID_CONFLICT_STRATEGY;
 
 /**
  * 排程引擎：展开候选计划点后按资源时间轴解析冲突。
@@ -242,6 +243,7 @@ public class SchedulingEngineImpl implements SchedulingEngine {
         return assigned;
     }
 
+    // Wave1: only the first resolvable requirement participates in resource-timeline locking.
     private String resourceKey(WorkItemDTO workItem) {
         if (workItem.getResourceRequirements() != null) {
             for (ResourceRequirementDTO req : workItem.getResourceRequirements()) {
@@ -275,7 +277,7 @@ public class SchedulingEngineImpl implements SchedulingEngine {
                 || STRATEGY_DEFER.equals(normalized)) {
             return normalized;
         }
-        return STRATEGY_DEFER;
+        throw exception(SCHEDULING_INVALID_CONFLICT_STRATEGY);
     }
 
     private int priorityOf(WorkItemDTO workItem) {
