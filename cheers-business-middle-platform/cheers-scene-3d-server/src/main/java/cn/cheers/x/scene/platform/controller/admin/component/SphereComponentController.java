@@ -22,7 +22,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - Sphere 组件")
 @RestController
-@RequestMapping("/scene-platform/sphere-components")
+@RequestMapping("/scene-3d/sphere-components")
 @Validated
 public class SphereComponentController {
 

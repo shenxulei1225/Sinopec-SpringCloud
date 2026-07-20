@@ -27,7 +27,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 场景资源")
 @RestController
-@RequestMapping("/scene-platform/assets")
+@RequestMapping("/scene-3d/assets")
 @Validated
 public class AssetResourceController {
 

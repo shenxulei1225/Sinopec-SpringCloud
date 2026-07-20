@@ -49,6 +49,18 @@ public class ActorInstanceSaveReqVO implements Serializable {
     @Schema(description = "业务元数据", example = "{\"facilityId\": 123}")
     private String metadataJson;
 
+    @Schema(description = "GPS 经度（WGS84）")
+    private java.math.BigDecimal gpsLng;
+
+    @Schema(description = "GPS 纬度（WGS84）")
+    private java.math.BigDecimal gpsLat;
+
+    @Schema(description = "GPS 椭球高（米）")
+    private java.math.BigDecimal gpsHeight;
+
+    @Schema(description = "GPS 高程来源：TERRAIN_SAMPLE / MANUAL 等")
+    private String gpsHeightSource;
+
     /**
      * 转换为 ActorInstanceDO
      */
@@ -65,6 +77,10 @@ public class ActorInstanceSaveReqVO implements Serializable {
         dobj.setTransform(transform);
         dobj.setLayerKeys(layerKeys);
         dobj.setMetadataJson(metadataJson);
+        dobj.setGpsLng(gpsLng);
+        dobj.setGpsLat(gpsLat);
+        dobj.setGpsHeight(gpsHeight);
+        dobj.setGpsHeightSource(gpsHeightSource);
         return dobj;
     }
 }

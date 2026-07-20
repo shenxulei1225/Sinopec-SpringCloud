@@ -17,7 +17,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 设施场景绑定")
 @RestController
-@RequestMapping("/scene-platform/facility-scenes")
+@RequestMapping("/scene-3d/facility-scenes")
 @Validated
 public class FacilitySceneBindingController {
 

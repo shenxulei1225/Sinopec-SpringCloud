@@ -179,20 +179,38 @@ function Test-InCmd {
     return -not [string]::IsNullOrEmpty($env:ComSpec) -and $env:ComSpec.ToLower().EndsWith("\\cmd.exe") -and -not [string]::IsNullOrEmpty($env:PROMPT)
 }
 
-# 检查端口是否被占用
-function Test-PortInUse {
-    param([int]$Port)
-    # 只判断监听状态，避免 TIME_WAIT/CLOSE_WAIT 等导致误判，也更快
-    $connection = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
-    if ($null -ne $connection) {
-        if ($connection -is [Array]) { return $connection.Count -gt 0 }
-        return $true
+# 一次性解析 netstat 监听端口 -> PID（远快于反复 Get-NetTCPConnection）
+function Get-ListenPortMap {
+    $map = @{}
+    $lines = & netstat.exe -ano -p tcp 2>$null
+    if (-not $lines) { return $map }
+    foreach ($line in $lines) {
+        # TCP  0.0.0.0:58093  0.0.0.0:0  LISTENING  12345
+        if ($line -notmatch 'LISTENING') { continue }
+        if ($line -match 'TCP\s+\S+:(\d+)\s+\S+\s+LISTENING\s+(\d+)') {
+            $listenPort = [int]$Matches[1]
+            $owningPid = [int]$Matches[2]
+            if ($owningPid -gt 0 -and -not $map.ContainsKey($listenPort)) {
+                $map[$listenPort] = $owningPid
+            }
+        }
     }
-    # 非管理员 / Get-NetTCPConnection 不可用时的兜底，避免误判「未运行」后又抢端口失败
+    return $map
+}
+
+# 检查端口是否被占用（TcpClient 探测，避免 Get-NetTCPConnection）
+function Test-PortInUse {
+    param(
+        [int]$Port,
+        [hashtable]$PortMap = $null
+    )
+    if ($null -ne $PortMap) {
+        return $PortMap.ContainsKey($Port)
+    }
     try {
         $client = New-Object System.Net.Sockets.TcpClient
         $iar = $client.BeginConnect('127.0.0.1', $Port, $null, $null)
-        $connected = $iar.AsyncWaitHandle.WaitOne(300)
+        $connected = $iar.AsyncWaitHandle.WaitOne(120)
         if ($connected) {
             try { $client.EndConnect($iar) } catch { }
             $client.Close()
@@ -207,24 +225,33 @@ function Test-PortInUse {
 
 # 获取占用端口(监听)的进程ID
 function Get-PortProcess {
-    param([int]$Port)
-    $connection = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($connection -and $connection.OwningProcess -and $connection.OwningProcess -ne 0) {
-        return $connection.OwningProcess
+    param(
+        [int]$Port,
+        [hashtable]$PortMap = $null
+    )
+    if ($null -ne $PortMap -and $PortMap.ContainsKey($Port)) {
+        return $PortMap[$Port]
+    }
+    $map = Get-ListenPortMap
+    if ($map.ContainsKey($Port)) {
+        return $map[$Port]
     }
     return $null
 }
 
 # 检查服务是否运行
 function Test-ServiceRunning {
-    param([string]$ServiceName)
+    param(
+        [string]$ServiceName,
+        [hashtable]$PortMap = $null
+    )
     
     if (-not $ServiceConfig.ContainsKey($ServiceName)) {
         return $false
     }
     
     $port = $ServiceConfig[$ServiceName].Port
-    return Test-PortInUse -Port $port
+    return Test-PortInUse -Port $port -PortMap $PortMap
 }
 
 
@@ -234,7 +261,7 @@ function Test-NacosRunning {
         $response = Invoke-WebRequest -Uri "http://localhost:8848/nacos/" -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop
         return $response.StatusCode -eq 200
     } catch {
-        $connection = Get-NetTCPConnection -LocalPort 8848 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+        $connection = Get-PortProcess -Port 8848
         return $null -ne $connection
     }
 }
@@ -543,7 +570,10 @@ function Start-SingleService {
 
 # 停止单个服务
 function Stop-SingleService {
-    param([string]$ServiceName)
+    param(
+        [string]$ServiceName,
+        [hashtable]$PortMap = $null
+    )
 
     if (-not $ServiceConfig.ContainsKey($ServiceName)) {
         Write-Error "未知的服务: $ServiceName"
@@ -551,64 +581,37 @@ function Stop-SingleService {
     }
 
     $port = $ServiceConfig[$ServiceName].Port
+    if ($null -eq $PortMap) {
+        $PortMap = Get-ListenPortMap
+    }
 
-    if (-not (Test-ServiceRunning -ServiceName $ServiceName)) {
+    $procId = Get-PortProcess -Port $port -PortMap $PortMap
+    if (-not $procId) {
         Write-Warning "服务 $ServiceName 未运行"
         return $true
     }
 
-    Write-ColorOutput "[STOP] 停止服务: $ServiceName" "Cyan"
+    Write-ColorOutput "[STOP] 停止服务: $ServiceName (端口: $port, PID: $procId)" "Cyan"
 
-    # 优先按端口获取 PID（更准确），再做二次确认与轮询等待端口释放
-    $procId = Get-PortProcess -Port $port
-    if (-not $procId) {
-        Write-Warning "未找到运行中的进程"
-        return $false
-    }
-
-    Write-Info "终止进程: $procId"
-
-    # 1) 先尝试优雅停止
+    # 本地开发直接杀进程树，避免优雅退出与长时间轮询
     try {
-        Stop-Process -Id $procId -ErrorAction SilentlyContinue
+        & taskkill.exe /PID $procId /T /F 2>$null | Out-Null
     } catch {
-        # ignore
+        try { Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue } catch { }
     }
 
-    # 2) 短暂等待（给 JVM / Spring 一点退出时间）
-    Start-Sleep -Seconds 2
-
-    # 3) 若端口仍占用，强制杀死，并包含子进程（mvn / java 可能有子进程树）
-    if (Test-PortInUse -Port $port) {
-        try {
-            Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue
-        } catch {
-            # ignore
-        }
-
-        # 兜底：使用 taskkill /T 确保杀掉整个树（某些情况下 Stop-Process 不会杀子进程）
-        try {
-            & taskkill.exe /PID $procId /T /F 2>$null | Out-Null
-        } catch {
-            # ignore
-        }
-    }
-
-    # 4) 轮询等待端口释放，避免“刚 kill 但端口还没回收”导致误判失败
-    $maxWaitSeconds = 20
-    $intervalSeconds = 1
+    $maxWaitMs = 2500
+    $intervalMs = 150
     $waited = 0
-
-    while ($waited -lt $maxWaitSeconds) {
+    while ($waited -lt $maxWaitMs) {
         if (-not (Test-PortInUse -Port $port)) {
             Write-Success "服务 $ServiceName 已停止"
             return $true
         }
-        Start-Sleep -Seconds $intervalSeconds
-        $waited += $intervalSeconds
+        Start-Sleep -Milliseconds $intervalMs
+        $waited += $intervalMs
     }
 
-    # 5) 超时仍占用：打印当前占用 PID 便于排查（可能是 PID 复用或端口被其他进程占用）
     $currentPid = Get-PortProcess -Port $port
     if ($currentPid) {
         Write-Error ("服务 {0} 停止失败（端口 {1} 仍被 PID {2} 占用）" -f $ServiceName, $port, $currentPid)
@@ -624,13 +627,7 @@ function Show-Status {
     Write-ColorOutput "[STATUS] 服务状态 (快速扫描模式):" "Cyan"
     Write-ColorOutput "" "White"
     
-    # 优化：一次性获取所有监听状态的 TCP 连接，极大提升 Windows 下的扫描速度
-    $allConnections = Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue
-    # 建立端口到 PID 的快速映射表
-    $portMap = @{}
-    foreach ($conn in $allConnections) {
-        $portMap[[int]$conn.LocalPort] = $conn.OwningProcess
-    }
+    $portMap = Get-ListenPortMap
 
     $format = "{0,-15} {1,-10} {2,-10} {3,-15} {4,-40}"
     Write-ColorOutput ($format -f "服务名", "端口", "状态", "PID", "访问链接") "White"
@@ -859,13 +856,7 @@ function Stop-AllServices {
     Write-ColorOutput "[STOP] 停止所有服务 (快速模式)..." "Cyan"
     Write-ColorOutput "" "White"
 
-    # 优化：一次性获取所有监听端口 -> PID 的映射，避免对每个服务重复调用 Get-NetTCPConnection
-    $allConnections = Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue
-    $portMap = @{}
-    foreach ($conn in $allConnections) {
-        $portMap[[int]$conn.LocalPort] = $conn.OwningProcess
-    }
-
+    $portMap = Get-ListenPortMap
     $stoppedCount = 0
     $failed = @()
 
@@ -879,28 +870,21 @@ function Stop-AllServices {
         $procId = $portMap[$port]
         Write-Info "停止服务: $svc (端口: $port, PID: $procId)"
 
-        # 快速停止：优先 taskkill /T 结束整棵进程树（mvn/cmd/java 常见父子进程关系）
         try {
             & taskkill.exe /PID $procId /T /F 2>$null | Out-Null
         } catch {
             # ignore
         }
+        $stoppedCount++
+    }
 
-        # 短暂等待端口释放（快速模式缩短等待时间）
-        $maxWaitSeconds = 5
-        $intervalSeconds = 1
-        $waited = 0
-        while ($waited -lt $maxWaitSeconds) {
-            if (-not (Test-PortInUse -Port $port)) {
-                break
-            }
-            Start-Sleep -Seconds $intervalSeconds
-            $waited += $intervalSeconds
-        }
-
-        if (-not (Test-PortInUse -Port $port)) {
-            $stoppedCount++
-        } else {
+    # 统一短等：端口释放即可，不做逐服务 5 秒轮询
+    Start-Sleep -Milliseconds 400
+    $afterMap = Get-ListenPortMap
+    foreach ($svc in $StopServices) {
+        if (-not $ServiceConfig.ContainsKey($svc)) { continue }
+        $port = $ServiceConfig[$svc].Port
+        if ($afterMap.ContainsKey($port)) {
             $failed += $svc
         }
     }
@@ -1004,12 +988,30 @@ function Start-SuiteServices {
 
 function Stop-SuiteServices {
     param([string[]]$Services)
+    $portMap = Get-ListenPortMap
     $stoppedCount = 0
+    $failed = @()
     foreach ($svc in $Services) {
-        if (Test-ServiceRunning -ServiceName $svc) {
-            if (Stop-SingleService -ServiceName $svc) {
-                $stoppedCount++
-            }
+        if (-not $ServiceConfig.ContainsKey($svc)) { continue }
+        $port = $ServiceConfig[$svc].Port
+        if (-not $portMap.ContainsKey($port)) { continue }
+        $procId = $portMap[$port]
+        Write-ColorOutput "[STOP] 停止服务: $svc (端口: $port, PID: $procId)" "Cyan"
+        try {
+            & taskkill.exe /PID $procId /T /F 2>$null | Out-Null
+        } catch {
+            try { Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue } catch { }
+        }
+        $stoppedCount++
+    }
+    if ($stoppedCount -gt 0) {
+        Start-Sleep -Milliseconds 400
+        $afterMap = Get-ListenPortMap
+        foreach ($svc in $Services) {
+            if (-not $ServiceConfig.ContainsKey($svc)) { continue }
+            $port = $ServiceConfig[$svc].Port
+            if ($afterMap.ContainsKey($port)) { $failed += $svc }
+            else { Write-Success "服务 $svc 已停止" }
         }
     }
     Write-ColorOutput "" "White"
@@ -1017,6 +1019,9 @@ function Stop-SuiteServices {
         Write-Success "套件已停止 $stoppedCount 个服务"
     } else {
         Write-Warning "套件内没有运行中的服务"
+    }
+    if ($failed.Count -gt 0) {
+        Write-Warning "部分服务停止可能未完全成功(端口仍占用): $($failed -join ', ')"
     }
 }
 
@@ -1061,7 +1066,7 @@ function Invoke-NacosCommand {
             else { Write-Warning "Nacos 未运行 ($NacosPath)" }
         }
         "stop" {
-            $nacosPid = Get-NetTCPConnection -LocalPort 8848 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess
+            $nacosPid = Get-PortProcess -Port 8848
             if ($nacosPid) { & taskkill.exe /PID $nacosPid /T /F 2>$null | Out-Null }
         }
         default { Start-Nacos | Out-Null }

@@ -26,7 +26,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - GEO 图层配置")
 @RestController
-@RequestMapping("/scene-platform/scenes/{sceneCode}/geo-layers")
+@RequestMapping("/gis/scenes/{sceneCode}/geo-layers")
 @Validated
 @ConditionalOnProperty(value = "scene.geo.enabled", havingValue = "true")
 public class GeoLayerConfigController {

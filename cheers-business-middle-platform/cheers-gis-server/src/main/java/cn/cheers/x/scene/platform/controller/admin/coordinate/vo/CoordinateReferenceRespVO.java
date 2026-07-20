@@ -22,6 +22,9 @@ public class CoordinateReferenceRespVO {
     @Schema(description = "原点高度（米）")
     private java.math.BigDecimal originHeight;
 
+    @Schema(description = "原点高程来源：TERRAIN_SAMPLE / MANUAL 等")
+    private String originHeightSource;
+
     @Schema(description = "地理坐标系")
     private CoordinateCrsCatalogRespVO geographicCrsCatalog;
 

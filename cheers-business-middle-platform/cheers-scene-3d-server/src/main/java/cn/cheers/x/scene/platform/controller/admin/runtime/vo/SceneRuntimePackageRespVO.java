@@ -97,6 +97,18 @@ public class SceneRuntimePackageRespVO {
         @Schema(description = "是否启用", example = "true")
         private Boolean enabled;
 
+        @Schema(description = "GPS 经度（WGS84）")
+        private java.math.BigDecimal gpsLng;
+
+        @Schema(description = "GPS 纬度（WGS84）")
+        private java.math.BigDecimal gpsLat;
+
+        @Schema(description = "GPS 椭球高（米）")
+        private java.math.BigDecimal gpsHeight;
+
+        @Schema(description = "GPS 高程来源")
+        private String gpsHeightSource;
+
         @Schema(description = "创建时间")
         private Long createTime;
     }

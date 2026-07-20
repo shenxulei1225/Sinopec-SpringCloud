@@ -3,6 +3,7 @@ package cn.cheers.x.scene.platform.service.coordinate.impl;
 import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.cheers.x.scene.platform.controller.admin.coordinate.vo.CoordinateCrsCatalogRespVO;
+import cn.cheers.x.scene.platform.controller.admin.coordinate.vo.CoordinateReferenceOriginHeightUpdateReqVO;
 import cn.cheers.x.scene.platform.controller.admin.coordinate.vo.CoordinateReferenceRespVO;
 import cn.cheers.x.scene.platform.controller.admin.coordinate.vo.CoordinateReferenceSaveReqVO;
 import cn.cheers.x.scene.platform.controller.admin.coordinate.vo.CoordinateReferenceUpdateRespVO;
@@ -77,6 +78,29 @@ public class CoordinateReferenceServiceImpl implements CoordinateReferenceServic
                 .map(CoordinateValidationIssueRespVO::getMessage)
                 .toList());
         return respVO;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public CoordinateReferenceRespVO updateOriginHeightBySceneCode(String sceneCode,
+                                                                   CoordinateReferenceOriginHeightUpdateReqVO reqVO) {
+        SceneIdentityDO scene = getRequiredScene(sceneCode);
+        CoordinateReferenceDO reference = coordinateReferenceMapper.selectBySceneId(scene.getId());
+        if (reference == null) {
+            throw ServiceExceptionUtil.exception(NOT_FOUND, "场景坐标参考不存在");
+        }
+        reference.setOriginHeight(reqVO.getOriginHeight());
+        if (reqVO.getOriginLng() != null) {
+            reference.setOriginLng(reqVO.getOriginLng());
+        }
+        if (reqVO.getOriginLat() != null) {
+            reference.setOriginLat(reqVO.getOriginLat());
+        }
+        if (hasText(reqVO.getOriginHeightSource())) {
+            reference.setOriginHeightSource(reqVO.getOriginHeightSource().trim());
+        }
+        coordinateReferenceMapper.updateById(reference);
+        return buildResp(scene.getSceneCode(), reference);
     }
 
     private CoordinateReferenceSaveReqVO applyProfileDefaults(CoordinateReferenceSaveReqVO reqVO) {
@@ -180,6 +204,7 @@ public class CoordinateReferenceServiceImpl implements CoordinateReferenceServic
         target.setOriginLng(reqVO.getOriginLng());
         target.setOriginLat(reqVO.getOriginLat());
         target.setOriginHeight(reqVO.getOriginHeight());
+        target.setOriginHeightSource(reqVO.getOriginHeightSource());
         target.setOriginProjectedX(reqVO.getOriginProjectedX());
         target.setOriginProjectedY(reqVO.getOriginProjectedY());
         target.setOriginProjectedZ(reqVO.getOriginProjectedZ());

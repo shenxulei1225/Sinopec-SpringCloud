@@ -26,6 +26,9 @@ public class CoordinateReferenceDO extends TenantBaseDO {
 
     private BigDecimal originHeight;
 
+    /** 原点高程来源：TERRAIN_SAMPLE / MANUAL 等 */
+    private String originHeightSource;
+
     private String geographicCrsCode;
 
     private String projectedCrsCode;

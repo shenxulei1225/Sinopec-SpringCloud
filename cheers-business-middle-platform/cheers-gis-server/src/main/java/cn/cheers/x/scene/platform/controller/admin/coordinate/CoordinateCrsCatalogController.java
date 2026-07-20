@@ -18,7 +18,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 常用坐标系目录")
 @RestController
-@RequestMapping("/scene-platform/coordinate/crs-catalog")
+@RequestMapping("/gis/coordinate/crs-catalog")
 @Validated
 public class CoordinateCrsCatalogController {
 

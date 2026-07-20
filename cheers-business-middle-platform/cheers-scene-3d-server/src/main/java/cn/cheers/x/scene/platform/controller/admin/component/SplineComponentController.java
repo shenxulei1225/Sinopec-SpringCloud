@@ -23,7 +23,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - Spline 组件")
 @RestController
-@RequestMapping("/scene-platform/spline-components")
+@RequestMapping("/scene-3d/spline-components")
 @Validated
 public class SplineComponentController {
 

@@ -23,7 +23,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - Widget 组件")
 @RestController
-@RequestMapping("/scene-platform/widget-components")
+@RequestMapping("/scene-3d/widget-components")
 @Validated
 public class WidgetComponentController {
 

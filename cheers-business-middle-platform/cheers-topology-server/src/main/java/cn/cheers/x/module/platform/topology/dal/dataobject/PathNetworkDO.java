@@ -34,6 +34,16 @@ public class PathNetworkDO extends TenantBaseDO {
 
     private Integer version;
 
+    /** 路网显示名称（实例元数据） */
+    private String displayName;
+
+    /** 说明 */
+    private String description;
+
+    /** 适用设备类型 JSON 数组，如 ["HUMAN","GROUND_ROBOT"] */
+    @TableField(typeHandler = JsonbStringTypeHandler.class)
+    private String applicableEquipmentTypes;
+
     @TableField(typeHandler = JsonbStringTypeHandler.class)
     private String nodes;
 

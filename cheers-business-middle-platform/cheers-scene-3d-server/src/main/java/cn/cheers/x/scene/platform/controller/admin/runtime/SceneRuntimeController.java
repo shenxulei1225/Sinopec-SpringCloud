@@ -40,7 +40,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 场景运行时")
 @RestController("sceneRuntimePackageController")
-@RequestMapping("/scene-platform/scenes/{sceneCode}/runtime")
+@RequestMapping("/scene-3d/scenes/{sceneCode}/runtime")
 @Validated
 public class SceneRuntimeController {
 
@@ -117,6 +117,10 @@ public class SceneRuntimeController {
             }
             item.setAttributeConfig(attrs);
             item.setEnabled(Boolean.TRUE.equals(actor.getVisibleFlag()));
+            item.setGpsLng(actor.getGpsLng());
+            item.setGpsLat(actor.getGpsLat());
+            item.setGpsHeight(actor.getGpsHeight());
+            item.setGpsHeightSource(actor.getGpsHeightSource());
             if (actor.getCreateTime() != null) {
                 item.setCreateTime(actor.getCreateTime().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
             }
@@ -167,6 +171,7 @@ public class SceneRuntimeController {
             map.put("originLng", ref.getOriginLng());
             map.put("originLat", ref.getOriginLat());
             map.put("originHeight", ref.getOriginHeight());
+            map.put("originHeightSource", ref.getOriginHeightSource());
             // 前端历史字段名（与 originLng/Lat 同值）
             map.put("originLongitude", ref.getOriginLng());
             map.put("originLatitude", ref.getOriginLat());

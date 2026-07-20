@@ -17,6 +17,7 @@ public class CoordinateReferenceSaveReqVO {
     private BigDecimal originLng;
     private BigDecimal originLat;
     private BigDecimal originHeight;
+    private String originHeightSource;
     private BigDecimal originProjectedX;
     private BigDecimal originProjectedY;
     private BigDecimal originProjectedZ;
@@ -46,6 +47,7 @@ public class CoordinateReferenceSaveReqVO {
         item.setOriginLng(originLng);
         item.setOriginLat(originLat);
         item.setOriginHeight(originHeight);
+        item.setOriginHeightSource(originHeightSource);
         item.setOriginProjectedX(originProjectedX);
         item.setOriginProjectedY(originProjectedY);
         item.setOriginProjectedZ(originProjectedZ);

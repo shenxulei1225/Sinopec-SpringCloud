@@ -28,6 +28,9 @@ public interface ActorInstanceService {
 
     void updateActorInstanceSchema(Long id, ActorInstanceDO actorInstanceDO);
 
+    void updateActorInstanceGps(Long id, java.math.BigDecimal gpsLng, java.math.BigDecimal gpsLat,
+                                java.math.BigDecimal gpsHeight, String gpsHeightSource);
+
     void deleteActorInstance(Long id);
 
     List<ActorInstanceDO> getChildrenInstances(String parentInstanceCode);

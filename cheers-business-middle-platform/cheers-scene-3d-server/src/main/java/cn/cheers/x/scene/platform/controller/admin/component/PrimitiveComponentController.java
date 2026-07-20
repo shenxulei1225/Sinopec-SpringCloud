@@ -23,7 +23,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - Primitive 组件")
 @RestController
-@RequestMapping("/scene-platform/primitive-components")
+@RequestMapping("/scene-3d/primitive-components")
 @Validated
 public class PrimitiveComponentController {
 

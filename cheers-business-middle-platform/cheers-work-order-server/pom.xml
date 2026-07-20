@@ -81,6 +81,16 @@
             <artifactId>cheers-spring-boot-starter-rpc</artifactId>
         </dependency>
 
+        <!-- 注册中心 / 配置中心（网关 grayLb 依赖 Nacos 实例） -->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>cn.cheers.x</groupId>

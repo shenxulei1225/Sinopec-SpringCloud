@@ -1,6 +1,7 @@
 package cn.cheers.x.scene.platform.controller.admin.coordinate;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.scene.platform.controller.admin.coordinate.vo.CoordinateReferenceOriginHeightUpdateReqVO;
 import cn.cheers.x.scene.platform.controller.admin.coordinate.vo.CoordinateReferenceRespVO;
 import cn.cheers.x.scene.platform.controller.admin.coordinate.vo.CoordinateReferenceSaveReqVO;
 import cn.cheers.x.scene.platform.controller.admin.coordinate.vo.CoordinateReferenceUpdateRespVO;
@@ -22,7 +23,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 坐标参考")
 @RestController
-@RequestMapping("/scene-platform/scenes/{sceneCode}/coordinate-reference")
+@RequestMapping("/gis/scenes/{sceneCode}/coordinate-reference")
 @Validated
 public class CoordinateReferenceController {
 
@@ -41,5 +42,12 @@ public class CoordinateReferenceController {
                                                                                    @Valid @RequestBody CoordinateReferenceSaveReqVO reqVO,
                                                                                    @RequestParam(value = "strict", defaultValue = "true") boolean strict) {
         return success(coordinateReferenceService.updateBySceneCode(sceneCode, reqVO, strict));
+    }
+
+    @PutMapping("/origin-height")
+    @Operation(summary = "仅更新场景坐标参考原点高程（确认写回站心采样）")
+    public CommonResult<CoordinateReferenceRespVO> updateOriginHeight(@PathVariable String sceneCode,
+                                                                      @Valid @RequestBody CoordinateReferenceOriginHeightUpdateReqVO reqVO) {
+        return success(coordinateReferenceService.updateOriginHeightBySceneCode(sceneCode, reqVO));
     }
 }

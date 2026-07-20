@@ -129,6 +129,23 @@ public class ActorInstanceServiceImpl implements ActorInstanceService {
     }
 
     @Override
+    public void updateActorInstanceGps(Long id, java.math.BigDecimal gpsLng, java.math.BigDecimal gpsLat,
+                                       java.math.BigDecimal gpsHeight, String gpsHeightSource) {
+        ActorInstanceDO db = getActorInstance(id);
+        if (gpsLng != null) {
+            db.setGpsLng(gpsLng);
+        }
+        if (gpsLat != null) {
+            db.setGpsLat(gpsLat);
+        }
+        db.setGpsHeight(gpsHeight);
+        if (gpsHeightSource != null && !gpsHeightSource.isBlank()) {
+            db.setGpsHeightSource(gpsHeightSource.trim());
+        }
+        actorInstanceMapper.updateById(db);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public Long spawnActorInstance(ActorInstanceSpawnReqVO reqVO) {
         ActorDO actorDO = actorService.getActorByCode(reqVO.getActorCode());

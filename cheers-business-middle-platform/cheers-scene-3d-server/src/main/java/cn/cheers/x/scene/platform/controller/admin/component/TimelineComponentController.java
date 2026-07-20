@@ -22,7 +22,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - Timeline 组件")
 @RestController
-@RequestMapping("/scene-platform/timeline-components")
+@RequestMapping("/scene-3d/timeline-components")
 @Validated
 public class TimelineComponentController {
 

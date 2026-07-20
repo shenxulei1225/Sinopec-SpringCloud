@@ -23,7 +23,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - Light 组件")
 @RestController
-@RequestMapping("/scene-platform/light-components")
+@RequestMapping("/scene-3d/light-components")
 @Validated
 public class LightComponentController {
 

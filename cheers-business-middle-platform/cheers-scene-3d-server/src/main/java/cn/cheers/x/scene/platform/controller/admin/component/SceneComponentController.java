@@ -22,7 +22,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 场景级全局组件")
 @RestController
-@RequestMapping("/scene-platform/scene-component")
+@RequestMapping("/scene-3d/scene-component")
 @Validated
 public class SceneComponentController {
 

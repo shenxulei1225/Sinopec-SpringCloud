@@ -22,7 +22,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - Capsule 组件")
 @RestController
-@RequestMapping("/scene-platform/capsule-components")
+@RequestMapping("/scene-3d/capsule-components")
 @Validated
 public class CapsuleComponentController {
 

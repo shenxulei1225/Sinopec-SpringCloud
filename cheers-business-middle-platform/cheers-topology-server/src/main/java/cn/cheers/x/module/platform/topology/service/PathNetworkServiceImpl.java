@@ -7,8 +7,11 @@ import cn.cheers.x.module.platform.contract.dto.network.PortalDTO;
 import cn.cheers.x.module.platform.contract.enums.NetworkKind;
 import cn.cheers.x.module.platform.contract.enums.NetworkLayer;
 import cn.cheers.x.module.platform.contract.enums.NodeType;
+import cn.cheers.x.module.platform.topology.api.dto.PathNetworkSummaryDTO;
 import cn.cheers.x.module.platform.topology.api.dto.TopologyValidateIssueDTO;
 import cn.cheers.x.module.platform.topology.api.dto.TopologyValidateRespDTO;
+import cn.cheers.x.module.platform.topology.controller.admin.vo.PathNetworkCreateReqVO;
+import cn.cheers.x.module.platform.topology.controller.admin.vo.PathNetworkMetaUpdateReqVO;
 import cn.cheers.x.module.platform.topology.dal.dataobject.PathNetworkDO;
 import cn.cheers.x.module.platform.topology.dal.dataobject.PathPortalDO;
 import cn.cheers.x.module.platform.topology.dal.mysql.PathNetworkMapper;
@@ -67,28 +70,77 @@ public class PathNetworkServiceImpl implements PathNetworkService {
     @Transactional(rollbackFor = Exception.class)
     public PathNetworkDTO saveDraft(PathNetworkDTO request) {
         Long facilityId = request.getFacilityId();
-        NetworkKind networkKind = request.getNetworkKind();
-        if (facilityId == null || networkKind == null) {
+        NetworkKind networkKind = request.getNetworkKind() != null
+                ? request.getNetworkKind() : NetworkKind.SITE;
+        if (facilityId == null) {
             throw exception(NETWORK_DRAFT_INVALID);
         }
-        String draftId = draftId(facilityId, networkKind);
-        PathNetworkDO existing = pathNetworkMapper.selectById(draftId);
+        String networkId = StringUtils.hasText(request.getNetworkRef())
+                ? request.getNetworkRef()
+                : draftId(facilityId, networkKind);
+        PathNetworkDO existing = pathNetworkMapper.selectById(networkId);
+        // isDraft=true → 草稿；false/空 → 正式保存（名称无草稿后缀）
+        boolean asDraft = Boolean.TRUE.equals(request.getIsDraft());
+        String status = asDraft ? GraphStatus.DRAFT : GraphStatus.PUBLISHED;
         PathNetworkDO network = PathNetworkDO.builder()
-                .id(draftId)
+                .id(networkId)
                 .facilityId(facilityId)
                 .networkKind(networkKind.name())
                 .scopeId(request.getScopeId() != null ? String.valueOf(request.getScopeId()) : null)
-                .status(GraphStatus.DRAFT)
-                .version(0)
+                .status(status)
+                .version(existing != null ? existing.getVersion() : 0)
+                .displayName(resolveDisplayName(request.getDisplayName(), existing))
+                .description(request.getDescription() != null
+                        ? request.getDescription()
+                        : (existing != null ? existing.getDescription() : null))
+                .applicableEquipmentTypes(toJson(request.getApplicableEquipmentTypes() != null
+                        ? request.getApplicableEquipmentTypes()
+                        : parseStringList(existing != null ? existing.getApplicableEquipmentTypes() : null)))
                 .nodes(toJson(request.getNodes()))
                 .edges(toJson(request.getEdges()))
                 .build();
         if (existing == null) {
+            if (!StringUtils.hasText(network.getDisplayName())) {
+                network.setDisplayName("默认路网");
+            }
             pathNetworkMapper.insert(network);
         } else {
             pathNetworkMapper.updateById(network);
         }
-        return toDto(network);
+        return toDto(pathNetworkMapper.selectById(networkId));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public PathNetworkDTO saveAsDraft(PathNetworkDTO request) {
+        if (request == null || request.getFacilityId() == null) {
+            throw exception(NETWORK_DRAFT_INVALID);
+        }
+        if (!StringUtils.hasText(request.getDisplayName())) {
+            throw exception(NETWORK_DRAFT_INVALID);
+        }
+        NetworkKind networkKind = request.getNetworkKind() != null
+                ? request.getNetworkKind() : NetworkKind.SITE;
+        String id = "net_" + request.getFacilityId() + "_"
+                + UUID.randomUUID().toString().replace("-", "").substring(0, 12) + "_draft";
+        PathNetworkDO network = PathNetworkDO.builder()
+                .id(id)
+                .facilityId(request.getFacilityId())
+                .networkKind(networkKind.name())
+                .scopeId(request.getScopeId() != null ? String.valueOf(request.getScopeId()) : null)
+                .status(GraphStatus.DRAFT)
+                .version(0)
+                .displayName(request.getDisplayName().trim())
+                .description(request.getDescription())
+                .applicableEquipmentTypes(toJson(
+                        request.getApplicableEquipmentTypes() != null
+                                ? request.getApplicableEquipmentTypes()
+                                : List.of()))
+                .nodes(toJson(request.getNodes() != null ? request.getNodes() : List.of()))
+                .edges(toJson(request.getEdges() != null ? request.getEdges() : List.of()))
+                .build();
+        pathNetworkMapper.insert(network);
+        return toDto(pathNetworkMapper.selectById(id));
     }
 
     @Override
@@ -104,26 +156,169 @@ public class PathNetworkServiceImpl implements PathNetworkService {
         if (draft == null) {
             throw exception(NETWORK_NOT_FOUND);
         }
+        return publishDraftRow(draft);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public PathNetworkDTO publishByRef(String networkRef) {
+        PathNetworkDO draft = pathNetworkMapper.selectById(networkRef);
+        if (draft == null || !GraphStatus.DRAFT.equals(draft.getStatus())) {
+            throw exception(NETWORK_NOT_FOUND);
+        }
+        return publishDraftRow(draft);
+    }
+
+    @Override
+    public List<PathNetworkSummaryDTO> listDrafts(Long facilityId) {
+        if (facilityId == null) {
+            return List.of();
+        }
+        List<PathNetworkDO> rows = pathNetworkMapper.selectAllByFacilityId(facilityId);
+        if (rows.isEmpty()) {
+            List<PathNetworkDO> legacy = new ArrayList<>();
+            for (NetworkKind kind : NetworkKind.values()) {
+                PathNetworkDO row = pathNetworkMapper.selectDraftByFacilityIdAndKind(
+                        facilityId, kind.name());
+                if (row != null) {
+                    legacy.add(row);
+                }
+            }
+            rows = legacy;
+        }
+        // 排除历史「发布伴侣」行（*_published / *_vN），列表只展示用户可编辑的路网记录
+        return rows.stream()
+                .filter(row -> row.getId() == null
+                        || (!row.getId().endsWith("_published") && !row.getId().matches(".*_v\\d+$")))
+                .map(PathNetworkServiceImpl::toSummary)
+                .toList();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public PathNetworkDTO createDraft(PathNetworkCreateReqVO request) {
+        if (request == null || request.getFacilityId() == null
+                || !StringUtils.hasText(request.getDisplayName())) {
+            throw exception(NETWORK_DRAFT_INVALID);
+        }
+        // 新建即为正式记录（无草稿后缀）；另存为草稿才产生 DRAFT
+        String id = "net_" + request.getFacilityId() + "_"
+                + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+        PathNetworkDO network = PathNetworkDO.builder()
+                .id(id)
+                .facilityId(request.getFacilityId())
+                .networkKind(NetworkKind.SITE.name())
+                .status(GraphStatus.PUBLISHED)
+                .version(0)
+                .displayName(request.getDisplayName().trim())
+                .description(request.getDescription())
+                .applicableEquipmentTypes(toJson(
+                        request.getApplicableEquipmentTypes() != null
+                                ? request.getApplicableEquipmentTypes()
+                                : List.of()))
+                .nodes("[]")
+                .edges("[]")
+                .build();
+        pathNetworkMapper.insert(network);
+        return toDto(network);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public PathNetworkDTO updateMeta(String networkRef, PathNetworkMetaUpdateReqVO request) {
+        PathNetworkDO existing = pathNetworkMapper.selectById(networkRef);
+        if (existing == null) {
+            throw exception(NETWORK_NOT_FOUND);
+        }
+        if (request == null || !StringUtils.hasText(request.getDisplayName())) {
+            throw exception(NETWORK_DRAFT_INVALID);
+        }
+        existing.setDisplayName(request.getDisplayName().trim());
+        existing.setDescription(request.getDescription());
+        existing.setApplicableEquipmentTypes(toJson(
+                request.getApplicableEquipmentTypes() != null
+                        ? request.getApplicableEquipmentTypes()
+                        : List.of()));
+        pathNetworkMapper.updateById(existing);
+        return toDto(pathNetworkMapper.selectById(networkRef));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteDraft(String networkRef) {
+        PathNetworkDO existing = pathNetworkMapper.selectById(networkRef);
+        if (existing == null) {
+            throw exception(NETWORK_NOT_FOUND);
+        }
+        pathNetworkMapper.deleteById(networkRef);
+    }
+
+    private PathNetworkDTO publishDraftRow(PathNetworkDO draft) {
         TopologyValidateRespDTO validation = doValidate(toDto(draft));
         if (!Boolean.TRUE.equals(validation.getPassed())) {
             throw exception(NETWORK_VALIDATE_FAILED);
         }
-        PathNetworkDO latest = pathNetworkMapper.selectLatestPublishedByFacilityIdAndKind(
-                facilityId, networkKind.name());
-        int nextVersion = latest != null ? latest.getVersion() + 1 : 1;
-        String publishedId = publishedId(facilityId, networkKind, nextVersion);
+        NetworkKind networkKind = parseNetworkKind(draft.getNetworkKind());
+        if (networkKind == null) {
+            networkKind = NetworkKind.SITE;
+        }
+        // 一条草稿对应唯一一条已发布：反复发布只覆盖更新，不新增版本行
+        String publishedId = publishedCompanionId(draft.getId());
+        removeObsoleteVersionedPublished(draft.getFacilityId(), networkKind.name(), publishedId);
+
+        PathNetworkDO existing = pathNetworkMapper.selectById(publishedId);
+        int nextVersion = existing != null && existing.getVersion() != null
+                ? existing.getVersion() + 1
+                : 1;
         PathNetworkDO published = PathNetworkDO.builder()
                 .id(publishedId)
-                .facilityId(facilityId)
+                .facilityId(draft.getFacilityId())
                 .networkKind(networkKind.name())
                 .scopeId(draft.getScopeId())
                 .status(GraphStatus.PUBLISHED)
                 .version(nextVersion)
+                .displayName(draft.getDisplayName())
+                .description(draft.getDescription())
+                .applicableEquipmentTypes(draft.getApplicableEquipmentTypes())
                 .nodes(draft.getNodes())
                 .edges(draft.getEdges())
                 .build();
-        pathNetworkMapper.insert(published);
-        return toDto(published);
+        if (existing == null) {
+            pathNetworkMapper.insert(published);
+        } else {
+            pathNetworkMapper.updateById(published);
+        }
+        return toDto(pathNetworkMapper.selectById(publishedId));
+    }
+
+    /** 草稿 net_xxx_draft → 已发布 net_xxx_published（固定一对一） */
+    static String publishedCompanionId(String draftId) {
+        if (!StringUtils.hasText(draftId)) {
+            throw exception(NETWORK_DRAFT_INVALID);
+        }
+        if (draftId.endsWith("_draft")) {
+            return draftId.substring(0, draftId.length() - "_draft".length()) + "_published";
+        }
+        return draftId + "_published";
+    }
+
+    /** 清掉历史错误产生的 net_*_v1 / v2… 版本行，只保留当前这条已发布 */
+    private void removeObsoleteVersionedPublished(
+            Long facilityId, String networkKind, String keepPublishedId) {
+        List<PathNetworkDO> published = pathNetworkMapper.selectPublishedByFacilityIdAndKind(
+                facilityId, networkKind);
+        if (published == null || published.isEmpty()) {
+            return;
+        }
+        for (PathNetworkDO row : published) {
+            if (row.getId() == null || row.getId().equals(keepPublishedId)) {
+                continue;
+            }
+            // 仅删除旧版号命名（…_v数字），避免误删其它草稿配套的 _published
+            if (row.getId().matches(".*_v\\d+$")) {
+                pathNetworkMapper.deleteById(row.getId());
+            }
+        }
     }
 
     @Override
@@ -195,13 +390,14 @@ public class PathNetworkServiceImpl implements PathNetworkService {
             if (from == null || to == null) {
                 continue;
             }
+            // 分区仅辅助展示/组织；跨区直连不再作为发布阻断（WARN 供人工核对）
             if (from.getZoneId() != null
                     && to.getZoneId() != null
                     && !from.getZoneId().equals(to.getZoneId())
                     && from.getNodeType() != NodeType.DOOR
                     && to.getNodeType() != NodeType.DOOR) {
-                issues.add(issue("CROSS_ZONE_NO_DOOR", "ERROR",
-                        "地面跨区边至少需要一端为门节点", edge.getEdgeId()));
+                issues.add(issue("CROSS_ZONE_NO_DOOR", "WARN",
+                        "地面跨区边两端均非门（分区仅供参考）", edge.getEdgeId()));
             }
         }
         return TopologyValidateRespDTO.builder()
@@ -252,30 +448,95 @@ public class PathNetworkServiceImpl implements PathNetworkService {
                 .facilityId(facilityId)
                 .status(GraphStatus.DRAFT)
                 .version(0)
+                .displayName("默认路网")
+                .applicableEquipmentTypes(List.of())
                 .nodes(List.of())
                 .edges(List.of())
                 .build();
+    }
+
+    private static String resolveDisplayName(String requested, PathNetworkDO existing) {
+        if (StringUtils.hasText(requested)) {
+            return requested.trim();
+        }
+        if (existing != null && StringUtils.hasText(existing.getDisplayName())) {
+            return existing.getDisplayName();
+        }
+        return "默认路网";
     }
 
     static String draftId(Long facilityId, NetworkKind networkKind) {
         return "net_" + facilityId + "_" + networkKind.name().toLowerCase() + "_draft";
     }
 
+    /** @deprecated 旧版按 vN 递增插行；已改为 publishedCompanionId 覆盖更新 */
     static String publishedId(Long facilityId, NetworkKind networkKind, int version) {
         return "net_" + facilityId + "_" + networkKind.name().toLowerCase() + "_v" + version;
     }
 
     static PathNetworkDTO toDto(PathNetworkDO network) {
+        boolean draft = isDraftStatus(network.getStatus());
         return PathNetworkDTO.builder()
                 .networkRef(network.getId())
                 .networkKind(parseNetworkKind(network.getNetworkKind()))
                 .facilityId(network.getFacilityId())
                 .scopeId(parseScopeId(network.getScopeId()))
                 .status(network.getStatus())
+                .isDraft(draft)
                 .version(network.getVersion())
+                .displayName(StringUtils.hasText(network.getDisplayName())
+                        ? network.getDisplayName() : "默认路网")
+                .description(network.getDescription())
+                .applicableEquipmentTypes(parseStringList(network.getApplicableEquipmentTypes()))
                 .nodes(parseNodes(network.getNodes()))
                 .edges(parseEdges(network.getEdges()))
                 .build();
+    }
+
+    static PathNetworkSummaryDTO toSummary(PathNetworkDO network) {
+        List<PathNodeDTO> nodes = parseNodes(network.getNodes());
+        List<PathEdgeDTO> edges = parseEdges(network.getEdges());
+        return PathNetworkSummaryDTO.builder()
+                .networkRef(network.getId())
+                .facilityId(network.getFacilityId())
+                .displayName(resolveListDisplayName(network))
+                .description(network.getDescription())
+                .status(network.getStatus())
+                .isDraft(isDraftStatus(network.getStatus()))
+                .version(network.getVersion())
+                .applicableEquipmentTypes(parseStringList(network.getApplicableEquipmentTypes()))
+                .nodeCount(nodes.size())
+                .edgeCount(edges.size())
+                .build();
+    }
+
+    /** status=DRAFT（或空）视为草稿 */
+    private static boolean isDraftStatus(String status) {
+        if (!StringUtils.hasText(status)) {
+            return true;
+        }
+        return GraphStatus.DRAFT.equalsIgnoreCase(status.trim());
+    }
+
+    /** 列表展示名：有名称用名称；旧槽位无名称时按种类给可读默认名 */
+    private static String resolveListDisplayName(PathNetworkDO network) {
+        if (StringUtils.hasText(network.getDisplayName())) {
+            return network.getDisplayName();
+        }
+        String kind = network.getNetworkKind() != null ? network.getNetworkKind().toUpperCase() : "";
+        String base = switch (kind) {
+            case "SITE" -> "站场路网";
+            case "PERIMETER" -> "站界路网";
+            case "PIPELINE" -> "管线路网";
+            case "ROAD" -> "道路路网";
+            case "UTILITY_TUNNEL" -> "管廊路网";
+            default -> "默认路网";
+        };
+        // 已发布无名称时带上版本，避免多条正式版同名
+        if (GraphStatus.PUBLISHED.equals(network.getStatus()) && network.getVersion() != null) {
+            return base + " v" + network.getVersion();
+        }
+        return base;
     }
 
     private static PortalDTO toPortalDto(PathPortalDO portal) {

@@ -1,5 +1,6 @@
 package cn.cheers.x.gis.api;
 
+import cn.cheers.x.gis.api.dto.CoordinateReferenceOriginHeightUpdateReqDTO;
 import cn.cheers.x.gis.api.dto.CoordinateReferenceRespDTO;
 import cn.cheers.x.gis.enums.GisApiConstants;
 import cn.cheers.x.framework.common.pojo.CommonResult;
@@ -7,6 +8,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @FeignClient(name = GisApiConstants.NAME)
@@ -18,4 +21,10 @@ public interface CoordinateReferenceApi {
     @GetMapping(PREFIX + "/get-by-scene-code")
     @Operation(summary = "按场景编码获取坐标参考")
     CommonResult<CoordinateReferenceRespDTO> getBySceneCode(@RequestParam("sceneCode") String sceneCode);
+
+    @PutMapping(PREFIX + "/origin-height")
+    @Operation(summary = "仅更新坐标参考原点高程（地形采样写回）")
+    CommonResult<CoordinateReferenceRespDTO> updateOriginHeight(
+            @RequestParam("sceneCode") String sceneCode,
+            @RequestBody CoordinateReferenceOriginHeightUpdateReqDTO reqDTO);
 }

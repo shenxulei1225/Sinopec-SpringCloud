@@ -265,6 +265,10 @@ public class SceneServiceImpl implements SceneService {
         vo.setMetadataJson(item.getMetadataJson());
         vo.setPath(item.getPath());
         vo.setLayerKeys(item.getLayerKeys());
+        vo.setGpsLng(item.getGpsLng());
+        vo.setGpsLat(item.getGpsLat());
+        vo.setGpsHeight(item.getGpsHeight());
+        vo.setGpsHeightSource(item.getGpsHeightSource());
         vo.setCreateTime(item.getCreateTime());
         vo.setUpdateTime(item.getUpdateTime());
         if (item.getId() != null) {

@@ -24,7 +24,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 坐标转换配置")
 @RestController
-@RequestMapping("/scene-platform/coordinate/transform-profiles")
+@RequestMapping("/gis/coordinate/transform-profiles")
 @Validated
 public class CoordinateTransformProfileController {
 

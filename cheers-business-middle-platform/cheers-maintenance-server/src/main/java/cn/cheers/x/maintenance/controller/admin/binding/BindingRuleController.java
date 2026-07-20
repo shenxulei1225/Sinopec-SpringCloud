@@ -1,4 +1,4 @@
-package cn.cheers.x.maintenance.controller.admin;
+package cn.cheers.x.maintenance.controller.admin.binding;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.framework.common.pojo.PageResult;

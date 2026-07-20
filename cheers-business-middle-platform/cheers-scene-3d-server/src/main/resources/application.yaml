@@ -1,6 +1,6 @@
 spring:
   application:
-    name: scene-platform-server
+    name: scene-3d-server
 
   profiles:
     active: local

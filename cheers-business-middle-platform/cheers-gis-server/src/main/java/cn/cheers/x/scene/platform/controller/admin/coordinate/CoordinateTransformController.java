@@ -20,7 +20,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 坐标转换")
 @RestController
-@RequestMapping("/scene-platform/coordinate")
+@RequestMapping("/gis/coordinate")
 @Validated
 public class CoordinateTransformController {
 

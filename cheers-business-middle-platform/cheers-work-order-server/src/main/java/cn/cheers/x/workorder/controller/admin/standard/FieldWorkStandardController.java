@@ -1,4 +1,4 @@
-package cn.cheers.x.workorder.controller.admin;
+package cn.cheers.x.workorder.controller.admin.standard;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.framework.common.pojo.PageResult;

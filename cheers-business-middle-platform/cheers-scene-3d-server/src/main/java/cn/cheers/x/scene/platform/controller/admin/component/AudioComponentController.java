@@ -23,7 +23,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 音频组件")
 @RestController
-@RequestMapping("/scene-platform/audio-components")
+@RequestMapping("/scene-3d/audio-components")
 @Validated
 public class AudioComponentController {
 

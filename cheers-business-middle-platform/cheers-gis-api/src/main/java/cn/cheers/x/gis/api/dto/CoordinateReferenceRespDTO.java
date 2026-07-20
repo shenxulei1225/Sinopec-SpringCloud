@@ -15,6 +15,7 @@ public class CoordinateReferenceRespDTO {
     private BigDecimal originLng;
     private BigDecimal originLat;
     private BigDecimal originHeight;
+    private String originHeightSource;
     private String crsCode;
     private String crsName;
     private String crsType;

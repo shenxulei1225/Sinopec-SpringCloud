@@ -3,6 +3,8 @@ package cn.cheers.x.scene.platform.controller.admin.actor;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.scene.platform.controller.admin.actor.vo.ActorInstanceComponentTreeNodeRespVO;
 import cn.cheers.x.scene.platform.controller.admin.actor.vo.ActorInstanceComponentTreeRespVO;
+import cn.cheers.x.scene.platform.controller.admin.actor.vo.ActorInstanceGpsBatchItemReqVO;
+import cn.cheers.x.scene.platform.controller.admin.actor.vo.ActorInstanceGpsUpdateReqVO;
 import cn.cheers.x.scene.platform.controller.admin.actor.vo.ActorInstanceRespVO;
 import cn.cheers.x.scene.platform.controller.admin.actor.vo.ActorInstanceSaveReqVO;
 import cn.cheers.x.scene.platform.controller.admin.actor.vo.ActorInstanceSimpleRespVO;
@@ -38,7 +40,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - Actor 实例")
 @RestController
-@RequestMapping("/scene-platform/actor-instances")
+@RequestMapping("/scene-3d/actor-instances")
 @Validated
 public class ActorInstanceController {
 
@@ -77,6 +79,29 @@ public class ActorInstanceController {
     public CommonResult<Boolean> updateActorInstance(@PathVariable Long id,
                                                      @Valid @RequestBody ActorInstanceSaveReqVO reqVO) {
         actorInstanceService.updateActorInstance(id, reqVO.toDO());
+        return success(true);
+    }
+
+    @PutMapping("/{id}/gps")
+    @Operation(summary = "更新 Actor 实例 GPS 高程（确认写回）")
+    public CommonResult<Boolean> updateActorInstanceGps(@PathVariable Long id,
+                                                        @Valid @RequestBody ActorInstanceGpsUpdateReqVO reqVO) {
+        actorInstanceService.updateActorInstanceGps(
+                id, reqVO.getGpsLng(), reqVO.getGpsLat(), reqVO.getGpsHeight(), reqVO.getGpsHeightSource());
+        return success(true);
+    }
+
+    @PutMapping("/gps-batch")
+    @Operation(summary = "批量更新 Actor 实例 GPS 高程（确认写回）")
+    public CommonResult<Boolean> updateActorInstanceGpsBatch(
+            @Valid @RequestBody List<ActorInstanceGpsBatchItemReqVO> items) {
+        if (items != null) {
+            for (ActorInstanceGpsBatchItemReqVO item : items) {
+                actorInstanceService.updateActorInstanceGps(
+                        item.getId(), item.getGpsLng(), item.getGpsLat(),
+                        item.getGpsHeight(), item.getGpsHeightSource());
+            }
+        }
         return success(true);
     }
 
@@ -124,6 +149,10 @@ public class ActorInstanceController {
         vo.setPath(item.getPath());
         vo.setLayerKeys(item.getLayerKeys());
         vo.setMetadataJson(item.getMetadataJson());
+        vo.setGpsLng(item.getGpsLng());
+        vo.setGpsLat(item.getGpsLat());
+        vo.setGpsHeight(item.getGpsHeight());
+        vo.setGpsHeightSource(item.getGpsHeightSource());
         vo.setCreateTime(item.getCreateTime());
         vo.setUpdateTime(item.getUpdateTime());
         vo.setTransform(convertTransform(item.getTransform()));

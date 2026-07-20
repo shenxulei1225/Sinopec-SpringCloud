@@ -202,13 +202,20 @@ spring:
                 - Path=/admin-api/mes/**
               filters:
                 - RewritePath=/admin-api/mes/v3/api-docs, /v3/api-docs # 配置，保证转发到 /v3/api-docs
-            ## scene-platform-server 服务
-            - id: scene-platform-admin-api # 路由的编号
-              uri: grayLb://scene-platform-server
-              predicates: # 断言，作为路由的匹配条件，对应 RouteDefinition 数组
-                - Path=/admin-api/scene-platform/**
+            ## scene-3d-server 服务（三维）
+            - id: scene-3d-admin-api
+              uri: grayLb://scene-3d-server
+              predicates:
+                - Path=/admin-api/scene-3d/**
               filters:
-                - RewritePath=/admin-api/scene-platform/v3/api-docs, /v3/api-docs # 配置，保证转发到 /v3/api-docs
+                - RewritePath=/admin-api/scene-3d/v3/api-docs, /v3/api-docs
+            ## gis-server 服务
+            - id: gis-admin-api
+              uri: grayLb://gis-server
+              predicates:
+                - Path=/admin-api/gis/**
+              filters:
+                - RewritePath=/admin-api/gis/v3/api-docs, /v3/api-docs
             ## dynamicbusiness-server 服务
             - id: dynamicbusiness-admin-api # 路由的编号
               uri: grayLb://dynamicbusiness-server
@@ -355,9 +362,12 @@ knife4j:
       - name: mes-server
         service-name: mes-server
         url: /admin-api/mes/v3/api-docs
-      - name: scene-platform-server
-        service-name: scene-platform-server
-        url: /admin-api/scene-platform/v3/api-docs
+      - name: scene-3d-server
+        service-name: scene-3d-server
+        url: /admin-api/scene-3d/v3/api-docs
+      - name: gis-server
+        service-name: gis-server
+        url: /admin-api/gis/v3/api-docs
       - name: dynamicbusiness-server
         service-name: dynamicbusiness-server
         url: /admin-api/dynamicbusiness/v3/api-docs

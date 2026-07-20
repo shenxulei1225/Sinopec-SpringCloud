@@ -22,7 +22,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - Actor 实例组件")
 @RestController
-@RequestMapping("/scene-platform/actor-instance-components")
+@RequestMapping("/scene-3d/actor-instance-components")
 @Validated
 public class ActorInstanceComponentController {
 

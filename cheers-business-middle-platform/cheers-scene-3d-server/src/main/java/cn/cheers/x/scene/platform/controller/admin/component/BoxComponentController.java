@@ -22,7 +22,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - Box 组件")
 @RestController
-@RequestMapping("/scene-platform/box-components")
+@RequestMapping("/scene-3d/box-components")
 @Validated
 public class BoxComponentController {
 

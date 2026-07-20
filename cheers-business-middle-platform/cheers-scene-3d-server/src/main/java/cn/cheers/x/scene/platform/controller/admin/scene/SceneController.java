@@ -29,7 +29,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
  */
 @Tag(name = "管理后台 - 场景管理")
 @RestController
-@RequestMapping("/scene-platform/scene")
+@RequestMapping("/scene-3d/scene")
 @Validated
 public class SceneController {
 

@@ -22,7 +22,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - Actor 运行时管理")
 @RestController
-@RequestMapping("/scene-platform/actor-runtime")
+@RequestMapping("/scene-3d/actor-runtime")
 @Validated
 public class ActorRuntimeController {
 

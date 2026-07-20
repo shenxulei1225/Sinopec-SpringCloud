@@ -18,7 +18,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 场景运行时管理")
 @RestController
-@RequestMapping("/scene-platform/runtime")
+@RequestMapping("/scene-3d/runtime")
 @Validated
 public class SceneRuntimeController {
 

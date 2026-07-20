@@ -25,7 +25,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - Actor")
 @RestController
-@RequestMapping("/scene-platform/actors")
+@RequestMapping("/scene-3d/actors")
 @Validated
 public class ActorController {
 

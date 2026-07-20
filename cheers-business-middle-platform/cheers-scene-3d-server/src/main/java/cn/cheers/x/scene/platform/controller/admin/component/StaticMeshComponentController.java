@@ -23,7 +23,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - Static Mesh 组件")
 @RestController
-@RequestMapping("/scene-platform/static-mesh-components")
+@RequestMapping("/scene-3d/static-mesh-components")
 @Validated
 public class StaticMeshComponentController {
 

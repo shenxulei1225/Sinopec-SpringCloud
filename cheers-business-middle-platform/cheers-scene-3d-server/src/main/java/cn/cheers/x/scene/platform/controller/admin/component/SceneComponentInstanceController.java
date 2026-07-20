@@ -24,7 +24,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 场景组件挂载")
 @RestController
-@RequestMapping("/scene-platform/scene-component-instances")
+@RequestMapping("/scene-3d/scene-component-instances")
 @Validated
 public class SceneComponentInstanceController {
 

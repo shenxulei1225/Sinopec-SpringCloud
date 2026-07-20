@@ -57,4 +57,16 @@ public class ActorInstanceDO extends TenantBaseDO {
 
     /** 动画类型 (linear / easeInOutCubic) */
     private String animationType;
+
+    /** 实例 GPS 经度（WGS84） */
+    private java.math.BigDecimal gpsLng;
+
+    /** 实例 GPS 纬度（WGS84） */
+    private java.math.BigDecimal gpsLat;
+
+    /** 实例 GPS 椭球高（米） */
+    private java.math.BigDecimal gpsHeight;
+
+    /** GPS 高程来源：TERRAIN_SAMPLE / MANUAL 等 */
+    private String gpsHeightSource;
 }
