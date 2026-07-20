@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.iocoder.yudao.module.emergency.dal.mysql.response.EmergencyResponseMapper">
+
+    <!-- 计算平均响应时间 -->
+    <select id="calculateAverageResponseTimes" resultType="java.util.Map">
+        SELECT
+            AVG(EXTRACT(EPOCH FROM (started_at - e.create_time))/60) as avgStartTime,
+            AVG(EXTRACT(EPOCH FROM (COALESCE(ended_at, CURRENT_TIMESTAMP) - started_at))/60) as avgExecutionTime,
+            AVG(EXTRACT(EPOCH FROM (COALESCE(ended_at, CURRENT_TIMESTAMP) - e.create_time))/60) as avgTotalTime,
+            MIN(EXTRACT(EPOCH FROM (COALESCE(ended_at, CURRENT_TIMESTAMP) - e.create_time))/60) as minResponseTime,
+            MAX(EXTRACT(EPOCH FROM (COALESCE(ended_at, CURRENT_TIMESTAMP) - e.create_time))/60) as maxResponseTime
+        FROM emergency_response r
+        LEFT JOIN emergency_event e ON r.emergency_event_id = e.id
+        WHERE r.deleted = false
+          AND r.status != 'cancelled'
+          <if test="reqVO.includeDrills == false">
+              AND e.is_drill = FALSE
+          </if>
+          <if test="reqVO.startTime != null">
+              AND r.create_time >= #{reqVO.startTime}
+          </if>
+          <if test="reqVO.endTime != null">
+              AND r.create_time &lt;= #{reqVO.endTime}
+          </if>
+          <if test="reqVO.responseLevel != null and reqVO.responseLevel != ''">
+              AND r.response_level = #{reqVO.responseLevel}
+          </if>
+          <if test="reqVO.eventType != null and reqVO.eventType != ''">
+              AND e.event_type = #{reqVO.eventType}
+          </if>
+    </select>
+
+    <!-- 按级别计算响应时间 -->
+    <select id="calculateResponseTimesByLevel" resultType="cn.iocoder.yudao.module.emergency.controller.admin.statistics.vo.ResponseTimeStatisticsRespVO$LevelTimeStatsVO">
+        SELECT
+            r.response_level as responseLevel,
+            AVG(EXTRACT(EPOCH FROM (r.started_at - e.create_time))/60) as avgStartTime,
+            AVG(EXTRACT(EPOCH FROM (COALESCE(r.ended_at, CURRENT_TIMESTAMP) - r.started_at))/60) as avgExecutionTime,
+            AVG(EXTRACT(EPOCH FROM (COALESCE(r.ended_at, CURRENT_TIMESTAMP) - e.create_time))/60) as avgTotalTime,
+            COUNT(*) as count
+        FROM emergency_response r
+        LEFT JOIN emergency_event e ON r.emergency_event_id = e.id
+        WHERE r.deleted = false
+          AND r.status != 'cancelled'
+          <if test="reqVO.includeDrills == false">
+              AND e.is_drill = FALSE
+          </if>
+          <if test="reqVO.startTime != null">
+              AND r.create_time >= #{reqVO.startTime}
+          </if>
+          <if test="reqVO.endTime != null">
+              AND r.create_time &lt;= #{reqVO.endTime}
+          </if>
+          <if test="reqVO.eventType != null and reqVO.eventType != ''">
+              AND e.event_type = #{reqVO.eventType}
+          </if>
+        GROUP BY r.response_level
+        ORDER BY responseLevel
+    </select>
+
+    <!-- 按事件类型计算响应时间 -->
+    <select id="calculateResponseTimesByType" resultType="cn.iocoder.yudao.module.emergency.controller.admin.statistics.vo.ResponseTimeStatisticsRespVO$TypeTimeStatsVO">
+        SELECT
+            e.event_type as eventType,
+            e.event_type as typeName,
+            AVG(EXTRACT(EPOCH FROM (r.started_at - e.create_time))/60) as avgStartTime,
+            AVG(EXTRACT(EPOCH FROM (COALESCE(r.ended_at, CURRENT_TIMESTAMP) - r.started_at))/60) as avgExecutionTime,
+            AVG(EXTRACT(EPOCH FROM (COALESCE(r.ended_at, CURRENT_TIMESTAMP) - e.create_time))/60) as avgTotalTime,
+            COUNT(*) as count
+        FROM emergency_response r
+        LEFT JOIN emergency_event e ON r.emergency_event_id = e.id
+        WHERE r.deleted = false
+          AND r.status != 'cancelled'
+          <if test="reqVO.includeDrills == false">
+              AND e.is_drill = FALSE
+          </if>
+          <if test="reqVO.startTime != null">
+              AND r.create_time >= #{reqVO.startTime}
+          </if>
+          <if test="reqVO.endTime != null">
+              AND r.create_time &lt;= #{reqVO.endTime}
+          </if>
+          <if test="reqVO.responseLevel != null and reqVO.responseLevel != ''">
+              AND r.response_level = #{reqVO.responseLevel}
+          </if>
+        GROUP BY e.event_type
+        ORDER BY count DESC
+    </select>
+
+    <!-- 计算响应时间分布 -->
+    <select id="calculateTimeDistribution" resultType="cn.iocoder.yudao.module.emergency.controller.admin.statistics.vo.ResponseTimeStatisticsRespVO$TimeRangeCountVO">
+        SELECT
+            CASE
+                WHEN total_time &lt;= 10 THEN '0-10分钟'
+                WHEN total_time &lt;= 30 THEN '10-30分钟'
+                WHEN total_time &lt;= 60 THEN '30-60分钟'
+                WHEN total_time &lt;= 120 THEN '1-2小时'
+                WHEN total_time &lt;= 480 THEN '2-8小时'
+                ELSE '8小时以上'
+            END as timeRange,
+            COUNT(*) as count,
+            ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) as percentage
+        FROM (
+            SELECT EXTRACT(EPOCH FROM (COALESCE(r.ended_at, CURRENT_TIMESTAMP) - e.create_time))/60 as total_time
+            FROM emergency_response r
+            LEFT JOIN emergency_event e ON r.emergency_event_id = e.id
+            WHERE r.deleted = false
+              AND r.status != 'cancelled'
+              <if test="reqVO.includeDrills == false">
+                  AND e.is_drill = FALSE
+              </if>
+              <if test="reqVO.startTime != null">
+                  AND r.create_time >= #{reqVO.startTime}
+              </if>
+              <if test="reqVO.endTime != null">
+                  AND r.create_time &lt;= #{reqVO.endTime}
+              </if>
+              <if test="reqVO.responseLevel != null and reqVO.responseLevel != ''">
+                  AND r.response_level = #{reqVO.responseLevel}
+              </if>
+              <if test="reqVO.eventType != null and reqVO.eventType != ''">
+                  AND e.event_type = #{reqVO.eventType}
+              </if>
+        ) t
+        GROUP BY
+            CASE
+                WHEN total_time &lt;= 10 THEN '0-10分钟'
+                WHEN total_time &lt;= 30 THEN '10-30分钟'
+                WHEN total_time &lt;= 60 THEN '30-60分钟'
+                WHEN total_time &lt;= 120 THEN '1-2小时'
+                WHEN total_time &lt;= 480 THEN '2-8小时'
+                ELSE '8小时以上'
+            END
+        ORDER BY MIN(total_time)
+    </select>
+
+    <!-- 统计成功响应数量 -->
+    <select id="countSuccessfulResponses" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM emergency_response r
+        LEFT JOIN emergency_event e ON r.emergency_event_id = e.id
+        WHERE r.deleted = false
+          AND r.status IN ('ended')
+          <if test="reqVO.includeDrills == false">
+              AND e.is_drill = FALSE
+          </if>
+          <if test="reqVO.startTime != null">
+              AND r.create_time >= #{reqVO.startTime}
+          </if>
+          <if test="reqVO.endTime != null">
+              AND r.create_time &lt;= #{reqVO.endTime}
+          </if>
+          <if test="reqVO.responseLevel != null and reqVO.responseLevel != ''">
+              AND r.response_level = #{reqVO.responseLevel}
+          </if>
+          <if test="reqVO.eventType != null and reqVO.eventType != ''">
+              AND e.event_type = #{reqVO.eventType}
+          </if>
+    </select>
+
+    <!-- 统计总响应数量 -->
+    <select id="countTotalResponses" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM emergency_response r
+        LEFT JOIN emergency_event e ON r.emergency_event_id = e.id
+        WHERE r.deleted = false
+          AND r.status != 'cancelled'
+          <if test="reqVO.includeDrills == false">
+              AND e.is_drill = FALSE
+          </if>
+          <if test="reqVO.startTime != null">
+              AND r.create_time >= #{reqVO.startTime}
+          </if>
+          <if test="reqVO.endTime != null">
+              AND r.create_time &lt;= #{reqVO.endTime}
+          </if>
+          <if test="reqVO.responseLevel != null and reqVO.responseLevel != ''">
+              AND r.response_level = #{reqVO.responseLevel}
+          </if>
+          <if test="reqVO.eventType != null and reqVO.eventType != ''">
+              AND e.event_type = #{reqVO.eventType}
+          </if>
+    </select>
+
+    <!-- 按级别计算成功率 -->
+    <select id="calculateSuccessRateByLevel" resultType="cn.iocoder.yudao.module.emergency.controller.admin.statistics.vo.HandlingEffectStatisticsRespVO$LevelSuccessRateVO">
+        SELECT
+            r.response_level as responseLevel,
+            COUNT(CASE WHEN r.status = 'ended' THEN 1 END) as successCount,
+            COUNT(*) as totalCount,
+            ROUND(COUNT(CASE WHEN r.status = 'ended' THEN 1 END) * 100.0 / COUNT(*), 2) as successRate
+        FROM emergency_response r
+        LEFT JOIN emergency_event e ON r.emergency_event_id = e.id
+        WHERE r.deleted = false
+          AND r.status != 'cancelled'
+          <if test="reqVO.includeDrills == false">
+              AND e.is_drill = FALSE
+          </if>
+          <if test="reqVO.startTime != null">
+              AND r.create_time >= #{reqVO.startTime}
+          </if>
+          <if test="reqVO.endTime != null">
+              AND r.create_time &lt;= #{reqVO.endTime}
+          </if>
+          <if test="reqVO.eventType != null and reqVO.eventType != ''">
+              AND e.event_type = #{reqVO.eventType}
+          </if>
+        GROUP BY r.response_level
+        ORDER BY responseLevel
+    </select>
+
+    <!-- 按事件类型计算成功率 -->
+    <select id="calculateSuccessRateByType" resultType="cn.iocoder.yudao.module.emergency.controller.admin.statistics.vo.HandlingEffectStatisticsRespVO$TypeSuccessRateVO">
+        SELECT
+            e.event_type as eventType,
+            e.event_type as typeName,
+            COUNT(CASE WHEN r.status = 'ended' THEN 1 END) as successCount,
+            COUNT(*) as totalCount,
+            ROUND(COUNT(CASE WHEN r.status = 'ended' THEN 1 END) * 100.0 / COUNT(*), 2) as successRate
+        FROM emergency_response r
+        LEFT JOIN emergency_event e ON r.emergency_event_id = e.id
+        WHERE r.deleted = false
+          AND r.status != 'cancelled'
+          <if test="reqVO.includeDrills == false">
+              AND e.is_drill = FALSE
+          </if>
+          <if test="reqVO.startTime != null">
+              AND r.create_time >= #{reqVO.startTime}
+          </if>
+          <if test="reqVO.endTime != null">
+              AND r.create_time &lt;= #{reqVO.endTime}
+          </if>
+          <if test="reqVO.responseLevel != null and reqVO.responseLevel != ''">
+              AND r.response_level = #{reqVO.responseLevel}
+          </if>
+        GROUP BY e.event_type
+        ORDER BY successRate DESC
+    </select>
+
+    <!-- 计算升级统计 -->
+    <select id="calculateUpgradeStats" resultType="cn.iocoder.yudao.module.emergency.controller.admin.statistics.vo.HandlingEffectStatisticsRespVO$UpgradeStatsVO">
+        SELECT
+            h.from_level as fromLevel,
+            h.to_level as toLevel,
+            COUNT(*) as upgradeCount,
+            AVG(EXTRACT(EPOCH FROM (h.create_time - r.started_at))/60) as avgUpgradeTime
+        FROM emergency_response_history h
+        LEFT JOIN emergency_response r ON h.response_id = r.id
+        LEFT JOIN emergency_event e ON r.emergency_event_id = e.id
+        WHERE h.type = 'upgrade'
+          AND r.deleted = false
+          <if test="reqVO.includeDrills == false">
+              AND e.is_drill = FALSE
+          </if>
+          <if test="reqVO.startTime != null">
+              AND h.create_time >= #{reqVO.startTime}
+          </if>
+          <if test="reqVO.endTime != null">
+              AND h.create_time &lt;= #{reqVO.endTime}
+          </if>
+          <if test="reqVO.responseLevel != null and reqVO.responseLevel != ''">
+              AND h.from_level = #{reqVO.responseLevel}
+          </if>
+          <if test="reqVO.eventType != null and reqVO.eventType != ''">
+              AND e.event_type = #{reqVO.eventType}
+          </if>
+        GROUP BY h.from_level, h.to_level
+        ORDER BY upgradeCount DESC
+    </select>
+
+    <!-- 计算取消统计 -->
+    <select id="calculateCancelStats" resultType="cn.iocoder.yudao.module.emergency.controller.admin.statistics.vo.HandlingEffectStatisticsRespVO$CancelStatsVO">
+        SELECT
+            r.response_level as responseLevel,
+            COUNT(*) as cancelCount
+        FROM emergency_response r
+        LEFT JOIN emergency_event e ON r.emergency_event_id = e.id
+        WHERE r.deleted = false
+          AND r.status = 'cancelled'
+          <if test="reqVO.includeDrills == false">
+              AND e.is_drill = FALSE
+          </if>
+          <if test="reqVO.startTime != null">
+              AND r.create_time >= #{reqVO.startTime}
+          </if>
+          <if test="reqVO.endTime != null">
+              AND r.create_time &lt;= #{reqVO.endTime}
+          </if>
+          <if test="reqVO.eventType != null and reqVO.eventType != ''">
+              AND e.event_type = #{reqVO.eventType}
+          </if>
+        GROUP BY r.response_level
+        ORDER BY cancelCount DESC
+    </select>
+
+    <!-- 计算时间效率分析 -->
+    <select id="calculateTimeEfficiency" resultType="cn.iocoder.yudao.module.emergency.controller.admin.statistics.vo.HandlingEffectStatisticsRespVO$TimeEfficiencyVO">
+        SELECT
+            r.response_level as responseLevel,
+            AVG(EXTRACT(EPOCH FROM (COALESCE(r.ended_at, CURRENT_TIMESTAMP) - e.create_time))/60) as avgResponseTime,
+            CASE
+                WHEN r.response_level = 'I' THEN 5
+                WHEN r.response_level = 'II' THEN 15
+                WHEN r.response_level = 'III' THEN 30
+                WHEN r.response_level = 'IV' THEN 60
+                WHEN r.response_level = 'V' THEN 120
+                ELSE 60
+            END as standardTime,
+            ROUND(
+                CASE
+                    WHEN r.response_level = 'I' THEN LEAST(100, 100 - (AVG(EXTRACT(EPOCH FROM (COALESCE(r.ended_at, CURRENT_TIMESTAMP) - e.create_time))/60) - 5) / 5 * 20)
+                    WHEN r.response_level = 'II' THEN LEAST(100, 100 - (AVG(EXTRACT(EPOCH FROM (COALESCE(r.ended_at, CURRENT_TIMESTAMP) - e.create_time))/60) - 15) / 15 * 20)
+                    WHEN r.response_level = 'III' THEN LEAST(100, 100 - (AVG(EXTRACT(EPOCH FROM (COALESCE(r.ended_at, CURRENT_TIMESTAMP) - e.create_time))/60) - 30) / 30 * 20)
+                    WHEN r.response_level = 'IV' THEN LEAST(100, 100 - (AVG(EXTRACT(EPOCH FROM (COALESCE(r.ended_at, CURRENT_TIMESTAMP) - e.create_time))/60) - 60) / 60 * 20)
+                    WHEN r.response_level = 'V' THEN LEAST(100, 100 - (AVG(EXTRACT(EPOCH FROM (COALESCE(r.ended_at, CURRENT_TIMESTAMP) - e.create_time))/60) - 120) / 120 * 20)
+                    ELSE 85
+                END, 2
+            ) as efficiencyScore,
+            ROUND(
+                COUNT(CASE WHEN EXTRACT(EPOCH FROM (COALESCE(r.ended_at, CURRENT_TIMESTAMP) - e.create_time))/60 >
+                    CASE
+                        WHEN r.response_level = 'I' THEN 10
+                        WHEN r.response_level = 'II' THEN 30
+                        WHEN r.response_level = 'III' THEN 60
+                        WHEN r.response_level = 'IV' THEN 120
+                        WHEN r.response_level = 'V' THEN 240
+                        ELSE 120
+                    END THEN 1 END) * 100.0 / COUNT(*), 2
+            ) as timeoutRate
+        FROM emergency_response r
+        LEFT JOIN emergency_event e ON r.emergency_event_id = e.id
+        WHERE r.deleted = false
+          AND r.status != 'cancelled'
+          <if test="reqVO.includeDrills == false">
+              AND e.is_drill = FALSE
+          </if>
+          <if test="reqVO.startTime != null">
+              AND r.create_time >= #{reqVO.startTime}
+          </if>
+          <if test="reqVO.endTime != null">
+              AND r.create_time &lt;= #{reqVO.endTime}
+          </if>
+          <if test="reqVO.eventType != null and reqVO.eventType != ''">
+              AND e.event_type = #{reqVO.eventType}
+          </if>
+        GROUP BY r.response_level
+        ORDER BY responseLevel
+    </select>
+
+</mapper>

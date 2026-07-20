@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.iocoder.yudao.module.emergency.dal.mysql.dispatch.ResourcePoolMapper">
+
+    <!-- 根据类型查询可用资源 -->
+    <select id="selectAvailableByType" resultType="cn.iocoder.yudao.module.emergency.dal.dataobject.dispatch.ResourcePoolDO">
+        SELECT
+            id, name, type, description, status, location, contact_info,
+            capacity, unit, organization_id, create_time, update_time,
+            creator, updater, deleted
+        FROM resource_pool
+        WHERE type = #{type}
+          AND status = 'available'
+          AND deleted = false
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据类型和状态统计资源数量 -->
+    <select id="countByTypeAndStatus" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM resource_pool
+        WHERE deleted = false
+          <if test="type != null and type != ''">
+              AND type = #{type}
+          </if>
+          <if test="status != null and status != ''">
+              AND status = #{status}
+          </if>
+    </select>
+
+    <!-- 根据组织ID查询资源 -->
+    <select id="selectByOrganizationId" resultType="cn.iocoder.yudao.module.emergency.dal.dataobject.dispatch.ResourcePoolDO">
+        SELECT
+            id, name, type, description, status, location, contact_info,
+            capacity, unit, organization_id, create_time, update_time,
+            creator, updater, deleted
+        FROM resource_pool
+        WHERE organization_id = #{organizationId}
+          AND deleted = false
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>
+
+
+

@@ -39,30 +39,39 @@ public class OrchestrationTemplateRegistry {
         register(OrchestrationRefs.STANDARD_EXPAND_SOLVE_PERSIST_V1, List.of(
                 OrchestrationPhase.EXPAND,
                 OrchestrationPhase.SOLVE,
-                OrchestrationPhase.PERSIST));
+                OrchestrationPhase.PERSIST), Map.of());
+
+        register(OrchestrationRefs.EMERGENCY_START_RESPONSE_V1, List.of(
+                OrchestrationPhase.VALIDATE,
+                OrchestrationPhase.EXPAND,
+                OrchestrationPhase.PERSIST), Map.of(
+                OrchestrationPhase.VALIDATE, "emergency.start_response.validate",
+                OrchestrationPhase.EXPAND, "emergency.start_response.expand",
+                OrchestrationPhase.PERSIST, "emergency.start_response.persist"));
+
         register(OrchestrationRefs.PATROL_ROUTE_PREVIEW_V1, List.of(
                 OrchestrationPhase.EXPAND,
-                OrchestrationPhase.ROUTE));
+                OrchestrationPhase.ROUTE), Map.of());
         register(OrchestrationRefs.PATROL_ROUTE_CONFIRM_V1, List.of(
                 OrchestrationPhase.EXPAND,
                 OrchestrationPhase.ROUTE,
-                OrchestrationPhase.CONFIRM));
+                OrchestrationPhase.CONFIRM), Map.of());
         register(OrchestrationRefs.PATROL_SCHEDULE_ENABLE_V1, List.of(
                 OrchestrationPhase.EXPAND,
                 OrchestrationPhase.SOLVE,
-                OrchestrationPhase.PERSIST));
+                OrchestrationPhase.PERSIST), Map.of());
         register(OrchestrationRefs.PATROL_REPLAN_V1, List.of(
                 OrchestrationPhase.EXPAND,
                 OrchestrationPhase.ROUTE,
                 OrchestrationPhase.SOLVE,
-                OrchestrationPhase.PERSIST));
+                OrchestrationPhase.PERSIST), Map.of());
     }
 
-    private void register(String ref, List<OrchestrationPhase> phases) {
+    private void register(String ref, List<OrchestrationPhase> phases, Map<OrchestrationPhase, String> handlerIds) {
         templates.put(ref, OrchestrationTemplate.builder()
                 .ref(ref)
                 .phases(phases)
-                .handlerIds(Map.of())
+                .handlerIds(handlerIds)
                 .build());
     }
 }

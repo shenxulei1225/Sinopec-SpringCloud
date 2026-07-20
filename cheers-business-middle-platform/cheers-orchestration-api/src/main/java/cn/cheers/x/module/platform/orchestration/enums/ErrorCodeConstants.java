@@ -14,5 +14,6 @@ public interface ErrorCodeConstants {
     ErrorCode SCHEDULE_RUN_MAPPING_PROFILE_REQUIRED = new ErrorCode(1_004_052_004, "排程运行缺少已发布的映射配置");
     ErrorCode SCHEDULE_DISPATCH_STANDARD_REQUIRED = new ErrorCode(1_004_052_005, "派工生成工单时必须指定现场作业标准 ID");
     ErrorCode ORCHESTRATION_PHASE_HANDLER_MISSING = new ErrorCode(1_004_052_006, "编排阶段缺少处理器");
+    ErrorCode ORCHESTRATION_PAYLOAD_INVALID = new ErrorCode(1_004_052_007, "编排载荷缺少必填字段");
 
 }

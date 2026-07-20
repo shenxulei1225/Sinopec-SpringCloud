@@ -16,6 +16,8 @@ import cn.cheers.x.module.platform.contract.dto.slot.ScheduleSlotDTO;
 import cn.cheers.x.module.platform.contract.dto.work.SourceInstanceRefDTO;
 import cn.cheers.x.module.platform.contract.dto.work.WorkItemDTO;
 import cn.cheers.x.module.platform.contract.enums.RuntimeJobStatus;
+import cn.cheers.x.module.platform.orchestration.api.dto.OrchestrationRunRequest;
+import cn.cheers.x.module.platform.orchestration.api.dto.OrchestrationRunResponse;
 import cn.cheers.x.module.platform.orchestration.enums.OrchestrationRefs;
 import cn.cheers.x.module.platform.orchestration.phase.OrchestrationPhase;
 import cn.cheers.x.module.platform.orchestration.phase.PhaseContext;
@@ -41,6 +43,7 @@ import org.springframework.util.StringUtils;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +51,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.ORCHESTRATION_PHASE_HANDLER_MISSING;
 import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_RUN_MAPPING_PROFILE_REQUIRED;
 import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_RUN_SCHEDULING_SPEC_REQUIRED;
 
@@ -76,6 +80,50 @@ public class OrchestrationRunner {
     private OrchestrationTemplateRegistry templateRegistry;
     @Resource
     private PhaseHandlerRegistry phaseHandlerRegistry;
+
+
+    /**
+     * 通用编排运行（非排程占窗）：按模板 handlerIds 执行阶段。
+     * 应急启动响应等走此入口，不走 schedule/run。
+     */
+    public OrchestrationRunResponse run(OrchestrationRunRequest request) {
+        if (request == null || !StringUtils.hasText(request.getOrchestrationRef())) {
+            throw exception(ORCHESTRATION_PHASE_HANDLER_MISSING);
+        }
+        OrchestrationTemplate template = templateRegistry.require(request.getOrchestrationRef());
+        PhaseContext context = PhaseContext.builder()
+                .orchestrationRunRequest(request)
+                .orchestrationRef(request.getOrchestrationRef())
+                .siteId(request.getSiteId())
+                .dryRun(Boolean.TRUE.equals(request.getDryRun()))
+                .attributes(new HashMap<>())
+                .workItems(new ArrayList<>())
+                .slots(new ArrayList<>())
+                .build();
+
+        for (OrchestrationPhase phase : template.getPhases()) {
+            Map<OrchestrationPhase, String> handlerIds = template.getHandlerIds() == null
+                    ? Collections.emptyMap() : template.getHandlerIds();
+            String handlerId = handlerIds.get(phase);
+            if (!StringUtils.hasText(handlerId)) {
+                throw exception(ORCHESTRATION_PHASE_HANDLER_MISSING);
+            }
+            phaseHandlerRegistry.require(handlerId).execute(context);
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        Object expand = context.getAttr("expandResult");
+        if (expand instanceof Map<?, ?> map) {
+            map.forEach((k, v) -> result.put(String.valueOf(k), v));
+        }
+        result.putIfAbsent("orchestrationRef", request.getOrchestrationRef());
+
+        return OrchestrationRunResponse.builder()
+                .orchestrationRef(request.getOrchestrationRef())
+                .status("COMPLETED")
+                .result(result)
+                .build();
+    }
 
     public ScheduleRunResponse run(ScheduleRunRequest request, Long siteId) {
         RunContext resolved = resolveRunContext(request);

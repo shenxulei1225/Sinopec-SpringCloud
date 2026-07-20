@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.iocoder.yudao.module.emergency.dal.mysql.timeline.EmergencyTimelineMapper">
+
+    <!-- 优化后的时间线查询：使用索引优化，从业务表查询，添加deleted条件 -->
+    <select id="selectTimelinePage" resultType="cn.iocoder.yudao.module.emergency.dal.dataobject.timeline.TimelineItemRaw">
+        SELECT t.type,
+               t.create_time AS createTime,
+               t.data::text AS data
+        FROM (
+                 -- 事件创建（仅查询一次，使用索引idx_event_timeline）
+                 SELECT 'event_created' AS type,
+                        e.create_time,
+                        json_build_object(
+                            'eventCode', e.event_code,
+                            'eventName', COALESCE(e.event_name, e.event_code),
+                            'eventLevel', e.event_level,
+                            'status', e.status
+                        )::text AS data
+                 FROM emergency_event e
+                 WHERE e.id = #{eventId}
+                   AND e.deleted = FALSE
+
+                 UNION ALL
+
+                 -- 事件状态变更历史
+                 SELECT 'event_status_change' AS type,
+                        h.operate_time AS create_time,
+                        json_build_object(
+                            'fromStatus', h.from_status,
+                            'toStatus', h.to_status,
+                            'reason', h.reason,
+                            'operatorName', h.operator_name
+                        )::text AS data
+                 FROM emergency_event_status_history h
+                 WHERE h.emergency_event_id = #{eventId}
+
+                 UNION ALL
+
+                 -- 任务历史记录（支持预警阶段和响应阶段）
+                 -- 预警阶段：responseId为null时，查询response_id为null的任务历史
+                 -- 响应阶段：responseId不为null时，查询该响应的任务历史（包含预警阶段任务，如果它们后来被关联到响应）
+                 SELECT CONCAT('task_', h2.type) AS type,
+                        h2.create_time,
+                        json_build_object(
+                            'taskId', h2.task_id,
+                            'taskName', COALESCE(task.title, task.task_code),
+                            'taskStatus', task.status,
+                            'fromStatus', h2.from_status,
+                            'toStatus', h2.to_status,
+                            'comment', h2.reason,
+                            'attachments', NULL,
+                            'timelyReport', NULL,
+                            'reason', h2.reason,
+                            'stage', task.stage
+                        )::text AS data
+                 FROM emergency_task_history h2
+                          LEFT JOIN emergency_task task ON task.id = h2.task_id AND task.deleted = FALSE
+                 WHERE task.event_id = #{eventId}
+                   <if test="responseId == null">
+                   -- 预警阶段：只查response_id为null的任务历史
+                   AND h2.response_id IS NULL
+                   </if>
+                   <if test="responseId != null">
+                   -- 响应阶段：查该响应的任务历史，同时包含预警阶段任务（response_id为null）
+                   AND (h2.response_id = #{responseId} OR h2.response_id IS NULL)
+                   </if>
+
+                 UNION ALL
+
+                 -- 任务记录（使用索引idx_task_timeline优化）
+                 SELECT CONCAT('task_', t.status) AS type,
+                        t.create_time,
+                        json_build_object(
+                            'taskId', t.id,
+                            'taskName', COALESCE(t.title, t.task_code),
+                            'taskStatus', t.status,
+                            'stage', t.stage
+                        )::text AS data
+                 FROM emergency_task t
+                 WHERE t.event_id = #{eventId}
+                   AND t.deleted = FALSE
+
+                 UNION ALL
+
+                 -- 资源调度（使用索引idx_dispatch_timeline优化）
+                 SELECT 'resource_dispatch' AS type,
+                        d.create_time,
+                        json_build_object(
+                            'dispatchId', d.id,
+                            'dispatchNo', d.dispatch_no,
+                            'resourceId', d.resource_id,
+                            'resourceName', r.name,
+                            'dispatchStatus', d.status,
+                            'stage', d.stage
+                        )::text AS data
+                 FROM resource_dispatch d
+                          LEFT JOIN resource_pool r ON r.id = d.resource_id
+                 WHERE d.event_id = #{eventId}
+                   AND d.deleted = FALSE
+
+                 UNION ALL
+
+                 -- 内部上报（使用索引idx_report_internal_timeline优化）
+                 SELECT 'event_report_internal' AS type,
+                        r.report_time AS create_time,
+                        json_build_object(
+                            'content', r.content,
+                            'attachments', r.attachments,
+                            'reporterName', r.reporter_name
+                        )::text AS data
+                 FROM emergency_event_report_internal r
+                 WHERE r.emergency_event_id = #{eventId}
+                   AND r.deleted = FALSE
+
+                 UNION ALL
+
+                 -- 外部上报（使用索引idx_report_external_timeline优化）
+                 SELECT 'event_report_external' AS type,
+                        r.report_time AS create_time,
+                        json_build_object(
+                            'content', r.description_part1,
+                            'reportOrgName', r.report_org_name,
+                            'reporterName', r.reporter_name,
+                            'reporterContact', r.reporter_phone,
+                            'attachments', r.attachments,
+                            'auditStatus', r.audit_status
+                        )::text AS data
+                 FROM emergency_event_report_external r
+                 WHERE r.emergency_event_id = #{eventId}
+                   AND r.deleted = FALSE
+
+                 UNION ALL
+
+                 -- 评估记录（使用索引idx_assess_timeline优化）
+                 SELECT 'event_assess' AS type,
+                        a.assess_time AS create_time,
+                        json_build_object(
+                            'originalLevel', a.original_level,
+                                                   'newLevel', a.new_level,
+                                                   'reason', a.reason,
+                            'meetingRecord', a.meeting_record
+                        )::text AS data
+                 FROM emergency_event_assess a
+                 WHERE a.emergency_event_id = #{eventId}
+                   AND a.deleted = FALSE
+
+                 UNION ALL
+
+                 -- 处置记录（使用索引idx_handling_timeline优化）
+                 SELECT 'event_handling' AS type,
+                        h.handling_time AS create_time,
+                        json_build_object(
+                            'handlingId', h.id,
+                            'handlerName', h.handler_name,
+                            'measures', h.measures,
+                            'results', h.results
+                        )::text AS data
+                 FROM emergency_event_handling h
+                 WHERE h.emergency_event_id = #{eventId}
+                   AND h.deleted = FALSE
+             ) t
+        ORDER BY t.create_time 
+        <if test="orderBy == 'asc'">
+            ASC
+        </if>
+        <if test="orderBy != 'asc'">
+            DESC
+        </if>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 优化后的时间线计数查询：添加deleted条件，使用索引优化 -->
+    <select id="countTimeline" resultType="long">
+        SELECT SUM(cnt) FROM (
+            -- 事件创建（仅1条）
+            SELECT 1 AS cnt FROM emergency_event 
+            WHERE id = #{eventId} AND deleted = FALSE
+            UNION ALL
+            -- 事件状态变更（从状态历史表）
+            SELECT COUNT(*) AS cnt FROM emergency_event_status_history 
+            WHERE emergency_event_id = #{eventId}
+            UNION ALL
+            -- 任务记录
+            SELECT COUNT(*) AS cnt FROM emergency_task 
+            WHERE event_id = #{eventId} AND deleted = FALSE
+            UNION ALL
+            -- 任务历史记录（支持预警阶段和响应阶段）
+            SELECT COUNT(*) AS cnt FROM emergency_task_history h2
+            LEFT JOIN emergency_task task ON task.id = h2.task_id AND task.deleted = FALSE
+            WHERE task.event_id = #{eventId}
+              <if test="responseId == null">
+              -- 预警阶段：只查response_id为null的任务历史
+              AND h2.response_id IS NULL
+              </if>
+              <if test="responseId != null">
+              -- 响应阶段：查该响应的任务历史，同时包含预警阶段任务（response_id为null）
+              AND (h2.response_id = #{responseId} OR h2.response_id IS NULL)
+              </if>
+            UNION ALL
+            -- 资源调度
+            SELECT COUNT(*) AS cnt FROM resource_dispatch 
+            WHERE event_id = #{eventId} AND deleted = FALSE
+            UNION ALL
+            -- 内部上报
+            SELECT COUNT(*) AS cnt FROM emergency_event_report_internal 
+            WHERE emergency_event_id = #{eventId} AND deleted = FALSE
+            UNION ALL
+            -- 外部上报
+            SELECT COUNT(*) AS cnt FROM emergency_event_report_external 
+            WHERE emergency_event_id = #{eventId} AND deleted = FALSE
+            UNION ALL
+            -- 评估记录
+            SELECT COUNT(*) AS cnt FROM emergency_event_assess 
+            WHERE emergency_event_id = #{eventId} AND deleted = FALSE
+            UNION ALL
+            -- 处置记录
+            SELECT COUNT(*) AS cnt FROM emergency_event_handling 
+            WHERE emergency_event_id = #{eventId} AND deleted = FALSE
+        ) x
+    </select>
+
+</mapper>

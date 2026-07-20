@@ -10,4 +10,6 @@ public interface ErrorCodeConstants {
     ErrorCode RUNTIME_JOB_NOT_EXISTS = new ErrorCode(1_004_051_000, "运行作业不存在");
     ErrorCode SCHEDULE_SLOT_NOT_EXISTS = new ErrorCode(1_004_051_001, "计划点不存在");
 
+    ErrorCode PROCESS_TIMELINE_APPEND_INVALID = new ErrorCode(1_004_051_100, "过程时间线条目缺少必填字段");
+
 }

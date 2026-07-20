@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.iocoder.yudao.module.emergency.dal.mysql.dispatch.ResourceDispatchMapper">
+
+    <!-- 计算调度统计 -->
+    <select id="calculateDispatchStats" resultType="java.util.Map">
+        SELECT
+            COUNT(DISTINCT rd.id) as totalDispatches,
+            SUM(rd.quantity) as totalResources
+        FROM resource_dispatch rd
+        LEFT JOIN emergency_response r ON rd.response_id = r.id
+        LEFT JOIN emergency_event e ON r.event_id = e.id
+        WHERE rd.deleted = false
+          <if test="reqVO.includeDrills == false">
+              AND e.is_drill = FALSE
+          </if>
+          <if test="reqVO.startTime != null">
+              AND rd.create_time >= #{reqVO.startTime}
+          </if>
+          <if test="reqVO.endTime != null">
+              AND rd.create_time &lt;= #{reqVO.endTime}
+          </if>
+          <if test="reqVO.resourceType != null and reqVO.resourceType != ''">
+              AND rd.resource_type = #{reqVO.resourceType}
+          </if>
+          <if test="reqVO.responseLevel != null and reqVO.responseLevel != ''">
+              AND r.response_level = #{reqVO.responseLevel}
+          </if>
+    </select>
+
+    <!-- 按资源类型统计 -->
+    <select id="countByResourceType" resultType="cn.iocoder.yudao.module.emergency.controller.admin.statistics.vo.ResourceUsageStatisticsRespVO$ResourceTypeStatsVO">
+        SELECT
+            rd.resource_type as resourceType,
+            rd.resource_type as typeName,
+            COUNT(DISTINCT rd.id) as dispatchCount,
+            SUM(rd.quantity) as totalResources,
+            ROUND(AVG(rd.quantity), 2) as avgResourcesPerDispatch
+        FROM resource_dispatch rd
+        LEFT JOIN emergency_response r ON rd.response_id = r.id
+        LEFT JOIN emergency_event e ON r.event_id = e.id
+        WHERE rd.deleted = false
+          <if test="reqVO.includeDrills == false">
+              AND e.is_drill = FALSE
+          </if>
+          <if test="reqVO.startTime != null">
+              AND rd.create_time >= #{reqVO.startTime}
+          </if>
+          <if test="reqVO.endTime != null">
+              AND rd.create_time &lt;= #{reqVO.endTime}
+          </if>
+          <if test="reqVO.responseLevel != null and reqVO.responseLevel != ''">
+              AND r.response_level = #{reqVO.responseLevel}
+          </if>
+        GROUP BY rd.resource_type
+        ORDER BY dispatchCount DESC
+    </select>
+
+    <!-- 按响应级别统计 -->
+    <select id="countByResponseLevel" resultType="cn.iocoder.yudao.module.emergency.controller.admin.statistics.vo.ResourceUsageStatisticsRespVO$LevelResourceStatsVO">
+        SELECT
+            r.response_level as responseLevel,
+            COUNT(DISTINCT rd.id) as dispatchCount,
+            ROUND(AVG(rd.quantity), 2) as avgResources,
+            ROUND(COUNT(DISTINCT rd.id) * 100.0 / SUM(COUNT(DISTINCT rd.id)) OVER (), 2) as utilizationRate
+        FROM resource_dispatch rd
+        LEFT JOIN emergency_response r ON rd.response_id = r.id
+        LEFT JOIN emergency_event e ON r.event_id = e.id
+        WHERE rd.deleted = false
+          <if test="reqVO.includeDrills == false">
+              AND e.is_drill = FALSE
+          </if>
+          <if test="reqVO.startTime != null">
+              AND rd.create_time >= #{reqVO.startTime}
+          </if>
+          <if test="reqVO.endTime != null">
+              AND rd.create_time &lt;= #{reqVO.endTime}
+          </if>
+          <if test="reqVO.resourceType != null and reqVO.resourceType != ''">
+              AND rd.resource_type = #{reqVO.resourceType}
+          </if>
+        GROUP BY r.response_level
+        ORDER BY responseLevel
+    </select>
+
+    <!-- 查找最常使用的资源 -->
+    <select id="findTopResources" resultType="cn.iocoder.yudao.module.emergency.controller.admin.statistics.vo.ResourceUsageStatisticsRespVO$TopResourceVO">
+        SELECT
+            rd.resource_id as resourceId,
+            rd.resource_name as resourceName,
+            rd.resource_type as resourceType,
+            COUNT(*) as usageCount,
+            SUM(EXTRACT(EPOCH FROM (COALESCE(rd.recovered_time, CURRENT_TIMESTAMP) - rd.dispatch_time))/60) as totalUsageTime
+        FROM resource_dispatch rd
+        LEFT JOIN emergency_response r ON rd.response_id = r.id
+        LEFT JOIN emergency_event e ON r.event_id = e.id
+        WHERE rd.deleted = false
+          AND rd.status IN ('dispatched', 'recovered')
+          <if test="reqVO.includeDrills == false">
+              AND e.is_drill = FALSE
+          </if>
+          <if test="reqVO.startTime != null">
+              AND rd.create_time >= #{reqVO.startTime}
+          </if>
+          <if test="reqVO.endTime != null">
+              AND rd.create_time &lt;= #{reqVO.endTime}
+          </if>
+          <if test="reqVO.resourceType != null and reqVO.resourceType != ''">
+              AND rd.resource_type = #{reqVO.resourceType}
+          </if>
+          <if test="reqVO.responseLevel != null and reqVO.responseLevel != ''">
+              AND r.response_level = #{reqVO.responseLevel}
+          </if>
+        GROUP BY rd.resource_id, rd.resource_name, rd.resource_type
+        ORDER BY usageCount DESC
+        LIMIT 10
+    </select>
+
+    <!-- 计算资源利用率 -->
+    <select id="calculateUtilization" resultType="cn.iocoder.yudao.module.emergency.controller.admin.statistics.vo.ResourceUsageStatisticsRespVO$ResourceUtilizationVO">
+        SELECT
+            rp.type as resourceType,
+            rp.type as typeName,
+            COUNT(DISTINCT rp.id) as totalResources,
+            COUNT(DISTINCT CASE WHEN rp.status = 'in_use' THEN rp.id END) as inUseResources,
+            ROUND(COUNT(DISTINCT CASE WHEN rp.status = 'in_use' THEN rp.id END) * 100.0 / COUNT(DISTINCT rp.id), 2) as utilizationRate
+        FROM resource_pool rp
+        WHERE rp.deleted = false
+          <if test="reqVO.resourceType != null and reqVO.resourceType != ''">
+              AND rp.type = #{reqVO.resourceType}
+          </if>
+        GROUP BY rp.type
+        ORDER BY utilizationRate DESC
+    </select>
+
+    <!-- 根据 ID 更新状态 -->
+    <update id="updateStatusById">
+        UPDATE resource_dispatch
+        SET status = #{status},
+            update_time = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据响应 ID 查询调度记录 -->
+    <select id="selectByResponseId" resultType="cn.iocoder.yudao.module.emergency.dal.dataobject.dispatch.ResourceDispatchDO">
+        SELECT
+            id, event_id, response_id, resource_id,
+            status, dispatch_time, eta_minutes, comment, location,
+            recovered_time, create_time, update_time, creator, updater, deleted
+        FROM resource_dispatch
+        WHERE response_id = #{responseId}
+          AND deleted = false
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

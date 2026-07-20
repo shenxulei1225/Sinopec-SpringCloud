@@ -1,8 +1,10 @@
 package cn.cheers.x.module.platform.orchestration.template;
 
 import cn.cheers.x.module.platform.orchestration.phase.OrchestrationPhase;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
@@ -12,15 +14,17 @@ import java.util.Map;
  */
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class OrchestrationTemplate {
 
-    private final String ref;
+    private String ref;
 
-    private final List<OrchestrationPhase> phases;
+    private List<OrchestrationPhase> phases;
 
     /**
      * 阶段 → handlerId；未配置时使用平台内建逻辑。
      */
-    private final Map<OrchestrationPhase, String> handlerIds;
+    private Map<OrchestrationPhase, String> handlerIds;
 
 }
