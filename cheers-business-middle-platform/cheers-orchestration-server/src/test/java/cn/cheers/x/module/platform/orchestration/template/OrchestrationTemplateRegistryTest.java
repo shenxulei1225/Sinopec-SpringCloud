@@ -45,6 +45,7 @@ class OrchestrationTemplateRegistryTest {
         assertEquals(List.of(
                 OrchestrationPhase.EXPAND,
                 OrchestrationPhase.ROUTE), t.getPhases());
+        assertEquals("platform.route.plan_v1", t.getHandlerIds().get(OrchestrationPhase.ROUTE));
     }
 
     @Test

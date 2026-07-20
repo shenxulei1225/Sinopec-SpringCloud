@@ -26,6 +26,7 @@
         <module>cheers-capability-server</module>
         <module>cheers-topology-api</module>
         <module>cheers-topology-server</module>
+        <module>cheers-routing-api</module>
         <module>cheers-routing-server</module>
         <module>cheers-exchange-api</module>
         <module>cheers-exchange-server</module>

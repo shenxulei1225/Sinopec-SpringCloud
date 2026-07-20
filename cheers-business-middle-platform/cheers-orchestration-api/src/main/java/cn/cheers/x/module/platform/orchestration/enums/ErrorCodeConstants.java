@@ -15,5 +15,7 @@ public interface ErrorCodeConstants {
     ErrorCode SCHEDULE_DISPATCH_STANDARD_REQUIRED = new ErrorCode(1_004_052_005, "派工生成工单时必须指定现场作业标准 ID");
     ErrorCode ORCHESTRATION_PHASE_HANDLER_MISSING = new ErrorCode(1_004_052_006, "编排阶段缺少处理器");
     ErrorCode ORCHESTRATION_PAYLOAD_INVALID = new ErrorCode(1_004_052_007, "编排载荷缺少必填字段");
+    ErrorCode ORCHESTRATION_ROUTE_DURATION_UNAVAILABLE = new ErrorCode(1_004_052_008,
+            "无法估算路线时长：缺少行驶距离或速度，且未提供作业分钟");
 
 }

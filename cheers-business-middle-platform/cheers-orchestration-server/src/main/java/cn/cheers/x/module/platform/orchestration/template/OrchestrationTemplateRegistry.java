@@ -51,11 +51,13 @@ public class OrchestrationTemplateRegistry {
 
         register(OrchestrationRefs.PATROL_ROUTE_PREVIEW_V1, List.of(
                 OrchestrationPhase.EXPAND,
-                OrchestrationPhase.ROUTE), Map.of());
+                OrchestrationPhase.ROUTE), Map.of(
+                OrchestrationPhase.ROUTE, "platform.route.plan_v1"));
         register(OrchestrationRefs.PATROL_ROUTE_CONFIRM_V1, List.of(
                 OrchestrationPhase.EXPAND,
                 OrchestrationPhase.ROUTE,
-                OrchestrationPhase.CONFIRM), Map.of());
+                OrchestrationPhase.CONFIRM), Map.of(
+                OrchestrationPhase.ROUTE, "platform.route.plan_v1"));
         register(OrchestrationRefs.PATROL_SCHEDULE_ENABLE_V1, List.of(
                 OrchestrationPhase.EXPAND,
                 OrchestrationPhase.SOLVE,
@@ -64,7 +66,8 @@ public class OrchestrationTemplateRegistry {
                 OrchestrationPhase.EXPAND,
                 OrchestrationPhase.ROUTE,
                 OrchestrationPhase.SOLVE,
-                OrchestrationPhase.PERSIST), Map.of());
+                OrchestrationPhase.PERSIST), Map.of(
+                OrchestrationPhase.ROUTE, "platform.route.plan_v1"));
     }
 
     private void register(String ref, List<OrchestrationPhase> phases, Map<OrchestrationPhase, String> handlerIds) {
