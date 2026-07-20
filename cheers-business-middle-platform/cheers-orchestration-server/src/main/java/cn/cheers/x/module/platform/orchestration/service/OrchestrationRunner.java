@@ -190,7 +190,7 @@ public class OrchestrationRunner {
             case VALIDATE -> log.debug("VALIDATE phase skipped (MVP no-op), ref={}",
                     context.getOrchestrationRef());
             case EXPAND -> runExpand(context);
-            case ROUTE -> log.info("ROUTE phase skipped until BuiltinRoutePhaseHandler (Task 5), ref={}",
+            case ROUTE -> log.info("ROUTE phase: no handler registered, skipping, ref={}",
                     context.getOrchestrationRef());
             case SOLVE -> runSolve(context);
             case PERSIST -> runPersist(context);

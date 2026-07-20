@@ -251,13 +251,14 @@ spring:
                 - Path=/admin-api/platformresource/**
               filters:
                 - RewritePath=/admin-api/platformresource/v3/api-docs, /v3/api-docs
-            ## platformorchestration-server 排程入口（优先于 runtime 通配）
+            ## platformorchestration-server 编排入口（优先于 runtime 通配）
             - id: platformorchestration-schedule-api
               uri: grayLb://platformorchestration-server
               predicates:
-                - Path=/admin-api/platform/runtime/schedule/**
+                - Path=/admin-api/platform/runtime/schedule/**,/admin-api/platform/orchestration/**
               filters:
                 - RewritePath=/admin-api/platform/runtime/schedule/v3/api-docs, /v3/api-docs
+                - RewritePath=/admin-api/platform/orchestration/v3/api-docs, /v3/api-docs
             ## platformpolicy-server 服务
             - id: platformpolicy-admin-api
               uri: grayLb://platformpolicy-server
