@@ -3,7 +3,6 @@ package cn.cheers.x.inspection.inspection_content.service.profile.impl;
 import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import cn.cheers.x.inspection.inspection_content.dal.dataobject.profile.InspectionObjectProfileDO;
 import cn.cheers.x.inspection.inspection_content.dal.mysql.profile.InspectionObjectProfileMapper;
-import cn.cheers.x.inspection.inspection_content.enums.InspectionTypeEnum;
 import cn.cheers.x.inspection.inspection_content.service.profile.ObjectProfileQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
