@@ -3,10 +3,13 @@ package cn.cheers.x.module.platform.runtime.service;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.platform.contract.enums.SlotStatus;
 import cn.cheers.x.module.platform.runtime.api.dto.ProcessTimelineActionAppendReqDTO;
+import cn.cheers.x.module.platform.runtime.api.dto.RuntimeSlotReleaseReqDTO;
 import cn.cheers.x.module.platform.runtime.api.dto.RuntimeSlotStatusUpdateReqDTO;
 import cn.cheers.x.module.platform.runtime.dal.dataobject.ScheduleSlotDO;
 import cn.cheers.x.module.platform.runtime.dal.mysql.ScheduleSlotMapper;
 import cn.cheers.x.module.platform.runtime.enums.ErrorCodeConstants;
+import cn.cheers.x.module.platform.runtime.enums.RuntimeSlotReleaseMode;
+import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -15,11 +18,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -86,6 +91,56 @@ class RuntimeSlotWriteServiceTest {
         assertEquals("slot-1", timeline.getTargetId());
         assertEquals("slot.status_update", timeline.getActionCode());
         assertEquals(actualEnd, timeline.getOccurredAt());
+        assertEquals(100L, timeline.getSiteId());
+    }
+
+    @Test
+    void release_yield_keepsCompleted_cancelsPlanned() {
+        ScheduleSlotDO completed = ScheduleSlotDO.builder()
+                .id("slot-done")
+                .runtimeJobId("job-1")
+                .workId("work-1")
+                .slotStatus(SlotStatus.COMPLETED.name())
+                .siteId(100L)
+                .build();
+        ScheduleSlotDO planned = ScheduleSlotDO.builder()
+                .id("slot-planned")
+                .runtimeJobId("job-1")
+                .workId("work-1")
+                .slotStatus(SlotStatus.PLANNED.name())
+                .siteId(100L)
+                .build();
+        ScheduleSlotDO inProgress = ScheduleSlotDO.builder()
+                .id("slot-running")
+                .runtimeJobId("job-1")
+                .workId("work-1")
+                .slotStatus(SlotStatus.IN_PROGRESS.name())
+                .siteId(100L)
+                .build();
+        when(scheduleSlotMapper.selectList(any(LambdaQueryWrapperX.class)))
+                .thenReturn(List.of(completed, planned, inProgress));
+
+        RuntimeSlotReleaseReqDTO req = RuntimeSlotReleaseReqDTO.builder()
+                .runtimeJobId("job-1")
+                .mode(RuntimeSlotReleaseMode.YIELD_PAUSE)
+                .reason("让路给其他任务")
+                .build();
+
+        runtimeSlotWriteService.releaseUnfinished(req);
+
+        ArgumentCaptor<ScheduleSlotDO> slotCaptor = ArgumentCaptor.forClass(ScheduleSlotDO.class);
+        verify(scheduleSlotMapper, times(2)).updateById(slotCaptor.capture());
+        List<ScheduleSlotDO> updated = slotCaptor.getAllValues();
+        assertEquals(SlotStatus.CANCELLED.name(), updated.get(0).getSlotStatus());
+        assertEquals(SlotStatus.CANCELLED.name(), updated.get(1).getSlotStatus());
+
+        ArgumentCaptor<ProcessTimelineActionAppendReqDTO> timelineCaptor =
+                ArgumentCaptor.forClass(ProcessTimelineActionAppendReqDTO.class);
+        verify(processTimelineService).append(timelineCaptor.capture());
+        ProcessTimelineActionAppendReqDTO timeline = timelineCaptor.getValue();
+        assertEquals("runtime_job", timeline.getTargetType());
+        assertEquals("job-1", timeline.getTargetId());
+        assertEquals("slot.release_unfinished", timeline.getActionCode());
         assertEquals(100L, timeline.getSiteId());
     }
 }

@@ -1,6 +1,7 @@
 package cn.cheers.x.module.platform.runtime.controller.admin;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.module.platform.runtime.api.dto.RuntimeSlotReleaseReqDTO;
 import cn.cheers.x.module.platform.runtime.api.dto.RuntimeSlotStatusUpdateReqDTO;
 import cn.cheers.x.module.platform.runtime.service.RuntimeSlotWriteService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,6 +29,13 @@ public class RuntimeSlotWriteController {
     @Operation(summary = "回写计划点状态并追加过程时间线")
     public CommonResult<Boolean> updateSlotStatus(@Valid @RequestBody RuntimeSlotStatusUpdateReqDTO request) {
         runtimeSlotWriteService.updateSlotStatus(request);
+        return success(true);
+    }
+
+    @PostMapping("/release-unfinished")
+    @Operation(summary = "按运行作业释放未执行计划点占用（让路/挂起/中止）")
+    public CommonResult<Boolean> releaseUnfinished(@Valid @RequestBody RuntimeSlotReleaseReqDTO request) {
+        runtimeSlotWriteService.releaseUnfinished(request);
         return success(true);
     }
 }

@@ -1,6 +1,7 @@
 package cn.cheers.x.module.platform.runtime.api;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.module.platform.runtime.api.dto.RuntimeSlotReleaseReqDTO;
 import cn.cheers.x.module.platform.runtime.api.dto.RuntimeSlotStatusUpdateReqDTO;
 import cn.cheers.x.module.platform.runtime.service.RuntimeSlotWriteService;
 import jakarta.annotation.Resource;
@@ -19,6 +20,12 @@ public class RuntimeSlotWriteApiImpl implements RuntimeSlotWriteApi {
     @Override
     public CommonResult<Boolean> updateSlotStatus(RuntimeSlotStatusUpdateReqDTO request) {
         runtimeSlotWriteService.updateSlotStatus(request);
+        return success(true);
+    }
+
+    @Override
+    public CommonResult<Boolean> releaseUnfinished(RuntimeSlotReleaseReqDTO request) {
+        runtimeSlotWriteService.releaseUnfinished(request);
         return success(true);
     }
 }
