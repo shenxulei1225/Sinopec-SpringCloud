@@ -109,4 +109,31 @@ public class InspectionTaskDO extends BaseDO {
      */
     @TableField(typeHandler = JacksonTypeHandler.class)
     private List<Long> planIds = new ArrayList<>();
+
+    // ==================== 路线快照（确认后写入） ====================
+
+    /**
+     * 已确认路网引用。
+     */
+    private String networkRef;
+
+    /**
+     * 已确认规划路线（JSON）。
+     */
+    private String plannedRoute;
+
+    /**
+     * 已确认路线时长估算（分钟）。
+     */
+    private Integer durationEstimateMinutes;
+
+    /**
+     * 巡检类型：HUMAN|GROUND_ROBOT|UAV。
+     */
+    private String inspectionType;
+
+    /**
+     * 关联路线方案台账 ID。
+     */
+    private Long routePlanId;
 }
