@@ -1,17 +1,22 @@
 package cn.cheers.x.bpm.api.task;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.bpm.api.task.dto.BpmActivityNodeRespDTO;
 import cn.cheers.x.bpm.api.task.dto.BpmProcessInstanceCreateReqDTO;
+import cn.cheers.x.bpm.api.task.dto.BpmTaskApproveReqDTO;
 import cn.cheers.x.bpm.enums.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import jakarta.validation.Valid;
+
+import java.util.List;
 
 @FeignClient(name = ApiConstants.NAME) // TODO 芋艿：fallbackFactory =
 @Tag(name = "RPC 服务 - 流程实例")
@@ -24,5 +29,17 @@ public interface BpmProcessInstanceApi {
     @Parameter(name = "userId", description = "用户编号", required = true, example = "1")
     CommonResult<String> createProcessInstance(@RequestParam("userId") Long userId,
                                                @Valid @RequestBody BpmProcessInstanceCreateReqDTO reqDTO);
+
+    @GetMapping(PREFIX + "/running-tasks")
+    @Operation(summary = "按业务键查询运行中用户任务")
+    @Parameter(name = "businessKey", description = "业务唯一标识", required = true)
+    CommonResult<List<BpmActivityNodeRespDTO>> getRunningTasksByBusinessKey(
+            @RequestParam("businessKey") String businessKey);
+
+    @PostMapping(PREFIX + "/approve-task")
+    @Operation(summary = "完成用户任务（内部）")
+    @Parameter(name = "userId", description = "用户编号", required = true, example = "1")
+    CommonResult<Boolean> approveTask(@RequestParam("userId") Long userId,
+                                      @Valid @RequestBody BpmTaskApproveReqDTO reqDTO);
 
 }

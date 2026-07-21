@@ -1,11 +1,14 @@
 package cn.iocoder.yudao.module.emergency.controller.admin.event.vo;
 
+import cn.cheers.x.bpm.api.task.dto.BpmActivityNodeRespDTO;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 @Schema(description = "管理后台 - 应急事件响应")
@@ -36,4 +39,10 @@ public class EventRespVO {
     private Map<String, Object> attachments;
     private String contactPerson;
     private String contactPhone;
+
+    @Schema(description = "流程实例编号（只读；无实例则为空）")
+    private String processInstanceId;
+
+    @Schema(description = "当前运行中流程节点（只读；无实例为空列表，不伪造）")
+    private List<BpmActivityNodeRespDTO> currentProcessNodes = Collections.emptyList();
 }

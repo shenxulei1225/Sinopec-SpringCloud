@@ -31,12 +31,10 @@ import cn.iocoder.yudao.module.emergency.service.report.InformationReportFlowSer
 import cn.iocoder.yudao.module.emergency.service.event.EventCategoryValidationService;
 import cn.iocoder.yudao.module.emergency.service.event.EventDeduplicationService;
 import cn.iocoder.yudao.module.emergency.service.event.EventNotificationService;
-import cn.iocoder.yudao.module.emergency.service.plan.EmergencyPlanService;
-import cn.iocoder.yudao.module.emergency.service.response.EmergencyResponseService;
 import cn.iocoder.yudao.module.emergency.service.timeline.TimelineCacheService;
 import cn.iocoder.yudao.module.emergency.service.timeline.EmergencyProcessTimelineWriter;
-import cn.iocoder.yudao.module.emergency.controller.admin.plan.vo.EmergencyPlanRespVO;
-import cn.iocoder.yudao.module.emergency.controller.admin.response.vo.ResponseStartReqVO;
+import cn.iocoder.yudao.module.emergency.service.process.EmergencyProcessKeys;
+import cn.iocoder.yudao.module.emergency.service.process.EmergencyProcessRuntimeService;
 import cn.cheers.x.system.api.user.AdminUserApi;
 import cn.cheers.x.framework.common.util.json.JsonUtils;
 import cn.cheers.x.module.platform.runtime.api.ProcessTimelineApi;
@@ -73,14 +71,13 @@ public class EmergencyEventServiceImpl implements EmergencyEventService {
     private final EventCategoryValidationService categoryValidationService;
     private final EventDeduplicationService deduplicationService;
     private final EventNotificationService notificationService;
-    private final EmergencyPlanService planService;
-    private final EmergencyResponseService responseService;
     private final EmergencyPlanStepMapper planStepMapper;
     private final EmergencyTaskMapper taskMapper;
     private final EmergencyTaskHistoryMapper taskHistoryMapper;
     private final TimelineCacheService timelineCacheService;
     private final EmergencyProcessTimelineWriter processTimelineWriter;
     private final ProcessTimelineApi processTimelineApi;
+    private final EmergencyProcessRuntimeService processRuntimeService;
 
     public EmergencyEventServiceImpl(EmergencyEventMapper eventMapper,
                                      EmergencyEventReportInternalMapper reportInternalMapper,
@@ -95,14 +92,13 @@ public class EmergencyEventServiceImpl implements EmergencyEventService {
                                      EventCategoryValidationService categoryValidationService,
                                      EventDeduplicationService deduplicationService,
                                      EventNotificationService notificationService,
-                                     EmergencyPlanService planService,
-                                     EmergencyResponseService responseService,
                                      EmergencyPlanStepMapper planStepMapper,
                                      EmergencyTaskMapper taskMapper,
                                      EmergencyTaskHistoryMapper taskHistoryMapper,
                                      TimelineCacheService timelineCacheService,
                                      EmergencyProcessTimelineWriter processTimelineWriter,
-                                     ProcessTimelineApi processTimelineApi) {
+                                     ProcessTimelineApi processTimelineApi,
+                                     EmergencyProcessRuntimeService processRuntimeService) {
         this.eventMapper = eventMapper;
         this.reportInternalMapper = reportInternalMapper;
         this.reportExternalMapper = reportExternalMapper;
@@ -116,14 +112,13 @@ public class EmergencyEventServiceImpl implements EmergencyEventService {
         this.categoryValidationService = categoryValidationService;
         this.deduplicationService = deduplicationService;
         this.notificationService = notificationService;
-        this.planService = planService;
-        this.responseService = responseService;
         this.planStepMapper = planStepMapper;
         this.taskMapper = taskMapper;
         this.taskHistoryMapper = taskHistoryMapper;
         this.timelineCacheService = timelineCacheService;
         this.processTimelineWriter = processTimelineWriter;
         this.processTimelineApi = processTimelineApi;
+        this.processRuntimeService = processRuntimeService;
     }
 
     @Override
@@ -192,6 +187,14 @@ public class EmergencyEventServiceImpl implements EmergencyEventService {
         // 记录审计日志
         auditLogService.logSuccess("create", "event", 
                 "创建应急事件：" + event.getEventCode(), event.getId(), null, null);
+
+        // B2-A：接报后启动流程实例；失败则整单回滚（禁止静默无实例）
+        Long processUserId = SecurityFrameworkUtils.getLoginUserId();
+        if (processUserId == null) {
+            throw ServiceExceptionUtil.exception(ErrorCodeConstants.EVENT_PROCESS_DEFINITION_MISSING);
+        }
+        String processInstanceId = processRuntimeService.startOnEventCreated(event.getId(), processUserId);
+        event.setProcessInstanceId(processInstanceId);
         
         return EmergencyEventConvert.INSTANCE.convert(event);
     }
@@ -316,157 +319,42 @@ public class EmergencyEventServiceImpl implements EmergencyEventService {
     public void confirm(Long eventId, EventConfirmReqVO reqVO) {
         EmergencyEventDO event = eventMapper.selectById(eventId);
         if (event == null) {
-            // 业务异常（事件不存在）不应该导致事务回滚
             throw ServiceExceptionUtil.exception(ErrorCodeConstants.EVENT_NOT_EXISTS);
         }
 
-        String currentStatus = event.getStatus();
-        String targetStatus;
-
-        // 根据确认结果确定目标状态
-        // result可能的值：real/false_alarm/ignore
-        if ("real".equals(reqVO.getResult())) {
-            // 真实事件：根据事件级别判断进入预警还是响应中
-            // BR-004：事件分级为Ⅰ级（特别重大）或Ⅱ级（重大）时，必须自动启动相应级别的应急预案
-            // 根据事件级别判断：
-            // - Ⅰ级（特别重大）或Ⅱ级（重大）：直接进入响应中状态
-            // - 其他级别：进入预警状态
-            String eventLevel = event.getEventLevel();
-            if (eventLevel != null && ("特别重大".equals(eventLevel) || "重大".equals(eventLevel) || "Ⅰ级".equals(eventLevel) || "Ⅱ级".equals(eventLevel))) {
-                // 重大事件：直接进入响应中状态，后续会自动启动响应
-                targetStatus = EventStatus.RESPONDING.getCode();
-            } else {
-                // 一般事件：进入预警阶段
-                targetStatus = EventStatus.WARNING.getCode();
-            }
-        } else if ("false_alarm".equals(reqVO.getResult())) {
-            targetStatus = EventStatus.CANCELLED.getCode();
-        } else {
-            // ignore：保持待响应状态
-            targetStatus = currentStatus;
-        }
-
-        // 使用状态机更新状态
-        if (!currentStatus.equals(targetStatus)) {
-            updateStatus(event, targetStatus, reqVO.getComment());
-            
-            // BR-004和BR-012：如果事件进入响应中状态且是重大事件，自动启动响应
-            // 根据事件级别自动确定响应级别和启动响应
-            if (EventStatus.RESPONDING.getCode().equals(targetStatus) && "real".equals(reqVO.getResult())) {
-                autoStartResponse(event);
-            } else if (EventStatus.WARNING.getCode().equals(targetStatus) && "real".equals(reqVO.getResult())) {
-                // 一般真实事件：进入预警阶段时，如果前端传入了预案ID，则根据预案的“预警阶段”步骤生成预警任务
-                if (reqVO.getPlanId() != null) {
-                    try {
-                        cloneWarningStepsToTasks(event.getId(), reqVO.getPlanId());
-                    } catch (Exception e) {
-                        // 预警任务生成失败不影响事件确认主流程，只记录错误日志
-                        log.error("事件确认后生成预警阶段任务失败：eventId={}, planId={}", event.getId(), reqVO.getPlanId(), e);
-                    }
-                }
+        // 引擎路径终态：台账仅投影/旁路；不以 EventStateMachine / autoStartResponse 推进主轴
+        if ("false_alarm".equals(reqVO.getResult())) {
+            EmergencyEventDO projection = new EmergencyEventDO();
+            projection.setId(eventId);
+            projection.setStatus(EventStatus.CANCELLED.getCode());
+            eventMapper.updateById(projection);
+            event.setStatus(EventStatus.CANCELLED.getCode());
+        } else if ("real".equals(reqVO.getResult()) && reqVO.getPlanId() != null) {
+            // 旁路：预警任务克隆（不决定下一阶段；下一阶段由 Flowable 网关/节点决定）
+            try {
+                cloneWarningStepsToTasks(event.getId(), reqVO.getPlanId());
+            } catch (Exception e) {
+                log.error("确认后生成预警阶段任务失败（旁路）：eventId={}, planId={}",
+                        event.getId(), reqVO.getPlanId(), e);
             }
         }
-        
-        // 发送事件确认通知
+
         notificationService.sendEventConfirmedNotification(event, reqVO.getResult());
 
         String how = "确认结果=" + reqVO.getResult()
                 + (reqVO.getPlanId() != null ? ", planId=" + reqVO.getPlanId() : "")
                 + (reqVO.getComment() != null && !reqVO.getComment().isBlank() ? ", " + reqVO.getComment() : "");
         processTimelineWriter.appendEventAction(eventId, "event.confirm", how);
-    }
 
-    /**
-     * 自动启动响应
-     * BR-004：事件分级为Ⅰ级（特别重大）或Ⅱ级（重大）时，必须自动启动相应级别的应急预案
-     * BR-012：系统必须根据事件分级自动确定应急响应级别
-     *
-     * @param event 事件
-     */
-    private void autoStartResponse(EmergencyEventDO event) {
-        try {
-            String eventLevel = event.getEventLevel();
-            if (eventLevel == null) {
-                log.warn("事件级别为空，无法自动启动响应：eventId={}", event.getId());
-                return;
-            }
-
-            // 根据事件级别确定响应级别
-            // 事件级别：特别重大/重大/较大/一般
-            // 响应级别：I/II/III/IV/V
-            String responseLevel = determineResponseLevel(eventLevel);
-            if (responseLevel == null) {
-                log.warn("无法确定响应级别，跳过自动启动响应：eventId={}, eventLevel={}", event.getId(), eventLevel);
-                return;
-            }
-
-            // 查找推荐的预案：根据响应级别和事件类型查找合适的预案
-            // 1. 根据响应级别推荐预案（planService.recommendPlans会根据plan_levels字段匹配）
-            // 2. 如果事件有类型，可以进一步筛选（planType参数）
-            Integer planType = event.getEventType() != null ? event.getEventType().intValue() : null;
-            List<EmergencyPlanRespVO> recommendedPlans = planService.recommendPlans(responseLevel, planType);
-            
-            if (recommendedPlans == null || recommendedPlans.isEmpty()) {
-                log.warn("未找到推荐的预案，无法自动启动响应：eventId={}, eventLevel={}, responseLevel={}, planType={}", 
-                        event.getId(), eventLevel, responseLevel, planType);
-                // 未找到预案时，记录日志但不影响事件确认流程
-                // 用户需要手动启动响应并选择预案
-                return;
-            }
-            
-            // 选择第一个推荐的预案（如果有多个，可以选择优先级最高的）
-            EmergencyPlanRespVO selectedPlan = recommendedPlans.get(0);
-            Long planId = selectedPlan.getId();
-            
-            log.info("找到推荐的预案，自动启动响应：eventId={}, eventLevel={}, responseLevel={}, planId={}, planName={}", 
-                    event.getId(), eventLevel, responseLevel, planId, selectedPlan.getPlanName());
-            
-            // 自动启动响应
-            try {
-                ResponseStartReqVO startReq = new ResponseStartReqVO();
-                startReq.setEventId(event.getId());
-                startReq.setResponseLevel(responseLevel);
-                startReq.setPlanId(planId);
-                startReq.setReason("事件确认后自动启动响应（事件级别：" + eventLevel + "）");
-                
-                responseService.start(startReq);
-                log.info("自动启动响应成功：eventId={}, responseLevel={}, planId={}", 
-                        event.getId(), responseLevel, planId);
-            } catch (Exception e) {
-                log.error("自动启动响应失败：eventId={}, responseLevel={}, planId={}", 
-                        event.getId(), responseLevel, planId, e);
-                // 自动启动失败不影响事件确认流程，只记录日志
-                // 用户需要手动启动响应
-            }
-        } catch (Exception e) {
-            log.error("自动启动响应失败：eventId={}", event.getId(), e);
-            // 自动启动失败不影响事件确认流程，只记录日志
+        Long processUserId = SecurityFrameworkUtils.getLoginUserId();
+        if (processUserId == null) {
+            throw ServiceExceptionUtil.exception(ErrorCodeConstants.EVENT_PROCESS_DEFINITION_MISSING);
         }
-    }
-
-    /**
-     * 根据事件级别确定响应级别
-     *
-     * @param eventLevel 事件级别（特别重大/重大/较大/一般 或 Ⅰ级/Ⅱ级/Ⅲ级/Ⅳ级）
-     * @return 响应级别（I/II/III/IV/V）
-     */
-    private String determineResponseLevel(String eventLevel) {
-        if (eventLevel == null) {
-            return null;
-        }
-        
-        // 支持两种格式：中文描述和罗马数字
-        if ("特别重大".equals(eventLevel) || "Ⅰ级".equals(eventLevel) || "I级".equals(eventLevel)) {
-            return "I";
-        } else if ("重大".equals(eventLevel) || "Ⅱ级".equals(eventLevel) || "II级".equals(eventLevel)) {
-            return "II";
-        } else if ("较大".equals(eventLevel) || "Ⅲ级".equals(eventLevel) || "III级".equals(eventLevel)) {
-            return "III";
-        } else if ("一般".equals(eventLevel) || "Ⅳ级".equals(eventLevel) || "IV级".equals(eventLevel)) {
-            return "IV";
-        }
-        
-        return null;
+        Map<String, Object> processVars = new HashMap<>();
+        processVars.put("confirmResult", reqVO.getResult());
+        // 令牌推进真源：Flowable complete；误报经 BPMN 排他网关结束，不进入研判/启动响应
+        processRuntimeService.completeUserTask(eventId, processUserId,
+                EmergencyProcessKeys.TASK_CONFIRM, processVars);
     }
 
     /**
@@ -582,21 +470,15 @@ public class EmergencyEventServiceImpl implements EmergencyEventService {
     public EventAssessRespVO assess(Long eventId, EventAssessReqVO reqVO) {
         EmergencyEventDO event = eventMapper.selectById(eventId);
         if (event == null) {
-            // 业务异常（事件不存在）不应该导致事务回滚
             throw ServiceExceptionUtil.exception(ErrorCodeConstants.EVENT_NOT_EXISTS);
         }
-        // 更新事件状态和级别（当前状态）
-        event.setStatus("assessing");
-        // 注意：根据数据模型，eventLevel是事件级别（特别重大/重大/较大/一般），
-        // 而reqVO.getResponseLevel()是响应级别（I/II/III/IV/V），两者不同
-        // 这里暂时使用响应级别，后续需要根据业务逻辑调整
-        // event.setEventLevel(reqVO.getResponseLevel());
-        
-        // 研判信息存储在历史表中，事件表只存储当前状态
-        eventMapper.updateById(event);
 
-        // 保存研判记录
+        // 引擎路径终态：只写研判台账；status 由 complete → projectLedgerStatus 投影
         EmergencyEventAssessDO assess = EmergencyEventConvert.INSTANCE.convertAssess(eventId, reqVO);
+        // convertAssess 已将 responseLevel → newLevel，供服务任务启动响应读取
+        if (assess.getNewLevel() == null || assess.getNewLevel().isBlank()) {
+            throw ServiceExceptionUtil.exception(ErrorCodeConstants.EVENT_PROCESS_TASK_NOT_FOUND, "responseLevel");
+        }
         assessMapper.insert(assess);
 
         EventAssessRespVO resp = new EventAssessRespVO();
@@ -608,11 +490,18 @@ public class EmergencyEventServiceImpl implements EmergencyEventService {
                 + (reqVO.getComment() != null && !reqVO.getComment().isBlank() ? ": " + reqVO.getComment() : "");
         processTimelineWriter.appendEventAction(eventId, "event.assess", how.isBlank() ? "事件研判" : how);
 
+        Long processUserId = SecurityFrameworkUtils.getLoginUserId();
+        if (processUserId == null) {
+            throw ServiceExceptionUtil.exception(ErrorCodeConstants.EVENT_PROCESS_DEFINITION_MISSING);
+        }
+        Map<String, Object> processVars = new HashMap<>();
+        processVars.put("responseLevel", reqVO.getResponseLevel());
+        processRuntimeService.completeUserTask(eventId, processUserId,
+                EmergencyProcessKeys.TASK_ASSESS, processVars);
+
         return resp;
     }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
     public void close(Long eventId, String reason) {
         EmergencyEventDO event = eventMapper.selectById(eventId);
         if (event == null) {
@@ -702,6 +591,19 @@ public class EmergencyEventServiceImpl implements EmergencyEventService {
         }
         
         log.info("【调试】最终返回的 respVO.attachments: {}", respVO.getAttachments());
+
+        // 只读当前流程节点；无实例时显式空态，不伪造
+        respVO.setProcessInstanceId(event.getProcessInstanceId());
+        if (event.getProcessInstanceId() != null && !event.getProcessInstanceId().isBlank()) {
+            try {
+                respVO.setCurrentProcessNodes(processRuntimeService.listCurrentNodes(id));
+            } catch (Exception ex) {
+                log.warn("查询当前流程节点失败：eventId={}", id, ex);
+                respVO.setCurrentProcessNodes(Collections.emptyList());
+            }
+        } else {
+            respVO.setCurrentProcessNodes(Collections.emptyList());
+        }
         return respVO;
     }
 

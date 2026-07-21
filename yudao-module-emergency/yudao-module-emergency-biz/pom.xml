@@ -50,6 +50,11 @@
             <artifactId>cheers-orchestration-api</artifactId>
             <version>${revision}</version>
         </dependency>
+        <dependency>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-bpm-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
 
         <dependency>
             <groupId>cn.cheers.x</groupId>

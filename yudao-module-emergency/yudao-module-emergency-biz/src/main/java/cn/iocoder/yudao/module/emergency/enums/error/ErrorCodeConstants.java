@@ -20,9 +20,13 @@ public interface ErrorCodeConstants {
     ErrorCode EVENT_DUPLICATE_DETECTED = new ErrorCode(1004001007, "检测到重复事件：{}");
     ErrorCode EVENT_EXTERNAL_REPORT_ORG_NAME_REQUIRED = new ErrorCode(1004001008, "外部上报必须填写上报单位");
     ErrorCode EVENT_EXTERNAL_REPORTER_NAME_REQUIRED = new ErrorCode(1004001009, "外部上报必须填写上报人姓名");
+    ErrorCode EVENT_PROCESS_NOT_STARTED = new ErrorCode(1004001010, "事件尚未启动流程实例");
+    ErrorCode EVENT_PROCESS_TASK_NOT_FOUND = new ErrorCode(1004001011, "未找到匹配的流程用户任务：{}");
+    ErrorCode EVENT_PROCESS_DEFINITION_MISSING = new ErrorCode(1004001012, "流程定义未部署或创建实例失败");
 
     // ========== 响应相关 1-004-002-000 ==========
     ErrorCode RESPONSE_NOT_EXISTS = new ErrorCode(1004002000, "响应不存在");
+    ErrorCode RESPONSE_PLAN_MATCH_FAILED = new ErrorCode(1004002001, "未匹配到合适的预案，无法启动响应");
 
     // ========== 预案相关 1-004-003-000 ==========
     ErrorCode PLAN_NOT_EXISTS = new ErrorCode(1004003000, "预案不存在");

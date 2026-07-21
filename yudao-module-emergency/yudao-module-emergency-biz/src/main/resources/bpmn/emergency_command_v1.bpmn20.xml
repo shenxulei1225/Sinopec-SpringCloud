@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:flowable="http://flowable.org/bpmn"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             targetNamespace="http://cheers.x/emergency">
+  <!-- emergency_command_v1：引擎路径终态骨架；在 cheers-bpm 管理端导入并发布 -->
+  <process id="emergency_command_v1" name="应急指挥主轴 v1" isExecutable="true">
+    <startEvent id="start" name="接报"/>
+    <userTask id="event_confirm" name="确认" flowable:assignee="${initiator}"/>
+    <exclusiveGateway id="gw_confirm_result" name="确认结果"/>
+    <userTask id="event_assess" name="研判" flowable:assignee="${initiator}"/>
+    <serviceTask id="response_start" name="启动响应"
+                 flowable:delegateExpression="${httpCallbackServiceTaskDelegate}"/>
+    <endEvent id="end_false_alarm" name="误报结束"/>
+    <endEvent id="end" name="结束"/>
+
+    <sequenceFlow sourceRef="start" targetRef="event_confirm"/>
+    <sequenceFlow sourceRef="event_confirm" targetRef="gw_confirm_result"/>
+    <sequenceFlow sourceRef="gw_confirm_result" targetRef="end_false_alarm">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${confirmResult == 'false_alarm'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow sourceRef="gw_confirm_result" targetRef="event_assess">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${confirmResult != 'false_alarm'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow sourceRef="event_assess" targetRef="response_start"/>
+    <sequenceFlow sourceRef="response_start" targetRef="end"/>
+  </process>
+</definitions>

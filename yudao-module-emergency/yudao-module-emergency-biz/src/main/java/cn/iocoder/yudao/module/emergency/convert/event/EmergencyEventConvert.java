@@ -35,7 +35,8 @@ public interface EmergencyEventConvert {
 
     @Mappings({
             @Mapping(target = "attachments", qualifiedByName = "directMapMapping"),
-            @Mapping(target = "impactSummary", qualifiedByName = "directMapMapping")
+            @Mapping(target = "impactSummary", qualifiedByName = "directMapMapping"),
+            @Mapping(target = "currentProcessNodes", ignore = true)
     })
     EventRespVO convert(EmergencyEventDO event);
 

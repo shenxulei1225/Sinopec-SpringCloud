@@ -130,5 +130,11 @@ public class EmergencyEventDO extends EmergencyBaseDO {
      * 联系方式
      */
     private String contactPhone;
+
+    /**
+     * Flowable 流程实例编号（接报 start 后写入；可为流程位置投影的绑定键）
+     */
+    @TableField("process_instance_id")
+    private String processInstanceId;
 }
 

@@ -1,8 +1,8 @@
 package cn.iocoder.yudao.module.emergency.framework.test;
 
 import cn.hutool.extra.spring.SpringUtil;
-import cn.cheers.x.framework.datasource.config.YudaoDataSourceAutoConfiguration;
-import cn.cheers.x.framework.mybatis.config.YudaoMybatisAutoConfiguration;
+import cn.cheers.x.framework.datasource.config.CheersDataSourceAutoConfiguration;
+import cn.cheers.x.framework.mybatis.config.CheersMybatisAutoConfiguration;
 import com.alibaba.druid.spring.boot3.autoconfigure.DruidDataSourceAutoConfigure;
 import com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration;
 import com.github.yulichang.autoconfigure.MybatisPlusJoinAutoConfiguration;
@@ -39,7 +39,7 @@ import org.springframework.test.context.DynamicPropertySource;
         // 按照 yudao 官方方式，在 @SpringBootTest 的 properties 中排除 Security 自动配置
         // 这样可以确保在自动配置加载之前就排除，避免加载顺序问题
         properties = {
-                "spring.autoconfigure.exclude=cn.cheers.x.framework.security.config.YudaoWebSecurityConfigurerAdapter,cn.cheers.x.framework.security.config.YudaoSecurityAutoConfiguration"
+                "spring.autoconfigure.exclude=cn.cheers.x.framework.security.config.CheersWebSecurityConfigurerAdapter,cn.cheers.x.framework.security.config.CheersSecurityAutoConfiguration"
         }
 )
 @ActiveProfiles("test") // 设置使用 application-test 配置文件
@@ -133,14 +133,14 @@ public class BasePostgresDbUnitTest {
      */
     @Import({
             // DB 配置类
-            YudaoDataSourceAutoConfiguration.class, // 自己的 DB 配置类
+            CheersDataSourceAutoConfiguration.class, // 自己的 DB 配置类
             DataSourceAutoConfiguration.class, // Spring DB 自动配置类
             DataSourceTransactionManagerAutoConfiguration.class, // Spring 事务自动配置类
             DruidDataSourceAutoConfigure.class, // Druid 自动配置类
             // 注意：不导入 SqlInitializationTestConfiguration，因为数据库初始化由 Testcontainers 处理
             
             // MyBatis 配置类
-            YudaoMybatisAutoConfiguration.class, // 自己的 MyBatis 配置类
+            CheersMybatisAutoConfiguration.class, // 自己的 MyBatis 配置类
             MybatisPlusAutoConfiguration.class, // MyBatis 的自动配置类
             MybatisPlusJoinAutoConfiguration.class, // MyBatis 的Join配置类
 
@@ -159,16 +159,16 @@ public class BasePostgresDbUnitTest {
             // 这样可以确保在自动配置加载之前就排除，避免加载顺序问题
             // 测试环境使用 Mock Bean 替代这些服务，所以排除相关自动配置类
             exclude = {
-                    cn.cheers.x.framework.security.config.YudaoWebSecurityConfigurerAdapter.class,
-                    cn.cheers.x.framework.security.config.YudaoSecurityAutoConfiguration.class,
-                    cn.cheers.x.framework.security.config.YudaoSecurityRpcAutoConfiguration.class,
-                    cn.cheers.x.framework.redis.config.YudaoRedisAutoConfiguration.class,
-                    cn.cheers.x.framework.redis.config.YudaoCacheAutoConfiguration.class,
+                    cn.cheers.x.framework.security.config.CheersWebSecurityConfigurerAdapter.class,
+                    cn.cheers.x.framework.security.config.CheersSecurityAutoConfiguration.class,
+                    cn.cheers.x.framework.security.config.CheersSecurityRpcAutoConfiguration.class,
+                    cn.cheers.x.framework.redis.config.CheersRedisAutoConfiguration.class,
+                    cn.cheers.x.framework.redis.config.CheersCacheAutoConfiguration.class,
                     org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration.class,
-                    cn.cheers.x.framework.tenant.config.YudaoTenantAutoConfiguration.class,
-                    cn.cheers.x.framework.tenant.config.YudaoTenantRpcAutoConfiguration.class,
-                    cn.cheers.x.framework.dict.config.YudaoDictAutoConfiguration.class,
-                    cn.cheers.x.framework.xss.config.YudaoXssAutoConfiguration.class
+                    cn.cheers.x.framework.tenant.config.CheersTenantAutoConfiguration.class,
+                    cn.cheers.x.framework.tenant.config.CheersTenantRpcAutoConfiguration.class,
+                    cn.cheers.x.framework.dict.config.CheersDictAutoConfiguration.class,
+                    cn.cheers.x.framework.xss.config.CheersXssAutoConfiguration.class
             }
     )
     public static class Application {
