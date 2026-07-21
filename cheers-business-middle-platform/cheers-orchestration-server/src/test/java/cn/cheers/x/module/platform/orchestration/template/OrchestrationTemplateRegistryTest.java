@@ -39,12 +39,13 @@ class OrchestrationTemplateRegistryTest {
     }
 
     @Test
-    @DisplayName("巡检路线预览模板阶段顺序 EXPAND→ROUTE")
+    @DisplayName("巡检路线预览模板 EXPAND→ROUTE 且挂载 expand handler")
     void patrolRoutePreview_phaseOrder() {
         OrchestrationTemplate t = registry.require(OrchestrationRefs.PATROL_ROUTE_PREVIEW_V1);
         assertEquals(List.of(
                 OrchestrationPhase.EXPAND,
                 OrchestrationPhase.ROUTE), t.getPhases());
+        assertEquals("patrol.expand_map_v1", t.getHandlerIds().get(OrchestrationPhase.EXPAND));
         assertEquals("platform.route.plan_v1", t.getHandlerIds().get(OrchestrationPhase.ROUTE));
     }
 

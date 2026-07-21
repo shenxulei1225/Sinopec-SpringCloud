@@ -192,12 +192,10 @@ public interface InspectionTaskMapper extends BaseMapperX<InspectionTaskDO> {
         if (parentIds == null || parentIds.isEmpty()) {
             return Map.of();
         }
-        // 初始化结果 Map，默认值为 0
         Map<Long, Long> countMap = new HashMap<>();
         for (Long parentId : parentIds) {
             countMap.put(parentId, 0L);
         }
-        // 为每个父任务查询子任务数量
         for (Long parentId : parentIds) {
             long count = selectCount(new LambdaQueryWrapperX<InspectionTaskDO>()
                     .eq(InspectionTaskDO::getParentId, parentId));
