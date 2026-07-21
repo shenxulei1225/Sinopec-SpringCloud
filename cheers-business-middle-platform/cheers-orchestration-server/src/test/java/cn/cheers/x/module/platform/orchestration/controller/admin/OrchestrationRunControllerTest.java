@@ -32,12 +32,12 @@ class OrchestrationRunControllerTest {
     @DisplayName("POST /run 委托 OrchestrationRunner.run")
     void run_delegatesToRunner() {
         OrchestrationRunRequest request = OrchestrationRunRequest.builder()
-                .orchestrationRef(OrchestrationRefs.EMERGENCY_START_RESPONSE_V1)
-                .scope("emergency")
-                .payload(Map.of("eventId", 1L))
+                .orchestrationRef(OrchestrationRefs.PATROL_ROUTE_PREVIEW_V1)
+                .scope("inspection")
+                .payload(Map.of("networkRef", "net-1"))
                 .build();
         OrchestrationRunResponse expected = OrchestrationRunResponse.builder()
-                .orchestrationRef(OrchestrationRefs.EMERGENCY_START_RESPONSE_V1)
+                .orchestrationRef(OrchestrationRefs.PATROL_ROUTE_PREVIEW_V1)
                 .status("COMPLETED")
                 .build();
         when(orchestrationRunner.run(any())).thenReturn(expected);

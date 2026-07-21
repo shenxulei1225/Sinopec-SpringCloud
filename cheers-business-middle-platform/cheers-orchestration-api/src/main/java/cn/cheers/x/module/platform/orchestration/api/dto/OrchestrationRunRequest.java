@@ -21,7 +21,7 @@ public class OrchestrationRunRequest {
     @NotBlank
     private String orchestrationRef;
 
-    /** 业务域，如 emergency */
+    /** 业务域，如 inspection / emergency */
     private String scope;
 
     private Long siteId;

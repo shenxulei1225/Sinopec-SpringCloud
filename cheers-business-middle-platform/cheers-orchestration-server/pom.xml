@@ -67,11 +67,6 @@
         </dependency>
         <dependency>
             <groupId>cn.cheers.x</groupId>
-            <artifactId>yudao-module-emergency-api</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        <dependency>
-            <groupId>cn.cheers.x</groupId>
             <artifactId>cheers-infra-api</artifactId>
             <version>${revision}</version>
         </dependency>

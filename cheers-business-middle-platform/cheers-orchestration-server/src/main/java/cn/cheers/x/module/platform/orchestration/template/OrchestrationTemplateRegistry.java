@@ -41,14 +41,6 @@ public class OrchestrationTemplateRegistry {
                 OrchestrationPhase.SOLVE,
                 OrchestrationPhase.PERSIST), Map.of());
 
-        register(OrchestrationRefs.EMERGENCY_START_RESPONSE_V1, List.of(
-                OrchestrationPhase.VALIDATE,
-                OrchestrationPhase.EXPAND,
-                OrchestrationPhase.PERSIST), Map.of(
-                OrchestrationPhase.VALIDATE, "emergency.start_response.validate",
-                OrchestrationPhase.EXPAND, "emergency.start_response.expand",
-                OrchestrationPhase.PERSIST, "emergency.start_response.persist"));
-
         register(OrchestrationRefs.PATROL_ROUTE_PREVIEW_V1, List.of(
                 OrchestrationPhase.EXPAND,
                 OrchestrationPhase.ROUTE), Map.of(
