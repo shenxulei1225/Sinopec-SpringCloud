@@ -17,5 +17,8 @@ public interface ErrorCodeConstants {
     ErrorCode ORCHESTRATION_PAYLOAD_INVALID = new ErrorCode(1_004_052_007, "编排载荷缺少必填字段");
     ErrorCode ORCHESTRATION_ROUTE_DURATION_UNAVAILABLE = new ErrorCode(1_004_052_008,
             "无法估算路线时长：缺少行驶距离或速度，且未提供作业分钟");
+    ErrorCode SCHEDULE_REPLAN_SOURCE_JOB_REQUIRED = new ErrorCode(1_004_052_009, "重排缺少源运行作业 id");
+    ErrorCode SCHEDULE_REPLAN_REMAINING_STOPS_REQUIRED = new ErrorCode(1_004_052_010,
+            "重排缺少剩余停靠点：须指定 remainingStopIds 或 completedSlotIds");
 
 }

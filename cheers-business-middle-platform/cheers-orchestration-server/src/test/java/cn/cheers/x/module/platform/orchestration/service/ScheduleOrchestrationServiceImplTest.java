@@ -18,6 +18,8 @@ import cn.cheers.x.module.platform.orchestration.phase.PhaseHandlerRegistry;
 import cn.cheers.x.module.platform.orchestration.template.OrchestrationTemplateRegistry;
 import cn.cheers.x.module.platform.policy.api.PolicyResolveApi;
 import cn.cheers.x.module.platform.runtime.api.RuntimePersistApi;
+import cn.cheers.x.module.platform.runtime.api.RuntimeQueryApi;
+import cn.cheers.x.module.platform.runtime.api.RuntimeSlotWriteApi;
 import cn.cheers.x.module.platform.runtime.api.dto.RuntimePersistReqDTO;
 import cn.cheers.x.module.platform.scheduling.engine.SchedulingEngine;
 import cn.cheers.x.workorder.api.WorkOrderApi;
@@ -38,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -48,6 +51,8 @@ class ScheduleOrchestrationServiceImplTest {
 
     @Mock private SchedulingEngine schedulingEngine;
     @Mock private RuntimePersistApi runtimePersistApi;
+    @Mock private RuntimeQueryApi runtimeQueryApi;
+    @Mock private RuntimeSlotWriteApi runtimeSlotWriteApi;
     @Mock private PolicyResolveApi policyResolveApi;
     @Mock private ProcessCapabilityBindingApi processCapabilityBindingApi;
     @Mock private MappingProfileApi mappingProfileApi;
@@ -61,6 +66,8 @@ class ScheduleOrchestrationServiceImplTest {
         OrchestrationRunner runner = new OrchestrationRunner();
         ReflectionTestUtils.setField(runner, "schedulingEngine", schedulingEngine);
         ReflectionTestUtils.setField(runner, "runtimePersistApi", runtimePersistApi);
+        ReflectionTestUtils.setField(runner, "runtimeQueryApi", runtimeQueryApi);
+        ReflectionTestUtils.setField(runner, "runtimeSlotWriteApi", runtimeSlotWriteApi);
         ReflectionTestUtils.setField(runner, "policyResolveApi", policyResolveApi);
         ReflectionTestUtils.setField(runner, "processCapabilityBindingApi", processCapabilityBindingApi);
         ReflectionTestUtils.setField(runner, "mappingProfileApi", mappingProfileApi);
@@ -72,6 +79,9 @@ class ScheduleOrchestrationServiceImplTest {
         scheduleOrchestrationService = new ScheduleOrchestrationServiceImpl();
         ReflectionTestUtils.setField(scheduleOrchestrationService, "orchestrationRunner", runner);
         ReflectionTestUtils.setField(scheduleOrchestrationService, "maintenanceApi", maintenanceApi);
+
+        lenient().when(runtimeQueryApi.listSlots(any(), any(), any(), any(), any(), anyList()))
+                .thenReturn(CommonResult.success(List.of()));
     }
 
     @Test

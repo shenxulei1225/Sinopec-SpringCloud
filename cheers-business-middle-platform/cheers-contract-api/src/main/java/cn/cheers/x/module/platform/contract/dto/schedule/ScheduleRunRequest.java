@@ -49,4 +49,11 @@ public class ScheduleRunRequest {
     private Boolean dryRun;
     /** 跑完该阶段后停止（含该阶段），阶段名枚举字符串 */
     private String stopAfterPhase;
+
+    /** 重排：源运行作业 id（replan 必填，复用作 runtimeJobId） */
+    private String sourceRuntimeJobId;
+    /** 重排：剩余停靠点 id（优先）；与 completedSlotIds 二选一，均缺则失败 */
+    private List<String> remainingStopIds;
+    /** 重排：已完成计划点 id，用于反推剩余停靠点 */
+    private List<String> completedSlotIds;
 }

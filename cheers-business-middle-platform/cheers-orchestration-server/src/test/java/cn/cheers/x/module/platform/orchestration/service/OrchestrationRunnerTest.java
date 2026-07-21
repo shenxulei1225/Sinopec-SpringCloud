@@ -1,6 +1,7 @@
 package cn.cheers.x.module.platform.orchestration.service;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.maintenance.api.MaintenanceApi;
 import cn.cheers.x.module.platform.capability.api.MappingProfileApi;
 import cn.cheers.x.module.platform.capability.api.ProcessCapabilityBindingApi;
@@ -15,6 +16,8 @@ import cn.cheers.x.module.platform.orchestration.phase.PhaseHandlerRegistry;
 import cn.cheers.x.module.platform.orchestration.template.OrchestrationTemplateRegistry;
 import cn.cheers.x.module.platform.policy.api.PolicyResolveApi;
 import cn.cheers.x.module.platform.runtime.api.RuntimePersistApi;
+import cn.cheers.x.module.platform.runtime.api.RuntimeQueryApi;
+import cn.cheers.x.module.platform.runtime.api.RuntimeSlotWriteApi;
 import cn.cheers.x.module.platform.runtime.api.dto.RuntimePersistReqDTO;
 import cn.cheers.x.module.platform.scheduling.engine.SchedulingEngine;
 import cn.cheers.x.workorder.api.WorkOrderApi;
@@ -43,6 +46,8 @@ class OrchestrationRunnerTest {
 
     @Mock private SchedulingEngine schedulingEngine;
     @Mock private RuntimePersistApi runtimePersistApi;
+    @Mock private RuntimeQueryApi runtimeQueryApi;
+    @Mock private RuntimeSlotWriteApi runtimeSlotWriteApi;
     @Mock private PolicyResolveApi policyResolveApi;
     @Mock private ProcessCapabilityBindingApi processCapabilityBindingApi;
     @Mock private MappingProfileApi mappingProfileApi;
@@ -56,6 +61,8 @@ class OrchestrationRunnerTest {
         runner = new OrchestrationRunner();
         ReflectionTestUtils.setField(runner, "schedulingEngine", schedulingEngine);
         ReflectionTestUtils.setField(runner, "runtimePersistApi", runtimePersistApi);
+        ReflectionTestUtils.setField(runner, "runtimeQueryApi", runtimeQueryApi);
+        ReflectionTestUtils.setField(runner, "runtimeSlotWriteApi", runtimeSlotWriteApi);
         ReflectionTestUtils.setField(runner, "policyResolveApi", policyResolveApi);
         ReflectionTestUtils.setField(runner, "processCapabilityBindingApi", processCapabilityBindingApi);
         ReflectionTestUtils.setField(runner, "mappingProfileApi", mappingProfileApi);
@@ -73,6 +80,8 @@ class OrchestrationRunnerTest {
         request.setDispatchWorkOrders(true);
         request.setFieldWorkStandardId(3L);
 
+        when(runtimeQueryApi.listSlots(any(), any(), any(), any(), any(), anyList()))
+                .thenReturn(CommonResult.success(List.of()));
         when(schedulingEngine.solve(anyList(), any(), anyString(), anyList()))
                 .thenReturn(List.of(ScheduleSlotDTO.builder().slotId("slot-1").workId("work-1").build()));
 

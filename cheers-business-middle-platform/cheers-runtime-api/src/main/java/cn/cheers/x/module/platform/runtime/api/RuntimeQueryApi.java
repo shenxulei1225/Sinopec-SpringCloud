@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.OffsetDateTime;
@@ -29,4 +30,8 @@ public interface RuntimeQueryApi {
             @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode,
             @RequestParam(value = "siteId", required = false) Long siteId,
             @RequestParam(value = "slotStatuses", required = false) List<SlotStatus> slotStatuses);
+
+    @GetMapping(PREFIX + "/jobs/{runtimeJobId}/slots")
+    @Operation(summary = "按运行作业列出计划点")
+    CommonResult<List<ScheduleSlotDTO>> listSlotsByJobId(@PathVariable("runtimeJobId") String runtimeJobId);
 }

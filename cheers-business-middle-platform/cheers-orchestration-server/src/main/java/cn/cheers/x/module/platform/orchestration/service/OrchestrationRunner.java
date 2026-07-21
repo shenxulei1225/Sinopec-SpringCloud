@@ -16,6 +16,7 @@ import cn.cheers.x.module.platform.contract.dto.slot.ScheduleSlotDTO;
 import cn.cheers.x.module.platform.contract.dto.work.SourceInstanceRefDTO;
 import cn.cheers.x.module.platform.contract.dto.work.WorkItemDTO;
 import cn.cheers.x.module.platform.contract.enums.RuntimeJobStatus;
+import cn.cheers.x.module.platform.contract.enums.SlotStatus;
 import cn.cheers.x.module.platform.orchestration.api.dto.OrchestrationRunRequest;
 import cn.cheers.x.module.platform.orchestration.api.dto.OrchestrationRunResponse;
 import cn.cheers.x.module.platform.orchestration.enums.OrchestrationRefs;
@@ -23,6 +24,7 @@ import cn.cheers.x.module.platform.orchestration.phase.OrchestrationPhase;
 import cn.cheers.x.module.platform.orchestration.phase.PhaseContext;
 import cn.cheers.x.module.platform.orchestration.phase.PhaseHandler;
 import cn.cheers.x.module.platform.orchestration.phase.PhaseHandlerRegistry;
+import cn.cheers.x.module.platform.orchestration.route.RoutePayloadKeys;
 import cn.cheers.x.module.platform.orchestration.template.OrchestrationTemplate;
 import cn.cheers.x.module.platform.orchestration.template.OrchestrationTemplateRegistry;
 import cn.cheers.x.module.platform.policy.api.PolicyResolveApi;
@@ -30,7 +32,11 @@ import cn.cheers.x.module.platform.policy.api.dto.PolicyResolveForRunReqDTO;
 import cn.cheers.x.module.platform.policy.api.dto.PolicyRunContextDTO;
 import cn.cheers.x.module.platform.policy.api.dto.PolicySnapshotRespDTO;
 import cn.cheers.x.module.platform.runtime.api.RuntimePersistApi;
+import cn.cheers.x.module.platform.runtime.api.RuntimeQueryApi;
+import cn.cheers.x.module.platform.runtime.api.RuntimeSlotWriteApi;
 import cn.cheers.x.module.platform.runtime.api.dto.RuntimePersistReqDTO;
+import cn.cheers.x.module.platform.runtime.api.dto.RuntimeSlotReleaseReqDTO;
+import cn.cheers.x.module.platform.runtime.enums.RuntimeSlotReleaseMode;
 import cn.cheers.x.module.platform.scheduling.engine.SchedulingEngine;
 import cn.cheers.x.workorder.api.WorkOrderApi;
 import cn.cheers.x.workorder.api.dto.WorkOrderCreateReqDTO;
@@ -40,18 +46,25 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.ORCHESTRATION_PHASE_HANDLER_MISSING;
+import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_REPLAN_REMAINING_STOPS_REQUIRED;
+import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_REPLAN_SOURCE_JOB_REQUIRED;
 import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_RUN_MAPPING_PROFILE_REQUIRED;
 import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants.SCHEDULE_RUN_SCHEDULING_SPEC_REQUIRED;
 
@@ -62,10 +75,20 @@ import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants
 @Component
 public class OrchestrationRunner {
 
+    private static final ZoneId DEFAULT_ZONE = ZoneId.systemDefault();
+    private static final String PAYLOAD_TASK_ENABLED = "taskEnabled";
+    /** 同级已排未启用降权：priority 为主，未启用在同 priority 下弱于已启用 */
+    private static final int DISABLED_PRIORITY_PENALTY = 10_000;
+    private static final String STRATEGY_PRIORITY = "priority_preempt";
+
     @Resource
     private SchedulingEngine schedulingEngine;
     @Resource
     private RuntimePersistApi runtimePersistApi;
+    @Resource
+    private RuntimeQueryApi runtimeQueryApi;
+    @Resource
+    private RuntimeSlotWriteApi runtimeSlotWriteApi;
     @Resource
     private PolicyResolveApi policyResolveApi;
     @Resource
@@ -131,8 +154,14 @@ public class OrchestrationRunner {
 
         boolean dryRun = Boolean.TRUE.equals(request.getDryRun());
         OrchestrationPhase stopAfter = parseStopAfterPhase(request.getStopAfterPhase());
+        boolean replan = OrchestrationRefs.PATROL_REPLAN_V1.equals(resolved.orchestrationRef());
+        if (replan) {
+            if (!StringUtils.hasText(request.getSourceRuntimeJobId())) {
+                throw exception(SCHEDULE_REPLAN_SOURCE_JOB_REQUIRED);
+            }
+        }
 
-        String runtimeJobId = UUID.randomUUID().toString();
+        String runtimeJobId = replan ? request.getSourceRuntimeJobId() : UUID.randomUUID().toString();
         PhaseContext context = PhaseContext.builder()
                 .request(request)
                 .schedulingSpec(resolved.schedulingSpec())
@@ -149,6 +178,9 @@ public class OrchestrationRunner {
         List<Long> workOrderIds = new ArrayList<>();
         for (OrchestrationPhase phase : template.getPhases()) {
             executePhase(phase, template, context, workOrderIds);
+            if (phase == OrchestrationPhase.EXPAND && replan) {
+                applyReplanRemainingStops(context);
+            }
             if (stopAfter != null && phase == stopAfter) {
                 break;
             }
@@ -213,11 +245,24 @@ public class OrchestrationRunner {
     }
 
     private void runSolve(PhaseContext context) {
+        List<WorkItemDTO> workItems = context.getWorkItems();
+        SchedulingSpecDTO schedulingSpec = context.getSchedulingSpec();
+        if (usesOccupiedSlots(context.getOrchestrationRef())
+                && STRATEGY_PRIORITY.equals(normalizeConflictStrategy(schedulingSpec))) {
+            // 产品规则：priority 为主；同级已排未启用（taskEnabled=false）弱于已启用
+            workItems = deprioritizeDisabledWorkItems(workItems);
+        }
+
+        List<ScheduleSlotDTO> occupiedSlots = List.of();
+        if (usesOccupiedSlots(context.getOrchestrationRef())) {
+            occupiedSlots = loadOccupiedSlots(context);
+        }
+
         List<ScheduleSlotDTO> slots = schedulingEngine.solve(
-                context.getWorkItems(),
-                context.getSchedulingSpec(),
+                workItems,
+                schedulingSpec,
                 context.getRuntimeJobId(),
-                List.of());
+                occupiedSlots);
         if (StringUtils.hasText(context.getPolicySnapshotId())) {
             for (ScheduleSlotDTO slot : slots) {
                 slot.setPolicySnapshotId(context.getPolicySnapshotId());
@@ -229,6 +274,10 @@ public class OrchestrationRunner {
     private void runPersist(PhaseContext context) {
         if (context.isDryRun()) {
             log.info("PERSIST skipped for dryRun, runtimeJobId={}", context.getRuntimeJobId());
+            return;
+        }
+        if (OrchestrationRefs.PATROL_REPLAN_V1.equals(context.getOrchestrationRef())) {
+            runReplanPersist(context);
             return;
         }
         ScheduleRunRequest request = context.getRequest();
@@ -249,6 +298,234 @@ public class OrchestrationRunner {
                 .slots(context.getSlots())
                 .siteId(context.getSiteId())
                 .build()).checkError();
+    }
+
+    private void runReplanPersist(PhaseContext context) {
+        String runtimeJobId = context.getRuntimeJobId();
+        runtimeSlotWriteApi.releaseUnfinished(RuntimeSlotReleaseReqDTO.builder()
+                .runtimeJobId(runtimeJobId)
+                .mode(RuntimeSlotReleaseMode.ABORT)
+                .reason("replan")
+                .siteId(context.getSiteId())
+                .build()).checkError();
+
+        runtimePersistApi.persist(RuntimePersistReqDTO.builder()
+                .appendSlotsOnly(true)
+                .job(RuntimeJobDTO.builder().runtimeJobId(runtimeJobId).build())
+                .slots(context.getSlots())
+                .siteId(context.getSiteId())
+                .build()).checkError();
+    }
+
+    private void applyReplanRemainingStops(PhaseContext context) {
+        List<String> remainingStopIds = resolveRemainingStopIds(context);
+        if (CollectionUtils.isEmpty(remainingStopIds)) {
+            throw exception(SCHEDULE_REPLAN_REMAINING_STOPS_REQUIRED);
+        }
+        List<WorkItemDTO> filtered = filterWorkItemsToRemainingStops(context.getWorkItems(), remainingStopIds);
+        context.setWorkItems(filtered);
+        context.putAttr("remainingStopIds", remainingStopIds);
+    }
+
+    private List<String> resolveRemainingStopIds(PhaseContext context) {
+        ScheduleRunRequest request = context.getRequest();
+        if (!CollectionUtils.isEmpty(request.getRemainingStopIds())) {
+            return new ArrayList<>(request.getRemainingStopIds());
+        }
+        if (!CollectionUtils.isEmpty(request.getCompletedSlotIds())) {
+            List<String> allStopIds = resolveAllStopIds(context);
+            Set<String> completedStops = deriveCompletedStopIds(request.getCompletedSlotIds(), context);
+            return allStopIds.stream()
+                    .filter(stopId -> !completedStops.contains(stopId))
+                    .collect(Collectors.toList());
+        }
+        throw exception(SCHEDULE_REPLAN_REMAINING_STOPS_REQUIRED);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> resolveAllStopIds(PhaseContext context) {
+        Object fromExpand = context.getAttr("expandResult");
+        if (fromExpand instanceof Map<?, ?> map && map.get("stopIds") instanceof List<?> stopIds) {
+            return stopIds.stream().map(String::valueOf).collect(Collectors.toList());
+        }
+        for (WorkItemDTO workItem : context.getWorkItems()) {
+            if (workItem.getPayload() == null) {
+                continue;
+            }
+            Object stopIds = workItem.getPayload().get(RoutePayloadKeys.STOP_IDS);
+            if (stopIds instanceof List<?> list && !list.isEmpty()) {
+                return list.stream().map(String::valueOf).collect(Collectors.toList());
+            }
+        }
+        return List.of();
+    }
+
+    private Set<String> deriveCompletedStopIds(List<String> completedSlotIds, PhaseContext context) {
+        Set<String> completedStops = new HashSet<>();
+        List<ScheduleSlotDTO> jobSlots = runtimeQueryApi.listSlotsByJobId(context.getRuntimeJobId()).getCheckedData();
+        Set<String> completedSlotIdSet = new HashSet<>(completedSlotIds);
+        Map<String, Integer> stopIndexByWorkId = buildStopIndexByWorkId(context.getWorkItems());
+        for (ScheduleSlotDTO slot : jobSlots) {
+            if (slot == null || !completedSlotIdSet.contains(slot.getSlotId())) {
+                continue;
+            }
+            String workId = slot.getWorkId();
+            Integer stopIndex = stopIndexByWorkId.get(workId);
+            List<String> allStops = resolveAllStopIds(context);
+            if (stopIndex != null && stopIndex >= 0 && stopIndex < allStops.size()) {
+                completedStops.add(allStops.get(stopIndex));
+            }
+        }
+        return completedStops;
+    }
+
+    private Map<String, Integer> buildStopIndexByWorkId(List<WorkItemDTO> workItems) {
+        Map<String, Integer> indexByWorkId = new HashMap<>();
+        int index = 0;
+        for (WorkItemDTO workItem : workItems) {
+            if (workItem != null && StringUtils.hasText(workItem.getWorkId())) {
+                indexByWorkId.put(workItem.getWorkId(), index++);
+            }
+        }
+        return indexByWorkId;
+    }
+
+    private List<WorkItemDTO> filterWorkItemsToRemainingStops(List<WorkItemDTO> workItems,
+                                                              List<String> remainingStopIds) {
+        if (CollectionUtils.isEmpty(workItems)) {
+            return workItems;
+        }
+        List<WorkItemDTO> result = new ArrayList<>(workItems.size());
+        Set<String> remaining = new HashSet<>(remainingStopIds);
+        for (WorkItemDTO workItem : workItems) {
+            WorkItemDTO copy = copyWorkItem(workItem);
+            Map<String, Object> payload = copy.getPayload();
+            if (payload != null && payload.get(RoutePayloadKeys.STOP_IDS) instanceof List<?> stopIds) {
+                List<String> filteredStops = stopIds.stream()
+                        .map(String::valueOf)
+                        .filter(remaining::contains)
+                        .collect(Collectors.toList());
+                payload.put(RoutePayloadKeys.STOP_IDS, filteredStops);
+            }
+            result.add(copy);
+        }
+        return result;
+    }
+
+    private WorkItemDTO copyWorkItem(WorkItemDTO source) {
+        Map<String, Object> payloadCopy = source.getPayload() == null
+                ? null : new HashMap<>(source.getPayload());
+        return WorkItemDTO.builder()
+                .contractVersion(source.getContractVersion())
+                .workId(source.getWorkId())
+                .entityTypeCode(source.getEntityTypeCode())
+                .sourceModelCode(source.getSourceModelCode())
+                .sourceInstanceId(source.getSourceInstanceId())
+                .durationEstimateMinutes(source.getDurationEstimateMinutes())
+                .priority(source.getPriority())
+                .resourceRequirements(source.getResourceRequirements())
+                .timePreferences(source.getTimePreferences())
+                .predecessorWorkIds(source.getPredecessorWorkIds())
+                .payload(payloadCopy)
+                .build();
+    }
+
+    private List<ScheduleSlotDTO> loadOccupiedSlots(PhaseContext context) {
+        SchedulingSpecDTO spec = context.getSchedulingSpec();
+        OffsetDateTime from = horizonStart(spec);
+        OffsetDateTime to = horizonEnd(spec);
+        List<SlotStatus> statuses = List.of(
+                SlotStatus.PLANNED, SlotStatus.IN_PROGRESS, SlotStatus.COMPLETED);
+        List<ScheduleSlotDTO> occupied = runtimeQueryApi.listSlots(
+                from, to, null, context.getRequest().getEntityTypeCode(), context.getSiteId(), statuses)
+                .getCheckedData();
+        return excludeReplanUnfinishedSelf(context, occupied);
+    }
+
+    /**
+     * Replan convention: exclude non-COMPLETED slots of sourceRuntimeJobId — those windows will be replaced;
+     * keep COMPLETED and foreign occupied slots for conflict resolution.
+     */
+    private List<ScheduleSlotDTO> excludeReplanUnfinishedSelf(PhaseContext context,
+                                                              List<ScheduleSlotDTO> occupied) {
+        String sourceJobId = context.getRequest().getSourceRuntimeJobId();
+        if (!StringUtils.hasText(sourceJobId)) {
+            return occupied == null ? List.of() : occupied;
+        }
+        if (occupied == null || occupied.isEmpty()) {
+            return List.of();
+        }
+        return occupied.stream()
+                .filter(slot -> !sourceJobId.equals(slot.getRuntimeJobId())
+                        || SlotStatus.COMPLETED.equals(slot.getSlotStatus()))
+                .collect(Collectors.toList());
+    }
+
+    private List<WorkItemDTO> deprioritizeDisabledWorkItems(List<WorkItemDTO> workItems) {
+        List<WorkItemDTO> adjusted = new ArrayList<>(workItems.size());
+        for (WorkItemDTO item : workItems) {
+            WorkItemDTO copy = copyWorkItem(item);
+            if (isTaskDisabled(copy)) {
+                int base = copy.getPriority() != null ? copy.getPriority() : 0;
+                copy.setPriority(base - DISABLED_PRIORITY_PENALTY);
+            }
+            adjusted.add(copy);
+        }
+        adjusted.sort(Comparator
+                .comparingInt((WorkItemDTO w) -> w.getPriority() != null ? w.getPriority() : 0).reversed()
+                .thenComparing(w -> w.getWorkId() != null ? w.getWorkId() : ""));
+        return adjusted;
+    }
+
+    private boolean isTaskDisabled(WorkItemDTO workItem) {
+        if (workItem.getPayload() == null) {
+            return false;
+        }
+        Object enabled = workItem.getPayload().get(PAYLOAD_TASK_ENABLED);
+        if (enabled instanceof Boolean bool) {
+            return !bool;
+        }
+        if (enabled != null) {
+            return !Boolean.parseBoolean(String.valueOf(enabled));
+        }
+        return false;
+    }
+
+    private boolean usesOccupiedSlots(String orchestrationRef) {
+        return OrchestrationRefs.STANDARD_EXPAND_SOLVE_PERSIST_V1.equals(orchestrationRef)
+                || OrchestrationRefs.PATROL_SCHEDULE_ENABLE_V1.equals(orchestrationRef)
+                || OrchestrationRefs.PATROL_REPLAN_V1.equals(orchestrationRef);
+    }
+
+    private String normalizeConflictStrategy(SchedulingSpecDTO schedulingSpec) {
+        if (schedulingSpec == null || !StringUtils.hasText(schedulingSpec.getConflictStrategy())) {
+            return "defer_slot";
+        }
+        return schedulingSpec.getConflictStrategy().trim().toLowerCase();
+    }
+
+    private OffsetDateTime horizonStart(SchedulingSpecDTO spec) {
+        LocalDate start = parseHorizonDate(spec != null ? spec.getHorizonStart() : null);
+        if (start == null) {
+            start = LocalDate.now();
+        }
+        return start.atStartOfDay(DEFAULT_ZONE).toOffsetDateTime();
+    }
+
+    private OffsetDateTime horizonEnd(SchedulingSpecDTO spec) {
+        LocalDate end = parseHorizonDate(spec != null ? spec.getHorizonEnd() : null);
+        if (end == null) {
+            LocalDate start = parseHorizonDate(spec != null ? spec.getHorizonStart() : null);
+            end = start != null ? start.plusWeeks(4) : LocalDate.now().plusWeeks(4);
+        }
+        return end.plusDays(1).atStartOfDay(DEFAULT_ZONE).toOffsetDateTime();
+    }
+
+    private LocalDate parseHorizonDate(String text) {
+        if (!StringUtils.hasText(text)) {
+            return null;
+        }
+        return LocalDate.parse(text.substring(0, Math.min(text.length(), 10)));
     }
 
     private void runDispatch(PhaseContext context, List<Long> workOrderIds) {
