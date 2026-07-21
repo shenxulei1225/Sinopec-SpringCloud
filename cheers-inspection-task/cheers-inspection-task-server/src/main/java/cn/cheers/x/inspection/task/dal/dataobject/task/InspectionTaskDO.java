@@ -136,4 +136,9 @@ public class InspectionTaskDO extends BaseDO {
      * 关联路线方案台账 ID。
      */
     private Long routePlanId;
+
+    /**
+     * 排期预占后的运行时作业 id（启用验窗 / 让路 / 恢复）。
+     */
+    private String runtimeJobId;
 }

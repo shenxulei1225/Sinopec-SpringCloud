@@ -20,4 +20,7 @@ public class PatrolRouteRunReqVO {
 
     /** 多条已发布路网时显式指定 */
     private String preferredNetworkRef;
+
+    /** 确认写入台账时必填，绑定任务路线快照 */
+    private Long taskId;
 }
