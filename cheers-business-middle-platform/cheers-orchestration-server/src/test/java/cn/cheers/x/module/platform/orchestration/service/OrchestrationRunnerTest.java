@@ -79,6 +79,8 @@ class OrchestrationRunnerTest {
         ScheduleRunResponse response = runner.run(request, 1L);
 
         assertEquals(1, response.getSlots().size());
+        assertEquals(1, response.getWorkItems().size());
+        assertEquals("work-1", response.getWorkItems().get(0).getWorkId());
         verify(runtimePersistApi, never()).persist(any(RuntimePersistReqDTO.class));
         verify(workOrderApi, never()).create(any());
     }

@@ -1,6 +1,8 @@
 package cn.cheers.x.module.platform.contract.dto.schedule;
 
+import cn.cheers.x.module.platform.contract.dto.route.RoutePreviewDTO;
 import cn.cheers.x.module.platform.contract.dto.slot.ScheduleSlotDTO;
+import cn.cheers.x.module.platform.contract.dto.work.WorkItemDTO;
 import cn.cheers.x.module.platform.contract.enums.RuntimeJobStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,4 +28,8 @@ public class ScheduleRunResponse {
     private String plainSummary;
     /** 派工生成的工单 ID 列表；未派工时为 null */
     private List<Long> workOrderIds;
+    /** 路线预览（route 阶段产出；预览/确认组路线时回填） */
+    private RoutePreviewDTO routePreview;
+    /** 编排阶段后的工作项（含 expand/route 回写字段） */
+    private List<WorkItemDTO> workItems;
 }

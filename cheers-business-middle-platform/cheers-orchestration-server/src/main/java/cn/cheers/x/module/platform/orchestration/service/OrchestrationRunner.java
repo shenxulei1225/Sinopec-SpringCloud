@@ -169,6 +169,8 @@ public class OrchestrationRunner {
                 .decisionTraceId(null)
                 .plainSummary(buildSummary(context.getSlots(), resolved.schedulingSpec()))
                 .workOrderIds(workOrderIds.isEmpty() ? null : workOrderIds)
+                .routePreview(context.getRoutePreview())
+                .workItems(context.getWorkItems())
                 .build();
     }
 
