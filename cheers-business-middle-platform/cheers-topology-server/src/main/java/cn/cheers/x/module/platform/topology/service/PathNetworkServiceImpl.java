@@ -195,6 +195,17 @@ public class PathNetworkServiceImpl implements PathNetworkService {
     }
 
     @Override
+    public List<PathNetworkSummaryDTO> listPublished(Long facilityId) {
+        if (facilityId == null) {
+            return List.of();
+        }
+        return pathNetworkMapper.selectAllByFacilityId(facilityId).stream()
+                .filter(row -> GraphStatus.PUBLISHED.equals(row.getStatus()))
+                .map(PathNetworkServiceImpl::toSummary)
+                .toList();
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public PathNetworkDTO createDraft(PathNetworkCreateReqVO request) {
         if (request == null || request.getFacilityId() == null

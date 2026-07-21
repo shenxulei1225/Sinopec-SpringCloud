@@ -2,6 +2,7 @@ package cn.cheers.x.module.platform.topology.api;
 
 import cn.cheers.x.module.platform.contract.dto.network.PathNetworkDTO;
 import cn.cheers.x.module.platform.contract.dto.network.PortalDTO;
+import cn.cheers.x.module.platform.topology.api.dto.PathNetworkSummaryDTO;
 import cn.cheers.x.module.platform.topology.service.PathNetworkService;
 
 import java.util.List;
@@ -22,6 +23,11 @@ public class PathNetworkApiImpl implements PathNetworkApi {
     @Override
     public CommonResult<PathNetworkDTO> getNetwork(String networkRef) {
         return success(pathNetworkService.getNetwork(networkRef));
+    }
+
+    @Override
+    public CommonResult<List<PathNetworkSummaryDTO>> listPublished(Long facilityId) {
+        return success(pathNetworkService.listPublished(facilityId));
     }
 
     @Override

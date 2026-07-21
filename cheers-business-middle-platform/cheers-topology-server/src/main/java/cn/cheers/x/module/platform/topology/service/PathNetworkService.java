@@ -31,6 +31,9 @@ public interface PathNetworkService {
 
     List<PathNetworkSummaryDTO> listDrafts(Long facilityId);
 
+    /** 设施下已发布路网摘要（供巡检选网等跨模块调用；不含草稿） */
+    List<PathNetworkSummaryDTO> listPublished(Long facilityId);
+
     PathNetworkDTO createDraft(PathNetworkCreateReqVO request);
 
     PathNetworkDTO updateMeta(String networkRef, PathNetworkMetaUpdateReqVO request);

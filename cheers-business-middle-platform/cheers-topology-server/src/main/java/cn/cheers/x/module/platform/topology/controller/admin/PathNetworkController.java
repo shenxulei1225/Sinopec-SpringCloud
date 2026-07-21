@@ -42,6 +42,13 @@ public class PathNetworkController {
         return success(pathNetworkService.listDrafts(facilityId));
     }
 
+    @GetMapping("/networks/published")
+    @Operation(summary = "列出设施下已发布路网摘要（不含草稿）")
+    public CommonResult<List<PathNetworkSummaryDTO>> listPublished(
+            @RequestParam("facilityId") Long facilityId) {
+        return success(pathNetworkService.listPublished(facilityId));
+    }
+
     @PostMapping("/networks")
     @Operation(summary = "新建路网（正式记录，名称无草稿后缀）")
     public CommonResult<PathNetworkDTO> createDraft(@Valid @RequestBody PathNetworkCreateReqVO request) {
