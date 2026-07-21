@@ -40,6 +40,10 @@ public class ScheduleSlotDO extends TenantBaseDO {
 
     private OffsetDateTime plannedEnd;
 
+    private OffsetDateTime actualStart;
+
+    private OffsetDateTime actualEnd;
+
     @TableField(typeHandler = JsonbStringTypeHandler.class)
     private String assignedResources;
 

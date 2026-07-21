@@ -25,6 +25,8 @@ public class ScheduleSlotDTO {
     private String entityTypeCode;
     private String plannedStart;
     private String plannedEnd;
+    private String actualStart;
+    private String actualEnd;
     private List<AssignedResourceDTO> assignedResources;
     private SlotLockState lockState;
     private SlotStatus slotStatus;

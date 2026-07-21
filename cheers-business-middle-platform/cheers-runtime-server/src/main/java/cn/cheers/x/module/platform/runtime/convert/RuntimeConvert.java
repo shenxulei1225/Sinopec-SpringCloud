@@ -56,6 +56,8 @@ public final class RuntimeConvert {
                 .entityTypeCode(slot.getEntityTypeCode())
                 .plannedStart(formatTime(slot.getPlannedStart()))
                 .plannedEnd(formatTime(slot.getPlannedEnd()))
+                .actualStart(formatTime(slot.getActualStart()))
+                .actualEnd(formatTime(slot.getActualEnd()))
                 .assignedResources(parseAssignedResources(slot.getAssignedResources()))
                 .lockState(parseLockState(slot.getLockState()))
                 .slotStatus(parseSlotStatus(slot.getSlotStatus()))
@@ -85,6 +87,8 @@ public final class RuntimeConvert {
                 .entityTypeCode(dto.getEntityTypeCode())
                 .plannedStart(parseTime(dto.getPlannedStart()))
                 .plannedEnd(parseTime(dto.getPlannedEnd()))
+                .actualStart(parseTime(dto.getActualStart()))
+                .actualEnd(parseTime(dto.getActualEnd()))
                 .assignedResources(dto.getAssignedResources() != null
                         ? JSON.toJSONString(dto.getAssignedResources()) : null)
                 .lockState(dto.getLockState() != null ? dto.getLockState().name() : SlotLockState.NONE.name())

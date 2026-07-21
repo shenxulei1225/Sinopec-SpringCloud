@@ -6,6 +6,7 @@ package cn.cheers.x.module.platform.contract.enums;
 public enum SlotStatus {
 
     PLANNED,
-    CANCELLED,
-    COMPLETED
+    IN_PROGRESS,
+    COMPLETED,
+    CANCELLED
 }
