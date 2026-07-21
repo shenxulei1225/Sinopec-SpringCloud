@@ -57,6 +57,9 @@ class OrchestrationTemplateRegistryTest {
                 OrchestrationPhase.EXPAND,
                 OrchestrationPhase.ROUTE,
                 OrchestrationPhase.CONFIRM), t.getPhases());
+        assertEquals("patrol.expand_map_v1", t.getHandlerIds().get(OrchestrationPhase.EXPAND));
+        assertEquals("platform.route.plan_v1", t.getHandlerIds().get(OrchestrationPhase.ROUTE));
+        assertEquals("patrol.confirm_route_v1", t.getHandlerIds().get(OrchestrationPhase.CONFIRM));
     }
 
     @Test

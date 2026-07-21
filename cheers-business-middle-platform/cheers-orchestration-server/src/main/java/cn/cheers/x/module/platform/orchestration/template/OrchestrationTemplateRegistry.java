@@ -1,6 +1,7 @@
 package cn.cheers.x.module.platform.orchestration.template;
 
 import cn.cheers.x.module.platform.orchestration.enums.OrchestrationRefs;
+import cn.cheers.x.module.platform.orchestration.handler.patrol.PatrolConfirmHandler;
 import cn.cheers.x.module.platform.orchestration.handler.patrol.PatrolExpandMapHandler;
 import cn.cheers.x.module.platform.orchestration.phase.OrchestrationPhase;
 import org.springframework.stereotype.Component;
@@ -52,7 +53,8 @@ public class OrchestrationTemplateRegistry {
                 OrchestrationPhase.ROUTE,
                 OrchestrationPhase.CONFIRM), Map.of(
                 OrchestrationPhase.EXPAND, PatrolExpandMapHandler.ID,
-                OrchestrationPhase.ROUTE, "platform.route.plan_v1"));
+                OrchestrationPhase.ROUTE, "platform.route.plan_v1",
+                OrchestrationPhase.CONFIRM, PatrolConfirmHandler.ID));
         register(OrchestrationRefs.PATROL_SCHEDULE_ENABLE_V1, List.of(
                 OrchestrationPhase.EXPAND,
                 OrchestrationPhase.SOLVE,
