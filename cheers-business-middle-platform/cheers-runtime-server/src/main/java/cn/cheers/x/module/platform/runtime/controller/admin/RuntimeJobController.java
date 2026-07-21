@@ -2,6 +2,7 @@ package cn.cheers.x.module.platform.runtime.controller.admin;
 
 import cn.cheers.x.module.platform.contract.dto.runtime.RuntimeJobDTO;
 import cn.cheers.x.module.platform.contract.dto.slot.ScheduleSlotDTO;
+import cn.cheers.x.module.platform.contract.enums.SlotStatus;
 import cn.cheers.x.module.platform.runtime.service.RuntimeQueryService;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,11 +43,14 @@ public class RuntimeJobController {
     @GetMapping("/slots")
     @Operation(summary = "按计划时间范围查询计划点")
     public CommonResult<List<ScheduleSlotDTO>> listSlots(
-            @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode,
-            @RequestParam(value = "from", required = false)
+            @RequestParam("from")
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
-            @RequestParam(value = "to", required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to) {
-        return success(runtimeQueryService.listSlots(entityTypeCode, from, to));
+            @RequestParam("to")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to,
+            @RequestParam(value = "resourceId", required = false) String resourceId,
+            @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode,
+            @RequestParam(value = "siteId", required = false) Long siteId,
+            @RequestParam(value = "slotStatuses", required = false) List<SlotStatus> slotStatuses) {
+        return success(runtimeQueryService.listSlots(from, to, resourceId, entityTypeCode, siteId, slotStatuses));
     }
 }
