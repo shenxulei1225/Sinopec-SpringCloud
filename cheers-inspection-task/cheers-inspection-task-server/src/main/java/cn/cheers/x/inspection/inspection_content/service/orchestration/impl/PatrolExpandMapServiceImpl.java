@@ -45,6 +45,8 @@ public class PatrolExpandMapServiceImpl implements PatrolExpandMapService {
     static final String INSPECTION_TYPE = "inspectionType";
     static final String WORK_MINUTES = "workMinutes";
     static final String PLANNED_ROUTE = "plannedRoute";
+    static final String START_STOP_ID = "startStopId";
+    static final String RETURN_TO_START = "returnToStart";
 
     private final ObjectProfileQueryService objectProfileQueryService;
     private final ObjectStationBindingQueryService bindingQueryService;
@@ -88,15 +90,17 @@ public class PatrolExpandMapServiceImpl implements PatrolExpandMapService {
             throw ServiceExceptionUtil.invalidParamException("任务缺少停靠点快照 stopIds");
         }
 
+        Map<String, Object> planned = parseJsonMap(task.getPlannedRoute());
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put(NETWORK_REF, task.getNetworkRef());
         payload.put(STOP_IDS, stopIds);
         payload.put(INSPECTION_TYPE, task.getInspectionType());
-        payload.put(PLANNED_ROUTE, parseJsonMap(task.getPlannedRoute()));
-        Integer workMinutes = extractWorkMinutes(payload.get(PLANNED_ROUTE));
+        payload.put(PLANNED_ROUTE, planned);
+        Integer workMinutes = extractWorkMinutes(planned);
         if (workMinutes != null) {
             payload.put(WORK_MINUTES, workMinutes);
         }
+        putStartConstraints(payload, request, planned);
 
         WorkItemDTO workItem = WorkItemDTO.builder()
                 .workId(resolveWorkId(request))
@@ -164,6 +168,7 @@ public class PatrolExpandMapServiceImpl implements PatrolExpandMapService {
         payload.put(STOP_IDS, stopIds);
         payload.put(INSPECTION_TYPE, inspectionType);
         payload.put(WORK_MINUTES, totalWorkMinutes);
+        putStartConstraints(payload, request, null);
 
         WorkItemDTO workItem = WorkItemDTO.builder()
                 .workId(resolveWorkId(request))
@@ -176,6 +181,37 @@ public class PatrolExpandMapServiceImpl implements PatrolExpandMapService {
                 .stopIds(stopIds)
                 .inspectionType(inspectionType)
                 .build();
+    }
+
+    /**
+     * 将起点约束写入 expand 工作项 payload，供 ROUTE 阶段读取。
+     * 请求显式值优先；快照路径可从 plannedRoute 回填已保存的 startStopId。
+     */
+    private static void putStartConstraints(Map<String, Object> payload, PatrolExpandReqDTO request,
+                                            Map<String, Object> plannedRoute) {
+        String startStopId = request != null ? request.getStartStopId() : null;
+        if (!StringUtils.hasText(startStopId) && plannedRoute != null) {
+            Object fromPlanned = plannedRoute.get(START_STOP_ID);
+            if (fromPlanned != null) {
+                startStopId = String.valueOf(fromPlanned);
+            }
+        }
+        if (StringUtils.hasText(startStopId)) {
+            payload.put(START_STOP_ID, startStopId.trim());
+        }
+
+        Boolean returnToStart = request != null ? request.getReturnToStart() : null;
+        if (returnToStart == null && plannedRoute != null) {
+            Object raw = plannedRoute.get(RETURN_TO_START);
+            if (raw instanceof Boolean bool) {
+                returnToStart = bool;
+            } else if (raw != null) {
+                returnToStart = Boolean.parseBoolean(String.valueOf(raw));
+            }
+        }
+        if (returnToStart != null) {
+            payload.put(RETURN_TO_START, returnToStart);
+        }
     }
 
     private String selectNetworkRef(Long facilityId, String inspectionType, String preferredNetworkRef) {

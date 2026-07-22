@@ -48,8 +48,7 @@ spring:
       missing-topics-fatal: false
 
 server:
-  port: 58105
-
+  port: 15105
 logging:
   file:
     name: ${user.home}/logs/${spring.application.name}.log

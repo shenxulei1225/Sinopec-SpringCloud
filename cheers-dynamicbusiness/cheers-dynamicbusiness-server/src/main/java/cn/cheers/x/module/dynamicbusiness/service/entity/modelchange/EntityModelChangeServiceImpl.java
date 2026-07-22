@@ -78,6 +78,7 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
     @Override
     public EntityChangeModelPreviewRespVO preview(EntityChangeModelPreviewReqVO reqVO) {
         MigrationContext ctx = buildContext(reqVO.getEntityTypeCode(), reqVO.getEntityId(), reqVO.getTargetModelId());
+        applyCurrentFieldsOverlay(ctx, reqVO.getCurrentFields());
         MigrationPlan plan = computePlan(ctx, Map.of());
         return toPreviewResp(ctx, plan);
     }
@@ -161,6 +162,29 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
         ctx.targetFields = targetFields;
         ctx.targetFieldCodes = descriptorCodes(targetFields);
         return ctx;
+    }
+
+    /**
+     * 用前端当前表单草稿覆盖库快照，使预览反映未保存修改。
+     */
+    private void applyCurrentFieldsOverlay(MigrationContext ctx, Map<String, Object> currentFields) {
+        if (currentFields == null || currentFields.isEmpty()) {
+            return;
+        }
+        if (ctx.rawSnapshot == null) {
+            ctx.rawSnapshot = new LinkedHashMap<>();
+        }
+        for (Map.Entry<String, Object> entry : currentFields.entrySet()) {
+            String key = entry.getKey();
+            if (key == null || key.isBlank()) {
+                continue;
+            }
+            if (ARCHIVE_KEY.equals(key) || SKIP_FIELD_CODES.contains(key.toLowerCase())) {
+                continue;
+            }
+            ctx.rawSnapshot.put(key, entry.getValue());
+        }
+        ctx.snapshotLookup = buildSnapshotLookup(ctx.entityTypeCode, ctx.rawSnapshot);
     }
 
     private MigrationPlan computePlan(MigrationContext ctx, Map<String, Object> patchFields) {

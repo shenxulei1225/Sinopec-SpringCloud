@@ -98,6 +98,14 @@ public class BuiltinRoutePhaseHandler implements PhaseHandler {
         planned.put("totalDistanceMeters", preview.getTotalDistanceMeters());
         planned.put("mobilityProfileId", mobilityProfileId);
         planned.put("stopIds", stopIds);
+        String startStopId = asString(payload.get(RoutePayloadKeys.START_STOP_ID));
+        if (StringUtils.hasText(startStopId)) {
+            planned.put(RoutePayloadKeys.START_STOP_ID, startStopId);
+        }
+        Boolean returnToStart = asBoolean(payload.get(RoutePayloadKeys.RETURN_TO_START));
+        if (returnToStart != null) {
+            planned.put(RoutePayloadKeys.RETURN_TO_START, returnToStart);
+        }
         if (preview.getDecisionTraceId() != null) {
             planned.put("decisionTraceId", preview.getDecisionTraceId());
         }

@@ -162,37 +162,37 @@ get_service_path() {
 # 获取服务端口
 get_service_port() {
     case "$1" in
-        gateway) echo "58080" ;;
-        system) echo "58081" ;;
-        infra) echo "58082" ;;
-        member) echo "58087" ;;
-        bpm) echo "58083" ;;
-        pay) echo "58085" ;;
-        report) echo "58084" ;;
-        mp) echo "58086" ;;
-        product) echo "58100" ;;
-        promotion) echo "58101" ;;
-        trade) echo "58102" ;;
-        statistics) echo "58103" ;;
-        crm) echo "58089" ;;
-        erp) echo "58088" ;;
-        ai) echo "58090" ;;
-        iot) echo "58091" ;;
-        alarm|bmp-alarm) echo "58097" ;;
-        work-order|bmp-work-order) echo "58110" ;;
-        maintenance|bmp-maintenance) echo "58111" ;;
-        scene|scene-3d) echo "58093" ;;
-        gis|bmp-gis) echo "58109" ;;
-        twin|cheers-twin) echo "58094" ;;
-        inspection) echo "58095" ;;
-        dynamic) echo "58096" ;;
-        platform|resource|bmp-resource) echo "58098" ;;
-        platform-runtime|runtime-l4|bmp-runtime) echo "58099" ;;
-        platform-orchestration|orchestration|bmp-orchestration) echo "58104" ;;
-        platform-policy|policy|bmp-policy) echo "58105" ;;
-        platform-capability|capability|bmp-capability) echo "58106" ;;
-        platform-topology|topology|bmp-topology) echo "58107" ;;
-        platform-routing|routing|bmp-routing) echo "58108" ;;
+        gateway) echo "15080" ;;
+        system) echo "15081" ;;
+        infra) echo "15082" ;;
+        member) echo "15087" ;;
+        bpm) echo "15083" ;;
+        pay) echo "15085" ;;
+        report) echo "15084" ;;
+        mp) echo "15086" ;;
+        product) echo "15100" ;;
+        promotion) echo "15101" ;;
+        trade) echo "15102" ;;
+        statistics) echo "15103" ;;
+        crm) echo "15089" ;;
+        erp) echo "15088" ;;
+        ai) echo "15090" ;;
+        iot) echo "15091" ;;
+        alarm|bmp-alarm) echo "15097" ;;
+        work-order|bmp-work-order) echo "15110" ;;
+        maintenance|bmp-maintenance) echo "15111" ;;
+        scene|scene-3d) echo "15093" ;;
+        gis|bmp-gis) echo "15109" ;;
+        twin|cheers-twin) echo "15094" ;;
+        inspection) echo "15095" ;;
+        dynamic) echo "15096" ;;
+        platform|resource|bmp-resource) echo "15098" ;;
+        platform-runtime|runtime-l4|bmp-runtime) echo "15099" ;;
+        platform-orchestration|orchestration|bmp-orchestration) echo "15104" ;;
+        platform-policy|policy|bmp-policy) echo "15105" ;;
+        platform-capability|capability|bmp-capability) echo "15106" ;;
+        platform-topology|topology|bmp-topology) echo "15107" ;;
+        platform-routing|routing|bmp-routing) echo "15108" ;;
         *) echo "" ;;
     esac
 }

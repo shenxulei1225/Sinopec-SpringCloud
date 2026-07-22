@@ -333,7 +333,7 @@ public class EntityController {
     public CommonResult<EntitySceneQueryRespVO> queryEntities(
             @RequestParam("scene") EntityQueryScene scene,
             @RequestParam(value = "resultShape", required = false, defaultValue = "PAGE") String resultShape,
-            @RequestParam(value = "resultDetail", required = false, defaultValue = "FULL") String resultDetail,
+            @RequestParam(value = "resultDetail", required = false, defaultValue = "LIGHT") String resultDetail,
             @RequestParam(value = "categoryTypeCode", required = false) String categoryTypeCode,
             @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode,
             @RequestParam(value = "modelIds", required = false) List<String> modelIds,

@@ -49,6 +49,8 @@ public final class ModelCrudFormFieldAssembler {
             "guid",
             "attrs");
 
+    private static final String DYNAMIC_ENTITY_PROVIDER_PREFIX = "dynamic-entity:";
+
     private ModelCrudFormFieldAssembler() {
     }
 
@@ -92,7 +94,13 @@ public final class ModelCrudFormFieldAssembler {
                 if (shouldSkipField(code, baseField, null)) {
                     continue;
                 }
-                putIfAbsent(fieldItems, addedCodes, buildBaseFieldItem(entityTypeCode, baseField));
+                FieldDO libraryField = baseField.getLibraryFieldId() != null && fieldById != null
+                        ? fieldById.get(baseField.getLibraryFieldId())
+                        : null;
+                putIfAbsent(
+                        fieldItems,
+                        addedCodes,
+                        buildBaseFieldItem(entityTypeCode, baseField, libraryField, refResolveContext));
             }
         }
 
@@ -104,11 +112,13 @@ public final class ModelCrudFormFieldAssembler {
                 continue;
             }
             String code = field.getCode().trim();
-            if (addedCodes.contains(code) || shouldSkipField(code, baseFieldByCode.get(code), field)) {
+            EntityTypeBaseFieldDO baseField = baseFieldByCode != null ? baseFieldByCode.get(code) : null;
+            if (shouldSkipField(code, baseField, field)) {
                 continue;
             }
-            EntityTypeBaseFieldDO baseField = baseFieldByCode != null ? baseFieldByCode.get(code) : null;
-            putIfAbsent(
+            // 基础字段先写入时通常没有 FieldDO.providerCode，REF 目标会落空；
+            // 有分配行时必须用分配组装结果覆盖，否则新建下拉「暂无选项」。
+            putOrReplace(
                     fieldItems,
                     addedCodes,
                     buildAssignmentField(entityTypeCode, assign, field, baseField, groups, refResolveContext));
@@ -190,19 +200,39 @@ public final class ModelCrudFormFieldAssembler {
             LinkedHashMap<String, Map<String, Object>> fieldItems,
             Set<String> addedCodes,
             Map<String, Object> item) {
+        String code = fieldItemCode(item);
+        if (code == null || addedCodes.contains(code)) {
+            return;
+        }
+        fieldItems.put(code, item);
+        addedCodes.add(code);
+    }
+
+    private static void putOrReplace(
+            LinkedHashMap<String, Map<String, Object>> fieldItems,
+            Set<String> addedCodes,
+            Map<String, Object> item) {
+        String code = fieldItemCode(item);
+        if (code == null) {
+            return;
+        }
+        fieldItems.put(code, item);
+        addedCodes.add(code);
+    }
+
+    private static String fieldItemCode(Map<String, Object> item) {
+        if (item == null) {
+            return null;
+        }
         Object key = item.get("fieldCode");
         if (key == null) {
             key = item.get("fieldKey");
         }
         if (key == null) {
-            return;
+            return null;
         }
         String code = String.valueOf(key).trim();
-        if (addedCodes.contains(code)) {
-            return;
-        }
-        fieldItems.put(code, item);
-        addedCodes.add(code);
+        return StringUtils.hasText(code) ? code : null;
     }
 
     private static String resolvePlatformLabel(Map<String, String> labels, String fieldCode, String defaultLabel) {
@@ -240,7 +270,11 @@ public final class ModelCrudFormFieldAssembler {
         return item;
     }
 
-    private static Map<String, Object> buildBaseFieldItem(String entityTypeCode, EntityTypeBaseFieldDO baseField) {
+    private static Map<String, Object> buildBaseFieldItem(
+            String entityTypeCode,
+            EntityTypeBaseFieldDO baseField,
+            FieldDO libraryField,
+            RefResolveContext refResolveContext) {
         String code = baseField.getFieldCode().trim();
         String fieldType = StringUtils.hasText(baseField.getDataType()) ? baseField.getDataType().trim().toUpperCase() : "TEXT";
         String label = StringUtils.hasText(baseField.getFieldName()) ? baseField.getFieldName() : code;
@@ -250,31 +284,31 @@ public final class ModelCrudFormFieldAssembler {
         item.put("groupName", "基础信息");
         item.put("groupSortOrder", 0);
         applyBaseFieldTypeConfig(item, baseField);
-        applyBaseFieldTypeExtensions(item, entityTypeCode, baseField, fieldType);
+        applyBaseFieldTypeExtensions(item, entityTypeCode, baseField, fieldType, libraryField, refResolveContext);
         applyDefaultValue(item, baseField.getDefaultValue());
         return item;
     }
 
     private static void applyBaseFieldTypeExtensions(
-            Map<String, Object> item, String entityTypeCode, EntityTypeBaseFieldDO baseField, String fieldType) {
-        if ("REF_MULTI".equals(fieldType) || FieldTypeEnum.isMultiEntityRef(fieldType)) {
+            Map<String, Object> item,
+            String entityTypeCode,
+            EntityTypeBaseFieldDO baseField,
+            String fieldType,
+            FieldDO libraryField,
+            RefResolveContext refResolveContext) {
+        boolean multiRef = "REF_MULTI".equals(fieldType)
+                || FieldTypeEnum.isMultiEntityRef(fieldType)
+                || "BATCH_ENTITY_REF".equalsIgnoreCase(fieldType)
+                || codeStartsWithRel(baseField.getFieldCode());
+        boolean singleRef = FieldTypeEnum.isSingleEntityRef(fieldType) || "REFERENCE".equals(fieldType);
+        if (multiRef) {
             item.put("renderAs", "ref-picker-multi");
             item.put("valueShape", "array");
-        }
-        if (FieldTypeEnum.isEntityRef(fieldType) || "REFERENCE".equals(fieldType)) {
+        } else if (singleRef) {
             item.put("renderAs", "ref-picker");
-            Map<String, Object> binding = new LinkedHashMap<>();
-            binding.put("businessCategory", BusinessCategoryConstants.DYNAMIC);
-            binding.put("dataKind", BusinessCategoryConstants.KIND_ENTITY);
-            binding.put("entityTypeCode", entityTypeCode);
-            item.put("refTarget", Map.of(
-                    "capabilityBinding", binding,
-                    "valueField", "id",
-                    "labelField", "name"));
         }
-        if (codeStartsWithRel(baseField.getFieldCode())) {
-            item.put("renderAs", "ref-picker-multi");
-            item.put("valueShape", "array");
+        if (multiRef || singleRef || FieldTypeEnum.isEntityRef(fieldType)) {
+            putEntityRefTarget(item, entityTypeCode, libraryField, null, refResolveContext);
         }
     }
 
@@ -391,31 +425,33 @@ public final class ModelCrudFormFieldAssembler {
             String fieldType,
             ModelFieldAssignmentDO assign,
             RefResolveContext refResolveContext) {
-        if (FieldTypeEnum.isMultiEntityRef(fieldType)) {
+        if (FieldTypeEnum.isMultiEntityRef(fieldType)
+                || "REF_MULTI".equals(fieldType)
+                || "BATCH_ENTITY_REF".equalsIgnoreCase(fieldType)) {
             item.put("renderAs", "ref-picker-multi");
             item.put("valueShape", "array");
             if (field.getMaxRelations() != null && field.getMaxRelations() > 0) {
                 item.put("max", field.getMaxRelations());
             }
+            putEntityRefTarget(item, entityTypeCode, field, assign, refResolveContext);
+        } else if (FieldTypeEnum.isSingleEntityRef(fieldType) || "REFERENCE".equals(fieldType)) {
+            item.put("renderAs", "ref-picker");
+            putEntityRefTarget(item, entityTypeCode, field, assign, refResolveContext);
         }
 
         if ("ENUM".equals(fieldType) && field.getOptions() != null) {
             putStaticOptions(item, field.getOptions());
-        }
-
-        if (FieldTypeEnum.isEntityRef(fieldType) || "REFERENCE".equals(fieldType)) {
-            item.put("renderAs", "ref-picker");
-            putEntityRefTarget(item, entityTypeCode, assign, refResolveContext);
         }
     }
 
     private static void putEntityRefTarget(
             Map<String, Object> item,
             String sourceEntityTypeCode,
+            FieldDO field,
             ModelFieldAssignmentDO assign,
             RefResolveContext refResolveContext) {
         String targetEntityTypeCode = resolveRefTargetEntityTypeCode(
-                sourceEntityTypeCode, assign, refResolveContext);
+                sourceEntityTypeCode, field, assign, refResolveContext);
         Map<String, Object> binding = new LinkedHashMap<>();
         binding.put("businessCategory", BusinessCategoryConstants.DYNAMIC);
         binding.put("dataKind", BusinessCategoryConstants.KIND_ENTITY);
@@ -427,8 +463,15 @@ public final class ModelCrudFormFieldAssembler {
                 "labelField", "name"));
     }
 
+    /**
+     * 解析关联字段选项加载的目标业务类型。
+     * <p>优先级：关联库 → 模型关联 → 分配行兜底 → <b>字段库 targetEntityType</b> → 源业务类型。
+     * 字段编辑里配置的「关联数据类型」写在 FieldDO；若分配请求未带 target，不得直接退回源类型，
+     * 否则新建表单会按本类型拉选项（常为空），而字段预览按字段库目标拉选项（有数据）。
+     */
     static String resolveRefTargetEntityTypeCode(
             String sourceEntityTypeCode,
+            FieldDO field,
             ModelFieldAssignmentDO assign,
             RefResolveContext refResolveContext) {
         RefResolveContext ctx = refResolveContext != null ? refResolveContext : RefResolveContext.empty();
@@ -451,7 +494,32 @@ public final class ModelCrudFormFieldAssembler {
         if (assign != null && StringUtils.hasText(assign.getTargetEntityType())) {
             return assign.getTargetEntityType().trim();
         }
+        String fromField = resolveTargetEntityTypeFromField(field);
+        if (StringUtils.hasText(fromField)) {
+            return fromField;
+        }
         return sourceEntityTypeCode;
+    }
+
+    /** 字段库 ENTITY_REF 目标：存于 providerCode = dynamic-entity:{entityTypeCode} */
+    static String resolveTargetEntityTypeFromField(FieldDO field) {
+        if (field == null) {
+            return null;
+        }
+        String providerCode = field.getProviderCode();
+        if (!StringUtils.hasText(providerCode) || !providerCode.startsWith(DYNAMIC_ENTITY_PROVIDER_PREFIX)) {
+            return null;
+        }
+        String code = providerCode.substring(DYNAMIC_ENTITY_PROVIDER_PREFIX.length()).trim();
+        return StringUtils.hasText(code) ? code : null;
+    }
+
+    /** @deprecated 保留给旧单测；请使用带 FieldDO 的重载。 */
+    static String resolveRefTargetEntityTypeCode(
+            String sourceEntityTypeCode,
+            ModelFieldAssignmentDO assign,
+            RefResolveContext refResolveContext) {
+        return resolveRefTargetEntityTypeCode(sourceEntityTypeCode, null, assign, refResolveContext);
     }
 
     private static void putStaticOptions(Map<String, Object> item, Object optionsRaw) {

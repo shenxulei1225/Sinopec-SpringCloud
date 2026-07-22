@@ -86,6 +86,13 @@ spring:
                 - Path=/admin-api/bpm/**
               filters:
                   - RewritePath=/admin-api/bpm/v3/api-docs, /v3/api-docs
+            ## emergency-server 服务（波次 0；端口迁移时补回）
+            - id: emergency-admin-api
+              uri: grayLb://emergency-server
+              predicates:
+                - Path=/admin-api/emergency/**
+              filters:
+                - RewritePath=/admin-api/emergency/v3/api-docs, /v3/api-docs
             ## report-server 服务
             - id: report-admin-api # 路由的编号
               uri: grayLb://report-server
@@ -224,12 +231,20 @@ spring:
               filters:
                 - RewritePath=/admin-api/dynamicbusiness/v3/api-docs, /v3/api-docs # 配置，保证转发到 /v3/api-docs
             ## inspection-task-server 服务
+            ## - /inspection-task/**：任务 CRUD 等历史前缀
+            ## - /inspection/**：绑定 / 编排门面等 Controller（@RequestMapping("/inspection/...")）
             - id: inspection-task-admin-api # 路由的编号
               uri: grayLb://inspection-task-server
               predicates: # 断言，作为路由的匹配条件，对应 RouteDefinition 数组
                 - Path=/admin-api/inspection-task/**
               filters:
                 - RewritePath=/admin-api/inspection-task/v3/api-docs, /v3/api-docs # 配置，保证转发到 /v3/api-docs
+            - id: inspection-admin-api
+              uri: grayLb://inspection-task-server
+              predicates:
+                - Path=/admin-api/inspection/**
+              filters:
+                - RewritePath=/admin-api/inspection/v3/api-docs, /v3/api-docs
             ## work-order-server 服务
             - id: work-order-admin-api # 路由的编号
               uri: grayLb://work-order-server
@@ -307,8 +322,7 @@ spring:
             - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin # 采用 https://github.com/spring-cloud/spring-cloud-gateway/pull/866 解决响应头重复问题
 
 server:
-  port: 58080
-
+  port: 15080
 logging:
   file:
     name: ${user.home}/logs/${spring.application.name}.log # 日志文件名，全路径
@@ -330,6 +344,9 @@ knife4j:
       - name: bpm-server
         service-name: bpm-server
         url: /admin-api/bpm/v3/api-docs
+      - name: emergency-server
+        service-name: emergency-server
+        url: /admin-api/emergency/v3/api-docs
       - name: pay-server
         service-name: pay-server
         url: /admin-api/pay/v3/api-docs

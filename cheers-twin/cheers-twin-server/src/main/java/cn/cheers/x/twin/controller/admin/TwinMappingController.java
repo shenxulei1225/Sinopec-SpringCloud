@@ -1,5 +1,7 @@
 package cn.cheers.x.twin.controller.admin;
 
+import cn.cheers.x.twin.controller.admin.vo.TwinEquipmentBindReqVO;
+import cn.cheers.x.twin.controller.admin.vo.TwinEquipmentUnbindReqVO;
 import cn.cheers.x.twin.controller.admin.vo.TwinMappingBindReqVO;
 import cn.cheers.x.twin.controller.admin.vo.TwinMappingRespVO;
 import cn.cheers.x.twin.controller.admin.vo.TwinMappingUnbindReqVO;
@@ -37,7 +39,7 @@ public class TwinMappingController {
     }
 
     @PostMapping("/unbind")
-    @Operation(summary = "解除映射")
+    @Operation(summary = "解除设施映射")
     public CommonResult<Boolean> unbind(@Valid @RequestBody TwinMappingUnbindReqVO reqVO) {
         twinMappingService.unbind(reqVO);
         return success(true);
@@ -50,15 +52,44 @@ public class TwinMappingController {
     }
 
     @GetMapping("/actor-instance/{actorInstanceId}")
-    @Operation(summary = "按 ActorInstance 查询当前映射")
+    @Operation(summary = "按 ActorInstance 查询设施映射")
     public CommonResult<TwinMappingRespVO> getByActorInstance(@PathVariable Long actorInstanceId) {
         return success(twinMappingService.getByActorInstanceId(actorInstanceId));
     }
 
     @GetMapping("/scene/overview")
-    @Operation(summary = "按场景查询映射概览")
-    public CommonResult<TwinSceneMappingOverviewRespVO> getSceneOverview(@RequestParam(value = "sceneId", required = false) Long sceneId,
-                                                                         @RequestParam(value = "sceneCode", required = false) String sceneCode) {
+    @Operation(summary = "按场景查询设施映射概览")
+    public CommonResult<TwinSceneMappingOverviewRespVO> getSceneOverview(
+            @RequestParam(value = "sceneId", required = false) Long sceneId,
+            @RequestParam(value = "sceneCode", required = false) String sceneCode) {
         return success(twinMappingService.getSceneOverview(sceneId, sceneCode));
+    }
+
+    @PostMapping("/equipment/bind")
+    @Operation(summary = "建立或换绑 设备实体 ↔ ActorInstance（一实例最多一设备）")
+    public CommonResult<TwinMappingRespVO> bindEquipment(@Valid @RequestBody TwinEquipmentBindReqVO reqVO) {
+        return success(twinMappingService.bindEquipment(reqVO));
+    }
+
+    @PostMapping("/equipment/unbind")
+    @Operation(summary = "解除设备 ↔ ActorInstance 映射")
+    public CommonResult<Boolean> unbindEquipment(@Valid @RequestBody TwinEquipmentUnbindReqVO reqVO) {
+        twinMappingService.unbindEquipment(reqVO);
+        return success(true);
+    }
+
+    @GetMapping("/equipment/actor-instance/{actorInstanceId}")
+    @Operation(summary = "按 ActorInstance 查询设备映射")
+    public CommonResult<TwinMappingRespVO> getEquipmentByActorInstance(@PathVariable Long actorInstanceId) {
+        return success(twinMappingService.getEquipmentByActorInstanceId(actorInstanceId));
+    }
+
+    @GetMapping("/equipment/by-entity")
+    @Operation(summary = "按站场 + 设备实体查询映射（取一条有效绑定）")
+    public CommonResult<TwinMappingRespVO> getEquipmentByEntity(
+            @RequestParam Long facilityId,
+            @RequestParam Long entityId,
+            @RequestParam(required = false, defaultValue = "equipment") String entityTypeCode) {
+        return success(twinMappingService.getEquipmentByEntity(facilityId, entityId, entityTypeCode));
     }
 }

@@ -23,8 +23,8 @@ public class EntitySceneQueryReqVO extends PageParam {
     @Schema(description = "结果形态（PAGE/TREE 等）", example = "PAGE")
     private String resultShape = "PAGE";
 
-    @Schema(description = "结果详情（FULL/LIGHT 等）", example = "FULL")
-    private String resultDetail = "FULL";
+    @Schema(description = "结果详情（FULL/LIGHT）。列表默认 LIGHT（基础字段）；需 customFields 等明细时传 FULL", example = "LIGHT")
+    private String resultDetail = "LIGHT";
 
     @Schema(description = "分类体系编码", example = "equipment_category")
     private String categoryTypeCode;

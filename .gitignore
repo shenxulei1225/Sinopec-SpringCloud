@@ -1,6 +1,9 @@
 
 # 查看更多 .gitignore 配置 -> https://help.github.com/articles/ignoring-files/
 
+# Local git worktrees (agent / parallel feature checkouts)
+.worktrees/
+
 target/
 !.mvn/wrapper/maven-wrapper.jar
 

@@ -18,6 +18,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.mockito.ArgumentCaptor;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -67,6 +69,37 @@ class PatrolExpandMapHandlerTest {
         assertEquals(List.of("s1"), expandResult.get("stopIds"));
         assertEquals("HUMAN", expandResult.get("inspectionType"));
         verify(patrolOrchestrationApi).expand(any(PatrolExpandReqDTO.class));
+    }
+
+    @Test
+    @DisplayName("种子 startStopId 透传到 PatrolExpandReqDTO")
+    void execute_forwardsStartStopIdToExpandReq() {
+        when(patrolOrchestrationApi.expand(any(PatrolExpandReqDTO.class)))
+                .thenReturn(CommonResult.success(PatrolExpandRespDTO.builder()
+                        .workItems(List.of(WorkItemDTO.builder().workId("seed-1").payload(Map.of()).build()))
+                        .networkRef("net-a")
+                        .stopIds(List.of("s1"))
+                        .inspectionType("HUMAN")
+                        .build()));
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("facilityId", 1L);
+        payload.put("objectIds", List.of(10L));
+        payload.put("startStopId", "sta-depot");
+        payload.put("returnToStart", Boolean.FALSE);
+        WorkItemDTO seed = WorkItemDTO.builder().workId("seed-1").payload(payload).build();
+        PhaseContext context = PhaseContext.builder()
+                .request(ScheduleRunRequest.builder().workItems(List.of(seed)).build())
+                .workItems(List.of(seed))
+                .attributes(new LinkedHashMap<>())
+                .build();
+
+        handler.execute(context);
+
+        ArgumentCaptor<PatrolExpandReqDTO> captor = ArgumentCaptor.forClass(PatrolExpandReqDTO.class);
+        verify(patrolOrchestrationApi).expand(captor.capture());
+        assertEquals("sta-depot", captor.getValue().getStartStopId());
+        assertEquals(Boolean.FALSE, captor.getValue().getReturnToStart());
     }
 
     private static ScheduleRunRequest seedRequest() {

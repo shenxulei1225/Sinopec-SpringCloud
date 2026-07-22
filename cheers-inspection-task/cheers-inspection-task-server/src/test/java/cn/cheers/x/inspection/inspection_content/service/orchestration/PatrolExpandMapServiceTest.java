@@ -98,6 +98,28 @@ class PatrolExpandMapServiceTest {
     }
 
     @Test
+    @DisplayName("expand：透传 startStopId 到工作项 payload")
+    void expand_forwardsStartStopId() {
+        stubHappyBindings();
+        when(objectProfileQueryService.requireConsistentInspectionType(FACILITY_ID, List.of(10L)))
+                .thenReturn("HUMAN");
+        when(pathNetworkApi.listPublished(FACILITY_ID)).thenReturn(CommonResult.success(List.of(
+                network("net-a", List.of("HUMAN"), "PUBLISHED"))));
+        when(profileMapper.selectByFacilityAndObjectIds(eq(FACILITY_ID), eq(List.of(10L))))
+                .thenReturn(List.of(profile(10L, 5)));
+
+        PatrolExpandReqDTO request = req(List.of(10L), null);
+        request.setStartStopId("sta-depot");
+        request.setReturnToStart(Boolean.TRUE);
+
+        PatrolExpandRespDTO resp = service.expand(request);
+
+        Map<String, Object> payload = resp.getWorkItems().get(0).getPayload();
+        assertEquals("sta-depot", payload.get("startStopId"));
+        assertEquals(Boolean.TRUE, payload.get("returnToStart"));
+    }
+
+    @Test
     @DisplayName("多条匹配路网且未指定 preferred → 显式失败")
     void expand_manyNetworksWithoutPreferred_fails() {
         stubHappyBindings();

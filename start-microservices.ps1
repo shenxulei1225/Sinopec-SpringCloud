@@ -26,6 +26,9 @@
 #   .\start-microservices.ps1 stop-bmp           # 停止 bmp（process+path）
 #   .\start-microservices.ps1 platform-all       # [弃用] 等同 bmp
 #
+# 本地微服务监听端口段：15xxx（网关 15080）。
+# 避开：kpki 固定口 16080/18080/8877-8879；Windows 临时端口 ≥49152（旧 58xxx 落在此段）。
+# 网关 15080；前端只连网关，勿直连业务端口。
 # 业务中台父工程：cheers-business-middle-platform
 # bmp = bmp-process + bmp-path（不含 scene-3d / gis / twin）
 # twin = cheers-twin（整合层；联调请用 twin-dev）
@@ -60,58 +63,58 @@ if (-not (Test-Path $LogDir)) {
 
 # 服务配置映射（与 start-microservices.sh 的 get_service_path 保持一致；勿再引用已迁走的 yudao-module-*）
 $ServiceConfig = @{
-    "gateway"    = @{ Path = "cheers-gateway"; Port = 58080 }
-    "system"     = @{ Path = "cheers-system\cheers-system-server"; Port = 58081 }
-    "infra"      = @{ Path = "cheers-infra\cheers-infra-server"; Port = 58082 }
-    "member"     = @{ Path = "cheers-member\cheers-member-server"; Port = 58087 }
-    "bpm"        = @{ Path = "cheers-bpm\cheers-bpm-server"; Port = 58083 }
-    "pay"        = @{ Path = "cheers-pay\cheers-pay-server"; Port = 58085 }
-    "report"     = @{ Path = "cheers-report\cheers-report-server"; Port = 58084 }
-    "mp"         = @{ Path = "cheers-mp\cheers-mp-server"; Port = 58086 }
-    "product"    = @{ Path = "cheers-mall\cheers-product-server"; Port = 58100 }
-    "promotion"  = @{ Path = "cheers-mall\cheers-promotion-server"; Port = 58101 }
-    "trade"      = @{ Path = "cheers-mall\cheers-trade-server"; Port = 58102 }
-    "statistics" = @{ Path = "cheers-mall\cheers-statistics-server"; Port = 58103 }
-    "crm"        = @{ Path = "cheers-crm\cheers-crm-server"; Port = 58089 }
-    "erp"        = @{ Path = "cheers-erp\cheers-erp-server"; Port = 58088 }
-    "ai"         = @{ Path = "cheers-ai\cheers-ai-server"; Port = 58090 }
-    "iot"        = @{ Path = "cheers-iot\cheers-iot-server"; Port = 58091 }
-    "alarm"      = @{ Path = "cheers-business-middle-platform\cheers-alarm-server"; Port = 58097 }
-    "bmp-alarm"  = @{ Path = "cheers-business-middle-platform\cheers-alarm-server"; Port = 58097 }
-    "work-order" = @{ Path = "cheers-business-middle-platform\cheers-work-order-server"; Port = 58110 }
-    "bmp-work-order" = @{ Path = "cheers-business-middle-platform\cheers-work-order-server"; Port = 58110 }
-    "maintenance" = @{ Path = "cheers-business-middle-platform\cheers-maintenance-server"; Port = 58111 }
-    "bmp-maintenance" = @{ Path = "cheers-business-middle-platform\cheers-maintenance-server"; Port = 58111 }
-    "scene"      = @{ Path = "cheers-business-middle-platform\cheers-scene-3d-server"; Port = 58093 }
-    "scene-3d"   = @{ Path = "cheers-business-middle-platform\cheers-scene-3d-server"; Port = 58093 }
-    "gis"        = @{ Path = "cheers-business-middle-platform\cheers-gis-server"; Port = 58109 }
-    "bmp-gis"    = @{ Path = "cheers-business-middle-platform\cheers-gis-server"; Port = 58109 }
-    "twin"       = @{ Path = "cheers-twin\cheers-twin-server"; Port = 58094 }
-    "cheers-twin"= @{ Path = "cheers-twin\cheers-twin-server"; Port = 58094 }
-    "inspection" = @{ Path = "cheers-inspection-task\cheers-inspection-task-server"; Port = 58095 }
-    "dynamic"    = @{ Path = "cheers-dynamicbusiness\cheers-dynamicbusiness-server"; Port = 58096 }
+    "gateway"    = @{ Path = "cheers-gateway"; Port = 15080 }
+    "system"     = @{ Path = "cheers-system\cheers-system-server"; Port = 15081 }
+    "infra"      = @{ Path = "cheers-infra\cheers-infra-server"; Port = 15082 }
+    "member"     = @{ Path = "cheers-member\cheers-member-server"; Port = 15087 }
+    "bpm"        = @{ Path = "cheers-bpm\cheers-bpm-server"; Port = 15083 }
+    "pay"        = @{ Path = "cheers-pay\cheers-pay-server"; Port = 15085 }
+    "report"     = @{ Path = "cheers-report\cheers-report-server"; Port = 15084 }
+    "mp"         = @{ Path = "cheers-mp\cheers-mp-server"; Port = 15086 }
+    "product"    = @{ Path = "cheers-mall\cheers-product-server"; Port = 15100 }
+    "promotion"  = @{ Path = "cheers-mall\cheers-promotion-server"; Port = 15101 }
+    "trade"      = @{ Path = "cheers-mall\cheers-trade-server"; Port = 15102 }
+    "statistics" = @{ Path = "cheers-mall\cheers-statistics-server"; Port = 15103 }
+    "crm"        = @{ Path = "cheers-crm\cheers-crm-server"; Port = 15089 }
+    "erp"        = @{ Path = "cheers-erp\cheers-erp-server"; Port = 15088 }
+    "ai"         = @{ Path = "cheers-ai\cheers-ai-server"; Port = 15090 }
+    "iot"        = @{ Path = "cheers-iot\cheers-iot-server"; Port = 15091 }
+    "alarm"      = @{ Path = "cheers-business-middle-platform\cheers-alarm-server"; Port = 15097 }
+    "bmp-alarm"  = @{ Path = "cheers-business-middle-platform\cheers-alarm-server"; Port = 15097 }
+    "work-order" = @{ Path = "cheers-business-middle-platform\cheers-work-order-server"; Port = 15110 }
+    "bmp-work-order" = @{ Path = "cheers-business-middle-platform\cheers-work-order-server"; Port = 15110 }
+    "maintenance" = @{ Path = "cheers-business-middle-platform\cheers-maintenance-server"; Port = 15111 }
+    "bmp-maintenance" = @{ Path = "cheers-business-middle-platform\cheers-maintenance-server"; Port = 15111 }
+    "scene"      = @{ Path = "cheers-business-middle-platform\cheers-scene-3d-server"; Port = 15093 }
+    "scene-3d"   = @{ Path = "cheers-business-middle-platform\cheers-scene-3d-server"; Port = 15093 }
+    "gis"        = @{ Path = "cheers-business-middle-platform\cheers-gis-server"; Port = 15109 }
+    "bmp-gis"    = @{ Path = "cheers-business-middle-platform\cheers-gis-server"; Port = 15109 }
+    "twin"       = @{ Path = "cheers-twin\cheers-twin-server"; Port = 15094 }
+    "cheers-twin"= @{ Path = "cheers-twin\cheers-twin-server"; Port = 15094 }
+    "inspection" = @{ Path = "cheers-inspection-task\cheers-inspection-task-server"; Port = 15095 }
+    "dynamic"    = @{ Path = "cheers-dynamicbusiness\cheers-dynamicbusiness-server"; Port = 15096 }
     # platform / resource：组件库、视图库
-    "platform"   = @{ Path = "cheers-business-middle-platform\cheers-resource-server"; Port = 58098 }
-    "resource"   = @{ Path = "cheers-business-middle-platform\cheers-resource-server"; Port = 58098 }
-    "bmp-resource" = @{ Path = "cheers-business-middle-platform\cheers-resource-server"; Port = 58098 }
-    "platform-runtime" = @{ Path = "cheers-business-middle-platform\cheers-runtime-server"; Port = 58099 }
-    "runtime-l4" = @{ Path = "cheers-business-middle-platform\cheers-runtime-server"; Port = 58099 }
-    "bmp-runtime" = @{ Path = "cheers-business-middle-platform\cheers-runtime-server"; Port = 58099 }
-    "platform-orchestration" = @{ Path = "cheers-business-middle-platform\cheers-orchestration-server"; Port = 58104 }
-    "orchestration" = @{ Path = "cheers-business-middle-platform\cheers-orchestration-server"; Port = 58104 }
-    "bmp-orchestration" = @{ Path = "cheers-business-middle-platform\cheers-orchestration-server"; Port = 58104 }
-    "platform-policy" = @{ Path = "cheers-business-middle-platform\cheers-policy-server"; Port = 58105 }
-    "policy"     = @{ Path = "cheers-business-middle-platform\cheers-policy-server"; Port = 58105 }
-    "bmp-policy" = @{ Path = "cheers-business-middle-platform\cheers-policy-server"; Port = 58105 }
-    "platform-capability" = @{ Path = "cheers-business-middle-platform\cheers-capability-server"; Port = 58106 }
-    "capability" = @{ Path = "cheers-business-middle-platform\cheers-capability-server"; Port = 58106 }
-    "bmp-capability" = @{ Path = "cheers-business-middle-platform\cheers-capability-server"; Port = 58106 }
-    "platform-topology" = @{ Path = "cheers-business-middle-platform\cheers-topology-server"; Port = 58107 }
-    "topology"   = @{ Path = "cheers-business-middle-platform\cheers-topology-server"; Port = 58107 }
-    "bmp-topology" = @{ Path = "cheers-business-middle-platform\cheers-topology-server"; Port = 58107 }
-    "platform-routing" = @{ Path = "cheers-business-middle-platform\cheers-routing-server"; Port = 58108 }
-    "routing"    = @{ Path = "cheers-business-middle-platform\cheers-routing-server"; Port = 58108 }
-    "bmp-routing" = @{ Path = "cheers-business-middle-platform\cheers-routing-server"; Port = 58108 }
+    "platform"   = @{ Path = "cheers-business-middle-platform\cheers-resource-server"; Port = 15098 }
+    "resource"   = @{ Path = "cheers-business-middle-platform\cheers-resource-server"; Port = 15098 }
+    "bmp-resource" = @{ Path = "cheers-business-middle-platform\cheers-resource-server"; Port = 15098 }
+    "platform-runtime" = @{ Path = "cheers-business-middle-platform\cheers-runtime-server"; Port = 15099 }
+    "runtime-l4" = @{ Path = "cheers-business-middle-platform\cheers-runtime-server"; Port = 15099 }
+    "bmp-runtime" = @{ Path = "cheers-business-middle-platform\cheers-runtime-server"; Port = 15099 }
+    "platform-orchestration" = @{ Path = "cheers-business-middle-platform\cheers-orchestration-server"; Port = 15104 }
+    "orchestration" = @{ Path = "cheers-business-middle-platform\cheers-orchestration-server"; Port = 15104 }
+    "bmp-orchestration" = @{ Path = "cheers-business-middle-platform\cheers-orchestration-server"; Port = 15104 }
+    "platform-policy" = @{ Path = "cheers-business-middle-platform\cheers-policy-server"; Port = 15105 }
+    "policy"     = @{ Path = "cheers-business-middle-platform\cheers-policy-server"; Port = 15105 }
+    "bmp-policy" = @{ Path = "cheers-business-middle-platform\cheers-policy-server"; Port = 15105 }
+    "platform-capability" = @{ Path = "cheers-business-middle-platform\cheers-capability-server"; Port = 15106 }
+    "capability" = @{ Path = "cheers-business-middle-platform\cheers-capability-server"; Port = 15106 }
+    "bmp-capability" = @{ Path = "cheers-business-middle-platform\cheers-capability-server"; Port = 15106 }
+    "platform-topology" = @{ Path = "cheers-business-middle-platform\cheers-topology-server"; Port = 15107 }
+    "topology"   = @{ Path = "cheers-business-middle-platform\cheers-topology-server"; Port = 15107 }
+    "bmp-topology" = @{ Path = "cheers-business-middle-platform\cheers-topology-server"; Port = 15107 }
+    "platform-routing" = @{ Path = "cheers-business-middle-platform\cheers-routing-server"; Port = 15108 }
+    "routing"    = @{ Path = "cheers-business-middle-platform\cheers-routing-server"; Port = 15108 }
+    "bmp-routing" = @{ Path = "cheers-business-middle-platform\cheers-routing-server"; Port = 15108 }
 }
 
 # 与 start-microservices.sh 保持一致
@@ -664,9 +667,9 @@ function Show-Status {
     
     Write-ColorOutput "" "White"
     Write-ColorOutput "[LINK] 快捷访问链接:" "Cyan"
-    Write-ColorOutput "   网关入口: http://localhost:58080" "Yellow"
-    Write-ColorOutput "   系统管理: http://localhost:58080/admin-ui/" "Yellow"
-    Write-ColorOutput "   应急管理: http://localhost:58080/emergency-admin/" "Yellow"
+    Write-ColorOutput "   网关入口: http://localhost:15080" "Yellow"
+    Write-ColorOutput "   系统管理: http://localhost:15080/admin-ui/" "Yellow"
+    Write-ColorOutput "   应急管理: http://localhost:15080/emergency-admin/" "Yellow"
     Write-ColorOutput "   Nacos控制台: http://localhost:8848/nacos" "Yellow"
     
     Write-ColorOutput "" "White"
@@ -737,16 +740,16 @@ function Show-Services {
     Write-ColorOutput "  3. gateway   - 网关服务（必需）" "White"
     Write-ColorOutput "  4. bpm       - 工作流服务（必需）" "White"
     Write-ColorOutput "  5. alarm     - 告警管理服务（必需）" "White"
-    Write-ColorOutput "  6. dynamic   - 动态业务（cheers-dynamicbusiness\cheers-dynamicbusiness-server，58096）" "White"
-    Write-ColorOutput "  7. platform  - 平台资源库（cheers-resource-server，别名 resource，58098）" "White"
+    Write-ColorOutput "  6. dynamic   - 动态业务（cheers-dynamicbusiness\cheers-dynamicbusiness-server，15096）" "White"
+    Write-ColorOutput "  7. platform  - 平台资源库（cheers-resource-server，别名 resource，15098）" "White"
     Write-ColorOutput "     路径: cheers-business-middle-platform\cheers-resource-server" "Gray"
     Write-ColorOutput "     套件: .\start-microservices.ps1 bmp / twin-dev（与 Mac .sh 一致）" "Gray"
-    Write-ColorOutput "  8. platform-policy - 平台策略（58105）" "White"
-    Write-ColorOutput "  9. platform-capability - 平台能力映射（58106）" "White"
-    Write-ColorOutput "  10. platform-runtime - 平台 L4 运行时（58099）" "White"
-    Write-ColorOutput "  11. platform-orchestration - 平台编排/排程 run（58104，依赖 runtime）" "White"
-    Write-ColorOutput "  12. platform-topology - 站场拓扑/路网（58107，路径规划必需）" "White"
-    Write-ColorOutput "  13. platform-routing - 路径规划引擎（58108，试走/算路必需）" "White"
+    Write-ColorOutput "  8. platform-policy - 平台策略（15105）" "White"
+    Write-ColorOutput "  9. platform-capability - 平台能力映射（15106）" "White"
+    Write-ColorOutput "  10. platform-runtime - 平台 L4 运行时（15099）" "White"
+    Write-ColorOutput "  11. platform-orchestration - 平台编排/排程 run（15104，依赖 runtime）" "White"
+    Write-ColorOutput "  12. platform-topology - 站场拓扑/路网（15107，路径规划必需）" "White"
+    Write-ColorOutput "  13. platform-routing - 路径规划引擎（15108，试走/算路必需）" "White"
     Write-ColorOutput "     （.\start-microservices.ps1 all / platform-all 已按 7->13 顺序启动 platform 套件）" "Gray"
     
     Write-ColorOutput "" "White"

@@ -28,13 +28,23 @@ public class TwinMappingDO {
 
     private String mappingCode;
 
-    /** 1 = Facility ↔ ActorInstance */
+    /** 1 = Facility ↔ ActorInstance；2 = EquipmentEntity ↔ ActorInstance */
     private Integer mappingType;
 
     /** 1 = 1:1 主绑定 */
     private Integer relationMode;
 
+    /** 站场/设施作用域；type=1 时即绑定的设施；type=2 时为站场 scope */
     private Long facilityId;
+
+    /**
+     * 动态业务实体 id（mappingType=2 时为设备）。
+     * type=1 可空。
+     */
+    private Long entityId;
+
+    /** 动态业务实体类型编码，如 equipment；type=2 使用 */
+    private String entityTypeCode;
 
     private Long actorInstanceId;
 

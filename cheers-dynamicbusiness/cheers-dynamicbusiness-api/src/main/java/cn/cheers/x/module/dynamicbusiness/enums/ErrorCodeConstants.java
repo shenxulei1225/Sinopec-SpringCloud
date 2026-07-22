@@ -293,4 +293,10 @@ public interface ErrorCodeConstants {
     ErrorCode REF_PROVIDER_FIELD_NOT_EXISTS = new ErrorCode(1_002_048_004, "字段不存在：{}");
     ErrorCode REF_PROVIDER_FIELD_MISSING_PROVIDER = new ErrorCode(1_002_048_005, "字段未配置 providerCode：{}");
 
+    // ========== 分类与系统用户关联 1-002-049-000 ==========
+    ErrorCode CATEGORY_NOT_EXISTS = new ErrorCode(1_002_049_000, "分类不存在");
+    ErrorCode CATEGORY_USER_ALREADY_BOUND = new ErrorCode(1_002_049_001, "用户已绑定到该分类");
+    ErrorCode CATEGORY_USER_NOT_BOUND = new ErrorCode(1_002_049_002, "用户未绑定到该分类");
+    ErrorCode CATEGORY_USER_IDS_EMPTY = new ErrorCode(1_002_049_003, "用户编号列表不能为空");
+
 }

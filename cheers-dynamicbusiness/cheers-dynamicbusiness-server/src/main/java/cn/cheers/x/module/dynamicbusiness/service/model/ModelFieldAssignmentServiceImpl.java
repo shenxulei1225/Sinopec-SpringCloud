@@ -48,6 +48,7 @@ import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeBaseFieldService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.capability.BusinessCapabilityService;
+import cn.cheers.x.module.dynamicbusiness.service.capability.form.ModelCrudFormFieldAssembler;
 import cn.cheers.x.module.dynamicbusiness.service.field.SmartSearchableService;
 import cn.cheers.x.module.dynamicbusiness.service.relation.RelationFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.relation.RelationFieldLibraryService;
@@ -227,8 +228,11 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 }
                 // 如果是关联字段,保存前端选择的目标业务类型作为兜底信息
                 if (isEntityRef) {
-                    if (item.getTargetEntityType() != null) {
-                        exist.setTargetEntityType(item.getTargetEntityType());
+                    String target = StringUtils.hasText(item.getTargetEntityType())
+                            ? item.getTargetEntityType().trim()
+                            : ModelCrudFormFieldAssembler.resolveTargetEntityTypeFromField(field);
+                    if (target != null) {
+                        exist.setTargetEntityType(target);
                     }
                 }
                 syncAssignmentIdentity(exist, model, field);
@@ -270,7 +274,10 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                     assignment.setSort(item.getSort());
                     // 如果是关联字段,保存前端选择的目标业务类型作为兜底信息
                     if (isEntityRef) {
-                        assignment.setTargetEntityType(item.getTargetEntityType());
+                        String target = StringUtils.hasText(item.getTargetEntityType())
+                                ? item.getTargetEntityType().trim()
+                                : ModelCrudFormFieldAssembler.resolveTargetEntityTypeFromField(field);
+                        assignment.setTargetEntityType(target);
                     }
                     assignment.setTenantId(tenantId);
                     modelFieldAssignmentMapper.insert(assignment);

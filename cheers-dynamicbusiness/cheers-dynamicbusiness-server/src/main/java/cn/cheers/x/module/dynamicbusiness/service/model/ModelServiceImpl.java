@@ -55,6 +55,7 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -184,6 +185,7 @@ public class ModelServiceImpl implements ModelService {
                         .modelCode(model.getCode())
                         .categoryId(categoryIdToBind)
                         .categoryCode(category.getCode())
+                        .entityTypeCode(reqVO.getEntityTypeCode())
                         .build();
                 modelCategoryRelationMapper.insert(relation);
             }
@@ -359,12 +361,25 @@ public class ModelServiceImpl implements ModelService {
         }
         
         // 步骤5：批量创建新的关联关系（租户插件会自动填充 tenantId）
+        // model_code / category_code 为库表非空列，须与创建路径一致一并写入（勿只写 id）
         if (!notExisting.isEmpty()) {
+            ModelDO model = modelCoreService.get(modelId);
+            if (model == null || model.getCode() == null || model.getCode().isBlank()) {
+                throw new ServiceException(404, "模型不存在或缺少业务编码,ID：" + modelId);
+            }
+            Map<Long, String> categoryCodeById = categories.stream()
+                    .collect(Collectors.toMap(CategoryDO::getId, CategoryDO::getCode, (a, b) -> a));
             List<ModelCategoryRelationDO> relationsToInsert = new ArrayList<>();
             for (Long categoryId : notExisting) {
+                String categoryCode = categoryCodeById.get(categoryId);
+                if (categoryCode == null || categoryCode.isBlank()) {
+                    throw new ServiceException(404, "分类缺少业务编码,ID：" + categoryId);
+                }
                 ModelCategoryRelationDO relation = ModelCategoryRelationDO.builder()
                         .modelId(modelId)
+                        .modelCode(model.getCode())
                         .categoryId(categoryId)
+                        .categoryCode(categoryCode)
                         .entityTypeCode(entityTypeCode)
                         .build();
                 relationsToInsert.add(relation);

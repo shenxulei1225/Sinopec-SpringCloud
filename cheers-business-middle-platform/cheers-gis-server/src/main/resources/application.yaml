@@ -32,8 +32,7 @@ spring:
       time-to-live: 1h
 
 server:
-  port: 58109
-
+  port: 15109
 logging:
   file:
     name: ${user.home}/logs/${spring.application.name}.log

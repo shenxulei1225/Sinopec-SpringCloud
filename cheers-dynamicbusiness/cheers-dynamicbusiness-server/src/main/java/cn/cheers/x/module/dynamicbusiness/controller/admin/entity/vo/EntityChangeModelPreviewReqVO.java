@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.util.Map;
+
 @Schema(description = "实体变更模型 - 预览 Request VO")
 @Data
 public class EntityChangeModelPreviewReqVO {
@@ -20,4 +22,7 @@ public class EntityChangeModelPreviewReqVO {
     @Schema(description = "目标模型 ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "28")
     @NotNull(message = "targetModelId 不能为空")
     private Long targetModelId;
+
+    @Schema(description = "当前表单草稿字段（含未保存修改）；有值时覆盖库中快照再计算预览")
+    private Map<String, Object> currentFields;
 }

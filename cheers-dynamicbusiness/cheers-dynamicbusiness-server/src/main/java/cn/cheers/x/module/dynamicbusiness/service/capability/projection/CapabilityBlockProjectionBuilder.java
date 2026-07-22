@@ -21,6 +21,9 @@ public final class CapabilityBlockProjectionBuilder {
     /** 实体列表读端点：统一场景查询（定稿主路径，非 page-by-filters POC） */
     private static final String ENTITY_SCENE_QUERY_URL = "/dynamicbusiness/business/entities/query-by-scene";
     private static final String MODEL_PAGE_URL = "/dynamicbusiness/business/models/page-models";
+    private static final String MODEL_CREATE_URL = "/dynamicbusiness/business/models/create";
+    private static final String MODEL_UPDATE_URL = "/dynamicbusiness/business/models/update";
+    private static final String MODEL_DELETE_URL = "/dynamicbusiness/business/models/delete";
     private static final String ENTITY_SCENE_DEFAULT = "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE";
     /** 实体层级树首屏 scene（非 ROOT_ENTITY_SUBTREE；子树由 Tree 运行时动作调用） */
     private static final String ENTITY_TREE_SCENE = "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE";
@@ -122,7 +125,7 @@ public final class CapabilityBlockProjectionBuilder {
         endpoint.put("url", definition.getReadUrl());
         endpoint.put("method", definition.getReadMethod());
         if (definition.isPaginated()) {
-            endpoint.put("defaultParams", Map.of("pageNo", 1, "pageSize", 10));
+            endpoint.put("defaultParams", Map.of("pageNo", 1, "pageSize", 20));
         }
         endpoint.put("responseMapping", listResponseMapping());
 
@@ -265,6 +268,7 @@ public final class CapabilityBlockProjectionBuilder {
             appendSort(projection, sortableFieldKeys);
         }
         appendPagination(projection);
+        appendModelCrudBlocks(projection);
         projection.put("asyncChecks", List.of());
         projection.put("externalInputs", List.of());
     }
@@ -341,7 +345,7 @@ public final class CapabilityBlockProjectionBuilder {
         endpoint.put("method", "GET");
         Map<String, Object> defaultParams = new LinkedHashMap<>();
         defaultParams.put("pageNo", 1);
-        defaultParams.put("pageSize", 10);
+        defaultParams.put("pageSize", 20);
         defaultParams.put("entityTypeCode", entityTypeCode);
         endpoint.put("defaultParams", defaultParams);
         endpoint.put("responseMapping", listResponseMapping());
@@ -355,11 +359,12 @@ public final class CapabilityBlockProjectionBuilder {
         endpoint.put("paramStyle", "entity-scene");
         Map<String, Object> defaultParams = new LinkedHashMap<>();
         defaultParams.put("pageNo", 1);
-        defaultParams.put("pageSize", 10);
+        defaultParams.put("pageSize", 20);
         defaultParams.put("entityTypeCode", entityTypeCode);
         defaultParams.put("scene", ENTITY_SCENE_DEFAULT);
         defaultParams.put("resultShape", "PAGE");
-        defaultParams.put("resultDetail", "FULL");
+        // 列表投影仅基础字段；扩展字段走表单/详情 FULL
+        defaultParams.put("resultDetail", "LIGHT");
         endpoint.put("defaultParams", defaultParams);
         endpoint.put("responseMapping", scenePageResponseMapping());
         return endpoint;
@@ -462,8 +467,8 @@ public final class CapabilityBlockProjectionBuilder {
 
     private static void appendPagination(Map<String, Object> projection) {
         projection.put("pagination", Map.of(
-                "defaultPageSize", 10,
-                "pageSizeOptions", List.of(10, 20, 50, 100),
+                "defaultPageSize", 20,
+                "pageSizeOptions", List.of(20, 10, 50, 100),
                 "paramKeys", Map.of("pageNo", "pageNo", "pageSize", "pageSize")));
     }
 
@@ -471,6 +476,51 @@ public final class CapabilityBlockProjectionBuilder {
         projection.put("create", writeBlock(ENTITY_CREATE_URL, "POST"));
         projection.put("update", writeBlock(ENTITY_UPDATE_URL, "PUT"));
         projection.put("delete", writeBlock(ENTITY_DELETE_URL, "DELETE"));
+    }
+
+    /** 型号 list：写块带表单字段，供 enrich → dataSourceSupportsAutoCrud（需 URL + requestFields） */
+    private static void appendModelCrudBlocks(Map<String, Object> projection) {
+        List<Map<String, Object>> formFields = modelCrudFormFields();
+        projection.put("create", writeBlockWithFields(MODEL_CREATE_URL, "POST", formFields));
+        projection.put("update", writeBlockWithFields(MODEL_UPDATE_URL, "PUT", formFields));
+        projection.put("delete", writeBlockWithFields(
+                MODEL_DELETE_URL,
+                "DELETE",
+                List.of(Map.of(
+                        "fieldKey", "id",
+                        "fieldCode", "id",
+                        "label", "ID",
+                        "fieldType", "TEXT",
+                        "renderAs", "input",
+                        "readOnly", true))));
+    }
+
+    private static List<Map<String, Object>> modelCrudFormFields() {
+        List<Map<String, Object>> fields = new ArrayList<>(2);
+        Map<String, Object> name = new LinkedHashMap<>();
+        name.put("fieldKey", "name");
+        name.put("fieldCode", "name");
+        name.put("label", "模型名称");
+        name.put("fieldType", "TEXT");
+        name.put("renderAs", "input");
+        name.put("required", true);
+        fields.add(name);
+        Map<String, Object> description = new LinkedHashMap<>();
+        description.put("fieldKey", "description");
+        description.put("fieldCode", "description");
+        description.put("label", "描述");
+        description.put("fieldType", "TEXT");
+        description.put("renderAs", "textarea");
+        fields.add(description);
+        return fields;
+    }
+
+    private static Map<String, Object> writeBlockWithFields(
+            String url, String method, List<Map<String, Object>> fields) {
+        Map<String, Object> block = new LinkedHashMap<>();
+        block.put("endpoint", Map.of("url", url, "method", method));
+        block.put("fields", fields);
+        return block;
     }
 
     /** 动态实体 CRUD 弹窗异步校验（与前端 AsyncFieldCheck 契约对齐）。 */

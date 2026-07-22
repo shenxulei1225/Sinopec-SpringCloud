@@ -7,7 +7,8 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @SpringBootApplication
 @EnableFeignClients(basePackages = {
         "cn.iocoder",
-        "cn.cheers.x.module.dynamicbusiness.api"
+        "cn.cheers.x.module.dynamicbusiness.api",
+        "cn.cheers.x.scene.platform.api"
 })
 public class TwinServerApplication {
 

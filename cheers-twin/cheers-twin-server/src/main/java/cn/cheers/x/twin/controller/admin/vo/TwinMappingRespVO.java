@@ -17,6 +17,8 @@ public class TwinMappingRespVO {
     private Integer mappingType;
     private Integer relationMode;
     private Long facilityId;
+    private Long entityId;
+    private String entityTypeCode;
     private Long actorInstanceId;
     private Long sceneId;
     private String sceneCode;
@@ -28,5 +30,7 @@ public class TwinMappingRespVO {
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     private EntityRespDTO facility;
+    /** mappingType=2 时为设备实体（查询增强） */
+    private EntityRespDTO entity;
     private ActorInstanceSimpleRespDTO actorInstance;
 }

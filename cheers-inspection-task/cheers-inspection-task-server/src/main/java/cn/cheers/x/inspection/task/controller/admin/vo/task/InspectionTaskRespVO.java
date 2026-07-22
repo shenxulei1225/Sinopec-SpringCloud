@@ -70,6 +70,29 @@ public class InspectionTaskRespVO {
     @Schema(description = "历史编排批次ID列表")
     private List<Long> planIds = new ArrayList<>();
 
+    // ==================== 已保存路线读模型（confirm 后） ====================
+
+    @Schema(description = "关联路线方案台账 ID；无已保存路线时为空")
+    private Long routePlanId;
+
+    @Schema(description = "已确认路网引用")
+    private String networkRef;
+
+    @Schema(description = "巡检类型：HUMAN|GROUND_ROBOT|UAV")
+    private String inspectionType;
+
+    @Schema(description = "已确认路线时长估算（分钟）")
+    private Integer durationEstimateMinutes;
+
+    @Schema(description = "停靠点规划序（stopSequence）")
+    private List<String> stopSequence = new ArrayList<>();
+
+    @Schema(description = "固定起点停靠点 id；未落库时为空（routing 无独立终点字段）")
+    private String startStopId;
+
+    @Schema(description = "已保存路线摘要；无 segments 折线时前端不得假装完整三维轨迹")
+    private TaskSavedRoutePreviewVO routePreview;
+
     // ==================== 子任务列表（轻量级） ====================
     @Schema(description = "直接子任务列表（轻量级，不含 inspectionContent）")
     private List<InspectionTaskSubTaskVO> subTasks = new ArrayList<>();

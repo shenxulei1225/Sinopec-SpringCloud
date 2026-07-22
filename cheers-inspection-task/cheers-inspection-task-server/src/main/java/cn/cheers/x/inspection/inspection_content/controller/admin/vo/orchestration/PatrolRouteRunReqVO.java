@@ -23,4 +23,15 @@ public class PatrolRouteRunReqVO {
 
     /** 确认写入台账时必填，绑定任务路线快照 */
     private Long taskId;
+
+    /**
+     * 固定起点停靠点 id（透传至路径引擎 {@code RouteRequestDTO.startStopId}）。
+     * <p>routing 当前不支持独立终点字段；勿在请求中伪造 endStopId。</p>
+     */
+    private String startStopId;
+
+    /**
+     * 是否回到起点。未传且 {@link #startStopId} 有值时，路径侧默认 true。
+     */
+    private Boolean returnToStart;
 }

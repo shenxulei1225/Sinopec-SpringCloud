@@ -35,7 +35,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -44,7 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -119,6 +117,23 @@ class PatrolRouteFacadeServiceTest {
         assertEquals(Boolean.FALSE, captured.getDryRun());
         Map<String, Object> payload = captured.getWorkItems().get(0).getPayload();
         assertEquals(TASK_ID, payload.get("taskId"));
+        assertSeedPayload(payload, reqVO, false);
+    }
+
+    @Test
+    @DisplayName("preview：透传 startStopId / returnToStart 到编排种子 payload")
+    void previewRoute_forwardsStartStopId() {
+        PatrolRouteRunReqVO reqVO = routeReq("net-a", null);
+        reqVO.setStartStopId("sta-depot");
+        reqVO.setReturnToStart(Boolean.FALSE);
+        when(scheduleRunApi.run(any())).thenReturn(CommonResult.success(
+                ScheduleRunResponse.builder().runtimeJobId("job-preview").build()));
+
+        facadeService.previewRoute(reqVO);
+
+        Map<String, Object> payload = captureRunRequest().getWorkItems().get(0).getPayload();
+        assertEquals("sta-depot", payload.get("startStopId"));
+        assertEquals(Boolean.FALSE, payload.get("returnToStart"));
         assertSeedPayload(payload, reqVO, false);
     }
 
@@ -312,6 +327,12 @@ class PatrolRouteFacadeServiceTest {
         }
         if (reqVO.getTaskId() != null) {
             assertEquals(reqVO.getTaskId(), payload.get("taskId"));
+        }
+        if (reqVO.getStartStopId() != null) {
+            assertEquals(reqVO.getStartStopId(), payload.get("startStopId"));
+        }
+        if (reqVO.getReturnToStart() != null) {
+            assertEquals(reqVO.getReturnToStart(), payload.get("returnToStart"));
         }
         assertEquals(fromConfirmedSnapshot, payload.get("fromConfirmedSnapshot"));
     }

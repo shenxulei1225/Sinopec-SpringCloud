@@ -65,6 +65,8 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
     static final String TASK_ID = "taskId";
     static final String FROM_CONFIRMED_SNAPSHOT = "fromConfirmedSnapshot";
     static final String TASK_ENABLED = "taskEnabled";
+    static final String START_STOP_ID = "startStopId";
+    static final String RETURN_TO_START = "returnToStart";
 
     private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Shanghai");
 
@@ -389,6 +391,12 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
         }
         if (taskId != null) {
             payload.put(TASK_ID, taskId);
+        }
+        if (StringUtils.hasText(reqVO.getStartStopId())) {
+            payload.put(START_STOP_ID, reqVO.getStartStopId().trim());
+        }
+        if (reqVO.getReturnToStart() != null) {
+            payload.put(RETURN_TO_START, reqVO.getReturnToStart());
         }
         payload.put(FROM_CONFIRMED_SNAPSHOT, fromConfirmedSnapshot);
 

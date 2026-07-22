@@ -2,6 +2,7 @@ package cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity;
 
 import cn.cheers.x.framework.mybatis.core.type.JsonbMapTypeHandler;
 import cn.cheers.x.framework.tenant.core.db.TenantBaseDO;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -46,6 +47,12 @@ public class EntityDO extends TenantBaseDO {
      * 实体名称
      */
     private String name;
+
+    /**
+     * 业务编码（专用表 ent_* 常见 NOT NULL；GENERIC 的 dynamic_entity 无此列，空值不参与 INSERT/UPDATE）。
+     */
+    @TableField(insertStrategy = FieldStrategy.NOT_EMPTY, updateStrategy = FieldStrategy.NOT_EMPTY)
+    private String code;
 
     /**
      * 父实体ID

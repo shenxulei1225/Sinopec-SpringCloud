@@ -29,8 +29,11 @@
 | V13 | `V13__entity_type_group_registry.sql` | 数据类型分组 seed 到通用 `dynamic_group`（`group_type=ENTITY_TYPE`） |
 | V14 | `V14__entity_type_and_model_data_scope.sql` | 数据类型 NATIVE/SCOPED 入口字段 + 模型 `data_scope` |
 | V15 | `V15__ent_point_and_route_indexes.sql` | 标准点位表 `ent_point`；`ent_route` 业务编码唯一索引 |
+| V16 | `V16__category_user_relation.sql` | 分类-用户关联 |
+| V17 | `V17__ent_scene_and_placement.sql` | 三维场景 `ent_scene`、三维摆放 `ent_scene_placement` |
+| V18 | `V18__ent_scene_parent_tree_path.sql` | 补齐 `parent_id` / `tree_path`（对齐 EntityDO） |
 
-下一新增版本应为 **V16**。  
+下一新增版本应为 **V19**。  
 已停用脚本在 `db/backup/flyway-legacy-pre-seed/`，不得放回本目录。
 
 > 上表随发版更新；改版本链时同步更新本节，并遵守通用规范中的历史对齐流程。
@@ -69,6 +72,8 @@ PGPASSWORD=Coolhomer psql -h 127.0.0.1 -U postgres -d sinopec -c \
 
 | 日期 | 说明 |
 |------|------|
+| 2026-07-22 | V18：`ent_scene`/`ent_scene_placement` 补 `parent_id`、`tree_path`（修 query-by-scene 500） |
+| 2026-07-22 | V17：`ent_scene` / `ent_scene_placement`（三维按动态业务收编阶段 1） |
 | 2026-07-14 | V15：`ent_point` 标准点位表；`ent_route` code 唯一索引（巡检域 SCOPED 复用存储） |
 | 2026-07-13 | V14：数据类型 `entry_kind` / `base_entity_type_code` / `data_scope`；模型 `data_scope` |
 | 2026-07-13 | platform-import：`system/import.sh` 结束后清理分类树 Redis 缓存，避免 seed 后仍返回仅根节点的旧树 |

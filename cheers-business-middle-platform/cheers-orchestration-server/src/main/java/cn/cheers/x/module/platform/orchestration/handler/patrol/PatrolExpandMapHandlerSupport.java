@@ -23,6 +23,8 @@ final class PatrolExpandMapHandlerSupport {
     static final String PREFERRED_NETWORK_REF = "preferredNetworkRef";
     static final String TASK_ID = "taskId";
     static final String FROM_CONFIRMED_SNAPSHOT = "fromConfirmedSnapshot";
+    static final String START_STOP_ID = "startStopId";
+    static final String RETURN_TO_START = "returnToStart";
 
     private PatrolExpandMapHandlerSupport() {
     }
@@ -40,6 +42,8 @@ final class PatrolExpandMapHandlerSupport {
                 .taskId(asLong(payload.get(TASK_ID)))
                 .fromConfirmedSnapshot(asBoolean(payload.get(FROM_CONFIRMED_SNAPSHOT)))
                 .seedWorkId(seed.getWorkId())
+                .startStopId(asString(payload.get(START_STOP_ID)))
+                .returnToStart(asBoolean(payload.get(RETURN_TO_START)))
                 .build();
     }
 

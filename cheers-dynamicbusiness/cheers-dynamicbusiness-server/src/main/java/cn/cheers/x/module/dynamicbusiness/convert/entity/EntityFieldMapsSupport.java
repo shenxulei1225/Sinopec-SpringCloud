@@ -11,7 +11,7 @@ import java.util.Set;
 /**
  * 实体 Write/Read 与 DO 之间的 baseFields / customFields 分桶转换。
  *
- * <p>固定列（含 entityTypeCode、modelId、name、status、parentId）在 API 层进入 {@code baseFields}；
+ * <p>固定列（含 entityTypeCode、modelId、name、code、status、parentId）在 API 层进入 {@code baseFields}；
  * DO 表列存核心固定列，其余 base 扩展键暂合并进 customFields JSONB 持久化。</p>
  */
 public final class EntityFieldMapsSupport {
@@ -20,7 +20,7 @@ public final class EntityFieldMapsSupport {
             "entitytypecode", "entity_type_code",
             "businesstypecode", "business_type_code",
             "modelid", "model_id",
-            "name", "status", "parentid", "parent_id");
+            "name", "code", "status", "parentid", "parent_id");
 
     private EntityFieldMapsSupport() {
     }
@@ -71,6 +71,11 @@ public final class EntityFieldMapsSupport {
         entity.setEntityTypeCode(getEntityTypeCode(base));
         entity.setModelId(getModelId(base));
         entity.setName(asString(firstPresent(base, "name")));
+        String code = asString(firstPresent(base, "code"));
+        if (code == null) {
+            code = asString(custom.get("code"));
+        }
+        entity.setCode(code);
         entity.setStatus(asInteger(firstPresent(base, "status")));
         entity.setParentId(asLong(firstPresent(base, "parentId", "parent_id")));
 
@@ -80,6 +85,8 @@ public final class EntityFieldMapsSupport {
                 mergedCustom.put(entry.getKey(), entry.getValue());
             }
         }
+        // code 已提升为表列时，勿再留在 JSONB，避免双写语义分裂
+        mergedCustom.remove("code");
         entity.setCustomFields(mergedCustom.isEmpty() ? null : mergedCustom);
     }
 
@@ -94,6 +101,7 @@ public final class EntityFieldMapsSupport {
         putIfNotNull(base, "entityTypeCode", entity.getEntityTypeCode());
         putIfNotNull(base, "modelId", entity.getModelId());
         putIfNotNull(base, "name", entity.getName());
+        putIfNotNull(base, "code", entity.getCode());
         putIfNotNull(base, "status", entity.getStatus());
         putIfNotNull(base, "parentId", entity.getParentId());
         return base;

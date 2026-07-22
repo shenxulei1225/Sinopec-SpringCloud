@@ -55,7 +55,9 @@ run "${SCRIPT_DIR}/seed/dynamic_seed_retire_route_inspection_point.sql"
 # 点位/路线 Scope 与两站样例须在 purge/retire 之后（重新注册 patrol_point / route）
 run "${SCRIPT_DIR}/seed/dynamic_entity_point_route_scope.sql"
 run "${SCRIPT_DIR}/seed/dynamic_entity_facility_jinqiao_luoyang.sql"
+# 三维场景/摆放阶段 1（前置 Flyway V17）
+run "${SCRIPT_DIR}/seed/dynamic_scene_3d_phase1.sql"
 
 bash "${SCRIPT_DIR}/evict_category_tree_cache.sh"
 
-echo "done: 系统共用 seed（前置：Flyway V1→…→V15 已执行）"
+echo "done: 系统共用 seed（前置：Flyway V1→…→V17 已执行）"

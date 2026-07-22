@@ -211,13 +211,9 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         if (modelId == null) {
             throw new ServiceException(400, "modelId 不能为空");
         }
+        // 按最新字段库 / 分配重建，避免关联目标仅改在字段库后仍读到过期表单（新建下拉为空）。
+        refreshSingleModelCrudForm(code, modelId);
         ModelCrudFormDefinitionDO data = modelCrudFormDefinitionMapper.selectByEntityTypeAndModel(code, modelId);
-        if (data == null) {
-            log.info("[getModelCrudFormDefinition][表单定义缺失，首次生成][entityTypeCode={}][modelId={}]",
-                    code, modelId);
-            refreshSingleModelCrudForm(code, modelId);
-            data = modelCrudFormDefinitionMapper.selectByEntityTypeAndModel(code, modelId);
-        }
         if (data == null) {
             throw new ServiceException(404, "未找到模型 CRUD 表单定义，entityTypeCode=" + code + ", modelId=" + modelId);
         }
@@ -728,6 +724,15 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                 for (EntityTypeBaseFieldDO baseField : baseFields) {
                     if (baseField != null && StringUtils.hasText(baseField.getFieldCode())) {
                         baseFieldByCode.put(baseField.getFieldCode().trim(), baseField);
+                    }
+                    // 基础字段库关联：即使尚未走分配行，也要带上 FieldDO.providerCode 供 REF 目标解析
+                    if (baseField != null
+                            && baseField.getLibraryFieldId() != null
+                            && !fieldById.containsKey(baseField.getLibraryFieldId())) {
+                        FieldDO libraryField = fieldMapper.selectById(baseField.getLibraryFieldId());
+                        if (libraryField != null) {
+                            fieldById.put(libraryField.getId(), libraryField);
+                        }
                     }
                 }
             }

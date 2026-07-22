@@ -27,6 +27,10 @@ public class TwinMappingHistoryDO {
 
     private Long facilityId;
 
+    private Long entityId;
+
+    private String entityTypeCode;
+
     private Long actorInstanceId;
 
     private Long sceneId;

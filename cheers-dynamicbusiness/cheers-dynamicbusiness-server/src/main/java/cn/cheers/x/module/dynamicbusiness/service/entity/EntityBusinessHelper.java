@@ -8,10 +8,15 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdat
 import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityConvert;
 import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityFieldMapsSupport;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.framework.mybatis.core.type.JsonbMapTypeHandler;
+import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
+import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.StrUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -27,6 +32,7 @@ import java.util.*;
 public class EntityBusinessHelper {
 
     private final ModelMapper modelMapper;
+    private final EntityTypeMapper entityTypeMapper;
     private final CustomFieldValidationService customFieldValidationService;
 
     public ModelDO validateModelExists(Long modelId) {
@@ -81,6 +87,7 @@ public class EntityBusinessHelper {
 
         EntityDO data = EntityConvert.INSTANCE.convert(reqVO);
         data.setTenantId(getTenantId());
+        ensureDedicatedEntityCode(data, entityTypeCode);
 
         validateEntityReferences(data, model, data.getCustomFields(), entityTypeCode);
 
@@ -150,5 +157,24 @@ public class EntityBusinessHelper {
 
     public Long getTenantId() {
         return Objects.requireNonNullElse(TenantContextHolder.getRequiredTenantId(), 0L);
+    }
+
+    /**
+     * 专用表（ent_*）普遍有 code 列且常为 NOT NULL；GENERIC 的 dynamic_entity 无 code 列。
+     * 创建时若未传 code，仅为 DEDICATED 自动生成，避免 NOT NULL 插入失败，也不向 GENERIC 写入不存在的列。
+     */
+    private void ensureDedicatedEntityCode(EntityDO data, String entityTypeCode) {
+        if (data == null || StrUtil.isNotBlank(data.getCode())) {
+            return;
+        }
+        EntityTypeDO entityType = entityTypeMapper.selectByCode(entityTypeCode);
+        if (entityType == null) {
+            return;
+        }
+        StorageTypeEnum storageType = StorageTypeEnum.getByCode(entityType.getStorageType());
+        if (storageType == null || !storageType.isDedicated()) {
+            return;
+        }
+        data.setCode(entityTypeCode + "-" + IdUtil.fastSimpleUUID());
     }
 }

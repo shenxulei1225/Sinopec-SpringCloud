@@ -36,8 +36,8 @@ spring:
       time-to-live: 1h # 设置过期时间为 1 小时
 
 server:
-  port: 58095
-
+  # 本机 58095 常被 kpki/KCliBaseTray 占用，改为 18095；经网关走服务名发现，不依赖此端口写死
+  port: 15095
 logging:
   file:
     name: ${user.home}/logs/${spring.application.name}.log # 日志文件名，全路径
