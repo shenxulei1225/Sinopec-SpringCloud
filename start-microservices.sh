@@ -20,16 +20,20 @@
 #   ./start-microservices.sh bmp-gis           # GIS
 #   ./start-microservices.sh bmp-alarm         # 告警标准服务
 #   ./start-microservices.sh bmp-work-order    # 工单标准服务
+#   ./start-microservices.sh bmp-maintenance   # 维护手册
 #   ./start-microservices.sh bmp-station-dev   # path + scene-3d
 #   ./start-microservices.sh twin-dev          # 孪生联调：dynamic + scene-3d + twin
 #   ./start-microservices.sh stop-bmp          # 停止 bmp（process+path）
-#   ./start-microservices.sh stop-bmp-process|stop-bmp-path|stop-bmp-scene-3d|stop-bmp-gis|stop-bmp-alarm|stop-bmp-work-order
+#   ./start-microservices.sh stop-bmp-process|stop-bmp-path|stop-bmp-scene-3d|stop-bmp-gis|stop-bmp-alarm|stop-bmp-work-order|stop-bmp-maintenance
 #   ./start-microservices.sh stop-twin-dev     # 停止 twin-dev
 #   ./start-microservices.sh platform-all      # [弃用] 等同 bmp
 #
+# 本地微服务监听端口段：15xxx（网关 15080）。与 start-microservices.ps1 保持一致。
+# 网关 15080；前端只连网关，勿直连业务端口（旧 58xxx 文案已废弃）。
 # 业务中台父工程：cheers-business-middle-platform
 # bmp = bmp-process + bmp-path（不含 scene-3d / gis / twin）
 # twin = cheers-twin（整合层，在 BMP 与 dynamic 之上；不进 bmp 标准套件）
+# dynamic = cheers-dynamicbusiness/cheers-dynamicbusiness-server（勿用旧 cheers-module-dynamicbusiness）
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -284,9 +288,9 @@ start_service() {
     echo -e "   路径: $service_path"
     echo ""
 
-    # topology/routing 依赖本仓 SNAPSHOT API，首次启动前先 install，避免服务未起来被网关报 Unable to find instance
+    # 本仓 SNAPSHOT API 需先 install（与 .ps1 一致）；否则 spring-boot:run 会去远程找 jar
     case "$service_name" in
-        topology|platform-topology|bmp-topology|routing|platform-routing|bmp-routing)
+        topology|platform-topology|bmp-topology|routing|platform-routing|bmp-routing|maintenance|bmp-maintenance|work-order|bmp-work-order)
             local artifact_id
             artifact_id=$(basename "$service_path")
             echo -e "${BLUE}   安装 ${artifact_id} 及依赖到本地 Maven（-am install -DskipTests）...${NC}"
@@ -514,8 +518,9 @@ show_status() {
 
     echo ""
     echo -e "${BLUE}🔗 快捷访问链接:${NC}"
-    echo -e "   ${YELLOW}网关入口:${NC} ${BLUE}http://localhost:58080${NC}"
-    echo -e "   ${YELLOW}系统管理:${NC} ${BLUE}http://localhost:58080/admin-ui/${NC}"
+    echo -e "   ${YELLOW}网关入口:${NC} ${BLUE}http://localhost:15080${NC}"
+    echo -e "   ${YELLOW}系统管理:${NC} ${BLUE}http://localhost:15080/admin-ui/${NC}"
+    echo -e "   ${YELLOW}应急管理:${NC} ${BLUE}http://localhost:15080/emergency-admin/${NC}"
     echo -e "   ${YELLOW}Nacos控制台:${NC} ${BLUE}http://localhost:8848/nacos${NC}"
     echo ""
     echo -e "${BLUE}📚 API 文档链接:${NC}"
@@ -569,10 +574,11 @@ show_services() {
     echo "  ./start-microservices.sh bmp-gis               # GIS（坐标/CRS）"
     echo "  ./start-microservices.sh bmp-alarm             # 告警标准服务"
     echo "  ./start-microservices.sh bmp-work-order        # 工单标准服务"
+    echo "  ./start-microservices.sh bmp-maintenance       # 维护手册"
     echo "  ./start-microservices.sh bmp-station-dev       # path + scene-3d"
     echo "  ./start-microservices.sh twin-dev              # 孪生联调：dynamic + scene-3d + twin"
     echo "  ./start-microservices.sh stop-bmp              # 停止 bmp（process+path）"
-    echo "  ./start-microservices.sh stop-bmp-process|stop-bmp-path|stop-bmp-scene-3d|stop-bmp-gis|stop-bmp-alarm|stop-bmp-work-order"
+    echo "  ./start-microservices.sh stop-bmp-process|stop-bmp-path|stop-bmp-scene-3d|stop-bmp-gis|stop-bmp-alarm|stop-bmp-work-order|stop-bmp-maintenance"
     echo "  ./start-microservices.sh stop-twin-dev         # 停止 twin-dev"
     echo "  ./start-microservices.sh platform-all           # [弃用] → bmp"
     echo "  ./start-microservices.sh status             # 查看服务状态"
@@ -596,14 +602,14 @@ show_services() {
     echo "  4. bpm       - 工作流服务（必需）"
     echo "  5. alarm     - 告警管理服务（必需）"
     echo "  6. dynamic    - 动态业务服务（设施/设备等实体，twin 等模块依赖）"
-    echo "  7. platform   - 平台资源库（组件/视图，别名 resource，58098）"
+    echo "  7. platform   - 平台资源库（组件/视图，别名 resource，15098）"
     echo "     路径: cheers-business-middle-platform/cheers-resource-server"
-    echo "  8. platform-policy - 平台策略（58105）"
-    echo "  9. platform-capability - 平台能力映射（58106）"
-    echo "  10. platform-runtime - 平台 L4 运行时（58099）"
-    echo "  11. platform-orchestration - 平台编排/排程 run（58104，依赖 runtime）"
-    echo "  12. platform-topology - 站场拓扑/路网（58107，路径规划必需）"
-    echo "  13. platform-routing - 路径规划引擎（58108，试走/算路必需）"
+    echo "  8. platform-policy - 平台策略（15105）"
+    echo "  9. platform-capability - 平台能力映射（15106）"
+    echo "  10. platform-runtime - 平台 L4 运行时（15099）"
+    echo "  11. platform-orchestration - 平台编排/排程 run（15104，依赖 runtime）"
+    echo "  12. platform-topology - 站场拓扑/路网（15107，路径规划必需）"
+    echo "  13. platform-routing - 路径规划引擎（15108，试走/算路必需）"
     echo "     （./start-microservices.sh bmp 一键启动 7→13；按需再用 bmp-process / bmp-path）"
     echo ""
     echo -e "${BLUE}业务服务（按需启动）:${NC}"
@@ -803,6 +809,7 @@ BMP_SCENE_3D_SERVICES=(scene-3d)
 BMP_GIS_SERVICES=(gis)
 BMP_ALARM_SERVICES=(alarm)
 BMP_WORK_ORDER_SERVICES=(work-order)
+BMP_MAINTENANCE_SERVICES=(maintenance)
 # 孪生整合层联调（不入 bmp）：设施实体 + 三维 + Twin 映射
 TWIN_DEV_SERVICES=(dynamic scene-3d twin)
 
@@ -913,6 +920,17 @@ main() {
         "stop-bmp-work-order")
             echo -e "${BLUE}🛑 停止 bmp-work-order${NC}"
             stop_suite_services "${BMP_WORK_ORDER_SERVICES[@]}"
+            ;;
+        "bmp-maintenance")
+            check_nacos
+            check_redis
+            echo -e "${BLUE}🚀 业务中台 · 维护手册服务 (bmp-maintenance)${NC}"
+            echo ""
+            start_suite_services "$show_logs" "${BMP_MAINTENANCE_SERVICES[@]}"
+            ;;
+        "stop-bmp-maintenance")
+            echo -e "${BLUE}🛑 停止 bmp-maintenance${NC}"
+            stop_suite_services "${BMP_MAINTENANCE_SERVICES[@]}"
             ;;
         "bmp-scene-3d")
             check_nacos
