@@ -502,7 +502,7 @@ public final class ModelCrudFormFieldAssembler {
     }
 
     /** 字段库 ENTITY_REF 目标：存于 providerCode = dynamic-entity:{entityTypeCode} */
-    static String resolveTargetEntityTypeFromField(FieldDO field) {
+    public static String resolveTargetEntityTypeFromField(FieldDO field) {
         if (field == null) {
             return null;
         }
