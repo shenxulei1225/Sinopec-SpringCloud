@@ -1,0 +1,51 @@
+spring:
+  main:
+    lazy-initialization: true # 开启懒加载，加快速度
+    banner-mode: off # 单元测试，禁用 Banner
+
+--- #################### 数据库相关配置 ####################
+
+# 注意：数据源配置由 Testcontainers 动态注入，不需要在这里配置
+# Testcontainers 会通过 @DynamicPropertySource 注入数据库连接信息
+
+spring:
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:/schema-postgres.sql
+
+  # Redis 配置。Redisson 默认的配置足够使用，一般不需要进行调优
+  data:
+    redis:
+      host: 127.0.0.1 # 地址
+      port: 16379 # 端口（单元测试，使用 16379 端口）
+      database: 0 # 数据库索引
+
+mybatis:
+  lazy-initialization: true # 单元测试，设置 MyBatis Mapper 延迟加载，加速每个单元测试
+
+mybatis-plus:
+  global-config:
+    db-config:
+      id-type: NONE # PostgreSQL 使用序列，由数据库自动生成
+      logic-delete-value: true # PostgreSQL 使用 1 表示已删除
+      logic-not-delete-value: false # PostgreSQL 使用 boolean 类型
+  type-aliases-package: ${yudao.info.base-package}.module.*.dal.dataobject
+
+--- #################### 定时任务相关配置 ####################
+
+--- #################### 配置中心相关配置 ####################
+
+--- #################### 服务保障相关配置 ####################
+
+# Lock4j 配置项（单元测试，禁用 Lock4j）
+
+--- #################### 监控相关配置 ####################
+
+--- #################### 芋道相关配置 ####################
+
+# 芋道配置项，设置当前项目所有自定义的配置
+yudao:
+  info:
+    base-package: cn.iocoder.yudao.module
+

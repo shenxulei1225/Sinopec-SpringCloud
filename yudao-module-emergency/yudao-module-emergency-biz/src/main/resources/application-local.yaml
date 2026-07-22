@@ -1,0 +1,12 @@
+# 注意：数据源配置已移至主配置文件 (yudao-server/src/main/resources/application-local.yaml)
+# 项目使用动态数据源 (spring.datasource.dynamic)，此处的配置不会生效
+# 如需修改数据库配置，请修改主配置文件中的 spring.datasource.dynamic.datasource.master 配置
+
+# mybatis-plus:
+#   mapper-locations: classpath*:mapper/**/*.xml
+
+# 如需开启调试日志，可取消下面注释
+#logging:
+#  level:
+#    cn.iocoder.yudao.module.emergency: debug
+
