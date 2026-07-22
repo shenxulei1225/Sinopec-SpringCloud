@@ -49,8 +49,10 @@ public abstract class AbstractCategoryService<
         DO db = findCategory(id, updateObj.getCategoryTypeCode());
         assertSameCategoryType(db.getCategoryTypeCode(), updateObj.getCategoryTypeCode());
         updateObj.setId(id);
-        boolean parentChanged = !Objects.equals(db.getParentId(), updateObj.getParentId());
+        Long previousParentId = normalizeParentId(db.getParentId());
+        // 必须先补全 parentId/treePath：改名请求常不传 parentId，若先算 parentChanged 会误判为挂到根
         fillLevelAndPathForUpdate(db, updateObj);
+        boolean parentChanged = !Objects.equals(previousParentId, normalizeParentId(updateObj.getParentId()));
         validateUnique(updateObj, false);
         getMapper().updateById(updateObj);
         if (parentChanged) {
@@ -211,8 +213,26 @@ public abstract class AbstractCategoryService<
         category.setTreePath(CategoryUtils.buildIdTreePath(parent.getTreePath(), category.getId()));
     }
 
+    /**
+     * 补全更新对象的 level / tree_path / parentCode。
+     *
+     * <p><b>parentId 语义</b>：</p>
+     * <ul>
+     *   <li>{@code null}（请求未传）→ 保持库中现有父节点（改名等局部更新；前端 Tree 改名当前不传 parentId）</li>
+     *   <li>{@code 0} → {@link #normalizeParentId} 后为 null，表示挂到根</li>
+     *   <li>正数 → 移动到该父节点下</li>
+     * </ul>
+     * <p>移动到根或改父优先走 {@link #moveCategory} / 拖拽接口；本方法需容忍改名漏传 parentId，
+     * 否则会把 tree_path 误写成 {@code /本节点id/}，而 parent_id 因 MyBatis 忽略 null 仍留在原父下。</p>
+     */
     private void fillLevelAndPathForUpdate(DO db, DO updateObj) {
-        Long newParentId = normalizeParentId(updateObj.getParentId());
+        Long newParentId;
+        if (updateObj.getParentId() == null) {
+            // 未传 parentId：不改父子关系
+            newParentId = normalizeParentId(db.getParentId());
+        } else {
+            newParentId = normalizeParentId(updateObj.getParentId());
+        }
         updateObj.setParentId(newParentId);
         if (Objects.equals(normalizeParentId(db.getParentId()), newParentId)) {
             ensureTreeMetadata(db.getId(), updateObj.getCategoryTypeCode());

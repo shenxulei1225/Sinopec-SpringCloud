@@ -14,7 +14,10 @@ import java.util.Map;
 @Accessors(chain = false)
 public class CategoryBaseVO {
 
-    @Schema(description = "父分类ID", example = "0")
+    @Schema(
+        description = "父分类ID。更新时：不传表示保持原父节点（改名等）；传 0 表示挂到根；传正数表示改挂到该父节点。创建时：不传/0 由服务端挂到分类种类顶层节点。",
+        example = "0"
+    )
     private Long parentId;
 
     @Schema(description = "分类名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "生产设备")

@@ -1,6 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.category;
 
 import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryBatchDeleteRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryCreateReqVO;
@@ -162,8 +163,8 @@ public class CategoryServiceImpl implements CategoryService {
         // 判断是否为实体分类：如果 entityModelId 不为空，则认为是实体分类
         validatePatternCParams(reqVO.getIsEntity(), reqVO.getEntityModelId());
 
-        // 如果未传 parentId，则挂到 CategoryType 的顶层节点
-        if (reqVO.getParentId() == null) {
+        // 如果未传 parentId（或传 0），则挂到 CategoryType 的顶层节点
+        if (reqVO.getParentId() == null || Objects.equals(reqVO.getParentId(), 0L)) {
             final String categoryTypeCode = reqVO.getCategoryTypeCode();
             CategoryTypeDO type = categoryTypeMapper.selectByCategoryTypeCode(categoryTypeCode);
             if (type == null || type.getTopLevelCategoryId() == null) {
@@ -331,13 +332,17 @@ public class CategoryServiceImpl implements CategoryService {
     private Long createEntityForCategory(CategoryCreateReqVO reqVO) {
         ModelDO model = modelMapper.selectById(reqVO.getEntityModelId());
         
+        Map<String, Object> baseOverlay = null;
+        if (StrUtil.isNotBlank(reqVO.getCode())) {
+            baseOverlay = Map.of("code", reqVO.getCode().trim());
+        }
         EntityCreateReqVO entityReqVO = EntityWriteReqMaps.createReq(
                 model.getEntityTypeCode(),
                 reqVO.getEntityModelId(),
                 reqVO.getName(),
                 reqVO.getStatus(),
                 null,
-                null,
+                baseOverlay,
                 reqVO.getCustomFields());
         
         // 1. 使用 Helper 准备实体数据（验证、转换、加密）
@@ -823,35 +828,23 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public List<Long> getAllCategoryIdsIncludingChildren(Long categoryId, String categoryTypeCode) {
         CategoryDO root = categoryMapper.selectByIdAndCategoryTypeCode(categoryId, categoryTypeCode);
+        // categoryTypeCode 与节点不一致时，勿静默缩成单节点（会漏子孙）
+        if (root == null && categoryTypeCode != null && !categoryTypeCode.isBlank()) {
+            root = categoryMapper.selectByIdAndCategoryTypeCode(categoryId, null);
+        }
         if (root == null) {
             return List.of(categoryId);
         }
 
-        String effectiveCategoryTypeCode = categoryTypeCode != null && !categoryTypeCode.isBlank()
-                ? categoryTypeCode
-                : root.getCategoryTypeCode();
-
-        String treePath = root.getTreePath();
-        if (treePath != null && treePath.startsWith("/")) {
-            List<CategoryDO> list = categoryMapper.selectSubtreeByPath(treePath, effectiveCategoryTypeCode, null);
-            if (!list.isEmpty()) {
-                List<Long> ids = list.stream()
-                        .map(CategoryDO::getId)
-                        .filter(Objects::nonNull)
-                        .toList();
-                if (ids.size() > 1 || !hasDirectChildCategories(categoryId, effectiveCategoryTypeCode)) {
-                    return ids;
-                }
-            }
+        String effectiveCategoryTypeCode = root.getCategoryTypeCode();
+        if (effectiveCategoryTypeCode == null || effectiveCategoryTypeCode.isBlank()) {
+            return List.of(categoryId);
         }
 
-        // tree_path 缺失/非路径格式/前缀匹配不到子节点时，按 parent_id 递归展开子树
+        // 以 parent_id 为准展开（与分类树 UI 一致）。
+        // tree_path 可能脏数据（如枪型摄像机 tree_path=/283/ 缺少祖先前缀）；
+        // 若仅用 path 前缀且部分子节点 path 正常、部分异常，会提前返回不完整子树，导致上级分类看不到下级型号/实体。
         return collectCategoryIdsByParentLink(categoryId, effectiveCategoryTypeCode);
-    }
-
-    private boolean hasDirectChildCategories(Long categoryId, String categoryTypeCode) {
-        List<CategoryDO> children = categoryMapper.selectByParentIdAndCategoryTypeCode(categoryId, categoryTypeCode);
-        return children != null && !children.isEmpty();
     }
 
     private List<Long> collectCategoryIdsByParentLink(Long rootCategoryId, String categoryTypeCode) {
