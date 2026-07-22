@@ -28,5 +28,7 @@ public interface EmergencyProcessTaskApi {
     class StartResponseServiceTaskReq {
         @NotNull
         private Long eventId;
+        /** 流程变量透传；台账尚未可见时兜底，优先仍读研判 newLevel */
+        private String responseLevel;
     }
 }

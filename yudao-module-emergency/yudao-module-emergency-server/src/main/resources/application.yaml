@@ -68,7 +68,7 @@ mybatis-plus:
       logic-delete-value: true # PostgreSQL 使用布尔 true 表示已删除
       logic-not-delete-value: false # PostgreSQL 使用布尔 false 表示未删除
     banner: false # 关闭控制台的 Banner 打印
-  type-aliases-package: ${yudao.info.base-package}.dal.dataobject
+  type-aliases-package: ${cheers.info.base-package}.dal.dataobject
   encryptor:
     password: XDV71a+xqStEA3WH # 加解密的秘钥,可使用 https://www.imaegoo.com/2020/aes-key-generator/ 网站生成
 
@@ -123,15 +123,16 @@ xxl:
       logpath: ${user.home}/logs/xxl-job/${spring.application.name} # 执行器运行日志文件存储磁盘路径
     accessToken: default_token # 执行器通讯TOKEN
 
---- #################### 芋道相关配置 ####################
+--- #################### Cheers 相关配置 ####################
 
-yudao:
+cheers:
   info:
     version: 1.0.0
+    # 应急包名暂仍为 cn.iocoder.yudao.module.emergency（Wave 0 未整体改包）
     base-package: cn.iocoder.yudao.module.emergency
   web:
     admin-ui:
-      url: http://dashboard.yudao.iocoder.cn # Admin 管理后台 UI 的地址
+      url: http://dashboard.local # Admin 管理后台 UI 的地址
   xss:
     enable: false
     exclude-urls: # 如下两个 url,仅仅是为了演示,去掉配置也没关系
@@ -140,7 +141,7 @@ yudao:
   swagger:
     title: 应急管理服务
     description: 提供应急事件管理、预案执行、资源调度等功能
-    version: ${yudao.info.version}
+    version: ${cheers.info.version}
   tenant: # 多租户相关配置项
     enable: true
     ignore-urls:

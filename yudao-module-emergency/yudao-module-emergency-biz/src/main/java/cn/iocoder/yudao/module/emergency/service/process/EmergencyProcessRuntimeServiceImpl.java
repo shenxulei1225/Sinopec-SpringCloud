@@ -9,8 +9,10 @@ import cn.iocoder.yudao.module.emergency.controller.admin.plan.vo.EmergencyPlanR
 import cn.iocoder.yudao.module.emergency.controller.admin.response.vo.ResponseStartReqVO;
 import cn.iocoder.yudao.module.emergency.dal.dataobject.event.EmergencyEventAssessDO;
 import cn.iocoder.yudao.module.emergency.dal.dataobject.event.EmergencyEventDO;
+import cn.iocoder.yudao.module.emergency.dal.dataobject.response.EmergencyResponseDO;
 import cn.iocoder.yudao.module.emergency.dal.mysql.event.EmergencyEventAssessMapper;
 import cn.iocoder.yudao.module.emergency.dal.mysql.event.EmergencyEventMapper;
+import cn.iocoder.yudao.module.emergency.dal.mysql.response.EmergencyResponseMapper;
 import cn.iocoder.yudao.module.emergency.enums.EventStatus;
 import cn.iocoder.yudao.module.emergency.enums.error.ErrorCodeConstants;
 import cn.iocoder.yudao.module.emergency.service.plan.EmergencyPlanService;
@@ -41,6 +43,8 @@ public class EmergencyProcessRuntimeServiceImpl implements EmergencyProcessRunti
     @Resource
     private EmergencyEventAssessMapper emergencyEventAssessMapper;
     @Resource
+    private EmergencyResponseMapper responseMapper;
+    @Resource
     private EmergencyPlanService planService;
     @Resource
     private EmergencyResponseService responseService;
@@ -60,6 +64,8 @@ public class EmergencyProcessRuntimeServiceImpl implements EmergencyProcessRunti
         variables.put("eventId", eventId);
         variables.put("scope", "emergency");
         variables.put("initiator", String.valueOf(userId));
+        // 供服务任务 HTTP 回调透传租户（Hutool 直连无网关租户头）
+        variables.put("tenantId", "1");
         req.setVariables(variables);
 
         String processInstanceId;
@@ -119,8 +125,20 @@ public class EmergencyProcessRuntimeServiceImpl implements EmergencyProcessRunti
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void onServiceTaskStartResponse(Long eventId) {
+    public void onServiceTaskStartResponse(Long eventId, String responseLevelHint) {
         EmergencyEventDO event = requireStarted(eventId);
+
+        // 服务任务重试幂等：已有进行中响应则只投影台账，不二次启动
+        EmergencyResponseDO existingActive = responseMapper.selectLatestActiveByEventId(eventId);
+        if (existingActive != null) {
+            EmergencyEventDO statusUpdate = new EmergencyEventDO();
+            statusUpdate.setId(eventId);
+            statusUpdate.setStatus(EventStatus.RESPONDING.getCode());
+            emergencyEventMapper.updateById(statusUpdate);
+            log.info("[onServiceTaskStartResponse] skip duplicate start, eventId={}, responseNo={}",
+                    eventId, existingActive.getResponseNo());
+            return;
+        }
 
         EmergencyEventAssessDO latestAssess = emergencyEventAssessMapper.selectOne(
                 new LambdaQueryWrapper<EmergencyEventAssessDO>()
@@ -128,6 +146,9 @@ public class EmergencyProcessRuntimeServiceImpl implements EmergencyProcessRunti
                         .orderByDesc(EmergencyEventAssessDO::getId)
                         .last("LIMIT 1"));
         String responseLevel = latestAssess != null ? latestAssess.getNewLevel() : null;
+        if (!StringUtils.hasText(responseLevel) && StringUtils.hasText(responseLevelHint)) {
+            responseLevel = responseLevelHint.trim();
+        }
         if (!StringUtils.hasText(responseLevel)) {
             throw ServiceExceptionUtil.exception(ErrorCodeConstants.EVENT_PROCESS_TASK_NOT_FOUND,
                     "responseLevel(from assess)");

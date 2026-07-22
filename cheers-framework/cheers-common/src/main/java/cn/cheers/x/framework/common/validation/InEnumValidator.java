@@ -35,7 +35,7 @@ public class InEnumValidator implements ConstraintValidator<InEnum, Object> {
         // 校验不通过，自定义提示语句
         context.disableDefaultConstraintViolation(); // 禁用默认的 message 的值
         context.buildConstraintViolationWithTemplate(context.getDefaultConstraintMessageTemplate()
-                .replaceAll("\\{value}", values.toString())).addConstraintViolation(); // 重新添加错误提示语句
+                .replace("{values}", values.toString())).addConstraintViolation();
         return false;
     }
 

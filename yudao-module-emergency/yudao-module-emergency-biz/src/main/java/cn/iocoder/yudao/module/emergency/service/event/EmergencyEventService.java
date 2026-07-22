@@ -8,6 +8,12 @@ public interface EmergencyEventService {
 
     EventRespVO create(EventCreateReqVO reqVO);
 
+    /**
+     * 告警转事件：写入告警关联 id + 建事件台账 + 过程时间线 alert.convert。
+     * 不编造告警/坐标；缺 alertId 或描述/发现时间则失败。
+     */
+    EventRespVO createFromAlert(EventFromAlertReqVO reqVO);
+
     void addReport(Long eventId, EventReportReqVO reqVO);
 
     EventExternalReportRespVO addExternalReport(Long eventId, EventExternalReportReqVO reqVO);

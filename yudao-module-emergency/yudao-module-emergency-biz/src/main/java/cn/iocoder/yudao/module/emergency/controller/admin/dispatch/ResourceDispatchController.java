@@ -1,6 +1,7 @@
 package cn.iocoder.yudao.module.emergency.controller.admin.dispatch;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.iocoder.yudao.module.emergency.controller.admin.dispatch.vo.ResourceDispatchAssignReqVO;
 import cn.iocoder.yudao.module.emergency.controller.admin.dispatch.vo.ResourceDispatchCreateReqVO;
 import cn.iocoder.yudao.module.emergency.controller.admin.dispatch.vo.ResourceDispatchRecoverReqVO;
 import cn.iocoder.yudao.module.emergency.service.dispatch.ResourceDispatchService;
@@ -36,6 +37,12 @@ public class ResourceDispatchController {
     public CommonResult<Long> create(@Valid @RequestBody ResourceDispatchCreateReqVO reqVO) {
         var entity = dispatchService.createDispatch(reqVO.toDO());
         return success(entity.getId());
+    }
+
+    @PostMapping("/dispatch/assign")
+    @Operation(summary = "编排派发资源", description = "经 orch.emergency.resource_dispatch_v1 校验并派发，写过程时间线 resource.dispatch")
+    public CommonResult<Long> assign(@Valid @RequestBody ResourceDispatchAssignReqVO reqVO) {
+        return success(dispatchService.assignViaOrchestration(reqVO));
     }
 
     @PostMapping("/dispatch/{id}/dispatch")

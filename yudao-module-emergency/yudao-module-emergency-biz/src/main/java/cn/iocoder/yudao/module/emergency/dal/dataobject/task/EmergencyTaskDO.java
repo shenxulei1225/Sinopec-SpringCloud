@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -22,7 +24,9 @@ import java.util.Map;
 @AllArgsConstructor
 public class EmergencyTaskDO extends TenantBaseDO {
 
+    /** 雪花 ID：JSON 序列化为字符串，避免前端 Number 精度丢失导致 parentId 建树失败 */
     @TableId(type = IdType.AUTO)
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     /**
@@ -46,8 +50,10 @@ public class EmergencyTaskDO extends TenantBaseDO {
     /**
      * 父任务ID（用于构建任务层级结构）
      * 顶级任务的parentId为null，子任务的parentId指向父任务ID
+     * JSON 序列化为字符串，与 id 一致，避免前端建树丢精度
      */
     @TableField("parent_id")
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long parentId;
 
     /**

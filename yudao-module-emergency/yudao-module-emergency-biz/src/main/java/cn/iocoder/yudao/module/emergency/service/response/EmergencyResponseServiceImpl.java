@@ -153,6 +153,10 @@ public class EmergencyResponseServiceImpl implements EmergencyResponseService {
         if (commandOrg == null || commandOrg.isEmpty()) {
             throw ServiceExceptionUtil.exception(ErrorCodeConstants.EVENT_RESPONDING_REQUIRES_LEADER);
         }
+        // 提交兜底：同一事件禁止再开一条进行中响应（引擎路径 + HTTP 共用）
+        if (responseMapper.selectLatestActiveByEventId(req.getEventId()) != null) {
+            throw ServiceExceptionUtil.exception(ErrorCodeConstants.RESPONSE_ALREADY_ACTIVE);
+        }
     }
 
     @Override
@@ -174,6 +178,10 @@ public class EmergencyResponseServiceImpl implements EmergencyResponseService {
         }
         if (commandOrg == null || commandOrg.isEmpty()) {
             throw ServiceExceptionUtil.exception(ErrorCodeConstants.EVENT_RESPONDING_REQUIRES_LEADER);
+        }
+
+        if (responseMapper.selectLatestActiveByEventId(req.getEventId()) != null) {
+            throw ServiceExceptionUtil.exception(ErrorCodeConstants.RESPONSE_ALREADY_ACTIVE);
         }
 
         if (req.getCommandOrg() != null && !req.getCommandOrg().isEmpty()

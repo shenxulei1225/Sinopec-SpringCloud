@@ -18,7 +18,8 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
         "cn.cheers.x.infra.api",
         "cn.cheers.x.module.platform.runtime.api",
         "cn.cheers.x.module.platform.orchestration.api",
-        "cn.cheers.x.bpm.api"
+        "cn.cheers.x.bpm.api",
+        "cn.cheers.x.iot.api"
 })
 public class EmergencyServerApplication {
 

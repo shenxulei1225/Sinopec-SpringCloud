@@ -7,8 +7,14 @@ import cn.cheers.x.bpm.api.task.dto.BpmTaskApproveReqDTO;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.emergency.dal.dataobject.event.EmergencyEventDO;
+import cn.iocoder.yudao.module.emergency.dal.dataobject.response.EmergencyResponseDO;
+import cn.iocoder.yudao.module.emergency.dal.mysql.event.EmergencyEventAssessMapper;
 import cn.iocoder.yudao.module.emergency.dal.mysql.event.EmergencyEventMapper;
+import cn.iocoder.yudao.module.emergency.dal.mysql.response.EmergencyResponseMapper;
+import cn.iocoder.yudao.module.emergency.enums.EventStatus;
 import cn.iocoder.yudao.module.emergency.enums.error.ErrorCodeConstants;
+import cn.iocoder.yudao.module.emergency.service.plan.EmergencyPlanService;
+import cn.iocoder.yudao.module.emergency.service.response.EmergencyResponseService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -34,6 +40,14 @@ class EmergencyProcessRuntimeServiceImplTest {
     private BpmProcessInstanceApi bpmProcessInstanceApi;
     @Mock
     private EmergencyEventMapper emergencyEventMapper;
+    @Mock
+    private EmergencyEventAssessMapper emergencyEventAssessMapper;
+    @Mock
+    private EmergencyResponseMapper responseMapper;
+    @Mock
+    private EmergencyPlanService planService;
+    @Mock
+    private EmergencyResponseService responseService;
 
     @Test
     void listCurrentNodes_withoutBinding_failsExplicitly() {
@@ -106,6 +120,26 @@ class EmergencyProcessRuntimeServiceImplTest {
         ArgumentCaptor<BpmTaskApproveReqDTO> approveCaptor = ArgumentCaptor.forClass(BpmTaskApproveReqDTO.class);
         verify(bpmProcessInstanceApi).approveTask(eq(100L), approveCaptor.capture());
         assertEquals("task-confirm-1", approveCaptor.getValue().getId());
+    }
+
+    @Test
+    void onServiceTaskStartResponse_whenActiveExists_skipsStart() {
+        EmergencyEventDO event = new EmergencyEventDO();
+        event.setId(7L);
+        event.setProcessInstanceId("pi-7");
+        when(emergencyEventMapper.selectById(7L)).thenReturn(event);
+
+        EmergencyResponseDO active = new EmergencyResponseDO();
+        active.setResponseNo("RESP-EXISTING");
+        active.setStatus("executing");
+        when(responseMapper.selectLatestActiveByEventId(7L)).thenReturn(active);
+
+        runtimeService.onServiceTaskStartResponse(7L, "II");
+
+        verify(responseService, never()).start(any());
+        ArgumentCaptor<EmergencyEventDO> updateCaptor = ArgumentCaptor.forClass(EmergencyEventDO.class);
+        verify(emergencyEventMapper).updateById(updateCaptor.capture());
+        assertEquals(EventStatus.RESPONDING.getCode(), updateCaptor.getValue().getStatus());
     }
 
 }

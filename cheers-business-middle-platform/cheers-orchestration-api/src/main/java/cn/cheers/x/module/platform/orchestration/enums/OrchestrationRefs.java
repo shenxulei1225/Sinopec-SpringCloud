@@ -10,6 +10,9 @@ public interface OrchestrationRefs {
     /** 应急启动响应：validate → expand → persist（不占窗） */
     String EMERGENCY_START_RESPONSE_V1 = "orch.emergency.start_response_v1";
 
+    /** 应急资源调度：validate → expand → solve → persist */
+    String EMERGENCY_RESOURCE_DISPATCH_V1 = "orch.emergency.resource_dispatch_v1";
+
     String PATROL_ROUTE_PREVIEW_V1 = "orch.patrol.route_preview_v1";
 
     String PATROL_ROUTE_CONFIRM_V1 = "orch.patrol.route_confirm_v1";

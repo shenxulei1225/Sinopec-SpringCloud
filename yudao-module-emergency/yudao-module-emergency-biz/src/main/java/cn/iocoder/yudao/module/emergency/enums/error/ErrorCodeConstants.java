@@ -23,10 +23,15 @@ public interface ErrorCodeConstants {
     ErrorCode EVENT_PROCESS_NOT_STARTED = new ErrorCode(1004001010, "事件尚未启动流程实例");
     ErrorCode EVENT_PROCESS_TASK_NOT_FOUND = new ErrorCode(1004001011, "未找到匹配的流程用户任务：{}");
     ErrorCode EVENT_PROCESS_DEFINITION_MISSING = new ErrorCode(1004001012, "流程定义未部署或创建实例失败");
+    ErrorCode EVENT_ALERT_ID_REQUIRED = new ErrorCode(1004001013, "告警转事件必须提供告警编号");
+    ErrorCode EVENT_ALERT_ALREADY_CONVERTED = new ErrorCode(1004001014, "该告警已转成应急事件，请勿重复转换");
+    ErrorCode EVENT_ALERT_NOT_EXISTS = new ErrorCode(1004001015, "告警记录不存在或不可用，无法转事件");
 
     // ========== 响应相关 1-004-002-000 ==========
     ErrorCode RESPONSE_NOT_EXISTS = new ErrorCode(1004002000, "响应不存在");
     ErrorCode RESPONSE_PLAN_MATCH_FAILED = new ErrorCode(1004002001, "未匹配到合适的预案，无法启动响应");
+    /** 同一事件已有未结束响应时禁止再次启动（引擎路径与 HTTP 共用兜底） */
+    ErrorCode RESPONSE_ALREADY_ACTIVE = new ErrorCode(1004002002, "该事件已有进行中的应急响应，请勿重复启动");
 
     // ========== 预案相关 1-004-003-000 ==========
     ErrorCode PLAN_NOT_EXISTS = new ErrorCode(1004003000, "预案不存在");
@@ -41,6 +46,8 @@ public interface ErrorCodeConstants {
 
     // ========== 调度相关 1-004-005-000 ==========
     ErrorCode DISPATCH_NOT_EXISTS = new ErrorCode(1004005000, "调度不存在");
+    ErrorCode DISPATCH_SCHEDULE_WINDOW_UNSUPPORTED = new ErrorCode(1004005001, "资源调度占窗尚未接入排程引擎，请勿传入时间窗或改走排程编排");
+    ErrorCode DISPATCH_ORCH_PAYLOAD_INVALID = new ErrorCode(1004005002, "资源调度编排载荷缺少事件或资源编号");
 
     // ========== 资源池相关 1-004-006-000 ==========
     ErrorCode RESOURCE_NOT_EXISTS = new ErrorCode(1004006000, "资源不存在");

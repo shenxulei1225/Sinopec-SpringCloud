@@ -2,20 +2,33 @@ package cn.iocoder.yudao.module.emergency.service.dispatch;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
+import cn.cheers.x.module.platform.orchestration.api.OrchestrationRunApi;
+import cn.cheers.x.module.platform.orchestration.api.dto.OrchestrationRunRequest;
+import cn.cheers.x.module.platform.orchestration.api.dto.OrchestrationRunResponse;
+import cn.cheers.x.module.platform.orchestration.enums.OrchestrationRefs;
+import cn.iocoder.yudao.module.emergency.api.orchestration.dto.EmergencyResourceDispatchExpandRespDTO;
+import cn.iocoder.yudao.module.emergency.api.orchestration.dto.EmergencyResourceDispatchReqDTO;
+import cn.iocoder.yudao.module.emergency.controller.admin.dispatch.vo.ResourceDispatchAssignReqVO;
 import cn.iocoder.yudao.module.emergency.dal.dataobject.dispatch.ResourceDispatchDO;
 import cn.iocoder.yudao.module.emergency.dal.dataobject.dispatch.ResourcePoolDO;
+import cn.iocoder.yudao.module.emergency.dal.dataobject.event.EmergencyEventDO;
 import cn.iocoder.yudao.module.emergency.dal.mysql.dispatch.ResourceDispatchMapper;
 import cn.iocoder.yudao.module.emergency.dal.mysql.dispatch.ResourcePoolMapper;
+import cn.iocoder.yudao.module.emergency.dal.mysql.event.EmergencyEventMapper;
 import cn.iocoder.yudao.module.emergency.enums.error.ErrorCodeConstants;
 import cn.iocoder.yudao.module.emergency.service.resource.ResourceTypeShareRuleService;
 import cn.iocoder.yudao.module.emergency.service.resource.ResourceTypeConfigService;
 import cn.iocoder.yudao.module.emergency.framework.common.util.DistributedLockUtil;
+import cn.iocoder.yudao.module.emergency.service.timeline.EmergencyProcessTimelineWriter;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -27,19 +40,28 @@ public class ResourceDispatchServiceImpl implements ResourceDispatchService {
     private final ResourcePoolMapper resourcePoolMapper;
     private final DistributedLockUtil distributedLockUtil;
     private final ResourceTypeConfigService resourceTypeConfigService;
+    private final EmergencyEventMapper eventMapper;
+    private final OrchestrationRunApi orchestrationRunApi;
+    private final EmergencyProcessTimelineWriter processTimelineWriter;
 
     public ResourceDispatchServiceImpl(ResourceDispatchMapper dispatchMapper,
                                        ResourceTypeShareRuleService shareRuleService,
                                        ResourcePoolService resourcePoolService,
                                        ResourcePoolMapper resourcePoolMapper,
                                        DistributedLockUtil distributedLockUtil,
-                                       ResourceTypeConfigService resourceTypeConfigService) {
+                                       ResourceTypeConfigService resourceTypeConfigService,
+                                       EmergencyEventMapper eventMapper,
+                                       OrchestrationRunApi orchestrationRunApi,
+                                       EmergencyProcessTimelineWriter processTimelineWriter) {
         this.dispatchMapper = dispatchMapper;
         this.shareRuleService = shareRuleService;
         this.resourcePoolService = resourcePoolService;
         this.resourcePoolMapper = resourcePoolMapper;
         this.distributedLockUtil = distributedLockUtil;
         this.resourceTypeConfigService = resourceTypeConfigService;
+        this.eventMapper = eventMapper;
+        this.orchestrationRunApi = orchestrationRunApi;
+        this.processTimelineWriter = processTimelineWriter;
     }
 
     @Override
@@ -150,6 +172,7 @@ public class ResourceDispatchServiceImpl implements ResourceDispatchService {
             
             // 创建资源调度记录
             ResourceDispatchDO dispatch = ResourceDispatchDO.builder()
+                    .dispatchNo("DISP-" + System.currentTimeMillis() + "-" + (System.nanoTime() % 10000))
                     .resourceId(resourceId)
                     .eventId(eventId)
                     .responseId(responseId)
@@ -164,6 +187,132 @@ public class ResourceDispatchServiceImpl implements ResourceDispatchService {
             
             return dispatch;
         });
+    }
+
+    @Override
+    public Long assignViaOrchestration(ResourceDispatchAssignReqVO reqVO) {
+        if (reqVO == null || reqVO.getEventId() == null || reqVO.getResourceId() == null) {
+            throw ServiceExceptionUtil.exception(ErrorCodeConstants.DISPATCH_ORCH_PAYLOAD_INVALID);
+        }
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("eventId", reqVO.getEventId());
+        payload.put("resourceId", reqVO.getResourceId());
+        if (reqVO.getResponseId() != null) {
+            payload.put("responseId", reqVO.getResponseId());
+        }
+        if (StringUtils.hasText(reqVO.getStage())) {
+            payload.put("stage", reqVO.getStage().trim());
+        }
+        if (StringUtils.hasText(reqVO.getWindowStart())) {
+            payload.put("windowStart", reqVO.getWindowStart().trim());
+        }
+        if (StringUtils.hasText(reqVO.getWindowEnd())) {
+            payload.put("windowEnd", reqVO.getWindowEnd().trim());
+        }
+
+        OrchestrationRunResponse runResp = orchestrationRunApi.run(OrchestrationRunRequest.builder()
+                        .orchestrationRef(OrchestrationRefs.EMERGENCY_RESOURCE_DISPATCH_V1)
+                        .scope("emergency")
+                        .payload(payload)
+                        .build())
+                .getCheckedData();
+
+        Object dispatchIdObj = runResp != null && runResp.getResult() != null
+                ? runResp.getResult().get("dispatchId") : null;
+        Long dispatchId = asLong(dispatchIdObj);
+        if (dispatchId == null) {
+            throw ServiceExceptionUtil.exception(ErrorCodeConstants.DISPATCH_NOT_EXISTS);
+        }
+        return dispatchId;
+    }
+
+    @Override
+    public void validateDispatchForOrchestration(EmergencyResourceDispatchReqDTO req) {
+        if (req == null || req.getEventId() == null || req.getResourceId() == null) {
+            throw ServiceExceptionUtil.exception(ErrorCodeConstants.DISPATCH_ORCH_PAYLOAD_INVALID);
+        }
+        EmergencyEventDO event = eventMapper.selectById(req.getEventId());
+        if (event == null) {
+            throw ServiceExceptionUtil.exception(ErrorCodeConstants.EVENT_NOT_EXISTS);
+        }
+        ResourcePoolDO resource = resourcePoolMapper.selectById(req.getResourceId());
+        if (resource == null) {
+            throw ServiceExceptionUtil.exception(ErrorCodeConstants.RESOURCE_NOT_EXISTS);
+        }
+        if (!"available".equals(resource.getStatus())) {
+            throw ServiceExceptionUtil.exception(ErrorCodeConstants.RESOURCE_NOT_AVAILABLE);
+        }
+    }
+
+    @Override
+    public EmergencyResourceDispatchExpandRespDTO expandDispatchForOrchestration(EmergencyResourceDispatchReqDTO req) {
+        validateDispatchForOrchestration(req);
+        return EmergencyResourceDispatchExpandRespDTO.builder()
+                .eventId(req.getEventId())
+                .resourceId(req.getResourceId())
+                .responseId(req.getResponseId())
+                .stage(req.getStage())
+                .orchestrationRef(req.getOrchestrationRef())
+                .windowStart(req.getWindowStart())
+                .windowEnd(req.getWindowEnd())
+                .solveSkipped(Boolean.FALSE)
+                .build();
+    }
+
+    @Override
+    public EmergencyResourceDispatchExpandRespDTO solveDispatchForOrchestration(
+            EmergencyResourceDispatchExpandRespDTO expand) {
+        if (expand == null || expand.getEventId() == null || expand.getResourceId() == null) {
+            throw ServiceExceptionUtil.exception(ErrorCodeConstants.DISPATCH_ORCH_PAYLOAD_INVALID);
+        }
+        boolean hasWindow = StringUtils.hasText(expand.getWindowStart())
+                || StringUtils.hasText(expand.getWindowEnd());
+        if (hasWindow) {
+            // 禁止编造槽位；本 MVP 未接线排程引擎占窗
+            throw ServiceExceptionUtil.exception(ErrorCodeConstants.DISPATCH_SCHEDULE_WINDOW_UNSUPPORTED);
+        }
+        log.info("resource_dispatch solve skipped (no time window), eventId={}, resourceId={}",
+                expand.getEventId(), expand.getResourceId());
+        expand.setSolveSkipped(Boolean.TRUE);
+        return expand;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class, noRollbackFor = ServiceException.class)
+    public EmergencyResourceDispatchExpandRespDTO persistDispatchForOrchestration(
+            EmergencyResourceDispatchExpandRespDTO expandResult) {
+        if (expandResult == null || expandResult.getEventId() == null || expandResult.getResourceId() == null) {
+            throw ServiceExceptionUtil.exception(ErrorCodeConstants.DISPATCH_ORCH_PAYLOAD_INVALID);
+        }
+        ResourceDispatchDO dispatch = dispatchResource(
+                expandResult.getResourceId(),
+                expandResult.getEventId(),
+                expandResult.getResponseId(),
+                expandResult.getStage());
+        expandResult.setDispatchId(dispatch.getId());
+        processTimelineWriter.appendEventAction(
+                expandResult.getEventId(),
+                "resource.dispatch",
+                "资源调度 resourceId=" + expandResult.getResourceId()
+                        + ", dispatchId=" + dispatch.getId()
+                        + (Boolean.TRUE.equals(expandResult.getSolveSkipped()) ? ", solveSkipped=true" : "")
+                        + (expandResult.getOrchestrationRef() != null
+                        ? ", orch=" + expandResult.getOrchestrationRef() : ""));
+        return expandResult;
+    }
+
+    private static Long asLong(Object v) {
+        if (v == null) {
+            return null;
+        }
+        if (v instanceof Number n) {
+            return n.longValue();
+        }
+        try {
+            return Long.parseLong(String.valueOf(v));
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private ResourceDispatchDO getOrThrow(Long id) {

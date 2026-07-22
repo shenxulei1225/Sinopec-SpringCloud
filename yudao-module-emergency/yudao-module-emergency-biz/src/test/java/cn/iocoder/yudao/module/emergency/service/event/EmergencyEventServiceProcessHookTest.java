@@ -63,6 +63,7 @@ class EmergencyEventServiceProcessHookTest {
     @Mock private EmergencyProcessTimelineWriter processTimelineWriter;
     @Mock private ProcessTimelineApi processTimelineApi;
     @Mock private EmergencyProcessRuntimeService processRuntimeService;
+    @Mock private cn.cheers.x.iot.api.alert.IotAlertRecordApi iotAlertRecordApi;
 
     @Test
     void confirm_thinAdapter_completesConfirmUserTask_withoutStateMachine() {

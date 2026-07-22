@@ -43,6 +43,12 @@ public class EventRespVO {
     @Schema(description = "流程实例编号（只读；无实例则为空）")
     private String processInstanceId;
 
+    @Schema(description = "告警来源类型（只读）")
+    private String sourceAlertType;
+
+    @Schema(description = "来源告警 id（只读）")
+    private String sourceAlertId;
+
     @Schema(description = "当前运行中流程节点（只读；无实例为空列表，不伪造）")
     private List<BpmActivityNodeRespDTO> currentProcessNodes = Collections.emptyList();
 }

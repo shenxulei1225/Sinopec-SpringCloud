@@ -29,8 +29,10 @@ public interface EmergencyProcessRuntimeService {
 
     /**
      * 服务任务：启动响应 → 能力编排（禁止域内再写一套 expand）。
+     *
+     * @param responseLevelHint 流程变量透传的级别；为空则从最新研判台账读取
      */
-    void onServiceTaskStartResponse(Long eventId);
+    void onServiceTaskStartResponse(Long eventId, String responseLevelHint);
 
     /**
      * 按当前流程节点投影台账 status（展示用，非跳转真源）。

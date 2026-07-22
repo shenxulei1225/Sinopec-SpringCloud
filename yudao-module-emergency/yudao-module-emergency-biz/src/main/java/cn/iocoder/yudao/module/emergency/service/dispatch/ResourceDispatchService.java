@@ -1,5 +1,8 @@
 package cn.iocoder.yudao.module.emergency.service.dispatch;
 
+import cn.iocoder.yudao.module.emergency.api.orchestration.dto.EmergencyResourceDispatchExpandRespDTO;
+import cn.iocoder.yudao.module.emergency.api.orchestration.dto.EmergencyResourceDispatchReqDTO;
+import cn.iocoder.yudao.module.emergency.controller.admin.dispatch.vo.ResourceDispatchAssignReqVO;
 import cn.iocoder.yudao.module.emergency.dal.dataobject.dispatch.ResourceDispatchDO;
 
 public interface ResourceDispatchService {
@@ -26,7 +29,7 @@ public interface ResourceDispatchService {
 
     /**
      * 分配资源（使用分布式锁防止并发冲突）
-     * 
+     *
      * @param resourceId 资源ID
      * @param eventId 事件ID
      * @param responseId 响应ID（可选，预警阶段时为null）
@@ -36,5 +39,17 @@ public interface ResourceDispatchService {
     ResourceDispatchDO dispatchResource(Long resourceId, Long eventId, Long responseId, String stage);
 
     ResourceDispatchDO get(Long id);
-}
 
+    /**
+     * HTTP：经编排模板 orch.emergency.resource_dispatch_v1 派发资源，返回调度记录 id。
+     */
+    Long assignViaOrchestration(ResourceDispatchAssignReqVO reqVO);
+
+    void validateDispatchForOrchestration(EmergencyResourceDispatchReqDTO req);
+
+    EmergencyResourceDispatchExpandRespDTO expandDispatchForOrchestration(EmergencyResourceDispatchReqDTO req);
+
+    EmergencyResourceDispatchExpandRespDTO solveDispatchForOrchestration(EmergencyResourceDispatchExpandRespDTO expand);
+
+    EmergencyResourceDispatchExpandRespDTO persistDispatchForOrchestration(EmergencyResourceDispatchExpandRespDTO expandResult);
+}

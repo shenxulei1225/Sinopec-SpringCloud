@@ -136,5 +136,17 @@ public class EmergencyEventDO extends EmergencyBaseDO {
      */
     @TableField("process_instance_id")
     private String processInstanceId;
+
+    /**
+     * 告警来源类型（如 iot_alert_record）；与 sourceAlertId 组成跨模块关联
+     */
+    @TableField("source_alert_type")
+    private String sourceAlertType;
+
+    /**
+     * 来源告警 id（只存关联标识，不存告警实体快照）
+     */
+    @TableField("source_alert_id")
+    private String sourceAlertId;
 }
 

@@ -23,6 +23,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import cn.iocoder.yudao.module.emergency.service.resource.ResourceTypeShareRuleService;
+import cn.iocoder.yudao.module.emergency.service.dispatch.ResourcePoolService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -45,6 +48,24 @@ import static org.junit.jupiter.api.Assertions.*;
 @Import({EmergencyResponseServiceImpl.class, EmergencyTaskServiceImpl.class, TaskCompletionNotificationServiceImpl.class, ResourceDispatchServiceImpl.class})
 @DisplayName("响应管理集成测试")
 class EmergencyResponseIntegrationTest extends BasePostgresDbUnitTest {
+
+    @MockitoBean
+    private ResourceTypeShareRuleService resourceTypeShareRuleService;
+
+    @MockitoBean
+    private ResourcePoolService resourcePoolService;
+
+    @MockitoBean
+    private cn.cheers.x.module.platform.orchestration.api.OrchestrationRunApi orchestrationRunApi;
+
+    @MockitoBean
+    private cn.iocoder.yudao.module.emergency.service.timeline.EmergencyProcessTimelineWriter processTimelineWriter;
+
+    @MockitoBean
+    private cn.iocoder.yudao.module.emergency.framework.common.util.DistributedLockUtil distributedLockUtil;
+
+    @MockitoBean
+    private cn.iocoder.yudao.module.emergency.service.resource.ResourceTypeConfigService resourceTypeConfigService;
 
     @Resource
     private EmergencyResponseServiceImpl responseService;

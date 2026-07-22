@@ -17,7 +17,7 @@ public class EmergencyProcessTaskApiImpl implements EmergencyProcessTaskApi {
 
     @Override
     public CommonResult<Boolean> startResponse(StartResponseServiceTaskReq req) {
-        processRuntimeService.onServiceTaskStartResponse(req.getEventId());
+        processRuntimeService.onServiceTaskStartResponse(req.getEventId(), req.getResponseLevel());
         return success(Boolean.TRUE);
     }
 }

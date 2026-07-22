@@ -44,6 +44,18 @@ class EmergencyResponseServiceImplTest extends BasePostgresDbUnitTest {
     @MockitoBean
     private ResourcePoolService resourcePoolService;
 
+    @MockitoBean
+    private cn.cheers.x.module.platform.orchestration.api.OrchestrationRunApi orchestrationRunApi;
+
+    @MockitoBean
+    private cn.iocoder.yudao.module.emergency.service.timeline.EmergencyProcessTimelineWriter processTimelineWriter;
+
+    @MockitoBean
+    private cn.iocoder.yudao.module.emergency.framework.common.util.DistributedLockUtil distributedLockUtil;
+
+    @MockitoBean
+    private cn.iocoder.yudao.module.emergency.service.resource.ResourceTypeConfigService resourceTypeConfigService;
+
     @Resource
     private EmergencyResponseServiceImpl responseService;
     @Resource

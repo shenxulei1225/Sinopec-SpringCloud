@@ -3,12 +3,16 @@
              xmlns:flowable="http://flowable.org/bpmn"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              targetNamespace="http://cheers.x/emergency">
-  <!-- emergency_command_v1：引擎路径终态骨架；在 cheers-bpm 管理端导入并发布 -->
+  <!-- emergency_command_v1：引擎路径终态骨架；candidateStrategy=36 发起人自己 -->
   <process id="emergency_command_v1" name="应急指挥主轴 v1" isExecutable="true">
     <startEvent id="start" name="接报"/>
-    <userTask id="event_confirm" name="确认" flowable:assignee="${initiator}"/>
+    <userTask id="event_confirm" name="确认"
+              flowable:assignee="${initiator}"
+              flowable:candidateStrategy="36"/>
     <exclusiveGateway id="gw_confirm_result" name="确认结果"/>
-    <userTask id="event_assess" name="研判" flowable:assignee="${initiator}"/>
+    <userTask id="event_assess" name="研判"
+              flowable:assignee="${initiator}"
+              flowable:candidateStrategy="36"/>
     <serviceTask id="response_start" name="启动响应"
                  flowable:delegateExpression="${httpCallbackServiceTaskDelegate}"/>
     <endEvent id="end_false_alarm" name="误报结束"/>

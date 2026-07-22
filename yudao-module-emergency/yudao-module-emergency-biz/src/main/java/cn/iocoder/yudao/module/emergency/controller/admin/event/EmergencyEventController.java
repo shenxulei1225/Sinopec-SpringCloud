@@ -28,6 +28,13 @@ public class EmergencyEventController {
         return success(eventService.create(reqVO));
     }
 
+    @PostMapping("/from-alert")
+    @Operation(summary = "告警转应急事件",
+            description = "写入告警关联 id 并建事件；调用方须带齐描述/发现时间等必填，服务端不编造告警或坐标")
+    public CommonResult<EventRespVO> createFromAlert(@Valid @RequestBody EventFromAlertReqVO reqVO) {
+        return success(eventService.createFromAlert(reqVO));
+    }
+
     @PostMapping("/{id}/reports")
     @Operation(summary = "追加事件上报", description = "为已存在的事件追加新的上报信息（内部上报）")
     @Parameter(name = "id", description = "事件ID", required = true)

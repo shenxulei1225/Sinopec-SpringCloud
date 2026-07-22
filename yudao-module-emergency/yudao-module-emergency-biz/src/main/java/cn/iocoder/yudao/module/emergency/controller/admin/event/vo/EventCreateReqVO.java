@@ -76,4 +76,10 @@ public class EventCreateReqVO {
 
     @Schema(description = "联系方式")
     private String contactPhone;
+
+    @Schema(description = "告警来源类型（告警转事件时写入）", example = "iot_alert_record")
+    private String sourceAlertType;
+
+    @Schema(description = "来源告警 id（告警转事件时写入）")
+    private String sourceAlertId;
 }

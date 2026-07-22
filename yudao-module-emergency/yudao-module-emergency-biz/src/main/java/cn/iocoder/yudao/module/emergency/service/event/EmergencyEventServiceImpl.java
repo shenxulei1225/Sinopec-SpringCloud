@@ -35,6 +35,8 @@ import cn.iocoder.yudao.module.emergency.service.timeline.TimelineCacheService;
 import cn.iocoder.yudao.module.emergency.service.timeline.EmergencyProcessTimelineWriter;
 import cn.iocoder.yudao.module.emergency.service.process.EmergencyProcessKeys;
 import cn.iocoder.yudao.module.emergency.service.process.EmergencyProcessRuntimeService;
+import cn.cheers.x.iot.api.alert.IotAlertRecordApi;
+import cn.cheers.x.iot.api.alert.dto.IotAlertRecordRespDTO;
 import cn.cheers.x.system.api.user.AdminUserApi;
 import cn.cheers.x.framework.common.util.json.JsonUtils;
 import cn.cheers.x.module.platform.runtime.api.ProcessTimelineApi;
@@ -45,7 +47,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -78,6 +86,7 @@ public class EmergencyEventServiceImpl implements EmergencyEventService {
     private final EmergencyProcessTimelineWriter processTimelineWriter;
     private final ProcessTimelineApi processTimelineApi;
     private final EmergencyProcessRuntimeService processRuntimeService;
+    private final IotAlertRecordApi iotAlertRecordApi;
 
     public EmergencyEventServiceImpl(EmergencyEventMapper eventMapper,
                                      EmergencyEventReportInternalMapper reportInternalMapper,
@@ -98,7 +107,8 @@ public class EmergencyEventServiceImpl implements EmergencyEventService {
                                      TimelineCacheService timelineCacheService,
                                      EmergencyProcessTimelineWriter processTimelineWriter,
                                      ProcessTimelineApi processTimelineApi,
-                                     EmergencyProcessRuntimeService processRuntimeService) {
+                                     EmergencyProcessRuntimeService processRuntimeService,
+                                     IotAlertRecordApi iotAlertRecordApi) {
         this.eventMapper = eventMapper;
         this.reportInternalMapper = reportInternalMapper;
         this.reportExternalMapper = reportExternalMapper;
@@ -119,6 +129,7 @@ public class EmergencyEventServiceImpl implements EmergencyEventService {
         this.processTimelineWriter = processTimelineWriter;
         this.processTimelineApi = processTimelineApi;
         this.processRuntimeService = processRuntimeService;
+        this.iotAlertRecordApi = iotAlertRecordApi;
     }
 
     @Override
@@ -197,6 +208,60 @@ public class EmergencyEventServiceImpl implements EmergencyEventService {
         event.setProcessInstanceId(processInstanceId);
         
         return EmergencyEventConvert.INSTANCE.convert(event);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class, noRollbackFor = ServiceException.class)
+    public EventRespVO createFromAlert(EventFromAlertReqVO reqVO) {
+        if (reqVO == null || !StringUtils.hasText(reqVO.getAlertId())) {
+            throw ServiceExceptionUtil.exception(ErrorCodeConstants.EVENT_ALERT_ID_REQUIRED);
+        }
+        String alertSource = StringUtils.hasText(reqVO.getAlertSource())
+                ? reqVO.getAlertSource().trim()
+                : "iot_alert_record";
+        String alertId = reqVO.getAlertId().trim();
+        assertSourceAlertExists(alertSource, alertId);
+
+        EmergencyEventDO existing = eventMapper.selectBySourceAlert(alertSource, alertId);
+        if (existing != null) {
+            throw ServiceExceptionUtil.exception(ErrorCodeConstants.EVENT_ALERT_ALREADY_CONVERTED);
+        }
+
+        EventCreateReqVO createReq = new EventCreateReqVO();
+        String eventCode = StringUtils.hasText(reqVO.getEventCode())
+                ? reqVO.getEventCode().trim()
+                : ("EVT-ALERT-" + alertId + "-" + System.currentTimeMillis());
+        createReq.setEventCode(eventCode);
+        createReq.setEventType(reqVO.getEventType());
+        createReq.setEventLevel(reqVO.getEventLevel());
+        createReq.setOccurredAt(reqVO.getOccurredAt());
+        createReq.setDiscoveredAt(reqVO.getDiscoveredAt());
+        createReq.setLocationAddress(reqVO.getLocationAddress());
+        createReq.setLocationGis(reqVO.getLocationGis());
+        createReq.setLocationBim(reqVO.getLocationBim());
+        // MapStruct 地址取自 location.address；扁平 locationAddress 不会写入 DO
+        if (StringUtils.hasText(reqVO.getLocationAddress())) {
+            LocationVO location = new LocationVO();
+            location.setAddress(reqVO.getLocationAddress());
+            createReq.setLocation(location);
+        }
+        createReq.setDescription(reqVO.getDescription());
+        createReq.setImpactSummary(reqVO.getImpactSummary());
+        createReq.setReportedBy(reqVO.getReportedBy());
+        createReq.setCommandOrg(reqVO.getCommandOrg());
+        createReq.setAttachments(reqVO.getAttachments());
+        createReq.setContactPerson(reqVO.getContactPerson());
+        createReq.setContactPhone(reqVO.getContactPhone());
+        createReq.setSourceAlertType(alertSource);
+        createReq.setSourceAlertId(alertId);
+
+        EventRespVO created = create(createReq);
+        processTimelineWriter.appendEventAction(
+                created.getId(),
+                "alert.convert",
+                "告警转事件 source=" + alertSource + ", alertId=" + alertId
+                        + ", eventCode=" + created.getEventCode());
+        return getEvent(created.getId());
     }
 
     @Override
@@ -352,6 +417,10 @@ public class EmergencyEventServiceImpl implements EmergencyEventService {
         }
         Map<String, Object> processVars = new HashMap<>();
         processVars.put("confirmResult", reqVO.getResult());
+        if (reqVO.getPlanId() != null) {
+            processVars.put("planId", reqVO.getPlanId());
+        }
+        putAccessTokenIfPresent(processVars);
         // 令牌推进真源：Flowable complete；误报经 BPMN 排他网关结束，不进入研判/启动响应
         processRuntimeService.completeUserTask(eventId, processUserId,
                 EmergencyProcessKeys.TASK_CONFIRM, processVars);
@@ -496,10 +565,43 @@ public class EmergencyEventServiceImpl implements EmergencyEventService {
         }
         Map<String, Object> processVars = new HashMap<>();
         processVars.put("responseLevel", reqVO.getResponseLevel());
-        processRuntimeService.completeUserTask(eventId, processUserId,
+        putAccessTokenIfPresent(processVars);
+        // 服务任务回调是另一 HTTP/事务：必须等研判台账提交后再 complete，否则读不到 newLevel
+        Runnable advance = () -> processRuntimeService.completeUserTask(eventId, processUserId,
                 EmergencyProcessKeys.TASK_ASSESS, processVars);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    advance.run();
+                }
+            });
+        } else {
+            advance.run();
+        }
 
         return resp;
+    }
+
+    /**
+     * 将当前请求 Authorization 写入流程变量，供 Flowable 服务任务 HTTP 回调透传至编排 RPC。
+     */
+    private void putAccessTokenIfPresent(Map<String, Object> processVars) {
+        RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
+        if (!(attrs instanceof ServletRequestAttributes servletAttrs)) {
+            return;
+        }
+        String authorization = servletAttrs.getRequest().getHeader("Authorization");
+        if (!StringUtils.hasText(authorization)) {
+            return;
+        }
+        String token = authorization.trim();
+        if (token.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            token = token.substring(7).trim();
+        }
+        if (StringUtils.hasText(token)) {
+            processVars.put("accessToken", token);
+        }
     }
 
     public void close(Long eventId, String reason) {
@@ -882,5 +984,33 @@ public class EmergencyEventServiceImpl implements EmergencyEventService {
         }
 
         return result;
+    }
+
+    /**
+     * 默认告警源 iot_alert_record：跨模块校验告警记录存在；缺记录或 IoT 不可用时显式失败，不编造告警。
+     * 其它 alertSource 本切片不校验存在性（调用方自担）。
+     */
+    private void assertSourceAlertExists(String alertSource, String alertId) {
+        if (!"iot_alert_record".equals(alertSource)) {
+            return;
+        }
+        Long numericId;
+        try {
+            numericId = Long.parseLong(alertId);
+        } catch (NumberFormatException ex) {
+            throw ServiceExceptionUtil.exception(ErrorCodeConstants.EVENT_ALERT_NOT_EXISTS);
+        }
+        try {
+            IotAlertRecordRespDTO alert = iotAlertRecordApi.getAlertRecord(numericId).getCheckedData();
+            if (alert == null || alert.getId() == null) {
+                throw ServiceExceptionUtil.exception(ErrorCodeConstants.EVENT_ALERT_NOT_EXISTS);
+            }
+        } catch (ServiceException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            // IoT 不可达 / Feign 失败：显式拒绝转事件，不编造告警
+            log.error("校验 IoT 告警记录失败 alertId={}", alertId, ex);
+            throw ServiceExceptionUtil.exception(ErrorCodeConstants.EVENT_ALERT_NOT_EXISTS);
+        }
     }
 }

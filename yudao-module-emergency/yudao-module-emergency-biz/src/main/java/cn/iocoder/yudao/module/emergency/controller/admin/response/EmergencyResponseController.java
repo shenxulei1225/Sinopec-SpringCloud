@@ -62,7 +62,8 @@ public class EmergencyResponseController {
     }
 
     @GetMapping("/get-by-event-id")
-    @Operation(summary = "根据事件ID获得应急响应", description = "根据事件ID获得应急响应详情")
+    @Operation(summary = "根据事件ID获得应急响应",
+            description = "返回该事件最新进行中响应；若无进行中则返回最新一条历史响应（同事件多行时不抛 TooManyResults）")
     @Parameter(name = "eventId", description = "事件ID", required = true, example = "1024")
     public CommonResult<ResponseRespVO> getResponseByEventId(@RequestParam("eventId") Long eventId) {
         return success(responseService.getResponseByEventId(eventId));

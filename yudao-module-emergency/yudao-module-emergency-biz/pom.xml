@@ -52,6 +52,11 @@
         </dependency>
         <dependency>
             <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-iot-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.cheers.x</groupId>
             <artifactId>cheers-bpm-api</artifactId>
             <version>${revision}</version>
         </dependency>
