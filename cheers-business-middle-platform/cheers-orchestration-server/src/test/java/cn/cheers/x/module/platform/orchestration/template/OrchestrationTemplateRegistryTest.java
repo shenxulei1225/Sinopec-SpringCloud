@@ -39,6 +39,29 @@ class OrchestrationTemplateRegistryTest {
     }
 
     @Test
+    @DisplayName("应急启动响应模板阶段顺序 VALIDATE→EXPAND→PERSIST")
+    void emergencyStartResponse_phaseOrder() {
+        OrchestrationTemplate t = registry.require(OrchestrationRefs.EMERGENCY_START_RESPONSE_V1);
+        assertEquals(List.of(
+                OrchestrationPhase.VALIDATE,
+                OrchestrationPhase.EXPAND,
+                OrchestrationPhase.PERSIST), t.getPhases());
+    }
+
+    @Test
+    @DisplayName("应急资源调度模板阶段顺序 VALIDATE→EXPAND→SOLVE→PERSIST")
+    void emergencyResourceDispatch_phaseOrder() {
+        OrchestrationTemplate t = registry.require(OrchestrationRefs.EMERGENCY_RESOURCE_DISPATCH_V1);
+        assertEquals(List.of(
+                OrchestrationPhase.VALIDATE,
+                OrchestrationPhase.EXPAND,
+                OrchestrationPhase.SOLVE,
+                OrchestrationPhase.PERSIST), t.getPhases());
+        assertEquals("emergency.resource_dispatch.solve",
+                t.getHandlerIds().get(OrchestrationPhase.SOLVE));
+    }
+
+    @Test
     @DisplayName("巡检路线预览模板 EXPAND→ROUTE 且挂载 expand handler")
     void patrolRoutePreview_phaseOrder() {
         OrchestrationTemplate t = registry.require(OrchestrationRefs.PATROL_ROUTE_PREVIEW_V1);

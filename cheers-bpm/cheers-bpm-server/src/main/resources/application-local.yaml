@@ -140,6 +140,11 @@ cheers:
   access-log: # 访问日志的配置项
     enable: false
 
+# B2-A 应急服务任务回调（emergency-server 本地端口）
+bpm:
+  callback:
+    emergency-start-response-url: http://127.0.0.1:48096/rpc-api/emergency/process/service-task/start-response
+
 
 
 # B2-A emergency callback

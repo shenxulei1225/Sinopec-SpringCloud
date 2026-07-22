@@ -34,6 +34,8 @@
         <module>cheers-twin</module>
         <module>cheers-dynamicbusiness</module>
         <module>cheers-business-middle-platform</module>
+        <!-- 应急指挥（Wave 0 挂入；与巡检分支隔离，仅应急 worktree 保留） -->
+        <module>yudao-module-emergency</module>
     </modules>
 
     <name>${project.artifactId}</name>

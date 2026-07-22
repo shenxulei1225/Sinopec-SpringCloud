@@ -245,6 +245,13 @@ spring:
                 - Path=/admin-api/inspection/**
               filters:
                 - RewritePath=/admin-api/inspection/v3/api-docs, /v3/api-docs
+            ## emergency-server 服务
+            - id: emergency-admin-api
+              uri: grayLb://emergency-server
+              predicates:
+                - Path=/admin-api/emergency/**
+              filters:
+                - RewritePath=/admin-api/emergency/v3/api-docs, /v3/api-docs
             ## work-order-server 服务
             - id: work-order-admin-api # 路由的编号
               uri: grayLb://work-order-server
