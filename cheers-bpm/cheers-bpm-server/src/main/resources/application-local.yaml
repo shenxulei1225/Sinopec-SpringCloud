@@ -145,10 +145,3 @@ bpm:
   callback:
     emergency-start-response-url: http://127.0.0.1:48096/rpc-api/emergency/process/service-task/start-response
 
-
-
-# B2-A emergency callback
-bpm:
-  callback:
-    emergency-start-response-url: http://127.0.0.1:48096/rpc-api/emergency/process/service-task/start-response
-

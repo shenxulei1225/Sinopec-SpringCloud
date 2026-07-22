@@ -11,26 +11,28 @@
         <module>cheers-dependencies</module>
         <module>cheers-gateway</module>
         <module>cheers-framework</module>
-        <!-- Server 主项目 -->
-        <module>cheers-server</module>
+        <!-- 本地日常启动不需要：单体聚合（微服务用各 *-server） -->
+        <!-- <module>cheers-server</module> -->
         <!--  各种 module 拓展 -->
         <module>cheers-system</module>
         <module>cheers-infra</module>
-        <module>cheers-member</module>
+        <!-- 本地日常启动不需要：会员 / 支付 / 报表 / 公众号 / 商城 / CRM / ERP / IoT / MES / AI -->
+        <!-- <module>cheers-member</module> -->
         <module>cheers-bpm</module>
-        <module>cheers-pay</module>
-        <module>cheers-report</module>
-        <module>cheers-mp</module>
-        <module>cheers-mall</module>
-        <module>cheers-crm</module>
-        <module>cheers-erp</module>
-        <module>cheers-iot</module>
-        <module>cheers-mes</module>
-        <module>cheers-ai</module>
+        <!-- <module>cheers-pay</module> -->
+        <!-- <module>cheers-report</module> -->
+        <!-- <module>cheers-mp</module> -->
+        <!-- <module>cheers-mall</module> -->
+        <!-- <module>cheers-crm</module> -->
+        <!-- <module>cheers-erp</module> -->
+        <!-- <module>cheers-iot</module> -->
+        <!-- <module>cheers-mes</module> -->
+        <!-- <module>cheers-ai</module> -->
+        <!-- inspection-task 依赖 device-api，需保留在 reactor -->
         <module>cheers-sinopec-device</module>
         <module>cheers-inspection-task</module>
-        <!-- 实时状态流 Runtime -->
-        <module>cheers-nats</module>
+        <!-- 本地日常启动不需要：NATS 独立模块（当前无服务依赖其 reactor 构建） -->
+        <!-- <module>cheers-nats</module> -->
         <module>cheers-twin</module>
         <module>cheers-dynamicbusiness</module>
         <!-- 应急指挥 API 须先于业务中台编排（orchestration 依赖 emergency-api） -->

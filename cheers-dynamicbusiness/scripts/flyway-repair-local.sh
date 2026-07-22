@@ -12,9 +12,11 @@ PGDATABASE="${PGDATABASE:-sinopec}"
 PGUSER="${PGUSER:-postgres}"
 export PGPASSWORD="${PGPASSWORD:-Coolhomer}"
 
+MAVEN_REPO_LOCAL="${MAVEN_REPO_LOCAL:-$HOME/MavenRepositoy}"
+
 echo ">> flyway:repair (${PGDATABASE} / dynamicbusiness)"
 cd "${SERVER}"
-mvn -q flyway:repair \
+mvn -q -Dmaven.repo.local="${MAVEN_REPO_LOCAL}" flyway:repair \
   -Dflyway.url="jdbc:postgresql://${PGHOST}:${PGPORT}/${PGDATABASE}" \
   -Dflyway.user="${PGUSER}" \
   -Dflyway.password="${PGPASSWORD}"

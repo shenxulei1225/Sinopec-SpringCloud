@@ -34,6 +34,7 @@
 # bmp = bmp-process + bmp-path（不含 scene-3d / gis / twin）
 # twin = cheers-twin（整合层，在 BMP 与 dynamic 之上；不进 bmp 标准套件）
 # dynamic = cheers-dynamicbusiness/cheers-dynamicbusiness-server（勿用旧 cheers-module-dynamicbusiness）
+# Maven 本地仓库：默认 ~/MavenRepositoy（历史目录名拼写），可用 MAVEN_REPO_LOCAL 覆盖；须与 IDE 全量 install 一致。
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -50,6 +51,11 @@ NC='\033[0m' # No Color
 if [ -f "setup-java17.sh" ]; then
     source setup-java17.sh 2>/dev/null
 fi
+
+# 统一本地仓库，避免 spring-boot:run 落到 ~/.m2 而找不到本仓 SNAPSHOT
+# 注意：nohup 无法调用 shell 函数，启动命令须直接写 mvn -Dmaven.repo.local=...
+MAVEN_REPO_LOCAL="${MAVEN_REPO_LOCAL:-$HOME/MavenRepositoy}"
+mkdir -p "$MAVEN_REPO_LOCAL"
 
 # Nacos 配置（Mac 默认 ~/nacos，可通过 NACOS_HOME 环境变量覆盖）
 NACOS_HOME="${NACOS_HOME:-$HOME/nacos}"
@@ -210,7 +216,7 @@ KNOWN_SERVICES=(
     scene gis twin inspection
 )
 CORE_START_SERVICES=(
-    infra system gateway bpm alarm dynamic
+    infra system gateway bpm alarm work-order dynamic
     platform platform-runtime platform-orchestration platform-policy platform-capability
     platform-topology platform-routing
     scene gis twin inspection
@@ -288,15 +294,23 @@ start_service() {
     echo -e "   路径: $service_path"
     echo ""
 
-    # 本仓 SNAPSHOT API 需先 install（与 .ps1 一致）；否则 spring-boot:run 会去远程找 jar
+    # 本仓 SNAPSHOT API 需先 install 到 ~/MavenRepositoy；否则 spring-boot:run 会去远程找 jar
+    # 一律从仓库根 -pl <相对路径> -am，才能拉到跨父工程依赖（如 orchestration → emergency-api）
     case "$service_name" in
-        topology|platform-topology|bmp-topology|routing|platform-routing|bmp-routing|maintenance|bmp-maintenance|work-order|bmp-work-order)
-            local artifact_id
-            artifact_id=$(basename "$service_path")
-            echo -e "${BLUE}   安装 ${artifact_id} 及依赖到本地 Maven（-am install -DskipTests）...${NC}"
+        platform|resource|bmp-resource|\
+        platform-runtime|runtime-l4|bmp-runtime|\
+        platform-orchestration|orchestration|bmp-orchestration|\
+        platform-policy|policy|bmp-policy|\
+        platform-capability|capability|bmp-capability|\
+        platform-topology|topology|bmp-topology|\
+        platform-routing|routing|bmp-routing|\
+        alarm|bmp-alarm|work-order|bmp-work-order|maintenance|bmp-maintenance|\
+        scene|scene-3d|gis|bmp-gis|\
+        twin|cheers-twin|dynamic|inspection)
+            echo -e "${BLUE}   安装 ${service_path} 及依赖到 ${MAVEN_REPO_LOCAL}（-am install -DskipTests）...${NC}"
             (
-                cd "$SCRIPT_DIR/cheers-business-middle-platform" || exit 1
-                mvn -pl "$artifact_id" -am install -DskipTests -q
+                cd "$SCRIPT_DIR" || exit 1
+                mvn -Dmaven.repo.local="$MAVEN_REPO_LOCAL" -pl "$service_path" -am install -DskipTests -q
             )
             if [ $? -ne 0 ]; then
                 echo -e "${YELLOW}⚠️  依赖安装失败，仍尝试启动；若失败请查看日志${NC}"
@@ -316,7 +330,8 @@ start_service() {
     cd "$working_dir"
     
     # 后台启动；disown 避免启动脚本 shell 退出时 SIGHUP 带走 Maven/Spring Boot
-    nohup mvn spring-boot:run -Dspring-boot.run.profiles=local >> "$log_file" 2>&1 &
+    # nohup 不能调用 shell 函数，须直接写 mvn + -Dmaven.repo.local（所有服务共用）
+    nohup mvn -Dmaven.repo.local="$MAVEN_REPO_LOCAL" spring-boot:run -Dspring-boot.run.profiles=local >> "$log_file" 2>&1 &
     local pid=$!
     disown -h "$pid" 2>/dev/null || true
     

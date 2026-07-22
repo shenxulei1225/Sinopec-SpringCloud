@@ -1,4 +1,4 @@
-package cn.cheers.x.yudao.module.scene.platform.service;
+package cn.cheers.x.scene.platform.service;
 
 import cn.cheers.x.scene.platform.model.RuntimePacket;
 import lombok.extern.slf4j.Slf4j;
