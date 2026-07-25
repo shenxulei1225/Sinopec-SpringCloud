@@ -332,9 +332,12 @@ public class CategoryServiceImpl implements CategoryService {
     private Long createEntityForCategory(CategoryCreateReqVO reqVO) {
         ModelDO model = modelMapper.selectById(reqVO.getEntityModelId());
         
-        Map<String, Object> baseOverlay = null;
+        Map<String, Object> baseOverlay = new LinkedHashMap<>();
+        if (reqVO.getEntityBaseFields() != null && !reqVO.getEntityBaseFields().isEmpty()) {
+            baseOverlay.putAll(reqVO.getEntityBaseFields());
+        }
         if (StrUtil.isNotBlank(reqVO.getCode())) {
-            baseOverlay = Map.of("code", reqVO.getCode().trim());
+            baseOverlay.put("code", reqVO.getCode().trim());
         }
         EntityCreateReqVO entityReqVO = EntityWriteReqMaps.createReq(
                 model.getEntityTypeCode(),
@@ -342,7 +345,7 @@ public class CategoryServiceImpl implements CategoryService {
                 reqVO.getName(),
                 reqVO.getStatus(),
                 null,
-                baseOverlay,
+                baseOverlay.isEmpty() ? null : baseOverlay,
                 reqVO.getCustomFields());
         
         // 1. 使用 Helper 准备实体数据（验证、转换、加密）

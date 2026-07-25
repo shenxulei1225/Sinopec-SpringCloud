@@ -46,11 +46,12 @@ public class InspectionTaskServiceImpl implements InspectionTaskService {
                 reqVO.getResourcePolicy());
 
         InspectionTaskDO taskDO = BeanUtils.toBean(reqVO, InspectionTaskDO.class);
+        // 草稿创建：允许分步保存后再启用（status=0 草稿，enabled 默认关闭）
         if (taskDO.getStatus() == null) {
-            taskDO.setStatus(1);
+            taskDO.setStatus(0);
         }
         if (taskDO.getEnabled() == null) {
-            taskDO.setEnabled(Boolean.TRUE);
+            taskDO.setEnabled(Boolean.FALSE);
         }
         inspectionTaskMapper.insert(taskDO);
         return taskDO.getId();
@@ -219,28 +220,39 @@ public class InspectionTaskServiceImpl implements InspectionTaskService {
         validateTaskExists(parentId);
     }
 
+    /**
+     * 排期校验（支持草稿：创建时可暂不配排期）。
+     * <ul>
+     *   <li>继承父任务排期时必须有父任务</li>
+     *   <li>非继承时：排期需求/策略均可空（后续再配）；若只填其一则两者都必填</li>
+     * </ul>
+     */
     private void validateScheduleInheritance(Boolean inheritParentSchedule, Long parentId,
                                             Long scheduleRequirementId, Long schedulePolicyId) {
         if (Boolean.TRUE.equals(inheritParentSchedule) && parentId == null) {
             throw ServiceExceptionUtil.exception(BAD_REQUEST, "未设置父任务时不能继承父任务排期");
         }
-        if (!Boolean.TRUE.equals(inheritParentSchedule)) {
-            if (scheduleRequirementId == null) {
-                throw ServiceExceptionUtil.exception(BAD_REQUEST, "未继承父任务排期时必须设置排期需求");
-            }
-            if (schedulePolicyId == null) {
-                throw ServiceExceptionUtil.exception(BAD_REQUEST, "未继承父任务排期时必须设置排期策略");
-            }
+        if (Boolean.TRUE.equals(inheritParentSchedule)) {
+            return;
+        }
+        // 草稿允许两者皆空；若已开始配置则需求与策略需成对出现
+        boolean hasRequirement = scheduleRequirementId != null;
+        boolean hasPolicy = schedulePolicyId != null;
+        if (hasRequirement != hasPolicy) {
+            throw ServiceExceptionUtil.exception(BAD_REQUEST,
+                    hasRequirement ? "已设置排期需求时必须同时设置排期策略"
+                            : "已设置排期策略时必须同时设置排期需求");
         }
     }
 
+    /**
+     * 资源策略校验（支持草稿：创建时可暂不配资源策略）。
+     * 仅在声明继承父任务资源策略时要求有父任务。
+     */
     private void validateResourceInheritance(Boolean inheritParentResourcePolicy, Long parentId,
                                              Object resourcePolicy) {
         if (Boolean.TRUE.equals(inheritParentResourcePolicy) && parentId == null) {
             throw ServiceExceptionUtil.exception(BAD_REQUEST, "未设置父任务时不能继承父任务资源策略");
-        }
-        if (!Boolean.TRUE.equals(inheritParentResourcePolicy) && resourcePolicy == null) {
-            throw ServiceExceptionUtil.exception(BAD_REQUEST, "未继承父任务资源策略时必须设置资源策略");
         }
     }
 }

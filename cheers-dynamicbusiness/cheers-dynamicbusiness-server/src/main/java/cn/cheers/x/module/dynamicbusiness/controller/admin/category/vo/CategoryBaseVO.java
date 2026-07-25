@@ -58,5 +58,8 @@ public class CategoryBaseVO {
 
     @Schema(description = "自定义字段（模式C），当 isEntity=true 时使用，格式：{\"field_code\":\"value\"}")
     private Map<String, Object> customFields;
+
+    @Schema(description = "实体基础字段覆盖（模式C），合并进 EntityCreateReqVO.baseFields，如 REF_FACILITY、boundary_geojson")
+    private Map<String, Object> entityBaseFields;
 }
 
