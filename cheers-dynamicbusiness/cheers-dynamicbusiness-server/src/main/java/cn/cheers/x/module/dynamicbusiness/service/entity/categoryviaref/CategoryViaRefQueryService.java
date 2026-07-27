@@ -51,7 +51,7 @@ public class CategoryViaRefQueryService {
      *       {@link TargetEntityResolveMode#CATEGORY_ENTITY_LINK} 时读
      *       {@code dynamic_category_entity_link}（{@link CategoryEntityLinkService#getLinksByCategoryIds}）</li>
      *   <li>主体实体 id — {@code dynamic_entity_relation}（或等价 REF 存储），
-     *       {@link EntityRelationService#listEntityIdsByRelationFieldAndRelatedIds}</li>
+     *       {@link EntityRelationService#listSubjectEntityIdsByRefFieldAndTargetIds}</li>
      * </ul>
      *
      * @param categoryViaRefPathCode 白名单反查路径编码
@@ -68,8 +68,8 @@ public class CategoryViaRefQueryService {
         if (targetIds.isEmpty()) {
             return List.of();
         }
-        List<Long> subjectIds = entityRelationService
-                .listEntityIdsByRelationFieldAndRelatedIds(path.refFieldCode(), targetIds);
+        List<Long> subjectIds = entityRelationService.listSubjectEntityIdsByRefFieldAndTargetIds(
+                path.refFieldCode(), path.subjectEntityTypeCode(), targetIds);
         if (subjectIds == null || subjectIds.isEmpty()) {
             return List.of();
         }
@@ -88,6 +88,26 @@ public class CategoryViaRefQueryService {
             throw new ServiceException(400,
                     "反查路径 " + path.pathCode() + " 的主体类型为 "
                             + path.subjectEntityTypeCode() + "，与请求 entityTypeCode 不符");
+        }
+    }
+
+    /**
+     * 校验请求侧 {@code categoryTypeCode} 与路径登记的维度分类种类一致；传入非空且不一致时 400。
+     * <p>
+     * 防止用「设备分类路径 + 区域 categoryTypeCode」等跨种类组合产生脏结果。
+     *
+     * @param categoryViaRefPathCode 白名单反查路径编码
+     * @param categoryTypeCode       请求中的分类种类编码（可空；空则跳过校验，由路径自带 dimension 展开子树）
+     */
+    public void assertDimensionCategoryTypeMatches(String categoryViaRefPathCode, String categoryTypeCode) {
+        if (categoryTypeCode == null || categoryTypeCode.isBlank()) {
+            return;
+        }
+        CategoryViaRefQueryPath path = requirePath(categoryViaRefPathCode);
+        if (!path.dimensionCategoryTypeCode().equals(categoryTypeCode.trim())) {
+            throw new ServiceException(400,
+                    "categoryTypeCode 与反查路径维度种类不符：路径要求 "
+                            + path.dimensionCategoryTypeCode() + "，请求为 " + categoryTypeCode.trim());
         }
     }
 

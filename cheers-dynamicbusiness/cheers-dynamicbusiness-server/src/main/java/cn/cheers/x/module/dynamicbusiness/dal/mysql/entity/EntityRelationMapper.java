@@ -332,14 +332,27 @@ public interface EntityRelationMapper extends BaseMapperX<EntityRelationDO> {
          * 根据字段编码与目标实体ID集合，查询命中的源实体ID集合。
          */
         default List<Long> selectSourceEntityIdsByFieldCodeAndTargetIds(String fieldCode, List<Long> targetEntityIds) {
+                return selectSourceEntityIdsByFieldCodeTargetIdsAndSourceType(fieldCode, targetEntityIds, null);
+        }
+
+        /**
+         * 按 REF 字段 + 目标实体 id 反查源实体 id；可选按源实体类型编码（{@code source_entity_type_code}）收窄。
+         */
+        default List<Long> selectSourceEntityIdsByFieldCodeTargetIdsAndSourceType(String fieldCode,
+                                                                                  List<Long> targetEntityIds,
+                                                                                  String sourceEntityTypeCode) {
                 if (targetEntityIds == null || targetEntityIds.isEmpty()) {
                         return java.util.Collections.emptyList();
                 }
-                List<EntityRelationDO> relations = selectList(new LambdaQueryWrapperX<EntityRelationDO>()
-                        .select(EntityRelationDO::getSourceEntityId)
-                        .eq(EntityRelationDO::getFieldCode, fieldCode)
-                        .in(EntityRelationDO::getTargetEntityId, targetEntityIds)
-                        .eq(EntityRelationDO::getDeleted, false));
+                LambdaQueryWrapperX<EntityRelationDO> query = new LambdaQueryWrapperX<>();
+                query.select(EntityRelationDO::getSourceEntityId);
+                query.eq(EntityRelationDO::getFieldCode, fieldCode);
+                query.in(EntityRelationDO::getTargetEntityId, targetEntityIds);
+                query.eq(EntityRelationDO::getDeleted, false);
+                if (sourceEntityTypeCode != null && !sourceEntityTypeCode.isBlank()) {
+                        query.eq(EntityRelationDO::getSourceEntityTypeCode, sourceEntityTypeCode.trim());
+                }
+                List<EntityRelationDO> relations = selectList(query);
                 return relations.stream()
                         .map(EntityRelationDO::getSourceEntityId)
                         .filter(java.util.Objects::nonNull)

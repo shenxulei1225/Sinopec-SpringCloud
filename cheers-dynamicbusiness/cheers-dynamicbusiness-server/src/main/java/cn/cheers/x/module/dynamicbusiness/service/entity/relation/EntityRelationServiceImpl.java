@@ -273,6 +273,19 @@ public class EntityRelationServiceImpl implements EntityRelationService {
         return entityRelationMapper.selectSourceEntityIdsByFieldCodeAndTargetIds(fieldCode, relatedEntityIds);
     }
 
+    @Override
+    public List<Long> listSubjectEntityIdsByRefFieldAndTargetIds(String refFieldCode,
+                                                                String subjectEntityTypeCode,
+                                                                List<Long> targetEntityIds) {
+        if (refFieldCode == null || refFieldCode.isBlank()
+                || subjectEntityTypeCode == null || subjectEntityTypeCode.isBlank()
+                || targetEntityIds == null || targetEntityIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        return entityRelationMapper.selectSourceEntityIdsByFieldCodeTargetIdsAndSourceType(
+                refFieldCode.trim(), targetEntityIds, subjectEntityTypeCode.trim());
+    }
+
     private void validateRelationType(String relationType) {
         if (!EntityRelationTypeEnum.isValid(relationType)) {
             throw new ServiceException(400, "无效的关联类型：" + relationType +

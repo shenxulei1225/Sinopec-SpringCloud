@@ -439,39 +439,16 @@ public class EntityServiceImpl implements EntityService {
         EntityQueryResultDetail detail = EntityQueryResultDetail.ofNullable(resultDetail);
         switch (scene) {
             case ENTITIES_BY_CATEGORY: {
-                if (storageEntityTypeCode == null || storageEntityTypeCode.isBlank()) {
+                String queryEntityTypeCode = resolved.entityTypeCode();
+                if (queryEntityTypeCode == null || queryEntityTypeCode.isBlank()) {
                     throw new ServiceException(400, "ENTITIES_BY_CATEGORY 场景下 entityTypeCode 不能为空");
                 }
-                String viaRefPathCode = categoryViaRefPathCode == null ? null : categoryViaRefPathCode.trim();
-                if (viaRefPathCode != null && !viaRefPathCode.isEmpty()) {
-                    String queryEntityTypeCode = resolved.entityTypeCode();
-                    categoryViaRefQueryService.assertSubjectTypeMatches(viaRefPathCode, queryEntityTypeCode);
-                    CategoryViaRefQueryPath path = categoryViaRefQueryService.requirePath(viaRefPathCode);
-                    if (categoryTypeCode != null && !categoryTypeCode.isBlank()
-                            && !path.dimensionCategoryTypeCode().equals(categoryTypeCode.trim())) {
-                        throw new ServiceException(400, "categoryTypeCode 与反查路径维度种类不符");
-                    }
-                    List<Long> normalizedCategoryIds = normalizeCategoryIdsOrUseRootCategory(
-                            categoryIds, path.dimensionCategoryTypeCode());
-                    List<Long> subjectEntityIds = categoryViaRefQueryService.listSubjectEntityIds(
-                            viaRefPathCode, normalizedCategoryIds);
-                    subjectEntityIds = dataMgmtEntityQueryRepository.retainOrderedIdsByDomainAndScope(
-                            subjectEntityIds, queryEntityTypeCode, normalizedDomain, normalizedScopeCode);
-                    PageResult<EntityRespVO> viaRefResult = queryEntitiesByOrderedCandidateIds(
-                            subjectEntityIds, queryEntityTypeCode, keyword, filters,
-                            shape == EntityQueryResultShape.PAGE ? effectivePageNo : null,
-                            shape == EntityQueryResultShape.PAGE ? effectivePageSize : null);
-                    if (shape == EntityQueryResultShape.PAGE) {
-                        return EntitySceneQueryRespVO.page(applyResultDetail(viaRefResult, detail), detail.getCode());
-                    }
-                    List<EntityRespVO> viaRefEntities = viaRefResult.getList();
-                    if (shape == EntityQueryResultShape.TREE) {
-                        return EntitySceneQueryRespVO.tree(
-                                applyResultDetail(EntityTreeBuilder.buildTree(viaRefEntities,
-                                        EntityTreeBuilder.SortMode.LOCAL_SIBLING_SORT), detail),
-                                detail.getCode());
-                    }
-                    return EntitySceneQueryRespVO.list(applyResultDetail(viaRefEntities, detail), detail.getCode());
+                String viaRefPathCode = trimToNull(categoryViaRefPathCode);
+                if (viaRefPathCode != null) {
+                    return queryEntitiesByCategoryViaRef(
+                            viaRefPathCode, categoryTypeCode, categoryIds, queryEntityTypeCode,
+                            normalizedDomain, normalizedScopeCode, keyword, filters,
+                            shape, detail, effectivePageNo, effectivePageSize);
                 }
                 String resolvedCategoryTypeCode = (categoryTypeCode == null || categoryTypeCode.isBlank())
                         ? storageEntityTypeCode : categoryTypeCode;
@@ -1464,6 +1441,64 @@ public class EntityServiceImpl implements EntityService {
         }
         var categoryType = categoryTypeService.getCategoryTypeByCode(categoryTypeCode);
         return categoryType == null ? null : categoryType.getTopLevelCategoryId();
+    }
+
+    /**
+     * {@link EntityQueryScene#ENTITIES_BY_CATEGORY} 的 Category-via-Ref 分支：只做分流，不重复实现分类/SQL。
+     *
+     * <p><strong>与直接挂靠的区别</strong>：主体实体不必挂在维度分类下；列表来自
+     * 「分类 → 目标实体 → 主体 REF」三步编排（{@link CategoryViaRefQueryService}）。</p>
+     *
+     * <p><strong>本方法职责</strong>：路径与请求类型校验、分类范围归一（含未选节点≡整树）、
+     * 业务域/划分成员收窄、复用 {@link #queryEntitiesByOrderedCandidateIds} 分页装 VO。</p>
+     *
+     * <p><strong>不写库</strong>：不创建 {@code dynamic_entity_category_relation}，不改 REF 源数据。</p>
+     */
+    private EntitySceneQueryRespVO queryEntitiesByCategoryViaRef(
+            String categoryViaRefPathCode,
+            String categoryTypeCode,
+            List<Long> categoryIds,
+            String subjectEntityTypeCode,
+            String domain,
+            String scopeRegistryCode,
+            String keyword,
+            List<FieldFilterReqVO> filters,
+            EntityQueryResultShape shape,
+            EntityQueryResultDetail detail,
+            Integer pageNo,
+            Integer pageSize) {
+        categoryViaRefQueryService.assertSubjectTypeMatches(categoryViaRefPathCode, subjectEntityTypeCode);
+        categoryViaRefQueryService.assertDimensionCategoryTypeMatches(categoryViaRefPathCode, categoryTypeCode);
+        CategoryViaRefQueryPath path = categoryViaRefQueryService.requirePath(categoryViaRefPathCode);
+        List<Long> normalizedCategoryIds = normalizeCategoryIdsOrUseRootCategory(
+                categoryIds, path.dimensionCategoryTypeCode());
+        List<Long> subjectEntityIds = categoryViaRefQueryService.listSubjectEntityIds(
+                categoryViaRefPathCode, normalizedCategoryIds);
+        subjectEntityIds = dataMgmtEntityQueryRepository.retainOrderedIdsByDomainAndScope(
+                subjectEntityIds, subjectEntityTypeCode, domain, scopeRegistryCode);
+        PageResult<EntityRespVO> viaRefResult = queryEntitiesByOrderedCandidateIds(
+                subjectEntityIds, subjectEntityTypeCode, keyword, filters,
+                shape == EntityQueryResultShape.PAGE ? pageNo : null,
+                shape == EntityQueryResultShape.PAGE ? pageSize : null);
+        if (shape == EntityQueryResultShape.PAGE) {
+            return EntitySceneQueryRespVO.page(applyResultDetail(viaRefResult, detail), detail.getCode());
+        }
+        List<EntityRespVO> viaRefEntities = viaRefResult.getList();
+        if (shape == EntityQueryResultShape.TREE) {
+            return EntitySceneQueryRespVO.tree(
+                    applyResultDetail(EntityTreeBuilder.buildTree(viaRefEntities,
+                            EntityTreeBuilder.SortMode.LOCAL_SIBLING_SORT), detail),
+                    detail.getCode());
+        }
+        return EntitySceneQueryRespVO.list(applyResultDetail(viaRefEntities, detail), detail.getCode());
+    }
+
+    private static String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     /**
