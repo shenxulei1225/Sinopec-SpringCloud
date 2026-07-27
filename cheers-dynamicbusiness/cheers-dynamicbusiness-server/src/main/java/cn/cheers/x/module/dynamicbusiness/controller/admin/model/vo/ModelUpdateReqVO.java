@@ -47,5 +47,8 @@ public class ModelUpdateReqVO {
     @Schema(description = "是否完全替换分类关联（默认false为增量添加模式，true为完全替换模式）。当为false时，只添加新分类，不删除现有分类；当为true时，使用差集更新（删除不在新列表中的，添加不在现有列表中的）", example = "false")
     private Boolean replaceCategories;
 
+    @Schema(description = "业务域（Domain）；须为该存储类型下已建 DOMAIN 子数据类型的域标识", example = "巡检")
+    private String domain;
+
 }
 

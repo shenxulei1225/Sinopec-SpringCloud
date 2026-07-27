@@ -3,7 +3,7 @@
 --
 -- 说明（2026-07-14）：
 --   · 路网停靠站几何仍归属 platform-topology，不在动态业务重复建「巡检几何点」。
---   · 动态业务 NATIVE `route` / SCOPED `patrol_route` 用于保存**路径规划标准计算结果**，
+--   · 动态业务 NATIVE `route` / DOMAIN `patrol_route` 用于保存**路径规划标准计算结果**，
 --     不再退役 route（见 dynamic_entity_point_route_scope.sql）。
 -- 幂等：重复执行安全。
 -- ============================================================================

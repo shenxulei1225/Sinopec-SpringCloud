@@ -7,6 +7,7 @@ import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityMapper;
 import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityTableNameContext;
+import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityTableNameHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
@@ -27,6 +28,7 @@ public class EntityRepositoryImpl implements EntityRepository {
 
     /** 实体基础 Mapper（实际表名由动态表名上下文决定）。 */
     private final EntityMapper entityMapper;
+    private final EntityTableNameHandler entityTableNameHandler;
 
     // ==================== 写入操作 ====================
 
@@ -139,7 +141,8 @@ public class EntityRepositoryImpl implements EntityRepository {
      */
     @Override
     public PageResult<EntityDO> findPageByModelIds(List<Long> modelIds, String entityTypeCode,
-                                                    Integer status, String keyword, Integer pageNo, Integer pageSize) {
+                                                    Integer status, String keyword, String domain,
+                                                    Integer pageNo, Integer pageSize) {
         if (CollUtil.isEmpty(modelIds)) {
             return new PageResult<>(Collections.emptyList(), 0L);
         }
@@ -147,6 +150,7 @@ public class EntityRepositoryImpl implements EntityRepository {
             LambdaQueryWrapperX<EntityDO> wrapper = new LambdaQueryWrapperX<>();
             wrapper.in(EntityDO::getModelId, modelIds)
                     .eqIfPresent(EntityDO::getStatus, status)
+                    .eqIfPresent(EntityDO::getDomain, domain != null ? domain.trim() : null)
                     .likeIfPresent(EntityDO::getName, keyword)
                     .eq(EntityDO::getDeleted, false);
             wrapper.orderByAsc(EntityDO::getSort);
@@ -193,6 +197,24 @@ public class EntityRepositoryImpl implements EntityRepository {
             entityMapper.updateBatch(entities);
             return null;
         });
+    }
+
+    /**
+     * 批量改写某型号下全部实体的业务域。
+     *
+     * <p>用整表更新而不是逐行 updateById：型号跨业务域迁移可能涉及上千实体，
+     * 逐行更新既慢又会把无关字段一起写回。</p>
+     */
+    @Override
+    public int updateDomainByModelId(Long modelId, String entityTypeCode, String domain) {
+        if (modelId == null || !org.springframework.util.StringUtils.hasText(entityTypeCode)) {
+            return 0;
+        }
+        return withTableName(entityTypeCode, () -> entityMapper.update(null,
+                new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<EntityDO>()
+                        .set(EntityDO::getDomain, domain)
+                        .eq(EntityDO::getModelId, modelId)
+                        .eq(EntityDO::getDeleted, false)));
     }
 
     // ==================== 删除操作 ====================
@@ -294,14 +316,104 @@ public class EntityRepositoryImpl implements EntityRepository {
         );
     }
 
+    @Override
+    public boolean existsByModelId(Long modelId, String entityTypeCode) {
+        if (modelId == null || !org.springframework.util.StringUtils.hasText(entityTypeCode)) {
+            return false;
+        }
+        return withTableName(entityTypeCode, () ->
+                entityMapper.selectOne(new LambdaQueryWrapperX<EntityDO>()
+                        .eq(EntityDO::getModelId, modelId)
+                        .eq(EntityDO::getDeleted, false)
+                        .last("LIMIT 1")) != null
+        );
+    }
+
+    @Override
+    public List<cn.cheers.x.module.dynamicbusiness.service.entity.dto.EntityAggregationCountDTO<Integer>>
+            countGroupByStatus(String entityTypeCode, Long modelId, Integer status, String keyword,
+                               List<Long> entityIds) {
+        return withTableName(entityTypeCode, () -> {
+            com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<EntityDO> query =
+                    new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+            query.select("status AS key", "COUNT(1) AS cnt");
+            query.eq("deleted", false);
+            if (modelId != null) {
+                query.eq("model_id", modelId);
+            }
+            if (status != null) {
+                query.eq("status", status);
+            }
+            if (org.springframework.util.StringUtils.hasText(keyword)) {
+                query.like("name", keyword.trim());
+            }
+            if (CollUtil.isNotEmpty(entityIds)) {
+                query.in("id", entityIds);
+            }
+            query.groupBy("status");
+            List<java.util.Map<String, Object>> rows = entityMapper.selectMaps(query);
+            if (CollUtil.isEmpty(rows)) {
+                return Collections.emptyList();
+            }
+            return rows.stream()
+                    .map(cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityAggregationMapper::toStatusCountDTO)
+                    .filter(java.util.Objects::nonNull)
+                    .toList();
+        });
+    }
+
+    @Override
+    public List<cn.cheers.x.module.dynamicbusiness.service.entity.dto.EntityAggregationCountDTO<Long>>
+            countGroupByModelId(String entityTypeCode, Long modelId, Integer status, String keyword,
+                                List<Long> entityIds) {
+        return withTableName(entityTypeCode, () -> {
+            com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<EntityDO> query =
+                    new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+            query.select("model_id AS key", "COUNT(1) AS cnt");
+            query.eq("deleted", false);
+            if (modelId != null) {
+                query.eq("model_id", modelId);
+            }
+            if (status != null) {
+                query.eq("status", status);
+            }
+            if (org.springframework.util.StringUtils.hasText(keyword)) {
+                query.like("name", keyword.trim());
+            }
+            if (CollUtil.isNotEmpty(entityIds)) {
+                query.in("id", entityIds);
+            }
+            query.groupBy("model_id");
+            List<java.util.Map<String, Object>> rows = entityMapper.selectMaps(query);
+            if (CollUtil.isEmpty(rows)) {
+                return Collections.emptyList();
+            }
+            return rows.stream()
+                    .map(cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityAggregationMapper::toModelCountDTO)
+                    .filter(java.util.Objects::nonNull)
+                    .toList();
+        });
+    }
+
+    @Override
+    public String resolvePhysicalTableName(String entityTypeCode) {
+        if (!org.springframework.util.StringUtils.hasText(entityTypeCode)) {
+            throw new IllegalArgumentException("entityTypeCode 不能为空：实体访问必须经 EntityRepository 并指定存储类型");
+        }
+        return entityTableNameHandler.resolvePhysicalTableName(entityTypeCode.trim());
+    }
+
     // ==================== 私有方法 ====================
 
     /**
      * 设置动态表名上下文并执行操作。
      */
     private <T> T withTableName(String entityTypeCode, Supplier<T> action) {
+        if (!org.springframework.util.StringUtils.hasText(entityTypeCode)) {
+            throw new IllegalArgumentException("entityTypeCode 不能为空：实体访问必须经 EntityRepository 并指定存储类型");
+        }
         try {
-            EntityTableNameContext.set(entityTypeCode);
+            EntityTableNameContext.set(entityTypeCode.trim());
             return action.get();
         } finally {
             EntityTableNameContext.clear();
@@ -316,6 +428,8 @@ public class EntityRepositoryImpl implements EntityRepository {
         wrapper.eqIfPresent(EntityDO::getEntityTypeCode, query.getEntityTypeCode());
         wrapper.eqIfPresent(EntityDO::getModelId, query.getModelId());
         wrapper.eqIfPresent(EntityDO::getStatus, query.getStatus());
+        wrapper.eqIfPresent(EntityDO::getDomain,
+                query.getDomain() != null && !query.getDomain().isBlank() ? query.getDomain().trim() : null);
         wrapper.likeIfPresent(EntityDO::getName, query.getKeyword());
         wrapper.eq(EntityDO::getDeleted, false);
         wrapper.orderByAsc(EntityDO::getSort);

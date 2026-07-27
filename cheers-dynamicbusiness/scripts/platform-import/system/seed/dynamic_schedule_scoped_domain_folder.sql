@@ -1,5 +1,5 @@
 -- 在 schedule 主数据分类根下补「巡检排期」域分组，并将已迁移的巡检子分类挂到其下。
--- 约定：SCOPED 域分组 code = {registryCode}_dir（与 EntityTypeCategoryBootstrapService 一致）。
+-- 约定：DOMAIN 域分组 code = {registryCode}_dir（与 EntityTypeCategoryBootstrapService 一致）。
 
 SET search_path TO dynamicbusiness;
 

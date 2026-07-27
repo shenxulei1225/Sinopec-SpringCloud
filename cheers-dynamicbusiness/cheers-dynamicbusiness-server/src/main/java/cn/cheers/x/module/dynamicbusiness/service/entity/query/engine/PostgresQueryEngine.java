@@ -7,8 +7,8 @@ import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.framework.mybatis.core.type.JsonbMapTypeHandler;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityFieldIndexMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
 import cn.cheers.x.module.dynamicbusiness.service.entity.query.dto.*;
 import cn.cheers.x.module.dynamicbusiness.service.entity.query.enums.AggregateType;
 import cn.cheers.x.module.dynamicbusiness.service.entity.query.enums.LogicType;
@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
  * PostgreSQL 查询引擎实现
  *
  * 采用混合查询策略：
- * - 等值/包含查询：使用 JSONB + GIN 索引（直接查询 dynamic_entity.custom_fields）
+ * - 等值/包含查询：使用 JSONB + GIN 索引（查询专用实体表 custom_fields，表名经 EntityRepository 解析）
  * - 范围查询/排序：使用 entity_field_index 索引表
  *
  * 查询策略分析：
@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 public class PostgresQueryEngine implements QueryEngine {
 
     private final JdbcTemplate jdbcTemplate;
-    private final EntityMapper entityMapper;
+    private final EntityRepository entityRepository;
     private final EntityFieldIndexMapper entityFieldIndexMapper;
     private final FieldMapper fieldMapper;
     private final ObjectMapper objectMapper;
@@ -180,7 +180,7 @@ public class PostgresQueryEngine implements QueryEngine {
      *
      * 使用 PostgreSQL JSONB @> 操作符进行等值查询
      * 示例 SQL：
-     * SELECT * FROM dynamic_entity
+     * SELECT * FROM {ent_*}
      * WHERE model_id = ? AND deleted = false
      *   AND custom_fields @> '{"brand": "海尔"}'::jsonb
      */
@@ -190,7 +190,8 @@ public class PostgresQueryEngine implements QueryEngine {
         Long tenantId = TenantContextHolder.getRequiredTenantId();
 
         // 基础查询
-        sql.append("SELECT * FROM dynamic_entity WHERE tenant_id = ? AND model_id = ? AND deleted = false");
+        sql.append("SELECT * FROM ").append(entityTable(request.getEntityTypeCode()))
+                .append(" WHERE tenant_id = ? AND model_id = ? AND deleted = false");
         params.add(tenantId);
         params.add(request.getModelId());
 
@@ -291,7 +292,8 @@ public class PostgresQueryEngine implements QueryEngine {
         List<Object> params = new ArrayList<>();
         Long tenantId = TenantContextHolder.getRequiredTenantId();
 
-        sql.append("SELECT COUNT(*) FROM dynamic_entity WHERE tenant_id = ? AND model_id = ? AND deleted = false");
+        sql.append("SELECT COUNT(*) FROM ").append(entityTable(request.getEntityTypeCode()))
+                .append(" WHERE tenant_id = ? AND model_id = ? AND deleted = false");
         params.add(tenantId);
         params.add(request.getModelId());
 
@@ -324,7 +326,7 @@ public class PostgresQueryEngine implements QueryEngine {
      *
      * 通过 JOIN entity_field_index 表实现范围查询和排序
      * 示例 SQL：
-     * SELECT e.* FROM dynamic_entity e
+     * SELECT e.* FROM {ent_*} e
      * WHERE e.model_id = ? AND e.deleted = false
      *   AND e.id IN (
      *     SELECT entity_id FROM dynamic_entity_field_index
@@ -341,7 +343,8 @@ public class PostgresQueryEngine implements QueryEngine {
         Long tenantId = TenantContextHolder.getRequiredTenantId();
 
         // 基础查询
-        sql.append("SELECT e.* FROM dynamic_entity e WHERE e.tenant_id = ? AND e.model_id = ? AND e.deleted = false");
+        sql.append("SELECT e.* FROM ").append(entityTable(request.getEntityTypeCode()))
+                .append(" e WHERE e.tenant_id = ? AND e.model_id = ? AND e.deleted = false");
         params.add(tenantId);
         params.add(request.getModelId());
 
@@ -594,7 +597,8 @@ public class PostgresQueryEngine implements QueryEngine {
         StringBuilder sql = new StringBuilder();
         List<Object> params = new ArrayList<>();
 
-        sql.append("SELECT COUNT(*) FROM dynamic_entity e WHERE e.model_id = ? AND e.deleted = false");
+        sql.append("SELECT COUNT(*) FROM ").append(entityTable(request.getEntityTypeCode()))
+                .append(" e WHERE e.model_id = ? AND e.deleted = false");
         params.add(request.getModelId());
 
         // 添加索引表条件
@@ -733,7 +737,8 @@ public class PostgresQueryEngine implements QueryEngine {
         StringBuilder sql = new StringBuilder();
         List<Object> params = new ArrayList<>();
 
-        sql.append("SELECT COUNT(*) FROM dynamic_entity e WHERE e.model_id = ? AND e.deleted = false");
+        sql.append("SELECT COUNT(*) FROM ").append(entityTable(request.getEntityTypeCode()))
+                .append(" e WHERE e.model_id = ? AND e.deleted = false");
         params.add(request.getModelId());
 
         // 添加条件过滤
@@ -889,7 +894,8 @@ public class PostgresQueryEngine implements QueryEngine {
         }
 
         StringBuilder subQuery = new StringBuilder();
-        subQuery.append("SELECT DISTINCT e.id FROM dynamic_entity e WHERE e.model_id = ? AND e.deleted = false");
+        subQuery.append("SELECT DISTINCT e.id FROM ").append(entityTable(request.getEntityTypeCode()))
+                .append(" e WHERE e.model_id = ? AND e.deleted = false");
 
         for (FieldCondition condition : request.getConditions()) {
             // 这里简化处理，使用索引表条件
@@ -1050,4 +1056,10 @@ public class PostgresQueryEngine implements QueryEngine {
             return entity;
         }
     }
+
+    private String entityTable(String entityTypeCode) {
+        return entityRepository.resolvePhysicalTableName(entityTypeCode);
+    }
+
+
 }

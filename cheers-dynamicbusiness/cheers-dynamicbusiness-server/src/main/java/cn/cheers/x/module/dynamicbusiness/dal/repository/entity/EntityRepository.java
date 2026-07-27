@@ -104,7 +104,8 @@ public interface EntityRepository {
      * @return 分页结果
      */
     PageResult<EntityDO> findPageByModelIds(List<Long> modelIds, String entityTypeCode,
-                                            Integer status, String keyword, Integer pageNo, Integer pageSize);
+                                            Integer status, String keyword, String domain,
+                                            Integer pageNo, Integer pageSize);
 
     /**
      * 根据树路径查询所有子孙实体
@@ -130,6 +131,16 @@ public interface EntityRepository {
      * @param entities 实体列表
      */
     void updateBatch(List<EntityDO> entities);
+
+    /**
+     * 把某个型号下全部实体的业务域改为目标值（型号跨业务域迁移用）。
+     *
+     * @param modelId 型号ID
+     * @param entityTypeCode 实际存储类型编码
+     * @param domain 目标业务域；null 表示清空
+     * @return 受影响的实体行数
+     */
+    int updateDomainByModelId(Long modelId, String entityTypeCode, String domain);
 
     // ==================== 删除操作 ====================
 
@@ -190,6 +201,31 @@ public interface EntityRepository {
      */
     boolean existsByExactName(String entityTypeCode, Long modelId, String name, Long excludeId);
 
+    /**
+     * 型号下是否仍存在未删除实体（删型号前护栏）。
+     */
+    boolean existsByModelId(Long modelId, String entityTypeCode);
+
+    /**
+     * 按状态聚合计数（须经本 Repository，禁止业务层直接打 Mapper）。
+     */
+    java.util.List<cn.cheers.x.module.dynamicbusiness.service.entity.dto.EntityAggregationCountDTO<Integer>>
+            countGroupByStatus(String entityTypeCode, Long modelId, Integer status, String keyword,
+                               java.util.List<Long> entityIds);
+
+    /**
+     * 按型号聚合计数。
+     */
+    java.util.List<cn.cheers.x.module.dynamicbusiness.service.entity.dto.EntityAggregationCountDTO<Long>>
+            countGroupByModelId(String entityTypeCode, Long modelId, Integer status, String keyword,
+                                java.util.List<Long> entityIds);
+
+    /**
+     * 解析存储类型编码对应的物理表名（供需原生 SQL 的查询引擎使用）。
+     * <p>业务层不得自行拼 {@code ent_*} 或回落已废止表；一律经本方法。</p>
+     */
+    String resolvePhysicalTableName(String entityTypeCode);
+
     // ==================== 查询条件类 ====================
 
     /**
@@ -212,6 +248,8 @@ public interface EntityRepository {
         private Integer status;
         /** 关键词搜索 */
         private String keyword;
+        /** 业务域（Domain），可选 */
+        private String domain;
         /** 页码（从1开始） */
         private Integer pageNo;
         /** 每页条数 */

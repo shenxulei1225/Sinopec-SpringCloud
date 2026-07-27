@@ -26,6 +26,15 @@ public interface CategoryEntityLinkMapper extends BaseMapperX<CategoryEntityLink
                 .eq(CategoryEntityLinkDO::getEntityId, entityId));
     }
 
+    default CategoryEntityLinkDO selectByEntityIdAndStorage(Long entityId, String storageEntityTypeCode) {
+        LambdaQueryWrapperX<CategoryEntityLinkDO> query = new LambdaQueryWrapperX<CategoryEntityLinkDO>()
+                .eq(CategoryEntityLinkDO::getEntityId, entityId);
+        if (storageEntityTypeCode != null && !storageEntityTypeCode.isBlank()) {
+            query.eq(CategoryEntityLinkDO::getStorageEntityTypeCode, storageEntityTypeCode.trim());
+        }
+        return selectOne(query);
+    }
+
     default int deleteByCategoryId(Long categoryId) {
         return delete(new LambdaQueryWrapperX<CategoryEntityLinkDO>()
                 .eq(CategoryEntityLinkDO::getCategoryId, categoryId));
@@ -34,6 +43,15 @@ public interface CategoryEntityLinkMapper extends BaseMapperX<CategoryEntityLink
     default int deleteByEntityId(Long entityId) {
         return delete(new LambdaQueryWrapperX<CategoryEntityLinkDO>()
                 .eq(CategoryEntityLinkDO::getEntityId, entityId));
+    }
+
+    default int deleteByEntityIdAndStorage(Long entityId, String storageEntityTypeCode) {
+        LambdaQueryWrapperX<CategoryEntityLinkDO> query = new LambdaQueryWrapperX<CategoryEntityLinkDO>()
+                .eq(CategoryEntityLinkDO::getEntityId, entityId);
+        if (storageEntityTypeCode != null && !storageEntityTypeCode.isBlank()) {
+            query.eq(CategoryEntityLinkDO::getStorageEntityTypeCode, storageEntityTypeCode.trim());
+        }
+        return delete(query);
     }
 
     /**

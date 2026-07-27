@@ -8,6 +8,7 @@ import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCreateReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelDomainChangePreviewRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldAssignmentRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldGroupCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelPageReqVO;
@@ -22,7 +23,6 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelCategoryRela
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelCategoryRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
@@ -36,17 +36,20 @@ import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.service.dynamictable.DynamicTableService;
 import cn.cheers.x.module.dynamicbusiness.service.model.core.ModelCoreService;
 import cn.cheers.x.module.dynamicbusiness.util.SparseSortUtils;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityCategoryRelationMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
+import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategoryRelationService;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
+import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeResolver;
 import cn.cheers.x.module.dynamicbusiness.event.ModelCreatedEvent;
 import cn.cheers.x.module.dynamicbusiness.event.RelationTargetCreatedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.exceptions.TooManyResultsException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.dao.DataAccessException;
-import org.springframework.jdbc.BadSqlGrammarException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 import jakarta.annotation.Resource;
@@ -79,8 +82,6 @@ public class ModelServiceImpl implements ModelService {
     @Resource
     private ModelMapper modelMapper;
     @Resource
-    private EntityMapper entityMapper;
-    @Resource
     private CategoryService categoryService;
     @Resource
     private CategoryTypeService categoryTypeService;
@@ -110,6 +111,19 @@ public class ModelServiceImpl implements ModelService {
 
     @Resource
     private ModelFieldGroupService modelFieldGroupService;
+
+    @Resource
+    private EntityTypeScopeResolver entityTypeScopeResolver;
+
+    @Resource
+    private EntityRepository entityRepository;
+
+    @Resource
+    private EntityCategoryRelationMapper entityCategoryRelationMapper;
+
+    @Resource
+    @Lazy // 避免与实体侧服务循环依赖
+    private EntityCategoryRelationService entityCategoryRelationService;
 
 
     /**
@@ -153,10 +167,19 @@ public class ModelServiceImpl implements ModelService {
             throw new ServiceException(400, "模型名称已存在：" + reqVO.getName());
         }
 
+        // 业务域登记在实际存储类型下：从子数据类型入口创建时，reqVO 里可能是注册编码（如 task_patrol）
+        String modelDomain = EntityTypeScopeContext.normalizeDomain(reqVO.getDomain());
+        if (StringUtils.hasText(modelDomain)
+                && !entityTypeService.isRegisteredDomain(
+                        resolveStorageEntityTypeCode(reqVO.getEntityTypeCode()), modelDomain)) {
+            throw new ServiceException(400,
+                    "业务域未登记为该数据类型下的子数据类型，请先创建对应子数据类型：" + modelDomain);
+        }
+
         // 创建模型（租户插件会自动填充 tenantId）
         ModelDO model = ModelConvert.INSTANCE.convert(reqVO);
         model.setCode(generateCode());
-        model.setDataScope(EntityTypeScopeContext.normalizeScope(reqVO.getDataScope()));
+        model.setDomain(modelDomain);
         if (model.getSort() == null) {
             Integer maxSort = modelMapper.selectMaxSortByEntityTypeCode(reqVO.getEntityTypeCode());
             model.setSort(SparseSortUtils.next(maxSort));
@@ -210,6 +233,7 @@ public class ModelServiceImpl implements ModelService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateModel(ModelUpdateReqVO reqVO) {
         // 校验模型存在
         ModelDO existModel = modelCoreService.get(reqVO.getId());
@@ -238,7 +262,16 @@ public class ModelServiceImpl implements ModelService {
         if (model.getSort() == null) {
             model.setSort(existModel.getSort());
         }
+        // 业务域始终保持既有值：改业务域必须走 changeDomain，才能连带迁移实体与分类关联。
+        model.setDomain(existModel.getDomain());
         modelCoreService.update(model);
+
+        if (reqVO.getDomain() != null) {
+            String requestedDomain = EntityTypeScopeContext.normalizeDomain(reqVO.getDomain());
+            if (!EntityTypeScopeContext.domainsEqual(requestedDomain, existModel.getDomain())) {
+                changeDomain(reqVO.getId(), requestedDomain);
+            }
+        }
 
         // 处理分类绑定：如果 categoryIds 不为 null,则更新分类关联
         // - categoryIds 为 null：不更新分类关联（保持现有）
@@ -260,6 +293,105 @@ public class ModelServiceImpl implements ModelService {
                 }
             }
         }
+    }
+
+    // ==================== 业务域迁移 ====================
+
+    @Override
+    public ModelDomainChangePreviewRespVO previewDomainChange(Long modelId, String targetDomain) {
+        return buildDomainChangePlan(modelId, targetDomain).toPreview();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ModelDomainChangePreviewRespVO changeDomain(Long modelId, String targetDomain) {
+        DomainChangePlan plan = buildDomainChangePlan(modelId, targetDomain);
+        if (!plan.changed()) {
+            return plan.toPreview();
+        }
+
+        // 权威链自上而下：型号 → 实体 → 分类关联；同一事务，任一步失败整体回滚。
+        ModelDO update = new ModelDO();
+        update.setId(plan.model().getId());
+        update.setDomain(plan.targetDomain());
+        modelCoreService.update(update);
+
+        if (!plan.entityIds().isEmpty()) {
+            entityRepository.updateDomainByModelId(
+                    plan.model().getId(), plan.storageEntityTypeCode(), plan.targetDomain());
+            entityCategoryRelationService.syncRelationDomainByEntityIds(
+                    plan.entityIds(), plan.storageEntityTypeCode(), plan.targetDomain());
+        }
+
+        log.info("型号业务域迁移完成: modelId={}, {} -> {}, entityCount={}, relationCount={}",
+                plan.model().getId(), plan.currentDomain(), plan.targetDomain(),
+                plan.entityIds().size(), plan.relationCount());
+        return plan.toPreview();
+    }
+
+    /**
+     * 汇总一次业务域迁移的目标与影响面：校验目标业务域已登记，统计该型号下的实体与分类关联。
+     */
+    private DomainChangePlan buildDomainChangePlan(Long modelId, String targetDomain) {
+        if (modelId == null) {
+            throw new ServiceException(400, "modelId 不能为空");
+        }
+        ModelDO model = modelCoreService.get(modelId);
+        if (model == null) {
+            throw new ServiceException(404, "模型不存在");
+        }
+        // 拖到「未划域」分组时前端复用同一个筛选标记；这里统一按清空业务域处理
+        String normalizedTarget = EntityTypeScopeContext.isNoneDomainFilter(targetDomain)
+                ? null
+                : EntityTypeScopeContext.normalizeDomain(targetDomain);
+        String currentDomain = EntityTypeScopeContext.normalizeDomain(model.getDomain());
+        // 存储类型是业务域的宿主：注册编码（如 task_patrol）不能作为型号归属
+        String storageEntityTypeCode = resolveStorageEntityTypeCode(model.getEntityTypeCode());
+        if (StringUtils.hasText(normalizedTarget)
+                && !entityTypeService.isRegisteredDomain(storageEntityTypeCode, normalizedTarget)) {
+            throw new ServiceException(400,
+                    "业务域未登记为该数据类型下的子数据类型，请先创建对应子数据类型：" + normalizedTarget);
+        }
+
+        List<Long> entityIds = entityRepository.findByModelId(modelId, storageEntityTypeCode).stream()
+                .map(EntityDO::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        long relationCount = entityCategoryRelationMapper.countByEntityIds(entityIds, storageEntityTypeCode);
+        boolean changed = !EntityTypeScopeContext.domainsEqual(currentDomain, normalizedTarget);
+        return new DomainChangePlan(model, storageEntityTypeCode, currentDomain, normalizedTarget,
+                changed, entityIds, (int) relationCount);
+    }
+
+    /** 型号业务域迁移的目标与影响面。 */
+    private record DomainChangePlan(ModelDO model,
+                                    String storageEntityTypeCode,
+                                    String currentDomain,
+                                    String targetDomain,
+                                    boolean changed,
+                                    List<Long> entityIds,
+                                    int relationCount) {
+
+        ModelDomainChangePreviewRespVO toPreview() {
+            return ModelDomainChangePreviewRespVO.builder()
+                    .modelId(model.getId())
+                    .modelName(model.getName())
+                    .entityTypeCode(storageEntityTypeCode)
+                    .currentDomain(currentDomain)
+                    .targetDomain(targetDomain)
+                    .changed(changed)
+                    .entityCount(entityIds.size())
+                    .relationCount(relationCount)
+                    .build();
+        }
+    }
+
+    /** 型号归属的实际存储类型；注册编码只用于侧边栏入口。 */
+    private String resolveStorageEntityTypeCode(String entityTypeCode) {
+        if (!StringUtils.hasText(entityTypeCode)) {
+            throw new ServiceException(400, "模型缺少 entityTypeCode");
+        }
+        return entityTypeScopeResolver.resolveStorageEntityTypeCode(entityTypeCode);
     }
 
     /**
@@ -412,53 +544,21 @@ public class ModelServiceImpl implements ModelService {
 
     @Override
     public void deleteModel(Long id) {
-        // 校验模型存在
         ModelDO model = modelCoreService.get(id);
         if (model == null) {
             throw new ServiceException(404, "模型不存在");
         }
 
-        // 校验是否有Entity关联（如果表不存在则跳过检查）
-        try {
-            // 优化：使用 selectOne + LIMIT 1 只需找到第一条匹配记录即可,比 selectCount 更高效
-            // 数据库只需扫描到第一条记录就返回,无需统计全部数量
-            EntityDO existingEntity = entityMapper.selectOne(
-                    new LambdaQueryWrapperX<EntityDO>()
-                            .eq(EntityDO::getModelId, id)
-                            .eq(EntityDO::getTenantId, getTenantId())
-                            .eq(EntityDO::getDeleted, false)
-                            .last("LIMIT 1"));
-            if (existingEntity != null) {
-                throw new ServiceException(400, "模型存在关联的实体,禁止删除");
-            }
-        } catch (BadSqlGrammarException e) {
-            // 如果表不存在,跳过关联检查,允许删除
-            // 这通常发生在实体功能还未完全实现时
-            String errorMsg = e.getMessage();
-            if (errorMsg != null && (errorMsg.contains("不存在") || errorMsg.contains("does not exist") 
-                    || errorMsg.contains("dynamic_entity"))) {
-                // 表不存在,跳过检查,允许删除
-            } else {
-                // 其他SQL语法错误,重新抛出
-                throw e;
-            }
-        } catch (DataAccessException e) {
-            // 处理其他数据库访问异常,如果是表不存在的错误,也跳过检查
-            String errorMsg = e.getMessage();
-            if (errorMsg != null && (errorMsg.contains("不存在") || errorMsg.contains("does not exist") 
-                    || errorMsg.contains("dynamic_entity"))) {
-                // 表不存在,跳过检查
-            } else {
-                // 其他数据库错误,重新抛出
-                throw e;
-            }
+        String storageEntityTypeCode = entityTypeScopeResolver.resolveStorageEntityTypeCode(model.getEntityTypeCode());
+        if (!StringUtils.hasText(storageEntityTypeCode)) {
+            storageEntityTypeCode = model.getEntityTypeCode();
+        }
+        if (entityRepository.existsByModelId(id, storageEntityTypeCode)) {
+            throw new ServiceException(400, "模型存在关联的实体,禁止删除");
         }
 
-        // 删除模型字段分配
         modelFieldAssignmentMapper.deleteByModelId(id);
-        // 删除模型分类关联（使用新服务）
         modelCategoryRelationService.deleteAllByModelId(id);
-        // 删除模型
         modelCoreService.delete(id);
     }
 
@@ -494,9 +594,9 @@ public class ModelServiceImpl implements ModelService {
     }
 
     @Override
-    public List<ModelRespVO> listModelsByEntityType(String entityTypeCode, String dataScope) {
-        List<ModelDO> list = filterModelDosByDataScope(
-                modelCoreService.listByEntityTypeCode(entityTypeCode), dataScope);
+    public List<ModelRespVO> listModelsByEntityType(String entityTypeCode, String domain) {
+        List<ModelDO> list = filterModelDosByDomain(
+                modelCoreService.listByEntityTypeCode(entityTypeCode), domain);
         if (list.isEmpty()) {
             return List.of();
         }
@@ -506,23 +606,23 @@ public class ModelServiceImpl implements ModelService {
         return result;
     }
 
-    private List<ModelDO> filterModelDosByDataScope(List<ModelDO> models, String dataScope) {
-        if (models == null || models.isEmpty() || !org.springframework.util.StringUtils.hasText(dataScope)) {
+    private List<ModelDO> filterModelDosByDomain(List<ModelDO> models, String domain) {
+        if (models == null || models.isEmpty() || !org.springframework.util.StringUtils.hasText(domain)) {
             return models == null ? List.of() : models;
         }
-        String normalized = dataScope.trim();
+        String normalized = domain.trim();
         return models.stream()
-                .filter(model -> EntityTypeScopeContext.scopesEqual(model.getDataScope(), normalized))
+                .filter(model -> EntityTypeScopeContext.matchesDomainFilter(model.getDomain(), normalized))
                 .toList();
     }
 
-    private List<ModelRespVO> filterModelVosByDataScope(List<ModelRespVO> models, String dataScope) {
-        if (models == null || models.isEmpty() || !org.springframework.util.StringUtils.hasText(dataScope)) {
+    private List<ModelRespVO> filterModelVosByDomain(List<ModelRespVO> models, String domain) {
+        if (models == null || models.isEmpty() || !org.springframework.util.StringUtils.hasText(domain)) {
             return models == null ? List.of() : models;
         }
-        String normalized = dataScope.trim();
+        String normalized = domain.trim();
         return models.stream()
-                .filter(model -> EntityTypeScopeContext.scopesEqual(model.getDataScope(), normalized))
+                .filter(model -> EntityTypeScopeContext.matchesDomainFilter(model.getDomain(), normalized))
                 .toList();
     }
 
@@ -533,14 +633,14 @@ public class ModelServiceImpl implements ModelService {
 
     @Override
     public List<ModelRespVO> listUncategorizedModelsByCategoryType(
-            String categoryTypeCode, String entityTypeCode, String dataScope) {
+            String categoryTypeCode, String entityTypeCode, String domain) {
         if (entityTypeCode == null || entityTypeCode.isBlank()) {
             throw new ServiceException(400, "entityTypeCode 不能为空");
         }
         if (categoryTypeCode == null || categoryTypeCode.isBlank()) {
             throw new ServiceException(400, "categoryTypeCode 不能为空");
         }
-        List<ModelRespVO> allModels = listModelsByEntityType(entityTypeCode, dataScope);
+        List<ModelRespVO> allModels = listModelsByEntityType(entityTypeCode, domain);
         if (allModels.isEmpty()) {
             return allModels;
         }
@@ -557,8 +657,8 @@ public class ModelServiceImpl implements ModelService {
     }
 
     @Override
-    public List<ModelRespVO> filterModelsByDataScope(List<ModelRespVO> models, String dataScope) {
-        return filterModelVosByDataScope(models, dataScope);
+    public List<ModelRespVO> filterModelsByDomain(List<ModelRespVO> models, String domain) {
+        return filterModelVosByDomain(models, domain);
     }
 
     /**
@@ -691,7 +791,7 @@ public class ModelServiceImpl implements ModelService {
         } else {
             pageResult = modelCoreService.pageModels(
                     reqVO.getEntityTypeCode(),
-                    EntityTypeScopeContext.normalizeScope(reqVO.getDataScope()),
+                    EntityTypeScopeContext.normalizeDomain(reqVO.getDomain()),
                     reqVO.getKeyword(),
                     status,
                     reqVO.getPageNo(),

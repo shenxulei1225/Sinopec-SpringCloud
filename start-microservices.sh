@@ -329,9 +329,10 @@ start_service() {
     local working_dir="$service_path"
     cd "$working_dir"
     
+    # 每次启动覆盖写日志，只保留本次运行；避免历史 ERROR 堆积干扰排查
     # 后台启动；disown 避免启动脚本 shell 退出时 SIGHUP 带走 Maven/Spring Boot
     # nohup 不能调用 shell 函数，须直接写 mvn + -Dmaven.repo.local（所有服务共用）
-    nohup mvn -Dmaven.repo.local="$MAVEN_REPO_LOCAL" spring-boot:run -Dspring-boot.run.profiles=local >> "$log_file" 2>&1 &
+    nohup mvn -Dmaven.repo.local="$MAVEN_REPO_LOCAL" spring-boot:run -Dspring-boot.run.profiles=local > "$log_file" 2>&1 &
     local pid=$!
     disown -h "$pid" 2>/dev/null || true
     
@@ -608,6 +609,7 @@ show_services() {
     echo -e "${BLUE}说明:${NC}"
     echo "  - Nacos 默认路径: $NACOS_HOME（可通过 NACOS_HOME 环境变量覆盖）"
     echo "  - 默认后台运行,日志保存到 logs/ 目录"
+    echo "  - 每次启动覆盖写 logs/<服务名>-server.log（只保留当次运行）"
     echo "  - 使用 -f 参数可以实时查看启动日志"
     echo ""
     echo -e "${BLUE}核心服务（推荐启动顺序）:${NC}"

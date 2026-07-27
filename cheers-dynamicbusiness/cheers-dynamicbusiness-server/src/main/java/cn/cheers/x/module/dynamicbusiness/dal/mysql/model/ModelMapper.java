@@ -5,7 +5,10 @@ import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
+import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
@@ -71,13 +74,17 @@ public interface ModelMapper extends BaseMapperX<ModelDO> {
         /**
          * 分页查询模型
          */
-        default PageResult<ModelDO> selectPage(String entityTypeCode, String dataScope, String keyword, Integer status, Integer pageNo, Integer pageSize) {
+        default PageResult<ModelDO> selectPage(String entityTypeCode, String domain, String keyword, Integer status, Integer pageNo, Integer pageSize) {
                 PageParam pageParam = new PageParam();
                 pageParam.setPageNo(pageNo);
                 pageParam.setPageSize(pageSize);
+                // 「未划域」分组在服务端过滤，避免前端拉全量后本地筛选导致分页失真
+                boolean unassignedDomain = EntityTypeScopeContext.isNoneDomainFilter(domain);
+                boolean namedDomain = StringUtils.isNotBlank(domain) && !unassignedDomain;
                 return selectPage(pageParam, new LambdaQueryWrapperX<ModelDO>()
                         .eq(StringUtils.isNotBlank(entityTypeCode), ModelDO::getEntityTypeCode, entityTypeCode)
-                        .eq(StringUtils.isNotBlank(dataScope), ModelDO::getDataScope, dataScope != null ? dataScope.trim() : null)
+                        .eq(namedDomain, ModelDO::getDomain, domain != null ? domain.trim() : null)
+                        .and(unassignedDomain, q -> q.isNull(ModelDO::getDomain).or().eq(ModelDO::getDomain, ""))
                         .eq(status != null, ModelDO::getStatus, status)
                         .and(StringUtils.isNotBlank(keyword), q -> q.like(ModelDO::getName, keyword)
                                 .or().like(ModelDO::getDescription, keyword))
@@ -104,5 +111,12 @@ public interface ModelMapper extends BaseMapperX<ModelDO> {
                 return selectCount(new LambdaQueryWrapperX<ModelDO>()
                         .eq(ModelDO::getEntityTypeCode, entityTypeCode));
         }
+
+        /**
+         * 按 ID 查询型号（含已软删），仅用于判定「不存在 / 已删除」。
+         * <p>变更模型业务禁止对已删型号做迁移；须用原生 SQL，因 {@code @TableLogic} 会挡住 Wrapper。</p>
+         */
+        @Select("SELECT * FROM dynamic_model WHERE id = #{id}")
+        ModelDO selectByIdIncludingDeleted(@Param("id") Long id);
 }
 

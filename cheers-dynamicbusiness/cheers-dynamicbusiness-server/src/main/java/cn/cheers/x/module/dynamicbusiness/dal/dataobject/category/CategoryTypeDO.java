@@ -55,5 +55,11 @@ public class CategoryTypeDO extends TenantBaseDO {
      */
     private Long topLevelCategoryId;
 
+    /**
+     * 分类建立方式：SIMPLE / ADVANCED。
+     * ADVANCED ≡ 分类即实体（创建节点仍走 isEntity + entityModelId），不是第二套管线。
+     */
+    private String categoryMode;
+
 
 }

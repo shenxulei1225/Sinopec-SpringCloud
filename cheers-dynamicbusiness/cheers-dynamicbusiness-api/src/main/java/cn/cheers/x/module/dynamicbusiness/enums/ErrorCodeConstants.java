@@ -181,6 +181,7 @@ public interface ErrorCodeConstants {
     ErrorCode CATEGORY_TYPE_NOT_EXISTS = new ErrorCode(1_002_032_000, "分类类型不存在");
     ErrorCode CATEGORY_TYPE_CODE_EXISTS = new ErrorCode(1_002_032_001, "分类类型编码已存在");
     ErrorCode CATEGORY_TYPE_CANNOT_DELETE = new ErrorCode(1_002_032_002, "该分类类型下有分类数据，无法删除");
+    ErrorCode CATEGORY_TYPE_MODE_INVALID = new ErrorCode(1_002_032_003, "分类建立方式无效，仅支持 SIMPLE 或 ADVANCED");
 
     // ========== 模型字段分配 1-002-030-000 ==========
     ErrorCode MODEL_FIELD_ASSIGNMENT_NOT_EXISTS = new ErrorCode(1_002_030_000, "字段分配不存在");
@@ -298,5 +299,11 @@ public interface ErrorCodeConstants {
     ErrorCode CATEGORY_USER_ALREADY_BOUND = new ErrorCode(1_002_049_001, "用户已绑定到该分类");
     ErrorCode CATEGORY_USER_NOT_BOUND = new ErrorCode(1_002_049_002, "用户未绑定到该分类");
     ErrorCode CATEGORY_USER_IDS_EMPTY = new ErrorCode(1_002_049_003, "用户编号列表不能为空");
+
+    // ========== 划分数据成员 1-002-050-000 ==========
+    ErrorCode SCOPE_ENTITY_TYPE_NOT_EXISTS = new ErrorCode(1_002_050_000, "划分数据入口不存在");
+    ErrorCode SCOPE_ENTITY_TYPE_NOT_SCOPE = new ErrorCode(1_002_050_001, "该入口不是划分数据，无法管理成员");
+    ErrorCode SCOPE_ENTITY_IDS_EMPTY = new ErrorCode(1_002_050_002, "实体编号列表不能为空");
+    ErrorCode SCOPE_ENTITY_NOT_IN_BASE = new ErrorCode(1_002_050_003, "实体不属于基础数据类型：{}");
 
 }

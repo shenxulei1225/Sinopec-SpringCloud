@@ -211,6 +211,13 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         if (modelId == null) {
             throw new ServiceException(400, "modelId 不能为空");
         }
+        ModelDO model = modelMapper.selectByIdIncludingDeleted(modelId);
+        if (model == null) {
+            throw new ServiceException(404, "模型不存在: " + modelId);
+        }
+        if (Boolean.TRUE.equals(model.getDeleted())) {
+            throw new ServiceException(400, "模型已删除，禁止加载表单或变更: " + modelId);
+        }
         // 按最新字段库 / 分配重建，避免关联目标仅改在字段库后仍读到过期表单（新建下拉为空）。
         refreshSingleModelCrudForm(code, modelId);
         ModelCrudFormDefinitionDO data = modelCrudFormDefinitionMapper.selectByEntityTypeAndModel(code, modelId);
@@ -316,7 +323,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         }
         String storageCode = model.getEntityTypeCode().trim();
         refreshSingleModelCrudForm(storageCode, modelId);
-        refreshScopedRegistryCrudFormsForModel(model);
+        refreshDomainRegistryCrudFormsForModel(model);
     }
 
     @Override
@@ -918,38 +925,38 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     }
 
     /**
-     * 模型字段变更时，同步刷新指向同一 storage + dataScope 的 SCOPED 入口表单定义。
+     * 模型字段变更时，同步刷新指向同一 storage + domain 的 DOMAIN 入口表单定义。
      */
-    private void refreshScopedRegistryCrudFormsForModel(ModelDO model) {
+    private void refreshDomainRegistryCrudFormsForModel(ModelDO model) {
         if (model == null || !StringUtils.hasText(model.getEntityTypeCode())) {
             return;
         }
-        List<EntityTypeDO> scopedEntries = entityTypeMapper.selectList(new LambdaQueryWrapperX<EntityTypeDO>()
-                .eq(EntityTypeDO::getEntryKind, EntityTypeDO.ENTRY_KIND_SCOPED)
+        List<EntityTypeDO> domainEntries = entityTypeMapper.selectList(new LambdaQueryWrapperX<EntityTypeDO>()
+                .eq(EntityTypeDO::getEntryKind, EntityTypeDO.ENTRY_KIND_DOMAIN)
                 .eq(EntityTypeDO::getBaseEntityTypeCode, model.getEntityTypeCode().trim())
                 .eq(EntityTypeDO::getDeleted, false));
-        if (scopedEntries == null || scopedEntries.isEmpty()) {
+        if (domainEntries == null || domainEntries.isEmpty()) {
             return;
         }
-        for (EntityTypeDO scopedEntry : scopedEntries) {
-            if (scopedEntry == null || !StringUtils.hasText(scopedEntry.getCode())) {
+        for (EntityTypeDO domainEntry : domainEntries) {
+            if (domainEntry == null || !StringUtils.hasText(domainEntry.getCode())) {
                 continue;
             }
-            if (!EntityTypeScopeContext.scopesEqual(scopedEntry.getDataScope(), model.getDataScope())) {
+            if (!EntityTypeScopeContext.domainsEqual(domainEntry.getDomain(), model.getDomain())) {
                 continue;
             }
-            refreshSingleModelCrudForm(scopedEntry.getCode().trim(), model.getId());
+            refreshSingleModelCrudForm(domainEntry.getCode().trim(), model.getId());
         }
     }
 
     /**
-     * 能力重建时列出应生成 CRUD 表单的模型：NATIVE 按 registry；SCOPED 按 storage + dataScope。
+     * 能力重建时列出应生成 CRUD 表单的模型：NATIVE 按 registry；DOMAIN 按 storage + domain。
      */
     private List<ModelDO> listModelsForCrudFormRebuild(String registryEntityTypeCode) {
         EntityTypeScopeContext scope = loadEntityTypeScope(registryEntityTypeCode);
-        if (scope != null && scope.isScoped()) {
+        if (scope != null && scope.isDomainEntry()) {
             return modelMapper.selectByEntityTypeCode(scope.getStorageEntityTypeCode()).stream()
-                    .filter(model -> EntityTypeScopeContext.scopesEqual(model.getDataScope(), scope.getDataScope()))
+                    .filter(model -> EntityTypeScopeContext.domainsEqual(model.getDomain(), scope.getDomain()))
                     .toList();
         }
         return modelMapper.selectByEntityTypeCode(registryEntityTypeCode);
@@ -962,7 +969,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
 
     private String resolveFormFieldEntityTypeCode(String registryEntityTypeCode, ModelDO model) {
         EntityTypeScopeContext scope = loadEntityTypeScope(registryEntityTypeCode);
-        if (scope != null && scope.isScoped()) {
+        if (scope != null && scope.isDomainEntry()) {
             return scope.getStorageEntityTypeCode();
         }
         return model.getEntityTypeCode();
@@ -977,11 +984,11 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             return null;
         }
         EntityTypeScopeContext scope = loadEntityTypeScope(registryEntityTypeCode);
-        if (scope != null && scope.isScoped()) {
+        if (scope != null && scope.isDomainEntry()) {
             if (!scope.getStorageEntityTypeCode().equals(model.getEntityTypeCode())) {
                 return null;
             }
-            if (!EntityTypeScopeContext.scopesEqual(scope.getDataScope(), model.getDataScope())) {
+            if (!EntityTypeScopeContext.domainsEqual(scope.getDomain(), model.getDomain())) {
                 return null;
             }
             return new ModelCrudFormResolveContext(registryEntityTypeCode, scope.getStorageEntityTypeCode());

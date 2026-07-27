@@ -127,6 +127,17 @@ public class EntityTypeController {
         return success(entityTypeService.listSimple());
     }
 
+    @GetMapping("/list-domain-options")
+    @Operation(
+            summary = "按存储类型列出业务域选项",
+            description = "来自该 baseEntityTypeCode 下已建的 DOMAIN 子数据类型；型号创建/编辑下拉使用")
+    @Parameter(name = "baseEntityTypeCode", description = "存储类型编码", required = true, example = "task")
+    @PreAuthorize("@ss.hasPermission('system:entity-type:query')")
+    public CommonResult<List<EntityTypeDomainOptionVO>> listDomainOptions(
+            @RequestParam("baseEntityTypeCode") String baseEntityTypeCode) {
+        return success(entityTypeService.listDomainOptions(baseEntityTypeCode));
+    }
+
     @GetMapping("/list-config-children")
     @Operation(summary = "获取某业务的配置子业务列表", description = "获取主业务(如巡检)所关联的配置/资源类业务元素(如巡检点、检查项),用于 How 维度建模")
     @Parameter(name = "entityTypeCode", description = "主业务类型编码", required = true, example = "INSPECTION_TASK")
@@ -138,9 +149,10 @@ public class EntityTypeController {
     // ========== 存储配置 (Config) 细节 API ==========
 
     @GetMapping("/config/storage-types")
-    @Operation(summary = "获取支持的存储类型选项", description = "用于创建业务类型时选择存储策略(GENERIC/DEDICATED等)")
+    @Operation(summary = "获取支持的存储类型选项", description = "动态业务仅支持专用表 DEDICATED（已废止 GENERIC）")
     public CommonResult<List<StorageTypeOption>> getStorageTypes() {
         List<StorageTypeOption> options = Arrays.stream(StorageTypeEnum.values())
+                .filter(StorageTypeEnum::isUnifiedDedicated)
                 .map(type -> new StorageTypeOption(type.getCode(), type.getName(),
                         type.isDedicated(), false, type.supportsRuleEngine()))
                 .toList();

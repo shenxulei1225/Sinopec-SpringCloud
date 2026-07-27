@@ -1,6 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.entitytype;
 
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeCreateReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeDomainOptionVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeSimpleVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeUpdateReqVO;
@@ -68,6 +69,19 @@ public interface EntityTypeService {
      * @return 业务类型简单列表
      */
     List<EntityTypeSimpleVO> listSimple();
+
+    /**
+     * 列出某存储类型下子数据类型（DOMAIN）的业务域选项，供型号 CRUD 下拉。
+     *
+     * @param baseEntityTypeCode 存储类型编码（如 task、equipment）
+     * @return value=domain，label=子数据类型名称
+     */
+    List<EntityTypeDomainOptionVO> listDomainOptions(String baseEntityTypeCode);
+
+    /**
+     * 业务域是否属于该存储类型下已登记的 DOMAIN 入口（空域视为合法）。
+     */
+    boolean isRegisteredDomain(String baseEntityTypeCode, String domain);
 
     /**
      * 获取系统级业务类型列表

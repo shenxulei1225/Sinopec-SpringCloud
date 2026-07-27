@@ -72,7 +72,7 @@ public class GenericEntityQueryServiceImpl implements GenericEntityQueryService 
         ModelDO model = getModelByCode(request.getModelCode());
 
         // 3. 转换为内部查询请求
-        FieldQueryRequest fieldQueryRequest = convertToFieldQueryRequest(request, model.getId());
+        FieldQueryRequest fieldQueryRequest = convertToFieldQueryRequest(request, model);
 
         // 4. 执行查询
         log.debug("执行通用查询: modelCode={}, modelId={}, conditions={}",
@@ -96,7 +96,7 @@ public class GenericEntityQueryServiceImpl implements GenericEntityQueryService 
         ModelDO model = getModelByCode(request.getModelCode());
 
         // 3. 转换为内部聚合请求
-        FieldAggregateRequest fieldAggregateRequest = convertToFieldAggregateRequest(request, model.getId());
+        FieldAggregateRequest fieldAggregateRequest = convertToFieldAggregateRequest(request, model);
 
         // 4. 执行聚合
         log.debug("执行通用聚合: modelCode={}, modelId={}, type={}, field={}",
@@ -118,7 +118,7 @@ public class GenericEntityQueryServiceImpl implements GenericEntityQueryService 
         ModelDO model = getModelByCode(request.getModelCode());
 
         // 3. 转换为内部查询请求
-        FieldQueryRequest fieldQueryRequest = convertToFieldQueryRequest(request, model.getId());
+        FieldQueryRequest fieldQueryRequest = convertToFieldQueryRequest(request, model);
 
         // 4. 执行计数
         log.debug("执行通用计数: modelCode={}, modelId={}", request.getModelCode(), model.getId());
@@ -243,9 +243,10 @@ public class GenericEntityQueryServiceImpl implements GenericEntityQueryService 
     /**
      * 将 GenericQueryRequest 转换为 FieldQueryRequest
      */
-    private FieldQueryRequest convertToFieldQueryRequest(GenericQueryRequest request, Long modelId) {
+    private FieldQueryRequest convertToFieldQueryRequest(GenericQueryRequest request, ModelDO model) {
         FieldQueryRequest.FieldQueryRequestBuilder builder = FieldQueryRequest.builder()
-            .modelId(modelId)
+            .modelId(model.getId())
+            .entityTypeCode(model.getEntityTypeCode())
             .logic(request.getLogic() != null ? request.getLogic() : LogicType.AND);
 
         // 转换查询条件
@@ -274,9 +275,10 @@ public class GenericEntityQueryServiceImpl implements GenericEntityQueryService 
     /**
      * 将 GenericAggregateRequest 转换为 FieldAggregateRequest
      */
-    private FieldAggregateRequest convertToFieldAggregateRequest(GenericAggregateRequest request, Long modelId) {
+    private FieldAggregateRequest convertToFieldAggregateRequest(GenericAggregateRequest request, ModelDO model) {
         FieldAggregateRequest.FieldAggregateRequestBuilder builder = FieldAggregateRequest.builder()
-            .modelId(modelId)
+            .modelId(model.getId())
+            .entityTypeCode(model.getEntityTypeCode())
             .aggregateType(request.getAggregateType())
             .fieldCode(request.getFieldCode())
             .groupByFieldCode(request.getGroupByFieldCode());

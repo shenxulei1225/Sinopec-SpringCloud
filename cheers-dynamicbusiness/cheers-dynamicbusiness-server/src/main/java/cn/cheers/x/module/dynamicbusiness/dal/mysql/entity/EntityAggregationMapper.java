@@ -13,10 +13,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * Entity 聚合统计 Mapper（PostgreSQL）
+ * Entity 聚合统计 Mapper（仅供 {@link cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepositoryImpl} 复用静态转换）。
  *
- * <p>仅用于聚合统计（facet）。表名固定写 dynamic_entity，由 MyBatis-Plus DynamicTableNameInnerInterceptor
- * 结合 ThreadLocal 的 entityTypeCode 在运行时替换为 ent_xxx。</p>
+ * <p>业务层禁止注入本 Mapper；聚合查询须走 EntityRepository，由其设置表名上下文。</p>
  */
 @Mapper
 public interface EntityAggregationMapper extends BaseMapperX<EntityDO> {

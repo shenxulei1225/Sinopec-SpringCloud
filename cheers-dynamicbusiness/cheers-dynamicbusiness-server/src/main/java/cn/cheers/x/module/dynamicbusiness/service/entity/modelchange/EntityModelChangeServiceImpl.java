@@ -17,11 +17,16 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeBaseFieldMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityCategoryRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
+import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
+import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeResolver;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
+import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategoryRelationService;
+import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.RequiredArgsConstructor;
@@ -62,6 +67,9 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
             "parentid", "parent_id",
             "treepath", "tree_path",
             "sort", "guid", "attrs",
+            // code 与 domain 是实体表的核心列，不是型号字段：换型号时随核心列原样带过去，
+            // 不能当成源型号专有字段归档（domain 另由目标型号改写）。
+            "code", "domain",
             ARCHIVE_KEY.toLowerCase());
 
     private static final Set<String> CORE_PRESERVED = Set.of(
@@ -74,6 +82,10 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
     private final FieldMapper fieldMapper;
     private final EntityTypeBaseFieldMapper entityTypeBaseFieldMapper;
     private final CustomFieldValidationService customFieldValidationService;
+    private final EntityTypeScopeResolver entityTypeScopeResolver;
+    private final EntityTypeService entityTypeService;
+    private final EntityCategoryRelationService entityCategoryRelationService;
+    private final EntityCategoryRelationMapper entityCategoryRelationMapper;
 
     @Override
     public EntityChangeModelPreviewRespVO preview(EntityChangeModelPreviewReqVO reqVO) {
@@ -102,22 +114,36 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
             throw new ServiceException(400, "存在将归档的源模型专有字段，请确认 confirmArchive=true");
         }
 
+        // 实体本体：业务域由 prepareUpdateEntity 从目标型号抄写；源专有字段随 customFields 整列覆盖而清空
         EntityUpdateReqVO updateReq = buildUpdateRequest(ctx, plan);
         entityService.updateIncludingModelChange(updateReq);
+
+        // 分类关联的业务域只是实体行的镜像，必须在同一事务内跟着迁移，否则按业务域筛分类会漏掉本实体
+        int syncedRelationCount = 0;
+        if (ctx.domainChanged) {
+            syncedRelationCount = entityCategoryRelationService.syncRelationDomainByEntityIds(
+                    List.of(ctx.entityId), ctx.entityTypeCode, ctx.targetDomain);
+        }
 
         EntityChangeModelCommitRespVO resp = new EntityChangeModelCommitRespVO();
         resp.setEntityId(ctx.entityId);
         resp.setModelId(ctx.targetModel.getId());
         resp.setKeptFieldCount(plan.keptValues.size());
         resp.setArchivedFieldCount(plan.archivedFields.size());
+        resp.setSourceDomain(ctx.sourceDomain);
+        resp.setTargetDomain(ctx.targetDomain);
+        resp.setDomainChanged(ctx.domainChanged);
+        resp.setSyncedRelationCount(syncedRelationCount);
         return resp;
     }
 
     private MigrationContext buildContext(String entityTypeCode, Long entityId, Long targetModelId) {
-        String trimmedType = entityTypeCode != null ? entityTypeCode.trim() : "";
-        if (!StringUtils.hasText(trimmedType)) {
+        String rawType = entityTypeCode != null ? entityTypeCode.trim() : "";
+        if (!StringUtils.hasText(rawType)) {
             throw new ServiceException(400, "entityTypeCode 不能为空");
         }
+        // 侧边栏可能传子数据类型入口编码（如 task_patrol）；实体、型号、分类关联一律按实际存储类型定位
+        String trimmedType = entityTypeScopeResolver.resolveStorageEntityTypeCode(rawType);
         if (entityId == null || entityId <= 0) {
             throw new ServiceException(400, "entityId 无效");
         }
@@ -138,10 +164,18 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
             throw new ServiceException(400, "目标模型与当前模型相同，无需变更");
         }
 
-        ModelDO sourceModel = requireModel(sourceModelId);
-        ModelDO targetModel = requireModel(targetModelId);
-        if (!trimmedType.equals(sourceModel.getEntityTypeCode()) || !trimmedType.equals(targetModel.getEntityTypeCode())) {
+        ModelDO sourceModel = requireAliveModel(sourceModelId, "源");
+        ModelDO targetModel = requireAliveModel(targetModelId, "目标");
+        if (!trimmedType.equals(entityTypeScopeResolver.resolveStorageEntityTypeCode(sourceModel.getEntityTypeCode()))
+                || !trimmedType.equals(entityTypeScopeResolver.resolveStorageEntityTypeCode(targetModel.getEntityTypeCode()))) {
             throw new ServiceException(400, "仅允许在同一业务类型内变更模型");
+        }
+
+        // 业务域权威链：目标型号的业务域即迁移后的实体业务域；跨业务域时必须是该存储类型下已登记的子数据类型
+        String targetDomain = EntityTypeScopeContext.normalizeDomain(targetModel.getDomain());
+        if (StringUtils.hasText(targetDomain) && !entityTypeService.isRegisteredDomain(trimmedType, targetDomain)) {
+            throw new ServiceException(400,
+                    "目标型号的业务域未登记为该数据类型下的子数据类型：" + targetDomain);
         }
 
         EntityRespVO entityVo = EntityDoVoHelper.toRespVO(entity, customFieldValidationService);
@@ -161,6 +195,10 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
         ctx.sourceFieldCodes = descriptorCodes(sourceFields);
         ctx.targetFields = targetFields;
         ctx.targetFieldCodes = descriptorCodes(targetFields);
+        ctx.sourceDomain = EntityTypeScopeContext.normalizeDomain(entity.getDomain());
+        ctx.targetDomain = targetDomain;
+        ctx.domainChanged = !EntityTypeScopeContext.domainsEqual(ctx.sourceDomain, targetDomain);
+        ctx.relationCount = (int) entityCategoryRelationMapper.countByEntityIds(List.of(entityId), trimmedType);
         return ctx;
     }
 
@@ -264,6 +302,12 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
         }
         baseFields.put("entityTypeCode", ctx.entityTypeCode);
         baseFields.put("modelId", ctx.targetModel.getId());
+        // 快照里带的是源业务域，换型号后必须改写为目标型号的业务域，否则会被「请求业务域与型号业务域不一致」拦下
+        if (StringUtils.hasText(ctx.targetDomain)) {
+            baseFields.put("domain", ctx.targetDomain);
+        } else {
+            baseFields.remove("domain");
+        }
         if (ctx.entityVo.getName() != null) {
             baseFields.put("name", ctx.entityVo.getName());
         }
@@ -316,8 +360,21 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
         resp.setKeptFields(plan.keptFieldItems);
         resp.setMissingRequired(plan.missingRequiredItems);
         resp.setArchivedFields(plan.archivedFieldItems);
-        resp.setWarnings(plan.warnings);
+        resp.setSourceDomain(ctx.sourceDomain);
+        resp.setTargetDomain(ctx.targetDomain);
+        resp.setDomainChanged(ctx.domainChanged);
+        resp.setRelationCount(ctx.relationCount);
+        List<String> warnings = new ArrayList<>(plan.warnings);
+        if (ctx.domainChanged) {
+            warnings.add("变更后实体业务域为「" + describeDomain(ctx.targetDomain)
+                    + "」，其 " + ctx.relationCount + " 条分类关联的业务域将同步迁移");
+        }
+        resp.setWarnings(warnings);
         return resp;
+    }
+
+    private String describeDomain(String domain) {
+        return StringUtils.hasText(domain) ? domain : "未划域";
     }
 
     private EntityChangeModelModelSummaryVO toModelSummary(ModelDO model) {
@@ -339,10 +396,18 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
         return item;
     }
 
-    private ModelDO requireModel(Long modelId) {
-        ModelDO model = modelMapper.selectById(modelId);
+    /**
+     * 变更模型仅允许存活型号：源、目标任一已软删一律拒绝。
+     * <p>先查含软删记录，以便区分「不存在」与「已删除」，避免把已删型号当成可迁移源。</p>
+     */
+    private ModelDO requireAliveModel(Long modelId, String role) {
+        ModelDO model = modelMapper.selectByIdIncludingDeleted(modelId);
         if (model == null) {
-            throw new ServiceException(404, "模型不存在: " + modelId);
+            throw new ServiceException(404, role + "模型不存在: " + modelId);
+        }
+        if (Boolean.TRUE.equals(model.getDeleted())) {
+            throw new ServiceException(400, role + "模型已删除，禁止变更模型: " + modelId
+                    + (StringUtils.hasText(model.getName()) ? "（" + model.getName() + "）" : ""));
         }
         return model;
     }
@@ -671,6 +736,10 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
         private Set<String> sourceFieldCodes;
         private List<ModelFieldDescriptor> targetFields;
         private Set<String> targetFieldCodes;
+        private String sourceDomain;
+        private String targetDomain;
+        private boolean domainChanged;
+        private int relationCount;
     }
 
     private static final class MigrationPlan {

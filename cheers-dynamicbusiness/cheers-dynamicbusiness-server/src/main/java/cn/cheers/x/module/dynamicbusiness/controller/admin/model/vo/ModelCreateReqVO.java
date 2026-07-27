@@ -40,8 +40,8 @@ public class ModelCreateReqVO {
     @Schema(description = "分类ID列表（可选，用于绑定模型到多个分类，支持多对多关系）", example = "[1, 2, 3]")
     private List<Long> categoryIds;
 
-    @Schema(description = "业务域 Scope（SCOPED 入口下创建模型时写入）", example = "巡检")
-    private String dataScope;
+    @Schema(description = "业务域（Domain）；子数据类型入口下创建型号时写入", example = "巡检")
+    private String domain;
 
 }
 

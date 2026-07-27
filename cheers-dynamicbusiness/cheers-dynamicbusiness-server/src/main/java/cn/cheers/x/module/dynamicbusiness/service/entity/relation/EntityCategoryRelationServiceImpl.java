@@ -9,8 +9,11 @@ import static cn.cheers.x.module.dynamicbusiness.enums.ErrorCodeConstants.ASSOCI
 import static cn.cheers.x.module.dynamicbusiness.enums.ErrorCodeConstants.ENTITY_NOT_EXISTS;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityCategoryRelationDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityCategoryRelationMapper;
+import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
+import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeResolver;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
 import cn.cheers.x.module.dynamicbusiness.util.SparseSortUtils;
@@ -51,6 +54,82 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
     @Resource
     private CategoryMapper categoryMapper;
 
+    @Resource
+    private EntityTypeScopeResolver entityTypeScopeResolver;
+
+    // ==================== 关联身份解析 ====================
+
+    /**
+     * 把调用方传入的数据类型编码归一为实际存储类型。
+     *
+     * <p>侧边栏注册项编码（如子数据类型入口 task_patrol）只是入口编号，关联表一律存实际存储类型
+     * （如 task）；业务域另由关联行上的 domain 承载。</p>
+     */
+    private String resolveStorageEntityTypeCode(String entityTypeCode) {
+        validateEntityTypeCodeNotBlank(entityTypeCode);
+        String storage = entityTypeScopeResolver.resolveStorageEntityTypeCode(entityTypeCode);
+        if (storage == null || storage.isBlank()) {
+            throw new ServiceException(400, "entityTypeCode 不能为空");
+        }
+        return storage;
+    }
+
+    /**
+     * 读取实体行上的业务域；关联行的 domain 一律抄实体，不接受调用方传入。
+     *
+     * @return entityId -> domain（实体无业务域时值为 null）
+     */
+    private Map<Long, String> loadEntityDomains(Collection<Long> entityIds, String storageEntityTypeCode) {
+        if (entityIds == null || entityIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Long> ids = entityIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (ids.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, String> domainByEntityId = new HashMap<>();
+        for (EntityDO entity : entityCoreService.listByIds(ids, storageEntityTypeCode)) {
+            if (entity != null && entity.getId() != null) {
+                domainByEntityId.put(entity.getId(), EntityTypeScopeContext.normalizeDomain(entity.getDomain()));
+            }
+        }
+        return domainByEntityId;
+    }
+
+    /** 单实体的业务域；实体不存在时抛错，避免写出无法对应实体的关联行。 */
+    private String requireEntityDomain(Long entityId, String storageEntityTypeCode) {
+        EntityDO entity = entityCoreService.get(entityId, storageEntityTypeCode);
+        if (entity == null) {
+            throw new ServiceException(404, "实体不存在");
+        }
+        return EntityTypeScopeContext.normalizeDomain(entity.getDomain());
+    }
+
+    /**
+     * 子数据类型入口下的关联读写，必须确认实体确实属于该入口的业务域。
+     *
+     * <p>存储类型归一后，巡检任务与维修任务共用 task 存储；若不校验，从巡检入口发起的
+     * 关联或解绑会误改维修任务。其它入口（数据类型 / 划分数据 / 旧分类入口）不做业务域限制。</p>
+     */
+    private void validateEntitiesInEntryDomain(String entityTypeCode, String storageEntityTypeCode,
+                                               Collection<Long> entityIds) {
+        EntityTypeScopeContext scope = entityTypeScopeResolver.resolve(entityTypeCode);
+        if (scope == null || !scope.isDomainEntry() || entityIds == null || entityIds.isEmpty()) {
+            return;
+        }
+        String entryDomain = scope.getDomain();
+        Map<Long, String> domainByEntityId = loadEntityDomains(entityIds, storageEntityTypeCode);
+        for (Long entityId : entityIds) {
+            if (entityId == null) {
+                continue;
+            }
+            if (!EntityTypeScopeContext.domainsEqual(domainByEntityId.get(entityId), entryDomain)) {
+                throw new ServiceException(400,
+                        "实体 " + entityId + " 不属于当前子数据类型的业务域（" + entryDomain + "）");
+            }
+        }
+    }
+
     // ==================== 单实体-单分类操作 ====================
 
     /**
@@ -72,20 +151,22 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         /** 校验参数 */
         validateEntityIdNotNull(entityId);
         validateCategoryIdNotNull(categoryId);
-        validateEntityTypeCodeNotBlank(entityTypeCode);
-        validateEntityExists(entityId, entityTypeCode);
+        String storageEntityTypeCode = resolveStorageEntityTypeCode(entityTypeCode);
+        String domain = requireEntityDomain(entityId, storageEntityTypeCode);
+        validateEntitiesInEntryDomain(entityTypeCode, storageEntityTypeCode, List.of(entityId));
         validateCategoryExists(categoryId);
 
         // 如果存在软删除的关联，优先恢复软删除关联，避免唯一键冲突
         int restored = relationMapper.restoreDeletedRelation(
                 entityId,
                 categoryId,
-                entityTypeCode,
+                storageEntityTypeCode,
+                domain,
                 // 排序策略：增量关联不全量重排；恢复/新增均置于当前分类末尾。
                 nextRelationSort(categoryId));
         if (restored > 0) {
-            log.info("重新启用已删除的实体-分类关联并更新排序: entityId={}, categoryId={}, entityTypeCode={}",
-                    entityId, categoryId, entityTypeCode);
+            log.info("重新启用已删除的实体-分类关联并更新排序: entityId={}, categoryId={}, entityTypeCode={}, domain={}",
+                    entityId, categoryId, storageEntityTypeCode, domain);
             return EntityCategoryAssociationRespVO.builder()
                     .operationType("ASSOCIATE")
                     .entityId(entityId)
@@ -100,8 +181,8 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         }
 
         // 检查有效关联是否已存在
-        if (existsRelation(entityId, categoryId, entityTypeCode)) {
-            log.debug("关联已存在: entityId={}, categoryId={}, entityTypeCode={}", entityId, categoryId, entityTypeCode);
+        if (existsRelation(entityId, categoryId, storageEntityTypeCode)) {
+            log.debug("关联已存在: entityId={}, categoryId={}, entityTypeCode={}", entityId, categoryId, storageEntityTypeCode);
             return EntityCategoryAssociationRespVO.builder()
                     .operationType("ASSOCIATE")
                     .entityId(entityId)
@@ -118,12 +199,14 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         EntityCategoryRelationDO relation = EntityCategoryRelationDO.builder()
                 .entityId(entityId)
                 .categoryId(categoryId)
-                .entityTypeCode(entityTypeCode)
+                .entityTypeCode(storageEntityTypeCode)
+                .domain(domain)
                 .sort(nextRelationSort(categoryId))
                 .build();
         relationMapper.insert(relation);
 
-        log.info("创建实体-分类关联: entityId={}, categoryId={}, entityTypeCode={}", entityId, categoryId, entityTypeCode);
+        log.info("创建实体-分类关联: entityId={}, categoryId={}, entityTypeCode={}, domain={}",
+                entityId, categoryId, storageEntityTypeCode, domain);
         return EntityCategoryAssociationRespVO.builder()
                 .operationType("ASSOCIATE")
                 .entityId(entityId)
@@ -167,9 +250,10 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                     .executionTime(System.currentTimeMillis() - startTime)
                     .build();
         }
-        validateEntityTypeCodeNotBlank(entityTypeCode);
-        markEntitiesExcludedFromCategory(List.of(entityId), categoryId, entityTypeCode);
-        log.info("删除实体-分类关联: entityId={}, categoryId={}, entityTypeCode={}", entityId, categoryId, entityTypeCode);
+        String storageEntityTypeCode = resolveStorageEntityTypeCode(entityTypeCode);
+        validateEntitiesInEntryDomain(entityTypeCode, storageEntityTypeCode, List.of(entityId));
+        markEntitiesExcludedFromCategory(List.of(entityId), categoryId, storageEntityTypeCode);
+        log.info("删除实体-分类关联: entityId={}, categoryId={}, entityTypeCode={}", entityId, categoryId, storageEntityTypeCode);
         return EntityCategoryAssociationRespVO.builder()
                 .operationType("DISASSOCIATE")
                 .entityId(entityId)
@@ -190,8 +274,8 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         if (entityId == null || categoryId == null) {
             return false;
         }
-        validateEntityTypeCodeNotBlank(entityTypeCode);
-        return relationMapper.selectByEntityAndCategory(entityId, categoryId, entityTypeCode) != null;
+        String storageEntityTypeCode = resolveStorageEntityTypeCode(entityTypeCode);
+        return relationMapper.selectByEntityAndCategory(entityId, categoryId, storageEntityTypeCode) != null;
     }
 
     // ==================== 单实体-多分类操作 ====================
@@ -264,13 +348,14 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                     .build();
         }
 
-        validateEntityTypeCodeNotBlank(entityTypeCode);
+        String storageEntityTypeCode = resolveStorageEntityTypeCode(entityTypeCode);
+        validateEntitiesInEntryDomain(entityTypeCode, storageEntityTypeCode, List.of(entityId));
         for (Long categoryId : categoryIds) {
-            // 仅删除 entity-category 关联（按业务类型过滤）
-            relationMapper.deleteByEntityAndCategory(entityId, categoryId, entityTypeCode);
+            // 仅删除 entity-category 关联（按实际存储类型过滤）
+            relationMapper.deleteByEntityAndCategory(entityId, categoryId, storageEntityTypeCode);
         }
 
-        log.info("批量取消实体与分类的关联: entityId={}, categoryIds={}, entityTypeCode={}", entityId, categoryIds, entityTypeCode);
+        log.info("批量取消实体与分类的关联: entityId={}, categoryIds={}, entityTypeCode={}", entityId, categoryIds, storageEntityTypeCode);
         return EntityCategoryAssociationRespVO.builder()
                 .operationType("BATCH_DISASSOCIATE")
                 .entityId(entityId)
@@ -328,10 +413,13 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             }
         }
 
-        // Step 3: 读取当前有效关联（按 entityId，再在内存中过滤 entityTypeCode）
+        // Step 3: 读取当前有效关联（按 entityId，再在内存中过滤实际存储类型）
+        String storageEntityTypeCode = resolveStorageEntityTypeCode(entityTypeCode);
+        String domain = requireEntityDomain(entityId, storageEntityTypeCode);
+        validateEntitiesInEntryDomain(entityTypeCode, storageEntityTypeCode, List.of(entityId));
         List<EntityCategoryRelationDO> activeRelations = relationMapper.selectByEntityId(entityId);
         Set<Long> activeCategoryIds = activeRelations.stream()
-                .filter(rel -> entityTypeCode.equals(rel.getEntityTypeCode()))
+                .filter(rel -> storageEntityTypeCode.equals(rel.getEntityTypeCode()))
                 .map(EntityCategoryRelationDO::getCategoryId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -339,7 +427,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         // Step 4: 读取目标分类上的历史关联（含 deleted）并提取恢复候选
         List<EntityCategoryRelationDO> existingRelationsOnTarget = validCategoryIds.isEmpty()
                 ? Collections.emptyList()
-                : relationMapper.selectByEntityAndCategoryIdsIncludingDeleted(entityId, validCategoryIds, entityTypeCode);
+                : relationMapper.selectByEntityAndCategoryIdsIncludingDeleted(entityId, validCategoryIds, storageEntityTypeCode);
         Set<Long> restoreCandidates = existingRelationsOnTarget.stream()
                 .filter(rel -> Boolean.TRUE.equals(rel.getDeleted()))
                 .map(EntityCategoryRelationDO::getCategoryId)
@@ -358,7 +446,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         }
         // Step 7: 先完成状态变更（恢复 + 新增），不在此阶段分段编号
         if (!toRestore.isEmpty()) {
-            relationMapper.restoreDeletedRelationsBatch(entityId, toRestore, entityTypeCode);
+            relationMapper.restoreDeletedRelationsBatch(entityId, toRestore, storageEntityTypeCode, domain);
         }
         if (!toInsert.isEmpty()) {
             List<EntityCategoryRelationDO> relationsToInsert = new ArrayList<>();
@@ -366,7 +454,8 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                 relationsToInsert.add(EntityCategoryRelationDO.builder()
                         .entityId(entityId)
                         .categoryId(categoryId)
-                        .entityTypeCode(entityTypeCode)
+                        .entityTypeCode(storageEntityTypeCode)
+                        .domain(domain)
                         .sort(0)
                         .build());
             }
@@ -382,7 +471,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             Map<Long, Integer> sortOffsetMap = new HashMap<>();
             for (Long categoryId : changedOrdered) {
                 relationMapper.updateSortByEntityAndCategory(entityId, categoryId,
-                        calculateSortWithBase(baseSortMap, sortOffsetMap, categoryId), entityTypeCode);
+                        calculateSortWithBase(baseSortMap, sortOffsetMap, categoryId), storageEntityTypeCode);
             }
         }
 
@@ -433,7 +522,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             List<Long> entityIds, Long categoryId, String entityTypeCode) {
         long startTime = System.currentTimeMillis();
 
-        validateEntityTypeCodeNotBlank(entityTypeCode);
+        String storageEntityTypeCode = resolveStorageEntityTypeCode(entityTypeCode);
 
         if (entityIds == null || entityIds.isEmpty() || categoryId == null) {
             return BatchEntityCategoryAssociationRespVO.builder()
@@ -446,9 +535,11 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                     .build();
         }
 
-        int successCount = markEntitiesExcludedFromCategory(entityIds, categoryId, entityTypeCode);
+        validateEntitiesInEntryDomain(entityTypeCode, storageEntityTypeCode, entityIds);
+        int successCount = markEntitiesExcludedFromCategory(entityIds, categoryId, storageEntityTypeCode);
 
-        log.info("批量取消实体与分类的关联: entityIds={}, categoryId={}, entityTypeCode={}", entityIds, categoryId, entityTypeCode);
+        log.info("批量取消实体与分类的关联: entityIds={}, categoryId={}, entityTypeCode={}",
+                entityIds, categoryId, storageEntityTypeCode);
 
         return BatchEntityCategoryAssociationRespVO.builder()
                 .operationType("BATCH_DISASSOCIATE")
@@ -463,27 +554,31 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
     /**
      * 解除实体与分类关联：删除有效关联；若无有效关联则写入 deleted=true 排除标记，
      * 防止实体仍通过「型号挂分类」出现在该分类范围内。
+     *
+     * @param storageEntityTypeCode 实际存储类型，调用方须先归一（注册编码不入库）
      */
-    private int markEntitiesExcludedFromCategory(List<Long> entityIds, Long categoryId, String entityTypeCode) {
+    private int markEntitiesExcludedFromCategory(List<Long> entityIds, Long categoryId, String storageEntityTypeCode) {
+        Map<Long, String> domainByEntityId = loadEntityDomains(entityIds, storageEntityTypeCode);
         int successCount = 0;
         for (Long entityId : entityIds) {
             if (entityId == null) {
                 continue;
             }
-            EntityCategoryRelationDO active = relationMapper.selectByEntityAndCategory(entityId, categoryId, entityTypeCode);
+            EntityCategoryRelationDO active = relationMapper.selectByEntityAndCategory(entityId, categoryId, storageEntityTypeCode);
             if (active != null) {
-                relationMapper.deleteByEntityAndCategory(entityId, categoryId, entityTypeCode);
+                relationMapper.deleteByEntityAndCategory(entityId, categoryId, storageEntityTypeCode);
             } else {
                 List<EntityCategoryRelationDO> deletedRelations = relationMapper
-                        .selectByEntityAndCategoryIdsIncludingDeleted(entityId, List.of(categoryId), entityTypeCode);
+                        .selectByEntityAndCategoryIdsIncludingDeleted(entityId, List.of(categoryId), storageEntityTypeCode);
                 if (deletedRelations.isEmpty()) {
                     relationMapper.insert(EntityCategoryRelationDO.builder()
                             .entityId(entityId)
                             .categoryId(categoryId)
-                            .entityTypeCode(entityTypeCode)
+                            .entityTypeCode(storageEntityTypeCode)
+                            .domain(domainByEntityId.get(entityId))
                             .sort(0)
                             .build());
-                    relationMapper.deleteByEntityAndCategory(entityId, categoryId, entityTypeCode);
+                    relationMapper.deleteByEntityAndCategory(entityId, categoryId, storageEntityTypeCode);
                 }
             }
             successCount++;
@@ -501,7 +596,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         // 排序策略：批量增量关联不做全量重排；对恢复/新增记录分配尾部 sort。
         long startTime = System.currentTimeMillis();
 
-        validateEntityTypeCodeNotBlank(entityTypeCode);
+        String storageEntityTypeCode = resolveStorageEntityTypeCode(entityTypeCode);
 
         if (entityIds == null || entityIds.isEmpty() || categoryIds == null || categoryIds.isEmpty()) {
             return BatchEntityCategoryAssociationRespVO.builder()
@@ -516,7 +611,9 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
 
         // 1. 批量验证实体存在性
         List<Long> notFoundEntityIds = new ArrayList<>();
-        Set<Long> existingEntityIds = collectExistingEntityIds(entityIds, entityTypeCode, notFoundEntityIds);
+        Set<Long> existingEntityIds = collectExistingEntityIds(entityIds, storageEntityTypeCode, notFoundEntityIds);
+        validateEntitiesInEntryDomain(entityTypeCode, storageEntityTypeCode, existingEntityIds);
+        Map<Long, String> domainByEntityId = loadEntityDomains(existingEntityIds, storageEntityTypeCode);
 
         // 2. 批量验证分类存在性
         List<Long> notFoundCategoryIds = new ArrayList<>();
@@ -525,7 +622,8 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         // 3. 批量查询现有关联（优化：避免 N+1 查询问题）
         List<EntityCategoryRelationDO> existingRelations = relationMapper.selectByEntityIdsAndCategoryIds(
                 new ArrayList<>(existingEntityIds),
-                validCategoryIds);
+                validCategoryIds,
+                storageEntityTypeCode);
 
         // 4. 构建现有关联索引 + 分类 max(sort)
         Map<Long, Set<Long>> existingByEntity = new HashMap<>();
@@ -541,10 +639,23 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             }
         }
 
+        // 4.1 已存在的排除标记（deleted=true）必须走恢复，不能重复插入：
+        // 唯一键为 租户 + 存储类型 + 实体 + 分类，盲插会撞唯一索引。
+        Map<Long, Set<Long>> excludedByEntity = new HashMap<>();
+        if (!existingEntityIds.isEmpty() && !validCategoryIds.isEmpty()) {
+            for (EntityCategoryRelationDO excluded : relationMapper.selectExcludedPairsByEntityIdsAndCategoryIds(
+                    new ArrayList<>(existingEntityIds), validCategoryIds, storageEntityTypeCode)) {
+                excludedByEntity
+                        .computeIfAbsent(excluded.getEntityId(), k -> new HashSet<>())
+                        .add(excluded.getCategoryId());
+            }
+        }
+
         // 5. 计算需要插入的新关联（同时统计每个实体的成功/失败）
         List<EntityCategoryRelationDO> relationsToInsert = new ArrayList<>();
         Map<Long, EntityResultData> entityResultDataMap = new HashMap<>();
         Map<Long, Integer> insertCountByEntity = new HashMap<>();
+        Map<Long, List<Long>> restoreCategoryIdsByEntity = new HashMap<>();
 
         for (Long entityId : entityIds) {
             if (!existingEntityIds.contains(entityId)) {
@@ -554,23 +665,38 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             }
 
             Set<Long> existedCategories = existingByEntity.getOrDefault(entityId, Collections.emptySet());
+            Set<Long> excludedCategories = excludedByEntity.getOrDefault(entityId, Collections.emptySet());
             int entitySuccessCount = validCategoryIds.size();
             int entityFailCount = notFoundCategoryIds.size();
 
             for (Long categoryId : validCategoryIds) {
-                if (!existedCategories.contains(categoryId)) {
-                    relationsToInsert.add(EntityCategoryRelationDO.builder()
-                            .entityId(entityId)
-                            .categoryId(categoryId)
-                            .entityTypeCode(entityTypeCode)
-                            .build());
-                    Integer currentInsert = insertCountByEntity.get(entityId);
-                    insertCountByEntity.put(entityId, currentInsert == null ? 1 : currentInsert + 1);
+                if (existedCategories.contains(categoryId)) {
+                    continue;
                 }
+                if (excludedCategories.contains(categoryId)) {
+                    restoreCategoryIdsByEntity
+                            .computeIfAbsent(entityId, k -> new ArrayList<>())
+                            .add(categoryId);
+                    continue;
+                }
+                relationsToInsert.add(EntityCategoryRelationDO.builder()
+                        .entityId(entityId)
+                        .categoryId(categoryId)
+                        .entityTypeCode(storageEntityTypeCode)
+                        .domain(domainByEntityId.get(entityId))
+                        .build());
+                Integer currentInsert = insertCountByEntity.get(entityId);
+                insertCountByEntity.put(entityId, currentInsert == null ? 1 : currentInsert + 1);
             }
 
             entityResultDataMap.put(entityId, new EntityResultData(
                     entityId, true, entitySuccessCount, entityFailCount, null));
+        }
+
+        // 5.1 恢复排除标记：同时刷新 domain，使关联行与实体当前业务域一致
+        for (Map.Entry<Long, List<Long>> entry : restoreCategoryIdsByEntity.entrySet()) {
+            relationMapper.restoreDeletedRelationsBatch(entry.getKey(), entry.getValue(),
+                    storageEntityTypeCode, domainByEntityId.get(entry.getKey()));
         }
 
         // 6. 批量插入新关联（按分类分组分配 sort）
@@ -657,13 +783,15 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         }
 
         // 执行删除操作（不验证存在性，直接删除）
+        String storageEntityTypeCode = resolveStorageEntityTypeCode(entityTypeCode);
+        validateEntitiesInEntryDomain(entityTypeCode, storageEntityTypeCode, entityIds);
         List<BatchEntityCategoryAssociationRespVO.EntityResult> entityResults = new ArrayList<>();
         int successEntityCount = 0;
 
         for (Long entityId : entityIds) {
             int entitySuccessCount = 0;
             for (Long categoryId : categoryIds) {
-                relationMapper.deleteByEntityAndCategory(entityId, categoryId, entityTypeCode);
+                relationMapper.deleteByEntityAndCategory(entityId, categoryId, storageEntityTypeCode);
                 entitySuccessCount++;
             }
 
@@ -821,7 +949,12 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         }
 
         // 单分类快路径：直接使用 Mapper 的“分类内 sort,id”排序结果，避免多分类编排开销。
-        List<EntityCategoryRelationDO> relations = relationMapper.selectByCategoryIdAndEntityType(categoryId, entityTypeCode);
+        // 入口若是子数据类型，按「实际存储类型 + 入口业务域」收窄，注册编码不进查询。
+        EntityTypeScopeContext scope = entityTypeScopeResolver.resolve(entityTypeCode);
+        String storageEntityTypeCode = scope != null ? scope.getStorageEntityTypeCode() : entityTypeCode.trim();
+        String domain = scope != null ? scope.getDomain() : null;
+        List<EntityCategoryRelationDO> relations =
+                relationMapper.selectByCategoryIdAndEntityType(categoryId, storageEntityTypeCode, domain);
         if (relations == null || relations.isEmpty()) {
             return new ArrayList<>();
         }
@@ -869,6 +1002,23 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         log.info("删除实体的所有分类关联: entityId={}", entityId);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteAllByEntityIdInBusiness(Long entityId, String entityTypeCode) {
+        if (entityId == null) {
+            return;
+        }
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
+            deleteAllByEntityId(entityId);
+            return;
+        }
+        // 删实体时按「实际存储类型 + 实体编号」清理，不按业务域收窄：
+        // 实体没了，它在其它业务域视角下的关联同样应当消失。
+        String storageEntityTypeCode = resolveStorageEntityTypeCode(entityTypeCode);
+        relationMapper.deleteByEntityId(entityId, storageEntityTypeCode);
+        log.info("删除实体的分类关联(按存储类型隔离): entityId={}, entityTypeCode={}", entityId, storageEntityTypeCode);
+    }
+
     /**
      * 批量删除多个实体的所有分类关联（级联清理入口）。
      */
@@ -904,8 +1054,10 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             return;
         }
 
-        relationMapper.deleteByCategoryId(categoryId, entityTypeCode);
-        log.info("删除分类的所有实体关联(按业务隔离): categoryId={}, entityTypeCode={}", categoryId, entityTypeCode);
+        // 分类编号全局唯一：删除分类节点要清掉该存储类型下的全部业务域关联，不按 domain 收窄。
+        String storageEntityTypeCode = resolveStorageEntityTypeCode(entityTypeCode);
+        relationMapper.deleteByCategoryId(categoryId, storageEntityTypeCode);
+        log.info("删除分类的所有实体关联(按存储类型隔离): categoryId={}, entityTypeCode={}", categoryId, storageEntityTypeCode);
     }
 
     /**
@@ -929,8 +1081,29 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             return;
         }
 
-        relationMapper.deleteByCategoryIds(categoryIds, entityTypeCode);
-        log.info("批量删除分类的所有实体关联(按业务隔离): categoryIds={}, entityTypeCode={}", categoryIds, entityTypeCode);
+        String storageEntityTypeCode = resolveStorageEntityTypeCode(entityTypeCode);
+        relationMapper.deleteByCategoryIds(categoryIds, storageEntityTypeCode);
+        log.info("批量删除分类的所有实体关联(按存储类型隔离): categoryIds={}, entityTypeCode={}", categoryIds, storageEntityTypeCode);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int syncRelationDomainByEntityIds(List<Long> entityIds, String entityTypeCode, String domain) {
+        if (entityIds == null || entityIds.isEmpty()) {
+            return 0;
+        }
+        List<Long> ids = entityIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (ids.isEmpty()) {
+            return 0;
+        }
+        String storageEntityTypeCode = resolveStorageEntityTypeCode(entityTypeCode);
+        int updated = relationMapper.updateDomainByEntityIds(ids, storageEntityTypeCode,
+                EntityTypeScopeContext.normalizeDomain(domain));
+        if (updated > 0) {
+            log.info("同步分类关联业务域: entityTypeCode={}, domain={}, entityCount={}, relationCount={}",
+                    storageEntityTypeCode, domain, ids.size(), updated);
+        }
+        return updated;
     }
 
     // ==================== 私有辅助方法 ====================
@@ -940,14 +1113,17 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
      *
      * @param entityId 实体ID
      * @param categoryIds 分类ID列表
-     * @param entityEntityType 实体所属业务类型（用于跨业务关联验证）
+     * @param entityTypeCode 实体所属数据类型编码（内部归一为实际存储类型）
      * @return 关联执行结果
      */
-    private BatchAssociateResult batchAssociateInternal(Long entityId, List<Long> categoryIds, String entityEntityType) {
+    private BatchAssociateResult batchAssociateInternal(Long entityId, List<Long> categoryIds, String entityTypeCode) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return new BatchAssociateResult(0, Collections.emptyList(), Collections.emptyList());
         }
 
+        String storageEntityTypeCode = resolveStorageEntityTypeCode(entityTypeCode);
+        String domain = requireEntityDomain(entityId, storageEntityTypeCode);
+        validateEntitiesInEntryDomain(entityTypeCode, storageEntityTypeCode, List.of(entityId));
         List<EntityCategoryAssociationRespVO.FailItem> failItems = new ArrayList<>();
 
         // 1) 分类Id的存在性校验（ 一次查询所有分类存在性 ）
@@ -972,7 +1148,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         // 2) 查询目标分类上的现有关联（含 deleted），一次分流出三集合
         List<EntityCategoryRelationDO> existingRelations = relationMapper
                 // mybatis-plus 的配置过滤了 deleted=true 的记录，所以需要显式查询包含 deleted=true 的记录
-                .selectByEntityAndCategoryIdsIncludingDeleted(entityId, validCategoryIds, entityEntityType);
+                .selectByEntityAndCategoryIdsIncludingDeleted(entityId, validCategoryIds, storageEntityTypeCode);
 
         Set<Long> alreadyActive = new LinkedHashSet<>();
         Set<Long> restoreCandidates = new LinkedHashSet<>();
@@ -1004,7 +1180,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
 
         // 4) 批量恢复软删除（恢复后需重新编号 sort）
         if (!toRestore.isEmpty()) {
-            int restored = relationMapper.restoreDeletedRelationsBatch(entityId, toRestore, entityEntityType);
+            int restored = relationMapper.restoreDeletedRelationsBatch(entityId, toRestore, storageEntityTypeCode, domain);
             successCount += restored;
             successCategoryIds.addAll(toRestore);
 
@@ -1016,7 +1192,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                         entityId,
                         categoryId,
                         calculateSortWithBase(baseSortMap, sortOffsetMap, categoryId),
-                        entityEntityType
+                        storageEntityTypeCode
                 );
             }
         }
@@ -1030,7 +1206,8 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                 relationsToInsert.add(EntityCategoryRelationDO.builder()
                         .entityId(entityId)
                         .categoryId(categoryId)
-                        .entityTypeCode(entityEntityType)
+                        .entityTypeCode(storageEntityTypeCode)
+                        .domain(domain)
                         .sort(calculateSortWithBase(baseSortMap, sortOffsetMap, categoryId))
                         .build());
             }
@@ -1425,20 +1602,23 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             return new RelationOrderData(Collections.emptyList());
         }
 
+        // 入口若是子数据类型，查询身份是「实际存储类型 + 入口业务域」，注册编码不进查询。
+        EntityTypeScopeContext scope = entityTypeScopeResolver.resolve(entityTypeCode);
+        String storageEntityTypeCode = scope != null ? scope.getStorageEntityTypeCode() : entityTypeCode.trim();
+        String domain = scope != null ? scope.getDomain() : null;
+
         // ========== 步骤1：单分类快速路径 ==========
         // 说明：当仅有一个 categoryId 时，直接复用 Mapper 的单分类排序能力（sort -> id）。
-        // 注意：selectByCategoryId 未带 businessType 过滤，这里在 Service 层补一次过滤。
         if (categoryIds.size() == 1) {
-            Long singleCategoryId = categoryIds.get(0);
-            List<EntityCategoryRelationDO> singleRelations = relationMapper.selectByCategoryId(singleCategoryId);
+            List<EntityCategoryRelationDO> singleRelations =
+                    relationMapper.selectByCategoryIdAndEntityType(categoryIds.get(0), storageEntityTypeCode, domain);
             if (singleRelations == null || singleRelations.isEmpty()) {
                 return new RelationOrderData(Collections.emptyList());
             }
 
             List<Long> orderedEntityIds = singleRelations.stream()
-                    .filter(r -> r.getEntityId() != null)
-                    .filter(r -> entityTypeCode.equals(r.getEntityTypeCode()))
                     .map(EntityCategoryRelationDO::getEntityId)
+                    .filter(Objects::nonNull)
                     .distinct()
                     .toList();
             return new RelationOrderData(orderedEntityIds);
@@ -1447,7 +1627,8 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         // ========== 步骤2：查询多分类原始关系数据 ==========
         // 说明：这里拿到的是“候选关系记录集合”，不能直接作为最终顺序。
         // 原因：Mapper 层无法保证“先 categoryIds 输入顺序，再分类内 sort”的完整语义。
-        List<EntityCategoryRelationDO> relations = relationMapper.selectRelationsByCategoryIdsForOrdering(categoryIds, entityTypeCode);
+        List<EntityCategoryRelationDO> relations =
+                relationMapper.selectRelationsByCategoryIdsForOrdering(categoryIds, storageEntityTypeCode, domain);
         if (relations == null || relations.isEmpty()) {
             return new RelationOrderData(Collections.emptyList());
         }

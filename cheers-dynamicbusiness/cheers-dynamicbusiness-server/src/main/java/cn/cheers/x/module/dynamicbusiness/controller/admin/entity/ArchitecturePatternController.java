@@ -301,7 +301,7 @@ public class ArchitecturePatternController {
             @RequestParam(value = "pageNo", defaultValue = "1") Integer pageNo,
             @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize) {
         EntitySceneQueryRespVO resp = entityService.queryEntities(
-                EntityQueryScene.PATTERN_A_C_ENTITIES_BY_CATEGORY,
+                EntityQueryScene.ENTITIES_BY_CATEGORY,
                 "PAGE",
                 "FULL",
                 null,
@@ -313,6 +313,7 @@ public class ArchitecturePatternController {
                 contentEntityTypeCode,
                 pageNo,
                 pageSize,
+                null,
                 null,
                 null
         );

@@ -67,20 +67,20 @@ public class EntityTypeCategoryBootstrapService {
         if (kind.isCategory()) {
             return;
         }
-        if (kind.isScoped()) {
+        if (kind.isDomainEntry()) {
             String baseCode = entityType.getBaseEntityTypeCode();
             if (!StringUtils.hasText(baseCode)) {
-                log.warn("分域数据 {} 缺少基础数据类型编码，跳过分类 bootstrap", entityType.getCode());
+                log.warn("子数据类型 {} 缺少基础数据类型编码，跳过分类 bootstrap", entityType.getCode());
                 return;
             }
             EntityTypeDO baseType = entityTypeMapper.selectByCode(baseCode.trim());
             if (baseType == null) {
-                log.warn("分域数据 {} 的基础类型 {} 不存在，跳过分类 bootstrap",
+                log.warn("子数据类型 {} 的基础类型 {} 不存在，跳过分类 bootstrap",
                         entityType.getCode(), baseCode);
                 return;
             }
             ensureNativeCategoryType(baseType);
-            ensureScopedDomainCategoryFolder(entityType, baseType);
+            ensureDomainCategoryFolder(entityType, baseType);
             return;
         }
         ensureNativeCategoryType(entityType);
@@ -115,12 +115,12 @@ public class EntityTypeCategoryBootstrapService {
     }
 
     /**
-     * SCOPED 域入口：在主数据分类根下创建域分组节点（code={registryCode}_dir），
+     * DOMAIN 域入口：在主数据分类根下创建域分组节点（code={registryCode}_dir），
      * 供该域下子分类挂载，总入口可按域并列统计。
      */
-    private void ensureScopedDomainCategoryFolder(EntityTypeDO scopedType, EntityTypeDO baseType) {
+    private void ensureDomainCategoryFolder(EntityTypeDO domainType, EntityTypeDO baseType) {
         String baseCategoryTypeCode = baseType.getCode().trim();
-        String folderCode = scopedType.getCode().trim() + "_dir";
+        String folderCode = domainType.getCode().trim() + "_dir";
         boolean folderExists = categoryMapper.selectByCategoryTypeCode(baseCategoryTypeCode).stream()
                 .anyMatch(item -> folderCode.equals(item.getCode()));
         if (folderExists) {
@@ -129,8 +129,8 @@ public class EntityTypeCategoryBootstrapService {
 
         CategoryTypeDO categoryType = categoryTypeMapper.selectByCategoryTypeCode(baseCategoryTypeCode);
         if (categoryType == null || categoryType.getTopLevelCategoryId() == null) {
-            log.warn("SCOPED 数据类型 {} 的基础分类 {} 未配置顶层节点，跳过域分组创建",
-                    scopedType.getCode(), baseCategoryTypeCode);
+            log.warn("DOMAIN 数据类型 {} 的基础分类 {} 未配置顶层节点，跳过域分组创建",
+                    domainType.getCode(), baseCategoryTypeCode);
             return;
         }
 
@@ -138,15 +138,15 @@ public class EntityTypeCategoryBootstrapService {
         req.setCategoryTypeCode(baseCategoryTypeCode);
         req.setParentId(categoryType.getTopLevelCategoryId());
         req.setCode(folderCode);
-        req.setName(scopedType.getName());
+        req.setName(domainType.getName());
         req.setStatus(1);
         try {
             categoryService.createCategory(req);
         } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {
-            log.error("[ensureScopedDomainCategoryFolder] 创建域分组失败, scoped={}, base={}",
-                    scopedType.getCode(), baseCategoryTypeCode, e);
+            log.error("[ensureDomainCategoryFolder] 创建域分组失败, domain={}, base={}",
+                    domainType.getCode(), baseCategoryTypeCode, e);
             throw new ServiceException(500, "自动创建域分类分组失败：" + e.getMessage());
         }
     }

@@ -11,7 +11,7 @@ import java.util.Set;
 /**
  * 实体 Write/Read 与 DO 之间的 baseFields / customFields 分桶转换。
  *
- * <p>固定列（含 entityTypeCode、modelId、name、code、status、parentId）在 API 层进入 {@code baseFields}；
+ * <p>固定列（含 entityTypeCode、modelId、name、code、status、parentId、domain）在 API 层进入 {@code baseFields}；
  * DO 表列存核心固定列，其余 base 扩展键暂合并进 customFields JSONB 持久化。</p>
  */
 public final class EntityFieldMapsSupport {
@@ -20,7 +20,8 @@ public final class EntityFieldMapsSupport {
             "entitytypecode", "entity_type_code",
             "businesstypecode", "business_type_code",
             "modelid", "model_id",
-            "name", "code", "status", "parentid", "parent_id");
+            "name", "code", "status", "parentid", "parent_id",
+            "domain");
 
     private EntityFieldMapsSupport() {
     }
@@ -104,6 +105,7 @@ public final class EntityFieldMapsSupport {
         putIfNotNull(base, "code", entity.getCode());
         putIfNotNull(base, "status", entity.getStatus());
         putIfNotNull(base, "parentId", entity.getParentId());
+        putIfNotNull(base, "domain", entity.getDomain());
         return base;
     }
 

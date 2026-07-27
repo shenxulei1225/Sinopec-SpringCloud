@@ -14,18 +14,17 @@ import lombok.Getter;
  *   <li>无 physicalColumnMapping 配置 → 原 DEDICATED_DYNAMIC（灵活扩展）</li>
  * </ul>
  * 
- * <h2>目标架构（两种存储类型）</h2>
+ * <h2>目标架构</h2>
  * <ul>
- *   <li><b>GENERIC</b>：使用 dynamic_entity 表，所有字段存储在 JSONB</li>
- *   <li><b>DEDICATED</b>：使用专用表，通过 physicalColumnMapping 配置决定字段存储位置</li>
+ *   <li><b>DEDICATED</b>：唯一允许的实体存储；使用 {@code ent_*} 专用表，经 EntityRepository 访问</li>
+ *   <li><b>GENERIC</b>：已废止（原 dynamic_entity 已删除）；创建/解析时拒绝</li>
  * </ul>
  * 
  * <h2>当前状态</h2>
  * <ul>
- *   <li>GENERIC：临时保留，用于应急管理业务，待应急完成后统一</li>
- *   <li>DEDICATED_STATIC：已废弃，请使用 DEDICATED + physicalColumnMapping 配置</li>
- *   <li>DEDICATED_DYNAMIC：已废弃，请使用 DEDICATED（无 physicalColumnMapping）</li>
- *   <li>DEDICATED：新增，统一的专用表存储类型</li>
+ *   <li>GENERIC：枚举值仅保留兼容读旧数据；写路径与表路由一律禁止</li>
+ *   <li>DEDICATED_STATIC / DEDICATED_DYNAMIC：已废弃，请使用 DEDICATED</li>
+ *   <li>DEDICATED：统一的专用表存储类型</li>
  * </ul>
  * 
  * @author yudao
@@ -36,26 +35,10 @@ import lombok.Getter;
 public enum StorageTypeEnum {
 
     /**
-     * 通用表存储
-     * <p>
-     * <b>⚠️ 临时保留：</b>用于应急管理业务，待应急完成后将统一迁移到 DEDICATED
-     * </p>
-     * 
-     * <h3>特点</h3>
-     * <ul>
-     *   <li>使用 dynamic_entity 表</li>
-     *   <li>所有字段存储在 custom_fields JSONB 中</li>
-     *   <li>零代码，无需开发</li>
-     * </ul>
-     * 
-     * <h3>适用场景</h3>
-     * <ul>
-     *   <li>简单业务、快速验证</li>
-     *   <li>字段变化频繁的业务</li>
-     *   <li>应急管理业务（临时）</li>
-     * </ul>
+     * 通用表存储（已废止）
+     * <p>原 {@code dynamic_entity} 已删除。枚举值仅兼容历史元数据；禁止新写入与表路由。</p>
      */
-    GENERIC("GENERIC", "通用表存储"),
+    GENERIC("GENERIC", "通用表存储（已废止）"),
 
     /**
      * 预制专用表存储

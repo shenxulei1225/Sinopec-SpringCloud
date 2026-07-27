@@ -34,17 +34,23 @@ public class CategoryEntityLinkServiceImpl implements CategoryEntityLinkService 
     public Long linkCategoryToEntity(@NotNull(message = "分类ID不能为空") Long categoryId,
                                      @NotNull(message = "实体ID不能为空") Long entityId,
                                      Long entityModelId) {
-        // 1. 校验是否已存在链接
+        return linkCategoryToEntity(categoryId, entityId, entityModelId, null, null);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public Long linkCategoryToEntity(Long categoryId, Long entityId, Long entityModelId,
+                                     String storageEntityTypeCode, String domain) {
         CategoryEntityLinkDO existingLink = linkMapper.selectByCategoryId(categoryId);
         if (existingLink != null) {
             throw new ServiceException(400, "分类已关联实体，请勿重复创建");
         }
 
-        // 2. 创建链接
         CategoryEntityLinkDO link = CategoryEntityLinkDO.builder()
                 .categoryId(categoryId)
                 .entityId(entityId)
                 .entityModelId(entityModelId)
+                .storageEntityTypeCode(storageEntityTypeCode)
+                .domain(domain)
                 .build();
         linkMapper.insert(link);
         return link.getId();
@@ -53,9 +59,7 @@ public class CategoryEntityLinkServiceImpl implements CategoryEntityLinkService 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateCategoryEntityLink(@Valid CategoryEntityLinkDO linkDO) {
-        // 1. 校验存在
         validateCategoryEntityLinkExists(linkDO.getId());
-        // 2. 更新
         linkMapper.updateById(linkDO);
     }
 
@@ -67,6 +71,11 @@ public class CategoryEntityLinkServiceImpl implements CategoryEntityLinkService 
     @Override
     public CategoryEntityLinkDO getLinkByEntityId(@NotNull(message = "实体ID不能为空") Long entityId) {
         return linkMapper.selectByEntityId(entityId);
+    }
+
+    @Override
+    public CategoryEntityLinkDO getLinkByEntityIdAndStorage(Long entityId, String storageEntityTypeCode) {
+        return linkMapper.selectByEntityIdAndStorage(entityId, storageEntityTypeCode);
     }
 
     @Override
@@ -84,6 +93,12 @@ public class CategoryEntityLinkServiceImpl implements CategoryEntityLinkService 
     @Transactional(rollbackFor = Exception.class)
     public void unlinkEntityCategory(@NotNull(message = "实体ID不能为空") Long entityId) {
         linkMapper.deleteByEntityId(entityId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void unlinkEntityCategory(Long entityId, String storageEntityTypeCode) {
+        linkMapper.deleteByEntityIdAndStorage(entityId, storageEntityTypeCode);
     }
 
     @Override

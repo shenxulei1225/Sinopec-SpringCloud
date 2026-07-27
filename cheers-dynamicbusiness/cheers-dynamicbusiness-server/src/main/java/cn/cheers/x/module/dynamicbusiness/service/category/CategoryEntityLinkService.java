@@ -27,6 +27,15 @@ public interface CategoryEntityLinkService {
                               Long entityModelId);
 
     /**
+     * 创建分类与实体链接，并写入存储类型 / 业务域（避免跨表同 id 误判）。
+     */
+    Long linkCategoryToEntity(@NotNull Long categoryId,
+                              @NotNull Long entityId,
+                              Long entityModelId,
+                              String storageEntityTypeCode,
+                              String domain);
+
+    /**
      * 更新分类与实体链接
      *
      * @param linkDO 链接DO
@@ -50,6 +59,11 @@ public interface CategoryEntityLinkService {
     CategoryEntityLinkDO getLinkByEntityId(@NotNull(message = "实体ID不能为空") Long entityId);
 
     /**
+     * 按实体 ID + 存储类型获取分类链接（避免跨表同 id 误命中）。
+     */
+    CategoryEntityLinkDO getLinkByEntityIdAndStorage(@NotNull Long entityId, String storageEntityTypeCode);
+
+    /**
      * 判断分类是否为实体分类
      *
      * @param categoryId 分类ID
@@ -65,11 +79,16 @@ public interface CategoryEntityLinkService {
     void unlinkCategoryEntity(@NotNull(message = "分类ID不能为空") Long categoryId);
 
     /**
-     * 解除实体与分类的链接
+     * 解除实体与分类的链接（仅按 entityId，历史兼容）。
      *
      * @param entityId 实体ID
      */
     void unlinkEntityCategory(@NotNull(message = "实体ID不能为空") Long entityId);
+
+    /**
+     * 按实体 ID + 存储类型解除链接。
+     */
+    void unlinkEntityCategory(@NotNull Long entityId, String storageEntityTypeCode);
 
     /**
      * 批量根据分类ID查询链接（用于优化批量删除时的 N+1 查询问题）

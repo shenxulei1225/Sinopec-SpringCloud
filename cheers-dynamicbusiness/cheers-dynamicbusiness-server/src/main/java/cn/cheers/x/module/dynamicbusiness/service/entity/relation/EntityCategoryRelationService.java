@@ -299,6 +299,11 @@ public interface EntityCategoryRelationService {
         void deleteAllByEntityId(Long entityId);
 
         /**
+         * 按业务类型删除实体的分类关联（避免跨表同 id）。
+         */
+        void deleteAllByEntityIdInBusiness(Long entityId, String entityTypeCode);
+
+        /**
          * 批量删除多个实体的所有分类关联
          *
          * @param entityIds 实体ID列表
@@ -330,4 +335,19 @@ public interface EntityCategoryRelationService {
          * 批量删除多个分类在指定业务下的所有实体关联。
          */
         void deleteAllByCategoryIdsInBusiness(List<Long> categoryIds, String entityTypeCode);
+
+        // ==================== 业务域同步 ====================
+
+        /**
+         * 实体业务域变更后，把新业务域同步到这些实体的全部分类关联（含软删除的排除标记）。
+         *
+         * <p>关联行的业务域只是实体行的镜像；型号跨业务域迁移、单实体换型号都必须调用本方法，
+         * 否则点分类按业务域过滤会漏掉刚迁移的实体。</p>
+         *
+         * @param entityIds 实体ID列表
+         * @param entityTypeCode 数据类型编码（内部归一为实际存储类型）
+         * @param domain 新业务域；为空表示实体无业务域
+         * @return 实际更新的关联行数
+         */
+        int syncRelationDomainByEntityIds(List<Long> entityIds, String entityTypeCode, String domain);
 }

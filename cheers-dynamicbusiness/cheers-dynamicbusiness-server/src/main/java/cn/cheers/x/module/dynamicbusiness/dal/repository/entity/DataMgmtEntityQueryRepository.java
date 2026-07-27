@@ -1,16 +1,18 @@
 package cn.cheers.x.module.dynamicbusiness.dal.repository.entity;
 
+import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryEntityLinkDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityCategoryRelationDO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityCategoryRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelCategoryRelationDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytypescope.EntityTypeScopeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryEntityLinkMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelCategoryRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityCategoryRelationMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytypescope.EntityTypeScopeMapper;
+import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.StringUtils;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -22,14 +24,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 数据管理三栏：按分类范围（expanded categoryIds）+ 可选 modelIds 收集有序 entityId。
+ * 按分类范围（expanded categoryIds）+ 可选 modelIds / domain / 划分成员 收集有序 entityId。
  *
- * <p>只合并分类范围内的实体关联，不做 modelId 全局扫表：</p>
- * <ul>
- *   <li>Pattern A：{@code dynamic_entity_category_relation}</li>
- *   <li>Pattern C：{@code dynamic_category_entity_link}</li>
- *   <li>模型挂分类：{@code dynamic_model_category_relation} → 实体按 modelId 归入分类范围</li>
- * </ul>
+ * <p>实体列只认分类–实体关联（relation / link）；型号列另走分类–型号关联，不在此展开实体。</p>
  */
 @Repository
 @RequiredArgsConstructor
@@ -39,25 +36,35 @@ public class DataMgmtEntityQueryRepository {
 
     private final EntityCategoryRelationMapper entityCategoryRelationMapper;
     private final CategoryEntityLinkMapper categoryEntityLinkMapper;
-    private final ModelCategoryRelationMapper modelCategoryRelationMapper;
+    private final EntityTypeScopeMapper entityTypeScopeMapper;
     private final EntityRepository entityRepository;
 
     /**
      * @param expandedCategoryIds 已展开子树的分类 ID（顺序即 cat_rank）
+     * @param entityTypeCode      实际存储类型编码；关联表过滤与物理表取数都用它，
+     *                            注册编码（如 task_patrol）不参与查询
+     * @param domain              业务域；有值时关联层先按 relation.domain 过滤，取数后再按 entity.domain 复核
+     * @param scopeRegistryCode 划分入口编码；有值时只保留成员表中的实体
      */
     public List<Long> listOrderedEntityIdsByCategoryScope(List<Long> expandedCategoryIds,
                                                           String entityTypeCode,
-                                                          List<Long> modelIds) {
+                                                          List<Long> modelIds,
+                                                          String domain,
+                                                          String scopeRegistryCode) {
         if (expandedCategoryIds == null || expandedCategoryIds.isEmpty()) {
             return List.of();
         }
         Map<Long, Integer> categoryRank = buildCategoryRank(expandedCategoryIds);
         Set<Long> modelIdFilter = toModelIdFilter(modelIds);
+        String normalizedDomain = EntityTypeScopeContext.normalizeDomain(domain);
 
         Map<Long, ScopeCandidate> bestByEntityId = new HashMap<>();
-        mergeRelationCandidates(bestByEntityId, categoryRank, expandedCategoryIds, entityTypeCode, modelIdFilter);
-        mergeLinkCandidates(bestByEntityId, categoryRank, expandedCategoryIds, modelIdFilter);
-        mergeModelCategoryCandidates(bestByEntityId, categoryRank, expandedCategoryIds, entityTypeCode, modelIdFilter);
+        mergeRelationCandidates(bestByEntityId, categoryRank, expandedCategoryIds, entityTypeCode,
+                normalizedDomain, modelIdFilter);
+        mergeLinkCandidates(bestByEntityId, categoryRank, expandedCategoryIds, entityTypeCode,
+                normalizedDomain, modelIdFilter);
+        // 无 domain/scope 时也要走一遍：剔除已软删实体，避免 total 含死 id、本页行数 < pageSize
+        retainByDomainAndScope(bestByEntityId, entityTypeCode, normalizedDomain, scopeRegistryCode);
 
         return bestByEntityId.values().stream()
                 .sorted(Comparator.comparingInt(ScopeCandidate::catRank)
@@ -68,91 +75,144 @@ public class DataMgmtEntityQueryRepository {
                 .toList();
     }
 
-    /**
-     * 分类体系下：模型已挂分类 → 实体按 modelId 归入（设备管理等主路径）。
-     */
-    public List<Long> listEntityIdsViaModelCategoryInCategoryType(String categoryTypeCode,
-                                                                  String entityTypeCode,
-                                                                  List<Long> modelIds) {
-        if (categoryTypeCode == null || categoryTypeCode.isBlank()
-                || entityTypeCode == null || entityTypeCode.isBlank()) {
-            return List.of();
-        }
-        List<Long> scopedModelIds = modelCategoryRelationMapper.selectDistinctModelIdsByCategoryTypeCode(
-                categoryTypeCode, entityTypeCode);
-        if (scopedModelIds == null || scopedModelIds.isEmpty()) {
-            return List.of();
-        }
-        Set<Long> modelIdFilter = toModelIdFilter(modelIds);
-        if (modelIdFilter != null) {
-            scopedModelIds = scopedModelIds.stream()
-                    .filter(modelIdFilter::contains)
-                    .distinct()
-                    .toList();
-        }
-        if (scopedModelIds.isEmpty()) {
-            return List.of();
-        }
-        List<EntityDO> entities = entityRepository.findByModelIds(scopedModelIds, entityTypeCode);
-        return entities.stream()
-                .map(EntityDO::getId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
+    /** 兼容旧调用：无业务域 / 划分约束。 */
+    public List<Long> listOrderedEntityIdsByCategoryScope(List<Long> expandedCategoryIds,
+                                                          String entityTypeCode,
+                                                          List<Long> modelIds) {
+        return listOrderedEntityIdsByCategoryScope(expandedCategoryIds, entityTypeCode, modelIds, null, null);
     }
 
+    /**
+     * 在已有候选 id 上收窄：始终剔除已软删/不存在实体；可选再按业务域与划分成员过滤。
+     * <p>划分用成员表按候选集批量查，等价 EXISTS，不先拉全员 id。</p>
+     */
+    public List<Long> retainOrderedIdsByDomainAndScope(List<Long> orderedEntityIds,
+                                                       String entityTypeCode,
+                                                       String domain,
+                                                       String scopeRegistryCode) {
+        if (orderedEntityIds == null || orderedEntityIds.isEmpty()) {
+            return List.of();
+        }
+        // findByIds 受 TableLogic 约束，只回未删除行 → 顺带去掉悬挂关联上的死 id，保证分页能填满 pageSize
+        List<EntityDO> aliveEntities = entityRepository.findByIds(orderedEntityIds, entityTypeCode);
+        Set<Long> allowed = aliveEntities.stream()
+                .map(EntityDO::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(HashSet::new));
+        if (allowed.isEmpty()) {
+            return List.of();
+        }
+
+        if (StringUtils.hasText(domain)) {
+            String normalizedDomain = EntityTypeScopeContext.normalizeDomain(domain);
+            Set<Long> domainMatched = aliveEntities.stream()
+                    .filter(entity -> EntityTypeScopeContext.domainsEqual(entity.getDomain(), normalizedDomain))
+                    .map(EntityDO::getId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            allowed.retainAll(domainMatched);
+        }
+        if (StringUtils.hasText(scopeRegistryCode) && !allowed.isEmpty()) {
+            String scopeCode = scopeRegistryCode.trim();
+            Set<Long> members = entityTypeScopeMapper
+                    .selectByCodeAndEntityIds(scopeCode, allowed)
+                    .stream()
+                    .map(EntityTypeScopeDO::getEntityId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            allowed.retainAll(members);
+        }
+        if (allowed.isEmpty()) {
+            return List.of();
+        }
+        return orderedEntityIds.stream().filter(allowed::contains).toList();
+    }
+
+    private void retainByDomainAndScope(Map<Long, ScopeCandidate> bestByEntityId,
+                                       String entityTypeCode,
+                                       String domain,
+                                       String scopeRegistryCode) {
+        if (bestByEntityId.isEmpty()) {
+            return;
+        }
+        List<Long> retained = retainOrderedIdsByDomainAndScope(
+                bestByEntityId.keySet().stream().toList(), entityTypeCode, domain, scopeRegistryCode);
+        if (retained.size() == bestByEntityId.size()) {
+            return;
+        }
+        Set<Long> keep = new HashSet<>(retained);
+        bestByEntityId.keySet().removeIf(id -> !keep.contains(id));
+    }
+
+    /**
+     * @param storageEntityTypeCode 实际存储类型（如 task）：既过滤关联表，也用于按型号过滤时路由 ent_* 表
+     * @param domain                业务域；有值时只取该业务域的关联行，NATIVE 总账传 null 表示不限业务域
+     */
     private void mergeRelationCandidates(Map<Long, ScopeCandidate> bestByEntityId,
                                          Map<Long, Integer> categoryRank,
                                          List<Long> expandedCategoryIds,
-                                         String entityTypeCode,
+                                         String storageEntityTypeCode,
+                                         String domain,
                                          Set<Long> modelIdFilter) {
         LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
                 .in(EntityCategoryRelationDO::getCategoryId, expandedCategoryIds)
-                .eq(EntityCategoryRelationDO::getDeleted, false);
-        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
-            query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
+                .eq(BaseDO::getDeleted, false);
+        if (StringUtils.hasText(storageEntityTypeCode)) {
+            query.eq(EntityCategoryRelationDO::getEntityTypeCode, storageEntityTypeCode.trim());
+        }
+        if (StringUtils.hasText(domain)) {
+            query.eq(EntityCategoryRelationDO::getDomain, domain);
         }
         List<EntityCategoryRelationDO> relations = entityCategoryRelationMapper.selectList(query);
         if (relations.isEmpty()) {
             return;
         }
-
-        Set<Long> allowedEntityIds = null;
+        Set<Long> modelMatchedEntityIds = null;
         if (modelIdFilter != null) {
             List<Long> entityIds = relations.stream()
                     .map(EntityCategoryRelationDO::getEntityId)
                     .filter(Objects::nonNull)
                     .distinct()
                     .toList();
-            allowedEntityIds = filterEntityIdsByModelIds(entityIds, entityTypeCode, modelIdFilter);
+            modelMatchedEntityIds = filterEntityIdsByModelIds(entityIds, storageEntityTypeCode, modelIdFilter);
         }
-
         for (EntityCategoryRelationDO relation : relations) {
             Long entityId = relation.getEntityId();
             Long categoryId = relation.getCategoryId();
             if (entityId == null || categoryId == null) {
                 continue;
             }
-            if (allowedEntityIds != null && !allowedEntityIds.contains(entityId)) {
+            if (modelMatchedEntityIds != null && !modelMatchedEntityIds.contains(entityId)) {
                 continue;
             }
+            int sortKey = relation.getSort() != null ? relation.getSort() : DEFAULT_SORT_FALLBACK;
+            long tieId = relation.getId() != null ? relation.getId() : Long.MAX_VALUE;
             offerCandidate(bestByEntityId, new ScopeCandidate(
                     entityId,
-                    categoryRank.getOrDefault(categoryId, DEFAULT_SORT_FALLBACK),
-                    relation.getSort() != null ? relation.getSort() : DEFAULT_SORT_FALLBACK,
-                    relation.getId() != null ? relation.getId() : Long.MAX_VALUE,
+                    categoryRank.getOrDefault(categoryId, Integer.MAX_VALUE),
+                    sortKey,
+                    tieId,
                     1));
         }
     }
 
+    /** 分类即实体 1:1 link 与 relation 同口径：按实际存储类型 + 业务域收窄，避免跨表同 ID 串行。 */
     private void mergeLinkCandidates(Map<Long, ScopeCandidate> bestByEntityId,
                                      Map<Long, Integer> categoryRank,
                                      List<Long> expandedCategoryIds,
+                                     String storageEntityTypeCode,
+                                     String domain,
                                      Set<Long> modelIdFilter) {
-        List<CategoryEntityLinkDO> links = categoryEntityLinkMapper.selectList(
-                new LambdaQueryWrapperX<CategoryEntityLinkDO>()
-                        .in(CategoryEntityLinkDO::getCategoryId, expandedCategoryIds)
-                        .eq(CategoryEntityLinkDO::getDeleted, false));
+        LambdaQueryWrapperX<CategoryEntityLinkDO> linkQuery = new LambdaQueryWrapperX<CategoryEntityLinkDO>()
+                .in(CategoryEntityLinkDO::getCategoryId, expandedCategoryIds)
+                .eq(BaseDO::getDeleted, false);
+        if (StringUtils.hasText(storageEntityTypeCode)) {
+            linkQuery.eq(CategoryEntityLinkDO::getStorageEntityTypeCode, storageEntityTypeCode.trim());
+        }
+        if (StringUtils.hasText(domain)) {
+            linkQuery.eq(CategoryEntityLinkDO::getDomain, domain);
+        }
+        List<CategoryEntityLinkDO> links = categoryEntityLinkMapper.selectList(linkQuery);
         for (CategoryEntityLinkDO link : links) {
             Long entityId = link.getEntityId();
             Long categoryId = link.getCategoryId();
@@ -160,241 +220,19 @@ public class DataMgmtEntityQueryRepository {
                 continue;
             }
             if (modelIdFilter != null) {
-                Long linkModelId = link.getEntityModelId();
-                if (linkModelId == null || !modelIdFilter.contains(linkModelId)) {
+                Long entityModelId = link.getEntityModelId();
+                if (entityModelId == null || !modelIdFilter.contains(entityModelId)) {
                     continue;
                 }
             }
+            long tieId = link.getId() != null ? link.getId() : Long.MAX_VALUE;
             offerCandidate(bestByEntityId, new ScopeCandidate(
                     entityId,
-                    categoryRank.getOrDefault(categoryId, DEFAULT_SORT_FALLBACK),
+                    categoryRank.getOrDefault(categoryId, Integer.MAX_VALUE),
                     0,
-                    link.getId() != null ? link.getId() : Long.MAX_VALUE,
+                    tieId,
                     2));
         }
-    }
-
-    /**
-     * 模型已挂分类、实体只挂模型：通过 model_category_relation 将实体纳入分类范围。
-     */
-    private void mergeModelCategoryCandidates(Map<Long, ScopeCandidate> bestByEntityId,
-                                              Map<Long, Integer> categoryRank,
-                                              List<Long> expandedCategoryIds,
-                                              String entityTypeCode,
-                                              Set<Long> modelIdFilter) {
-        LambdaQueryWrapperX<ModelCategoryRelationDO> query = new LambdaQueryWrapperX<ModelCategoryRelationDO>()
-                .in(ModelCategoryRelationDO::getCategoryId, expandedCategoryIds)
-                .eq(ModelCategoryRelationDO::getDeleted, false);
-        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
-            query.eq(ModelCategoryRelationDO::getEntityTypeCode, entityTypeCode);
-        }
-        if (modelIdFilter != null) {
-            query.in(ModelCategoryRelationDO::getModelId, modelIdFilter);
-        }
-        List<ModelCategoryRelationDO> relations = modelCategoryRelationMapper.selectList(query);
-        if (relations.isEmpty()) {
-            return;
-        }
-
-        Map<Long, Integer> modelBestRank = new HashMap<>();
-        Map<Long, Integer> modelBestSort = new HashMap<>();
-        Map<Long, Long> modelBestTie = new HashMap<>();
-        Map<Long, Map<Long, Integer>> modelCategoryRank = new HashMap<>();
-        for (ModelCategoryRelationDO relation : relations) {
-            Long modelId = relation.getModelId();
-            Long categoryId = relation.getCategoryId();
-            if (modelId == null || categoryId == null) {
-                continue;
-            }
-            int catRank = categoryRank.getOrDefault(categoryId, DEFAULT_SORT_FALLBACK);
-            int sortKey = relation.getSort() != null ? relation.getSort() : DEFAULT_SORT_FALLBACK;
-            long tieId = relation.getId() != null ? relation.getId() : Long.MAX_VALUE;
-            modelCategoryRank
-                    .computeIfAbsent(modelId, ignored -> new HashMap<>())
-                    .put(categoryId, catRank);
-            Integer existingRank = modelBestRank.get(modelId);
-            if (existingRank == null || catRank < existingRank
-                    || (catRank == existingRank && sortKey < modelBestSort.getOrDefault(modelId, DEFAULT_SORT_FALLBACK))) {
-                modelBestRank.put(modelId, catRank);
-                modelBestSort.put(modelId, sortKey);
-                modelBestTie.put(modelId, tieId);
-            }
-        }
-        if (modelBestRank.isEmpty()) {
-            return;
-        }
-
-        List<Long> scopedModelIds = modelBestRank.keySet().stream().toList();
-        List<EntityDO> entities = entityRepository.findByModelIds(scopedModelIds, entityTypeCode);
-        if (entities.isEmpty()) {
-            return;
-        }
-
-        Set<Long> candidateEntityIds = entities.stream()
-                .map(EntityDO::getId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        Set<Long> linkedOrRelatedInScope = resolveEntityIdsBoundInCategories(
-                expandedCategoryIds, entityTypeCode, candidateEntityIds);
-        Set<Long> linkedOrRelatedAnywhere = resolveEntityIdsWithCategoryBinding(entityTypeCode, candidateEntityIds);
-        Set<String> excludedEntityCategoryPairs = resolveExcludedEntityCategoryPairs(
-                entityTypeCode, candidateEntityIds, expandedCategoryIds);
-
-        for (EntityDO entity : entities) {
-            Long entityId = entity.getId();
-            Long modelId = entity.getModelId();
-            if (entityId == null || modelId == null) {
-                continue;
-            }
-            // Pattern C：实体已挂其它分类时，不可因「同型号」越界纳入当前分类范围；仅保留模型挂分类、实体只挂型号的场景。
-            if (!linkedOrRelatedInScope.contains(entityId) && linkedOrRelatedAnywhere.contains(entityId)) {
-                continue;
-            }
-            ScopeCandidate candidate = resolveModelCategoryCandidate(
-                    entityId,
-                    modelId,
-                    modelCategoryRank.get(modelId),
-                    modelBestSort,
-                    modelBestTie,
-                    categoryRank,
-                    excludedEntityCategoryPairs);
-            if (candidate == null) {
-                continue;
-            }
-            offerCandidate(bestByEntityId, candidate);
-        }
-    }
-
-    /**
-     * 实体已显式解除与某分类的关联（deleted=true）时，不再因型号挂分类而纳入该分类范围。
-     */
-    private Set<String> resolveExcludedEntityCategoryPairs(String entityTypeCode,
-                                                           Set<Long> candidateEntityIds,
-                                                           List<Long> expandedCategoryIds) {
-        if (entityTypeCode == null || entityTypeCode.isBlank()
-                || candidateEntityIds == null || candidateEntityIds.isEmpty()
-                || expandedCategoryIds == null || expandedCategoryIds.isEmpty()) {
-            return Set.of();
-        }
-        List<EntityCategoryRelationDO> excluded = entityCategoryRelationMapper.selectExcludedPairsByEntityIdsAndCategoryIds(
-                candidateEntityIds.stream().toList(),
-                expandedCategoryIds,
-                entityTypeCode);
-        Set<String> pairs = new HashSet<>();
-        for (EntityCategoryRelationDO relation : excluded) {
-            if (relation.getEntityId() != null && relation.getCategoryId() != null) {
-                pairs.add(entityCategoryPairKey(relation.getEntityId(), relation.getCategoryId()));
-            }
-        }
-        return pairs;
-    }
-
-    private ScopeCandidate resolveModelCategoryCandidate(long entityId,
-                                                         long modelId,
-                                                         Map<Long, Integer> categoryRanksForModel,
-                                                         Map<Long, Integer> modelBestSort,
-                                                         Map<Long, Long> modelBestTie,
-                                                         Map<Long, Integer> categoryRank,
-                                                         Set<String> excludedEntityCategoryPairs) {
-        if (categoryRanksForModel == null || categoryRanksForModel.isEmpty()) {
-            return null;
-        }
-        Long bestCategoryId = null;
-        int bestRank = DEFAULT_SORT_FALLBACK;
-        for (Map.Entry<Long, Integer> entry : categoryRanksForModel.entrySet()) {
-            Long categoryId = entry.getKey();
-            if (categoryId == null) {
-                continue;
-            }
-            if (excludedEntityCategoryPairs.contains(entityCategoryPairKey(entityId, categoryId))) {
-                continue;
-            }
-            int rank = entry.getValue() != null ? entry.getValue() : categoryRank.getOrDefault(categoryId, DEFAULT_SORT_FALLBACK);
-            if (bestCategoryId == null || rank < bestRank) {
-                bestCategoryId = categoryId;
-                bestRank = rank;
-            }
-        }
-        if (bestCategoryId == null) {
-            return null;
-        }
-        return new ScopeCandidate(
-                entityId,
-                bestRank,
-                modelBestSort.getOrDefault(modelId, DEFAULT_SORT_FALLBACK),
-                modelBestTie.getOrDefault(modelId, Long.MAX_VALUE),
-                3);
-    }
-
-    private static String entityCategoryPairKey(long entityId, long categoryId) {
-        return entityId + ":" + categoryId;
-    }
-
-    /** 分类范围内已有 entity↔category 绑定（link ∪ relation）的实体 id。 */
-    private Set<Long> resolveEntityIdsBoundInCategories(List<Long> expandedCategoryIds,
-                                                        String entityTypeCode,
-                                                        Set<Long> candidateEntityIds) {
-        if (expandedCategoryIds == null || expandedCategoryIds.isEmpty()
-                || candidateEntityIds == null || candidateEntityIds.isEmpty()) {
-            return Set.of();
-        }
-        Set<Long> bound = new HashSet<>();
-        List<CategoryEntityLinkDO> links = categoryEntityLinkMapper.selectList(
-                new LambdaQueryWrapperX<CategoryEntityLinkDO>()
-                        .in(CategoryEntityLinkDO::getCategoryId, expandedCategoryIds)
-                        .in(CategoryEntityLinkDO::getEntityId, candidateEntityIds)
-                        .eq(CategoryEntityLinkDO::getDeleted, false));
-        for (CategoryEntityLinkDO link : links) {
-            if (link.getEntityId() != null) {
-                bound.add(link.getEntityId());
-            }
-        }
-
-        LambdaQueryWrapperX<EntityCategoryRelationDO> relationQuery = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
-                .in(EntityCategoryRelationDO::getCategoryId, expandedCategoryIds)
-                .in(EntityCategoryRelationDO::getEntityId, candidateEntityIds)
-                .eq(EntityCategoryRelationDO::getDeleted, false);
-        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
-            relationQuery.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
-        }
-        List<EntityCategoryRelationDO> relations = entityCategoryRelationMapper.selectList(relationQuery);
-        for (EntityCategoryRelationDO relation : relations) {
-            if (relation.getEntityId() != null) {
-                bound.add(relation.getEntityId());
-            }
-        }
-        return bound;
-    }
-
-    /** 实体是否已在当前业务类型下挂接任意分类（link ∪ relation）。 */
-    private Set<Long> resolveEntityIdsWithCategoryBinding(String entityTypeCode, Set<Long> candidateEntityIds) {
-        if (candidateEntityIds == null || candidateEntityIds.isEmpty()) {
-            return Set.of();
-        }
-        Set<Long> bound = new HashSet<>();
-        List<CategoryEntityLinkDO> links = categoryEntityLinkMapper.selectList(
-                new LambdaQueryWrapperX<CategoryEntityLinkDO>()
-                        .in(CategoryEntityLinkDO::getEntityId, candidateEntityIds)
-                        .eq(CategoryEntityLinkDO::getDeleted, false));
-        for (CategoryEntityLinkDO link : links) {
-            if (link.getEntityId() != null) {
-                bound.add(link.getEntityId());
-            }
-        }
-
-        LambdaQueryWrapperX<EntityCategoryRelationDO> relationQuery = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
-                .in(EntityCategoryRelationDO::getEntityId, candidateEntityIds)
-                .eq(EntityCategoryRelationDO::getDeleted, false);
-        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
-            relationQuery.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
-        }
-        List<EntityCategoryRelationDO> relations = entityCategoryRelationMapper.selectList(relationQuery);
-        for (EntityCategoryRelationDO relation : relations) {
-            if (relation.getEntityId() != null) {
-                bound.add(relation.getEntityId());
-            }
-        }
-        return bound;
     }
 
     private Set<Long> filterEntityIdsByModelIds(List<Long> entityIds,

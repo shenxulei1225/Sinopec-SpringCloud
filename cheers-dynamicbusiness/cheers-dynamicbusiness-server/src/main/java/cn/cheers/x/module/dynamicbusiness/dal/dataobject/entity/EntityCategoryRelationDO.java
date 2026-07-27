@@ -12,18 +12,11 @@ import lombok.*;
  * 
  * <p>存储实体与分类的多对多关联关系。</p>
  * 
- * <h3>索引建议</h3>
- * <pre>
- * -- 核心索引：根据 Category 查询 Entity（最常用）
- * CREATE INDEX idx_category_business ON dynamic_entity_category_relation 
- *     (category_id, entity_type_code);
- * 
- * -- 辅助索引：根据 Entity 查询 Category
- * CREATE INDEX idx_entity ON dynamic_entity_category_relation (entity_id);
- * 
- * -- 辅助索引：根据业务类型批量操作
- * CREATE INDEX idx_business_type ON dynamic_entity_category_relation (entity_type_code);
- * </pre>
+ * <h3>身份约定</h3>
+ * <p>唯一身份为「租户 + 实际存储类型 + 实体ID + 分类ID」（见 V24 迁移的
+ * {@code uk_dynamic_entity_category_relation_identity}）；{@code domain} 是实体业务域的
+ * 镜像，不参与唯一键。一个实体在同一分类上最多一行：{@code deleted=false} 表示已关联，
+ * {@code deleted=true} 表示显式排除（型号挂分类推导时用于剔除）。</p>
  */
 @TableName("dynamic_entity_category_relation")
 @KeySequence("dynamic_entity_category_relation_seq")
@@ -49,12 +42,20 @@ public class EntityCategoryRelationDO extends TenantBaseDO {
     private Long categoryId;
 
     /**
-     * 业务类型编码
+     * 实际存储类型编码（如 equipment、task）。
      *
-     * <p>用于按业务类型过滤，提高查询性能。</p>
-     * <p>例如：equipment、task、personnel</p>
+     * <p>注册编码（如子数据类型入口 task_patrol）不得写入本列：
+     * 实体身份是「实际存储类型 + 实体ID」，业务域另由 {@link #domain} 承载。</p>
      */
     private String entityTypeCode;
+
+    /**
+     * 业务域（Domain），实体行 domain 的同步镜像。
+     *
+     * <p>随实体迁移业务域而更新，仅作查询维度，不参与关联唯一身份
+     * （唯一键为 租户 + entityTypeCode + entityId + categoryId）。</p>
+     */
+    private String domain;
 
     /**
      * 分类视图下的排序（同一分类上下文内）

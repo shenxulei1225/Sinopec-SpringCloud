@@ -4,7 +4,6 @@ import cn.cheers.x.framework.mybatis.core.type.JsonbMapTypeHandler;
 import cn.cheers.x.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -13,12 +12,16 @@ import lombok.*;
 import java.util.Map;
 
 /**
- * 实体 DO
+ * 实体行映射（ ent_* 专用表共用列形）。
+ *
+ * <p>{@code @TableName} 使用非物理占位符 {@code __entity_dynamic__}，由
+ * {@link cn.cheers.x.module.dynamicbusiness.framework.entity.EntityTableNameHandler}
+ * 在 {@link cn.cheers.x.module.dynamicbusiness.framework.entity.EntityTableNameContext}
+ * 下改写为实际 {@code ent_*}。业务代码必须经 {@code EntityRepository} 访问，禁止直接 Mapper。</p>
  *
  * @author 基础服务模块
  */
-@TableName(value = "dynamic_entity", autoResultMap = true)
-@KeySequence("dynamic_entity_seq")
+@TableName(value = "__entity_dynamic__", autoResultMap = true)
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
@@ -44,12 +47,17 @@ public class EntityDO extends TenantBaseDO {
     private Long modelId;
 
     /**
+     * 业务域（Domain）：创建或更换型号时从型号抄写；无业务域时为空。
+     */
+    private String domain;
+
+    /**
      * 实体名称
      */
     private String name;
 
     /**
-     * 业务编码（专用表 ent_* 常见 NOT NULL；GENERIC 的 dynamic_entity 无此列，空值不参与 INSERT/UPDATE）。
+     * 业务编码（专用表 ent_* 常见 NOT NULL；空值不参与 INSERT/UPDATE）。
      */
     @TableField(insertStrategy = FieldStrategy.NOT_EMPTY, updateStrategy = FieldStrategy.NOT_EMPTY)
     private String code;

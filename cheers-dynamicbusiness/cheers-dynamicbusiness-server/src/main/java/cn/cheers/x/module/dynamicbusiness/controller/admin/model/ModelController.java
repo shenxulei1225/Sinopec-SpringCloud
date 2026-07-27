@@ -1,10 +1,12 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.model;
 
 import cn.cheers.x.framework.apilog.core.annotation.ApiAccessLog;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelAvailableFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCreateReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelDomainChangePreviewRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelPageReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelUpdateReqVO;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
+import java.util.ArrayList;
 import java.util.List;
 
 import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.CREATE;
@@ -91,6 +94,51 @@ public class ModelController {
         return success(true);
     }
 
+    @GetMapping("/preview-domain-change")
+    @Operation(
+        summary = "预览型号业务域迁移影响",
+        description = "把型号拖到另一个业务域分组后、提交之前调用。\n" +
+            "- 返回该型号下会被连带改写业务域的实体数与分类关联数\n" +
+            "- 有存量实体时前端须展示数量并二次确认\n" +
+            "- targetDomain 留空表示移出业务域（未划域）"
+    )
+    @Parameter(name = "modelId", description = "型号编号", required = true, example = "1")
+    @Parameter(name = "targetDomain", description = "目标业务域；留空表示未划域", example = "巡检")
+    @PreAuthorize("@ss.hasPermission('system:model:update')")
+    /**
+     * 用途：型号业务域迁移前的影响预览。
+     * Service 映射：{@link ModelService#previewDomainChange(Long, String)}。
+     * 边界：只读，不改动任何数据。
+     */
+    public CommonResult<ModelDomainChangePreviewRespVO> previewDomainChange(
+            @RequestParam("modelId") Long modelId,
+            @RequestParam(value = "targetDomain", required = false) String targetDomain) {
+        return success(modelService.previewDomainChange(modelId, targetDomain));
+    }
+
+    @PutMapping("/change-domain")
+    @Operation(
+        summary = "迁移型号到目标业务域",
+        description = "在同一事务内更新型号、该型号下全部实体、以及这些实体的全部分类关联的业务域。\n" +
+            "- 业务域权威链为「型号 → 实体 → 分类关联」，任一步失败整体回滚\n" +
+            "- targetDomain 留空表示移出业务域（未划域）\n" +
+            "- 返回本次实际影响的实体数与分类关联数"
+    )
+    @Parameter(name = "modelId", description = "型号编号", required = true, example = "1")
+    @Parameter(name = "targetDomain", description = "目标业务域；留空表示未划域", example = "巡检")
+    @ApiAccessLog(operateType = UPDATE)
+    @PreAuthorize("@ss.hasPermission('system:model:update')")
+    /**
+     * 用途：型号业务域迁移（含级联）。
+     * Service 映射：{@link ModelService#changeDomain(Long, String)}。
+     * 边界：不改型号其它字段；业务域是否登记由 Service 校验。
+     */
+    public CommonResult<ModelDomainChangePreviewRespVO> changeDomain(
+            @RequestParam("modelId") Long modelId,
+            @RequestParam(value = "targetDomain", required = false) String targetDomain) {
+        return success(modelService.changeDomain(modelId, targetDomain));
+    }
+
     @DeleteMapping("/delete")
     @Operation(
         summary = "删除业务模型",
@@ -133,27 +181,51 @@ public class ModelController {
     @GetMapping("/find-by-category-in-business")
     @Operation(
         summary = "查找指定业务下分类关联的模型",
-        description = "根据分类ID和业务类型编码，查找该业务下与分类关联的模型列表（通过 ModelCategoryRelation 关联）。\n" +
+        description = "根据分类ID（单个或多个）和业务类型编码，查找该业务下与分类关联的模型列表（通过 ModelCategoryRelation 关联）。\n" +
             "- entityTypeCode 必填，按业务类型命中关系表索引\n" +
+            "- categoryIds 优先；为空时回退 categoryId（兼容旧调用）\n" +
+            "- 多分类：合并各分类含子树的模型 ID，稳定去重\n" +
             "- 聚合链路：先查 model_category_relation 的 modelId 列表，再批量查询 model 详情"
     )
-    @Parameter(name = "categoryId", description = "分类ID（必填，用于查询分类下的模型，Category只用于归类筛选，不影响字段规则）", required = true, example = "1")
+    @Parameter(name = "categoryIds", description = "分类ID列表（优先；支持重复 query 参数或逗号分隔）", example = "1,2")
+    @Parameter(name = "categoryId", description = "单个分类ID（兼容旧版；categoryIds 为空时使用）", example = "1")
     @Parameter(name = "entityTypeCode", description = "业务类型编码（必填，用于关系过滤并命中索引）", required = true, example = "equipment")
     @PreAuthorize("@ss.hasPermission('system:model:query')")
     /**
      * 用途：查找指定业务下分类关联的模型（Controller 聚合接口）。
      * Service 映射：
      * 1) {@link ModelCategoryRelationService#listModelIdsByCategoryIdWithDescendants(Long, String)}
+     *    或 {@link ModelCategoryRelationService#listModelIdsByCategoryIdsWithDescendants(List, String)}
      * 2) {@link ModelService#getModelsByIds(List)}
      * 边界：本接口返回模型详情；关系服务只返回 ID 序列。
      */
     public CommonResult<List<ModelRespVO>> findModelsByCategoryInBusiness(
-            @RequestParam("categoryId") Long categoryId,
+            @RequestParam(value = "categoryIds", required = false) List<Long> categoryIds,
+            @RequestParam(value = "categoryId", required = false) Long categoryId,
             @RequestParam("entityTypeCode") String entityTypeCode,
-            @RequestParam(value = "dataScope", required = false) String dataScope) {
-        List<Long> modelIds = modelCategoryRelationService.listModelIdsByCategoryIdWithDescendants(categoryId, entityTypeCode);
+            @RequestParam(value = "domain", required = false) String domain) {
+        List<Long> resolvedCategoryIds = new ArrayList<>();
+        if (categoryIds != null) {
+            for (Long id : categoryIds) {
+                if (id != null && !resolvedCategoryIds.contains(id)) {
+                    resolvedCategoryIds.add(id);
+                }
+            }
+        }
+        if (resolvedCategoryIds.isEmpty() && categoryId != null) {
+            resolvedCategoryIds.add(categoryId);
+        }
+        if (resolvedCategoryIds.isEmpty()) {
+            throw new ServiceException(400, "categoryIds 或 categoryId 不能为空");
+        }
+
+        List<Long> modelIds = resolvedCategoryIds.size() == 1
+                ? modelCategoryRelationService.listModelIdsByCategoryIdWithDescendants(
+                        resolvedCategoryIds.get(0), entityTypeCode)
+                : modelCategoryRelationService.listModelIdsByCategoryIdsWithDescendants(
+                        resolvedCategoryIds, entityTypeCode);
         List<ModelRespVO> models = modelIds.isEmpty() ? List.of() : modelService.getModelsByIds(modelIds);
-        return success(modelService.filterModelsByDataScope(models, dataScope));
+        return success(modelService.filterModelsByDomain(models, domain));
     }
 
     @GetMapping("/list-by-entity-type")
@@ -169,8 +241,8 @@ public class ModelController {
      */
     public CommonResult<List<ModelRespVO>> listModelsByEntityType(
             @RequestParam("entityTypeCode") String entityTypeCode,
-            @RequestParam(value = "dataScope", required = false) String dataScope) {
-        return success(modelService.listModelsByEntityType(entityTypeCode, dataScope));
+            @RequestParam(value = "domain", required = false) String domain) {
+        return success(modelService.listModelsByEntityType(entityTypeCode, domain));
     }
 
     @GetMapping("/list-uncategorized-by-category-type")
@@ -184,8 +256,8 @@ public class ModelController {
     public CommonResult<List<ModelRespVO>> listUncategorizedModelsByCategoryType(
             @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam("categoryTypeCode") String categoryTypeCode,
-            @RequestParam(value = "dataScope", required = false) String dataScope) {
-        return success(modelService.listUncategorizedModelsByCategoryType(categoryTypeCode, entityTypeCode, dataScope));
+            @RequestParam(value = "domain", required = false) String domain) {
+        return success(modelService.listUncategorizedModelsByCategoryType(categoryTypeCode, entityTypeCode, domain));
     }
 
     @GetMapping("/list-all")

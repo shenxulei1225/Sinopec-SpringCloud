@@ -18,4 +18,16 @@ public class EntityChangeModelCommitRespVO {
 
     @Schema(description = "归档字段数")
     private int archivedFieldCount;
+
+    @Schema(description = "变更前的业务域；空表示未划域")
+    private String sourceDomain;
+
+    @Schema(description = "变更后的业务域，取自目标模型；空表示未划域")
+    private String targetDomain;
+
+    @Schema(description = "是否跨业务域变更")
+    private boolean domainChanged;
+
+    @Schema(description = "同步迁移业务域的分类关联数")
+    private int syncedRelationCount;
 }

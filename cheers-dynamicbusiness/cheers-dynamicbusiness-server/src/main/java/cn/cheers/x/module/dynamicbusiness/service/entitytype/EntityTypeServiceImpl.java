@@ -93,8 +93,11 @@ public class EntityTypeServiceImpl implements EntityTypeService {
     @Transactional(rollbackFor = Exception.class)
     public Long create(EntityTypeCreateReqVO reqVO) {
         EntityTypeEntryKindEnum entryKind = EntityTypeEntryKindEnum.fromCode(reqVO.getEntryKind());
-        if (entryKind.isScoped()) {
-            return createScopedEntityType(reqVO);
+        if (entryKind.isDomainEntry()) {
+            return createDomainEntityType(reqVO);
+        }
+        if (entryKind.isScopeEntry()) {
+            return createScopeEntityType(reqVO);
         }
         if (entryKind.isCategory()) {
             return createCategoryEntityType(reqVO);
@@ -113,7 +116,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         entityType.setParentId(null);
         entityType.setEntryKind(EntityTypeDO.ENTRY_KIND_NATIVE);
         entityType.setBaseEntityTypeCode(null);
-        entityType.setDataScope(null);
+        entityType.setDomain(null);
         ensureEntityTypeGroupRegistered(entityType.getGroupName());
         entityTypeMapper.insert(entityType);
 
@@ -137,31 +140,62 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         return entityType.getId();
     }
 
-    private Long createScopedEntityType(EntityTypeCreateReqVO reqVO) {
+    private Long createDomainEntityType(EntityTypeCreateReqVO reqVO) {
         if (!StringUtils.hasText(reqVO.getBaseEntityTypeCode())) {
-            throw new ServiceException(400, "分域数据必须指定基础数据类型编码");
+            throw new ServiceException(400, "子数据类型必须指定基础数据类型编码");
         }
-        if (!StringUtils.hasText(reqVO.getDataScope())) {
-            throw new ServiceException(400, "分域数据必须指定业务域标识");
+        if (!StringUtils.hasText(reqVO.getDomain())) {
+            throw new ServiceException(400, "子数据类型必须指定业务域标识");
         }
         if (entityTypeMapper.existsByCode(reqVO.getCode())) {
             throw new ServiceException(400, "业务类型编码已存在");
         }
 
         String baseCode = reqVO.getBaseEntityTypeCode().trim();
-        String dataScope = EntityTypeScopeContext.normalizeScope(reqVO.getDataScope());
-        EntityTypeDO baseType = requireNativeBaseEntityType(baseCode, "分域数据");
-        if (existsScopedEntry(baseCode, dataScope, null)) {
-            throw new ServiceException(400, "该基础类型下业务域已存在：" + dataScope);
+        String domain = EntityTypeScopeContext.normalizeDomain(reqVO.getDomain());
+        EntityTypeDO baseType = requireNativeBaseEntityType(baseCode, "子数据类型");
+        if (existsDomainEntry(baseCode, domain, null)) {
+            throw new ServiceException(400, "该基础类型下业务域已存在：" + domain);
         }
 
         EntityTypeDO entityType = new EntityTypeDO();
         copyBaseFields(entityType, reqVO);
         entityType.setTypeLevel(EntityTypeDO.TYPE_LEVEL_USER);
         entityType.setParentId(null);
-        entityType.setEntryKind(EntityTypeDO.ENTRY_KIND_SCOPED);
+        entityType.setEntryKind(EntityTypeDO.ENTRY_KIND_DOMAIN);
         entityType.setBaseEntityTypeCode(baseCode);
-        entityType.setDataScope(dataScope);
+        entityType.setDomain(domain);
+        inheritStorageFromBase(entityType, baseType);
+        ensureEntityTypeGroupRegistered(entityType.getGroupName());
+        entityTypeMapper.insert(entityType);
+
+        entityTypeCategoryBootstrapService.ensureForEntityTypeCode(entityType.getCode());
+
+        return entityType.getId();
+    }
+
+    /**
+     * 划分数据（SCOPE）：复用基础类型存储，不建新表、不带业务域；
+     * 成员关系后续按实体级加入/移出，不走旧 CATEGORY（分类即实体）管线。
+     */
+    private Long createScopeEntityType(EntityTypeCreateReqVO reqVO) {
+        if (!StringUtils.hasText(reqVO.getBaseEntityTypeCode())) {
+            throw new ServiceException(400, "划分数据必须指定基础数据类型编码");
+        }
+        if (entityTypeMapper.existsByCode(reqVO.getCode())) {
+            throw new ServiceException(400, "业务类型编码已存在");
+        }
+
+        String baseCode = reqVO.getBaseEntityTypeCode().trim();
+        EntityTypeDO baseType = requireNativeBaseEntityType(baseCode, "划分数据");
+
+        EntityTypeDO entityType = new EntityTypeDO();
+        copyBaseFields(entityType, reqVO);
+        entityType.setTypeLevel(EntityTypeDO.TYPE_LEVEL_USER);
+        entityType.setParentId(null);
+        entityType.setEntryKind(EntityTypeDO.ENTRY_KIND_SCOPE);
+        entityType.setBaseEntityTypeCode(baseCode);
+        entityType.setDomain(null);
         inheritStorageFromBase(entityType, baseType);
         ensureEntityTypeGroupRegistered(entityType.getGroupName());
         entityTypeMapper.insert(entityType);
@@ -188,7 +222,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         entityType.setParentId(null);
         entityType.setEntryKind(EntityTypeDO.ENTRY_KIND_CATEGORY);
         entityType.setBaseEntityTypeCode(baseCode);
-        entityType.setDataScope(null);
+        entityType.setDomain(null);
         inheritStorageFromBase(entityType, baseType);
         ensureEntityTypeGroupRegistered(entityType.getGroupName());
         entityTypeMapper.insert(entityType);
@@ -205,7 +239,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         }
         EntityTypeEntryKindEnum baseKind = EntityTypeEntryKindEnum.fromCode(baseType.getEntryKind());
         if (baseKind.reusesBaseStorage()) {
-            throw new ServiceException(400, productKindLabel + "不能基于分域数据或分类数据创建，请选择独立数据");
+            throw new ServiceException(400, productKindLabel + "不能基于子数据类型、划分数据或分类数据创建，请选择数据类型");
         }
         return baseType;
     }
@@ -217,11 +251,11 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         entityType.setEnableRuleEngine(baseType.getEnableRuleEngine());
     }
 
-    private boolean existsScopedEntry(String baseEntityTypeCode, String dataScope, Long excludeId) {
+    private boolean existsDomainEntry(String baseEntityTypeCode, String domain, Long excludeId) {
         LambdaQueryWrapperX<EntityTypeDO> query = new LambdaQueryWrapperX<EntityTypeDO>()
-                .eq(EntityTypeDO::getEntryKind, EntityTypeDO.ENTRY_KIND_SCOPED)
+                .eq(EntityTypeDO::getEntryKind, EntityTypeDO.ENTRY_KIND_DOMAIN)
                 .eq(EntityTypeDO::getBaseEntityTypeCode, baseEntityTypeCode)
-                .eq(EntityTypeDO::getDataScope, dataScope)
+                .eq(EntityTypeDO::getDomain, domain)
                 .eq(EntityTypeDO::getDeleted, false);
         if (excludeId != null) {
             query.ne(EntityTypeDO::getId, excludeId);
@@ -408,6 +442,42 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         return entityTypeMapper.selectAllList().stream()
                 .map(this::convertToSimpleVO)
                 .toList();
+    }
+
+    @Override
+    public List<EntityTypeDomainOptionVO> listDomainOptions(String baseEntityTypeCode) {
+        if (!StringUtils.hasText(baseEntityTypeCode)) {
+            return List.of();
+        }
+        String base = baseEntityTypeCode.trim();
+        List<EntityTypeDO> rows = entityTypeMapper.selectList(new LambdaQueryWrapperX<EntityTypeDO>()
+                .eq(EntityTypeDO::getEntryKind, EntityTypeDO.ENTRY_KIND_DOMAIN)
+                .eq(EntityTypeDO::getBaseEntityTypeCode, base)
+                .eq(EntityTypeDO::getDeleted, false)
+                .orderByAsc(EntityTypeDO::getSort)
+                .orderByAsc(EntityTypeDO::getId));
+        Map<String, EntityTypeDomainOptionVO> byDomain = new java.util.LinkedHashMap<>();
+        for (EntityTypeDO row : rows) {
+            String domain = EntityTypeScopeContext.normalizeDomain(row.getDomain());
+            if (!StringUtils.hasText(domain) || byDomain.containsKey(domain)) {
+                continue;
+            }
+            String name = StringUtils.hasText(row.getName()) ? row.getName().trim() : domain;
+            byDomain.put(domain, new EntityTypeDomainOptionVO(domain, name, row.getCode()));
+        }
+        return List.copyOf(byDomain.values());
+    }
+
+    @Override
+    public boolean isRegisteredDomain(String baseEntityTypeCode, String domain) {
+        String normalized = EntityTypeScopeContext.normalizeDomain(domain);
+        if (!StringUtils.hasText(normalized)) {
+            return true;
+        }
+        if (!StringUtils.hasText(baseEntityTypeCode)) {
+            return false;
+        }
+        return existsDomainEntry(baseEntityTypeCode.trim(), normalized, null);
     }
 
     /**
@@ -746,12 +816,25 @@ public class EntityTypeServiceImpl implements EntityTypeService {
                         : EntityTypeDO.ENTRY_KIND_NATIVE);
         entityType.setBaseEntityTypeCode(
                 StringUtils.hasText(reqVO.getBaseEntityTypeCode()) ? reqVO.getBaseEntityTypeCode().trim() : null);
-        entityType.setDataScope(EntityTypeScopeContext.normalizeScope(reqVO.getDataScope()));
-        // Copy storage config fields
+        entityType.setDomain(EntityTypeScopeContext.normalizeDomain(reqVO.getDomain()));
+        // Copy storage config fields（仅 DEDICATED；禁止 GENERIC / dynamic_entity）
         entityType.setStorageType(reqVO.getStorageType());
         entityType.setDedicatedTableName(reqVO.getDedicatedTableName());
         entityType.setPhysicalColumnMapping(normalizeJsonFieldString(reqVO.getPhysicalColumnMapping()));
         entityType.setEnableRuleEngine(reqVO.getEnableRuleEngine());
+        requireDedicatedStorage(entityType);
+    }
+
+    /** 动态业务仅允许专用表；显式 GENERIC 拒绝，缺省补为 DEDICATED。 */
+    private void requireDedicatedStorage(EntityTypeDO entityType) {
+        String raw = entityType.getStorageType();
+        if ("GENERIC".equalsIgnoreCase(raw)) {
+            throw new ServiceException(400, "已废止通用表存储（GENERIC），仅支持专用表 DEDICATED");
+        }
+        StorageTypeEnum storageType = StorageTypeEnum.getByCode(raw);
+        if (storageType == null || !storageType.isDedicated()) {
+            entityType.setStorageType(StorageTypeEnum.DEDICATED.getCode());
+        }
     }
 
     private EntityTypeSimpleVO convertToSimpleVO(EntityTypeDO entityType) {
@@ -778,7 +861,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         vo.setGroupName(entityType.getGroupName());
         vo.setEntryKind(entityType.getEntryKind());
         vo.setBaseEntityTypeCode(entityType.getBaseEntityTypeCode());
-        vo.setDataScope(entityType.getDataScope());
+        vo.setDomain(entityType.getDomain());
         vo.setCreateTime(entityType.getCreateTime());
         // Copy storage config fields
         vo.setStorageType(entityType.getStorageType());

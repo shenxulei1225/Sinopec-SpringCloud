@@ -5,11 +5,11 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityFieldIndex
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntitySyncFailLogDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityFieldIndexMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntitySyncFailLogMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
 import cn.cheers.x.module.dynamicbusiness.service.field.SmartSearchableService;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
@@ -60,7 +60,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EntitySyncServiceImpl implements EntitySyncService {
 
-    private final EntityMapper entityMapper;
+    private final EntityRepository entityRepository;
     private final EntityFieldIndexMapper entityFieldIndexMapper;
     private final EntitySyncFailLogMapper entitySyncFailLogMapper;
     private final FieldMapper fieldMapper;
@@ -281,11 +281,9 @@ public class EntitySyncServiceImpl implements EntitySyncService {
             return false;
         }
 
-        // 注意：此方法目前仍使用 entityMapper，仅支持通用表
-        // 如果需要支持动态表，应该使用 IndexRebuildService.resyncByEntityId(entityId, entityTypeCode)
-        EntityDO entity = entityMapper.selectById(entityId);
+        EntityDO entity = entityRepository.findById(entityId, entityTypeCode);
         if (entity == null) {
-            log.warn("[resyncByEntityId][Entity 不存在于通用表][entityId={}, entityTypeCode={}]", 
+            log.warn("[resyncByEntityId][Entity 不存在][entityId={}, entityTypeCode={}]",
                     entityId, entityTypeCode);
             return false;
         }
@@ -330,7 +328,10 @@ public class EntitySyncServiceImpl implements EntitySyncService {
         }
 
         Long entityId = failLog.getEntityId();
-        EntityDO entity = entityMapper.selectById(entityId);
+        String entityTypeCode = failLog.getEntityTypeCode();
+        EntityDO entity = (entityTypeCode == null || entityTypeCode.isBlank())
+                ? null
+                : entityRepository.findById(entityId, entityTypeCode);
 
         if (entity == null) {
             // Entity 已被删除，标记为成功
@@ -607,9 +608,14 @@ public class EntitySyncServiceImpl implements EntitySyncService {
             EntitySyncFailLogDO lastFailLog = entitySyncFailLogMapper.selectLatestByEntityId(entityId);
             String lastError = lastFailLog != null ? lastFailLog.getFailReason() : "未知错误";
             
-            // 获取 modelId
-            EntityDO entity = entityMapper.selectById(entityId);
-            Long modelId = entity != null ? entity.getModelId() : null;
+            // 获取 modelId（须带 entityTypeCode，经 Repository 访问专用表）
+            Long modelId = null;
+            if (lastFailLog != null
+                    && lastFailLog.getEntityTypeCode() != null
+                    && !lastFailLog.getEntityTypeCode().isBlank()) {
+                EntityDO entity = entityRepository.findById(entityId, lastFailLog.getEntityTypeCode());
+                modelId = entity != null ? entity.getModelId() : null;
+            }
             
             // 调用告警服务
             syncAlertService.sendSyncFailureAlert(entityId, modelId, failCount, lastError);

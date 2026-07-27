@@ -35,17 +35,17 @@ public class EntityTypeBaseVO {
     @Size(max = 100, message = "分组名长度不能超过100")
     private String groupName;
 
-    @Schema(description = "入口类型：NATIVE=独立数据；SCOPED=分域数据；CATEGORY=分类数据", example = "NATIVE")
+    @Schema(description = "入口类型：NATIVE=数据类型；DOMAIN=子数据类型；SCOPE=划分数据；CATEGORY=旧分类即实体", example = "NATIVE")
     @Size(max = 16, message = "入口类型长度不能超过16")
     private String entryKind;
 
-    @Schema(description = "分域/分类数据时指向的存储数据类型编码", example = "task")
+    @Schema(description = "子类型/划分数据/旧分类数据时指向的存储数据类型编码", example = "task")
     @Size(max = 100, message = "基础数据类型编码长度不能超过100")
     private String baseEntityTypeCode;
 
-    @Schema(description = "分域数据时的业务域标识；分类数据为空", example = "巡检")
-    @Size(max = 128, message = "业务域标识长度不能超过128")
-    private String dataScope;
+    @Schema(description = "业务域（Domain）；子数据类型入口必填，其余为空", example = "巡检")
+    @Size(max = 128, message = "业务域长度不能超过128")
+    private String domain;
 
     @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "active")
     @NotNull(message = "状态不能为空")

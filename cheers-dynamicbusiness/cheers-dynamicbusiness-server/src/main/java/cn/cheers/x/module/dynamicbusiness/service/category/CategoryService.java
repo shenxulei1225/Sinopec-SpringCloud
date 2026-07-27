@@ -55,6 +55,12 @@ public interface CategoryService {
      */
     void deleteCategory(CategoryDeleteReqVO reqVO);
 
+    /**
+     * 实体侧已删除绑定实体并断开 link 后，仅删除高级分类业务节点（不再删实体）。
+     * 简单分类若仍有/曾有异常绑定由调用方先验；此处再校验种类为 ADVANCED。
+     */
+    void deleteCategoryNodeAfterEntityRemoved(Long categoryId, String categoryTypeCode);
+
     CategoryRespVO getCategoryVO(Long id);
 
     /**

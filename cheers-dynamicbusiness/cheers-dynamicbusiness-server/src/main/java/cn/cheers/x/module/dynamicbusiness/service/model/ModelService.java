@@ -2,6 +2,7 @@ package cn.cheers.x.module.dynamicbusiness.service.model;
 
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCreateReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelDomainChangePreviewRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelPageReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelUpdateReqVO;
@@ -51,6 +52,31 @@ public interface ModelService {
      */
     void deleteModel(Long id);
 
+    // ==================== 业务域迁移 ====================
+
+    /**
+     * 预览把型号迁到目标业务域会连带改动多少数据。
+     *
+     * <p>调用时机：把型号拖到另一个业务域分组后、真正提交之前。有存量实体时前端须二次确认。</p>
+     *
+     * @param modelId 型号ID
+     * @param targetDomain 目标业务域；为空表示移出业务域（未划域）
+     * @return 受影响的实体数与分类关联数
+     */
+    ModelDomainChangePreviewRespVO previewDomainChange(Long modelId, String targetDomain);
+
+    /**
+     * 把型号迁到目标业务域，并在同一事务内级联更新该型号全部实体及这些实体的全部分类关联。
+     *
+     * <p>业务域权威链是「型号 → 实体 → 分类关联」，任一步失败整体回滚；
+     * 型号更新接口若改动了业务域，也必须走本方法，不得只改型号行。</p>
+     *
+     * @param modelId 型号ID
+     * @param targetDomain 目标业务域；为空表示移出业务域
+     * @return 实际迁移结果（含受影响数量）
+     */
+    ModelDomainChangePreviewRespVO changeDomain(Long modelId, String targetDomain);
+
     /**
      * 获取业务模型详情
      *
@@ -72,16 +98,16 @@ public interface ModelService {
      */
     List<ModelRespVO> listModelsByEntityType(String entityTypeCode);
 
-    List<ModelRespVO> listModelsByEntityType(String entityTypeCode, String dataScope);
+    List<ModelRespVO> listModelsByEntityType(String entityTypeCode, String domain);
 
     /**
      * 按分类体系查询未挂接任何分类节点的模型（Pattern B 数据管理「未分类」）。
      */
     List<ModelRespVO> listUncategorizedModelsByCategoryType(String categoryTypeCode, String entityTypeCode);
 
-    List<ModelRespVO> listUncategorizedModelsByCategoryType(String categoryTypeCode, String entityTypeCode, String dataScope);
+    List<ModelRespVO> listUncategorizedModelsByCategoryType(String categoryTypeCode, String entityTypeCode, String domain);
 
-    List<ModelRespVO> filterModelsByDataScope(List<ModelRespVO> models, String dataScope);
+    List<ModelRespVO> filterModelsByDomain(List<ModelRespVO> models, String domain);
 
     /**
      * 获取跨业务类型的模型列表（不分页，含启用/停用）。

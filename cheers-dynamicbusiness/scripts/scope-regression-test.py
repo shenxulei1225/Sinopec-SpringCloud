@@ -114,10 +114,10 @@ def query_total(body: dict) -> int:
     return 0
 
 
-def list_models(entity_type: str, data_scope: Optional[str] = None) -> list:
+def list_models(entity_type: str, domain: Optional[str] = None) -> list:
     params = {"entityTypeCode": entity_type}
-    if data_scope:
-        params["dataScope"] = data_scope
+    if domain:
+        params["domain"] = domain
     return http("GET", "/business/models/list-by-entity-type", params=params).get("data") or []
 
 
@@ -178,7 +178,7 @@ def main() -> int:
             {
                 "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
                 "entityTypeCode": "task",
-                "dataScope": "巡检",
+                "domain": "巡检",
                 "pageNo": 1,
                 "pageSize": 100,
                 "resultShape": "PAGE",
@@ -191,7 +191,7 @@ def main() -> int:
             {
                 "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
                 "entityTypeCode": "task",
-                "dataScope": "维修",
+                "domain": "维修",
                 "pageNo": 1,
                 "pageSize": 100,
                 "resultShape": "PAGE",
@@ -216,7 +216,7 @@ def main() -> int:
             {
                 "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
                 "entityTypeCode": "task",
-                "dataScope": "空域测试",
+                "domain": "空域测试",
                 "pageNo": 1,
                 "pageSize": 100,
                 "resultShape": "PAGE",
@@ -229,7 +229,7 @@ def main() -> int:
             {
                 "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
                 "entityTypeCode": "task",
-                "dataScope": "巡检",
+                "domain": "巡检",
                 "resultShape": "TREE",
                 "resultDetail": "LIGHT",
                 "pageNo": 1,
@@ -243,7 +243,7 @@ def main() -> int:
             {
                 "scene": "PATTERN_B_ENTITIES_BY_MODEL",
                 "entityTypeCode": "task",
-                "dataScope": "巡检",
+                "domain": "巡检",
                 "pageNo": 1,
                 "pageSize": 100,
                 "resultShape": "PAGE",
@@ -259,13 +259,13 @@ def main() -> int:
                 "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
                 "entityTypeCode": "task",
                 "modelIds": [patrol_model["id"]],
-                "dataScope": "维修",  # 应被忽略
+                "domain": "维修",  # 应被忽略
                 "pageNo": 1,
                 "pageSize": 100,
                 "resultShape": "PAGE",
             }
         )
-        return assert_eq(total, 5, "显式 modelIds 优先于 dataScope")
+        return assert_eq(total, 5, "显式 modelIds 优先于 domain")
 
     def p0_dm_category_scope():
         total = query_total(
@@ -274,7 +274,7 @@ def main() -> int:
                 "entityTypeCode": "task",
                 "categoryTypeCode": "task",
                 "categoryIds": [cat_daily],
-                "dataScope": "巡检",
+                "domain": "巡检",
                 "pageNo": 1,
                 "pageSize": 100,
                 "resultShape": "PAGE",
@@ -289,7 +289,7 @@ def main() -> int:
                 "scene": "DATA_MGMT_ENTITIES_UNCATEGORIZED",
                 "entityTypeCode": "task",
                 "categoryTypeCode": "task",
-                "dataScope": "巡检",
+                "domain": "巡检",
                 "pageNo": 1,
                 "pageSize": 100,
                 "resultShape": "PAGE",
@@ -305,7 +305,7 @@ def main() -> int:
                 "entityTypeCode": "task",
                 "categoryTypeCode": "task",
                 "categoryIds": [cat_daily],
-                "dataScope": "巡检",
+                "domain": "巡检",
                 "pageNo": 1,
                 "pageSize": 100,
                 "resultShape": "PAGE",
@@ -321,7 +321,7 @@ def main() -> int:
                 "entityTypeCode": "task",
                 "categoryTypeCode": "task",
                 "categoryIds": [cat_daily],
-                "dataScope": "巡检",
+                "domain": "巡检",
                 "pageNo": 1,
                 "pageSize": 100,
                 "resultShape": "PAGE",
@@ -337,7 +337,7 @@ def main() -> int:
         Case("P0", "空 Scope 哨兵", p0_abc_empty_scope),
         Case("P0", "PATTERN_ABC_ALL TREE", p0_abc_tree_patrol),
         Case("P0", "PATTERN_B + 巡检", p0_pattern_b_scope),
-        Case("P0", "modelIds 优先于 dataScope", p0_explicit_model_ids_win),
+        Case("P0", "modelIds 优先于 domain", p0_explicit_model_ids_win),
         Case("P0", "DATA_MGMT 分类∩Scope", p0_dm_category_scope),
         Case("P0", "DATA_MGMT 未分类+Scope", p0_dm_uncategorized_scope),
         Case("P0", "PATTERN_A_C 分类（Scope 缺口）", p0_pattern_ac_category_scope, known_gap=True),
@@ -362,7 +362,7 @@ def main() -> int:
             {
                 "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
                 "entityTypeCode": "task_excution_record",
-                "dataScope": "巡检",
+                "domain": "巡检",
                 "pageNo": 1,
                 "pageSize": 100,
                 "resultShape": "PAGE",
@@ -375,7 +375,7 @@ def main() -> int:
             {
                 "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
                 "entityTypeCode": "task_excution_record",
-                "dataScope": "维修",
+                "domain": "维修",
                 "pageNo": 1,
                 "pageSize": 100,
                 "resultShape": "PAGE",
@@ -399,7 +399,7 @@ def main() -> int:
             {
                 "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
                 "entityTypeCode": "task_excution_record",
-                "dataScope": "巡检",
+                "domain": "巡检",
                 "pageNo": 1,
                 "pageSize": 100,
                 "resultShape": "PAGE",
@@ -409,7 +409,7 @@ def main() -> int:
             {
                 "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
                 "entityTypeCode": "task_excution_record",
-                "dataScope": "维修",
+                "domain": "维修",
                 "pageNo": 1,
                 "pageSize": 100,
                 "resultShape": "PAGE",
@@ -442,31 +442,31 @@ def main() -> int:
         )
         return ok, f"all={len(all_m)} patrol={len(patrol_m)} maint={len(maint_m)}"
 
-    def p0_model_get_data_scope():
+    def p0_model_get_domain():
         if not patrol_model:
             return False, "patrol_task missing"
         vo = http("GET", "/business/models/get", params={"id": patrol_model["id"]}).get("data") or {}
-        return assert_eq(vo.get("dataScope"), "巡检", "model get dataScope")
+        return assert_eq(vo.get("domain"), "巡检", "model get domain")
 
     def p0_page_models():
         page = http(
             "GET",
             "/business/models/page-models",
-            params={"entityTypeCode": "task", "dataScope": "巡检", "pageNo": 1, "pageSize": 50},
+            params={"entityTypeCode": "task", "domain": "巡检", "pageNo": 1, "pageSize": 50},
         ).get("data") or {}
         total = int(page.get("total") or 0)
         return assert_eq(total, EXPECT["models_patrol_scope"], "page-models+巡检")
 
     cases += [
         Case("P0", "list-by-entity-type 模型计数", p0_models_list),
-        Case("P0", "models/get dataScope", p0_model_get_data_scope),
+        Case("P0", "models/get domain", p0_model_get_domain),
         Case("P0", "page-models+巡检", p0_page_models),
     ]
 
     # --- P1 域入口 / 组合 ---
     def p1_scoped_type_registry():
         types = http("GET", "/entity-type/list-all").get("data") or []
-        codes = {t.get("code") for t in types if t.get("entryKind") == "SCOPED"}
+        codes = {t.get("code") for t in types if t.get("entryKind") == "DOMAIN"}
         need = {
             "task_patrol",
             "task_maintenance",
@@ -480,7 +480,7 @@ def main() -> int:
         lst = http(
             "GET",
             "/business/models/list-uncategorized-by-category-type",
-            params={"categoryTypeCode": "task", "entityTypeCode": "task", "dataScope": "巡检"},
+            params={"categoryTypeCode": "task", "entityTypeCode": "task", "domain": "巡检"},
         ).get("data") or []
         codes = {m.get("code") for m in lst}
         ok = "patrol_adhoc" in codes and "patrol_task" not in codes
@@ -493,7 +493,7 @@ def main() -> int:
                 "entityTypeCode": "task",
                 "categoryTypeCode": "task",
                 "categoryIds": [cat_maint],
-                "dataScope": "维修",
+                "domain": "维修",
                 "pageNo": 1,
                 "pageSize": 100,
                 "resultShape": "PAGE",
@@ -502,7 +502,7 @@ def main() -> int:
         return assert_eq(total, 3, "维修分类实体数")
 
     cases += [
-        Case("P1", "SCOPED 域入口注册", p1_scoped_type_registry),
+        Case("P1", "DOMAIN 域入口注册", p1_scoped_type_registry),
         Case("P1", "未挂分类模型+Scope", p1_uncategorized_models_scope),
         Case("P1", "维修分类 A/C 实体", p1_maint_category_entities),
     ]
@@ -513,18 +513,18 @@ def main() -> int:
         ok = len(lst) >= 1
         return ok, f"equipment models={len(lst)}"
 
-    def p2_batch_models_data_scope():
+    def p2_batch_models_domain():
         ids = [m["id"] for m in list_models("task", "巡检")[:2]]
         batch = http("GET", "/business/models/batch", params={"ids": ",".join(map(str, ids))}).get("data") or []
-        ok = len(batch) == len(ids) and all(b.get("dataScope") == "巡检" for b in batch)
-        return ok, f"batch scopes={[b.get('dataScope') for b in batch]}"
+        ok = len(batch) == len(ids) and all(b.get("domain") == "巡检" for b in batch)
+        return ok, f"batch scopes={[b.get('domain') for b in batch]}"
 
     def p2_general_not_in_patrol_scope():
         total = query_total(
             {
                 "scene": "PATTERN_B_ENTITIES_BY_MODEL",
                 "entityTypeCode": "task",
-                "dataScope": "巡检",
+                "domain": "巡检",
                 "pageNo": 1,
                 "pageSize": 100,
                 "resultShape": "PAGE",
@@ -540,7 +540,7 @@ def main() -> int:
             {
                 "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
                 "entityTypeCode": "task",
-                "dataScope": "巡检",
+                "domain": "巡检",
                 "pageNo": 1,
                 "pageSize": 100,
                 "resultShape": "PAGE",
@@ -550,7 +550,7 @@ def main() -> int:
             {
                 "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
                 "entityTypeCode": "task",
-                "dataScope": "维修",
+                "domain": "维修",
                 "pageNo": 1,
                 "pageSize": 100,
                 "resultShape": "PAGE",
@@ -565,7 +565,7 @@ def main() -> int:
 
     cases += [
         Case("P2", "equipment 原生入口抽样", p2_equipment_native_models),
-        Case("P2", "models/batch 带 dataScope", p2_batch_models_data_scope),
+        Case("P2", "models/batch 带 domain", p2_batch_models_domain),
         Case("P2", "general 域外", p2_general_not_in_patrol_scope),
         Case("P2", "任务 Scope 与 general 隔离", p2_task_scope_isolation),
     ]

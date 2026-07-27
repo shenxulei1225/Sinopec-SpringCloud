@@ -25,4 +25,11 @@ public class CategoryTypeBaseVO {
     @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     private Integer status;
 
+    @Schema(
+        description = "分类建立方式。ADVANCED（高级分类）≡ 既有分类即实体管线；SIMPLE=简单分类。勿另开实现。",
+        example = "SIMPLE",
+        allowableValues = {"SIMPLE", "ADVANCED"}
+    )
+    private String categoryMode;
+
 }

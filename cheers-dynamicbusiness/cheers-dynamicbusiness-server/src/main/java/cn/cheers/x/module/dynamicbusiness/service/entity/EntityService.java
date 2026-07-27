@@ -30,7 +30,7 @@ import java.util.List;
  *
  * <p>Service 层负责业务逻辑处理，不关心数据存储细节。
  * 通过 Repository 层访问数据，底层使用 MyBatis-Plus 动态表名机制实现存储透明。
- * 支持通用表（dynamic_entity）和动态表（ent_{entityTypeCode}），对调用方完全透明。</p>
+ * 实体一律落在专用表 {@code ent_*}；禁止绕过 Repository 直接访问 Mapper / 通用表。</p>
  *
  * <h3>架构说明</h3>
  * <ul>
@@ -232,7 +232,8 @@ public interface EntityService {
      */
     EntitySceneQueryRespVO queryEntities(EntityQueryScene scene, String resultShape, String resultDetail, String categoryTypeCode, String entityTypeCode,
             List<Long> modelIds, List<Long> categoryIds, Long entityId, Long rootEntityId, String entitySourceEntityType,
-            Integer pageNo, Integer pageSize, String keyword, List<FieldFilterReqVO> filters);
+            Integer pageNo, Integer pageSize, String keyword, String domain,
+            List<FieldFilterReqVO> filters);
 
 
     /**

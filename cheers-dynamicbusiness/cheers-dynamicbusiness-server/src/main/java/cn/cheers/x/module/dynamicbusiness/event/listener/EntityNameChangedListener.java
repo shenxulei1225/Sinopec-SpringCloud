@@ -3,8 +3,8 @@ package cn.cheers.x.module.dynamicbusiness.event.listener;
 import cn.cheers.x.framework.tenant.core.util.TenantUtils;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityRelationDO;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityRelationMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
 import cn.cheers.x.module.dynamicbusiness.event.EntityNameChangedEvent;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -59,7 +59,7 @@ public class EntityNameChangedListener {
     private EntityRelationMapper entityRelationMapper;
 
     @Resource
-    private EntityMapper entityMapper;
+    private EntityRepository entityRepository;
 
     /**
      * 单选关联类型
@@ -159,11 +159,15 @@ public class EntityNameChangedListener {
         Long sourceEntityId = relation.getSourceEntityId();
         String fieldCode = relation.getFieldCode();
         String relationType = relation.getRelationType();
+        String sourceTypeCode = relation.getSourceEntityTypeCode();
+        if (sourceTypeCode == null || sourceTypeCode.isBlank()) {
+            log.warn("[updateSourceEntityName][源实体缺少 entityTypeCode: sourceEntityId={}]", sourceEntityId);
+            return false;
+        }
 
-        // 获取源实体
-        EntityDO sourceEntity = entityMapper.selectById(sourceEntityId);
+        EntityDO sourceEntity = entityRepository.findById(sourceEntityId, sourceTypeCode.trim());
         if (sourceEntity == null) {
-            log.warn("[updateSourceEntityName][源实体不存在: sourceEntityId={}]", sourceEntityId);
+            log.warn("[updateSourceEntityName][源实体不存在: sourceEntityId={}, type={}]", sourceEntityId, sourceTypeCode);
             return false;
         }
 
@@ -189,8 +193,9 @@ public class EntityNameChangedListener {
 
         EntityDO update = new EntityDO();
         update.setId(sourceEntityId);
+        update.setEntityTypeCode(sourceTypeCode.trim());
         update.setCustomFields(mutableFields);
-        entityMapper.updateById(update);
+        entityRepository.update(update);
 
         log.debug("[updateSourceEntityName][更新源实体名称成功: sourceEntityId={}, fieldCode={}]",
                 sourceEntityId, fieldCode);

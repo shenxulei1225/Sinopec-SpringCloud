@@ -24,9 +24,9 @@ public final class CapabilityBlockProjectionBuilder {
     private static final String MODEL_CREATE_URL = "/dynamicbusiness/business/models/create";
     private static final String MODEL_UPDATE_URL = "/dynamicbusiness/business/models/update";
     private static final String MODEL_DELETE_URL = "/dynamicbusiness/business/models/delete";
-    private static final String ENTITY_SCENE_DEFAULT = "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE";
+    private static final String ENTITY_SCENE_DEFAULT = "ENTITIES_BY_MODEL";
     /** 实体层级树首屏 scene（非 ROOT_ENTITY_SUBTREE；子树由 Tree 运行时动作调用） */
-    private static final String ENTITY_TREE_SCENE = "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE";
+    private static final String ENTITY_TREE_SCENE = "ENTITIES_BY_MODEL";
     private static final String ENTITY_DETAIL_URL = "/dynamicbusiness/business/entities/detail";
     private static final String ENTITY_CREATE_URL = "/dynamicbusiness/business/entities/create";
     private static final String ENTITY_UPDATE_URL = "/dynamicbusiness/business/entities/update";
@@ -268,7 +268,7 @@ public final class CapabilityBlockProjectionBuilder {
             appendSort(projection, sortableFieldKeys);
         }
         appendPagination(projection);
-        appendModelCrudBlocks(projection);
+        appendModelCrudBlocks(projection, entityTypeCode);
         projection.put("asyncChecks", List.of());
         projection.put("externalInputs", List.of());
     }
@@ -479,8 +479,8 @@ public final class CapabilityBlockProjectionBuilder {
     }
 
     /** 型号 list：写块带表单字段，供 enrich → dataSourceSupportsAutoCrud（需 URL + requestFields） */
-    private static void appendModelCrudBlocks(Map<String, Object> projection) {
-        List<Map<String, Object>> formFields = modelCrudFormFields();
+    private static void appendModelCrudBlocks(Map<String, Object> projection, String entityTypeCode) {
+        List<Map<String, Object>> formFields = modelCrudFormFields(entityTypeCode);
         projection.put("create", writeBlockWithFields(MODEL_CREATE_URL, "POST", formFields));
         projection.put("update", writeBlockWithFields(MODEL_UPDATE_URL, "PUT", formFields));
         projection.put("delete", writeBlockWithFields(
@@ -495,8 +495,8 @@ public final class CapabilityBlockProjectionBuilder {
                         "readOnly", true))));
     }
 
-    private static List<Map<String, Object>> modelCrudFormFields() {
-        List<Map<String, Object>> fields = new ArrayList<>(2);
+    private static List<Map<String, Object>> modelCrudFormFields(String entityTypeCode) {
+        List<Map<String, Object>> fields = new ArrayList<>(3);
         Map<String, Object> name = new LinkedHashMap<>();
         name.put("fieldKey", "name");
         name.put("fieldCode", "name");
@@ -505,6 +505,30 @@ public final class CapabilityBlockProjectionBuilder {
         name.put("renderAs", "input");
         name.put("required", true);
         fields.add(name);
+
+        Map<String, Object> domain = new LinkedHashMap<>();
+        domain.put("fieldKey", "domain");
+        domain.put("fieldCode", "domain");
+        domain.put("label", "业务域");
+        domain.put("fieldType", "TEXT");
+        domain.put("renderAs", "select");
+        domain.put("required", false);
+        Map<String, Object> optionsSource = new LinkedHashMap<>();
+        optionsSource.put("kind", "dict");
+        optionsSource.put("dictType", "entity-type-domain");
+        Map<String, Object> loadEndpoint = new LinkedHashMap<>();
+        loadEndpoint.put("url", "/dynamicbusiness/entity-type/list-domain-options");
+        loadEndpoint.put("method", "GET");
+        loadEndpoint.put("params", Map.of(
+                "baseEntityTypeCode",
+                StringUtils.hasText(entityTypeCode) ? entityTypeCode.trim() : ""));
+        optionsSource.put("loadEndpoint", loadEndpoint);
+        optionsSource.put("valueField", "value");
+        optionsSource.put("labelField", "label");
+        optionsSource.put("listPath", "");
+        domain.put("optionsSource", optionsSource);
+        fields.add(domain);
+
         Map<String, Object> description = new LinkedHashMap<>();
         description.put("fieldKey", "description");
         description.put("fieldCode", "description");

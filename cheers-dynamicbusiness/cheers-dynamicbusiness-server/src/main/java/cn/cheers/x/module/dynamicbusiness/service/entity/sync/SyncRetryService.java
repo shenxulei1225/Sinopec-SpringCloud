@@ -2,8 +2,8 @@ package cn.cheers.x.module.dynamicbusiness.service.entity.sync;
 
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntitySyncFailLogDO;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntitySyncFailLogMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.retry.annotation.Backoff;
@@ -43,7 +43,7 @@ import static cn.cheers.x.module.dynamicbusiness.config.EntitySyncRetryConfigura
 public class SyncRetryService {
 
     private final EntitySyncFailLogMapper entitySyncFailLogMapper;
-    private final EntityMapper entityMapper;
+    private final EntityRepository entityRepository;
     private final SyncAlertService syncAlertService;
     private final SyncRetryCallback syncRetryCallback;
     private final RetryTemplate entitySyncRetryTemplate;
@@ -219,7 +219,10 @@ public class SyncRetryService {
         updateRetryStatus(failLog.getId(), EntitySyncFailLogDO.STATUS_RETRYING);
 
         try {
-            EntityDO entity = entityMapper.selectById(entityId);
+            String entityTypeCode = requireEntityTypeCode(failLog);
+            EntityDO entity = entityTypeCode == null
+                    ? null
+                    : entityRepository.findById(entityId, entityTypeCode);
             if (entity == null) {
                 log.info("Entity 已被删除，标记同步成功: entityId={}", entityId);
                 updateRetryStatus(failLog.getId(), EntitySyncFailLogDO.STATUS_SUCCESS);
@@ -306,12 +309,24 @@ public class SyncRetryService {
         if (failCount >= ALERT_THRESHOLD) {
             EntitySyncFailLogDO lastFailLog = entitySyncFailLogMapper.selectLatestByEntityId(entityId);
             String lastError = lastFailLog != null ? lastFailLog.getFailReason() : "未知错误";
-            
-            EntityDO entity = entityMapper.selectById(entityId);
-            Long modelId = entity != null ? entity.getModelId() : null;
-            
+
+            Long modelId = null;
+            String entityTypeCode = lastFailLog != null ? lastFailLog.getEntityTypeCode() : null;
+            if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+                EntityDO entity = entityRepository.findById(entityId, entityTypeCode);
+                modelId = entity != null ? entity.getModelId() : null;
+            }
+
             syncAlertService.sendSyncFailureAlert(entityId, modelId, failCount, lastError);
         }
+    }
+
+    private static String requireEntityTypeCode(EntitySyncFailLogDO failLog) {
+        if (failLog == null) {
+            return null;
+        }
+        String code = failLog.getEntityTypeCode();
+        return code == null || code.isBlank() ? null : code;
     }
 
     // ==================== 同步动作接口 ====================

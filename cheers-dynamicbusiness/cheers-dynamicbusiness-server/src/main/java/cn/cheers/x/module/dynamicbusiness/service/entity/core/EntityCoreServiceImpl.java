@@ -147,7 +147,7 @@ public class EntityCoreServiceImpl implements EntityCoreService {
         if (entityTypeCode == null || entityTypeCode.isEmpty() || modelIds == null || modelIds.isEmpty()) {
             return new PageResult<>(Collections.emptyList(), 0L);
         }
-        return entityRepository.findPageByModelIds(modelIds, entityTypeCode, status, keyword, pageNo, pageSize);
+        return entityRepository.findPageByModelIds(modelIds, entityTypeCode, status, keyword, null, pageNo, pageSize);
     }
 
     @Override

@@ -79,9 +79,9 @@ public class ModelDO extends TenantBaseDO {
     private String entityTypeCode;
 
     /**
-     * 业务域 Scope（与 SCOPED 数据类型入口对齐；NATIVE 全量入口可为空）
+     * 业务域（Domain）；与子数据类型入口的业务域对齐，无业务域时为空。
      */
-    private String dataScope;
+    private String domain;
 
     /**
      * 模型描述

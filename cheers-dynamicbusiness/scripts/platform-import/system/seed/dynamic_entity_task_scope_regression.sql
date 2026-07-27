@@ -2,8 +2,8 @@
 -- 油库 Scope 样例 · 任务 + 执行记录（tenant_id=1）
 --
 -- 定稿：
---   · 巡检任务、维修任务 → storage `task` / ent_task，侧边栏 SCOPED 域入口
---   · 巡检记录、维修记录 → storage `task_excution_record` / ent_task_excution_record，SCOPED 域入口
+--   · 巡检任务、维修任务 → storage `task` / ent_task，侧边栏 DOMAIN 域入口
+--   · 巡检记录、维修记录 → storage `task_excution_record` / ent_task_excution_record，DOMAIN 域入口
 --   · 删除旧法：patrol 独立类型上的任务模型
 --   · patrol 域已物理清除，任务/记录统一走 task + Scope
 --
@@ -49,7 +49,7 @@ ALTER TABLE ent_task_excution_record
 -- 任务执行记录 storage 补全
 UPDATE dynamic_entity_type
 SET dedicated_table_name = 'ent_task_excution_record',
-    description = '任务执行记录（巡检轮次、异常、维修作业日志）；按 SCOPED 域入口过滤',
+    description = '任务执行记录（巡检轮次、异常、维修作业日志）；按 DOMAIN 域入口过滤',
     updater = 'oil-depot-scope',
     update_time = CURRENT_TIMESTAMP
 WHERE deleted = false AND tenant_id = 1 AND code = 'task_excution_record';
@@ -69,30 +69,30 @@ DO UPDATE SET
   update_time = CURRENT_TIMESTAMP;
 
 -- ---------------------------------------------------------------------------
--- 1. 域入口（SCOPED）
+-- 1. 域入口（DOMAIN）
 -- ---------------------------------------------------------------------------
 INSERT INTO dynamic_entity_type (
   code, name, description, icon, alias, sort, status, type_level,
   association_fields, storage_type, dedicated_table_name, enable_rule_engine,
-  tenant_id, creator, entry_kind, base_entity_type_code, data_scope, group_name
+  tenant_id, creator, entry_kind, base_entity_type_code, domain, group_name
 ) VALUES
-  ('task_patrol', '巡检任务', '油库巡检任务；storage=task，dataScope=巡检', 'ep:view', '巡检任务',
+  ('task_patrol', '巡检任务', '油库巡检任务；storage=task，domain=巡检', 'ep:view', '巡检任务',
    11, 'active', 'USER', '{}', 'DEDICATED', 'ent_task', false, 1, 'oil-depot-scope',
-   'SCOPED', 'task', '巡检', '任务'),
-  ('task_maintenance', '维修任务', '油库维修/抢修任务；storage=task，dataScope=维修', 'ep:tools', '维修任务',
+   'DOMAIN', 'task', '巡检', '任务'),
+  ('task_maintenance', '维修任务', '油库维修/抢修任务；storage=task，domain=维修', 'ep:tools', '维修任务',
    12, 'active', 'USER', '{}', 'DEDICATED', 'ent_task', false, 1, 'oil-depot-scope',
-   'SCOPED', 'task', '维修', '任务'),
-  ('task_record_patrol', '巡检记录', '巡检执行记录；storage=task_excution_record，dataScope=巡检', 'ep:document', '巡检记录',
+   'DOMAIN', 'task', '维修', '任务'),
+  ('task_record_patrol', '巡检记录', '巡检执行记录；storage=task_excution_record，domain=巡检', 'ep:document', '巡检记录',
    13, 'active', 'USER', '{}', 'DEDICATED', 'ent_task_excution_record', false, 1, 'oil-depot-scope',
-   'SCOPED', 'task_excution_record', '巡检', '任务'),
-  ('task_record_maintenance', '维修记录', '维修作业记录；storage=task_excution_record，dataScope=维修', 'ep:notebook', '维修记录',
+   'DOMAIN', 'task_excution_record', '巡检', '任务'),
+  ('task_record_maintenance', '维修记录', '维修作业记录；storage=task_excution_record，domain=维修', 'ep:notebook', '维修记录',
    14, 'active', 'USER', '{}', 'DEDICATED', 'ent_task_excution_record', false, 1, 'oil-depot-scope',
-   'SCOPED', 'task_excution_record', '维修', '任务')
+   'DOMAIN', 'task_excution_record', '维修', '任务')
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   name = EXCLUDED.name, description = EXCLUDED.description,
-  entry_kind = 'SCOPED', base_entity_type_code = EXCLUDED.base_entity_type_code,
-  data_scope = EXCLUDED.data_scope, dedicated_table_name = EXCLUDED.dedicated_table_name,
+  entry_kind = 'DOMAIN', base_entity_type_code = EXCLUDED.base_entity_type_code,
+  domain = EXCLUDED.domain, dedicated_table_name = EXCLUDED.dedicated_table_name,
   group_name = EXCLUDED.group_name, deleted = false,
   updater = 'oil-depot-scope', update_time = CURRENT_TIMESTAMP;
 
@@ -149,8 +149,8 @@ DO UPDATE SET parent_id = EXCLUDED.parent_id, name = EXCLUDED.name,
 -- ---------------------------------------------------------------------------
 -- 4. 任务模型（storage task，8 个）
 -- ---------------------------------------------------------------------------
-INSERT INTO dynamic_model (code, name, entity_type_code, data_scope, description, status, sort, field_groups_config, tenant_id, creator)
-SELECT v.code, v.name, 'task', v.data_scope, v.description, 1, v.sort,
+INSERT INTO dynamic_model (code, name, entity_type_code, domain, description, status, sort, field_groups_config, tenant_id, creator)
+SELECT v.code, v.name, 'task', v.domain, v.description, 1, v.sort,
   COALESCE(
     (SELECT field_groups_config FROM dynamic_model WHERE code = 'patrol_task' AND deleted = false AND tenant_id = 1 LIMIT 1),
     '[]'
@@ -165,9 +165,9 @@ FROM (VALUES
   ('maint_work_order', '预防性维护工单', '维修', '泵、阀、仪表计划性保养', 10),
   ('maint_emergency', '抢修任务', '维修', '泄漏/停电等应急抢修', 11),
   ('general_station_task', '站场综合事务', NULL, '非巡检/维修域（测 Scope 隔离）', 20)
-) AS v(code, name, data_scope, description, sort)
+) AS v(code, name, domain, description, sort)
 ON CONFLICT (code, tenant_id) WHERE deleted = false
-DO UPDATE SET name = EXCLUDED.name, entity_type_code = 'task', data_scope = EXCLUDED.data_scope,
+DO UPDATE SET name = EXCLUDED.name, entity_type_code = 'task', domain = EXCLUDED.domain,
   description = EXCLUDED.description, sort = EXCLUDED.sort, deleted = false,
   updater = 'oil-depot-scope', update_time = CURRENT_TIMESTAMP;
 
@@ -211,14 +211,14 @@ DO UPDATE SET model_id = EXCLUDED.model_id, category_id = EXCLUDED.category_id,
 -- ---------------------------------------------------------------------------
 -- 5. 执行记录模型（storage task_excution_record，3 个）
 -- ---------------------------------------------------------------------------
-INSERT INTO dynamic_model (code, name, entity_type_code, data_scope, description, status, sort, field_groups_config, tenant_id, creator)
+INSERT INTO dynamic_model (code, name, entity_type_code, domain, description, status, sort, field_groups_config, tenant_id, creator)
 VALUES
   ('exec_patrol_round', '巡检轮次记录', 'task_excution_record', '巡检', '一次巡检任务的现场轮次/签到记录', 1, 1, '[]', 1, 'oil-depot-scope'),
   ('exec_patrol_issue', '巡检异常记录', 'task_excution_record', '巡检', '巡检发现的异常/缺陷记录', 1, 2, '[]', 1, 'oil-depot-scope'),
   ('exec_maint_log', '维修作业记录', 'task_excution_record', '维修', '维修工单的过程与验收记录', 1, 10, '[]', 1, 'oil-depot-scope')
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, entity_type_code = EXCLUDED.entity_type_code,
-  data_scope = EXCLUDED.data_scope, description = EXCLUDED.description, deleted = false,
+  domain = EXCLUDED.domain, description = EXCLUDED.description, deleted = false,
   updater = 'oil-depot-scope', update_time = CURRENT_TIMESTAMP;
 
 INSERT INTO dynamic_model_category_relation (model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator)

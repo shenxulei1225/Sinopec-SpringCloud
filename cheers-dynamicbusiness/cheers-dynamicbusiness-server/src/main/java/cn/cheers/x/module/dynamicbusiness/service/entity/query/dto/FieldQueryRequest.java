@@ -34,6 +34,12 @@ public class FieldQueryRequest {
     private Long modelId;
 
     /**
+     * 存储类型编码（必填）：路由到对应 {@code ent_*} 物理表，禁止缺省回落。
+     */
+    @NotNull(message = "entityTypeCode不能为空")
+    private String entityTypeCode;
+
+    /**
      * 查询条件列表
      * 最多支持 10 个条件
      */

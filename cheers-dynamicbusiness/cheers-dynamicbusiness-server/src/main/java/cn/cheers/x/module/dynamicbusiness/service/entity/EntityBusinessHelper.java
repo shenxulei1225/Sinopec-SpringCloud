@@ -82,11 +82,14 @@ public class EntityBusinessHelper {
 
         ModelDO model = validateModelExists(modelId);
         validateModelEntityType(modelId, entityTypeCode);
+        validateRequestedDomainMatchesModel(baseFields, model);
         validateBaseFields(entityTypeCode, baseFields);
         validateCustomFields(modelId, reqVO.getCustomFields());
 
         EntityDO data = EntityConvert.INSTANCE.convert(reqVO);
         data.setTenantId(getTenantId());
+        // 业务域（Domain）最终以型号为准写入；请求域仅作选项校验
+        data.setDomain(normalizeDomain(model.getDomain()));
         ensureDedicatedEntityCode(data, entityTypeCode);
 
         validateEntityReferences(data, model, data.getCustomFields(), entityTypeCode);
@@ -114,12 +117,15 @@ public class EntityBusinessHelper {
 
         ModelDO model = validateModelExists(modelId);
         validateModelEntityType(modelId, entityTypeCode);
+        validateRequestedDomainMatchesModel(baseFields, model);
         validateBaseFields(entityTypeCode, baseFields);
         validateCustomFields(modelId, reqVO.getCustomFields());
 
         reqVO.setBaseFields(baseFields);
         EntityDO update = EntityConvert.INSTANCE.convert(reqVO);
         update.setTenantId(dbEntity.getTenantId());
+        // 业务域（Domain）随当前型号抄写
+        update.setDomain(normalizeDomain(model.getDomain()));
 
         validateEntityReferences(update, model, update.getCustomFields(), entityTypeCode);
 
@@ -160,8 +166,8 @@ public class EntityBusinessHelper {
     }
 
     /**
-     * 专用表（ent_*）普遍有 code 列且常为 NOT NULL；GENERIC 的 dynamic_entity 无 code 列。
-     * 创建时若未传 code，仅为 DEDICATED 自动生成，避免 NOT NULL 插入失败，也不向 GENERIC 写入不存在的列。
+     * 专用表（ent_*）普遍有 code 列且常为 NOT NULL。
+     * 创建时若未传 code，自动生成，避免 NOT NULL 插入失败。
      */
     private void ensureDedicatedEntityCode(EntityDO data, String entityTypeCode) {
         if (data == null || StrUtil.isNotBlank(data.getCode())) {
@@ -173,8 +179,37 @@ public class EntityBusinessHelper {
         }
         StorageTypeEnum storageType = StorageTypeEnum.getByCode(entityType.getStorageType());
         if (storageType == null || !storageType.isDedicated()) {
-            return;
+            throw new ServiceException(400, "实体类型未使用专用表存储，无法写入实体：" + entityTypeCode);
         }
         data.setCode(entityTypeCode + "-" + IdUtil.fastSimpleUUID());
+    }
+
+    /**
+     * 请求若携带 domain（选项），须与型号 domain 一致；最终仍以型号写入实体。
+     */
+    private void validateRequestedDomainMatchesModel(Map<String, Object> baseFields, ModelDO model) {
+        if (baseFields == null || model == null) {
+            return;
+        }
+        Object raw = baseFields.get("domain");
+        if (raw == null) {
+            return;
+        }
+        String reqDomain = normalizeDomain(String.valueOf(raw));
+        if (reqDomain == null) {
+            return;
+        }
+        String modelDomain = normalizeDomain(model.getDomain());
+        if (!Objects.equals(reqDomain, modelDomain)) {
+            throw new ServiceException(400, "请求业务域与型号业务域不一致");
+        }
+    }
+
+    /** 将型号上的业务域规范化写入实体；空白则为 null。 */
+    private static String normalizeDomain(String domain) {
+        if (StrUtil.isBlank(domain)) {
+            return null;
+        }
+        return domain.trim();
     }
 }

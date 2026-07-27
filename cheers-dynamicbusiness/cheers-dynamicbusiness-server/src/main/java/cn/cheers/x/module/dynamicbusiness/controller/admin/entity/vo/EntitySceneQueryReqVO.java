@@ -16,7 +16,7 @@ import java.util.List;
 @ToString(callSuper = true)
 public class EntitySceneQueryReqVO extends PageParam {
 
-    @Schema(description = "查询场景", requiredMode = Schema.RequiredMode.REQUIRED, example = "PATTERN_B_ENTITIES_BY_MODEL")
+    @Schema(description = "查询场景", requiredMode = Schema.RequiredMode.REQUIRED, example = "ENTITIES_BY_MODEL")
     @NotNull(message = "scene 不能为空")
     private EntityQueryScene scene;
 
@@ -53,7 +53,7 @@ public class EntitySceneQueryReqVO extends PageParam {
     @Schema(description = "结构化字段筛选条件")
     private List<FieldFilterReqVO> fieldFilters;
 
-    @Schema(description = "业务域 Scope（可选；未传 modelIds 时按 scope 下全部模型过滤实体）", example = "巡检")
-    private String dataScope;
+    @Schema(description = "业务域（Domain），可选；子数据类型入口未传时回落到入口自身业务域", example = "巡检")
+    private String domain;
 
 }

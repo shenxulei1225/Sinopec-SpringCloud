@@ -55,9 +55,11 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
     }
 
     /**
-     * 查询实体在指定分类集合上的关联（包含 deleted=true 记录）。
+     * 查询实体在指定分类集合上的关联，有效行与软删除的排除标记都返回。
      *
-     * <p>须用原生 SQL：{@code @TableLogic} 会拦截 Wrapper 对 deleted=true 的查询。</p>
+     * <p>须用原生 SQL：{@code @TableLogic} 会拦截 Wrapper 对 deleted=true 的查询。
+     * 调用方据 {@code deleted} 分流「已关联 / 待恢复 / 待新增」，不能只看软删除行，
+     * 否则已有有效关联会被再插一遍并撞唯一索引。</p>
      */
     @Select("""
             <script>
@@ -69,7 +71,6 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
                 <foreach collection='categoryIds' item='id' open='(' separator=',' close=')'>
                     #{id}
                 </foreach>
-                AND deleted = TRUE
             </script>
             """)
     List<EntityCategoryRelationDO> selectByEntityAndCategoryIdsIncludingDeleted(@Param("entityId") Long entityId,
@@ -119,6 +120,16 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
      * <p>适用于“单分类”场景，保证分类内排序语义，同时按业务类型过滤。</p>
      */
     default List<EntityCategoryRelationDO> selectByCategoryIdAndEntityType(Long categoryId, String entityTypeCode) {
+        return selectByCategoryIdAndEntityType(categoryId, entityTypeCode, null);
+    }
+
+    /**
+     * 根据分类ID + 实际存储类型 + 业务域查询所有关联（分类内按 sort,id 排序）。
+     *
+     * <p>{@code domain} 为空表示不限业务域（总账视角）。</p>
+     */
+    default List<EntityCategoryRelationDO> selectByCategoryIdAndEntityType(Long categoryId, String entityTypeCode,
+                                                                          String domain) {
         LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>();
         query.eq(EntityCategoryRelationDO::getCategoryId, categoryId);
         query.eq(EntityCategoryRelationDO::getDeleted, false);
@@ -126,6 +137,9 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
         query.orderByAsc(EntityCategoryRelationDO::getId);
         if (entityTypeCode != null && !entityTypeCode.isBlank()) {
             query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
+        }
+        if (domain != null && !domain.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getDomain, domain);
         }
         return selectList(query);
     }
@@ -158,6 +172,16 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
     default void deleteByEntityId(Long entityId) {
         delete(new LambdaQueryWrapperX<EntityCategoryRelationDO>()
                 .eq(EntityCategoryRelationDO::getEntityId, entityId));
+    }
+
+    /** 按实体 + 业务类型删除分类关联。 */
+    default void deleteByEntityId(Long entityId, String entityTypeCode) {
+        LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .eq(EntityCategoryRelationDO::getEntityId, entityId);
+        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
+        }
+        delete(query);
     }
 
     /**
@@ -200,6 +224,22 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
             return;
         }
         insertBatch(relations);
+    }
+
+    /**
+     * 统计这些实体在指定存储类型下的有效分类关联数（业务域迁移的影响预览用）。
+     */
+    default long countByEntityIds(List<Long> entityIds, String entityTypeCode) {
+        if (entityIds == null || entityIds.isEmpty()) {
+            return 0L;
+        }
+        LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .in(EntityCategoryRelationDO::getEntityId, entityIds)
+                .eq(EntityCategoryRelationDO::getDeleted, false);
+        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
+        }
+        return selectCount(query);
     }
 
     /**
@@ -248,14 +288,17 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
             UPDATE dynamic_entity_category_relation
             SET deleted = FALSE,
                 sort = #{sort},
-                entity_type_code = #{entityTypeCode}
+                entity_type_code = #{entityTypeCode},
+                domain = #{domain}
             WHERE entity_id = #{entityId}
                 AND category_id = #{categoryId}
+                AND entity_type_code = #{entityTypeCode}
                 AND deleted = TRUE
             """)
     int restoreDeletedRelation(@Param("entityId") Long entityId,
                                @Param("categoryId") Long categoryId,
                                @Param("entityTypeCode") String entityTypeCode,
+                               @Param("domain") String domain,
                                @Param("sort") Integer sort);
 
     /**
@@ -267,7 +310,8 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
             <script>
             UPDATE dynamic_entity_category_relation
             SET deleted = FALSE,
-                entity_type_code = #{entityTypeCode}
+                entity_type_code = #{entityTypeCode},
+                domain = #{domain}
             WHERE entity_id = #{entityId}
                 AND entity_type_code = #{entityTypeCode}
                 AND category_id IN
@@ -279,7 +323,30 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
             """)
     int restoreDeletedRelationsBatch(@Param("entityId") Long entityId,
                                      @Param("categoryIds") List<Long> categoryIds,
-                                     @Param("entityTypeCode") String entityTypeCode);
+                                     @Param("entityTypeCode") String entityTypeCode,
+                                     @Param("domain") String domain);
+
+    /**
+     * 同步实体业务域到其全部分类关联（含软删除的排除标记行）。
+     *
+     * <p>须用原生 SQL：{@code @TableLogic} 会拦截 Wrapper 对 deleted=true 记录的更新，
+     * 而排除标记也必须跟随实体一起迁移业务域，否则实体换域后旧标记会失配。</p>
+     */
+    @Update("""
+            <script>
+            UPDATE dynamic_entity_category_relation
+            SET domain = #{domain}
+            WHERE entity_type_code = #{entityTypeCode}
+                AND entity_id IN
+                <foreach collection='entityIds' item='eid' open='(' separator=',' close=')'>
+                    #{eid}
+                </foreach>
+                AND domain IS DISTINCT FROM #{domain}
+            </script>
+            """)
+    int updateDomainByEntityIds(@Param("entityIds") List<Long> entityIds,
+                                @Param("entityTypeCode") String entityTypeCode,
+                                @Param("domain") String domain);
 
     /**
      * 更新实体-分类关联的排序值。
@@ -306,13 +373,27 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
      * @return 关联列表
      */
     default List<EntityCategoryRelationDO> selectByEntityIdsAndCategoryIds(List<Long> entityIds, List<Long> categoryIds) {
+        return selectByEntityIdsAndCategoryIds(entityIds, categoryIds, null);
+    }
+
+    /**
+     * 批量查询实体-分类关联，并按实际存储类型收窄，避免跨表同 ID 串行。
+     *
+     * @param entityTypeCode 实际存储类型；为空表示不限类型
+     */
+    default List<EntityCategoryRelationDO> selectByEntityIdsAndCategoryIds(List<Long> entityIds, List<Long> categoryIds,
+                                                                           String entityTypeCode) {
         if (entityIds == null || entityIds.isEmpty() || categoryIds == null || categoryIds.isEmpty()) {
             return new ArrayList<>();
         }
-        return selectList(new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+        LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
                 .in(EntityCategoryRelationDO::getEntityId, entityIds)
                 .in(EntityCategoryRelationDO::getCategoryId, categoryIds)
-                .eq(EntityCategoryRelationDO::getDeleted, false));
+                .eq(EntityCategoryRelationDO::getDeleted, false);
+        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
+        }
+        return selectList(query);
     }
 
     /**
@@ -377,6 +458,17 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
      * 查询多分类原始关系记录（用于 Service 层按 categoryIds 顺序二次编排）。
      */
     default List<EntityCategoryRelationDO> selectRelationsByCategoryIdsForOrdering(List<Long> categoryIds, String entityTypeCode) {
+        return selectRelationsByCategoryIdsForOrdering(categoryIds, entityTypeCode, null);
+    }
+
+    /**
+     * 查询多分类原始关系记录（用于 Service 层按 categoryIds 顺序二次编排）。
+     *
+     * <p>{@code domain} 为空表示不限业务域（总账视角）。</p>
+     */
+    default List<EntityCategoryRelationDO> selectRelationsByCategoryIdsForOrdering(List<Long> categoryIds,
+                                                                                   String entityTypeCode,
+                                                                                   String domain) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return new ArrayList<>();
         }
@@ -385,6 +477,9 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
         query.eq(EntityCategoryRelationDO::getDeleted, false);
         if (entityTypeCode != null && !entityTypeCode.isBlank()) {
             query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
+        }
+        if (domain != null && !domain.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getDomain, domain);
         }
         // 这里仅提供稳定基础顺序，最终顺序由 Service 层按输入 categoryIds 决定
         query.orderByAsc(EntityCategoryRelationDO::getSort);

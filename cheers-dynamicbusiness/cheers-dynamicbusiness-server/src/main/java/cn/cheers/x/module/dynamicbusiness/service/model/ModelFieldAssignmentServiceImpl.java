@@ -30,19 +30,19 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFilterF
 import cn.cheers.x.module.dynamicbusiness.convert.field.FieldConvert;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.relation.RelationFieldLibraryDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.relation.RelationFieldLibraryMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
+import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeResolver;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeBaseFieldService;
@@ -78,7 +78,9 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
     @Resource
     private FieldMapper fieldMapper;
     @Resource
-    private EntityMapper entityMapper;
+    private EntityRepository entityRepository;
+    @Resource
+    private EntityTypeScopeResolver entityTypeScopeResolver;
     @Resource
     private EntityTypeBaseFieldService entityTypeBaseFieldService;
     @Resource
@@ -309,12 +311,15 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         }
 
         // 检查是否有Entity使用该字段
-        Long entityCount = entityMapper.selectCount(
-                new LambdaQueryWrapperX<EntityDO>()
-                        .eq(EntityDO::getModelId, modelId)
-                        .eq(EntityDO::getTenantId, getTenantId())
-                        .eq(EntityDO::getDeleted, false));
-        if (entityCount != null && entityCount > 0) {
+        String storageType = entityTypeScopeResolver.resolveStorageEntityTypeCode(model.getEntityTypeCode());
+        if (!StringUtils.hasText(storageType)) {
+            storageType = model.getEntityTypeCode();
+        }
+        long entityCount = entityRepository.count(EntityRepository.EntityQuery.builder()
+                .entityTypeCode(storageType)
+                .modelId(modelId)
+                .build());
+        if (entityCount > 0) {
             // 提示用户受影响Entity的数量
             throw new ServiceException(400, "模型存在关联的业务实体（数量：" + entityCount + "）,解除字段分配前请先处理这些实体的字段数据");
         }
@@ -355,12 +360,15 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         }
 
         // 检查是否有Entity使用该模型
-        Long entityCount = entityMapper.selectCount(
-                new LambdaQueryWrapperX<EntityDO>()
-                        .eq(EntityDO::getModelId, modelId)
-                        .eq(EntityDO::getTenantId, getTenantId())
-                        .eq(EntityDO::getDeleted, false));
-        if (entityCount != null && entityCount > 0) {
+        String storageType = entityTypeScopeResolver.resolveStorageEntityTypeCode(model.getEntityTypeCode());
+        if (!StringUtils.hasText(storageType)) {
+            storageType = model.getEntityTypeCode();
+        }
+        long entityCount = entityRepository.count(EntityRepository.EntityQuery.builder()
+                .entityTypeCode(storageType)
+                .modelId(modelId)
+                .build());
+        if (entityCount > 0) {
             // 提示用户受影响Entity的数量
             throw new ServiceException(400, "模型存在关联的业务实体（数量：" + entityCount + "）,解除字段分配前请先处理这些实体的字段数据");
         }

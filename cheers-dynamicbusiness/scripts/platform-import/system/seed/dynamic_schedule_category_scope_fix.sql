@@ -1,4 +1,4 @@
--- SCOPED 域入口共用主数据（storage）分类树：将 patrol_schedule 误建分类并入 schedule。
+-- DOMAIN 域入口共用主数据（storage）分类树：将 patrol_schedule 误建分类并入 schedule。
 -- 执行后请运行 system/evict_category_tree_cache.sh 清理 Redis 分类树缓存。
 
 SET search_path TO dynamicbusiness;
@@ -94,7 +94,7 @@ SET category_dimension_meta = jsonb_set(
     update_time = CURRENT_TIMESTAMP
 FROM dynamic_entity_type et
 WHERE d.entity_type_code = et.code
-  AND et.entry_kind = 'SCOPED'
+  AND et.entry_kind = 'DOMAIN'
   AND et.base_entity_type_code IS NOT NULL
   AND d.dimension_kind = 'CATEGORY'
   AND (

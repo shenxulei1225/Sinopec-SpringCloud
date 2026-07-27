@@ -39,4 +39,11 @@ public class CategoryTypeRespVO {
     @Schema(description = "顶层分类ID（该分类类型的根节点）", example = "100")
     private Long topLevelCategoryId;
 
+    @Schema(
+        description = "分类建立方式：SIMPLE=简单分类；ADVANCED=高级分类（节点可绑定实体）",
+        example = "SIMPLE",
+        allowableValues = {"SIMPLE", "ADVANCED"}
+    )
+    private String categoryMode;
+
 }

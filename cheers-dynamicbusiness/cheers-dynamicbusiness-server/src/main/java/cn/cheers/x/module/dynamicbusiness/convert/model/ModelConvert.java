@@ -46,7 +46,7 @@ public interface ModelConvert {
         vo.setDescription(bean.getDescription());
         vo.setStatus(bean.getStatus());
         vo.setSort(bean.getSort());
-        vo.setDataScope(bean.getDataScope());
+        vo.setDomain(bean.getDomain());
         vo.setCreateTime(bean.getCreateTime());
         vo.setUpdateTime(bean.getUpdateTime());
         

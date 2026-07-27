@@ -1,9 +1,9 @@
 -- ============================================================================
--- 点位 / 路线 · NATIVE + 巡检 SCOPED 域入口
+-- 点位 / 路线 · NATIVE + 巡检 DOMAIN 域入口
 -- 定稿：docs/superpowers/specs/2026-07-14-legacy-site-import-design.md
 --
---   point (NATIVE, ent_point)     → patrol_point (SCOPED, dataScope=patrol)
---   route (NATIVE, ent_route)     → patrol_route (SCOPED, dataScope=patrol)
+--   point (NATIVE, ent_point)     → patrol_point (DOMAIN, domain=patrol)
+--   route (NATIVE, ent_route)     → patrol_route (DOMAIN, domain=patrol)
 --
 -- 须在 dynamic_purge_patrol_domain + dynamic_seed_retire_* 之后执行（import.sh 已挂序）。
 -- 模型 code 用 point_patrol / route_patrol，避免与 purge 清理的旧 model_code=patrol_point 纠缠。
@@ -69,7 +69,7 @@ DO UPDATE SET
   dedicated_table_name = 'ent_point',
   entry_kind = 'NATIVE',
   base_entity_type_code = NULL,
-  data_scope = NULL,
+  domain = NULL,
   group_name = '路径',
   status = 'active',
   deleted = false,
@@ -99,7 +99,7 @@ DO UPDATE SET
   dedicated_table_name = 'ent_route',
   entry_kind = 'NATIVE',
   base_entity_type_code = NULL,
-  data_scope = NULL,
+  domain = NULL,
   group_name = '路径',
   status = 'active',
   deleted = false,
@@ -109,21 +109,21 @@ DO UPDATE SET
 INSERT INTO dynamic_entity_type (
   code, name, description, icon, alias, sort, status, type_level,
   association_fields, storage_type, dedicated_table_name, enable_rule_engine,
-  tenant_id, creator, entry_kind, base_entity_type_code, data_scope, group_name
+  tenant_id, creator, entry_kind, base_entity_type_code, domain, group_name
 ) VALUES
-  ('patrol_point', '巡检点', '点位的巡检域入口；storage=point，dataScope=patrol；不做模板',
+  ('patrol_point', '巡检点', '点位的巡检域入口；storage=point，domain=patrol；不做模板',
    'ep:map-location', '巡检点', 22, 'active', 'USER', '{}',
-   'DEDICATED', 'ent_point', false, 1, 'seed', 'SCOPED', 'point', 'patrol', '巡检管理'),
-  ('patrol_route', '巡检路线', '路线的巡检域入口；storage=route，dataScope=patrol；保存算路结果免重算',
+   'DEDICATED', 'ent_point', false, 1, 'seed', 'DOMAIN', 'point', 'patrol', '巡检管理'),
+  ('patrol_route', '巡检路线', '路线的巡检域入口；storage=route，domain=patrol；保存算路结果免重算',
    'ep:guide', '巡检路线', 23, 'active', 'USER', '{}',
-   'DEDICATED', 'ent_route', false, 1, 'seed', 'SCOPED', 'route', 'patrol', '巡检管理')
+   'DEDICATED', 'ent_route', false, 1, 'seed', 'DOMAIN', 'route', 'patrol', '巡检管理')
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   name = EXCLUDED.name,
   description = EXCLUDED.description,
-  entry_kind = 'SCOPED',
+  entry_kind = 'DOMAIN',
   base_entity_type_code = EXCLUDED.base_entity_type_code,
-  data_scope = EXCLUDED.data_scope,
+  domain = EXCLUDED.domain,
   dedicated_table_name = EXCLUDED.dedicated_table_name,
   storage_type = 'DEDICATED',
   group_name = EXCLUDED.group_name,
@@ -152,10 +152,10 @@ DO UPDATE SET
   update_time = CURRENT_TIMESTAMP;
 
 -- ---------------------------------------------------------------------------
--- 3. 模型（storage code + data_scope）
+-- 3. 模型（storage code + domain）
 -- ---------------------------------------------------------------------------
 INSERT INTO dynamic_model (
-  code, name, entity_type_code, data_scope, description, status, sort, tenant_id, creator
+  code, name, entity_type_code, domain, description, status, sort, tenant_id, creator
 ) VALUES
   ('point_standard', '标准点位', 'point', NULL,
    '业务中立点位：code/name/facility/station_node_id', 1, 1, 1, 'seed'),
@@ -169,7 +169,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   name = EXCLUDED.name,
   entity_type_code = EXCLUDED.entity_type_code,
-  data_scope = EXCLUDED.data_scope,
+  domain = EXCLUDED.domain,
   description = EXCLUDED.description,
   status = 1,
   deleted = false,
