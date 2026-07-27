@@ -50,9 +50,10 @@ public class CategoryEntityLinkDO extends TenantBaseDO {
     private Long entityModelId;
 
     /**
-     * 绑定实体所在存储类型编码（如 facility / equipment），用于跨表同 id 时精确定位。
+     * 绑定实体的类型编码（如 facility / equipment），与 {@code dynamic_entity_category_relation.entity_type_code} 命名一致；
+     * 用于跨专用表同 id 时精确定位实体行。
      */
-    private String storageEntityTypeCode;
+    private String entityTypeCode;
 
     /**
      * 绑定实体当时的业务域（可空）；与实体行 domain 对齐，便于索引过滤。

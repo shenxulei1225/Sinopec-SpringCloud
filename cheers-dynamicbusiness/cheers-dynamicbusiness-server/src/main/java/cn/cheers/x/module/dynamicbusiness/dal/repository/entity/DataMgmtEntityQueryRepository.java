@@ -207,7 +207,7 @@ public class DataMgmtEntityQueryRepository {
                 .in(CategoryEntityLinkDO::getCategoryId, expandedCategoryIds)
                 .eq(BaseDO::getDeleted, false);
         if (StringUtils.hasText(storageEntityTypeCode)) {
-            linkQuery.eq(CategoryEntityLinkDO::getStorageEntityTypeCode, storageEntityTypeCode.trim());
+            linkQuery.eq(CategoryEntityLinkDO::getEntityTypeCode, storageEntityTypeCode.trim());
         }
         if (StringUtils.hasText(domain)) {
             linkQuery.eq(CategoryEntityLinkDO::getDomain, domain);

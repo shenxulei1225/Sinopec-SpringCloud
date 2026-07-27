@@ -258,7 +258,7 @@ public class EntityServiceImpl implements EntityService {
         }
 
         // 分类即实体：删实体 → 断 link → 删分类节点（与从分类侧删除语义对齐）
-        CategoryEntityLinkDO boundLink = categoryEntityLinkService.getLinkByEntityIdAndStorage(
+        CategoryEntityLinkDO boundLink = categoryEntityLinkService.getLinkByEntityIdAndEntityTypeCode(
                 reqVO.getId(), reqVO.getEntityTypeCode());
         if (boundLink != null && boundLink.getCategoryId() != null) {
             deleteCategoryBoundEntity(existingEntity, reqVO, boundLink);
