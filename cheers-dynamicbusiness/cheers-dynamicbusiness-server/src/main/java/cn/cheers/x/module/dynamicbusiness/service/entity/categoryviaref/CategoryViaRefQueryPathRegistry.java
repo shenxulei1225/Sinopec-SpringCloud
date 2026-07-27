@@ -24,7 +24,7 @@ public class CategoryViaRefQueryPathRegistry {
      * <ul>
      *   <li>{@code dynamic_category_type} / 分类子树 — 确认维度为设备简单分类（equipment，SIMPLE）</li>
      *   <li>{@code dynamic_entity_category_relation} — 分类节点下的设备 id</li>
-     *   <li>{@code dynamic_entity_relation}（或等价 REF 存储）— 任务 {@code FLD-TSK-016} 指向的设备 id</li>
+     *   <li>{@code dynamic_entity_relation} — 任务字段 {@code FLD-TSK-016}（关联设备，多选 REF）；本机库核对（2026-07-27）任务类型尚未分配该 field_code，仅有 {@code FLD-TSK-024}（所属设施）；路径启用前须与 {@code dynamic_model_field_assignment} 对齐真实 code</li>
      * </ul>
      */
     public static final String TASK_VIA_EQUIPMENT_CATEGORY = "task_via_equipment_category";
