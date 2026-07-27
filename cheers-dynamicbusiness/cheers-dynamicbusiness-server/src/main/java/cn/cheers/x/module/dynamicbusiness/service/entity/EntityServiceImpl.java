@@ -455,6 +455,8 @@ public class EntityServiceImpl implements EntityService {
                             categoryIds, path.dimensionCategoryTypeCode());
                     List<Long> subjectEntityIds = categoryViaRefQueryService.listSubjectEntityIds(
                             viaRefPathCode, normalizedCategoryIds);
+                    subjectEntityIds = dataMgmtEntityQueryRepository.retainOrderedIdsByDomainAndScope(
+                            subjectEntityIds, queryEntityTypeCode, normalizedDomain, normalizedScopeCode);
                     PageResult<EntityRespVO> viaRefResult = queryEntitiesByOrderedCandidateIds(
                             subjectEntityIds, queryEntityTypeCode, keyword, filters,
                             shape == EntityQueryResultShape.PAGE ? effectivePageNo : null,
