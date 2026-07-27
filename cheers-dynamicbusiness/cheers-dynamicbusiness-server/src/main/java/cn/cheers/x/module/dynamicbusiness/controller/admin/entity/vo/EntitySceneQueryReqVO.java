@@ -38,6 +38,10 @@ public class EntitySceneQueryReqVO extends PageParam {
     @Schema(description = "分类 ID 列表", example = "[1, 2]")
     private List<Long> categoryIds;
 
+    @Schema(description = "经 REF 反查路径编码（白名单）；非空时按分类→目标→REF 查主体，不做主体直接挂靠",
+            example = "task_via_equipment_category")
+    private String categoryViaRefPathCode;
+
     @Schema(description = "实体 ID", example = "100")
     private Long entityId;
 

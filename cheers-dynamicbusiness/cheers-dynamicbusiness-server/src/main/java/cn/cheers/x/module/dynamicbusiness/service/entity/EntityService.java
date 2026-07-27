@@ -231,7 +231,7 @@ public interface EntityService {
      * @return 分页结果，包含实体列表和总数（树形结构或平铺结构，根据场景而定）
      */
     EntitySceneQueryRespVO queryEntities(EntityQueryScene scene, String resultShape, String resultDetail, String categoryTypeCode, String entityTypeCode,
-            List<Long> modelIds, List<Long> categoryIds, Long entityId, Long rootEntityId, String entitySourceEntityType,
+            List<Long> modelIds, List<Long> categoryIds, String categoryViaRefPathCode, Long entityId, Long rootEntityId, String entitySourceEntityType,
             Integer pageNo, Integer pageSize, String keyword, String domain,
             List<FieldFilterReqVO> filters);
 

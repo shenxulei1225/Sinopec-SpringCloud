@@ -310,6 +310,7 @@ public class ArchitecturePatternController {
                 List.of(categoryId),
                 null,
                 null,
+                null,
                 contentEntityTypeCode,
                 pageNo,
                 pageSize,

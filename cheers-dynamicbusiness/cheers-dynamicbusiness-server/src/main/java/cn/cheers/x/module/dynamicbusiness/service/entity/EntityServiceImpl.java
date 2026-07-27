@@ -36,6 +36,8 @@ import cn.cheers.x.module.dynamicbusiness.enums.entity.EntityQueryResultDetail;
 import cn.cheers.x.module.dynamicbusiness.enums.entity.EntityQueryResultShape;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategoryRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityRelationService;
+import cn.cheers.x.module.dynamicbusiness.service.entity.categoryviaref.CategoryViaRefQueryPath;
+import cn.cheers.x.module.dynamicbusiness.service.entity.categoryviaref.CategoryViaRefQueryService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.sync.EntitySyncService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryEntityLinkService;
@@ -145,6 +147,9 @@ public class EntityServiceImpl implements EntityService {
 
     @Resource
     private DataMgmtEntityQueryRepository dataMgmtEntityQueryRepository;
+
+    @Resource
+    private CategoryViaRefQueryService categoryViaRefQueryService;
 
     @Resource
     private ObjectProvider<EntityServiceImpl> selfProvider;
@@ -414,7 +419,7 @@ public class EntityServiceImpl implements EntityService {
 
     @Override
     public EntitySceneQueryRespVO queryEntities(EntityQueryScene scene, String resultShape, String resultDetail, String categoryTypeCode, String entityTypeCode,
-            List<Long> modelIds, List<Long> categoryIds, Long entityId, Long rootEntityId, String entitySourceEntityType,
+            List<Long> modelIds, List<Long> categoryIds, String categoryViaRefPathCode, Long entityId, Long rootEntityId, String entitySourceEntityType,
             Integer pageNo, Integer pageSize, String keyword, String domain,
             List<FieldFilterReqVO> filters) {
 
@@ -426,7 +431,7 @@ public class EntityServiceImpl implements EntityService {
 
         // 按入口解析：SCOPE → storage + 成员过滤；DOMAIN registry → storage + domain；其余用请求 domain
         ResolvedQueryType resolved = resolveQueryEntityType(entityTypeCode, domain);
-        String storageEntityTypeCode = resolved.storageEntityTypeCode();
+        String storageEntityTypeCode = resolved.entityTypeCode();
         String normalizedDomain = resolved.domain();
         String normalizedScopeCode = resolved.scopeRegistryCode();
 
@@ -436,6 +441,35 @@ public class EntityServiceImpl implements EntityService {
             case ENTITIES_BY_CATEGORY: {
                 if (storageEntityTypeCode == null || storageEntityTypeCode.isBlank()) {
                     throw new ServiceException(400, "ENTITIES_BY_CATEGORY 场景下 entityTypeCode 不能为空");
+                }
+                String viaRefPathCode = categoryViaRefPathCode == null ? null : categoryViaRefPathCode.trim();
+                if (viaRefPathCode != null && !viaRefPathCode.isEmpty()) {
+                    String queryEntityTypeCode = resolved.entityTypeCode();
+                    categoryViaRefQueryService.assertSubjectTypeMatches(viaRefPathCode, queryEntityTypeCode);
+                    CategoryViaRefQueryPath path = categoryViaRefQueryService.requirePath(viaRefPathCode);
+                    if (categoryTypeCode != null && !categoryTypeCode.isBlank()
+                            && !path.dimensionCategoryTypeCode().equals(categoryTypeCode.trim())) {
+                        throw new ServiceException(400, "categoryTypeCode 与反查路径维度种类不符");
+                    }
+                    List<Long> normalizedCategoryIds = normalizeCategoryIdsOrUseRootCategory(
+                            categoryIds, path.dimensionCategoryTypeCode());
+                    List<Long> subjectEntityIds = categoryViaRefQueryService.listSubjectEntityIds(
+                            viaRefPathCode, normalizedCategoryIds);
+                    PageResult<EntityRespVO> viaRefResult = queryEntitiesByOrderedCandidateIds(
+                            subjectEntityIds, queryEntityTypeCode, keyword, filters,
+                            shape == EntityQueryResultShape.PAGE ? effectivePageNo : null,
+                            shape == EntityQueryResultShape.PAGE ? effectivePageSize : null);
+                    if (shape == EntityQueryResultShape.PAGE) {
+                        return EntitySceneQueryRespVO.page(applyResultDetail(viaRefResult, detail), detail.getCode());
+                    }
+                    List<EntityRespVO> viaRefEntities = viaRefResult.getList();
+                    if (shape == EntityQueryResultShape.TREE) {
+                        return EntitySceneQueryRespVO.tree(
+                                applyResultDetail(EntityTreeBuilder.buildTree(viaRefEntities,
+                                        EntityTreeBuilder.SortMode.LOCAL_SIBLING_SORT), detail),
+                                detail.getCode());
+                    }
+                    return EntitySceneQueryRespVO.list(applyResultDetail(viaRefEntities, detail), detail.getCode());
                 }
                 String resolvedCategoryTypeCode = (categoryTypeCode == null || categoryTypeCode.isBlank())
                         ? storageEntityTypeCode : categoryTypeCode;
@@ -600,7 +634,7 @@ public class EntityServiceImpl implements EntityService {
         return new ResolvedQueryType(ctx.getStorageEntityTypeCode(), reqDomain, null);
     }
 
-    private record ResolvedQueryType(String storageEntityTypeCode, String domain, String scopeRegistryCode) {
+    private record ResolvedQueryType(String entityTypeCode, String domain, String scopeRegistryCode) {
     }
 
     /** 规范化模型 ID：去 null、去重（保留顺序）。 */

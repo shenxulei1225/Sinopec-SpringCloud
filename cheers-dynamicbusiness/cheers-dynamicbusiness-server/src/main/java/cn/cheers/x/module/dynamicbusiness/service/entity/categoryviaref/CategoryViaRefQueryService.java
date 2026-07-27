@@ -91,7 +91,7 @@ public class CategoryViaRefQueryService {
         }
     }
 
-    private CategoryViaRefQueryPath requirePath(String categoryViaRefPathCode) {
+    public CategoryViaRefQueryPath requirePath(String categoryViaRefPathCode) {
         if (categoryViaRefPathCode == null || categoryViaRefPathCode.isBlank()) {
             throw new ServiceException(400, "反查路径编码不能为空");
         }

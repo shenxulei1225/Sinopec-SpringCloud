@@ -331,6 +331,7 @@ public class EntityController {
             @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode,
             @RequestParam(value = "modelIds", required = false) List<String> modelIds,
             @RequestParam(value = "categoryIds", required = false) List<String> categoryIds,
+            @RequestParam(value = "categoryViaRefPathCode", required = false) String categoryViaRefPathCode,
             @RequestParam(value = "entityId", required = false) Long entityId,
             @RequestParam(value = "rootEntityId", required = false) Long rootEntityId,
             @RequestParam(value = "entitySourceEntityType", required = false) String entitySourceEntityType,
@@ -341,6 +342,7 @@ public class EntityController {
             @RequestBody(required = false) List<FieldFilterReqVO> filters) {
         return queryEntitiesInternal(scene, resultShape, resultDetail, categoryTypeCode, entityTypeCode,
                 parseFlexibleIdList(modelIds), parseFlexibleIdList(categoryIds),
+                categoryViaRefPathCode,
                 entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword, domain,
                 filters);
     }
@@ -359,7 +361,7 @@ public class EntityController {
     public CommonResult<EntitySceneQueryRespVO> queryEntitiesByBody(@Valid @RequestBody EntitySceneQueryReqVO reqVO) {
         return queryEntitiesInternal(reqVO.getScene(), reqVO.getResultShape(), reqVO.getResultDetail(),
                 reqVO.getCategoryTypeCode(), reqVO.getEntityTypeCode(),
-                reqVO.getModelIds(), reqVO.getCategoryIds(),
+                reqVO.getModelIds(), reqVO.getCategoryIds(), reqVO.getCategoryViaRefPathCode(),
                 reqVO.getEntityId(), reqVO.getRootEntityId(), reqVO.getEntitySourceEntityType(),
                 reqVO.getPageNo(), reqVO.getPageSize(), reqVO.getKeyword(), reqVO.getDomain(),
                 reqVO.getFieldFilters());
@@ -373,6 +375,7 @@ public class EntityController {
             String entityTypeCode,
             List<Long> modelIds,
             List<Long> categoryIds,
+            String categoryViaRefPathCode,
             Long entityId,
             Long rootEntityId,
             String entitySourceEntityType,
@@ -384,7 +387,7 @@ public class EntityController {
         return success(entityService.queryEntities(scene, EntityQueryResultShape.ofNullable(resultShape).getCode(),
                 EntityQueryResultDetail.ofNullable(resultDetail).getCode(),
                 categoryTypeCode, entityTypeCode,
-                modelIds, categoryIds, entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword,
+                modelIds, categoryIds, categoryViaRefPathCode, entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword,
                 domain, filters));
     }
 
