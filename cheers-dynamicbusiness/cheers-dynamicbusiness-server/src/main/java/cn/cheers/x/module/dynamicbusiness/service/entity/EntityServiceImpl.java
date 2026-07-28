@@ -417,6 +417,16 @@ public class EntityServiceImpl implements EntityService {
             List<Long> modelIds, List<Long> categoryIds, Long entityId, Long rootEntityId, String entitySourceEntityType,
             Integer pageNo, Integer pageSize, String keyword, String domain,
             List<FieldFilterReqVO> filters) {
+        return queryEntities(scene, resultShape, resultDetail, categoryTypeCode, entityTypeCode,
+                modelIds, categoryIds, null, entityId, rootEntityId, entitySourceEntityType,
+                pageNo, pageSize, keyword, domain, filters);
+    }
+
+    @Override
+    public EntitySceneQueryRespVO queryEntities(EntityQueryScene scene, String resultShape, String resultDetail, String categoryTypeCode, String entityTypeCode,
+            List<Long> modelIds, List<Long> categoryIds, List<CategoryIdGroupReqVO> categoryIdGroups, Long entityId, Long rootEntityId, String entitySourceEntityType,
+            Integer pageNo, Integer pageSize, String keyword, String domain,
+            List<FieldFilterReqVO> filters) {
 
         if (scene == null) throw new ServiceException(400, "查询场景 scene 参数不能为空");
 
@@ -437,17 +447,20 @@ public class EntityServiceImpl implements EntityService {
                 if (storageEntityTypeCode == null || storageEntityTypeCode.isBlank()) {
                     throw new ServiceException(400, "ENTITIES_BY_CATEGORY 场景下 entityTypeCode 不能为空");
                 }
-                String resolvedCategoryTypeCode = (categoryTypeCode == null || categoryTypeCode.isBlank())
-                        ? storageEntityTypeCode : categoryTypeCode;
+                // 禁止用 storage 冒充分类种类：同源也须显式传 categoryTypeCode，避免跨视角漏传时查错树
+                if (categoryTypeCode == null || categoryTypeCode.isBlank()) {
+                    throw new ServiceException(400, "ENTITIES_BY_CATEGORY 场景下 categoryTypeCode 不能为空");
+                }
+                String resolvedCategoryTypeCode = categoryTypeCode.trim();
                 if (shape == EntityQueryResultShape.PAGE) {
                     PageResult<EntityRespVO> paged = queryDataMgmtEntitiesByCategoryModel(
-                            categoryIds, resolvedCategoryTypeCode, storageEntityTypeCode, modelIds,
+                            categoryIds, categoryIdGroups, resolvedCategoryTypeCode, storageEntityTypeCode, modelIds,
                             keyword, filters, effectivePageNo, effectivePageSize, true,
                             normalizedDomain, normalizedScopeCode);
                     return EntitySceneQueryRespVO.page(applyResultDetail(paged, detail), detail.getCode());
                 }
                 PageResult<EntityRespVO> full = queryDataMgmtEntitiesByCategoryModel(
-                        categoryIds, resolvedCategoryTypeCode, storageEntityTypeCode, modelIds,
+                        categoryIds, categoryIdGroups, resolvedCategoryTypeCode, storageEntityTypeCode, modelIds,
                         keyword, filters, null, null, false,
                         normalizedDomain, normalizedScopeCode);
                 List<EntityRespVO> entities = full.getList();
@@ -700,8 +713,11 @@ public class EntityServiceImpl implements EntityService {
     /**
      * 数据管理三栏：分类定范围（含子树，空 categoryIds 回退根分类）+ 可选 modelIds 过滤。
      * <p>右栏实体只取分类范围内的 relation / link 关联，不做 modelId 全局扫表。</p>
+     * <p>{@code categoryIdGroups} 非空时按多独立栏求交（组间 AND）。</p>
      */
-    private PageResult<EntityRespVO> queryDataMgmtEntitiesByCategoryModel(List<Long> categoryIds, String categoryTypeCode,
+    private PageResult<EntityRespVO> queryDataMgmtEntitiesByCategoryModel(List<Long> categoryIds,
+                                                                          List<CategoryIdGroupReqVO> categoryIdGroups,
+                                                                          String categoryTypeCode,
                                                                           String entityTypeCode, List<Long> modelIds,
                                                                           String keyword, List<FieldFilterReqVO> filters,
                                                                           Integer pageNo, Integer pageSize, boolean allowDirectPaging,
@@ -709,17 +725,43 @@ public class EntityServiceImpl implements EntityService {
         if (entityTypeCode == null || entityTypeCode.isBlank()) {
             return new PageResult<>(new ArrayList<>(), 0L);
         }
-        List<Long> normalizedCategoryIds = normalizeCategoryIdsOrUseRootCategory(categoryIds, categoryTypeCode);
-        if (normalizedCategoryIds.isEmpty()) {
-            return new PageResult<>(new ArrayList<>(), 0L);
-        }
-        List<Long> expandedCategoryIds = expandCategoryIdsWithDescendants(normalizedCategoryIds, categoryTypeCode);
-        if (expandedCategoryIds.isEmpty()) {
-            return new PageResult<>(new ArrayList<>(), 0L);
-        }
 
-        List<Long> orderedCandidateEntityIds = dataMgmtEntityQueryRepository.listOrderedEntityIdsByCategoryScope(
-                expandedCategoryIds, entityTypeCode, normalizeModelIds(modelIds), domain, scopeRegistryCode);
+        List<Long> orderedCandidateEntityIds;
+        if (categoryIdGroups != null && !categoryIdGroups.isEmpty()) {
+            List<List<Long>> expandedGroups = new ArrayList<>();
+            for (CategoryIdGroupReqVO group : categoryIdGroups) {
+                if (group == null) {
+                    continue;
+                }
+                String groupTypeCode = (group.getCategoryTypeCode() == null || group.getCategoryTypeCode().isBlank())
+                        ? categoryTypeCode
+                        : group.getCategoryTypeCode().trim();
+                List<Long> normalized = normalizeCategoryIdsOrUseRootCategory(group.getCategoryIds(), groupTypeCode);
+                if (normalized.isEmpty()) {
+                    continue;
+                }
+                List<Long> expanded = expandCategoryIdsWithDescendants(normalized, groupTypeCode);
+                if (!expanded.isEmpty()) {
+                    expandedGroups.add(expanded);
+                }
+            }
+            if (expandedGroups.isEmpty()) {
+                return new PageResult<>(new ArrayList<>(), 0L);
+            }
+            orderedCandidateEntityIds = dataMgmtEntityQueryRepository.listOrderedEntityIdsByIntersectingCategoryGroups(
+                    expandedGroups, entityTypeCode, normalizeModelIds(modelIds), domain, scopeRegistryCode);
+        } else {
+            List<Long> normalizedCategoryIds = normalizeCategoryIdsOrUseRootCategory(categoryIds, categoryTypeCode);
+            if (normalizedCategoryIds.isEmpty()) {
+                return new PageResult<>(new ArrayList<>(), 0L);
+            }
+            List<Long> expandedCategoryIds = expandCategoryIdsWithDescendants(normalizedCategoryIds, categoryTypeCode);
+            if (expandedCategoryIds.isEmpty()) {
+                return new PageResult<>(new ArrayList<>(), 0L);
+            }
+            orderedCandidateEntityIds = dataMgmtEntityQueryRepository.listOrderedEntityIdsByCategoryScope(
+                    expandedCategoryIds, entityTypeCode, normalizeModelIds(modelIds), domain, scopeRegistryCode);
+        }
 
         if (allowDirectPaging && canPageDirectly(keyword, filters)) {
             Integer pn = normalizePageNo(pageNo);
@@ -728,6 +770,16 @@ public class EntityServiceImpl implements EntityService {
         }
         return queryEntitiesByOrderedCandidateIds(
                 orderedCandidateEntityIds, entityTypeCode, keyword, filters, pageNo, pageSize);
+    }
+
+    /** 兼容旧调用：无 categoryIdGroups */
+    private PageResult<EntityRespVO> queryDataMgmtEntitiesByCategoryModel(List<Long> categoryIds, String categoryTypeCode,
+                                                                          String entityTypeCode, List<Long> modelIds,
+                                                                          String keyword, List<FieldFilterReqVO> filters,
+                                                                          Integer pageNo, Integer pageSize, boolean allowDirectPaging,
+                                                                          String domain, String scopeRegistryCode) {
+        return queryDataMgmtEntitiesByCategoryModel(categoryIds, null, categoryTypeCode, entityTypeCode, modelIds,
+                keyword, filters, pageNo, pageSize, allowDirectPaging, domain, scopeRegistryCode);
     }
 
     /** 保留 primary 顺序，追加 supplemental 中未出现的 id。 */

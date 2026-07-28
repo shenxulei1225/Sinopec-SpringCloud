@@ -6,8 +6,8 @@ import lombok.Getter;
 /**
  * 数据类型侧边栏入口类型。
  * <p>
- * 产品文案：NATIVE=数据类型（新建数据）；DOMAIN=子数据类型（按业务域过滤）；
- * SCOPE=划分数据（按业务划分，实体成员选用）；CATEGORY=旧「分类即实体」入口（勿与 SCOPE 混用）。
+ * 产品文案：NATIVE=新建数据；DOMAIN=子数据类型；SCOPE=划分数据；
+ * CATEGORY=分类绑定实体（树节点 1:1 绑实体，自有存储；勿与 SCOPE 混用）。
  */
 @Getter
 @AllArgsConstructor
@@ -16,7 +16,7 @@ public enum EntityTypeEntryKindEnum {
     NATIVE("NATIVE"),
     DOMAIN("DOMAIN"),
     SCOPE("SCOPE"),
-    /** @deprecated 旧分类即实体入口；新划分数据请用 {@link #SCOPE} */
+    /** 分类绑定实体：自有存储 + 同名高级分类；勿与 SCOPE 混用。 */
     CATEGORY("CATEGORY");
 
     private final String code;
@@ -48,8 +48,8 @@ public enum EntityTypeEntryKindEnum {
         return this == CATEGORY;
     }
 
-    /** 子数据类型、划分数据、旧分类数据均复用基础类型的存储表。 */
+    /** 子数据类型、划分数据复用基础类型的存储表；分类绑定实体自有存储。 */
     public boolean reusesBaseStorage() {
-        return this == DOMAIN || this == SCOPE || this == CATEGORY;
+        return this == DOMAIN || this == SCOPE;
     }
 }

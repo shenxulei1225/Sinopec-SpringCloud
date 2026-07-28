@@ -1,6 +1,8 @@
 package cn.cheers.x.scene.platform.controller.admin.runtime.vo;
 
 import cn.cheers.x.scene.platform.model.Transform;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -61,7 +63,8 @@ public class SceneRuntimePackageRespVO {
         @Schema(description = "实例编码", example = "instance_001")
         private String instanceCode;
 
-        @Schema(description = "实例主键（便于前端拖动更新）")
+        @Schema(description = "实例主键（便于前端拖动更新；JSON 序列化为字符串，避免 JS 大整数精度丢失）")
+        @JsonSerialize(using = ToStringSerializer.class)
         private Long id;
 
         @Schema(description = "实例显示名")

@@ -39,6 +39,10 @@ public class ActorInstanceSpawnReqVO implements Serializable {
     @Schema(description = "可见标志", example = "true")
     private Boolean visibleFlag;
 
+    @Schema(description = "业务元数据（如 {\"renderAssetCode\":\"LEGACY-HOUSE-1\"}）",
+            example = "{\"renderAssetCode\":\"LEGACY-HOUSE-1\"}")
+    private String metadataJson;
+
     /**
      * 实例级组件树
      *

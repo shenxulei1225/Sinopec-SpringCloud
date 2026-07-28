@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum DmDimensionKindEnum {
+public enum DmDataTabLayoutKindEnum {
 
     CATEGORY("CATEGORY"),
     MODEL("MODEL"),
@@ -20,7 +20,7 @@ public enum DmDimensionKindEnum {
         if (code == null || code.isBlank()) {
             return false;
         }
-        for (DmDimensionKindEnum value : values()) {
+        for (DmDataTabLayoutKindEnum value : values()) {
             if (value.code.equalsIgnoreCase(code)) {
                 return true;
             }
@@ -28,11 +28,11 @@ public enum DmDimensionKindEnum {
         return false;
     }
 
-    public static DmDimensionKindEnum getByCode(String code) {
+    public static DmDataTabLayoutKindEnum getByCode(String code) {
         if (code == null) {
             return null;
         }
-        for (DmDimensionKindEnum value : values()) {
+        for (DmDataTabLayoutKindEnum value : values()) {
             if (value.code.equalsIgnoreCase(code)) {
                 return value;
             }

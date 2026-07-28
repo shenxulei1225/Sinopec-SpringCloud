@@ -4,6 +4,7 @@ import cn.cheers.x.framework.tenant.core.db.TenantBaseDO;
 import cn.cheers.x.scene.platform.dal.dataobject.JsonStringTypeHandler;
 import cn.cheers.x.scene.platform.dal.dataobject.TransformTypeHandler;
 import cn.cheers.x.scene.platform.model.Transform;
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -15,7 +16,10 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class ActorInstanceDO extends TenantBaseDO {
 
-    @TableId
+    /**
+     * scene_platform 表主键为 BIGINT 且无 DB sequence；PG 全局 id-type=INPUT 时须应用侧生成。
+     */
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
     private Long sceneId;

@@ -83,6 +83,52 @@ public class DataMgmtEntityQueryRepository {
     }
 
     /**
+     * 多独立栏归类求交：每组已展开的分类 id 在关联表上 INTERSECT，再按 domain / 划分 / 型号收窄。
+     * 单组时回落到 {@link #listOrderedEntityIdsByCategoryScope}。
+     */
+    public List<Long> listOrderedEntityIdsByIntersectingCategoryGroups(List<List<Long>> expandedGroups,
+                                                                       String entityTypeCode,
+                                                                       List<Long> modelIds,
+                                                                       String domain,
+                                                                       String scopeRegistryCode) {
+        if (expandedGroups == null || expandedGroups.isEmpty()) {
+            return List.of();
+        }
+        List<List<Long>> normalizedGroups = expandedGroups.stream()
+                .filter(Objects::nonNull)
+                .map(group -> group.stream().filter(Objects::nonNull).distinct().toList())
+                .filter(group -> !group.isEmpty())
+                .toList();
+        if (normalizedGroups.isEmpty()) {
+            return List.of();
+        }
+        if (normalizedGroups.size() == 1) {
+            return listOrderedEntityIdsByCategoryScope(
+                    normalizedGroups.get(0), entityTypeCode, modelIds, domain, scopeRegistryCode);
+        }
+
+        String storage = entityTypeCode == null ? null : entityTypeCode.trim();
+        if (!StringUtils.hasText(storage)) {
+            return List.of();
+        }
+        String normalizedDomain = EntityTypeScopeContext.normalizeDomain(domain);
+        List<Long> intersected = entityCategoryRelationMapper.selectEntityIdsIntersectingCategoryGroups(
+                storage, StringUtils.hasText(normalizedDomain) ? normalizedDomain : null, normalizedGroups);
+        if (intersected == null || intersected.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> ordered = retainOrderedIdsByDomainAndScope(
+                intersected, storage, normalizedDomain, scopeRegistryCode);
+        Set<Long> modelIdFilter = toModelIdFilter(modelIds);
+        if (modelIdFilter != null && !modelIdFilter.isEmpty() && !ordered.isEmpty()) {
+            Set<Long> modelMatched = filterEntityIdsByModelIds(ordered, storage, modelIdFilter);
+            ordered = ordered.stream().filter(modelMatched::contains).toList();
+        }
+        return ordered;
+    }
+
+    /**
      * 在已有候选 id 上收窄：始终剔除已软删/不存在实体；可选再按业务域与划分成员过滤。
      * <p>划分用成员表按候选集批量查，等价 EXISTS，不先拉全员 id。</p>
      */

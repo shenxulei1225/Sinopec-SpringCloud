@@ -1,7 +1,6 @@
 package cn.cheers.x.scene.platform.service.actor.impl;
 
 import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
-import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.cheers.x.scene.platform.controller.admin.actor.vo.ActorInstanceSpawnReqVO;
 import cn.cheers.x.scene.platform.controller.admin.actor.vo.ComponentTreeNodeVO;
 import cn.cheers.x.scene.platform.controller.admin.actor.vo.ComponentTreeVO;
@@ -92,8 +91,57 @@ public class ActorInstanceServiceImpl implements ActorInstanceService {
     @Override
     public void updateActorInstance(Long id, ActorInstanceDO actorInstanceDO) {
         ActorInstanceDO db = getActorInstance(id);
-        BeanUtils.copyProperties(actorInstanceDO, db);
+        // 勿用全量 copy：请求里未带的字段为 null，会把 metadata/GPS 等清掉，拖动保存后模型回退成占位
+        if (actorInstanceDO.getSceneId() != null) {
+            db.setSceneId(actorInstanceDO.getSceneId());
+        }
+        if (actorInstanceDO.getActorCode() != null) {
+            db.setActorCode(actorInstanceDO.getActorCode());
+        }
+        if (actorInstanceDO.getInstanceCode() != null) {
+            db.setInstanceCode(actorInstanceDO.getInstanceCode());
+        }
+        if (actorInstanceDO.getInstanceName() != null) {
+            db.setInstanceName(actorInstanceDO.getInstanceName());
+        }
+        if (actorInstanceDO.getParentInstanceCode() != null) {
+            db.setParentInstanceCode(actorInstanceDO.getParentInstanceCode());
+        }
+        if (actorInstanceDO.getInstanceStatus() != null) {
+            db.setInstanceStatus(actorInstanceDO.getInstanceStatus());
+        }
+        if (actorInstanceDO.getVisibleFlag() != null) {
+            db.setVisibleFlag(actorInstanceDO.getVisibleFlag());
+        }
+        if (actorInstanceDO.getTransform() != null) {
+            db.setTransform(actorInstanceDO.getTransform());
+        }
+        if (actorInstanceDO.getMetadataJson() != null) {
+            db.setMetadataJson(actorInstanceDO.getMetadataJson());
+        }
+        if (actorInstanceDO.getPath() != null) {
+            db.setPath(actorInstanceDO.getPath());
+        }
+        if (actorInstanceDO.getLayerKeys() != null) {
+            db.setLayerKeys(actorInstanceDO.getLayerKeys());
+        }
+        if (actorInstanceDO.getGpsLng() != null) {
+            db.setGpsLng(actorInstanceDO.getGpsLng());
+        }
+        if (actorInstanceDO.getGpsLat() != null) {
+            db.setGpsLat(actorInstanceDO.getGpsLat());
+        }
+        if (actorInstanceDO.getGpsHeight() != null) {
+            db.setGpsHeight(actorInstanceDO.getGpsHeight());
+        }
+        if (actorInstanceDO.getGpsHeightSource() != null) {
+            db.setGpsHeightSource(actorInstanceDO.getGpsHeightSource());
+        }
         actorInstanceMapper.updateById(db);
+        if (actorInstanceDO.getTransform() != null) {
+            webSocketService.broadcastPositionUpdate(
+                    resolveSceneCode(db.getSceneId()), db.getId(), db.getInstanceCode(), db.getTransform());
+        }
     }
 
     @Override
@@ -162,6 +210,9 @@ public class ActorInstanceServiceImpl implements ActorInstanceService {
         instanceDO.setInstanceStatus("RUNNING");
         instanceDO.setLayerKeys(reqVO.getLayerKeys());
         instanceDO.setParentInstanceCode(reqVO.getParentInstanceCode());
+        if (reqVO.getMetadataJson() != null && !reqVO.getMetadataJson().isBlank()) {
+            instanceDO.setMetadataJson(reqVO.getMetadataJson().trim());
+        }
         actorInstanceMapper.insert(instanceDO);
 
         List<ActorInstanceComponentDO> components;

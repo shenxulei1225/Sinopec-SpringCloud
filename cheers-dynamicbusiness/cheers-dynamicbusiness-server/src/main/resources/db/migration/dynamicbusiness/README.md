@@ -39,8 +39,11 @@
 | V23 | `V23__domain_entry_and_scope_table.sql` | SCOPED→DOMAIN；划分表重命名为 `dynamic_entity_type_scope`；link 表补 `storage_entity_type_code` / `domain` |
 | V24 | `V24__entity_category_relation_storage_and_domain.sql` | 分类关联 `entity_type_code` 归一为实际存储类型、补 `domain` 镜像列、去重并建唯一索引 |
 | V25 | `V25__drop_generic_dynamic_entity.sql` | 废止 GENERIC：删除空壳通用表 `dynamic_entity`（实体仅 `ent_*`） |
+| V26 | `V26__dm_browse_column_rename.sql` | 布局字段对齐：`column_kind` / `category_column` / `model_tab_category` |
+| V27 | `V27__dm_model_tab_category_split.sql` | 模型管理左侧分类栏独立表；从布局 MODEL 行迁出并删列 |
+| V28 | `V28__dm_data_tab_layout_rename.sql` | `dm_entity_dimension` → `dm_data_tab_layout` |
 
-下一新增版本应为 **V26**。  
+下一新增版本应为 **V29**。  
 已停用脚本在 `db/backup/flyway-legacy-pre-seed/`，不得放回本目录。
 
 > 上表随发版更新；改版本链时同步更新本节，并遵守通用规范中的历史对齐流程。
@@ -79,6 +82,9 @@ PGPASSWORD=Coolhomer psql -h 127.0.0.1 -U postgres -d sinopec -c \
 
 | 日期 | 说明 |
 |------|------|
+| 2026-07-28 | V28：`dm_entity_dimension` → `dm_data_tab_layout`；弃用 dimension 表述 |
+| 2026-07-28 | V27：`dm_model_tab_category` 独立表；布局表删除 `model_tab_category` |
+| 2026-07-28 | V26：浏览布局字段重命名对齐前端 |
 | 2026-07-26 | V25：删除空壳 `dynamic_entity`；实体访问仅 `ent_*` + EntityRepository |
 | 2026-07-26 | V24：分类关联只存实际存储类型（`task_patrol`→`task`）、新增 `domain` 镜像列、按「租户+存储类型+实体+分类」去重建唯一索引 |
 | 2026-07-26 | V23：入口 SCOPED→DOMAIN；`dynamic_entity_type_scope_member`→`dynamic_entity_type_scope`；分类 link 存储类型列 |

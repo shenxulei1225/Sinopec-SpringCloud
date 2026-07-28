@@ -205,27 +205,38 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         return entityType.getId();
     }
 
+    /**
+     * 分类绑定实体（CATEGORY）：自有存储；自动同名高级分类 + 默认「分类|详情」布局。
+     * 不要求基础类型（与 SCOPE 划分成员入口不同）。
+     */
     private Long createCategoryEntityType(EntityTypeCreateReqVO reqVO) {
-        if (!StringUtils.hasText(reqVO.getBaseEntityTypeCode())) {
-            throw new ServiceException(400, "分类数据必须指定基础数据类型编码");
-        }
         if (entityTypeMapper.existsByCode(reqVO.getCode())) {
             throw new ServiceException(400, "业务类型编码已存在");
         }
-
-        String baseCode = reqVO.getBaseEntityTypeCode().trim();
-        EntityTypeDO baseType = requireNativeBaseEntityType(baseCode, "分类数据");
-
         EntityTypeDO entityType = new EntityTypeDO();
         copyBaseFields(entityType, reqVO);
         entityType.setTypeLevel(EntityTypeDO.TYPE_LEVEL_USER);
         entityType.setParentId(null);
         entityType.setEntryKind(EntityTypeDO.ENTRY_KIND_CATEGORY);
-        entityType.setBaseEntityTypeCode(baseCode);
+        entityType.setBaseEntityTypeCode(null);
         entityType.setDomain(null);
-        inheritStorageFromBase(entityType, baseType);
         ensureEntityTypeGroupRegistered(entityType.getGroupName());
         entityTypeMapper.insert(entityType);
+
+        createRelationFieldForEntityType(entityType);
+
+        StorageTypeEnum storageType = StorageTypeEnum.getByCode(entityType.getStorageType());
+        if (storageType != null && storageType.isDedicated()) {
+            String tableName = StringUtils.hasText(entityType.getDedicatedTableName())
+                    ? entityType.getDedicatedTableName()
+                    : "ent_" + entityType.getCode().toLowerCase();
+            dynamicTableService.createDynamicTableForEntityType(
+                    entityType.getCode(),
+                    tableName,
+                    entityType.getName(),
+                    PhysicalColumnMappingUtils.parseMapping(entityType.getPhysicalColumnMapping())
+            );
+        }
 
         entityTypeCategoryBootstrapService.ensureForEntityTypeCode(entityType.getCode());
 
@@ -238,8 +249,8 @@ public class EntityTypeServiceImpl implements EntityTypeService {
             throw new ServiceException(404, "基础数据类型不存在：" + baseCode);
         }
         EntityTypeEntryKindEnum baseKind = EntityTypeEntryKindEnum.fromCode(baseType.getEntryKind());
-        if (baseKind.reusesBaseStorage()) {
-            throw new ServiceException(400, productKindLabel + "不能基于子数据类型、划分数据或分类数据创建，请选择数据类型");
+        if (baseKind != EntityTypeEntryKindEnum.NATIVE) {
+            throw new ServiceException(400, productKindLabel + "只能基于「新建数据」类型创建，请选择独立数据");
         }
         return baseType;
     }

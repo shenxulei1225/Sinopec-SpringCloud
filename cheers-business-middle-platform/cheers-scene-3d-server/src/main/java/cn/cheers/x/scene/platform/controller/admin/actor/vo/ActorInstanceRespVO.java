@@ -2,6 +2,8 @@ package cn.cheers.x.scene.platform.controller.admin.actor.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
 import java.io.Serializable;
 import java.util.List;
@@ -13,6 +15,7 @@ import cn.cheers.x.scene.platform.model.Transform;
 public class ActorInstanceRespVO implements Serializable {
 
     @Schema(description = "主键 ID", example = "1")
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     @Schema(description = "场景ID", example = "1")

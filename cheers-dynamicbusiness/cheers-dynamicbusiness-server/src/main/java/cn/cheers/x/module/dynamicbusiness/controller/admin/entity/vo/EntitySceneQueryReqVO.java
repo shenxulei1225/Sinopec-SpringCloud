@@ -38,6 +38,9 @@ public class EntitySceneQueryReqVO extends PageParam {
     @Schema(description = "分类 ID 列表", example = "[1, 2]")
     private List<Long> categoryIds;
 
+    @Schema(description = "多独立栏分类求交组。有非空 groups 时优先于 categoryIds；组与组 AND，组内 OR（含子树展开）。")
+    private List<CategoryIdGroupReqVO> categoryIdGroups;
+
     @Schema(description = "实体 ID", example = "100")
     private Long entityId;
 

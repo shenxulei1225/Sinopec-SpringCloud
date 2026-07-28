@@ -4,14 +4,15 @@ import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryTypeCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryTypeDO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmEntityDimensionDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmDataTabLayoutDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryTypeMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmEntityDimensionMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmDataTabLayoutMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
-import cn.cheers.x.module.dynamicbusiness.enums.datamgmt.DmDimensionKindEnum;
+import cn.cheers.x.module.dynamicbusiness.enums.datamgmt.DmDataTabLayoutKindEnum;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.EntityTypeEntryKindEnum;
+import cn.cheers.x.module.dynamicbusiness.service.category.CategoryModeSupport;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryTypeService;
 import jakarta.annotation.Resource;
@@ -21,10 +22,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.List;
 import java.util.Map;
 
 /**
- * 为数据类型自动创建默认分类体系与数据管理浏览维度，避免用户手工初始化。
+ * 为数据类型自动创建默认分类体系与数据管理数据 Tab 布局，避免用户手工初始化。
  */
 @Service
 @Slf4j
@@ -46,7 +48,7 @@ public class EntityTypeCategoryBootstrapService {
     private CategoryMapper categoryMapper;
 
     @Resource
-    private DmEntityDimensionMapper dmEntityDimensionMapper;
+    private DmDataTabLayoutMapper dmDataTabLayoutMapper;
 
     @Transactional(rollbackFor = Exception.class)
     public void ensureForEntityTypeCode(String entityTypeCode) {
@@ -58,13 +60,14 @@ public class EntityTypeCategoryBootstrapService {
             return;
         }
         ensureCategoryType(entityType);
-        ensureDimensionRows(entityType);
+        ensureLayoutRows(entityType);
     }
 
     private void ensureCategoryType(EntityTypeDO entityType) {
         EntityTypeEntryKindEnum kind = EntityTypeEntryKindEnum.fromCode(entityType.getEntryKind());
-        // 分类数据：不自动建分类种类 / 域分组；由本入口「选用分类」配置。
+        // 分类绑定实体：同编码高级分类（节点即台账）
         if (kind.isCategory()) {
+            ensureAdvancedCategoryType(entityType);
             return;
         }
         if (kind.isDomainEntry()) {
@@ -86,8 +89,17 @@ public class EntityTypeCategoryBootstrapService {
         ensureNativeCategoryType(entityType);
     }
 
-    /** NATIVE 数据类型：按 registry code 自动创建默认分类体系。 */
+    /** NATIVE 数据类型：按 registry code 自动创建默认分类体系（简单分类）。 */
     private void ensureNativeCategoryType(EntityTypeDO entityType) {
+        ensureCategoryTypeRecord(entityType, CategoryModeSupport.SIMPLE, "默认分类");
+    }
+
+    /** CATEGORY 入口：同编码高级分类，供树节点 1:1 绑实体。 */
+    private void ensureAdvancedCategoryType(EntityTypeDO entityType) {
+        ensureCategoryTypeRecord(entityType, CategoryModeSupport.ADVANCED, "分类绑定实体默认高级分类");
+    }
+
+    private void ensureCategoryTypeRecord(EntityTypeDO entityType, String categoryMode, String descSuffix) {
         String code = entityType.getCode();
         if (categoryTypeService.existsByCategoryTypeCode(code, null)) {
             return;
@@ -102,14 +114,16 @@ public class EntityTypeCategoryBootstrapService {
         CategoryTypeCreateReqVO req = new CategoryTypeCreateReqVO();
         req.setCategoryTypeCode(code);
         req.setName(entityType.getName());
-        req.setDescription("数据类型「" + entityType.getName() + "」默认分类");
+        req.setDescription("数据类型「" + entityType.getName() + "」" + descSuffix);
         req.setStatus(1);
+        req.setCategoryMode(categoryMode);
         try {
             categoryTypeService.createCategoryType(req);
         } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {
-            log.error("[ensureNativeCategoryType] 自动创建分类类型失败, entityTypeCode={}", code, e);
+            log.error("[ensureCategoryTypeRecord] 自动创建分类类型失败, entityTypeCode={}, mode={}",
+                    code, categoryMode, e);
             throw new ServiceException(500, "自动创建默认分类失败：" + e.getMessage());
         }
     }
@@ -151,44 +165,153 @@ public class EntityTypeCategoryBootstrapService {
         }
     }
 
-    private void ensureDimensionRows(EntityTypeDO entityType) {
+    private void ensureLayoutRows(EntityTypeDO entityType) {
         String code = entityType.getCode();
-        // 分类维由「选用分类」显式保存；不在 bootstrap 自动插入，避免与用户删除/保存打架。
-        ensureDimensionRow(code, DmDimensionKindEnum.MODEL.getCode(), null, null, null);
-        ensureDimensionRow(code, DmDimensionKindEnum.ENTITY.getCode(), null, null, null);
-    }
-
-    private void ensureDimensionRow(String entityTypeCode, String kind, String perspectiveId,
-                                    Map<String, Object> categoryMeta, Map<String, Object> modelAdminMeta) {
-        if (DmDimensionKindEnum.CATEGORY.getCode().equals(kind)) {
+        EntityTypeEntryKindEnum kind = EntityTypeEntryKindEnum.fromCode(entityType.getEntryKind());
+        if (kind.isCategory() || isCategoryAsEntityType(code)) {
+            ensureCategoryAsEntityLayoutRows(code, entityType.getName());
             return;
         }
-        if (dmEntityDimensionMapper.existsByKind(entityTypeCode, kind)) {
+        // 基础数据标准场景：分类 | 型号 | 实体 | 详情（自带同编码分类维）
+        ensureNativeFourColumnLayoutRows(code, entityType.getName());
+    }
+
+    /**
+     * 基础数据默认四栏。空布局或旧「仅型号+实体」种子可一次写入；已有 CATEGORY 等不覆盖。
+     */
+    private void ensureNativeFourColumnLayoutRows(String entityTypeCode, String typeName) {
+        List<DmDataTabLayoutDO> existing =
+                dmDataTabLayoutMapper.selectListByEntityTypeCode(entityTypeCode);
+        if (!existing.isEmpty() && !isLegacyModelEntityOnlySeed(existing)) {
+            // 已有非旧种子配置：仅补缺失的 MODEL/ENTITY（不碰 CATEGORY）
+            ensureLayoutRow(entityTypeCode, DmDataTabLayoutKindEnum.MODEL.getCode(),
+                    null, null, true);
+            ensureLayoutRow(entityTypeCode, DmDataTabLayoutKindEnum.ENTITY.getCode(),
+                    null, null, true);
+            return;
+        }
+        if (!existing.isEmpty()) {
+            for (DmDataTabLayoutDO row : existing) {
+                dmDataTabLayoutMapper.deleteById(row.getId());
+            }
+        }
+        String perspectiveId = defaultPerspectiveId(entityTypeCode);
+        Map<String, Object> categoryMeta = Map.of(
+                "label", StringUtils.hasText(typeName) ? typeName : entityTypeCode,
+                "categoryTypeCode", entityTypeCode
+        );
+        insertLayoutRow(entityTypeCode, DmDataTabLayoutKindEnum.CATEGORY.getCode(),
+                perspectiveId, categoryMeta, true);
+        insertLayoutRow(entityTypeCode, DmDataTabLayoutKindEnum.MODEL.getCode(),
+                null, null, true);
+        insertLayoutRow(entityTypeCode, DmDataTabLayoutKindEnum.ENTITY.getCode(),
+                null, null, true);
+        insertLayoutRow(entityTypeCode, DmDataTabLayoutKindEnum.DETAIL.getCode(),
+                null, null, true);
+    }
+
+    /**
+     * 分类即实体（如 region）：默认分类栏 + 详情栏；型号/实体默认关。
+     * 已有非「旧种子」布局时不覆盖，允许用户用顶栏改显隐。
+     */
+    private void ensureCategoryAsEntityLayoutRows(String entityTypeCode, String typeName) {
+        List<DmDataTabLayoutDO> existing =
+                dmDataTabLayoutMapper.selectListByEntityTypeCode(entityTypeCode);
+        if (!existing.isEmpty() && !isLegacyModelEntityOnlySeed(existing)) {
+            return;
+        }
+        if (!existing.isEmpty()) {
+            // 旧 bootstrap 仅 MODEL+ENTITY：逻辑删除后写入标准两栏默认
+            for (DmDataTabLayoutDO row : existing) {
+                dmDataTabLayoutMapper.deleteById(row.getId());
+            }
+        }
+        String perspectiveId = defaultPerspectiveId(entityTypeCode);
+        Map<String, Object> categoryMeta = Map.of(
+                "label", StringUtils.hasText(typeName) ? typeName : entityTypeCode,
+                "categoryTypeCode", entityTypeCode
+        );
+        insertLayoutRow(entityTypeCode, DmDataTabLayoutKindEnum.CATEGORY.getCode(),
+                perspectiveId, categoryMeta, true);
+        insertLayoutRow(entityTypeCode, DmDataTabLayoutKindEnum.MODEL.getCode(),
+                null, null, false);
+        insertLayoutRow(entityTypeCode, DmDataTabLayoutKindEnum.ENTITY.getCode(),
+                null, null, false);
+        insertLayoutRow(entityTypeCode, DmDataTabLayoutKindEnum.DETAIL.getCode(),
+                null, null, true);
+    }
+
+    /** 与前端 isCategoryAsEntityDefaultType 对齐的已知编码；种类 ADVANCED 同构亦可扩展。 */
+    private boolean isCategoryAsEntityType(String entityTypeCode) {
+        if (!StringUtils.hasText(entityTypeCode)) {
+            return false;
+        }
+        String code = entityTypeCode.trim();
+        if ("region".equalsIgnoreCase(code)
+                || "facility".equalsIgnoreCase(code)
+                || "zone".equalsIgnoreCase(code)) {
+            return true;
+        }
+        CategoryTypeDO categoryType = categoryTypeMapper.selectByCategoryTypeCode(code);
+        if (categoryType == null || !StringUtils.hasText(categoryType.getCategoryMode())) {
+            return false;
+        }
+        String mode = categoryType.getCategoryMode().trim().toUpperCase();
+        return "ADVANCED".equals(mode) || "ORG_RECORD".equals(mode) || "PATTERN_C".equals(mode);
+    }
+
+    private boolean isLegacyModelEntityOnlySeed(List<DmDataTabLayoutDO> rows) {
+        boolean hasCategory = false;
+        boolean hasModel = false;
+        boolean hasEntity = false;
+        boolean detailEnabled = false;
+        for (DmDataTabLayoutDO row : rows) {
+            String kind = row.getColumnKind();
+            if (DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(kind)) {
+                hasCategory = true;
+            } else if (DmDataTabLayoutKindEnum.MODEL.getCode().equals(kind)) {
+                hasModel = row.getEnabled() == null || Boolean.TRUE.equals(row.getEnabled());
+            } else if (DmDataTabLayoutKindEnum.ENTITY.getCode().equals(kind)) {
+                hasEntity = row.getEnabled() == null || Boolean.TRUE.equals(row.getEnabled());
+            } else if (DmDataTabLayoutKindEnum.DETAIL.getCode().equals(kind)) {
+                detailEnabled = row.getEnabled() == null || Boolean.TRUE.equals(row.getEnabled());
+            }
+        }
+        return !hasCategory && hasModel && hasEntity && !detailEnabled;
+    }
+
+    private void ensureLayoutRow(String entityTypeCode, String kind, String perspectiveId,
+                                    Map<String, Object> categoryMeta, boolean enabled) {
+        if (DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(kind)) {
+            return;
+        }
+        if (dmDataTabLayoutMapper.existsByKind(entityTypeCode, kind)) {
             return;
         }
         try {
-            insertDimensionRow(entityTypeCode, kind, perspectiveId, categoryMeta, modelAdminMeta);
+            insertLayoutRow(entityTypeCode, kind, perspectiveId, categoryMeta, enabled);
         } catch (DuplicateKeyException e) {
-            log.debug("[ensureDimensionRow] 并发初始化已存在, entityTypeCode={}, kind={}, perspectiveId={}",
+            log.debug("[ensureLayoutRow] 并发初始化已存在, entityTypeCode={}, kind={}, perspectiveId={}",
                     entityTypeCode, kind, perspectiveId);
         } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {
-            log.error("[ensureDimensionRow] 自动创建浏览维度失败, entityTypeCode={}, kind={}", entityTypeCode, kind, e);
-            throw new ServiceException(500, "自动创建数据管理浏览维度失败：" + e.getMessage());
+            log.error("[ensureLayoutRow] 自动创建数据 Tab 布局失败, entityTypeCode={}, kind={}", entityTypeCode, kind, e);
+            throw new ServiceException(500, "自动创建数据管理数据 Tab 布局失败：" + e.getMessage());
         }
     }
 
-    private void insertDimensionRow(String entityTypeCode, String kind, String perspectiveId,
-                                    Map<String, Object> categoryMeta, Map<String, Object> modelAdminMeta) {
-        DmEntityDimensionDO row = new DmEntityDimensionDO();
+    private void insertLayoutRow(String entityTypeCode, String kind, String perspectiveId,
+                                    Map<String, Object> categoryMeta, boolean enabled) {
+        DmDataTabLayoutDO row = new DmDataTabLayoutDO();
         row.setEntityTypeCode(entityTypeCode);
-        row.setDimensionKind(kind);
+        row.setColumnKind(kind);
         row.setPerspectiveId(perspectiveId);
-        row.setEnabled(true);
-        row.setCategoryDimensionMeta(categoryMeta);
-        row.setModelAdminCategoryMeta(modelAdminMeta);
-        dmEntityDimensionMapper.insert(row);
+        row.setEnabled(enabled);
+        row.setCategoryColumn(categoryMeta);
+        // propsId 由前端创建成功后的 seedDataMgmtColumnProps 写入（各列独占一份 component-props）。
+        // 此处只保证布局行存在；勿在未分配 propsId 时假定列配置已就绪。
+        dmDataTabLayoutMapper.insert(row);
     }
 
     public static String defaultPerspectiveId(String entityTypeCode) {

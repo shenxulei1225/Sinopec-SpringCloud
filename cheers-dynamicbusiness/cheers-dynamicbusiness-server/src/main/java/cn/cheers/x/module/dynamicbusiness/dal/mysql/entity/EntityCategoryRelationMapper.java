@@ -531,4 +531,29 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
         }
         return selectCount(query);
     }
+
+    /**
+     * 多组分类求交：每组内 category_id IN (...)，组与组 INTERSECT。
+     * 只返回 entity_id；调用方再叠 domain/scope/排序。domain 为空则不限业务域。
+     */
+    @Select("""
+            <script>
+            <foreach collection='groups' item='group' separator=' INTERSECT '>
+              SELECT DISTINCT entity_id
+              FROM dynamic_entity_category_relation
+              WHERE deleted = false
+                AND entity_type_code = #{entityTypeCode}
+                <if test='domain != null and domain != \"\"'>
+                  AND domain = #{domain}
+                </if>
+                AND category_id IN
+                <foreach collection='group' item='cid' open='(' separator=',' close=')'>
+                  #{cid}
+                </foreach>
+            </foreach>
+            </script>
+            """)
+    List<Long> selectEntityIdsIntersectingCategoryGroups(@Param("entityTypeCode") String entityTypeCode,
+                                                         @Param("domain") String domain,
+                                                         @Param("groups") List<List<Long>> groups);
 }

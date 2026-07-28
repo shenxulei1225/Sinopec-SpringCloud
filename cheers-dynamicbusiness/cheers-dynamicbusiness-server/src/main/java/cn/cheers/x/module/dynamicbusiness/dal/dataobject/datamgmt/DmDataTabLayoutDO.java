@@ -10,21 +10,26 @@ import lombok.*;
 
 import java.util.Map;
 
-@TableName(value = "dm_entity_dimension", autoResultMap = true)
+/**
+ * 数据管理·数据 Tab 布局（分类 / 型号 / 实体 / 详情）。
+ * 「模型管理」左侧分类栏见 dm_model_tab_category。
+ */
+@TableName(value = "dm_data_tab_layout", autoResultMap = true)
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DmEntityDimensionDO extends TenantBaseDO {
+public class DmDataTabLayoutDO extends TenantBaseDO {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
     private String entityTypeCode;
 
-    private String dimensionKind;
+    /** CATEGORY | MODEL | ENTITY | DETAIL */
+    private String columnKind;
 
     private String perspectiveId;
 
@@ -32,10 +37,7 @@ public class DmEntityDimensionDO extends TenantBaseDO {
 
     private Boolean enabled;
 
+    /** 「数据」Tab 分类列设置 */
     @TableField(typeHandler = JsonbMapTypeHandler.class)
-    private Map<String, Object> categoryDimensionMeta;
-
-    /** 仅 MODEL 维：模型管理 Tab 分类栏配置 JSON */
-    @TableField(typeHandler = JsonbMapTypeHandler.class)
-    private Map<String, Object> modelAdminCategoryMeta;
+    private Map<String, Object> categoryColumn;
 }

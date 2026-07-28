@@ -15,6 +15,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityPageR
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntitySearchReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntitySearchRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntitySceneQueryRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.CategoryIdGroupReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.AssociationCategoryViewReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityDeleteReqVO;
@@ -232,6 +233,15 @@ public interface EntityService {
      */
     EntitySceneQueryRespVO queryEntities(EntityQueryScene scene, String resultShape, String resultDetail, String categoryTypeCode, String entityTypeCode,
             List<Long> modelIds, List<Long> categoryIds, Long entityId, Long rootEntityId, String entitySourceEntityType,
+            Integer pageNo, Integer pageSize, String keyword, String domain,
+            List<FieldFilterReqVO> filters);
+
+    /**
+     * 同无 groups 重载；{@code categoryIdGroups} 非空时 ENTITIES_BY_CATEGORY 按多栏求交。
+     */
+    EntitySceneQueryRespVO queryEntities(EntityQueryScene scene, String resultShape, String resultDetail, String categoryTypeCode, String entityTypeCode,
+            List<Long> modelIds, List<Long> categoryIds, List<CategoryIdGroupReqVO> categoryIdGroups,
+            Long entityId, Long rootEntityId, String entitySourceEntityType,
             Integer pageNo, Integer pageSize, String keyword, String domain,
             List<FieldFilterReqVO> filters);
 

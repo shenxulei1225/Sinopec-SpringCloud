@@ -316,7 +316,7 @@ public class EntityController {
             - 业务范围：多数场景为指定业务（建议传 entityTypeCode）
             - modelIds / categoryIds 支持重复 query 参数（modelIds=1&modelIds=2）或逗号分隔单参数（modelIds=1,2,3）
             - 多选 ID 较多时建议使用 POST /query-by-scene + JSON body
-            - ENTITIES_BY_CATEGORY：按分类查实体（含子树；未选≡整树）；可叠 modelIds
+            - ENTITIES_BY_CATEGORY：按分类查实体（含子树；未选≡整树）；可叠 modelIds；categoryTypeCode 必填（禁止默认成 entityTypeCode）
             - ENTITIES_BY_MODEL：按型号或类型查实体
             - ENTITIES_BY_CATEGORY_LINK：分类节点绑定实体
             - ENTITIES_DETAIL：实体详情
@@ -357,12 +357,23 @@ public class EntityController {
     )
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<EntitySceneQueryRespVO> queryEntitiesByBody(@Valid @RequestBody EntitySceneQueryReqVO reqVO) {
-        return queryEntitiesInternal(reqVO.getScene(), reqVO.getResultShape(), reqVO.getResultDetail(),
-                reqVO.getCategoryTypeCode(), reqVO.getEntityTypeCode(),
-                reqVO.getModelIds(), reqVO.getCategoryIds(),
-                reqVO.getEntityId(), reqVO.getRootEntityId(), reqVO.getEntitySourceEntityType(),
-                reqVO.getPageNo(), reqVO.getPageSize(), reqVO.getKeyword(), reqVO.getDomain(),
-                reqVO.getFieldFilters());
+        return success(entityService.queryEntities(
+                reqVO.getScene(),
+                EntityQueryResultShape.ofNullable(reqVO.getResultShape()).getCode(),
+                EntityQueryResultDetail.ofNullable(reqVO.getResultDetail()).getCode(),
+                reqVO.getCategoryTypeCode(),
+                reqVO.getEntityTypeCode(),
+                reqVO.getModelIds(),
+                reqVO.getCategoryIds(),
+                reqVO.getCategoryIdGroups(),
+                reqVO.getEntityId(),
+                reqVO.getRootEntityId(),
+                reqVO.getEntitySourceEntityType(),
+                reqVO.getPageNo(),
+                reqVO.getPageSize(),
+                reqVO.getKeyword(),
+                reqVO.getDomain(),
+                reqVO.getFieldFilters()));
     }
 
     private CommonResult<EntitySceneQueryRespVO> queryEntitiesInternal(
