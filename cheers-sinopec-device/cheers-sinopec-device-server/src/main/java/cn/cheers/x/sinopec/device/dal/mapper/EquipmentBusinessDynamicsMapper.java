@@ -9,6 +9,6 @@ import java.util.List;
  */
 public interface EquipmentBusinessDynamicsMapper {
 
-    List<EquipmentBusinessDynamicsDO> selectListBySiteId(Integer siteId);
+    List<EquipmentBusinessDynamicsDO> selectListByFacilityId(Integer facilityId);
 
 }

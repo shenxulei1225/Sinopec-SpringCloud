@@ -10,7 +10,7 @@ public class DeviceDetailRespDTO {
 
     private String deviceId;
     private String deviceName;
-    private Integer siteId;
+    private Integer facilityId;
     private Integer deviceType;
     private String stateDesc;
     private Integer stateCode;

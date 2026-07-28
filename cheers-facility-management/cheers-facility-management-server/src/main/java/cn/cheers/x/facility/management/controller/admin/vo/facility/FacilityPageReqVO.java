@@ -14,7 +14,7 @@ public class FacilityPageReqVO extends PageParam {
     private String facilityName;
 
     @Schema(description = "所属区域ID", example = "1")
-    private Long siteId;
+    private Long stationId;
 
     @Schema(description = "分类ID", example = "1")
     private Long categoryId;

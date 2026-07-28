@@ -23,7 +23,7 @@ public interface FacilityMapper extends BaseMapperX<FacilityDO> {
     default PageResult<FacilityDO> selectPage(FacilityPageReqVO reqVO) {
         return selectPage(reqVO, new LambdaQueryWrapperX<FacilityDO>()
                 .likeIfPresent(FacilityDO::getFacilityName, reqVO.getFacilityName())
-                .eqIfPresent(FacilityDO::getSiteId, reqVO.getSiteId())
+                .eqIfPresent(FacilityDO::getStationId, reqVO.getStationId())
                 .eqIfPresent(FacilityDO::getCategoryId, reqVO.getCategoryId())
                 .eqIfPresent(FacilityDO::getModel, reqVO.getModel())
                 .eqIfPresent(FacilityDO::getStatus, reqVO.getStatus())
@@ -36,7 +36,7 @@ public interface FacilityMapper extends BaseMapperX<FacilityDO> {
      */
     default PageResult<FacilityDO> selectSearchPage(FacilitySearchReqVO reqVO) {
         LambdaQueryWrapperX<FacilityDO> wrapper = new LambdaQueryWrapperX<FacilityDO>()
-                .eqIfPresent(FacilityDO::getSiteId, reqVO.getSiteId())
+                .eqIfPresent(FacilityDO::getStationId, reqVO.getStationId())
                 .eqIfPresent(FacilityDO::getCategoryId, reqVO.getCategoryId())
                 .eqIfPresent(FacilityDO::getModel, reqVO.getEquipmentType())
                 .likeIfPresent(FacilityDO::getFacilityCode, reqVO.getKeyword())
@@ -63,11 +63,11 @@ public interface FacilityMapper extends BaseMapperX<FacilityDO> {
     /**
      * 简单列表查询（用于下拉选择）
      */
-    default List<FacilityDO> selectSimpleList(Long siteId, Long categoryId, String keyword) {
+    default List<FacilityDO> selectSimpleList(Long stationId, Long categoryId, String keyword) {
         LambdaQueryWrapperX<FacilityDO> wrapper = new LambdaQueryWrapperX<FacilityDO>()
                 .eqIfPresent(FacilityDO::getStatus, 0);
-        if (siteId != null) {
-            wrapper.eq(FacilityDO::getSiteId, siteId);
+        if (stationId != null) {
+            wrapper.eq(FacilityDO::getStationId, stationId);
         }
         if (categoryId != null) {
             wrapper.eq(FacilityDO::getCategoryId, categoryId);

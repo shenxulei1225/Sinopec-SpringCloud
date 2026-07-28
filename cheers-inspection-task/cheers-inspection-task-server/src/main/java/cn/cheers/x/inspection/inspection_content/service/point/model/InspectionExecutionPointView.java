@@ -14,7 +14,7 @@ public class InspectionExecutionPointView {
     private Long id;
     private String pointCode;
     private String pointName;
-    private Long siteId;
+    private Long facilityId;
     private Long objectId;
     private BigDecimal longitude;
     private BigDecimal latitude;

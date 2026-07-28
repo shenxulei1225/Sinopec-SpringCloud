@@ -27,12 +27,12 @@ public interface CategoryEntityLinkService {
                               Long entityModelId);
 
     /**
-     * 创建分类与实体链接，并写入存储类型 / 业务域（避免跨表同 id 误判）。
+     * 创建分类与实体链接，并写入实体类型编码 / 业务域（避免跨表同 id 误判）。
      */
     Long linkCategoryToEntity(@NotNull Long categoryId,
                               @NotNull Long entityId,
                               Long entityModelId,
-                              String storageEntityTypeCode,
+                              String entityTypeCode,
                               String domain);
 
     /**
@@ -59,9 +59,9 @@ public interface CategoryEntityLinkService {
     CategoryEntityLinkDO getLinkByEntityId(@NotNull(message = "实体ID不能为空") Long entityId);
 
     /**
-     * 按实体 ID + 存储类型获取分类链接（避免跨表同 id 误命中）。
+     * 按实体 ID + 实体类型编码获取分类链接（避免跨表同 id 误命中）。
      */
-    CategoryEntityLinkDO getLinkByEntityIdAndStorage(@NotNull Long entityId, String storageEntityTypeCode);
+    CategoryEntityLinkDO getLinkByEntityIdAndEntityTypeCode(@NotNull Long entityId, String entityTypeCode);
 
     /**
      * 判断分类是否为实体分类
@@ -86,9 +86,9 @@ public interface CategoryEntityLinkService {
     void unlinkEntityCategory(@NotNull(message = "实体ID不能为空") Long entityId);
 
     /**
-     * 按实体 ID + 存储类型解除链接。
+     * 按实体 ID + 实体类型编码解除链接。
      */
-    void unlinkEntityCategory(@NotNull Long entityId, String storageEntityTypeCode);
+    void unlinkEntityCategory(@NotNull Long entityId, String entityTypeCode);
 
     /**
      * 批量根据分类ID查询链接（用于优化批量删除时的 N+1 查询问题）

@@ -28,7 +28,7 @@ public interface FacilityQueryService {
     /**
      * 获取设施简单视图列表（用于巡检对象选择）
      */
-    List<FacilityView> getFacilitySimpleViewList(Long siteId, Long categoryId, String keyword);
+    List<FacilityView> getFacilitySimpleViewList(Long stationId, Long categoryId, String keyword);
 
     /**
      * 根据ID列表获取设施视图
@@ -50,7 +50,7 @@ public interface FacilityQueryService {
     /**
      * 获取设施分类树
      */
-    List<FacilityTreeNodeVO> getFacilityTree(Long siteId);
+    List<FacilityTreeNodeVO> getFacilityTree(Long stationId);
 
     /**
      * 获取设施类型列表

@@ -41,5 +41,5 @@ public class RuntimeJobDO extends TenantBaseDO {
 
     private String orchestrationRef;
 
-    private Long siteId;
+    private Long facilityId;
 }

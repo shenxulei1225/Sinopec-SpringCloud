@@ -90,7 +90,7 @@ class MultilegPlanTest {
                 .facilityId(100L)
                 .legs(List.of(
                         RouteLegDTO.builder()
-                                .networkKind(NetworkKind.SITE)
+                                .networkKind(NetworkKind.FACILITY)
                                 .mobilityProfileId("person_walk")
                                 .build(),
                         RouteLegDTO.builder()
@@ -107,7 +107,7 @@ class MultilegPlanTest {
         assertEquals(2, preview.getSegments().size());
 
         RoutePreviewSegmentDTO siteSegment = preview.getSegments().get(0);
-        assertEquals(NetworkKind.SITE, siteSegment.getNetworkKind());
+        assertEquals(NetworkKind.FACILITY, siteSegment.getNetworkKind());
         assertEquals("person_walk", siteSegment.getMobilityProfileId());
         assertEquals(List.of("site_start", "site_exit"), siteSegment.getNodeIds());
         assertEquals(10L, siteSegment.getDistanceMeters());
@@ -125,7 +125,7 @@ class MultilegPlanTest {
     void singleNetworkAsGivenStillWorksWithoutPortals() {
         PathNetworkDTO siteNetwork = PathNetworkDTO.builder()
                 .networkRef("net_site")
-                .networkKind(NetworkKind.SITE)
+                .networkKind(NetworkKind.FACILITY)
                 .nodes(List.of(
                         node("a"),
                         node("b")
@@ -149,7 +149,7 @@ class MultilegPlanTest {
 
         assertEquals(15L, preview.getTotalDistanceMeters());
         assertEquals(1, preview.getSegments().size());
-        assertEquals(NetworkKind.SITE, preview.getSegments().get(0).getNetworkKind());
+        assertEquals(NetworkKind.FACILITY, preview.getSegments().get(0).getNetworkKind());
         assertEquals("person_walk", preview.getSegments().get(0).getMobilityProfileId());
         assertEquals(List.of("a", "b"), preview.getSegments().get(0).getNodeIds());
     }
@@ -157,7 +157,7 @@ class MultilegPlanTest {
     private static PathNetworkDTO siteNetwork() {
         return PathNetworkDTO.builder()
                 .networkRef("net_site")
-                .networkKind(NetworkKind.SITE)
+                .networkKind(NetworkKind.FACILITY)
                 .facilityId(100L)
                 .nodes(List.of(
                         node("site_start"),
@@ -187,7 +187,7 @@ class MultilegPlanTest {
     private static MobilityProfileDTO walkProfile() {
         return MobilityProfileDTO.builder()
                 .profileId("person_walk")
-                .allowedNetworkKinds(List.of(NetworkKind.SITE))
+                .allowedNetworkKinds(List.of(NetworkKind.FACILITY))
                 .layer(NetworkLayer.GROUND)
                 .respectDoors(true)
                 .build();

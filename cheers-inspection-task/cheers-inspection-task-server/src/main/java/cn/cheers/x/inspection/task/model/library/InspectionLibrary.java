@@ -64,17 +64,7 @@ public class InspectionLibrary {
         private String categoryName;
 
         /**
-         * 所属站场 ID。
-         */
-        private Long siteId;
-
-        /**
-         * 站场名称。
-         */
-        private String siteName;
-
-        /**
-         * 来源设施 ID。
+         * 所属设施 ID。
          */
         private Long facilityId;
 
@@ -82,6 +72,16 @@ public class InspectionLibrary {
          * 设施名称。
          */
         private String facilityName;
+
+        /**
+         * 来源设施 ID。
+         */
+        private Long sourceFacilityId;
+
+        /**
+         * 来源设施名称。
+         */
+        private String sourceFacilityName;
 
         /**
          * 状态。

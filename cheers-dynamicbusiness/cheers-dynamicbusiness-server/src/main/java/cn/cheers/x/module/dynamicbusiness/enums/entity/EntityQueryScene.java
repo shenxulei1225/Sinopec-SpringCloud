@@ -17,7 +17,7 @@ import java.util.Map;
 @AllArgsConstructor
 public enum EntityQueryScene {
 
-    /** 有分类列：按分类范围查实体（含子树；未选节点≡整树）；可叠 modelIds；须显式传 categoryTypeCode */
+    /** 有分类列：按分类范围查实体（含子树；未选节点≡整树）；可叠 modelIds；须显式传 categoryTypeCode；可选 categoryViaRefPathCode 走经 REF 反查 */
     ENTITIES_BY_CATEGORY("ENTITIES_BY_CATEGORY", "按分类查实体"),
 
     /** 无分类列：按型号查实体；未传 modelIds 时按类型（可叠业务域/划分） */

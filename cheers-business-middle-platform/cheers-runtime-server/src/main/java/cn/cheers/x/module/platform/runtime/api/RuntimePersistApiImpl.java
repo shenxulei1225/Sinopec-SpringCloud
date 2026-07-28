@@ -20,9 +20,9 @@ public class RuntimePersistApiImpl implements RuntimePersistApi {
     public CommonResult<Boolean> persist(RuntimePersistReqDTO request) {
         if (Boolean.TRUE.equals(request.getAppendSlotsOnly())) {
             runtimePersistService.appendSlots(
-                    request.getJob().getRuntimeJobId(), request.getSlots(), request.getSiteId());
+                    request.getJob().getRuntimeJobId(), request.getSlots(), request.getFacilityId());
         } else {
-            runtimePersistService.saveJobWithSlots(request.getJob(), request.getSlots(), request.getSiteId());
+            runtimePersistService.saveJobWithSlots(request.getJob(), request.getSlots(), request.getFacilityId());
         }
         return success(true);
     }

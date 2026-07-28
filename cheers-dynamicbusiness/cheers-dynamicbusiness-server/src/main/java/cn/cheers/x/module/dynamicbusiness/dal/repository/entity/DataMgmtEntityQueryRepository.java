@@ -242,18 +242,18 @@ public class DataMgmtEntityQueryRepository {
         }
     }
 
-    /** 分类即实体 1:1 link 与 relation 同口径：按实际存储类型 + 业务域收窄，避免跨表同 ID 串行。 */
+    /** 分类即实体 1:1 link 与 relation 同口径：按 entityTypeCode + 业务域收窄，避免跨表同 ID 串行。 */
     private void mergeLinkCandidates(Map<Long, ScopeCandidate> bestByEntityId,
                                      Map<Long, Integer> categoryRank,
                                      List<Long> expandedCategoryIds,
-                                     String storageEntityTypeCode,
+                                     String entityTypeCode,
                                      String domain,
                                      Set<Long> modelIdFilter) {
         LambdaQueryWrapperX<CategoryEntityLinkDO> linkQuery = new LambdaQueryWrapperX<CategoryEntityLinkDO>()
                 .in(CategoryEntityLinkDO::getCategoryId, expandedCategoryIds)
                 .eq(BaseDO::getDeleted, false);
-        if (StringUtils.hasText(storageEntityTypeCode)) {
-            linkQuery.eq(CategoryEntityLinkDO::getStorageEntityTypeCode, storageEntityTypeCode.trim());
+        if (StringUtils.hasText(entityTypeCode)) {
+            linkQuery.eq(CategoryEntityLinkDO::getEntityTypeCode, entityTypeCode.trim());
         }
         if (StringUtils.hasText(domain)) {
             linkQuery.eq(CategoryEntityLinkDO::getDomain, domain);

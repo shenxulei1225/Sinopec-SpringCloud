@@ -55,4 +55,15 @@ public interface EntityRelationService {
      * @return 命中的当前实体ID列表（去重）
      */
     List<Long> listEntityIdsByRelationFieldAndRelatedIds(String fieldCode, List<Long> relatedEntityIds);
+
+    /**
+     * 经 REF 反查主体：在 {@link #listEntityIdsByRelationFieldAndRelatedIds} 基础上按源实体类型编码过滤。
+     *
+     * @param refFieldCode          主体实体上的 REF 字段编码（{@code dynamic_field.code}）
+     * @param subjectEntityTypeCode 主体实体类型编码（{@code dynamic_entity_relation.source_entity_type_code}）
+     * @param targetEntityIds       REF 指向的目标实体 id 集合
+     */
+    List<Long> listSubjectEntityIdsByRefFieldAndTargetIds(String refFieldCode,
+                                                          String subjectEntityTypeCode,
+                                                          List<Long> targetEntityIds);
 }

@@ -12,7 +12,7 @@ public class InspectionExecutionPointCreateReqVO {
 
     private String pointCode;
     private String pointName;
-    private Long siteId;
+    private Long facilityId;
     private Long objectId;
     private BigDecimal longitude;
     private BigDecimal latitude;

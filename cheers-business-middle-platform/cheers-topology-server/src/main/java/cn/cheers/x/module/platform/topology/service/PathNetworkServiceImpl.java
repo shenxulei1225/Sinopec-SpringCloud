@@ -71,7 +71,7 @@ public class PathNetworkServiceImpl implements PathNetworkService {
     public PathNetworkDTO saveDraft(PathNetworkDTO request) {
         Long facilityId = request.getFacilityId();
         NetworkKind networkKind = request.getNetworkKind() != null
-                ? request.getNetworkKind() : NetworkKind.SITE;
+                ? request.getNetworkKind() : NetworkKind.FACILITY;
         if (facilityId == null) {
             throw exception(NETWORK_DRAFT_INVALID);
         }
@@ -120,7 +120,7 @@ public class PathNetworkServiceImpl implements PathNetworkService {
             throw exception(NETWORK_DRAFT_INVALID);
         }
         NetworkKind networkKind = request.getNetworkKind() != null
-                ? request.getNetworkKind() : NetworkKind.SITE;
+                ? request.getNetworkKind() : NetworkKind.FACILITY;
         String id = "net_" + request.getFacilityId() + "_"
                 + UUID.randomUUID().toString().replace("-", "").substring(0, 12) + "_draft";
         PathNetworkDO network = PathNetworkDO.builder()
@@ -218,7 +218,7 @@ public class PathNetworkServiceImpl implements PathNetworkService {
         PathNetworkDO network = PathNetworkDO.builder()
                 .id(id)
                 .facilityId(request.getFacilityId())
-                .networkKind(NetworkKind.SITE.name())
+                .networkKind(NetworkKind.FACILITY.name())
                 .status(GraphStatus.PUBLISHED)
                 .version(0)
                 .displayName(request.getDisplayName().trim())
@@ -271,7 +271,7 @@ public class PathNetworkServiceImpl implements PathNetworkService {
         }
         NetworkKind networkKind = parseNetworkKind(draft.getNetworkKind());
         if (networkKind == null) {
-            networkKind = NetworkKind.SITE;
+            networkKind = NetworkKind.FACILITY;
         }
         // 一条草稿对应唯一一条已发布：反复发布只覆盖更新，不新增版本行
         String publishedId = publishedCompanionId(draft.getId());
@@ -536,7 +536,7 @@ public class PathNetworkServiceImpl implements PathNetworkService {
         }
         String kind = network.getNetworkKind() != null ? network.getNetworkKind().toUpperCase() : "";
         String base = switch (kind) {
-            case "SITE" -> "站场路网";
+            case "FACILITY" -> "设施路网";
             case "PERIMETER" -> "站界路网";
             case "PIPELINE" -> "管线路网";
             case "ROAD" -> "道路路网";
@@ -572,7 +572,9 @@ public class PathNetworkServiceImpl implements PathNetworkService {
         if (!StringUtils.hasText(networkKind)) {
             return null;
         }
-        return NetworkKind.valueOf(networkKind);
+        // 历史库可能仍存 SITE；与枚举 FACILITY 对齐
+        String normalized = "SITE".equalsIgnoreCase(networkKind.trim()) ? "FACILITY" : networkKind.trim();
+        return NetworkKind.valueOf(normalized);
     }
 
     private static Long parseScopeId(String scopeId) {

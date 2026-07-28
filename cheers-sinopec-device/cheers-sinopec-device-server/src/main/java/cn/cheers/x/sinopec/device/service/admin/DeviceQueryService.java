@@ -12,9 +12,9 @@ public interface DeviceQueryService {
     /**
      * 查询设备列表。
      *
-     * @param siteId 站场编号
+     * @param facilityId 站场编号
      * @return 设备列表
      */
-    List<DeviceListRespDTO> getDeviceList(Integer siteId);
+    List<DeviceListRespDTO> getDeviceList(Integer facilityId);
 
 }

@@ -55,5 +55,5 @@ public class ScheduleSlotDO extends TenantBaseDO {
 
     private String decisionTraceId;
 
-    private Long siteId;
+    private Long facilityId;
 }

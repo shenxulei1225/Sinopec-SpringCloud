@@ -39,10 +39,10 @@ public class FacilityUpdateReqVO {
 
     @Schema(description = "所属站场ID", example = "1")
     @NotNull(message = "站场ID不能为空")
-    private Long siteId;
+    private Long stationId;
 
     @Schema(description = "所属站场名称", example = "罐区A")
-    private String siteName;
+    private String stationName;
 
     @Schema(description = "排序号", example = "1")
     private Integer sortNo;

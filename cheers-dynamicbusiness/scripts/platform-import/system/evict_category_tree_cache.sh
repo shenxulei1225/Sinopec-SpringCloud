@@ -19,12 +19,16 @@ if [[ -n "${REDIS_PASSWORD}" ]]; then
 fi
 
 PATTERN="dynamicbusiness:category:tree:*"
-mapfile -t KEYS < <(redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT}" -n "${REDIS_DB}" "${AUTH_ARGS[@]}" --raw KEYS "${PATTERN}")
+KEYS=$(
+  redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT}" -n "${REDIS_DB}" "${AUTH_ARGS[@]}" --raw KEYS "${PATTERN}" 2>/dev/null || true
+)
 
-if [[ ${#KEYS[@]} -eq 0 ]]; then
+if [[ -z "${KEYS// /}" ]]; then
   echo ">> category tree cache: no keys (${PATTERN})"
   exit 0
 fi
 
-redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT}" -n "${REDIS_DB}" "${AUTH_ARGS[@]}" DEL "${KEYS[@]}" >/dev/null
-echo ">> category tree cache evicted: ${#KEYS[@]} key(s)"
+# shellcheck disable=SC2086
+redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT}" -n "${REDIS_DB}" "${AUTH_ARGS[@]}" DEL ${KEYS} >/dev/null
+KEY_COUNT=$(echo "${KEYS}" | wc -w | tr -d ' ')
+echo ">> category tree cache evicted: ${KEY_COUNT} key(s)"

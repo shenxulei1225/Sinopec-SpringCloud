@@ -4,12 +4,12 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="cn.cheers.x.sinopec.device.dal.mapper.EquipmentBusinessDynamicsMapper">
 
-    <select id="selectListBySiteId"
+    <select id="selectListByFacilityId"
             parameterType="java.lang.Integer"
             resultType="cn.cheers.x.sinopec.device.dal.dataobject.EquipmentBusinessDynamicsDO">
         SELECT
             id,
-            site_id AS siteId,
+            site_id AS facilityId,
             equipment_serial_no AS equipmentSerialNo,
             equipment_name AS equipmentName,
             equipment_type AS equipmentType,
@@ -17,7 +17,7 @@
             created_time AS createTime,
             updated_time AS updateTime
         FROM equipment_business_dynamics
-        WHERE site_id = #{siteId}
+        WHERE site_id = #{facilityId}
     </select>
 
 </mapper>

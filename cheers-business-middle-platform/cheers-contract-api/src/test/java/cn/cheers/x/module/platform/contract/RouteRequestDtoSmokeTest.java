@@ -24,7 +24,7 @@ class RouteRequestDtoSmokeTest {
                   "stopIds": ["s1", "s2", "s3"],
                   "strategy": "as_given",
                   "legs": [
-                    {"mobilityProfileId": "ground_robot", "networkKind": "SITE"},
+                    {"mobilityProfileId": "ground_robot", "networkKind": "FACILITY"},
                     {"mobilityProfileId": "ground_vehicle", "networkKind": "ROAD"}
                   ]
                 }
@@ -38,7 +38,7 @@ class RouteRequestDtoSmokeTest {
         assertEquals(List.of("s1", "s2", "s3"), request.getStopIds());
         assertEquals(2, request.getLegs().size());
         assertEquals("ground_robot", request.getLegs().get(0).getMobilityProfileId());
-        assertEquals(NetworkKind.SITE, request.getLegs().get(0).getNetworkKind());
+        assertEquals(NetworkKind.FACILITY, request.getLegs().get(0).getNetworkKind());
         assertEquals("ground_vehicle", request.getLegs().get(1).getMobilityProfileId());
         assertEquals(NetworkKind.ROAD, request.getLegs().get(1).getNetworkKind());
     }

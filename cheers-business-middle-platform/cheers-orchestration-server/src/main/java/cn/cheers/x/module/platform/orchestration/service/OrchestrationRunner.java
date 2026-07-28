@@ -117,7 +117,7 @@ public class OrchestrationRunner {
         PhaseContext context = PhaseContext.builder()
                 .orchestrationRunRequest(request)
                 .orchestrationRef(request.getOrchestrationRef())
-                .siteId(request.getSiteId())
+                .facilityId(request.getFacilityId())
                 .dryRun(Boolean.TRUE.equals(request.getDryRun()))
                 .attributes(new HashMap<>())
                 .workItems(new ArrayList<>())
@@ -148,7 +148,7 @@ public class OrchestrationRunner {
                 .build();
     }
 
-    public ScheduleRunResponse run(ScheduleRunRequest request, Long siteId) {
+    public ScheduleRunResponse run(ScheduleRunRequest request, Long facilityId) {
         RunContext resolved = resolveRunContext(request);
         OrchestrationTemplate template = templateRegistry.require(resolved.orchestrationRef());
 
@@ -172,7 +172,7 @@ public class OrchestrationRunner {
                 .dryRun(dryRun)
                 .stopAfterPhase(stopAfter)
                 .policySnapshotId(resolved.policySnapshotId())
-                .siteId(siteId)
+                .facilityId(facilityId)
                 .build();
 
         List<Long> workOrderIds = new ArrayList<>();
@@ -296,7 +296,7 @@ public class OrchestrationRunner {
         runtimePersistApi.persist(RuntimePersistReqDTO.builder()
                 .job(job)
                 .slots(context.getSlots())
-                .siteId(context.getSiteId())
+                .facilityId(context.getFacilityId())
                 .build()).checkError();
     }
 
@@ -306,14 +306,14 @@ public class OrchestrationRunner {
                 .runtimeJobId(runtimeJobId)
                 .mode(RuntimeSlotReleaseMode.ABORT)
                 .reason("replan")
-                .siteId(context.getSiteId())
+                .facilityId(context.getFacilityId())
                 .build()).checkError();
 
         runtimePersistApi.persist(RuntimePersistReqDTO.builder()
                 .appendSlotsOnly(true)
                 .job(RuntimeJobDTO.builder().runtimeJobId(runtimeJobId).build())
                 .slots(context.getSlots())
-                .siteId(context.getSiteId())
+                .facilityId(context.getFacilityId())
                 .build()).checkError();
     }
 
@@ -437,7 +437,7 @@ public class OrchestrationRunner {
         List<SlotStatus> statuses = List.of(
                 SlotStatus.PLANNED, SlotStatus.IN_PROGRESS, SlotStatus.COMPLETED);
         List<ScheduleSlotDTO> occupied = runtimeQueryApi.listSlots(
-                from, to, null, context.getRequest().getEntityTypeCode(), context.getSiteId(), statuses)
+                from, to, null, context.getRequest().getEntityTypeCode(), context.getFacilityId(), statuses)
                 .getCheckedData();
         return excludeReplanUnfinishedSelf(context, occupied);
     }

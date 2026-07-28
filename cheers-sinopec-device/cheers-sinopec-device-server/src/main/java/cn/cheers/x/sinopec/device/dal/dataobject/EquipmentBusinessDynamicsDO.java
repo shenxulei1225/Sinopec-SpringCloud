@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 public class EquipmentBusinessDynamicsDO {
 
     private Long id;
-    private Integer siteId;
+    private Integer facilityId;
     private String equipmentSerialNo;
     private String equipmentName;
     private Integer equipmentType;

@@ -56,6 +56,12 @@ public class FacilityApiImpl implements FacilityApi {
     }
 
     @Override
+    public CommonResult<List<FacilityRespDTO>> getFacilitiesByIds(List<Long> ids) {
+        List<FacilityView> views = facilityQueryService.getFacilityViewListByIds(ids);
+        return CommonResult.success(toDTOList(views));
+    }
+
+    @Override
     public CommonResult<PageResult<FacilityRespDTO>> getFacilityPage(FacilityPageReqDTO reqDTO) {
         FacilityPageReqVO pageReqVO = BeanUtils.toBean(reqDTO, FacilityPageReqVO.class);
         PageResult<FacilityView> pageResult = facilityQueryService.getFacilityViewPage(pageReqVO);
@@ -73,8 +79,8 @@ public class FacilityApiImpl implements FacilityApi {
         dto.setFacilityName(view.getFacilityName());
         dto.setCategoryId(view.getCategoryId());
         dto.setCategoryName(view.getCategoryName());
-        dto.setSiteId(view.getSiteId());
-        dto.setSiteName(view.getSiteName());
+        dto.setStationId(view.getStationId());
+        dto.setStationName(view.getStationName());
         dto.setSortNo(view.getSortNo());
         dto.setStatus(view.getStatus());
         dto.setManufacturer(view.getManufacturer());

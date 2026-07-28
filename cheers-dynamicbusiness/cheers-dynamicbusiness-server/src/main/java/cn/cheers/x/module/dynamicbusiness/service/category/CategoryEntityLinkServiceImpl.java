@@ -37,9 +37,10 @@ public class CategoryEntityLinkServiceImpl implements CategoryEntityLinkService 
         return linkCategoryToEntity(categoryId, entityId, entityModelId, null, null);
     }
 
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public Long linkCategoryToEntity(Long categoryId, Long entityId, Long entityModelId,
-                                     String storageEntityTypeCode, String domain) {
+                                     String entityTypeCode, String domain) {
         CategoryEntityLinkDO existingLink = linkMapper.selectByCategoryId(categoryId);
         if (existingLink != null) {
             throw new ServiceException(400, "分类已关联实体，请勿重复创建");
@@ -49,7 +50,7 @@ public class CategoryEntityLinkServiceImpl implements CategoryEntityLinkService 
                 .categoryId(categoryId)
                 .entityId(entityId)
                 .entityModelId(entityModelId)
-                .storageEntityTypeCode(storageEntityTypeCode)
+                .entityTypeCode(entityTypeCode)
                 .domain(domain)
                 .build();
         linkMapper.insert(link);
@@ -74,8 +75,8 @@ public class CategoryEntityLinkServiceImpl implements CategoryEntityLinkService 
     }
 
     @Override
-    public CategoryEntityLinkDO getLinkByEntityIdAndStorage(Long entityId, String storageEntityTypeCode) {
-        return linkMapper.selectByEntityIdAndStorage(entityId, storageEntityTypeCode);
+    public CategoryEntityLinkDO getLinkByEntityIdAndEntityTypeCode(Long entityId, String entityTypeCode) {
+        return linkMapper.selectByEntityIdAndEntityTypeCode(entityId, entityTypeCode);
     }
 
     @Override
@@ -97,8 +98,8 @@ public class CategoryEntityLinkServiceImpl implements CategoryEntityLinkService 
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void unlinkEntityCategory(Long entityId, String storageEntityTypeCode) {
-        linkMapper.deleteByEntityIdAndStorage(entityId, storageEntityTypeCode);
+    public void unlinkEntityCategory(Long entityId, String entityTypeCode) {
+        linkMapper.deleteByEntityIdAndEntityTypeCode(entityId, entityTypeCode);
     }
 
     @Override

@@ -36,5 +36,5 @@ public class PolicySetDO extends TenantBaseDO {
     @TableField(typeHandler = JsonbStringTypeHandler.class)
     private String specParams;
 
-    private Long siteId;
+    private Long facilityId;
 }

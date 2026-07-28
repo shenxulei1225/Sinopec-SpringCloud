@@ -231,16 +231,14 @@ public interface EntityService {
      * @param keyword 搜索关键词（可选）
      * @return 分页结果，包含实体列表和总数（树形结构或平铺结构，根据场景而定）
      */
-    EntitySceneQueryRespVO queryEntities(EntityQueryScene scene, String resultShape, String resultDetail, String categoryTypeCode, String entityTypeCode,
-            List<Long> modelIds, List<Long> categoryIds, Long entityId, Long rootEntityId, String entitySourceEntityType,
-            Integer pageNo, Integer pageSize, String keyword, String domain,
-            List<FieldFilterReqVO> filters);
-
     /**
-     * 同无 groups 重载；{@code categoryIdGroups} 非空时 ENTITIES_BY_CATEGORY 按多栏求交。
+     * 统一实体查询（按场景）。
+     *
+     * @param categoryIdGroups 多独立栏分类求交；非空时优先于 categoryIds
+     * @param categoryViaRefPathCode 经 REF 反查路径；非空时走 Category-via-Ref（与直接挂靠互斥）
      */
     EntitySceneQueryRespVO queryEntities(EntityQueryScene scene, String resultShape, String resultDetail, String categoryTypeCode, String entityTypeCode,
-            List<Long> modelIds, List<Long> categoryIds, List<CategoryIdGroupReqVO> categoryIdGroups,
+            List<Long> modelIds, List<Long> categoryIds, List<CategoryIdGroupReqVO> categoryIdGroups, String categoryViaRefPathCode,
             Long entityId, Long rootEntityId, String entitySourceEntityType,
             Integer pageNo, Integer pageSize, String keyword, String domain,
             List<FieldFilterReqVO> filters);

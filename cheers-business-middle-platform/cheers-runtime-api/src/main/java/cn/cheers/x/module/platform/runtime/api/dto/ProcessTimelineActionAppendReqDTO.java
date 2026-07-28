@@ -44,5 +44,5 @@ public class ProcessTimelineActionAppendReqDTO {
     /** 可选扩展 JSON 字符串 */
     private String payloadJson;
 
-    private Long siteId;
+    private Long facilityId;
 }

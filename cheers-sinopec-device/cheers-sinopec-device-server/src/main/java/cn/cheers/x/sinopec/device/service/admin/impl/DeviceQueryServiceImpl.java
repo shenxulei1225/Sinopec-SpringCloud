@@ -26,9 +26,9 @@ public class DeviceQueryServiceImpl implements DeviceQueryService {
     private final EquipmentBusinessDynamicsMapper equipmentBusinessDynamicsMapper;
 
     @Override
-    public List<DeviceListRespDTO> getDeviceList(Integer siteId) {
-        List<EquipmentBusinessDynamicsDO> dynamicsList = equipmentBusinessDynamicsMapper.selectListBySiteId(siteId);
-        List<DeviceDetailsDO> detailsList = deviceDetailsMapper.selectListBySiteId(siteId);
+    public List<DeviceListRespDTO> getDeviceList(Integer facilityId) {
+        List<EquipmentBusinessDynamicsDO> dynamicsList = equipmentBusinessDynamicsMapper.selectListByFacilityId(facilityId);
+        List<DeviceDetailsDO> detailsList = deviceDetailsMapper.selectListByFacilityId(facilityId);
         Map<String, DeviceDetailsDO> detailsMap = buildDetailsMap(detailsList);
 
         List<DeviceListRespDTO> result = new ArrayList<>();

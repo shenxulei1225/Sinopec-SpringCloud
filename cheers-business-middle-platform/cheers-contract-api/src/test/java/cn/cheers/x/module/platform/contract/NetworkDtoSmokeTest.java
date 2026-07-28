@@ -14,12 +14,12 @@ class NetworkDtoSmokeTest {
     void pathNetworkHoldsKindAndLayer() {
         PathNetworkDTO n = PathNetworkDTO.builder()
                 .networkRef("net_fac_1_v1")
-                .networkKind(NetworkKind.SITE)
+                .networkKind(NetworkKind.FACILITY)
                 .facilityId(1L)
                 .status("PUBLISHED")
                 .version(1)
                 .build();
-        assertEquals(NetworkKind.SITE, n.getNetworkKind());
+        assertEquals(NetworkKind.FACILITY, n.getNetworkKind());
         PathNodeDTO node = PathNodeDTO.builder()
                 .nodeId("n1")
                 .layer(NetworkLayer.GROUND)

@@ -317,7 +317,7 @@ public class RoutePlanServiceImpl implements RoutePlanService {
             return request.getFacilityId();
         }
         for (PathNetworkDTO network : networks) {
-            if (network != null && NetworkKind.SITE == network.getNetworkKind() && network.getFacilityId() != null) {
+            if (network != null && NetworkKind.FACILITY == network.getNetworkKind() && network.getFacilityId() != null) {
                 return network.getFacilityId();
             }
         }

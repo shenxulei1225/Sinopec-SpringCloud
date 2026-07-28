@@ -49,8 +49,8 @@ public class RuntimeJobController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to,
             @RequestParam(value = "resourceId", required = false) String resourceId,
             @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode,
-            @RequestParam(value = "siteId", required = false) Long siteId,
+            @RequestParam(value = "facilityId", required = false) Long facilityId,
             @RequestParam(value = "slotStatuses", required = false) List<SlotStatus> slotStatuses) {
-        return success(runtimeQueryService.listSlots(from, to, resourceId, entityTypeCode, siteId, slotStatuses));
+        return success(runtimeQueryService.listSlots(from, to, resourceId, entityTypeCode, facilityId, slotStatuses));
     }
 }

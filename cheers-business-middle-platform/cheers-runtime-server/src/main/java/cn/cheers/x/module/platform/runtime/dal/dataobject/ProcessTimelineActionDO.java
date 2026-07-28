@@ -30,7 +30,7 @@ public class ProcessTimelineActionDO extends TenantBaseDO {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    private Long siteId;
+    private Long facilityId;
 
     private String targetType;
 

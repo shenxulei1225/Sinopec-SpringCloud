@@ -36,6 +36,8 @@ import cn.cheers.x.module.dynamicbusiness.enums.entity.EntityQueryResultDetail;
 import cn.cheers.x.module.dynamicbusiness.enums.entity.EntityQueryResultShape;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategoryRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityRelationService;
+import cn.cheers.x.module.dynamicbusiness.service.entity.categoryviaref.CategoryViaRefQueryPath;
+import cn.cheers.x.module.dynamicbusiness.service.entity.categoryviaref.CategoryViaRefQueryService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.sync.EntitySyncService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryEntityLinkService;
@@ -145,6 +147,9 @@ public class EntityServiceImpl implements EntityService {
 
     @Resource
     private DataMgmtEntityQueryRepository dataMgmtEntityQueryRepository;
+
+    @Resource
+    private CategoryViaRefQueryService categoryViaRefQueryService;
 
     @Resource
     private ObjectProvider<EntityServiceImpl> selfProvider;
@@ -258,7 +263,7 @@ public class EntityServiceImpl implements EntityService {
         }
 
         // 分类即实体：删实体 → 断 link → 删分类节点（与从分类侧删除语义对齐）
-        CategoryEntityLinkDO boundLink = categoryEntityLinkService.getLinkByEntityIdAndStorage(
+        CategoryEntityLinkDO boundLink = categoryEntityLinkService.getLinkByEntityIdAndEntityTypeCode(
                 reqVO.getId(), reqVO.getEntityTypeCode());
         if (boundLink != null && boundLink.getCategoryId() != null) {
             deleteCategoryBoundEntity(existingEntity, reqVO, boundLink);
@@ -414,17 +419,8 @@ public class EntityServiceImpl implements EntityService {
 
     @Override
     public EntitySceneQueryRespVO queryEntities(EntityQueryScene scene, String resultShape, String resultDetail, String categoryTypeCode, String entityTypeCode,
-            List<Long> modelIds, List<Long> categoryIds, Long entityId, Long rootEntityId, String entitySourceEntityType,
-            Integer pageNo, Integer pageSize, String keyword, String domain,
-            List<FieldFilterReqVO> filters) {
-        return queryEntities(scene, resultShape, resultDetail, categoryTypeCode, entityTypeCode,
-                modelIds, categoryIds, null, entityId, rootEntityId, entitySourceEntityType,
-                pageNo, pageSize, keyword, domain, filters);
-    }
-
-    @Override
-    public EntitySceneQueryRespVO queryEntities(EntityQueryScene scene, String resultShape, String resultDetail, String categoryTypeCode, String entityTypeCode,
-            List<Long> modelIds, List<Long> categoryIds, List<CategoryIdGroupReqVO> categoryIdGroups, Long entityId, Long rootEntityId, String entitySourceEntityType,
+            List<Long> modelIds, List<Long> categoryIds, List<CategoryIdGroupReqVO> categoryIdGroups, String categoryViaRefPathCode,
+            Long entityId, Long rootEntityId, String entitySourceEntityType,
             Integer pageNo, Integer pageSize, String keyword, String domain,
             List<FieldFilterReqVO> filters) {
 
@@ -436,7 +432,7 @@ public class EntityServiceImpl implements EntityService {
 
         // 按入口解析：SCOPE → storage + 成员过滤；DOMAIN registry → storage + domain；其余用请求 domain
         ResolvedQueryType resolved = resolveQueryEntityType(entityTypeCode, domain);
-        String storageEntityTypeCode = resolved.storageEntityTypeCode();
+        String storageEntityTypeCode = resolved.entityTypeCode();
         String normalizedDomain = resolved.domain();
         String normalizedScopeCode = resolved.scopeRegistryCode();
 
@@ -444,8 +440,16 @@ public class EntityServiceImpl implements EntityService {
         EntityQueryResultDetail detail = EntityQueryResultDetail.ofNullable(resultDetail);
         switch (scene) {
             case ENTITIES_BY_CATEGORY: {
-                if (storageEntityTypeCode == null || storageEntityTypeCode.isBlank()) {
+                String queryEntityTypeCode = resolved.entityTypeCode();
+                if (queryEntityTypeCode == null || queryEntityTypeCode.isBlank()) {
                     throw new ServiceException(400, "ENTITIES_BY_CATEGORY 场景下 entityTypeCode 不能为空");
+                }
+                String viaRefPathCode = trimToNull(categoryViaRefPathCode);
+                if (viaRefPathCode != null) {
+                    return queryEntitiesByCategoryViaRef(
+                            viaRefPathCode, categoryTypeCode, categoryIds, queryEntityTypeCode,
+                            normalizedDomain, normalizedScopeCode, keyword, filters,
+                            shape, detail, effectivePageNo, effectivePageSize);
                 }
                 // 禁止用 storage 冒充分类种类：同源也须显式传 categoryTypeCode，避免跨视角漏传时查错树
                 if (categoryTypeCode == null || categoryTypeCode.isBlank()) {
@@ -613,7 +617,7 @@ public class EntityServiceImpl implements EntityService {
         return new ResolvedQueryType(ctx.getStorageEntityTypeCode(), reqDomain, null);
     }
 
-    private record ResolvedQueryType(String storageEntityTypeCode, String domain, String scopeRegistryCode) {
+    private record ResolvedQueryType(String entityTypeCode, String domain, String scopeRegistryCode) {
     }
 
     /** 规范化模型 ID：去 null、去重（保留顺序）。 */
@@ -1480,6 +1484,64 @@ public class EntityServiceImpl implements EntityService {
         }
         var categoryType = categoryTypeService.getCategoryTypeByCode(categoryTypeCode);
         return categoryType == null ? null : categoryType.getTopLevelCategoryId();
+    }
+
+    /**
+     * {@link EntityQueryScene#ENTITIES_BY_CATEGORY} 的 Category-via-Ref 分支：只做分流，不重复实现分类/SQL。
+     *
+     * <p><strong>与直接挂靠的区别</strong>：主体实体不必挂在维度分类下；列表来自
+     * 「分类 → 目标实体 → 主体 REF」三步编排（{@link CategoryViaRefQueryService}）。</p>
+     *
+     * <p><strong>本方法职责</strong>：路径与请求类型校验、分类范围归一（含未选节点≡整树）、
+     * 业务域/划分成员收窄、复用 {@link #queryEntitiesByOrderedCandidateIds} 分页装 VO。</p>
+     *
+     * <p><strong>不写库</strong>：不创建 {@code dynamic_entity_category_relation}，不改 REF 源数据。</p>
+     */
+    private EntitySceneQueryRespVO queryEntitiesByCategoryViaRef(
+            String categoryViaRefPathCode,
+            String categoryTypeCode,
+            List<Long> categoryIds,
+            String subjectEntityTypeCode,
+            String domain,
+            String scopeRegistryCode,
+            String keyword,
+            List<FieldFilterReqVO> filters,
+            EntityQueryResultShape shape,
+            EntityQueryResultDetail detail,
+            Integer pageNo,
+            Integer pageSize) {
+        categoryViaRefQueryService.assertSubjectTypeMatches(categoryViaRefPathCode, subjectEntityTypeCode);
+        categoryViaRefQueryService.assertDimensionCategoryTypeMatches(categoryViaRefPathCode, categoryTypeCode);
+        CategoryViaRefQueryPath path = categoryViaRefQueryService.requirePath(categoryViaRefPathCode);
+        List<Long> normalizedCategoryIds = normalizeCategoryIdsOrUseRootCategory(
+                categoryIds, path.dimensionCategoryTypeCode());
+        List<Long> subjectEntityIds = categoryViaRefQueryService.listSubjectEntityIds(
+                categoryViaRefPathCode, normalizedCategoryIds);
+        subjectEntityIds = dataMgmtEntityQueryRepository.retainOrderedIdsByDomainAndScope(
+                subjectEntityIds, subjectEntityTypeCode, domain, scopeRegistryCode);
+        PageResult<EntityRespVO> viaRefResult = queryEntitiesByOrderedCandidateIds(
+                subjectEntityIds, subjectEntityTypeCode, keyword, filters,
+                shape == EntityQueryResultShape.PAGE ? pageNo : null,
+                shape == EntityQueryResultShape.PAGE ? pageSize : null);
+        if (shape == EntityQueryResultShape.PAGE) {
+            return EntitySceneQueryRespVO.page(applyResultDetail(viaRefResult, detail), detail.getCode());
+        }
+        List<EntityRespVO> viaRefEntities = viaRefResult.getList();
+        if (shape == EntityQueryResultShape.TREE) {
+            return EntitySceneQueryRespVO.tree(
+                    applyResultDetail(EntityTreeBuilder.buildTree(viaRefEntities,
+                            EntityTreeBuilder.SortMode.LOCAL_SIBLING_SORT), detail),
+                    detail.getCode());
+        }
+        return EntitySceneQueryRespVO.list(applyResultDetail(viaRefEntities, detail), detail.getCode());
+    }
+
+    private static String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     /**

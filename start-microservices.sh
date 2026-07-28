@@ -336,9 +336,14 @@ start_service() {
     local pid=$!
     disown -h "$pid" 2>/dev/null || true
     
+    # Mac 上 InetUtils 解析主机名可能占 30s+，Maven 编译 + 冷启动常 >60s
+    local max_wait=120
+    local waited=0
+    local check_interval=2
+    
     echo -e "${BLUE}   Maven 进程 ID: $pid${NC}"
     echo -e "${BLUE}   日志文件: $log_file${NC}"
-    echo -e "${BLUE}   等待服务启动（最多 60 秒）...${NC}"
+    echo -e "${BLUE}   等待服务启动（最多 ${max_wait} 秒）...${NC}"
     echo ""
     
     # 如果要求显示日志,则实时显示
@@ -351,11 +356,6 @@ start_service() {
         tail -f "$log_file" &
         local tail_pid=$!
     fi
-    
-    # 等待服务启动
-    local max_wait=60
-    local waited=0
-    local check_interval=2
     
     while [ $waited -lt $max_wait ]; do
         if is_service_running "$service_name"; then

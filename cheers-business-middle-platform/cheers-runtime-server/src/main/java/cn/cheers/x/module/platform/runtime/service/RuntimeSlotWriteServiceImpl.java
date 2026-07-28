@@ -58,7 +58,7 @@ public class RuntimeSlotWriteServiceImpl implements RuntimeSlotWriteService {
         OffsetDateTime occurredAt = request.getActualEnd() != null
                 ? request.getActualEnd()
                 : OffsetDateTime.now();
-        Long siteId = request.getSiteId() != null ? request.getSiteId() : slot.getSiteId();
+        Long facilityId = request.getFacilityId() != null ? request.getFacilityId() : slot.getFacilityId();
 
         processTimelineService.append(ProcessTimelineActionAppendReqDTO.builder()
                 .targetType(TARGET_TYPE_SCHEDULE_SLOT)
@@ -67,7 +67,7 @@ public class RuntimeSlotWriteServiceImpl implements RuntimeSlotWriteService {
                 .actionCode(ACTION_SLOT_STATUS_UPDATE)
                 .howSummary(buildHowSummary(request))
                 .payloadJson(buildPayloadJson(request, slot))
-                .siteId(siteId)
+                .facilityId(facilityId)
                 .build());
     }
 
@@ -79,14 +79,14 @@ public class RuntimeSlotWriteServiceImpl implements RuntimeSlotWriteService {
                 .orderByAsc(ScheduleSlotDO::getPlannedStart));
 
         List<String> affectedSlotIds = new ArrayList<>();
-        Long siteId = request.getSiteId();
+        Long facilityId = request.getFacilityId();
 
         switch (request.getMode()) {
             case YIELD_PAUSE, ABORT -> {
                 for (ScheduleSlotDO slot : slots) {
                     if (SlotStatus.COMPLETED.name().equals(slot.getSlotStatus())) {
-                        if (siteId == null) {
-                            siteId = slot.getSiteId();
+                        if (facilityId == null) {
+                            facilityId = slot.getFacilityId();
                         }
                         continue;
                     }
@@ -95,19 +95,19 @@ public class RuntimeSlotWriteServiceImpl implements RuntimeSlotWriteService {
                         scheduleSlotMapper.updateById(slot);
                         affectedSlotIds.add(slot.getId());
                     }
-                    if (siteId == null) {
-                        siteId = slot.getSiteId();
+                    if (facilityId == null) {
+                        facilityId = slot.getFacilityId();
                     }
                 }
-                appendReleaseTimeline(request, siteId, ACTION_SLOT_RELEASE_UNFINISHED,
+                appendReleaseTimeline(request, facilityId, ACTION_SLOT_RELEASE_UNFINISHED,
                         buildReleaseSummary(request.getMode(), affectedSlotIds.size()), affectedSlotIds);
             }
             case HOLD_PAUSE -> {
                 for (ScheduleSlotDO slot : slots) {
                     if (SlotStatus.COMPLETED.name().equals(slot.getSlotStatus())
                             || SlotStatus.CANCELLED.name().equals(slot.getSlotStatus())) {
-                        if (siteId == null) {
-                            siteId = slot.getSiteId();
+                        if (facilityId == null) {
+                            facilityId = slot.getFacilityId();
                         }
                         continue;
                     }
@@ -116,18 +116,18 @@ public class RuntimeSlotWriteServiceImpl implements RuntimeSlotWriteService {
                         scheduleSlotMapper.updateById(slot);
                         affectedSlotIds.add(slot.getId());
                     }
-                    if (siteId == null) {
-                        siteId = slot.getSiteId();
+                    if (facilityId == null) {
+                        facilityId = slot.getFacilityId();
                     }
                 }
-                appendReleaseTimeline(request, siteId, ACTION_SLOT_HOLD_PAUSE,
+                appendReleaseTimeline(request, facilityId, ACTION_SLOT_HOLD_PAUSE,
                         buildHoldPauseSummary(affectedSlotIds.size()), affectedSlotIds);
             }
             default -> throw new IllegalArgumentException("Unsupported release mode: " + request.getMode());
         }
     }
 
-    private void appendReleaseTimeline(RuntimeSlotReleaseReqDTO request, Long siteId, String actionCode,
+    private void appendReleaseTimeline(RuntimeSlotReleaseReqDTO request, Long facilityId, String actionCode,
                                        String howSummary, List<String> affectedSlotIds) {
         processTimelineService.append(ProcessTimelineActionAppendReqDTO.builder()
                 .targetType(TARGET_TYPE_RUNTIME_JOB)
@@ -136,7 +136,7 @@ public class RuntimeSlotWriteServiceImpl implements RuntimeSlotWriteService {
                 .actionCode(actionCode)
                 .howSummary(howSummary)
                 .payloadJson(buildReleasePayloadJson(request, affectedSlotIds))
-                .siteId(siteId)
+                .facilityId(facilityId)
                 .build());
     }
 

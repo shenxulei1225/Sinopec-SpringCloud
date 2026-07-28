@@ -316,7 +316,7 @@ public class EntityController {
             - 业务范围：多数场景为指定业务（建议传 entityTypeCode）
             - modelIds / categoryIds 支持重复 query 参数（modelIds=1&modelIds=2）或逗号分隔单参数（modelIds=1,2,3）
             - 多选 ID 较多时建议使用 POST /query-by-scene + JSON body
-            - ENTITIES_BY_CATEGORY：按分类查实体（含子树；未选≡整树）；可叠 modelIds；categoryTypeCode 必填（禁止默认成 entityTypeCode）
+            - ENTITIES_BY_CATEGORY：按分类查实体（含子树；未选≡整树）；可叠 modelIds；categoryTypeCode 必填（禁止默认成 entityTypeCode）；传 categoryViaRefPathCode 时走经 REF 反查
             - ENTITIES_BY_MODEL：按型号或类型查实体
             - ENTITIES_BY_CATEGORY_LINK：分类节点绑定实体
             - ENTITIES_DETAIL：实体详情
@@ -331,6 +331,7 @@ public class EntityController {
             @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode,
             @RequestParam(value = "modelIds", required = false) List<String> modelIds,
             @RequestParam(value = "categoryIds", required = false) List<String> categoryIds,
+            @RequestParam(value = "categoryViaRefPathCode", required = false) String categoryViaRefPathCode,
             @RequestParam(value = "entityId", required = false) Long entityId,
             @RequestParam(value = "rootEntityId", required = false) Long rootEntityId,
             @RequestParam(value = "entitySourceEntityType", required = false) String entitySourceEntityType,
@@ -341,8 +342,36 @@ public class EntityController {
             @RequestBody(required = false) List<FieldFilterReqVO> filters) {
         return queryEntitiesInternal(scene, resultShape, resultDetail, categoryTypeCode, entityTypeCode,
                 parseFlexibleIdList(modelIds), parseFlexibleIdList(categoryIds),
+                null,
+                categoryViaRefPathCode,
                 entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword, domain,
                 filters);
+    }
+
+    private CommonResult<EntitySceneQueryRespVO> queryEntitiesInternal(
+            EntityQueryScene scene,
+            String resultShape,
+            String resultDetail,
+            String categoryTypeCode,
+            String entityTypeCode,
+            List<Long> modelIds,
+            List<Long> categoryIds,
+            List<CategoryIdGroupReqVO> categoryIdGroups,
+            String categoryViaRefPathCode,
+            Long entityId,
+            Long rootEntityId,
+            String entitySourceEntityType,
+            Integer pageNo,
+            Integer pageSize,
+            String keyword,
+            String domain,
+            List<FieldFilterReqVO> filters) {
+        return success(entityService.queryEntities(scene, EntityQueryResultShape.ofNullable(resultShape).getCode(),
+                EntityQueryResultDetail.ofNullable(resultDetail).getCode(),
+                categoryTypeCode, entityTypeCode,
+                modelIds, categoryIds, categoryIdGroups, categoryViaRefPathCode,
+                entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword,
+                domain, filters));
     }
 
     @PostMapping("/query-by-scene")
@@ -357,46 +386,13 @@ public class EntityController {
     )
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<EntitySceneQueryRespVO> queryEntitiesByBody(@Valid @RequestBody EntitySceneQueryReqVO reqVO) {
-        return success(entityService.queryEntities(
-                reqVO.getScene(),
-                EntityQueryResultShape.ofNullable(reqVO.getResultShape()).getCode(),
-                EntityQueryResultDetail.ofNullable(reqVO.getResultDetail()).getCode(),
-                reqVO.getCategoryTypeCode(),
-                reqVO.getEntityTypeCode(),
-                reqVO.getModelIds(),
-                reqVO.getCategoryIds(),
-                reqVO.getCategoryIdGroups(),
-                reqVO.getEntityId(),
-                reqVO.getRootEntityId(),
-                reqVO.getEntitySourceEntityType(),
-                reqVO.getPageNo(),
-                reqVO.getPageSize(),
-                reqVO.getKeyword(),
-                reqVO.getDomain(),
-                reqVO.getFieldFilters()));
-    }
-
-    private CommonResult<EntitySceneQueryRespVO> queryEntitiesInternal(
-            EntityQueryScene scene,
-            String resultShape,
-            String resultDetail,
-            String categoryTypeCode,
-            String entityTypeCode,
-            List<Long> modelIds,
-            List<Long> categoryIds,
-            Long entityId,
-            Long rootEntityId,
-            String entitySourceEntityType,
-            Integer pageNo,
-            Integer pageSize,
-            String keyword,
-            String domain,
-            List<FieldFilterReqVO> filters) {
-        return success(entityService.queryEntities(scene, EntityQueryResultShape.ofNullable(resultShape).getCode(),
-                EntityQueryResultDetail.ofNullable(resultDetail).getCode(),
-                categoryTypeCode, entityTypeCode,
-                modelIds, categoryIds, entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword,
-                domain, filters));
+        return queryEntitiesInternal(reqVO.getScene(), reqVO.getResultShape(), reqVO.getResultDetail(),
+                reqVO.getCategoryTypeCode(), reqVO.getEntityTypeCode(),
+                reqVO.getModelIds(), reqVO.getCategoryIds(), reqVO.getCategoryIdGroups(),
+                reqVO.getCategoryViaRefPathCode(),
+                reqVO.getEntityId(), reqVO.getRootEntityId(), reqVO.getEntitySourceEntityType(),
+                reqVO.getPageNo(), reqVO.getPageSize(), reqVO.getKeyword(), reqVO.getDomain(),
+                reqVO.getFieldFilters());
     }
 
     /**

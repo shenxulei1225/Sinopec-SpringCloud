@@ -21,8 +21,8 @@ public class DeviceAdminController {
     private final DeviceQueryService deviceQueryService;
 
     @GetMapping("/list")
-    public List<DeviceListRespDTO> getDeviceList(@RequestParam("siteId") Integer siteId) {
-        return deviceQueryService.getDeviceList(siteId);
+    public List<DeviceListRespDTO> getDeviceList(@RequestParam("facilityId") Integer facilityId) {
+        return deviceQueryService.getDeviceList(facilityId);
     }
 
 }

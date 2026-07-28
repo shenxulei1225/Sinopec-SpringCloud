@@ -20,7 +20,7 @@ public class RuntimePersistReqDTO {
 
     private RuntimeJobDTO job;
     private List<ScheduleSlotDTO> slots;
-    private Long siteId;
+    private Long facilityId;
 
     /**
      * 为 true 时仅追加计划点到已有运行作业，不新建 job（重排 release-then-insert 用）。

@@ -14,7 +14,7 @@ import java.util.List;
 public class TopologyGraphDTO {
 
     private String topologyRef;
-    private Long siteId;
+    private Long facilityId;
     private String status;
     private Integer version;
     private List<TopologyNodeDTO> nodes;

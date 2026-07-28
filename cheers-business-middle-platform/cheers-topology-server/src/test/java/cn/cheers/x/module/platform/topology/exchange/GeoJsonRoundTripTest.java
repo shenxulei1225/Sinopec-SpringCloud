@@ -37,12 +37,12 @@ class GeoJsonRoundTripTest {
         JsonNode exported = geoJsonExchangeService.toFeatureCollection(original);
 
         PathNetworkDTO parsed = geoJsonExchangeService.fromFeatureCollection(
-                exported, 7L, NetworkKind.SITE);
+                exported, 7L, NetworkKind.FACILITY);
 
         assertEquals(original.getNodes().size(), parsed.getNodes().size());
         assertEquals(original.getEdges().size(), parsed.getEdges().size());
         assertEquals(7L, parsed.getFacilityId());
-        assertEquals(NetworkKind.SITE, parsed.getNetworkKind());
+        assertEquals(NetworkKind.FACILITY, parsed.getNetworkKind());
         assertEquals("n1", parsed.getNodes().get(0).getNodeId());
         assertEquals("e1", parsed.getEdges().get(0).getEdgeId());
     }
@@ -63,7 +63,7 @@ class GeoJsonRoundTripTest {
         });
 
         GeoJsonImportResultDTO result = geoJsonExchangeService.importGeoJson(
-                7L, NetworkKind.SITE, exported);
+                7L, NetworkKind.FACILITY, exported);
 
         assertEquals("net_7_site_draft", result.getNetworkRef());
         assertEquals(2, result.getNodeCount());
@@ -73,7 +73,7 @@ class GeoJsonRoundTripTest {
     private static PathNetworkDTO minimalNetwork() {
         return PathNetworkDTO.builder()
                 .facilityId(1L)
-                .networkKind(NetworkKind.SITE)
+                .networkKind(NetworkKind.FACILITY)
                 .nodes(List.of(
                         PathNodeDTO.builder()
                                 .nodeId("n1")

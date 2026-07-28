@@ -3,6 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.service.category;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryBatchDeleteRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryDeleteReqVO;
@@ -895,9 +896,23 @@ public class CategoryServiceImpl implements CategoryService {
         }
     }
 
+    /**
+     * 分类树 Redis 缓存键须含租户，避免多租户共用 type:zone 等同键串租户数据。
+     */
+    private String buildCategoryTreeCacheKey(String categoryTypeCode, Integer status) {
+        Long tenantId = TenantContextHolder.getTenantId();
+        if (tenantId == null) {
+            tenantId = 0L;
+        }
+        if (status == null) {
+            return "tenant:" + tenantId + ":type:" + categoryTypeCode;
+        }
+        return "tenant:" + tenantId + ":type:" + categoryTypeCode + ":status:" + status;
+    }
+
     @Override
     public List<CategoryTreeRespVO> getCategoryTreeByType(String categoryTypeCode, Integer status) {
-        String cacheKey = status == null ? "type:" + categoryTypeCode : "type:" + categoryTypeCode + ":status:" + status;
+        String cacheKey = buildCategoryTreeCacheKey(categoryTypeCode, status);
         List<CategoryTreeRespVO> cached = null;
         try {
             cached = CategoryCacheHelper.getCachedTree(stringRedisTemplate, cacheKey);
@@ -1454,13 +1469,9 @@ public class CategoryServiceImpl implements CategoryService {
         if (categoryTypeCode == null || categoryTypeCode.isEmpty()) {
             return;
         }
-        // 与 getCategoryTreeByType 中使用的 cacheKey 规则保持一致：
-        // - 不带 status: type:{categoryTypeCode}
-        // - 带 status:   type:{categoryTypeCode}:status:{status}
-        CategoryCacheHelper.evict(stringRedisTemplate, "type:" + categoryTypeCode);
-        // 目前分类状态只用到 0/1，两种状态的缓存一并清理
-        CategoryCacheHelper.evict(stringRedisTemplate, "type:" + categoryTypeCode + ":status:0");
-        CategoryCacheHelper.evict(stringRedisTemplate, "type:" + categoryTypeCode + ":status:1");
+        CategoryCacheHelper.evict(stringRedisTemplate, buildCategoryTreeCacheKey(categoryTypeCode, null));
+        CategoryCacheHelper.evict(stringRedisTemplate, buildCategoryTreeCacheKey(categoryTypeCode, 0));
+        CategoryCacheHelper.evict(stringRedisTemplate, buildCategoryTreeCacheKey(categoryTypeCode, 1));
     }
 
     @Override

@@ -26,11 +26,11 @@ public interface CategoryEntityLinkMapper extends BaseMapperX<CategoryEntityLink
                 .eq(CategoryEntityLinkDO::getEntityId, entityId));
     }
 
-    default CategoryEntityLinkDO selectByEntityIdAndStorage(Long entityId, String storageEntityTypeCode) {
+    default CategoryEntityLinkDO selectByEntityIdAndEntityTypeCode(Long entityId, String entityTypeCode) {
         LambdaQueryWrapperX<CategoryEntityLinkDO> query = new LambdaQueryWrapperX<CategoryEntityLinkDO>()
                 .eq(CategoryEntityLinkDO::getEntityId, entityId);
-        if (storageEntityTypeCode != null && !storageEntityTypeCode.isBlank()) {
-            query.eq(CategoryEntityLinkDO::getStorageEntityTypeCode, storageEntityTypeCode.trim());
+        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+            query.eq(CategoryEntityLinkDO::getEntityTypeCode, entityTypeCode.trim());
         }
         return selectOne(query);
     }
@@ -45,11 +45,11 @@ public interface CategoryEntityLinkMapper extends BaseMapperX<CategoryEntityLink
                 .eq(CategoryEntityLinkDO::getEntityId, entityId));
     }
 
-    default int deleteByEntityIdAndStorage(Long entityId, String storageEntityTypeCode) {
+    default int deleteByEntityIdAndEntityTypeCode(Long entityId, String entityTypeCode) {
         LambdaQueryWrapperX<CategoryEntityLinkDO> query = new LambdaQueryWrapperX<CategoryEntityLinkDO>()
                 .eq(CategoryEntityLinkDO::getEntityId, entityId);
-        if (storageEntityTypeCode != null && !storageEntityTypeCode.isBlank()) {
-            query.eq(CategoryEntityLinkDO::getStorageEntityTypeCode, storageEntityTypeCode.trim());
+        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+            query.eq(CategoryEntityLinkDO::getEntityTypeCode, entityTypeCode.trim());
         }
         return delete(query);
     }

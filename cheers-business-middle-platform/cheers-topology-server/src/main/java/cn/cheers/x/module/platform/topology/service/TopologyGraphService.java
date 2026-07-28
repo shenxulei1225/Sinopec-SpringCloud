@@ -8,13 +8,13 @@ public interface TopologyGraphService {
 
     TopologyGraphDTO getGraph(String topologyRef);
 
-    TopologyGraphDTO getDraftBySiteId(Long siteId);
+    TopologyGraphDTO getDraftByFacilityId(Long facilityId);
 
-    TopologyGraphDTO saveDraft(Long siteId, TopologyGraphSaveReqDTO request);
+    TopologyGraphDTO saveDraft(Long facilityId, TopologyGraphSaveReqDTO request);
 
-    TopologyGraphDTO publish(Long siteId);
+    TopologyGraphDTO publish(Long facilityId);
 
-    TopologyValidateRespDTO validate(Long siteId, TopologyGraphSaveReqDTO request);
+    TopologyValidateRespDTO validate(Long facilityId, TopologyGraphSaveReqDTO request);
 
-    TopologyGraphDTO importLegacy(Long siteId);
+    TopologyGraphDTO importLegacy(Long facilityId);
 }

@@ -2,6 +2,7 @@ package cn.cheers.x.facility.management.dal.dataobject;
 
 import cn.cheers.x.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.KeySequence;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -49,12 +50,14 @@ public class FacilityDO extends TenantBaseDO {
     /**
      * 所属站场ID
      */
-    private Long siteId;
+    @TableField("station_id")
+    private Long stationId;
 
     /**
      * 所属站场名称
      */
-    private String siteName;
+    @TableField("station_name")
+    private String stationName;
 
     /**
      * 排序号

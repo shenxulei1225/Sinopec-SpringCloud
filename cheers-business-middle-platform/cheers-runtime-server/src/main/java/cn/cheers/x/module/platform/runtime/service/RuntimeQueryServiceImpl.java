@@ -48,7 +48,7 @@ public class RuntimeQueryServiceImpl implements RuntimeQueryService {
             OffsetDateTime to,
             String resourceId,
             String entityTypeCode,
-            Long siteId,
+            Long facilityId,
             List<SlotStatus> slotStatuses) {
         if (from == null || to == null) {
             throw exception(SCHEDULE_SLOT_QUERY_TIME_RANGE_REQUIRED);
@@ -56,7 +56,7 @@ public class RuntimeQueryServiceImpl implements RuntimeQueryService {
 
         LambdaQueryWrapperX<ScheduleSlotDO> wrapper = new LambdaQueryWrapperX<>();
         wrapper.eqIfPresent(ScheduleSlotDO::getEntityTypeCode, entityTypeCode)
-                .eqIfPresent(ScheduleSlotDO::getSiteId, siteId)
+                .eqIfPresent(ScheduleSlotDO::getFacilityId, facilityId)
                 .lt(ScheduleSlotDO::getPlannedStart, to)
                 .gt(ScheduleSlotDO::getPlannedEnd, from);
         wrapper.orderByAsc(ScheduleSlotDO::getPlannedStart);

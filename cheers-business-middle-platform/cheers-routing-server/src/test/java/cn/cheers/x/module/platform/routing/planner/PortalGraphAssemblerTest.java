@@ -34,7 +34,7 @@ class PortalGraphAssemblerTest {
     void siteStopThroughPortalToRoadStopIsReachableWithMultilegProfiles() {
         PathNetworkDTO siteNetwork = PathNetworkDTO.builder()
                 .networkRef("net_site")
-                .networkKind(NetworkKind.SITE)
+                .networkKind(NetworkKind.FACILITY)
                 .facilityId(100L)
                 .nodes(List.of(
                         node("site_start"),
@@ -67,7 +67,7 @@ class PortalGraphAssemblerTest {
                 .build();
 
         Map<NetworkKind, String> profileIdByKind = Map.of(
-                NetworkKind.SITE, "person_walk",
+                NetworkKind.FACILITY, "person_walk",
                 NetworkKind.ROAD, "ground_vehicle"
         );
         Map<String, MobilityProfileDTO> profilesById = Map.of(
@@ -104,7 +104,7 @@ class PortalGraphAssemblerTest {
     private static MobilityProfileDTO walkProfile() {
         return MobilityProfileDTO.builder()
                 .profileId("person_walk")
-                .allowedNetworkKinds(List.of(NetworkKind.SITE))
+                .allowedNetworkKinds(List.of(NetworkKind.FACILITY))
                 .layer(NetworkLayer.GROUND)
                 .respectDoors(true)
                 .build();

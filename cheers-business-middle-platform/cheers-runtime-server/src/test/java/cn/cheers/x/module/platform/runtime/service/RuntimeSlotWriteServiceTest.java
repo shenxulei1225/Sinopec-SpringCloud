@@ -64,7 +64,7 @@ class RuntimeSlotWriteServiceTest {
                 .workId("work-1")
                 .entityTypeCode("patrol_task")
                 .slotStatus(SlotStatus.PLANNED.name())
-                .siteId(100L)
+                .facilityId(100L)
                 .build();
         when(scheduleSlotMapper.selectById("slot-1")).thenReturn(existing);
         when(processTimelineService.append(any(ProcessTimelineActionAppendReqDTO.class))).thenReturn(42L);
@@ -91,7 +91,7 @@ class RuntimeSlotWriteServiceTest {
         assertEquals("slot-1", timeline.getTargetId());
         assertEquals("slot.status_update", timeline.getActionCode());
         assertEquals(actualEnd, timeline.getOccurredAt());
-        assertEquals(100L, timeline.getSiteId());
+        assertEquals(100L, timeline.getFacilityId());
     }
 
     @Test
@@ -101,21 +101,21 @@ class RuntimeSlotWriteServiceTest {
                 .runtimeJobId("job-1")
                 .workId("work-1")
                 .slotStatus(SlotStatus.COMPLETED.name())
-                .siteId(100L)
+                .facilityId(100L)
                 .build();
         ScheduleSlotDO planned = ScheduleSlotDO.builder()
                 .id("slot-planned")
                 .runtimeJobId("job-1")
                 .workId("work-1")
                 .slotStatus(SlotStatus.PLANNED.name())
-                .siteId(100L)
+                .facilityId(100L)
                 .build();
         ScheduleSlotDO inProgress = ScheduleSlotDO.builder()
                 .id("slot-running")
                 .runtimeJobId("job-1")
                 .workId("work-1")
                 .slotStatus(SlotStatus.IN_PROGRESS.name())
-                .siteId(100L)
+                .facilityId(100L)
                 .build();
         when(scheduleSlotMapper.selectList(any(LambdaQueryWrapperX.class)))
                 .thenReturn(List.of(completed, planned, inProgress));
@@ -141,6 +141,6 @@ class RuntimeSlotWriteServiceTest {
         assertEquals("runtime_job", timeline.getTargetType());
         assertEquals("job-1", timeline.getTargetId());
         assertEquals("slot.release_unfinished", timeline.getActionCode());
-        assertEquals(100L, timeline.getSiteId());
+        assertEquals(100L, timeline.getFacilityId());
     }
 }

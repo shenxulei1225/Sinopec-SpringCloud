@@ -135,7 +135,7 @@ public class EmergencyEventReportExternalDO extends EmergencyBaseDO {
     /**
      * 场站/工地名称
      */
-    private String siteName;
+    private String facilityName;
 
     /**
      * 事件发生单位类型：enterprise（企业）/ secondary_enterprise（二级单位）/ contractor（承包商单位）

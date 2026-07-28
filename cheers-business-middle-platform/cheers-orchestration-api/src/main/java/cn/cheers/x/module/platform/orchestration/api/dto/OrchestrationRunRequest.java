@@ -24,7 +24,7 @@ public class OrchestrationRunRequest {
     /** 业务域，如 inspection / emergency */
     private String scope;
 
-    private Long siteId;
+    private Long facilityId;
 
     /** 干跑：跑阶段但不执行带副作用的 persist（本波次 expand 仍可写台账，由 Handler 自决） */
     private Boolean dryRun;

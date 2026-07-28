@@ -36,12 +36,12 @@ public class FacilityView {
     /**
      * 所属站场ID
      */
-    private Long siteId;
+    private Long stationId;
 
     /**
      * 所属站场名称
      */
-    private String siteName;
+    private String stationName;
 
     /**
      * 排序号

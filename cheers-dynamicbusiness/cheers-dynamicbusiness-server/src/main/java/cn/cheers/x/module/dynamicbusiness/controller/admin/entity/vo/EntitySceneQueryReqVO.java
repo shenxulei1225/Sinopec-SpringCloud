@@ -41,6 +41,10 @@ public class EntitySceneQueryReqVO extends PageParam {
     @Schema(description = "多独立栏分类求交组。有非空 groups 时优先于 categoryIds；组与组 AND，组内 OR（含子树展开）。")
     private List<CategoryIdGroupReqVO> categoryIdGroups;
 
+    @Schema(description = "经 REF 反查路径编码（白名单）；非空时按分类→目标→REF 查主体，不做主体直接挂靠",
+            example = "task_via_equipment_category")
+    private String categoryViaRefPathCode;
+
     @Schema(description = "实体 ID", example = "100")
     private Long entityId;
 

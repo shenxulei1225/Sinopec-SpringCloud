@@ -1,6 +1,7 @@
 package cn.cheers.x.inspection.inspection_content.dal.dataobject.point;
 
 import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -22,7 +23,8 @@ public class InspectionExecutionPointItemDO extends BaseDO {
     /**
      * 所属站场 ID。
      */
-    private Long siteId;
+    @TableField("site_id")
+    private Long facilityId;
     /**
      * 执行点位 ID。
      */

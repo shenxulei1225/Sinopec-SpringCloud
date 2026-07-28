@@ -13,6 +13,7 @@
 | 历史表 | `dynamicbusiness.flyway_schema_history_dynamicbusiness` |
 | 应用配置 | `application-local.yaml` → `spring.flyway.*` |
 | 数据 seed | `scripts/platform-import/`（**无 DDL**） |
+| 管廊租户 seed | `scripts/platform-import/corridor-tenant/`（`CORRIDOR_TENANT_ID` · zone 模型） |
 | 本机 repair | `scripts/flyway-repair-local.sh` |
 
 ## 当前 classpath 迁移（快照）
@@ -42,8 +43,12 @@
 | V26 | `V26__dm_browse_column_rename.sql` | 布局字段对齐：`column_kind` / `category_column` / `model_tab_category` |
 | V27 | `V27__dm_model_tab_category_split.sql` | 模型管理左侧分类栏独立表；从布局 MODEL 行迁出并删列 |
 | V28 | `V28__dm_data_tab_layout_rename.sql` | `dm_entity_dimension` → `dm_data_tab_layout` |
+| V29 | `V29__category_entity_link_entity_type_code.sql` | link 表 `storage_entity_type_code` → `entity_type_code`；索引重命名（合并时自对方原 V26 重编号，避免与布局迁移撞号） |
+| V30 | `V30__ent_structure.sql` | 构筑物（structure）专用表 `ent_structure`（`facility_id` 必填，`zone_id` 可选；合并时自对方原 V27 重编号） |
 
-下一新增版本应为 **V29**。  
+下一新增版本应为 **V31**。  
+
+> **跨机合并说明**：本机布局迁移已占用 V26–V28 且已执行；对方原 `V26__category_*` / `V27__ent_structure` 在合并后改为 V29/V30。若对方库已按旧文件名执行过 V26/V27，需对齐历史表 `version`/`script` 后 `flyway:repair`，再拉本分支。
 已停用脚本在 `db/backup/flyway-legacy-pre-seed/`，不得放回本目录。
 
 > 上表随发版更新；改版本链时同步更新本节，并遵守通用规范中的历史对齐流程。

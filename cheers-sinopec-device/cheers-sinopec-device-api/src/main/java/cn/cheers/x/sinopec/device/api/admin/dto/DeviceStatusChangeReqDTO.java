@@ -10,8 +10,8 @@ import lombok.Data;
 @Data
 public class DeviceStatusChangeReqDTO {
 
-    @NotNull(message = "站场编号不能为空")
-    private Integer siteId;
+    @NotNull(message = "设施编号不能为空")
+    private Integer facilityId;
 
     @NotBlank(message = "设备编号不能为空")
     private String deviceId;

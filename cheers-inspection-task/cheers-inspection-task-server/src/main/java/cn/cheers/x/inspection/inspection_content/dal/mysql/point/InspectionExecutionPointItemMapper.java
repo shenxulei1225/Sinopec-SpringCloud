@@ -23,7 +23,7 @@ public interface InspectionExecutionPointItemMapper extends BaseMapperX<Inspecti
 
     default List<InspectionExecutionPointItemDO> selectListByCondition(InspectionExecutionPointItemPageReqVO reqVO) {
         return selectList(new LambdaQueryWrapperX<InspectionExecutionPointItemDO>()
-                .eqIfPresent(InspectionExecutionPointItemDO::getSiteId, reqVO.getSiteId())
+                .eqIfPresent(InspectionExecutionPointItemDO::getFacilityId, reqVO.getFacilityId())
                 .eqIfPresent(InspectionExecutionPointItemDO::getPointId, reqVO.getPointId())
                 .eqIfPresent(InspectionExecutionPointItemDO::getItemId, reqVO.getItemId())
                 .eqIfPresent(InspectionExecutionPointItemDO::getEnabled, reqVO.getEnabled())

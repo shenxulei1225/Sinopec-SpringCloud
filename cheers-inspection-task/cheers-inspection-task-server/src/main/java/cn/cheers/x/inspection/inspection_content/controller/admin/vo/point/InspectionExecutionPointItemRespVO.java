@@ -13,7 +13,7 @@ public class InspectionExecutionPointItemRespVO {
     private Long id;
 
     @Schema(description = "站场 ID")
-    private Long siteId;
+    private Long facilityId;
 
     @Schema(description = "点位 ID")
     private Long pointId;

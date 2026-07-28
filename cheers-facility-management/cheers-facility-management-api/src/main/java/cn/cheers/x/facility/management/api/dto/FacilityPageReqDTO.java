@@ -24,7 +24,7 @@ public class FacilityPageReqDTO extends PageParam {
     /**
      * 所属区域ID
      */
-    private Long siteId;
+    private Long stationId;
 
     /**
      * 分类ID

@@ -23,7 +23,7 @@ class ProfileGateTest {
     void siteOnlyProfileRejectsPipelineNetwork() {
         MobilityProfileDTO profile = MobilityProfileDTO.builder()
                 .profileId("person_walk")
-                .allowedNetworkKinds(List.of(NetworkKind.SITE))
+                .allowedNetworkKinds(List.of(NetworkKind.FACILITY))
                 .layer(NetworkLayer.GROUND)
                 .build();
         PathNetworkDTO network = PathNetworkDTO.builder()
@@ -40,12 +40,12 @@ class ProfileGateTest {
     void allowedNetworkKindPasses() {
         MobilityProfileDTO profile = MobilityProfileDTO.builder()
                 .profileId("person_walk")
-                .allowedNetworkKinds(List.of(NetworkKind.SITE))
+                .allowedNetworkKinds(List.of(NetworkKind.FACILITY))
                 .layer(NetworkLayer.GROUND)
                 .build();
         PathNetworkDTO network = PathNetworkDTO.builder()
                 .networkRef("net_site")
-                .networkKind(NetworkKind.SITE)
+                .networkKind(NetworkKind.FACILITY)
                 .build();
 
         assertDoesNotThrow(() -> profileGate.assertAllowed(profile, network));
@@ -55,7 +55,7 @@ class ProfileGateTest {
     void groundRobotRejectsPortalHop() {
         MobilityProfileDTO profile = MobilityProfileDTO.builder()
                 .profileId("ground_robot")
-                .allowedNetworkKinds(List.of(NetworkKind.SITE))
+                .allowedNetworkKinds(List.of(NetworkKind.FACILITY))
                 .layer(NetworkLayer.GROUND)
                 .build();
 

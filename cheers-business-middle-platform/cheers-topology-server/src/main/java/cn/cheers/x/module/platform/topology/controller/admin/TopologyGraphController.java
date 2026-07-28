@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
-@Tag(name = "管理后台 - 站场拓扑图")
+@Tag(name = "管理后台 - 设施拓扑图")
 @RestController
 @RequestMapping("/platform/topology")
 public class TopologyGraphController {
@@ -33,37 +33,37 @@ public class TopologyGraphController {
         return success(topologyGraphService.getGraph(topologyRef));
     }
 
-    @GetMapping("/sites/{siteId}/graph/draft")
-    @Operation(summary = "读取站场草稿拓扑图")
-    public CommonResult<TopologyGraphDTO> getDraft(@PathVariable("siteId") Long siteId) {
-        return success(topologyGraphService.getDraftBySiteId(siteId));
+    @GetMapping("/facilities/{facilityId}/graph/draft")
+    @Operation(summary = "读取设施草稿拓扑图")
+    public CommonResult<TopologyGraphDTO> getDraft(@PathVariable("facilityId") Long facilityId) {
+        return success(topologyGraphService.getDraftByFacilityId(facilityId));
     }
 
-    @PutMapping("/sites/{siteId}/graph")
-    @Operation(summary = "保存站场草稿拓扑图")
+    @PutMapping("/facilities/{facilityId}/graph")
+    @Operation(summary = "保存设施草稿拓扑图")
     public CommonResult<TopologyGraphDTO> saveDraft(
-            @PathVariable("siteId") Long siteId,
+            @PathVariable("facilityId") Long facilityId,
             @Valid @RequestBody TopologyGraphSaveReqDTO request) {
-        return success(topologyGraphService.saveDraft(siteId, request));
+        return success(topologyGraphService.saveDraft(facilityId, request));
     }
 
-    @PostMapping("/sites/{siteId}/graph/publish")
-    @Operation(summary = "发布站场拓扑图")
-    public CommonResult<TopologyGraphDTO> publish(@PathVariable("siteId") Long siteId) {
-        return success(topologyGraphService.publish(siteId));
+    @PostMapping("/facilities/{facilityId}/graph/publish")
+    @Operation(summary = "发布设施拓扑图")
+    public CommonResult<TopologyGraphDTO> publish(@PathVariable("facilityId") Long facilityId) {
+        return success(topologyGraphService.publish(facilityId));
     }
 
-    @PostMapping("/sites/{siteId}/graph/validate")
+    @PostMapping("/facilities/{facilityId}/graph/validate")
     @Operation(summary = "校验拓扑图")
     public CommonResult<TopologyValidateRespDTO> validate(
-            @PathVariable("siteId") Long siteId,
+            @PathVariable("facilityId") Long facilityId,
             @Valid @RequestBody TopologyGraphSaveReqDTO request) {
-        return success(topologyGraphService.validate(siteId, request));
+        return success(topologyGraphService.validate(facilityId, request));
     }
 
-    @PostMapping("/sites/{siteId}/import/legacy")
+    @PostMapping("/facilities/{facilityId}/import/legacy")
     @Operation(summary = "从旧库导入拓扑并保存为草稿")
-    public CommonResult<TopologyGraphDTO> importLegacy(@PathVariable("siteId") Long siteId) {
-        return success(topologyGraphService.importLegacy(siteId));
+    public CommonResult<TopologyGraphDTO> importLegacy(@PathVariable("facilityId") Long facilityId) {
+        return success(topologyGraphService.importLegacy(facilityId));
     }
 }

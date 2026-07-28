@@ -60,7 +60,7 @@ class StopOrderStrategyTest {
         when(mobilityProfileApi.getProfile("person_walk")).thenReturn(CommonResult.success(
                 cn.cheers.x.module.platform.contract.dto.network.MobilityProfileDTO.builder()
                         .profileId("person_walk")
-                        .allowedNetworkKinds(List.of(NetworkKind.SITE))
+                        .allowedNetworkKinds(List.of(NetworkKind.FACILITY))
                         .layer(NetworkLayer.GROUND)
                         .respectDoors(true)
                         .build()));
@@ -94,7 +94,7 @@ class StopOrderStrategyTest {
         when(mobilityProfileApi.getProfile("person_walk")).thenReturn(CommonResult.success(
                 cn.cheers.x.module.platform.contract.dto.network.MobilityProfileDTO.builder()
                         .profileId("person_walk")
-                        .allowedNetworkKinds(List.of(NetworkKind.SITE))
+                        .allowedNetworkKinds(List.of(NetworkKind.FACILITY))
                         .layer(NetworkLayer.GROUND)
                         .respectDoors(true)
                         .build()));
@@ -150,7 +150,7 @@ class StopOrderStrategyTest {
         }
         PathNetworkDTO network = PathNetworkDTO.builder()
                 .networkRef("net_long")
-                .networkKind(NetworkKind.SITE)
+                .networkKind(NetworkKind.FACILITY)
                 .nodes(nodes)
                 .edges(edges)
                 .build();
@@ -194,7 +194,7 @@ class StopOrderStrategyTest {
         }
         PathNetworkDTO network = PathNetworkDTO.builder()
                 .networkRef("net_square")
-                .networkKind(NetworkKind.SITE)
+                .networkKind(NetworkKind.FACILITY)
                 .nodes(nodes)
                 .edges(edges)
                 .build();
@@ -216,7 +216,7 @@ class StopOrderStrategyTest {
     private static PathNetworkDTO linearNetwork() {
         return PathNetworkDTO.builder()
                 .networkRef("net_site")
-                .networkKind(NetworkKind.SITE)
+                .networkKind(NetworkKind.FACILITY)
                 .nodes(List.of(
                         node("w"),
                         node("x"),

@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 public class DeviceDetailsDO {
 
     private Long id;
-    private Integer siteId;
+    private Integer facilityId;
     private String equipmentSerialNo;
     private Integer equipmentType;
     private Integer stateCode;
