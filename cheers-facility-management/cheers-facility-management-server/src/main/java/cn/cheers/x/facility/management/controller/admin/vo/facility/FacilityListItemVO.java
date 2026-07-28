@@ -31,10 +31,10 @@ public class FacilityListItemVO {
     private String categoryName;
 
     @Schema(description = "所属站点ID", example = "1")
-    private Long siteId;
+    private Long stationId;
 
     @Schema(description = "所属站点名称", example = "罐区A")
-    private String siteName;
+    private String stationName;
 
     @Schema(description = "设备类型", example = "TANK")
     private String equipmentType;

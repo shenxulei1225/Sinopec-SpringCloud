@@ -9,7 +9,7 @@ import java.util.List;
  */
 public interface DeviceDetailsMapper {
 
-    List<DeviceDetailsDO> selectListBySiteId(Integer siteId);
+    List<DeviceDetailsDO> selectListByFacilityId(Integer facilityId);
 
     DeviceDetailsDO selectByEquipmentSerialNo(String equipmentSerialNo);
 

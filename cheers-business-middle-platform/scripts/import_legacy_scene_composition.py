@@ -62,7 +62,7 @@ LEGACY_TABLES = tuple(TABLE_ASSET_TYPE.keys()) + ("bs_asset",)
 
 @dataclass(frozen=True)
 class SiteMap:
-    legacy_site_id: str
+    legacy_facility_id: str
     facility_id: int
     scene_code: str
 
@@ -193,17 +193,17 @@ def iter_table_rows(dump: Path, table: str) -> Iterable[dict[str, Any]]:
                 yield dict(zip(columns, vals))
 
 
-def resolve_oil_depot_origin(dump: Path, legacy_site_id: str) -> tuple[float, float]:
+def resolve_oil_depot_origin(dump: Path, legacy_facility_id: str) -> tuple[float, float]:
     """站心：bs_3d_oil_depot 该站首条有效 GPS（与老栈 ensureMapOriginFromOilDepot 一致）。"""
     for row in iter_table_rows(dump, "bs_3d_oil_depot"):
-        if str(row.get("site_id") or "") != legacy_site_id:
+        if str(row.get("facility_id") or row.get("site_id") or row.get("facilityId") or row.get("siteId") or "") != legacy_facility_id:
             continue
         lon = row.get("longitude")
         lat = row.get("latitude")
         if lon is None or lat is None or lon == "" or lat == "":
             continue
         return float(lon), float(lat)
-    raise RuntimeError(f"site {legacy_site_id}: dump 中无 bs_3d_oil_depot 原点，请传 --origin-lon/--origin-lat")
+    raise RuntimeError(f"facility {legacy_facility_id}: dump 中无 bs_3d_oil_depot 原点，请传 --origin-lon/--origin-lat")
 
 
 def lonlat_to_local_meters(lon: float, lat: float, origin_lon: float, origin_lat: float) -> tuple[float, float]:
@@ -449,7 +449,7 @@ def import_site(
     # bs_asset: id -> lon/lat
     asset_gps: dict[Any, tuple[float, float]] = {}
     for row in iter_table_rows(dump, "bs_asset"):
-        if str(row.get("site_id") or row.get("siteId") or "") != site.legacy_site_id:
+        if str(row.get("facility_id") or row.get("site_id") or row.get("facilityId") or row.get("siteId") or "") != site.legacy_facility_id:
             continue
         lon = row.get("longitude") or row.get("lon")
         lat = row.get("latitude") or row.get("lat")
@@ -459,15 +459,15 @@ def import_site(
 
     # 站心：优先 CLI；否则 bs_3d_oil_depot（禁止构筑物均值冒充）
     if origin_lon is None or origin_lat is None:
-        origin_lon, origin_lat = resolve_oil_depot_origin(dump, site.legacy_site_id)
+        origin_lon, origin_lat = resolve_oil_depot_origin(dump, site.legacy_facility_id)
     print(f"  origin lon={origin_lon:.6f} lat={origin_lat:.6f} (oil-depot/cli)")
 
     for table, asset_type in TABLE_ASSET_TYPE.items():
         count = 0
         skipped = 0
         for row in iter_table_rows(dump, table):
-            site_id = str(row.get("site_id") or row.get("siteId") or "")
-            if site_id and site_id != site.legacy_site_id:
+            facility_id = str(row.get("facility_id") or row.get("site_id") or row.get("facilityId") or row.get("siteId") or "")
+            if facility_id and facility_id != site.legacy_facility_id:
                 continue
             legacy_id = row.get("id")
             if legacy_id is None:
@@ -483,7 +483,7 @@ def import_site(
             if shared:
                 asset_code, asset_display_name = shared
             else:
-                asset_code = f"LEGACY-{asset_type}-{site.legacy_site_id}-{legacy_id}"
+                asset_code = f"LEGACY-{asset_type}-{site.legacy_facility_id}-{legacy_id}"
                 if len(asset_code) > 64:
                     asset_code = asset_code[:64]
                 asset_display_name = name

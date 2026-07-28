@@ -34,7 +34,7 @@ public class ProcessTimelineServiceImpl implements ProcessTimelineService {
             throw ServiceExceptionUtil.exception(ErrorCodeConstants.PROCESS_TIMELINE_APPEND_INVALID);
         }
         ProcessTimelineActionDO row = ProcessTimelineActionDO.builder()
-                .siteId(request.getSiteId())
+                .facilityId(request.getFacilityId())
                 .targetType(request.getTargetType().trim())
                 .targetId(request.getTargetId().trim())
                 .occurredAt(request.getOccurredAt())
@@ -81,7 +81,7 @@ public class ProcessTimelineServiceImpl implements ProcessTimelineService {
                 .actionCode(row.getActionCode())
                 .howSummary(row.getHowSummary())
                 .payloadJson(row.getPayloadJson())
-                .siteId(row.getSiteId())
+                .facilityId(row.getFacilityId())
                 .source("platform")
                 .build();
     }

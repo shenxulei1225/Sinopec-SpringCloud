@@ -43,5 +43,5 @@ public class ProcessCapabilityBindingDO extends TenantBaseDO {
 
     private Integer version;
 
-    private Long siteId;
+    private Long facilityId;
 }

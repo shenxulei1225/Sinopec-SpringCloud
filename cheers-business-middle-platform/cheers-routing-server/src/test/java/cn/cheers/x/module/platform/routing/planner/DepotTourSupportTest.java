@@ -22,7 +22,7 @@ class DepotTourSupportTest {
         // 线性 h — c — b — a；中间序 a,b,c 应反转为 c,b,a 再闭环
         PathNetworkDTO network = PathNetworkDTO.builder()
                 .networkRef("net_depot")
-                .networkKind(NetworkKind.SITE)
+                .networkKind(NetworkKind.FACILITY)
                 .nodes(List.of(
                         node("h", 0, 0),
                         node("c", 1, 0),

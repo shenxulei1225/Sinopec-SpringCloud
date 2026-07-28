@@ -21,7 +21,7 @@ public interface RuntimeQueryService {
             OffsetDateTime to,
             String resourceId,
             String entityTypeCode,
-            Long siteId,
+            Long facilityId,
             List<SlotStatus> slotStatuses);
 
     List<ScheduleSlotDTO> listSlotsByJobId(String runtimeJobId);

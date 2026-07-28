@@ -19,9 +19,9 @@ public interface InspectionExecutionPointMapper extends BaseMapperX<InspectionEx
         return selectList(InspectionExecutionPointDO::getObjectId, objectId);
     }
 
-    default List<InspectionExecutionPointDO> selectListBySiteIdAndStatus(Long siteId, String status) {
+    default List<InspectionExecutionPointDO> selectListByFacilityIdAndStatus(Long facilityId, String status) {
         return selectList(new LambdaQueryWrapperX<InspectionExecutionPointDO>()
-                .eqIfPresent(InspectionExecutionPointDO::getSiteId, siteId)
+                .eqIfPresent(InspectionExecutionPointDO::getFacilityId, facilityId)
                 .eqIfPresent(InspectionExecutionPointDO::getStatus, status));
     }
 
@@ -29,7 +29,7 @@ public interface InspectionExecutionPointMapper extends BaseMapperX<InspectionEx
         return selectList(new LambdaQueryWrapperX<InspectionExecutionPointDO>()
                 .likeIfPresent(InspectionExecutionPointDO::getPointName, reqVO.getPointName())
                 .likeIfPresent(InspectionExecutionPointDO::getPointCode, reqVO.getPointCode())
-                .eqIfPresent(InspectionExecutionPointDO::getSiteId, reqVO.getSiteId())
+                .eqIfPresent(InspectionExecutionPointDO::getFacilityId, reqVO.getFacilityId())
                 .eqIfPresent(InspectionExecutionPointDO::getObjectId, reqVO.getObjectId())
                 .eqIfPresent(InspectionExecutionPointDO::getDeviceType, reqVO.getDeviceType())
                 .eqIfPresent(InspectionExecutionPointDO::getStatus, reqVO.getStatus())

@@ -14,7 +14,7 @@ import lombok.EqualsAndHashCode;
 public class FacilitySearchReqVO extends PageParam {
 
     @Schema(description = "站点ID")
-    private Long siteId;
+    private Long stationId;
 
     @Schema(description = "用户ID")
     private Long userId;

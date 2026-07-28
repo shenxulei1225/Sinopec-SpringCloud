@@ -14,7 +14,7 @@ public class InspectionObjectPageReqVO {
     private String objectCode;
 
     @Schema(description = "站场 ID")
-    private Long siteId;
+    private Long facilityId;
 
     @Schema(description = "对象类型")
     private String objectType;

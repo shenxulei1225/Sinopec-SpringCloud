@@ -30,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from mercator_scene import scene_to_lon_lat  # noqa: E402
 from refit_legacy_transforms import iter_table_rows, load_oil_depot_origins  # noqa: E402
 
-LEGACY_SITE_ID = "121212"
+LEGACY_FACILITY_ID = "121212"
 SCENE_CODE = "SCENE-JINQIAO"
 # dump 表 → instance_code 前缀
 DIRECT_TABLES = {
@@ -54,7 +54,7 @@ def load_direct_gps(dump: Path) -> dict[str, tuple[float, float]]:
     out: dict[str, tuple[float, float]] = {}
     for table, prefix in DIRECT_TABLES.items():
         for row in iter_table_rows(dump, table):
-            if str(row.get("site_id") or row.get("siteId") or "") != LEGACY_SITE_ID:
+            if str(row.get("facility_id") or row.get("site_id") or row.get("facilityId") or row.get("siteId") or "") != LEGACY_FACILITY_ID:
                 continue
             legacy_id = row.get("id")
             if legacy_id is None:
@@ -94,7 +94,7 @@ def main() -> int:
     print(f"dump 直读 GPS: {len(direct)} 条 (house/pot/asset)")
 
     origins = load_oil_depot_origins(args.dump)
-    origin = origins.get(LEGACY_SITE_ID)
+    origin = origins.get(LEGACY_FACILITY_ID)
     if args.origin_lon is not None and args.origin_lat is not None:
         origin_lon, origin_lat = args.origin_lon, args.origin_lat
     elif origin:

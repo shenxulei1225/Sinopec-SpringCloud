@@ -5,7 +5,7 @@ package cn.cheers.x.module.platform.contract.enums;
  */
 public enum NetworkKind {
 
-    SITE,
+    FACILITY,
     PIPELINE,
     ROAD,
     PERIMETER,

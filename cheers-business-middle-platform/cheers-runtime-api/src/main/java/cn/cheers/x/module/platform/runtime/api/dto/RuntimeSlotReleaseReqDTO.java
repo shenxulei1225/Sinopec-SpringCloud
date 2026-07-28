@@ -28,5 +28,5 @@ public class RuntimeSlotReleaseReqDTO {
     /** 业务原因文案，写入过程时间线摘要 */
     private String reason;
 
-    private Long siteId;
+    private Long facilityId;
 }

@@ -5,7 +5,7 @@
   "networks": [
     {
       "networkRef": "net_100_site_v1",
-      "networkKind": "SITE",
+      "networkKind": "FACILITY",
       "facilityId": 100,
       "status": "PUBLISHED",
       "version": 1,

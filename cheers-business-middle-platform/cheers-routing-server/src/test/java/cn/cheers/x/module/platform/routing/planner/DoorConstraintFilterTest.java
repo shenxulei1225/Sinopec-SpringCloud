@@ -27,7 +27,7 @@ class DoorConstraintFilterTest {
     void groundWalkCrossZoneWithoutDoorRemovesEdgeAndPathIsUnreachable() {
         PathNetworkDTO network = PathNetworkDTO.builder()
                 .networkRef("net_site")
-                .networkKind(NetworkKind.SITE)
+                .networkKind(NetworkKind.FACILITY)
                 .nodes(List.of(
                         node("a", NodeType.STATION, NetworkLayer.GROUND, 1L),
                         node("b", NodeType.STATION, NetworkLayer.GROUND, 2L)
@@ -49,7 +49,7 @@ class DoorConstraintFilterTest {
     void groundWalkCrossZoneViaDoorKeepsEdgesAndPathIsReachable() {
         PathNetworkDTO network = PathNetworkDTO.builder()
                 .networkRef("net_site")
-                .networkKind(NetworkKind.SITE)
+                .networkKind(NetworkKind.FACILITY)
                 .nodes(List.of(
                         node("a", NodeType.STATION, NetworkLayer.GROUND, 1L),
                         node("d", NodeType.DOOR, NetworkLayer.GROUND, 1L),
@@ -77,7 +77,7 @@ class DoorConstraintFilterTest {
     void uavLowIgnoresGroundCrossZoneAndKeepsOnlyAirEdges() {
         PathNetworkDTO network = PathNetworkDTO.builder()
                 .networkRef("net_site")
-                .networkKind(NetworkKind.SITE)
+                .networkKind(NetworkKind.FACILITY)
                 .nodes(List.of(
                         node("a", NodeType.STATION, NetworkLayer.GROUND, 1L),
                         node("b", NodeType.STATION, NetworkLayer.GROUND, 2L)
@@ -89,7 +89,7 @@ class DoorConstraintFilterTest {
                 .build();
         MobilityProfileDTO profile = MobilityProfileDTO.builder()
                 .profileId("uav_low")
-                .allowedNetworkKinds(List.of(NetworkKind.SITE))
+                .allowedNetworkKinds(List.of(NetworkKind.FACILITY))
                 .layer(NetworkLayer.AIR)
                 .respectDoors(false)
                 .build();
@@ -109,7 +109,7 @@ class DoorConstraintFilterTest {
     private static MobilityProfileDTO groundProfile(String profileId) {
         return MobilityProfileDTO.builder()
                 .profileId(profileId)
-                .allowedNetworkKinds(List.of(NetworkKind.SITE))
+                .allowedNetworkKinds(List.of(NetworkKind.FACILITY))
                 .layer(NetworkLayer.GROUND)
                 .respectDoors(true)
                 .build();

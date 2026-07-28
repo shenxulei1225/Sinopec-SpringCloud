@@ -19,7 +19,7 @@ class GraphViewBlockedEdgeTest {
     void blockedEdgeNotInAdjacency() {
         PathNetworkDTO net = PathNetworkDTO.builder()
                 .networkRef("net_t")
-                .networkKind(NetworkKind.SITE)
+                .networkKind(NetworkKind.FACILITY)
                 .nodes(List.of(node("A"), node("B"), node("C")))
                 .edges(List.of(
                         PathEdgeDTO.builder()

@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 public class EquipmentRealTimePathDO {
 
     private Long id;
-    private Integer siteId;
+    private Integer facilityId;
     private String taskId;
     private String deviceSerialNo;
     private String longitude;

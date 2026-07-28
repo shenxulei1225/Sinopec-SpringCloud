@@ -194,7 +194,7 @@ public interface EmergencyEventConvert {
             @Mapping(target = "pipelineName", ignore = true),
             @Mapping(target = "sectionName", ignore = true),
             @Mapping(target = "unitName", ignore = true),
-            @Mapping(target = "siteName", ignore = true),
+            @Mapping(target = "facilityName", ignore = true),
             @Mapping(target = "eventOrgType", ignore = true),
             @Mapping(target = "eventOrgName", ignore = true),
             @Mapping(target = "descriptionPart2", ignore = true),

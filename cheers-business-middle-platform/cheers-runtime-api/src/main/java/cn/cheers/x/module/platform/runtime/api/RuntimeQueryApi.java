@@ -28,7 +28,7 @@ public interface RuntimeQueryApi {
             @RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to,
             @RequestParam(value = "resourceId", required = false) String resourceId,
             @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode,
-            @RequestParam(value = "siteId", required = false) Long siteId,
+            @RequestParam(value = "facilityId", required = false) Long facilityId,
             @RequestParam(value = "slotStatuses", required = false) List<SlotStatus> slotStatuses);
 
     @GetMapping(PREFIX + "/jobs/{runtimeJobId}/slots")

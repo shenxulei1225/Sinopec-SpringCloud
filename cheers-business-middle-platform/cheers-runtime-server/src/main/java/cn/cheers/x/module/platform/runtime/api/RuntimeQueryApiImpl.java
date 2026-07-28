@@ -26,9 +26,9 @@ public class RuntimeQueryApiImpl implements RuntimeQueryApi {
             OffsetDateTime to,
             String resourceId,
             String entityTypeCode,
-            Long siteId,
+            Long facilityId,
             List<SlotStatus> slotStatuses) {
-        return success(runtimeQueryService.listSlots(from, to, resourceId, entityTypeCode, siteId, slotStatuses));
+        return success(runtimeQueryService.listSlots(from, to, resourceId, entityTypeCode, facilityId, slotStatuses));
     }
 
     @Override

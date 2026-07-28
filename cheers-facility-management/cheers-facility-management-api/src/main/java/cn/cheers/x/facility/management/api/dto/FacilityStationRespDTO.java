@@ -1,41 +1,34 @@
-package cn.cheers.x.facility.management.service.query.model;
+package cn.cheers.x.facility.management.api.dto;
 
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
 
 /**
- * 站场视图对象（读模型）
+ * 站场（动态业务 ent_facility）响应 DTO
  */
 @Data
-public class SiteView {
+public class FacilityStationRespDTO {
 
     /**
-     * 站场ID
+     * 站场 ID
      */
-    private Long siteId;
+    private Long facilityId;
 
     /**
      * 站场编码
      */
-    private String siteCode;
+    private String facilityCode;
 
     /**
      * 站场名称
      */
-    private String siteName;
+    private String facilityName;
 
     /**
-     * 父级节点ID
+     * 父级节点 ID（无 fac_site 层级时恒为 0）
      */
     private Long parentId;
-
-    /**
-     * 父级节点名称
-     */
-    private String parentName;
 
     /**
      * 排序号
@@ -46,21 +39,6 @@ public class SiteView {
      * 节点类型：1-分组，2-站场
      */
     private Integer nodeType;
-
-    /**
-     * 节点类型描述
-     */
-    private String nodeTypeDesc;
-
-    /**
-     * 站场类型ID
-     */
-    private Long siteTypeId;
-
-    /**
-     * 站场类型名称
-     */
-    private String siteTypeName;
 
     /**
      * 层级
@@ -113,11 +91,6 @@ public class SiteView {
     private String email;
 
     /**
-     * 路由URL
-     */
-    private String routingUrl;
-
-    /**
      * 经度
      */
     private BigDecimal longitude;
@@ -128,28 +101,8 @@ public class SiteView {
     private BigDecimal latitude;
 
     /**
-     * 负责人用户ID
-     */
-    private Integer ownerUserId;
-
-    /**
      * 备注
      */
     private String remark;
-
-    /**
-     * 创建时间
-     */
-    private LocalDateTime createTime;
-
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updateTime;
-
-    /**
-     * 子节点列表
-     */
-    private List<SiteView> children;
 
 }

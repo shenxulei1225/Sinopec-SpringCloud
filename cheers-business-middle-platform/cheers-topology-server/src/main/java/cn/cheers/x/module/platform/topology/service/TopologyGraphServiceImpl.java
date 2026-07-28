@@ -45,22 +45,22 @@ public class TopologyGraphServiceImpl implements TopologyGraphService {
     }
 
     @Override
-    public TopologyGraphDTO getDraftBySiteId(Long siteId) {
-        TopologyGraphDO draft = topologyGraphMapper.selectDraftBySiteId(siteId);
+    public TopologyGraphDTO getDraftByFacilityId(Long facilityId) {
+        TopologyGraphDO draft = topologyGraphMapper.selectDraftByFacilityId(facilityId);
         if (draft == null) {
-            return emptyDraft(siteId);
+            return emptyDraft(facilityId);
         }
         return toDto(draft);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public TopologyGraphDTO saveDraft(Long siteId, TopologyGraphSaveReqDTO request) {
-        String draftId = draftId(siteId);
+    public TopologyGraphDTO saveDraft(Long facilityId, TopologyGraphSaveReqDTO request) {
+        String draftId = draftId(facilityId);
         TopologyGraphDO existing = topologyGraphMapper.selectById(draftId);
         TopologyGraphDO graph = TopologyGraphDO.builder()
                 .id(draftId)
-                .siteId(siteId)
+                .facilityId(facilityId)
                 .status(GraphStatus.DRAFT)
                 .version(0)
                 .nodes(toJson(request.getNodes()))
@@ -77,17 +77,17 @@ public class TopologyGraphServiceImpl implements TopologyGraphService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public TopologyGraphDTO publish(Long siteId) {
-        TopologyGraphDO draft = topologyGraphMapper.selectDraftBySiteId(siteId);
+    public TopologyGraphDTO publish(Long facilityId) {
+        TopologyGraphDO draft = topologyGraphMapper.selectDraftByFacilityId(facilityId);
         if (draft == null) {
             throw exception(TOPOLOGY_GRAPH_NOT_FOUND);
         }
-        TopologyGraphDO latest = topologyGraphMapper.selectLatestPublishedBySiteId(siteId);
+        TopologyGraphDO latest = topologyGraphMapper.selectLatestPublishedByFacilityId(facilityId);
         int nextVersion = latest != null ? latest.getVersion() + 1 : 1;
-        String publishedId = publishedId(siteId, nextVersion);
+        String publishedId = publishedId(facilityId, nextVersion);
         TopologyGraphDO published = TopologyGraphDO.builder()
                 .id(publishedId)
-                .siteId(siteId)
+                .facilityId(facilityId)
                 .status(GraphStatus.PUBLISHED)
                 .version(nextVersion)
                 .nodes(draft.getNodes())
@@ -99,15 +99,15 @@ public class TopologyGraphServiceImpl implements TopologyGraphService {
     }
 
     @Override
-    public TopologyValidateRespDTO validate(Long siteId, TopologyGraphSaveReqDTO request) {
+    public TopologyValidateRespDTO validate(Long facilityId, TopologyGraphSaveReqDTO request) {
         return doValidate(request);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public TopologyGraphDTO importLegacy(Long siteId) {
-        TopologyGraphSaveReqDTO imported = legacyTopologyImportAdapter.importGraph(siteId);
-        return saveDraft(siteId, imported);
+    public TopologyGraphDTO importLegacy(Long facilityId) {
+        TopologyGraphSaveReqDTO imported = legacyTopologyImportAdapter.importGraph(facilityId);
+        return saveDraft(facilityId, imported);
     }
 
     static TopologyValidateRespDTO doValidate(TopologyGraphSaveReqDTO request) {
@@ -158,10 +158,10 @@ public class TopologyGraphServiceImpl implements TopologyGraphService {
                 .build();
     }
 
-    private static TopologyGraphDTO emptyDraft(Long siteId) {
+    private static TopologyGraphDTO emptyDraft(Long facilityId) {
         return TopologyGraphDTO.builder()
-                .topologyRef(draftId(siteId))
-                .siteId(siteId)
+                .topologyRef(draftId(facilityId))
+                .facilityId(facilityId)
                 .status(GraphStatus.DRAFT)
                 .version(0)
                 .nodes(List.of())
@@ -170,18 +170,18 @@ public class TopologyGraphServiceImpl implements TopologyGraphService {
                 .build();
     }
 
-    static String draftId(Long siteId) {
-        return "topo_" + siteId + "_draft";
+    static String draftId(Long facilityId) {
+        return "topo_" + facilityId + "_draft";
     }
 
-    static String publishedId(Long siteId, int version) {
-        return "topo_" + siteId + "_v" + version;
+    static String publishedId(Long facilityId, int version) {
+        return "topo_" + facilityId + "_v" + version;
     }
 
     static TopologyGraphDTO toDto(TopologyGraphDO graph) {
         return TopologyGraphDTO.builder()
                 .topologyRef(graph.getId())
-                .siteId(graph.getSiteId())
+                .facilityId(graph.getFacilityId())
                 .status(graph.getStatus())
                 .version(graph.getVersion())
                 .nodes(parseList(graph.getNodes(), TopologyNodeDTO.class))

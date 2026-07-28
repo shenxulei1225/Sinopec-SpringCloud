@@ -87,11 +87,11 @@ class PathNetworkServiceTest {
     @Test
     void publishRejectsInvalidCrossZoneDraft() {
         Long facilityId = 42L;
-        NetworkKind kind = NetworkKind.SITE;
+        NetworkKind kind = NetworkKind.FACILITY;
         PathNetworkDO draft = PathNetworkDO.builder()
                 .id("net_42_site_draft")
                 .facilityId(facilityId)
-                .networkKind("SITE")
+                .networkKind("FACILITY")
                 .status("DRAFT")
                 .version(0)
                 .nodes(JSON.toJSONString(List.of(
@@ -99,7 +99,7 @@ class PathNetworkServiceTest {
                         node("b", NodeType.STATION, NetworkLayer.GROUND, 2L))))
                 .edges(JSON.toJSONString(List.of(edge("e1", "a", "b", null))))
                 .build();
-        when(pathNetworkMapper.selectDraftByFacilityIdAndKind(facilityId, "SITE")).thenReturn(draft);
+        when(pathNetworkMapper.selectDraftByFacilityIdAndKind(facilityId, "FACILITY")).thenReturn(draft);
 
         ServiceException ex = assertThrows(ServiceException.class,
                 () -> pathNetworkService.publish(facilityId, kind));
@@ -111,18 +111,18 @@ class PathNetworkServiceTest {
     @Test
     void publishInsertsPublishedVersionAndKeepsDraft() {
         Long facilityId = 42L;
-        NetworkKind kind = NetworkKind.SITE;
+        NetworkKind kind = NetworkKind.FACILITY;
         PathNetworkDO draft = PathNetworkDO.builder()
                 .id("net_42_site_draft")
                 .facilityId(facilityId)
-                .networkKind("SITE")
+                .networkKind("FACILITY")
                 .status("DRAFT")
                 .version(0)
                 .nodes("[]")
                 .edges("[]")
                 .build();
-        when(pathNetworkMapper.selectDraftByFacilityIdAndKind(facilityId, "SITE")).thenReturn(draft);
-        when(pathNetworkMapper.selectLatestPublishedByFacilityIdAndKind(facilityId, "SITE")).thenReturn(null);
+        when(pathNetworkMapper.selectDraftByFacilityIdAndKind(facilityId, "FACILITY")).thenReturn(draft);
+        when(pathNetworkMapper.selectLatestPublishedByFacilityIdAndKind(facilityId, "FACILITY")).thenReturn(null);
 
         pathNetworkService.publish(facilityId, kind);
 
@@ -134,7 +134,7 @@ class PathNetworkServiceTest {
     private static PathNetworkDTO network(List<PathNodeDTO> nodes, List<PathEdgeDTO> edges) {
         return PathNetworkDTO.builder()
                 .facilityId(1L)
-                .networkKind(NetworkKind.SITE)
+                .networkKind(NetworkKind.FACILITY)
                 .nodes(nodes)
                 .edges(edges)
                 .build();

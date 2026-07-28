@@ -40,9 +40,9 @@ public class FacilityWorkbenchController {
     @GetMapping("/category-tree")
     @Operation(summary = "获取设施分类树（legacy接口）")
     public CommonResult<FacilityCategoryTreeResponse> getCategoryTree(
-            @Parameter(description = "站点ID") @RequestParam(required = false) Long siteId,
+            @Parameter(description = "站点ID") @RequestParam(required = false) Long stationId,
             @Parameter(description = "用户ID") @RequestParam(required = false) Long userId) {
-        List<FacilityTreeNodeVO> tree = facilityQueryService.getFacilityTree(siteId);
+        List<FacilityTreeNodeVO> tree = facilityQueryService.getFacilityTree(stationId);
         FacilityCategoryTreeResponse response = new FacilityCategoryTreeResponse();
         response.setTree(tree);
         response.setFacilitiesType(facilityQueryService.getFacilityTypes());
@@ -52,7 +52,7 @@ public class FacilityWorkbenchController {
     @GetMapping("/workbench/search-list")
     @Operation(summary = "搜索设施列表（legacy接口）")
     public CommonResult<PageResult<FacilityListItemVO>> searchFacilityList(
-            @Parameter(description = "站点ID") @RequestParam(required = false) Long siteId,
+            @Parameter(description = "站点ID") @RequestParam(required = false) Long stationId,
             @Parameter(description = "用户ID") @RequestParam(required = false) Long userId,
             @Parameter(description = "设备类型") @RequestParam(required = false) String equipmentType,
             @Parameter(description = "设施类型") @RequestParam(required = false) String facilitiesType,
@@ -62,7 +62,7 @@ public class FacilityWorkbenchController {
             @Parameter(description = "当前页") @RequestParam(required = false, defaultValue = "1") Integer pageNo,
             @Parameter(description = "每页条数") @RequestParam(required = false, defaultValue = "10") Integer pageSize) {
         FacilitySearchReqVO reqVO = new FacilitySearchReqVO();
-        reqVO.setSiteId(siteId);
+        reqVO.setStationId(stationId);
         reqVO.setUserId(userId);
         reqVO.setEquipmentType(equipmentType);
         reqVO.setFacilitiesType(facilitiesType);
@@ -133,8 +133,8 @@ public class FacilityWorkbenchController {
         vo.setFacilityTypeDesc(view.getCategoryName());
         vo.setCategoryId(view.getCategoryId());
         vo.setCategoryName(view.getCategoryName());
-        vo.setSiteId(view.getSiteId());
-        vo.setSiteName(view.getSiteName());
+        vo.setStationId(view.getStationId());
+        vo.setStationName(view.getStationName());
         vo.setStatus(view.getStatus());
         vo.setDescription(view.getRemark());
         return vo;
@@ -154,8 +154,8 @@ public class FacilityWorkbenchController {
         vo.setFacilityTypeDesc(view.getCategoryName());
         vo.setCategoryId(view.getCategoryId());
         vo.setCategoryName(view.getCategoryName());
-        vo.setSiteId(view.getSiteId());
-        vo.setSiteName(view.getSiteName());
+        vo.setStationId(view.getStationId());
+        vo.setStationName(view.getStationName());
         vo.setStatus(view.getStatus());
         vo.setDescription(view.getRemark());
         return vo;

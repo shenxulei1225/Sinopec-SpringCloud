@@ -57,7 +57,7 @@ class MobilityProfileQueryTest {
                 .orElseThrow();
         assertEquals("低空UAV", uavLow.getDisplayName());
         assertEquals(NetworkLayer.AIR, uavLow.getLayer());
-        assertEquals(List.of(NetworkKind.SITE, NetworkKind.PERIMETER, NetworkKind.PIPELINE),
+        assertEquals(List.of(NetworkKind.FACILITY, NetworkKind.PERIMETER, NetworkKind.PIPELINE),
                 uavLow.getAllowedNetworkKinds());
         assertFalse(uavLow.getRespectDoors());
         assertTrue(uavLow.getAllowPortalHop());

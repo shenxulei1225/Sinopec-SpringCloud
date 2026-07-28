@@ -71,7 +71,7 @@ public class PolicySnapshotServiceImpl implements PolicySnapshotService {
                 .platformLawVersion(DEFAULT_PLATFORM_LAW_VERSION)
                 .resolvedSpec(policySet.getSpecParams())
                 .provenanceIndex(provenanceIndex)
-                .siteId(policySet.getSiteId())
+                .facilityId(policySet.getFacilityId())
                 .build();
         policySnapshotMapper.insert(snapshot);
         return snapshot;

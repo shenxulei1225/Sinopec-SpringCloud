@@ -22,10 +22,10 @@ public class ScheduleOrchestrationServiceImpl implements ScheduleOrchestrationSe
     private MaintenanceApi maintenanceApi;
 
     @Override
-    public ScheduleRunResponse runSchedule(ScheduleRunRequest request, Long siteId) {
+    public ScheduleRunResponse runSchedule(ScheduleRunRequest request, Long facilityId) {
         validateBasic(request);
         validateDispatchPreconditions(request);
-        return orchestrationRunner.run(request, siteId);
+        return orchestrationRunner.run(request, facilityId);
     }
 
     private void validateBasic(ScheduleRunRequest request) {

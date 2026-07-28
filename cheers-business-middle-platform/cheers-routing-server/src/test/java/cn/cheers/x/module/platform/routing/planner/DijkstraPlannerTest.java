@@ -24,7 +24,7 @@ class DijkstraPlannerTest {
     void unreachableThrowsRouteUnreachable() {
         PathNetworkDTO network = PathNetworkDTO.builder()
                 .networkRef("net_test")
-                .networkKind(NetworkKind.SITE)
+                .networkKind(NetworkKind.FACILITY)
                 .nodes(List.of(node("a"), node("b")))
                 .edges(List.of())
                 .build();
@@ -39,7 +39,7 @@ class DijkstraPlannerTest {
     void threeEdgePathCostSumsImpedances() {
         PathNetworkDTO network = PathNetworkDTO.builder()
                 .networkRef("net_test")
-                .networkKind(NetworkKind.SITE)
+                .networkKind(NetworkKind.FACILITY)
                 .nodes(List.of(node("a"), node("b"), node("c"), node("d")))
                 .edges(List.of(
                         edge("e1", "a", "b", 10D),

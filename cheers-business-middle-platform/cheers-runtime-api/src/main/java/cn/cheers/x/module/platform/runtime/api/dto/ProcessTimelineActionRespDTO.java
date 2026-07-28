@@ -25,7 +25,7 @@ public class ProcessTimelineActionRespDTO {
     private String actionCode;
     private String howSummary;
     private String payloadJson;
-    private Long siteId;
+    private Long facilityId;
     /** platform | （读侧门面可标注） */
     private String source;
 }

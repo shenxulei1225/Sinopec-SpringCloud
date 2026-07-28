@@ -66,7 +66,7 @@ public final class RuntimeConvert {
                 .build();
     }
 
-    public static RuntimeJobDO toJobDo(RuntimeJobDTO dto, Long siteId) {
+    public static RuntimeJobDO toJobDo(RuntimeJobDTO dto, Long facilityId) {
         return RuntimeJobDO.builder()
                 .id(dto.getRuntimeJobId())
                 .entityTypeCode(dto.getEntityTypeCode())
@@ -75,11 +75,11 @@ public final class RuntimeConvert {
                 .sourceWorkIds(JSON.toJSONString(dto.getSourceWorkIds() != null ? dto.getSourceWorkIds() : Collections.emptyList()))
                 .policySnapshotId(dto.getPolicySnapshotId())
                 .orchestrationRef(dto.getOrchestrationRef())
-                .siteId(siteId)
+                .facilityId(facilityId)
                 .build();
     }
 
-    public static ScheduleSlotDO toSlotDo(ScheduleSlotDTO dto, Long siteId) {
+    public static ScheduleSlotDO toSlotDo(ScheduleSlotDTO dto, Long facilityId) {
         return ScheduleSlotDO.builder()
                 .id(dto.getSlotId())
                 .runtimeJobId(dto.getRuntimeJobId())
@@ -95,7 +95,7 @@ public final class RuntimeConvert {
                 .slotStatus(dto.getSlotStatus() != null ? dto.getSlotStatus().name() : SlotStatus.PLANNED.name())
                 .policySnapshotId(dto.getPolicySnapshotId())
                 .decisionTraceId(dto.getDecisionTraceId())
-                .siteId(siteId)
+                .facilityId(facilityId)
                 .build();
     }
 

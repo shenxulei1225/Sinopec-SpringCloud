@@ -8,5 +8,5 @@ import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunResponse;
  */
 public interface ScheduleOrchestrationService {
 
-    ScheduleRunResponse runSchedule(ScheduleRunRequest request, Long siteId);
+    ScheduleRunResponse runSchedule(ScheduleRunRequest request, Long facilityId);
 }

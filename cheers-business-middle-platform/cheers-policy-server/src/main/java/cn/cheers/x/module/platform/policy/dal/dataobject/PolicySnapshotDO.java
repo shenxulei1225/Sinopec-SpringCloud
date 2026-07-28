@@ -39,5 +39,5 @@ public class PolicySnapshotDO extends TenantBaseDO {
     @TableField(typeHandler = JsonbStringTypeHandler.class)
     private String provenanceIndex;
 
-    private Long siteId;
+    private Long facilityId;
 }

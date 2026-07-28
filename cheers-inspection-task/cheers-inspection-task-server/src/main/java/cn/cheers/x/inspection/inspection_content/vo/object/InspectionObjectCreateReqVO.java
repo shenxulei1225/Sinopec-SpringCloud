@@ -10,7 +10,7 @@ public class InspectionObjectCreateReqVO {
 
     private String objectCode;
     private String objectName;
-    private Long siteId;
+    private Long facilityId;
     private String objectType;
     private Long sourceFacilityId;
     private Long ascriptionId;

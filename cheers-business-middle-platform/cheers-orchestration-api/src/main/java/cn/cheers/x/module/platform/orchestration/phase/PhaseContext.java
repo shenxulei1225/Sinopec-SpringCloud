@@ -39,7 +39,7 @@ public class PhaseContext {
     private boolean dryRun;
     private OrchestrationPhase stopAfterPhase;
     private String policySnapshotId;
-    private Long siteId;
+    private Long facilityId;
 
     @Builder.Default
     private Map<String, Object> attributes = new HashMap<>();

@@ -13,10 +13,10 @@ public interface RuntimePersistService {
     /**
      * 保存运行作业及其计划点。
      */
-    void saveJobWithSlots(RuntimeJobDTO job, List<ScheduleSlotDTO> slots, Long siteId);
+    void saveJobWithSlots(RuntimeJobDTO job, List<ScheduleSlotDTO> slots, Long facilityId);
 
     /**
      * 向已有运行作业追加计划点（不新建 job）。
      */
-    void appendSlots(String runtimeJobId, List<ScheduleSlotDTO> slots, Long siteId);
+    void appendSlots(String runtimeJobId, List<ScheduleSlotDTO> slots, Long facilityId);
 }

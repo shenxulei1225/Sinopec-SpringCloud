@@ -1,6 +1,6 @@
 package cn.cheers.x.facility.management.api;
 
-import cn.cheers.x.facility.management.api.dto.SiteRespDTO;
+import cn.cheers.x.facility.management.api.dto.FacilityStationRespDTO;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,21 +12,21 @@ import java.util.List;
  * 站场 API
  */
 @FeignClient(name = "facility-management")
-public interface SiteApi {
+public interface FacilityStationApi {
 
-    String PREFIX = "facility/site";
+    String PREFIX = "facility/station";
 
     /**
      * 获取站场树
      */
     @GetMapping(PREFIX + "/tree")
-    CommonResult<List<SiteRespDTO>> getSiteTree();
+    CommonResult<List<FacilityStationRespDTO>> getFacilityTree();
 
     /**
      * 获取站场详情
      */
     @GetMapping(PREFIX + "/get")
-    CommonResult<SiteRespDTO> getSite(@RequestParam("siteId") Long siteId);
+    CommonResult<FacilityStationRespDTO> getFacility(@RequestParam("facilityId") Long facilityId);
 
     /**
      * 获取站场下的所有子节点ID

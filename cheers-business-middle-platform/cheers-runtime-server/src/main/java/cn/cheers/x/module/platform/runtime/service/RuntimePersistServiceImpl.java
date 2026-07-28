@@ -27,30 +27,30 @@ public class RuntimePersistServiceImpl implements RuntimePersistService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void saveJobWithSlots(RuntimeJobDTO job, List<ScheduleSlotDTO> slots, Long siteId) {
-        RuntimeJobDO jobDO = RuntimeConvert.toJobDo(job, siteId);
+    public void saveJobWithSlots(RuntimeJobDTO job, List<ScheduleSlotDTO> slots, Long facilityId) {
+        RuntimeJobDO jobDO = RuntimeConvert.toJobDo(job, facilityId);
         runtimeJobMapper.insert(jobDO);
-        insertSlots(slots, siteId);
+        insertSlots(slots, facilityId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void appendSlots(String runtimeJobId, List<ScheduleSlotDTO> slots, Long siteId) {
+    public void appendSlots(String runtimeJobId, List<ScheduleSlotDTO> slots, Long facilityId) {
         if (!StringUtils.hasText(runtimeJobId)) {
             throw exception(RUNTIME_JOB_NOT_EXISTS);
         }
         if (runtimeJobMapper.selectById(runtimeJobId) == null) {
             throw exception(RUNTIME_JOB_NOT_EXISTS);
         }
-        insertSlots(slots, siteId);
+        insertSlots(slots, facilityId);
     }
 
-    private void insertSlots(List<ScheduleSlotDTO> slots, Long siteId) {
+    private void insertSlots(List<ScheduleSlotDTO> slots, Long facilityId) {
         if (slots == null || slots.isEmpty()) {
             return;
         }
         for (ScheduleSlotDTO slot : slots) {
-            ScheduleSlotDO slotDO = RuntimeConvert.toSlotDo(slot, siteId);
+            ScheduleSlotDO slotDO = RuntimeConvert.toSlotDo(slot, facilityId);
             scheduleSlotMapper.insert(slotDO);
         }
     }

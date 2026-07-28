@@ -30,7 +30,15 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
--- 废弃旧「分公司」与误用的 region 管道模型
+-- 退役非组织层级的 region 模型（管廊构筑物/舱室、旧省市区语义等）
+-- 定稿仅保留：集团 / 省公司 / 作业区。管廊租户的空间单元应使用 zone（或该租户独立库），不得挂在 region。
 UPDATE dynamic_model
 SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
-WHERE deleted = false AND tenant_id = 1 AND code IN ('MODEL-REGION-BRANCH', 'MODEL-REGION-PIPELINE');
+WHERE deleted = false
+  AND tenant_id = 1
+  AND entity_type_code = 'region'
+  AND code NOT IN (
+    'MODEL-REGION-GROUP',
+    'MODEL-REGION-PROVINCIAL',
+    'MODEL-REGION-OPERATION'
+  );

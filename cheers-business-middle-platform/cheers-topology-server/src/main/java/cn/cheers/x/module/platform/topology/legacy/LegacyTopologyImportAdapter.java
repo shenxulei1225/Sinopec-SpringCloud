@@ -38,16 +38,16 @@ public class LegacyTopologyImportAdapter {
     @Resource
     private LegacyTopologyProperties properties;
 
-    public TopologyGraphSaveReqDTO importGraph(Long siteId) {
+    public TopologyGraphSaveReqDTO importGraph(Long facilityId) {
         if (!properties.isEnabled()) {
             throw exception(LEGACY_TOPOLOGY_DISABLED);
         }
-        String legacySiteId = String.valueOf(siteId);
+        String legacyFacilityId = String.valueOf(facilityId);
         List<LegacyCheckPointRow> checkPoints;
         try {
-            checkPoints = loadCheckPoints(legacySiteId);
+            checkPoints = loadCheckPoints(legacyFacilityId);
         } catch (Exception ex) {
-            log.warn("legacy topology import failed for siteId={}: {}", siteId, ex.getMessage());
+            log.warn("legacy topology import failed for facilityId={}: {}", facilityId, ex.getMessage());
             throw exception(LEGACY_TOPOLOGY_SOURCE_UNAVAILABLE);
         }
         if (CollectionUtils.isEmpty(checkPoints)) {
@@ -91,8 +91,8 @@ public class LegacyTopologyImportAdapter {
 
         List<TopologyEdgeDTO> edges = new ArrayList<>();
         Set<String> edgeKeys = new HashSet<>();
-        appendDistanceRouteEdges(legacySiteId, transform, edges, edgeKeys);
-        appendWeightEdges(legacySiteId, edges, edgeKeys);
+        appendDistanceRouteEdges(legacyFacilityId, transform, edges, edgeKeys);
+        appendWeightEdges(legacyFacilityId, edges, edgeKeys);
 
         List<ZoneBoundaryDTO> zoneBoundaries = buildZoneBoundaries(checkPointById, transform);
 
@@ -103,9 +103,9 @@ public class LegacyTopologyImportAdapter {
                 .build();
     }
 
-    private void appendDistanceRouteEdges(String legacySiteId, LegacyCoordinateTransform transform,
+    private void appendDistanceRouteEdges(String legacyFacilityId, LegacyCoordinateTransform transform,
                                           List<TopologyEdgeDTO> edges, Set<String> edgeKeys) {
-        List<LegacyDistanceRouteRow> routes = loadDistanceRoutes(legacySiteId);
+        List<LegacyDistanceRouteRow> routes = loadDistanceRoutes(legacyFacilityId);
         for (LegacyDistanceRouteRow row : routes) {
             if (!StringUtils.hasText(row.startCheckId()) || !StringUtils.hasText(row.endCheckId())) {
                 continue;
@@ -127,8 +127,8 @@ public class LegacyTopologyImportAdapter {
         }
     }
 
-    private void appendWeightEdges(String legacySiteId, List<TopologyEdgeDTO> edges, Set<String> edgeKeys) {
-        List<LegacyWeightRow> weights = loadWeights(legacySiteId);
+    private void appendWeightEdges(String legacyFacilityId, List<TopologyEdgeDTO> edges, Set<String> edgeKeys) {
+        List<LegacyWeightRow> weights = loadWeights(legacyFacilityId);
         for (LegacyWeightRow row : weights) {
             if (!StringUtils.hasText(row.startCheckId()) || !StringUtils.hasText(row.endCheckId())) {
                 continue;
@@ -194,7 +194,7 @@ public class LegacyTopologyImportAdapter {
         return zones;
     }
 
-    private List<LegacyCheckPointRow> loadCheckPoints(String legacySiteId) {
+    private List<LegacyCheckPointRow> loadCheckPoints(String legacyFacilityId) {
         String sql = """
                 SELECT check_id, check_name, dept_id, tank_group_id, longitude, latitude,
                        check_type, weight, height, device_type
@@ -212,10 +212,10 @@ public class LegacyTopologyImportAdapter {
                 rs.getObject("weight") != null ? rs.getInt("weight") : null,
                 rs.getObject("height") != null ? rs.getDouble("height") : null,
                 rs.getObject("device_type") != null ? rs.getInt("device_type") : null
-        ), legacySiteId);
+        ), legacyFacilityId);
     }
 
-    private List<LegacyDistanceRouteRow> loadDistanceRoutes(String legacySiteId) {
+    private List<LegacyDistanceRouteRow> loadDistanceRoutes(String legacyFacilityId) {
         String sql = """
                 SELECT id, dept_id, tank_group_id, start_check_id, end_check_id, distance, weight, route
                 FROM %s.%s
@@ -230,10 +230,10 @@ public class LegacyTopologyImportAdapter {
                 rs.getObject("distance") != null ? rs.getLong("distance") : null,
                 rs.getObject("weight") != null ? rs.getInt("weight") : null,
                 rs.getString("route")
-        ), legacySiteId);
+        ), legacyFacilityId);
     }
 
-    private List<LegacyWeightRow> loadWeights(String legacySiteId) {
+    private List<LegacyWeightRow> loadWeights(String legacyFacilityId) {
         String sql = """
                 SELECT id, dept_id, tank_group_id, start_check_id, end_check_id, weight
                 FROM %s.%s
@@ -246,7 +246,7 @@ public class LegacyTopologyImportAdapter {
                 rs.getString("start_check_id"),
                 rs.getString("end_check_id"),
                 rs.getObject("weight") != null ? rs.getInt("weight") : null
-        ), legacySiteId);
+        ), legacyFacilityId);
     }
 
     private String qualifiedSchema() {

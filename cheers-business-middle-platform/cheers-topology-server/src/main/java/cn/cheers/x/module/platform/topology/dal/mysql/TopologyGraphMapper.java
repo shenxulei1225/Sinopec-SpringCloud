@@ -8,15 +8,15 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface TopologyGraphMapper extends BaseMapperX<TopologyGraphDO> {
 
-    default TopologyGraphDO selectDraftBySiteId(Long siteId) {
+    default TopologyGraphDO selectDraftByFacilityId(Long facilityId) {
         return selectOne(new LambdaQueryWrapperX<TopologyGraphDO>()
-                .eq(TopologyGraphDO::getSiteId, siteId)
+                .eq(TopologyGraphDO::getFacilityId, facilityId)
                 .eq(TopologyGraphDO::getStatus, "DRAFT"));
     }
 
-    default TopologyGraphDO selectLatestPublishedBySiteId(Long siteId) {
+    default TopologyGraphDO selectLatestPublishedByFacilityId(Long facilityId) {
         return selectOne(new LambdaQueryWrapperX<TopologyGraphDO>()
-                .eq(TopologyGraphDO::getSiteId, siteId)
+                .eq(TopologyGraphDO::getFacilityId, facilityId)
                 .eq(TopologyGraphDO::getStatus, "PUBLISHED")
                 .orderByDesc(TopologyGraphDO::getVersion)
                 .last("LIMIT 1"));

@@ -13,6 +13,7 @@
 | 历史表 | `dynamicbusiness.flyway_schema_history_dynamicbusiness` |
 | 应用配置 | `application-local.yaml` → `spring.flyway.*` |
 | 数据 seed | `scripts/platform-import/`（**无 DDL**） |
+| 管廊租户 seed | `scripts/platform-import/corridor-tenant/`（`CORRIDOR_TENANT_ID` · zone 模型） |
 | 本机 repair | `scripts/flyway-repair-local.sh` |
 
 ## 当前 classpath 迁移（快照）
@@ -40,8 +41,9 @@
 | V24 | `V24__entity_category_relation_storage_and_domain.sql` | 分类关联 `entity_type_code` 归一为实际存储类型、补 `domain` 镜像列、去重并建唯一索引 |
 | V25 | `V25__drop_generic_dynamic_entity.sql` | 废止 GENERIC：删除空壳通用表 `dynamic_entity`（实体仅 `ent_*`） |
 | V26 | `V26__category_entity_link_entity_type_code.sql` | link 表 `storage_entity_type_code` → `entity_type_code`；索引重命名为 `idx_dynamic_category_entity_link_entity_type` |
+| V27 | `V27__ent_structure.sql` | 构筑物（structure）专用表 `ent_structure`（`facility_id` 必填，`zone_id` 可选） |
 
-下一新增版本应为 **V27**。  
+下一新增版本应为 **V28**。  
 已停用脚本在 `db/backup/flyway-legacy-pre-seed/`，不得放回本目录。
 
 > 上表随发版更新；改版本链时同步更新本节，并遵守通用规范中的历史对齐流程。

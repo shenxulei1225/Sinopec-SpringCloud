@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 public class InspectionExecutionPointItemView {
 
     private Long id;
-    private Long siteId;
+    private Long facilityId;
     private Long pointId;
     private Long itemId;
     private String paramsJson;

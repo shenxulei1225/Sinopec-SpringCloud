@@ -102,14 +102,14 @@ class RuntimeQueryServiceListSlotsTest {
         verify(scheduleSlotMapper).selectList(captor.capture());
     }
 
-    private static ScheduleSlotDO slot(String id, String entityTypeCode, Long siteId, SlotStatus status,
+    private static ScheduleSlotDO slot(String id, String entityTypeCode, Long facilityId, SlotStatus status,
                                        String plannedStart, String plannedEnd, String assignedResources) {
         return ScheduleSlotDO.builder()
                 .id(id)
                 .runtimeJobId("job-1")
                 .workId("work-1")
                 .entityTypeCode(entityTypeCode)
-                .siteId(siteId)
+                .facilityId(facilityId)
                 .slotStatus(status.name())
                 .plannedStart(OffsetDateTime.parse(plannedStart))
                 .plannedEnd(OffsetDateTime.parse(plannedEnd))

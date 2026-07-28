@@ -24,7 +24,7 @@ public class TopologyGraphDO extends TenantBaseDO {
     @TableId
     private String id;
 
-    private Long siteId;
+    private Long facilityId;
 
     private String status;
 
