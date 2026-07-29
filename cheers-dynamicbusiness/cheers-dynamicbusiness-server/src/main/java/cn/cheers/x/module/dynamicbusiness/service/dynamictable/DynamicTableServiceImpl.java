@@ -1118,15 +1118,11 @@ public class DynamicTableServiceImpl implements DynamicTableService {
     }
 
     /**
-     * 构建创建表的 SQL
-     * 
-     * DEDICATED 表结构设计：
-     * - 基础列：与 dynamic_entity 表结构一致，支持 EAV 模式
-     * - 扩展字段：存储在 JSONB (attrs/custom_fields) 中
-     * - 查询优化：扩展字段通过 dynamic_entity_field_index 索引表加速
-     * 
-     * 与 GENERIC 的区别：数据隔离（每个业务独立表），查询性能相同
-     * 有 physicalColumnMapping 配置时：字段存储到物理列，查询性能更高
+     * 构建创建表的 SQL。
+     *
+     * <p>核心列必须与 {@link cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO}
+     * 一致（含 domain / tree_path / sort），否则 query-by-scene 等统一 SELECT 会因缺列 500。
+     * 有 physicalColumnMapping 时追加基础字段固定列。</p>
      */
     private String buildCreateTableSql(String tableName, String tableComment, 
                                        Map<String, PhysicalColumnConfig> physicalColumnMapping) {
@@ -1176,22 +1172,23 @@ public class DynamicTableServiceImpl implements DynamicTableService {
                     -- ==================== 主键和租户 ====================
                     id BIGSERIAL PRIMARY KEY,
                     tenant_id BIGINT NOT NULL DEFAULT 0,
-                    
-                    -- ==================== 核心业务字段（与 dynamic_entity 一致） ====================
+
+                    -- ==================== 核心列（与 EntityDO 对齐） ====================
                     entity_type_code VARCHAR(64),
                     model_id BIGINT NOT NULL,
+                    domain VARCHAR(128),
                     name VARCHAR(255) NOT NULL,
                     code VARCHAR(100),
-                    status INTEGER DEFAULT 1,
-                    area_id BIGINT,
                     parent_id BIGINT DEFAULT 0,
-                    
-                    -- ==================== 物理列（高性能查询字段） ====================
+                    tree_path VARCHAR(500),
+                    sort INTEGER DEFAULT 0,
+                    status INTEGER DEFAULT 1,
+
+                    -- ==================== 基础字段固定列 ====================
 %s
-                    -- ==================== 扩展字段（EAV 模式） ====================
-                    attrs JSONB DEFAULT '{}',
+                    -- ==================== 扩展字段 ====================
                     custom_fields JSONB DEFAULT '{}',
-                    
+
                     -- ==================== 系统字段 ====================
                     creator VARCHAR(64),
                     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1199,37 +1196,38 @@ public class DynamicTableServiceImpl implements DynamicTableService {
                     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     deleted BOOLEAN DEFAULT FALSE
                 );
-                
-                -- 表注释
+
                 COMMENT ON TABLE %s IS '%s';
                 COMMENT ON COLUMN %s.entity_type_code IS '业务类型编码';
                 COMMENT ON COLUMN %s.model_id IS '所属 Model ID';
+                COMMENT ON COLUMN %s.domain IS '业务域（Domain）；创建或更换型号时从型号抄写；无业务域时为空';
                 COMMENT ON COLUMN %s.name IS '名称';
                 COMMENT ON COLUMN %s.code IS '编码';
-                COMMENT ON COLUMN %s.status IS '状态';
-                COMMENT ON COLUMN %s.area_id IS '所属区域 ID';
                 COMMENT ON COLUMN %s.parent_id IS '父节点 ID（0 表示根节点）';
-                COMMENT ON COLUMN %s.attrs IS '扩展字段（JSONB）';
+                COMMENT ON COLUMN %s.tree_path IS '树路径（通用实体）';
+                COMMENT ON COLUMN %s.sort IS '同级排序';
+                COMMENT ON COLUMN %s.status IS '状态';
                 COMMENT ON COLUMN %s.custom_fields IS '自定义字段（JSONB）';
 %s
-                -- 基础索引
                 CREATE INDEX IF NOT EXISTS idx_%s_tenant ON %s(tenant_id);
                 CREATE INDEX IF NOT EXISTS idx_%s_ent_type ON %s(entity_type_code);
                 CREATE INDEX IF NOT EXISTS idx_%s_model ON %s(model_id);
+                CREATE INDEX IF NOT EXISTS idx_%s_domain ON %s(domain) WHERE deleted = false;
                 CREATE INDEX IF NOT EXISTS idx_%s_status ON %s(status);
-                CREATE INDEX IF NOT EXISTS idx_%s_area ON %s(area_id);
                 CREATE INDEX IF NOT EXISTS idx_%s_parent ON %s(parent_id);
+                CREATE INDEX IF NOT EXISTS idx_%s_tree_path ON %s(tree_path);
                 CREATE INDEX IF NOT EXISTS idx_%s_deleted ON %s(deleted);
-                CREATE INDEX IF NOT EXISTS idx_%s_attrs ON %s USING GIN(attrs);
-                
+                CREATE INDEX IF NOT EXISTS idx_%s_custom_fields ON %s USING GIN(custom_fields);
+
                 -- 物理列索引（B-Tree，高性能查询）
 %s
-                """, 
-                tableName, 
+                """,
+                tableName,
                 physicalColumns,
                 tableName, tableComment,
-                tableName, tableName, tableName, tableName, tableName, tableName, tableName, tableName, tableName,
+                tableName, tableName, tableName, tableName, tableName, tableName, tableName, tableName, tableName, tableName,
                 physicalColumnComments,
+                safeTableName, tableName,
                 safeTableName, tableName,
                 safeTableName, tableName,
                 safeTableName, tableName,
