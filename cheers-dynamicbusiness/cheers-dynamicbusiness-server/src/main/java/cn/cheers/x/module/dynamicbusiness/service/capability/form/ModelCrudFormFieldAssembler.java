@@ -284,6 +284,14 @@ public final class ModelCrudFormFieldAssembler {
         item.put("sort", baseField.getSortOrder() != null ? baseField.getSortOrder() : 0);
         item.put("groupName", "基础信息");
         item.put("groupSortOrder", 0);
+        if (libraryField != null && StringUtils.hasText(libraryField.getSemanticType())) {
+            item.put("semanticType", libraryField.getSemanticType().trim());
+        } else {
+            String inferred = EntityBaseFieldColumnNames.inferSemanticType(code);
+            if (StringUtils.hasText(inferred)) {
+                item.put("semanticType", inferred);
+            }
+        }
         applyBaseFieldTypeConfig(item, baseField);
         applyBaseFieldTypeExtensions(item, entityTypeCode, baseField, fieldType, libraryField, refResolveContext);
         applyDefaultValue(item, baseField.getDefaultValue());
@@ -339,6 +347,14 @@ public final class ModelCrudFormFieldAssembler {
         item.put("required", Boolean.TRUE.equals(assign.getRequired()));
         item.put("sort", assign.getSort() != null ? assign.getSort() : 0);
         item.put("baseField", baseField != null);
+        if (StringUtils.hasText(field.getSemanticType())) {
+            item.put("semanticType", field.getSemanticType().trim());
+        } else {
+            String inferred = EntityBaseFieldColumnNames.inferSemanticType(code);
+            if (StringUtils.hasText(inferred)) {
+                item.put("semanticType", inferred);
+            }
+        }
         if (baseField == null) {
             item.put("fieldSource", "CUSTOM");
         }

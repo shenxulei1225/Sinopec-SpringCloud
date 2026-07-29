@@ -6765,11 +6765,11 @@ INSERT INTO dynamic_field (
   index_strategy, options, provider_code, semantic_type, tenant_id, creator
 ) VALUES (
   'FLD-TSK-024', '所属设施', 'ENTITY_REF',
-  NULL, '任务归属站场/厂区（facilityId）；与拓扑图归属一致',
+  NULL, '任务归属站场/厂区（facility）；与拓扑图归属一致',
   'SYSTEM', 1,
   1, 'NONE',
   NULL, NULL,
-  'facility_id', 1, 'seed'
+  'facility', 1, 'seed'
 )
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
@@ -6937,7 +6937,7 @@ INSERT INTO dynamic_field (
 ) VALUES (
   'FLD-POB-001', '所属设施', 'ENTITY_REF',
   NULL, '关联 facility id',
-  'SYSTEM', 1, 1, 'NONE', NULL, NULL, 'facility_id', 1, 'seed'
+  'SYSTEM', 1, 1, 'NONE', NULL, NULL, 'facility', 1, 'seed'
 )
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
@@ -6959,7 +6959,7 @@ INSERT INTO dynamic_field (
 ) VALUES (
   'FLD-POB-003', '所属分区', 'ENTITY_REF',
   NULL, '可选 zone id',
-  'SYSTEM', 1, 1, 'NONE', NULL, NULL, 'zone_id', 1, 'seed'
+  'SYSTEM', 1, 1, 'NONE', NULL, NULL, 'zone', 1, 'seed'
 )
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
@@ -6971,7 +6971,7 @@ INSERT INTO dynamic_field (
 ) VALUES (
   'FLD-PPT-001', '所属设施', 'ENTITY_REF',
   NULL, '关联 facility id',
-  'SYSTEM', 1, 1, 'NONE', NULL, NULL, 'facility_id', 1, 'seed'
+  'SYSTEM', 1, 1, 'NONE', NULL, NULL, 'facility', 1, 'seed'
 )
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;

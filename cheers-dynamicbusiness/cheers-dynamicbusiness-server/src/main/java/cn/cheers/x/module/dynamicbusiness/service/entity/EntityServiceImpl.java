@@ -14,6 +14,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelRespVO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryEntityLinkMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityCategoryRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityFieldIndexDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityCategoryRelationMapper;
@@ -106,6 +107,9 @@ public class EntityServiceImpl implements EntityService {
 
     @Resource
     private EntityCategoryRelationMapper entityCategoryRelationMapper;
+
+    @Resource
+    private CategoryEntityLinkMapper categoryEntityLinkMapper;
 
     @Resource
     private EntityRelationMapper entityRelationMapper;
@@ -538,8 +542,16 @@ public class EntityServiceImpl implements EntityService {
         Integer effectivePageNo = (pageNo == null || pageNo < 1) ? 1 : pageNo;
         Integer effectivePageSize = (pageSize == null || pageSize < 1) ? 20 : pageSize;
         int fullPageSize = Integer.MAX_VALUE;
+
+        EntityQueryResultShape shape = EntityQueryResultShape.ofNullable(resultShape);
+        EntityQueryResultDetail detail = EntityQueryResultDetail.ofNullable(resultDetail);
+        // 未传排序列时：PAGE 列表默认按名称；拖拽人工序由前端显式传 orderByColumn=sort
         String normalizedOrderByColumn = normalizeOrderByColumn(orderByColumn);
+        if (!StringUtils.hasText(normalizedOrderByColumn) && shape == EntityQueryResultShape.PAGE) {
+            normalizedOrderByColumn = "name";
+        }
         boolean orderAsc = isAsc == null || Boolean.TRUE.equals(isAsc);
+        boolean manualSortOrder = "sort".equals(normalizedOrderByColumn);
 
         // 按入口解析：SCOPE → storage + 成员过滤；DOMAIN registry → storage + domain；其余用请求 domain
         ResolvedQueryType resolved = resolveQueryEntityType(entityTypeCode, domain);
@@ -547,24 +559,23 @@ public class EntityServiceImpl implements EntityService {
         String normalizedDomain = resolved.domain();
         String normalizedScopeCode = resolved.scopeRegistryCode();
 
-        EntityQueryResultShape shape = EntityQueryResultShape.ofNullable(resultShape);
-        EntityQueryResultDetail detail = EntityQueryResultDetail.ofNullable(resultDetail);
         switch (scene) {
             case ENTITIES_BY_CATEGORY: {
                 String queryEntityTypeCode = resolved.entityTypeCode();
                 if (queryEntityTypeCode == null || queryEntityTypeCode.isBlank()) {
                     throw new ServiceException(400, "ENTITIES_BY_CATEGORY 场景下 entityTypeCode 不能为空");
                 }
-                if (normalizedOrderByColumn != null) {
+                if (StringUtils.hasText(normalizedOrderByColumn) && !manualSortOrder) {
                     validateOrderByColumn(queryEntityTypeCode, normalizedOrderByColumn);
                 }
+                String fieldOrderColumn = manualSortOrder ? null : normalizedOrderByColumn;
                 String viaRefPathCode = trimToNull(categoryViaRefPathCode);
                 if (viaRefPathCode != null) {
                     return queryEntitiesByCategoryViaRef(
                             viaRefPathCode, categoryTypeCode, categoryIds, queryEntityTypeCode,
                             normalizedDomain, normalizedScopeCode, keyword, filters,
                             shape, detail, effectivePageNo, effectivePageSize,
-                            normalizedOrderByColumn, orderAsc);
+                            fieldOrderColumn, orderAsc);
                 }
                 // 禁止用 storage 冒充分类种类：同源也须显式传 categoryTypeCode，避免跨视角漏传时查错树
                 if (categoryTypeCode == null || categoryTypeCode.isBlank()) {
@@ -575,13 +586,13 @@ public class EntityServiceImpl implements EntityService {
                     PageResult<EntityRespVO> paged = queryDataMgmtEntitiesByCategoryModel(
                             categoryIds, categoryIdGroups, resolvedCategoryTypeCode, storageEntityTypeCode, modelIds,
                             keyword, filters, effectivePageNo, effectivePageSize, true,
-                            normalizedDomain, normalizedScopeCode, normalizedOrderByColumn, orderAsc);
+                            normalizedDomain, normalizedScopeCode, fieldOrderColumn, orderAsc);
                     return EntitySceneQueryRespVO.page(applyResultDetail(paged, detail), detail.getCode());
                 }
                 PageResult<EntityRespVO> full = queryDataMgmtEntitiesByCategoryModel(
                         categoryIds, categoryIdGroups, resolvedCategoryTypeCode, storageEntityTypeCode, modelIds,
                         keyword, filters, null, null, false,
-                        normalizedDomain, normalizedScopeCode, normalizedOrderByColumn, orderAsc);
+                        normalizedDomain, normalizedScopeCode, fieldOrderColumn, orderAsc);
                 List<EntityRespVO> entities = full.getList();
                 if (shape == EntityQueryResultShape.TREE) {
                     return EntitySceneQueryRespVO.tree(
@@ -592,14 +603,14 @@ public class EntityServiceImpl implements EntityService {
             }
 
             case ENTITIES_BY_MODEL: {
-                if (normalizedOrderByColumn != null) {
+                if (StringUtils.hasText(normalizedOrderByColumn) && !manualSortOrder) {
                     validateOrderByColumn(storageEntityTypeCode, normalizedOrderByColumn);
                 }
                 List<Long> normalizedModelIds = normalizeModelIds(modelIds);
                 if (!normalizedModelIds.isEmpty()) {
                     if (shape == EntityQueryResultShape.TREE && normalizedModelIds.size() == 1
                             && !StringUtils.hasText(normalizedDomain) && !StringUtils.hasText(normalizedScopeCode)
-                            && normalizedOrderByColumn == null) {
+                            && (manualSortOrder || !StringUtils.hasText(normalizedOrderByColumn))) {
                         return EntitySceneQueryRespVO.tree(
                                 applyResultDetail(getEntityTreeByModelId(storageEntityTypeCode, normalizedModelIds.get(0)), detail),
                                 detail.getCode());
@@ -608,7 +619,8 @@ public class EntityServiceImpl implements EntityService {
                             normalizedModelIds, storageEntityTypeCode, keyword, filters,
                             shape == EntityQueryResultShape.PAGE ? effectivePageNo : 1,
                             shape == EntityQueryResultShape.PAGE ? effectivePageSize : fullPageSize,
-                            normalizedDomain, normalizedScopeCode, normalizedOrderByColumn, orderAsc);
+                            normalizedDomain, normalizedScopeCode,
+                            manualSortOrder ? null : normalizedOrderByColumn, orderAsc);
                     if (shape == EntityQueryResultShape.PAGE) {
                         return EntitySceneQueryRespVO.page(applyResultDetail(modelPage, detail), detail.getCode());
                     }
@@ -621,7 +633,8 @@ public class EntityServiceImpl implements EntityService {
                     return EntitySceneQueryRespVO.list(applyResultDetail(modelPage.getList(), detail), detail.getCode());
                 }
                 // 未传 modelIds：按类型范围（+ Domain / 划分）
-                if (shape == EntityQueryResultShape.TREE && normalizedOrderByColumn == null) {
+                if (shape == EntityQueryResultShape.TREE
+                        && (manualSortOrder || !StringUtils.hasText(normalizedOrderByColumn))) {
                     List<EntityRespVO> treeRoots = buildEntityHierarchySubtree(
                             storageEntityTypeCode, null, keyword, filters, detail,
                             effectivePageNo, resolveTreeRootPageSize(pageSize));
@@ -630,7 +643,8 @@ public class EntityServiceImpl implements EntityService {
                 List<Long> allEntityIds = collectPatternAbcAllCandidateEntityIds(
                         storageEntityTypeCode, modelIds, normalizedDomain, normalizedScopeCode);
                 allEntityIds = applyFieldOrderToCandidateIds(
-                        allEntityIds, storageEntityTypeCode, normalizedOrderByColumn, orderAsc);
+                        allEntityIds, storageEntityTypeCode,
+                        manualSortOrder ? null : normalizedOrderByColumn, orderAsc);
                 PageResult<EntityRespVO> result = queryEntitiesByOrderedCandidateIds(
                         allEntityIds, storageEntityTypeCode, keyword, filters,
                         shape == EntityQueryResultShape.PAGE ? effectivePageNo : null,
@@ -639,6 +653,38 @@ public class EntityServiceImpl implements EntityService {
                     return EntitySceneQueryRespVO.page(applyResultDetail(result, detail), detail.getCode());
                 }
                 return EntitySceneQueryRespVO.list(applyResultDetail(result.getList(), detail), detail.getCode());
+            }
+
+            case ENTITIES_UNCATEGORIZED: {
+                String queryEntityTypeCode = resolved.entityTypeCode();
+                if (queryEntityTypeCode == null || queryEntityTypeCode.isBlank()) {
+                    throw new ServiceException(400, "ENTITIES_UNCATEGORIZED 场景下 entityTypeCode 不能为空");
+                }
+                if (categoryTypeCode == null || categoryTypeCode.isBlank()) {
+                    throw new ServiceException(400, "ENTITIES_UNCATEGORIZED 场景下 categoryTypeCode 不能为空");
+                }
+                if (StringUtils.hasText(normalizedOrderByColumn) && !manualSortOrder) {
+                    validateOrderByColumn(queryEntityTypeCode, normalizedOrderByColumn);
+                }
+                String fieldOrderColumn = manualSortOrder ? null : normalizedOrderByColumn;
+                PageResult<EntityRespVO> uncategorizedPage = queryUncategorizedEntitiesByCategoryType(
+                        categoryTypeCode.trim(), storageEntityTypeCode, modelIds,
+                        keyword, filters,
+                        shape == EntityQueryResultShape.PAGE ? effectivePageNo : null,
+                        shape == EntityQueryResultShape.PAGE ? effectivePageSize : null,
+                        shape == EntityQueryResultShape.PAGE,
+                        normalizedDomain, normalizedScopeCode, fieldOrderColumn, orderAsc);
+                if (shape == EntityQueryResultShape.PAGE) {
+                    return EntitySceneQueryRespVO.page(applyResultDetail(uncategorizedPage, detail), detail.getCode());
+                }
+                if (shape == EntityQueryResultShape.TREE) {
+                    return EntitySceneQueryRespVO.tree(
+                            applyResultDetail(EntityTreeBuilder.buildTree(uncategorizedPage.getList(),
+                                    EntityTreeBuilder.SortMode.LOCAL_SIBLING_SORT), detail),
+                            detail.getCode());
+                }
+                return EntitySceneQueryRespVO.list(
+                        applyResultDetail(uncategorizedPage.getList(), detail), detail.getCode());
             }
 
             case ENTITIES_BY_CATEGORY_LINK: {
@@ -833,6 +879,57 @@ public class EntityServiceImpl implements EntityService {
         List<Long> orderedCandidateEntityIds = listOrderedEntityIdsByCategoriesInBusiness(normalizedCategoryIds, categoryTypeCode, entityTypeCode);
         return queryEntitiesByOrderedCandidateIds(
                 orderedCandidateEntityIds, entityTypeCode, keyword, filters, pageNo, pageSize);
+    }
+
+    /**
+     * 数据管理「未分类」：类型范围内实体 − 已挂接当前 categoryTypeCode 任一节点（relation ∪ link）。
+     * 可叠 modelIds / domain / 划分；保留桶节点（code 含 UNCATEGORIZED）不算「已分类」。
+     */
+    private PageResult<EntityRespVO> queryUncategorizedEntitiesByCategoryType(
+            String categoryTypeCode,
+            String entityTypeCode,
+            List<Long> modelIds,
+            String keyword,
+            List<FieldFilterReqVO> filters,
+            Integer pageNo,
+            Integer pageSize,
+            boolean allowDirectPaging,
+            String domain,
+            String scopeRegistryCode,
+            String orderByColumn,
+            boolean orderAsc) {
+        if (entityTypeCode == null || entityTypeCode.isBlank()
+                || categoryTypeCode == null || categoryTypeCode.isBlank()) {
+            return new PageResult<>(new ArrayList<>(), 0L);
+        }
+        List<Long> allCandidateIds = collectPatternAbcAllCandidateEntityIds(
+                entityTypeCode, modelIds, domain, scopeRegistryCode);
+        if (allCandidateIds.isEmpty()) {
+            return new PageResult<>(new ArrayList<>(), 0L);
+        }
+        Set<Long> categorized = new HashSet<>();
+        List<Long> fromRelation = entityCategoryRelationMapper.selectDistinctEntityIdsByCategoryTypeCode(
+                categoryTypeCode, entityTypeCode);
+        if (fromRelation != null) {
+            categorized.addAll(fromRelation.stream().filter(Objects::nonNull).toList());
+        }
+        List<Long> fromLink = categoryEntityLinkMapper.selectDistinctEntityIdsByCategoryTypeCode(
+                categoryTypeCode, entityTypeCode);
+        if (fromLink != null) {
+            categorized.addAll(fromLink.stream().filter(Objects::nonNull).toList());
+        }
+        List<Long> uncategorizedIds = allCandidateIds.stream()
+                .filter(id -> id != null && !categorized.contains(id))
+                .toList();
+        uncategorizedIds = applyFieldOrderToCandidateIds(
+                uncategorizedIds, entityTypeCode, orderByColumn, orderAsc);
+        if (allowDirectPaging && canPageDirectly(keyword, filters)) {
+            Integer pn = normalizePageNo(pageNo);
+            Integer ps = normalizePageSize(pageSize);
+            return pageByOrderedIds(uncategorizedIds, entityTypeCode, pn, ps);
+        }
+        return queryEntitiesByOrderedCandidateIds(
+                uncategorizedIds, entityTypeCode, keyword, filters, pageNo, pageSize);
     }
 
     /**
@@ -2814,6 +2911,9 @@ public class EntityServiceImpl implements EntityService {
             return;
         }
         String column = orderByColumn.trim();
+        if ("sort".equals(column)) {
+            return;
+        }
         if (CORE_ORDER_BY_COLUMNS.contains(column)) {
             return;
         }
@@ -2869,6 +2969,7 @@ public class EntityServiceImpl implements EntityService {
                                                      String orderByColumn,
                                                      boolean orderAsc) {
         if (!StringUtils.hasText(orderByColumn)
+                || "sort".equals(orderByColumn.trim())
                 || orderedCandidateEntityIds == null
                 || orderedCandidateEntityIds.isEmpty()
                 || !StringUtils.hasText(entityTypeCode)) {

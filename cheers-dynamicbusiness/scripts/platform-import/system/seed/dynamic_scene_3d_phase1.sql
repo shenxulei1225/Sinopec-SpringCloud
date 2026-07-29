@@ -145,7 +145,7 @@ DO UPDATE SET
 -- 场景实体（对账 SCENE-LUOYANG-SHENGRUI / facility 45）
 INSERT INTO ent_scene (
   tenant_id, entity_type_code, model_id, name, code, status,
-  facility_id, scene_code,
+  fld_base_scene_ref_facility, scene_code,
   origin_lng, origin_lat, origin_height, origin_height_source, publish_status,
   creator, updater, deleted, sort
 )
@@ -165,7 +165,7 @@ UPDATE ent_scene e
 SET
   name = '洛阳圣瑞场景',
   model_id = m.id,
-  facility_id = 45,
+  fld_base_scene_ref_facility = 45,
   scene_code = 'SCENE-LUOYANG-SHENGRUI',
   origin_lng = 112.453900,
   origin_lat = 34.619700,

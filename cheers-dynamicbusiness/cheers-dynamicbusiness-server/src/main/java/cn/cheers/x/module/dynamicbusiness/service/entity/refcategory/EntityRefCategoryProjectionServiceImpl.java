@@ -137,7 +137,7 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
     public int backfillFacilityRegionCategoryRelations() {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                 """
-                SELECT id, fld_base_facility_ref_region AS region_id
+                SELECT id, fld_base_facility_ref_region AS fld_base_facility_ref_region
                 FROM ent_facility
                 WHERE deleted = false
                   AND fld_base_facility_ref_region IS NOT NULL
@@ -147,18 +147,18 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
         }
         int ok = 0;
         for (Map<String, Object> row : rows) {
-            Long facilityId = toLong(row.get("id"));
-            Long regionId = toLong(row.get("region_id"));
-            if (facilityId == null || regionId == null) {
+            Long facilityEntityId = toLong(row.get("id"));
+            Long regionEntityId = toLong(row.get("fld_base_facility_ref_region"));
+            if (facilityEntityId == null || regionEntityId == null) {
                 continue;
             }
-            Long categoryId = resolveCategoryId(new TargetRef("region", regionId));
+            Long categoryId = resolveCategoryId(new TargetRef("region", regionEntityId));
             if (categoryId == null) {
-                log.debug("[ref→category] 回填跳过：区域实体无分类即实体 link, facilityId={}, regionId={}",
-                        facilityId, regionId);
+                log.debug("[ref→category] 回填跳过：区域实体无分类即实体 link, facilityEntityId={}, regionEntityId={}",
+                        facilityEntityId, regionEntityId);
                 continue;
             }
-            entityCategoryRelationService.associate(facilityId, categoryId, SUBJECT_FACILITY);
+            entityCategoryRelationService.associate(facilityEntityId, categoryId, SUBJECT_FACILITY);
             ok++;
         }
         log.info("[ref→category] 设施所属区域 → 区域分类 回填完成, count={}", ok);

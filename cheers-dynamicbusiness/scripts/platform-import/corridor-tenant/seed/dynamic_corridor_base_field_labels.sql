@@ -65,7 +65,7 @@ SET
   END,
   description = CASE field_code
     WHEN 'FLD-BASE-structure-REF_FACILITY' THEN '关联管廊工程设施（必填）'
-    WHEN 'FLD-BASE-structure-REF_ZONE' THEN '防火区或舱室分区（与 zone_id 一致）'
+    WHEN 'FLD-BASE-structure-REF_ZONE' THEN '防火区或舱室分区（与所属分区 REF 一致）'
     WHEN 'FLD-BASE-structure-zone_type' THEN '与模型一致的构筑物细类'
     WHEN 'FLD-BASE-structure-description' THEN '构筑物文字说明'
     ELSE COALESCE(description, '平台基础字段；界面以中文名为准，FLD 开头为系统内部编码')

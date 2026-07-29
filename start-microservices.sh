@@ -208,9 +208,9 @@ get_service_port() {
 }
 
 # 服务列表（platform：resource → policy/capability → runtime → orchestration → topology → routing）
+# 演示/商城类（member/pay/report/mp/mall/crm/erp/ai/iot）不进默认列表；get_service_path 仍保留，可手动启动
 KNOWN_SERVICES=(
-    gateway system infra member bpm pay report mp product promotion trade statistics
-    crm erp ai iot alarm work-order dynamic
+    gateway system infra bpm alarm work-order dynamic
     platform platform-runtime platform-orchestration platform-policy platform-capability
     platform-topology platform-routing
     scene gis twin inspection
@@ -222,15 +222,13 @@ CORE_START_SERVICES=(
     scene gis twin inspection
 )
 ALL_START_SERVICES=(
-    system infra gateway member bpm pay report mp product promotion trade statistics
-    crm erp ai iot alarm work-order dynamic
+    system infra gateway bpm alarm work-order dynamic
     platform platform-runtime platform-orchestration platform-policy platform-capability
     platform-topology platform-routing
     scene gis twin inspection
 )
 STOP_SERVICES=(
-    gateway infra system member bpm pay report mp product promotion trade statistics
-    crm erp ai iot alarm work-order dynamic
+    gateway infra system bpm alarm work-order dynamic
     platform-routing platform-topology
     platform-orchestration platform-runtime platform-policy platform-capability platform
     scene gis twin inspection
@@ -629,14 +627,9 @@ show_services() {
     echo "  13. platform-routing - 路径规划引擎（15108，试走/算路必需）"
     echo "     （./start-microservices.sh bmp 一键启动 7→13；按需再用 bmp-process / bmp-path）"
     echo ""
-    echo -e "${BLUE}业务服务（按需启动）:${NC}"
-    echo "  - member     - 会员服务"
-    echo "  - bpm        - 工作流服务"
-    echo "  - pay        - 支付服务"
-    echo "  - crm        - CRM 服务"
-    echo "  - erp        - ERP 服务"
-    echo "  - ai         - AI 服务"
-    echo "  - iot        - IoT 服务"
+    echo -e "${BLUE}按需启动:${NC}"
+    echo "  - work-order - 工单（亦可 bmp-work-order）"
+    echo "  - scene / gis / twin / inspection / maintenance"
 }
 
 # 启动所有核心服务

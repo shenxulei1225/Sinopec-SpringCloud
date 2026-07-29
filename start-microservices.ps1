@@ -118,32 +118,30 @@ $ServiceConfig = @{
 }
 
 # 与 start-microservices.sh 保持一致
+# 演示/商城类（member/pay/report/mp/mall/crm/erp/ai/iot）不进默认列表；配置仍保留，可手动启动
 $KnownServices = @(
-    "gateway", "system", "infra", "member", "bpm", "pay", "report", "mp", "product", "promotion", "trade", "statistics",
-    "crm", "erp", "ai", "iot", "alarm", "work-order", "dynamic",
+    "gateway", "system", "infra", "bpm", "alarm", "work-order", "dynamic",
     "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
     "platform-topology", "platform-routing",
     "scene", "gis", "twin", "inspection"
 )
 
 $CoreServices = @(
-    "infra", "system", "gateway", "bpm", "alarm", "dynamic",
+    "infra", "system", "gateway", "bpm", "alarm", "work-order", "dynamic",
     "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
     "platform-topology", "platform-routing",
     "scene", "gis", "twin", "inspection"
 )
 
 $AllServices = @(
-    "system", "infra", "gateway", "member", "bpm", "pay", "report", "mp", "product", "promotion", "trade", "statistics",
-    "crm", "erp", "ai", "iot", "alarm", "work-order", "dynamic",
+    "system", "infra", "gateway", "bpm", "alarm", "work-order", "dynamic",
     "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
     "platform-topology", "platform-routing",
     "scene", "gis", "twin", "inspection"
 )
 
 $StopServices = @(
-    "gateway", "infra", "system", "member", "bpm", "pay", "report", "mp", "product", "promotion", "trade", "statistics",
-    "crm", "erp", "ai", "iot", "alarm", "work-order", "dynamic",
+    "gateway", "infra", "system", "bpm", "alarm", "work-order", "dynamic",
     "platform-routing", "platform-topology",
     "platform-orchestration", "platform-runtime", "platform-policy", "platform-capability", "platform",
     "scene", "gis", "twin", "inspection"
@@ -753,13 +751,9 @@ function Show-Services {
     Write-ColorOutput "     （.\start-microservices.ps1 all / platform-all 已按 7->13 顺序启动 platform 套件）" "Gray"
     
     Write-ColorOutput "" "White"
-    Write-ColorOutput "业务服务（按需启动）:" "Cyan"
-    Write-ColorOutput "  - member     - 会员服务" "White"
-    Write-ColorOutput "  - pay        - 支付服务" "White"
-    Write-ColorOutput "  - crm        - CRM 服务" "White"
-    Write-ColorOutput "  - erp        - ERP 服务" "White"
-    Write-ColorOutput "  - ai         - AI 服务" "White"
-    Write-ColorOutput "  - iot        - IoT 服务" "White"
+    Write-ColorOutput "按需启动:" "Cyan"
+    Write-ColorOutput "  - work-order - 工单（亦可 bmp-work-order）" "White"
+    Write-ColorOutput "  - scene / gis / twin / inspection / maintenance" "White"
 }
 
 

@@ -8,13 +8,13 @@ SET search_path TO dynamicbusiness;
 
 INSERT INTO ent_facility (
     id, entity_type_code, model_id, name, code, tenant_id, creator,
-    tree_path, sort, status, deleted, region_id, address, longitude, latitude,
+    tree_path, sort, status, deleted, fld_base_facility_ref_region, address, longitude, latitude,
     facility_type, custom_fields
 )
 OVERRIDING SYSTEM VALUE
 SELECT
     v.id, 'facility', m.id, v.name, v.code, 1, 'seed',
-    v.tree_path, v.sort, 1, false, v.region_id, v.address, v.longitude, v.latitude,
+    v.tree_path, v.sort, 1, false, v.fld_base_facility_ref_region, v.address, v.longitude, v.latitude,
     v.facility_type, '{}'::jsonb
 FROM (
     VALUES
@@ -500,7 +500,7 @@ FROM (
             'ng_distribution'
         )
 ) AS v(
-    id, code, name, tree_path, sort, model_code, region_id,
+    id, code, name, tree_path, sort, model_code, fld_base_facility_ref_region,
     address, longitude, latitude, facility_type
 )
 JOIN dynamic_model m
@@ -509,7 +509,7 @@ ON CONFLICT (id) DO UPDATE SET
     model_id = EXCLUDED.model_id,
     name = EXCLUDED.name,
     code = EXCLUDED.code,
-    region_id = EXCLUDED.region_id,
+    fld_base_facility_ref_region = EXCLUDED.fld_base_facility_ref_region,
     facility_type = EXCLUDED.facility_type,
     deleted = false,
     updater = 'seed',

@@ -401,9 +401,35 @@ public final class CapabilityBlockProjectionBuilder {
             if (source.get("applicableViews") != null) {
                 item.put("applicableViews", source.get("applicableViews"));
             }
+            copyFieldSemantics(source, item);
             fields.add(item);
         }
         return fields;
+    }
+
+    /** 透传字段语义 / REF 目标，供前端按角色解析 fieldKey（禁止再写死 FLD-*）。 */
+    private static void copyFieldSemantics(Map<String, Object> source, Map<String, Object> item) {
+        if (source.get("semanticType") != null) {
+            item.put("semanticType", source.get("semanticType"));
+        }
+        if (source.get("targetEntityTypeCode") != null) {
+            item.put("targetEntityTypeCode", source.get("targetEntityTypeCode"));
+        }
+        if (source.get("refTarget") != null) {
+            item.put("refTarget", source.get("refTarget"));
+        }
+        if (source.get("baseField") != null) {
+            item.put("baseField", source.get("baseField"));
+        }
+        if (source.get("groupId") != null) {
+            item.put("groupId", source.get("groupId"));
+        }
+        if (source.get("groupName") != null) {
+            item.put("groupName", source.get("groupName"));
+        }
+        if (source.get("groupSortOrder") != null) {
+            item.put("groupSortOrder", source.get("groupSortOrder"));
+        }
     }
 
     private static String mapFieldType(String renderAs) {
@@ -449,6 +475,7 @@ public final class CapabilityBlockProjectionBuilder {
             item.put("searchable", source.getOrDefault("searchable", false));
             item.put("sortable", source.getOrDefault("sortable", false));
             item.put("defaultVisible", source.getOrDefault("defaultVisible", false));
+            copyFieldSemantics(source, item);
             fields.add(item);
         }
         projection.put("filter", Map.of("fields", fields));

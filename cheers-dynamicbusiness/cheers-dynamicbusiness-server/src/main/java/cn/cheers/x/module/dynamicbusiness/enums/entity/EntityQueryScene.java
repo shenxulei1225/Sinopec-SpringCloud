@@ -11,7 +11,7 @@ import java.util.Map;
  * 实体统一查询场景（query-by-scene）。
  *
  * <p>正式场景：{@link #ENTITIES_BY_CATEGORY}、{@link #ENTITIES_BY_MODEL}、
- * {@link #ENTITIES_BY_CATEGORY_LINK}、{@link #ENTITIES_DETAIL}。
+ * {@link #ENTITIES_UNCATEGORIZED}、{@link #ENTITIES_BY_CATEGORY_LINK}、{@link #ENTITIES_DETAIL}。
  * {@link #ROOT_ENTITY_SUBTREE} 仅兼容保留，本期数据管理不对对接。</p>
  */
 @AllArgsConstructor
@@ -22,6 +22,12 @@ public enum EntityQueryScene {
 
     /** 无分类列：按型号查实体；未传 modelIds 时按类型（可叠业务域/划分） */
     ENTITIES_BY_MODEL("ENTITIES_BY_MODEL", "按型号或类型查实体"),
+
+    /**
+     * 数据管理「未分类」：当前 categoryTypeCode 下未挂接任何分类节点的实体
+     * （差集 = 类型范围内实体 − relation/link 已关联该种类任一节点）。
+     */
+    ENTITIES_UNCATEGORIZED("ENTITIES_UNCATEGORIZED", "未挂分类的实体"),
 
     /** 节点绑实体：点分类节点取绑定实体 */
     ENTITIES_BY_CATEGORY_LINK("ENTITIES_BY_CATEGORY_LINK", "分类节点绑定实体"),

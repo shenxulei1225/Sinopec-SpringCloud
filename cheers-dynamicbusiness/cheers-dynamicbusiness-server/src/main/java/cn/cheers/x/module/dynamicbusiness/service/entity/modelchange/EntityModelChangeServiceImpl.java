@@ -1,6 +1,11 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity.modelchange;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityChangeModelBatchCommitReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityChangeModelBatchCommitRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityChangeModelBatchItemVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityChangeModelBatchPreviewReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityChangeModelBatchPreviewRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityChangeModelCommitReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityChangeModelCommitRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityChangeModelFieldItemVO;
@@ -28,6 +33,8 @@ import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategoryRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
+import cn.cheers.x.module.dynamicbusiness.service.model.relation.ModelCategoryRelationService;
+import cn.cheers.x.module.dynamicbusiness.service.model.relation.ModelCategoryRelationService;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -54,6 +61,8 @@ import java.util.stream.Collectors;
 public class EntityModelChangeServiceImpl implements EntityModelChangeService {
 
     private static final String ARCHIVE_KEY = "_modelChangeArchive";
+    /** 单次批量上限，避免一次拖垮预览/提交 */
+    private static final int BATCH_MAX_SIZE = 200;
 
     private static final Set<String> SKIP_FIELD_CODES = Set.of(
             "id", "tenantid", "tenant_id",
@@ -86,6 +95,7 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
     private final EntityTypeService entityTypeService;
     private final EntityCategoryRelationService entityCategoryRelationService;
     private final EntityCategoryRelationMapper entityCategoryRelationMapper;
+    private final ModelCategoryRelationService modelCategoryRelationService;
 
     @Override
     public EntityChangeModelPreviewRespVO preview(EntityChangeModelPreviewReqVO reqVO) {
@@ -125,6 +135,9 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
                     List.of(ctx.entityId), ctx.entityTypeCode, ctx.targetDomain);
         }
 
+        // 实体已挂的分类须能在型号列看到新型号：补建 目标型号 ↔ 这些分类 的关联
+        int linkedModelCategoryCount = ensureTargetModelLinkedToEntityCategories(ctx);
+
         EntityChangeModelCommitRespVO resp = new EntityChangeModelCommitRespVO();
         resp.setEntityId(ctx.entityId);
         resp.setModelId(ctx.targetModel.getId());
@@ -134,7 +147,180 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
         resp.setTargetDomain(ctx.targetDomain);
         resp.setDomainChanged(ctx.domainChanged);
         resp.setSyncedRelationCount(syncedRelationCount);
+        resp.setLinkedModelCategoryCount(linkedModelCategoryCount);
         return resp;
+    }
+
+    /**
+     * 按实体当前分类关联，把目标型号关联到这些分类（已存在则跳过）。
+     * 否则分类浏览时型号列只有旧型号，新型号下的实体会「看不见型号入口」。
+     */
+    private int ensureTargetModelLinkedToEntityCategories(MigrationContext ctx) {
+        if (ctx == null || ctx.targetModel == null || ctx.targetModel.getId() == null) {
+            return 0;
+        }
+        List<Long> categoryIds = entityCategoryRelationService.listCategoryIdsByEntityId(
+                ctx.entityId, ctx.entityTypeCode);
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return 0;
+        }
+        Long targetModelId = ctx.targetModel.getId();
+        List<Long> missing = new ArrayList<>();
+        for (Long categoryId : categoryIds) {
+            if (categoryId == null || categoryId <= 0) {
+                continue;
+            }
+            if (!modelCategoryRelationService.existsRelation(targetModelId, categoryId, ctx.entityTypeCode)) {
+                missing.add(categoryId);
+            }
+        }
+        if (missing.isEmpty()) {
+            return 0;
+        }
+        modelCategoryRelationService.batchAssociateModelToCategories(
+                targetModelId, missing, ctx.entityTypeCode);
+        return missing.size();
+    }
+
+    @Override
+    public EntityChangeModelBatchPreviewRespVO batchPreview(EntityChangeModelBatchPreviewReqVO reqVO) {
+        List<Long> entityIds = normalizeBatchEntityIds(reqVO.getEntityIds());
+        Long targetModelId = reqVO.getTargetModelId();
+        String entityTypeCode = reqVO.getEntityTypeCode();
+
+        EntityChangeModelBatchPreviewRespVO resp = new EntityChangeModelBatchPreviewRespVO();
+        ModelDO targetModel = requireAliveModel(targetModelId, "目标");
+        EntityChangeModelModelSummaryVO targetSummary = new EntityChangeModelModelSummaryVO();
+        targetSummary.setId(targetModel.getId());
+        targetSummary.setCode(targetModel.getCode());
+        targetSummary.setName(targetModel.getName());
+        resp.setTargetModel(targetSummary);
+
+        for (Long entityId : entityIds) {
+            EntityChangeModelBatchItemVO item = new EntityChangeModelBatchItemVO();
+            item.setEntityId(entityId);
+            try {
+                EntityChangeModelPreviewReqVO one = new EntityChangeModelPreviewReqVO();
+                one.setEntityTypeCode(entityTypeCode);
+                one.setEntityId(entityId);
+                one.setTargetModelId(targetModelId);
+                EntityChangeModelPreviewRespVO preview = preview(one);
+                item.setEntityName(resolveEntityDisplayName(entityTypeCode, entityId, preview));
+                item.setSourceModelName(preview.getSourceModel() != null ? preview.getSourceModel().getName() : null);
+                item.setKeptFieldCount(preview.getKeptFields() != null ? preview.getKeptFields().size() : 0);
+                item.setArchivedFieldCount(preview.getArchivedFields() != null ? preview.getArchivedFields().size() : 0);
+                item.setMissingRequired(preview.getMissingRequired() != null
+                        ? preview.getMissingRequired() : List.of());
+                item.setDomainChanged(preview.isDomainChanged());
+                if (item.getMissingRequired() != null && !item.getMissingRequired().isEmpty()) {
+                    item.setStatus(EntityChangeModelBatchItemVO.STATUS_NEEDS_PATCH);
+                    item.setReason("目标型号必填字段未齐："
+                            + item.getMissingRequired().stream()
+                            .map(f -> f.getLabel() != null && !f.getLabel().isBlank()
+                                    ? f.getLabel() : f.getFieldCode())
+                            .collect(Collectors.joining("、")));
+                    resp.getNeedsPatch().add(item);
+                } else {
+                    item.setStatus(EntityChangeModelBatchItemVO.STATUS_READY);
+                    resp.getReady().add(item);
+                }
+            } catch (ServiceException ex) {
+                item.setStatus(EntityChangeModelBatchItemVO.STATUS_BLOCKED);
+                item.setReason(ex.getMessage());
+                item.setEntityName(resolveEntityDisplayNameSafe(entityTypeCode, entityId));
+                resp.getBlocked().add(item);
+            } catch (Exception ex) {
+                item.setStatus(EntityChangeModelBatchItemVO.STATUS_BLOCKED);
+                item.setReason(ex.getMessage() != null ? ex.getMessage() : "预览失败");
+                item.setEntityName(resolveEntityDisplayNameSafe(entityTypeCode, entityId));
+                resp.getBlocked().add(item);
+            }
+        }
+        resp.setReadyCount(resp.getReady().size());
+        resp.setNeedsPatchCount(resp.getNeedsPatch().size());
+        resp.setBlockedCount(resp.getBlocked().size());
+        return resp;
+    }
+
+    @Override
+    public EntityChangeModelBatchCommitRespVO batchCommit(EntityChangeModelBatchCommitReqVO reqVO) {
+        List<Long> entityIds = normalizeBatchEntityIds(reqVO.getEntityIds());
+        Map<String, Map<String, Object>> patches =
+                reqVO.getPatches() != null ? reqVO.getPatches() : Map.of();
+        boolean confirmArchive = reqVO.getConfirmArchive() == null
+                || Boolean.TRUE.equals(reqVO.getConfirmArchive());
+
+        EntityChangeModelBatchCommitRespVO resp = new EntityChangeModelBatchCommitRespVO();
+        for (Long entityId : entityIds) {
+            try {
+                EntityChangeModelCommitReqVO one = new EntityChangeModelCommitReqVO();
+                one.setEntityTypeCode(reqVO.getEntityTypeCode());
+                one.setEntityId(entityId);
+                one.setTargetModelId(reqVO.getTargetModelId());
+                one.setConfirmArchive(confirmArchive);
+                Map<String, Object> patch = patches.get(String.valueOf(entityId));
+                if (patch != null && !patch.isEmpty()) {
+                    one.setPatchFields(patch);
+                }
+                EntityChangeModelCommitRespVO committed = commit(one);
+                resp.getSuccesses().add(committed);
+            } catch (ServiceException ex) {
+                EntityChangeModelBatchItemVO fail = new EntityChangeModelBatchItemVO();
+                fail.setEntityId(entityId);
+                fail.setStatus(EntityChangeModelBatchItemVO.STATUS_BLOCKED);
+                fail.setReason(ex.getMessage());
+                fail.setEntityName(resolveEntityDisplayNameSafe(reqVO.getEntityTypeCode(), entityId));
+                resp.getFailures().add(fail);
+            } catch (Exception ex) {
+                EntityChangeModelBatchItemVO fail = new EntityChangeModelBatchItemVO();
+                fail.setEntityId(entityId);
+                fail.setStatus(EntityChangeModelBatchItemVO.STATUS_BLOCKED);
+                fail.setReason(ex.getMessage() != null ? ex.getMessage() : "提交失败");
+                fail.setEntityName(resolveEntityDisplayNameSafe(reqVO.getEntityTypeCode(), entityId));
+                resp.getFailures().add(fail);
+            }
+        }
+        resp.setSuccessCount(resp.getSuccesses().size());
+        resp.setFailureCount(resp.getFailures().size());
+        return resp;
+    }
+
+    private List<Long> normalizeBatchEntityIds(List<Long> rawIds) {
+        if (rawIds == null || rawIds.isEmpty()) {
+            throw new ServiceException(400, "entityIds 不能为空");
+        }
+        LinkedHashSet<Long> unique = new LinkedHashSet<>();
+        for (Long id : rawIds) {
+            if (id != null && id > 0) {
+                unique.add(id);
+            }
+        }
+        if (unique.isEmpty()) {
+            throw new ServiceException(400, "entityIds 无有效 ID");
+        }
+        if (unique.size() > BATCH_MAX_SIZE) {
+            throw new ServiceException(400, "单次最多处理 " + BATCH_MAX_SIZE + " 条，请缩小勾选范围");
+        }
+        return List.copyOf(unique);
+    }
+
+    private String resolveEntityDisplayName(String entityTypeCode, Long entityId,
+                                            EntityChangeModelPreviewRespVO preview) {
+        return resolveEntityDisplayNameSafe(entityTypeCode, entityId);
+    }
+
+    private String resolveEntityDisplayNameSafe(String entityTypeCode, Long entityId) {
+        try {
+            String trimmedType = entityTypeScopeResolver.resolveStorageEntityTypeCode(
+                    entityTypeCode != null ? entityTypeCode.trim() : "");
+            EntityDO entity = entityCoreService.get(entityId, trimmedType);
+            if (entity != null && StringUtils.hasText(entity.getName())) {
+                return entity.getName().trim();
+            }
+        } catch (Exception ignored) {
+            // 名称仅展示用
+        }
+        return entityId != null ? String.valueOf(entityId) : null;
     }
 
     private MigrationContext buildContext(String entityTypeCode, Long entityId, Long targetModelId) {
@@ -420,7 +606,7 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
     }
 
     /**
-     * 构建字段查找表：同一业务值可能以 fieldCode、字段库 code（FLD-BASE-*）、物理列名（如 region_id）存储。
+     * 构建字段查找表：键仅为字段编码（基础字段 fieldCode / 字段库 code），不做物理列名或短名别名。
      */
     private Map<String, Object> buildSnapshotLookup(String entityTypeCode, Map<String, Object> rawSnapshot) {
         Map<String, Object> lookup = new LinkedHashMap<>();
@@ -443,29 +629,9 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
         String canonical = canonicalFieldCode(entityTypeCode, key);
         if (StringUtils.hasText(canonical)) {
             lookup.putIfAbsent(canonical, value);
-            registerRefPhysicalAliases(lookup, canonical, value);
             String libraryCode = libraryCodeForRegisteredField(entityTypeCode, canonical);
             if (libraryCode != null) {
                 lookup.putIfAbsent(libraryCode, value);
-            }
-        }
-    }
-
-    private void registerRefPhysicalAliases(Map<String, Object> lookup, String canonicalFieldCode, Object value) {
-        if (!StringUtils.hasText(canonicalFieldCode)) {
-            return;
-        }
-        if (canonicalFieldCode.startsWith("REF_")) {
-            String physicalKey = inferPhysicalKeyFromRefFieldCode(canonicalFieldCode);
-            if (physicalKey != null) {
-                lookup.putIfAbsent(physicalKey, value);
-            }
-            return;
-        }
-        if (canonicalFieldCode.endsWith("_id")) {
-            String refCode = inferRefFieldCodeFromPhysicalKey(canonicalFieldCode);
-            if (refCode != null) {
-                lookup.putIfAbsent(refCode, value);
             }
         }
     }
@@ -507,15 +673,6 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
                 return fromLibrary;
             }
         }
-        if (canonical.startsWith("REF_")) {
-            String physicalKey = inferPhysicalKeyFromRefFieldCode(canonical);
-            if (physicalKey != null) {
-                Object fromPhysical = patchFields.get(physicalKey);
-                if (!isEmptyValue(fromPhysical)) {
-                    return fromPhysical;
-                }
-            }
-        }
         return null;
     }
 
@@ -525,12 +682,6 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
         String libraryCode = libraryCodeForRegisteredField(ctx.entityTypeCode, canonical);
         if (libraryCode != null) {
             consumedSnapshotKeys.add(libraryCode);
-        }
-        if (canonical.startsWith("REF_")) {
-            String physicalKey = inferPhysicalKeyFromRefFieldCode(canonical);
-            if (physicalKey != null) {
-                consumedSnapshotKeys.add(physicalKey);
-            }
         }
         if (ctx.rawSnapshot != null) {
             for (String rawKey : ctx.rawSnapshot.keySet()) {
@@ -571,30 +722,6 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
         }
         FieldDO libraryField = fieldMapper.selectByCode(registeredFieldCode);
         return libraryField != null ? libraryField.getCode() : null;
-    }
-
-    /** REF_REGION → region_id */
-    private String inferPhysicalKeyFromRefFieldCode(String fieldCode) {
-        if (!StringUtils.hasText(fieldCode) || !fieldCode.startsWith("REF_")) {
-            return null;
-        }
-        String suffix = fieldCode.substring(4);
-        if (suffix.isEmpty()) {
-            return null;
-        }
-        return suffix.toLowerCase() + "_id";
-    }
-
-    /** region_id → REF_REGION */
-    private String inferRefFieldCodeFromPhysicalKey(String physicalKey) {
-        if (!StringUtils.hasText(physicalKey) || !physicalKey.endsWith("_id")) {
-            return null;
-        }
-        String stem = physicalKey.substring(0, physicalKey.length() - 3);
-        if (stem.isEmpty()) {
-            return null;
-        }
-        return "REF_" + stem.toUpperCase();
     }
 
     private void mergeSnapshot(Map<String, Object> target, Map<String, Object> source) {

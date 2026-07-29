@@ -58,7 +58,7 @@ INSERT INTO dynamic_entity_type_config (
 ) VALUES (
     'facility', '设施管理', 'DEDICATED', 'ent_facility', NULL, TRUE,
     '设施点 ent_facility', 1,
-    '{"region_id": {"type": "BIGINT", "column": "region_id"}, "address": {"type": "VARCHAR", "column": "address", "length": 500}, "longitude": {"type": "DECIMAL", "scale": 8, "column": "longitude", "precision": 12}, "latitude": {"type": "DECIMAL", "scale": 8, "column": "latitude", "precision": 12}, "facility_type": {"type": "VARCHAR", "column": "facility_type", "length": 100}}',
+    '{"FLD-BASE-facility-REF_REGION": {"type": "BIGINT", "column": "fld_base_facility_ref_region"}, "address": {"type": "VARCHAR", "column": "address", "length": 500}, "longitude": {"type": "DECIMAL", "scale": 8, "column": "longitude", "precision": 12}, "latitude": {"type": "DECIMAL", "scale": 8, "column": "latitude", "precision": 12}, "facility_type": {"type": "VARCHAR", "column": "facility_type", "length": 100}}',
     1, 'seed'
 )
 ON CONFLICT (entity_type_code, tenant_id) WHERE deleted = false
@@ -74,7 +74,7 @@ INSERT INTO dynamic_entity_type_config (
 ) VALUES (
     'zone', '空间分区', 'DEDICATED', 'ent_zone', NULL, TRUE,
     '站内分区 ent_zone', 1,
-    '{"facility_id": {"type": "BIGINT", "column": "facility_id"}, "zone_type": {"type": "VARCHAR", "column": "zone_type", "length": 100}, "description": {"type": "VARCHAR", "column": "description", "length": 500}, "boundary_geojson": {"type": "JSONB", "column": "boundary_geojson"}, "boundary_crs": {"type": "VARCHAR", "column": "boundary_crs", "length": 32}, "boundary_status": {"type": "VARCHAR", "column": "boundary_status", "length": 32}, "min_height_m": {"type": "DECIMAL", "scale": 3, "column": "min_height_m", "precision": 10}, "max_height_m": {"type": "DECIMAL", "scale": 3, "column": "max_height_m", "precision": 10}, "centroid_lng": {"type": "DECIMAL", "scale": 8, "column": "centroid_lng", "precision": 12}, "centroid_lat": {"type": "DECIMAL", "scale": 8, "column": "centroid_lat", "precision": 12}}',
+    '{"FLD-BASE-zone-REF_FACILITY": {"type": "BIGINT", "column": "fld_base_zone_ref_facility"}, "zone_type": {"type": "VARCHAR", "column": "zone_type", "length": 100}, "description": {"type": "VARCHAR", "column": "description", "length": 500}, "boundary_geojson": {"type": "JSONB", "column": "boundary_geojson"}, "boundary_crs": {"type": "VARCHAR", "column": "boundary_crs", "length": 32}, "boundary_status": {"type": "VARCHAR", "column": "boundary_status", "length": 32}, "min_height_m": {"type": "DECIMAL", "scale": 3, "column": "min_height_m", "precision": 10}, "max_height_m": {"type": "DECIMAL", "scale": 3, "column": "max_height_m", "precision": 10}, "centroid_lng": {"type": "DECIMAL", "scale": 8, "column": "centroid_lng", "precision": 12}, "centroid_lat": {"type": "DECIMAL", "scale": 8, "column": "centroid_lat", "precision": 12}}',
     1, 'seed'
 )
 ON CONFLICT (entity_type_code, tenant_id) WHERE deleted = false

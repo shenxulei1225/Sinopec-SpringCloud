@@ -30,8 +30,10 @@ import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldGroupRespVO;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelFieldGroupService;
+import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityBaseFieldColumnNames;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
 import cn.cheers.x.module.dynamicbusiness.framework.field.EntityTypeFieldLabelHelper;
+import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.service.capability.form.ModelCrudFormFieldAssembler;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.service.capability.projection.CapabilityBlockProjectionBuilder;
@@ -517,17 +519,16 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         int order = 0;
         for (Map<String, Object> meta : byFieldKey.values()) {
             String fieldKey = String.valueOf(meta.get("fieldKey"));
-            if (!isBaseDisplayField(meta, fieldKey)) {
-                continue;
-            }
+            // 列表展示列 + 全量字段目录（含非基础字段）；列表 UI 用 defaultVisible 控制默认列
+            boolean visibleByDefault = isBaseDisplayField(meta, fieldKey);
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("id", fieldKey);
             item.put("fieldKey", fieldKey);
             item.put("label", meta.get("label"));
             item.put("renderAs", mapDisplayRenderAs(String.valueOf(meta.get("fieldType"))));
             item.put("sortOrder", meta.get("sortOrder") != null ? meta.get("sortOrder") : order++);
-            item.put("defaultVisible", isBaseDisplayField(meta, fieldKey));
-            item.put("baseField", isBaseDisplayField(meta, fieldKey));
+            item.put("defaultVisible", visibleByDefault);
+            item.put("baseField", Boolean.TRUE.equals(meta.get("baseField")) || BUILTIN_BASE_DISPLAY_KEYS.contains(fieldKey));
             item.put("applicableViews", List.of(componentCode));
             if (meta.get("groupId") != null) {
                 item.put("groupId", meta.get("groupId"));
@@ -538,6 +539,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             if (meta.get("groupSortOrder") != null) {
                 item.put("groupSortOrder", meta.get("groupSortOrder"));
             }
+            copyFieldSemanticsToProjectionItem(meta, item);
             displayFields.add(item);
         }
         displayFields.sort(displayFieldOrderComparator());
@@ -589,6 +591,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             filter.put("searchable", Boolean.TRUE.equals(meta.get("searchable")));
             filter.put("sortable", Boolean.TRUE.equals(meta.get("sortable")));
             filter.put("defaultVisible", true);
+            copyFieldSemanticsToProjectionItem(meta, filter);
             filters.add(filter);
         }
         filters.sort(Comparator.comparingInt(item -> item.get("sortOrder") instanceof Integer sort
@@ -635,6 +638,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                     meta.put("sortable", Boolean.TRUE.equals(assign.getIsSortable()));
                     meta.put("sortOrder", assign.getSort() != null ? assign.getSort() : 0);
                     meta.put("baseField", false);
+                    applyFieldSemanticsAndRefTarget(meta, field);
                     byFieldKey.put(fieldKey, meta);
                     continue;
                 }
@@ -644,6 +648,9 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                         || Boolean.TRUE.equals(assign.getIsSearchable()));
                 existing.put("sortable", Boolean.TRUE.equals(existing.get("sortable"))
                         || Boolean.TRUE.equals(assign.getIsSortable()));
+                if (!existing.containsKey("semanticType") && !existing.containsKey("targetEntityTypeCode")) {
+                    applyFieldSemanticsAndRefTarget(existing, field);
+                }
             }
             applyModelGroupMeta(model.getId(), byFieldKey, fieldById);
         }
@@ -726,6 +733,129 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                 meta.put("groupSortOrder", 0);
             }
         }
+        enrichBaseFieldSemanticsFromLibrary(byFieldKey);
+    }
+
+    /** 基础字段行可能无 FieldDO 上下文：按 field_code 回查字段库补 semantic / REF 目标。 */
+    private void enrichBaseFieldSemanticsFromLibrary(LinkedHashMap<String, Map<String, Object>> byFieldKey) {
+        if (byFieldKey == null || byFieldKey.isEmpty()) {
+            return;
+        }
+        List<String> codesNeedingEnrich = new ArrayList<>();
+        for (Map.Entry<String, Map<String, Object>> entry : byFieldKey.entrySet()) {
+            Map<String, Object> meta = entry.getValue();
+            if (meta == null) {
+                continue;
+            }
+            if (meta.containsKey("semanticType") && meta.containsKey("targetEntityTypeCode")) {
+                continue;
+            }
+            if (Boolean.TRUE.equals(meta.get("baseField")) || needsSemanticEnrich(meta)) {
+                codesNeedingEnrich.add(entry.getKey());
+            }
+        }
+        if (codesNeedingEnrich.isEmpty()) {
+            return;
+        }
+        Map<String, FieldDO> fieldByCode = loadFieldMapByCodes(codesNeedingEnrich);
+        for (String code : codesNeedingEnrich) {
+            Map<String, Object> meta = byFieldKey.get(code);
+            if (meta == null) {
+                continue;
+            }
+            applyFieldSemanticsAndRefTarget(meta, fieldByCode.get(code));
+        }
+    }
+
+    private static boolean needsSemanticEnrich(Map<String, Object> meta) {
+        return !meta.containsKey("semanticType")
+                || (isEntityRefFieldType(String.valueOf(meta.get("fieldType")))
+                && !meta.containsKey("targetEntityTypeCode"));
+    }
+
+    private static boolean isEntityRefFieldType(String fieldType) {
+        if (!StringUtils.hasText(fieldType)) {
+            return false;
+        }
+        String t = fieldType.trim();
+        return FieldTypeEnum.isEntityRef(t) || "REFERENCE".equalsIgnoreCase(t) || "REF".equalsIgnoreCase(t);
+    }
+
+    private void applyFieldSemanticsAndRefTarget(Map<String, Object> meta, FieldDO field) {
+        if (meta == null) {
+            return;
+        }
+        String fieldKey = String.valueOf(meta.get("fieldKey"));
+        String semantic = null;
+        if (field != null && StringUtils.hasText(field.getSemanticType())) {
+            semantic = field.getSemanticType().trim();
+        }
+        if (!StringUtils.hasText(semantic)) {
+            semantic = EntityBaseFieldColumnNames.inferSemanticType(fieldKey);
+        }
+        if (StringUtils.hasText(semantic) && !meta.containsKey("semanticType")) {
+            meta.put("semanticType", semantic);
+        }
+
+        String fieldType = field != null && StringUtils.hasText(field.getType())
+                ? field.getType()
+                : String.valueOf(meta.get("fieldType"));
+        if (!isEntityRefFieldType(fieldType)) {
+            return;
+        }
+        if (meta.containsKey("targetEntityTypeCode")) {
+            return;
+        }
+        String target = ModelCrudFormFieldAssembler.resolveTargetEntityTypeFromField(field);
+        if (!StringUtils.hasText(target)) {
+            target = EntityBaseFieldColumnNames.inferRefTargetEntityType(fieldKey);
+        }
+        if (!StringUtils.hasText(target) && StringUtils.hasText(semantic)
+                && !semantic.contains("_") && semantic.length() < 64) {
+            // ENTITY_REF 且 semantic_type=facility/zone 等业务类型编码
+            target = semantic;
+        }
+        if (!StringUtils.hasText(target)) {
+            return;
+        }
+        meta.put("targetEntityTypeCode", target.trim());
+        Map<String, Object> binding = new LinkedHashMap<>();
+        binding.put("businessCategory", BusinessCategoryConstants.DYNAMIC);
+        binding.put("dataKind", BusinessCategoryConstants.KIND_ENTITY);
+        binding.put("entityTypeCode", target.trim());
+        meta.put("refTarget", Map.of(
+                "capabilityBinding", binding,
+                "valueField", "id",
+                "labelField", "name"));
+    }
+
+    private static void copyFieldSemanticsToProjectionItem(Map<String, Object> meta, Map<String, Object> item) {
+        if (meta.get("semanticType") != null) {
+            item.put("semanticType", meta.get("semanticType"));
+        }
+        if (meta.get("targetEntityTypeCode") != null) {
+            item.put("targetEntityTypeCode", meta.get("targetEntityTypeCode"));
+        }
+        if (meta.get("refTarget") != null) {
+            item.put("refTarget", meta.get("refTarget"));
+        }
+    }
+
+    private Map<String, FieldDO> loadFieldMapByCodes(Collection<String> codes) {
+        Map<String, FieldDO> byCode = new HashMap<>();
+        if (codes == null || codes.isEmpty()) {
+            return byCode;
+        }
+        for (String code : codes) {
+            if (!StringUtils.hasText(code)) {
+                continue;
+            }
+            FieldDO field = fieldMapper.selectByCode(code.trim());
+            if (field != null && StringUtils.hasText(field.getCode())) {
+                byCode.put(field.getCode().trim(), field);
+            }
+        }
+        return byCode;
     }
 
     private boolean isBaseDisplayField(Map<String, Object> meta, String fieldKey) {
@@ -774,6 +904,8 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             case "ENUM" -> "select";
             case "DATE", "DATETIME", "TIMESTAMP" -> "date";
             case "NUMBER", "INTEGER", "DECIMAL" -> "input";
+            case "ENTITY_REF", "REFERENCE", "REF" -> "ref-picker";
+            case "ENTITY_REF_MULTI", "REF_MULTI", "BATCH_ENTITY_REF" -> "ref-picker-multi";
             default -> "input";
         };
     }

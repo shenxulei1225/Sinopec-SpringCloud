@@ -63,10 +63,10 @@ public class EntitySceneQueryReqVO extends PageParam {
     @Schema(description = "业务域（Domain），可选；子数据类型入口未传时回落到入口自身业务域", example = "巡检")
     private String domain;
 
-    @Schema(description = "字段排序列（能力投影 sortByParam=orderByColumn）；为空时沿用 relation.sort / entity.sort", example = "name")
+    @Schema(description = "字段排序列；PAGE 未传时默认 name；拖拽人工序传 sort", example = "name")
     private String orderByColumn;
 
-    @Schema(description = "字段排序方向（能力投影 sortDirParam=isAsc）；默认 true=升序", example = "true")
+    @Schema(description = "字段排序方向；默认 true=升序", example = "true")
     private Boolean isAsc;
 
 }

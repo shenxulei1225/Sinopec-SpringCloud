@@ -20,13 +20,13 @@ INSERT INTO dynamic_field (
   index_strategy, options, provider_code, semantic_type, tenant_id, creator
 ) VALUES
   ('FLD-PNT-001', '所属设施', 'ENTITY_REF', NULL,
-   '挂接 facility 实体 id', 'SYSTEM', 1, 1, 'NONE', NULL, NULL, 'facility_id', 1, 'seed'),
+   '挂接 facility 实体 id', 'SYSTEM', 1, 1, 'NONE', NULL, NULL, 'facility', 1, 'seed'),
   ('FLD-PNT-002', '挂接停靠站', 'STRING', NULL,
    '路网停靠站 nodeId；路网导入后回填', 'SYSTEM', 1, NULL, 'NONE', NULL, NULL, 'station_node_id', 1, 'seed'),
   ('FLD-PNT-003', '关联设备', 'ENTITY_REF_MULTI', NULL,
    '待巡检设备 id 列表', 'SYSTEM', 1, NULL, 'NONE', NULL, NULL, 'equipment_ids', 1, 'seed'),
   ('FLD-RTE-010', '所属设施', 'ENTITY_REF', NULL,
-   '路线所属 facility', 'SYSTEM', 1, 1, 'NONE', NULL, NULL, 'facility_id', 1, 'seed'),
+   '路线所属 facility', 'SYSTEM', 1, 1, 'NONE', NULL, NULL, 'facility', 1, 'seed'),
   ('FLD-RTE-011', '拓扑版本', 'STRING', NULL,
    '已发布路网 topologyRef', 'SYSTEM', 1, NULL, 'NONE', NULL, NULL, 'topology_ref', 1, 'seed'),
   ('FLD-RTE-012', '停靠站有序列表', 'LONG_TEXT', NULL,

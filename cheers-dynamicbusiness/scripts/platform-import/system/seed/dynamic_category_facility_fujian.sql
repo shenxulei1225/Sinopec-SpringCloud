@@ -1,6 +1,6 @@
 -- 福建设施 Pattern C：管道线路（facility 管道模型）→ 站场（facility 站型模型）
 -- 前置：dynamic_entity_facility_fujian_dev_sample.sql、dynamic_model_facility.sql（含 PIPELINE 模型）
--- 组织维度：站场 region_id 已在设施 seed 挂 REG-PROV-FJ（100024）
+-- 组织维度：站场 fld_base_facility_ref_region 已在设施 seed 挂 REG-PROV-FJ（100024）
 
 SET search_path TO dynamicbusiness;
 
@@ -56,7 +56,7 @@ FROM (VALUES
 -- 1) 管道线路实体（facility · 管道模型）
 INSERT INTO ent_facility (
   id, entity_type_code, model_id, name, code, tenant_id, creator,
-  tree_path, sort, status, deleted, region_id, facility_type, custom_fields
+  tree_path, sort, status, deleted, fld_base_facility_ref_region, facility_type, custom_fields
 )
 SELECT
   n.entity_id, 'facility', m.id, n.display_name,
@@ -76,7 +76,7 @@ ON CONFLICT (id) DO UPDATE SET
   model_id = EXCLUDED.model_id,
   name = EXCLUDED.name,
   code = EXCLUDED.code,
-  region_id = EXCLUDED.region_id,
+  fld_base_facility_ref_region = EXCLUDED.fld_base_facility_ref_region,
   facility_type = EXCLUDED.facility_type,
   deleted = false,
   updater = 'seed',

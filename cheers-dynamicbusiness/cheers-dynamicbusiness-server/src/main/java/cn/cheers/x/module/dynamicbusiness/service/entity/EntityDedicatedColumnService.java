@@ -61,8 +61,7 @@ public class EntityDedicatedColumnService {
             if (!customFields.containsKey(fieldCode)) {
                 continue;
             }
-            String column = EntityBaseFieldColumnNames.resolvePhysicalColumnName(
-                    fieldCode, col -> columnExists(resolveTableName(entityType), col));
+            String column = EntityBaseFieldColumnNames.toColumnName(fieldCode);
             if (column == null || !columnExists(resolveTableName(entityType), column)) {
                 continue;
             }
@@ -118,8 +117,7 @@ public class EntityDedicatedColumnService {
             if (field == null || StrUtil.isBlank(field.getFieldCode()) || !field.isEnabled()) {
                 continue;
             }
-            String column = EntityBaseFieldColumnNames.resolvePhysicalColumnName(
-                    field.getFieldCode(), col -> columnExists(table, col));
+            String column = EntityBaseFieldColumnNames.toColumnName(field.getFieldCode());
             if (column == null || !columnExists(table, column)) {
                 continue;
             }
@@ -139,8 +137,7 @@ public class EntityDedicatedColumnService {
         }
         Map<String, Object> row = rows.get(0);
         for (EntityTypeBaseFieldDO field : selected) {
-            String column = EntityBaseFieldColumnNames.resolvePhysicalColumnName(
-                    field.getFieldCode(), col -> columnExists(table, col));
+            String column = EntityBaseFieldColumnNames.toColumnName(field.getFieldCode());
             Object dbVal = row.get(column);
             if (dbVal == null) {
                 // JDBC 可能返回小写/原名；再试一遍
@@ -179,8 +176,7 @@ public class EntityDedicatedColumnService {
             return out;
         }
         String table = resolveTableName(entityType);
-        String column = EntityBaseFieldColumnNames.resolvePhysicalColumnName(
-                fieldCode.trim(), col -> columnExists(table, col));
+        String column = EntityBaseFieldColumnNames.toColumnName(fieldCode.trim());
         if (column == null || !columnExists(table, column)) {
             return out;
         }

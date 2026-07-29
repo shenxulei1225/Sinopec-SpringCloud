@@ -84,6 +84,29 @@ public class EntityController {
         return success(entityModelChangeService.commit(reqVO));
     }
 
+    @PostMapping("/change-model/batch-preview")
+    @Operation(
+        summary = "变更模型 - 批量预览",
+        description = "按勾选的实体 ID 列表逐条预览，汇总可迁 / 需补填 / 不可迁。不使用当前高亮单行。"
+    )
+    @PreAuthorize("@ss.hasPermission('system:entity:update')")
+    public CommonResult<EntityChangeModelBatchPreviewRespVO> batchPreviewChangeModel(
+            @Valid @RequestBody EntityChangeModelBatchPreviewReqVO reqVO) {
+        return success(entityModelChangeService.batchPreview(reqVO));
+    }
+
+    @PostMapping("/change-model/batch")
+    @Operation(
+        summary = "变更模型 - 批量提交",
+        description = "按实体 ID 列表逐条提交；单条失败不影响其余。入参应为预览中的可迁及已补填项。"
+    )
+    @ApiAccessLog(operateType = UPDATE)
+    @PreAuthorize("@ss.hasPermission('system:entity:update')")
+    public CommonResult<EntityChangeModelBatchCommitRespVO> batchCommitChangeModel(
+            @Valid @RequestBody EntityChangeModelBatchCommitReqVO reqVO) {
+        return success(entityModelChangeService.batchCommit(reqVO));
+    }
+
     @PostMapping("/create")
     @Operation(
         summary = "创建实体",
@@ -334,6 +357,7 @@ public class EntityController {
             - 多选 ID 较多时建议使用 POST /query-by-scene + JSON body
             - ENTITIES_BY_CATEGORY：按分类查实体（含子树；未选≡整树）；可叠 modelIds；categoryTypeCode 必填（禁止默认成 entityTypeCode）；传 categoryViaRefPathCode 时走经 REF 反查
             - ENTITIES_BY_MODEL：按型号或类型查实体
+            - ENTITIES_UNCATEGORIZED：当前分类种类下未挂任何节点的实体（差集）；categoryTypeCode 必填；可叠 modelIds
             - ENTITIES_BY_CATEGORY_LINK：分类节点绑定实体
             - ENTITIES_DETAIL：实体详情
             """

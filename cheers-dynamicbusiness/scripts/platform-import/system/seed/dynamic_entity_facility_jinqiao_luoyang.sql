@@ -23,7 +23,7 @@ INSERT INTO ent_facility (
     sort,
     status,
     deleted,
-    region_id,
+    fld_base_facility_ref_region,
     address,
     longitude,
     latitude,
@@ -41,7 +41,7 @@ SELECT
     v.sort,
     1,
     false,
-    v.region_id,
+    v.fld_base_facility_ref_region,
     v.address,
     v.longitude,
     v.latitude,
@@ -68,7 +68,7 @@ FROM (
             112.45390000::numeric(12,8),
             34.61970000::numeric(12,8)
         )
-) AS v(code, name, sort, region_id, address, longitude, latitude)
+) AS v(code, name, sort, fld_base_facility_ref_region, address, longitude, latitude)
 JOIN dynamic_model m
   ON m.deleted = false AND m.tenant_id = 1 AND m.code = 'MODEL-FACILITY-STATION'
 WHERE NOT EXISTS (

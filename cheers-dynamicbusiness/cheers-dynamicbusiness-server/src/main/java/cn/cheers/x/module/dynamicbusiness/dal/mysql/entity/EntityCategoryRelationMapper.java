@@ -556,4 +556,20 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
     List<Long> selectEntityIdsIntersectingCategoryGroups(@Param("entityTypeCode") String entityTypeCode,
                                                          @Param("domain") String domain,
                                                          @Param("groups") List<List<Long>> groups);
+
+    /**
+     * 当前分类种类下已挂接任一节点的实体 id（排除保留「未分类」桶节点）。
+     */
+    @Select("""
+            SELECT DISTINCT ecr.entity_id
+            FROM dynamic_entity_category_relation ecr
+            INNER JOIN dynamic_category c ON c.id = ecr.category_id AND c.deleted = FALSE
+            WHERE ecr.deleted = FALSE
+              AND ecr.entity_type_code = #{entityTypeCode}
+              AND c.category_type_code = #{categoryTypeCode}
+              AND UPPER(c.code) NOT LIKE '%UNCATEGORIZED%'
+            ORDER BY ecr.entity_id ASC
+            """)
+    List<Long> selectDistinctEntityIdsByCategoryTypeCode(@Param("categoryTypeCode") String categoryTypeCode,
+                                                         @Param("entityTypeCode") String entityTypeCode);
 }

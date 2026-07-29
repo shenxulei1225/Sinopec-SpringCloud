@@ -4,6 +4,8 @@ import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryEntityLinkDO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,4 +66,20 @@ public interface CategoryEntityLinkMapper extends BaseMapperX<CategoryEntityLink
         return selectList(new LambdaQueryWrapperX<CategoryEntityLinkDO>()
                 .in(CategoryEntityLinkDO::getCategoryId, categoryIds));
     }
+
+    /**
+     * 当前分类种类下已通过「分类即实体」链接挂接的实体 id（排除保留「未分类」桶节点）。
+     */
+    @Select("""
+            SELECT DISTINCT cel.entity_id
+            FROM dynamic_category_entity_link cel
+            INNER JOIN dynamic_category c ON c.id = cel.category_id AND c.deleted = FALSE
+            WHERE cel.deleted = FALSE
+              AND cel.entity_type_code = #{entityTypeCode}
+              AND c.category_type_code = #{categoryTypeCode}
+              AND UPPER(c.code) NOT LIKE '%UNCATEGORIZED%'
+            ORDER BY cel.entity_id ASC
+            """)
+    List<Long> selectDistinctEntityIdsByCategoryTypeCode(@Param("categoryTypeCode") String categoryTypeCode,
+                                                         @Param("entityTypeCode") String entityTypeCode);
 }

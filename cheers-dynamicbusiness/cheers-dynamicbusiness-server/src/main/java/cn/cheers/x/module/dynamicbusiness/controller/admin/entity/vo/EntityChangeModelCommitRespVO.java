@@ -30,4 +30,7 @@ public class EntityChangeModelCommitRespVO {
 
     @Schema(description = "同步迁移业务域的分类关联数")
     private int syncedRelationCount;
+
+    @Schema(description = "为目标型号新补建的型号–分类关联数（实体已挂分类、型号列可见）")
+    private int linkedModelCategoryCount;
 }

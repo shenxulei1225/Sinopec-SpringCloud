@@ -95,7 +95,7 @@ DO UPDATE SET
 -- equipment 物理列映射增补
 UPDATE dynamic_entity_type_config
 SET physical_column_mapping = COALESCE(physical_column_mapping, '{}'::jsonb)
-    || '{"facility_id": {"type": "BIGINT", "column": "facility_id"}, "zone_id": {"type": "BIGINT", "column": "zone_id"}}'::jsonb,
+    || '{"FLD-BASE-equipment-REF_FACILITY": {"type": "BIGINT", "column": "fld_base_equipment_ref_facility"}, "FLD-BASE-equipment-REF_ZONE": {"type": "BIGINT", "column": "fld_base_equipment_ref_zone"}}'::jsonb,
     updater = 'seed',
     update_time = CURRENT_TIMESTAMP
 WHERE entity_type_code = 'equipment' AND tenant_id = 1 AND deleted = false;

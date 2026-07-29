@@ -17,7 +17,7 @@ INSERT INTO ent_facility (
     sort,
     status,
     deleted,
-    region_id,
+    fld_base_facility_ref_region,
     address,
     longitude,
     latitude,
@@ -37,7 +37,7 @@ SELECT
     v.sort,
     1,
     false,
-    v.region_id,
+    v.fld_base_facility_ref_region,
     v.address,
     v.longitude,
     v.latitude,
@@ -72,7 +72,7 @@ FROM (
             'station'
         )
 ) AS v(
-    id, code, name, tree_path, sort, model_code, region_id,
+    id, code, name, tree_path, sort, model_code, fld_base_facility_ref_region,
     address, longitude, latitude, facility_type
 )
 JOIN dynamic_model m
@@ -88,7 +88,7 @@ ON CONFLICT (id) DO UPDATE SET
     sort = EXCLUDED.sort,
     status = EXCLUDED.status,
     deleted = false,
-    region_id = EXCLUDED.region_id,
+    fld_base_facility_ref_region = EXCLUDED.fld_base_facility_ref_region,
     address = EXCLUDED.address,
     longitude = EXCLUDED.longitude,
     latitude = EXCLUDED.latitude,
