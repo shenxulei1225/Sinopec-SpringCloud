@@ -2,12 +2,14 @@ package cn.cheers.x.module.dynamicbusiness.service.entity;
 
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityRelationDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.relation.RelationFieldLibraryDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityRelationMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeBaseFieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
@@ -15,6 +17,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.relation.RelationFieldLibraryMapper;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.service.capability.form.ModelCrudFormFieldAssembler;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
 import cn.cheers.x.module.dynamicbusiness.service.relation.BidirectionalRelationService;
@@ -46,6 +49,7 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
     private final ModelMapper modelMapper;
     private final ModelRelationMapper modelRelationMapper;
     private final RelationFieldLibraryMapper relationFieldLibraryMapper;
+    private final EntityTypeBaseFieldMapper entityTypeBaseFieldMapper;
 
     @Lazy
     private final EntityCoreService entityCoreService;
@@ -151,7 +155,13 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
         Long newTargetId = newRef == null ? null : newRef.getId();
         Long oldTargetId = oldRef == null ? null : oldRef.getId();
 
-        if (Objects.equals(newTargetId, oldTargetId)) return;
+        if (Objects.equals(newTargetId, oldTargetId)) {
+            // 目标未变时仍补齐缺失的关联行（例如历史只写了固定列）
+            if (newRef != null && validateTargetEntityExists(newRef, fieldInfo)) {
+                createRelation(entity, model, fieldInfo, newRef, false);
+            }
+            return;
+        }
 
         if (oldTargetId != null) {
             deleteRelationByTarget(entity.getId(), fieldInfo.getFieldCode(), oldTargetId);
@@ -249,6 +259,12 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
         List<ModelFieldAssignmentDO> assignments = modelFieldAssignmentMapper.selectByModelId(modelId);
         if (CollectionUtils.isEmpty(assignments)) return Collections.emptyList();
 
+        ModelDO model = modelMapper.selectById(modelId);
+        String entityTypeCode = model != null && StringUtils.hasText(model.getEntityTypeCode())
+                ? model.getEntityTypeCode().trim()
+                : null;
+        Map<String, EntityTypeBaseFieldDO> baseFieldByCode = loadBaseFieldsByCode(entityTypeCode);
+
         List<Long> fieldIds = assignments.stream()
                 .map(ModelFieldAssignmentDO::getFieldId)
                 .filter(Objects::nonNull)
@@ -263,18 +279,67 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
         List<EntityRefFieldInfo> result = new ArrayList<>();
         for (ModelFieldAssignmentDO assignment : assignments) {
             FieldDO field = fieldMap.get(assignment.getFieldId());
-            if (field == null || !FieldTypeEnum.isEntityRef(field.getType())) continue;
+            if (field == null || !StringUtils.hasText(field.getCode())) {
+                continue;
+            }
+            EntityTypeBaseFieldDO baseField = baseFieldByCode.get(field.getCode().trim());
+            // 字段库或固定列配成引用，均纳入同步
+            if (!FieldTypeEnum.isEntityRef(field.getType()) && !isBaseFieldRef(baseField)) {
+                continue;
+            }
 
             EntityRefFieldInfo info = new EntityRefFieldInfo();
             info.setFieldId(field.getId());
             info.setFieldCode(field.getCode());
             info.setFieldName(field.getName());
             info.setFieldType(field.getType());
-            info.setMultiRef(FieldTypeEnum.isMultiEntityRef(field.getType()));
+            info.setMultiRef(resolveMultiRef(field, baseField));
             resolveMetadata(assignment, info);
             result.add(info);
         }
         return result;
+    }
+
+    private Map<String, EntityTypeBaseFieldDO> loadBaseFieldsByCode(String entityTypeCode) {
+        if (!StringUtils.hasText(entityTypeCode)) {
+            return Map.of();
+        }
+        List<EntityTypeBaseFieldDO> baseFields = entityTypeBaseFieldMapper.selectByEntityTypeCode(entityTypeCode);
+        if (CollectionUtils.isEmpty(baseFields)) {
+            return Map.of();
+        }
+        Map<String, EntityTypeBaseFieldDO> byCode = new HashMap<>();
+        for (EntityTypeBaseFieldDO baseField : baseFields) {
+            if (baseField != null && StringUtils.hasText(baseField.getFieldCode())) {
+                byCode.put(baseField.getFieldCode().trim(), baseField);
+            }
+        }
+        return byCode;
+    }
+
+    private static boolean isBaseFieldRef(EntityTypeBaseFieldDO baseField) {
+        if (baseField == null || !StringUtils.hasText(baseField.getDataType())) {
+            return false;
+        }
+        String normalized = ModelCrudFormFieldAssembler.normalizeFieldType(baseField.getDataType());
+        return FieldTypeEnum.isEntityRef(normalized) || "REFERENCE".equalsIgnoreCase(normalized);
+    }
+
+    /**
+     * 多选判定：字段库 ENTITY_REF_MULTI，或固定列 data_type=REF_Multi。
+     * 固定列配多选而字段库仍为单选时，以固定列为准，避免表单多选写入后同步按单选解析。
+     */
+    private static boolean resolveMultiRef(FieldDO field, EntityTypeBaseFieldDO baseField) {
+        if (field != null && (FieldTypeEnum.isMultiEntityRef(field.getType())
+                || "BATCH_ENTITY_REF".equalsIgnoreCase(field.getType()))) {
+            return true;
+        }
+        if (baseField != null && StringUtils.hasText(baseField.getDataType())) {
+            String normalized = ModelCrudFormFieldAssembler.normalizeFieldType(baseField.getDataType());
+            return FieldTypeEnum.isMultiEntityRef(normalized)
+                    || "BATCH_ENTITY_REF".equalsIgnoreCase(normalized);
+        }
+        return false;
     }
 
     private void resolveMetadata(ModelFieldAssignmentDO assignment, EntityRefFieldInfo info) {
@@ -368,6 +433,14 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
 
     private EntityRefValue parseEntityRef(Object value) {
         if (value == null) return null;
+        // 空数组 / 空集合：视为未填写（多选控件清空时常提交 []）
+        if (value instanceof Collection<?> collection) {
+            if (collection.isEmpty()) {
+                return null;
+            }
+            // 单选路径偶发收到单元素数组时，取首项
+            return parseEntityRef(collection.iterator().next());
+        }
         if (value instanceof Map<?, ?> map) {
             Object idObj = map.get("id");
             Object typeObj = firstNonBlankMapValue(map, "entityTypeCode", "bizCode");
@@ -430,7 +503,15 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
 
     private List<EntityRefValue> parseEntityRefList(Object value) {
         if (value == null) return Collections.emptyList();
+        // 后端配多选时，前端只传单个 {entityTypeCode,id} 也兼容
+        if (value instanceof Map<?, ?>) {
+            EntityRefValue ref = parseEntityRef(value);
+            return ref == null ? Collections.emptyList() : List.of(ref);
+        }
         if (value instanceof List<?> list) {
+            if (list.isEmpty()) {
+                return Collections.emptyList();
+            }
             List<EntityRefValue> refs = new ArrayList<>();
             for (Object item : list) {
                 EntityRefValue ref = parseEntityRef(item);

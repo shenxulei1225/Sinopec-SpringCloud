@@ -1,6 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.category;
 
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryBatchDeleteRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryCloneReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryDeleteReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryRespVO;
@@ -39,6 +40,12 @@ public interface CategoryService {
     // ==================== 基础 CRUD 操作 ====================
 
     Long createCategory(CategoryCreateReqVO reqVO);
+
+    /**
+     * 复制分类：默认挂到源节点同一父下（同级），不复制子树。
+     * 高级分类会带上源关联实体的字段值再走创建管线。
+     */
+    Long cloneCategory(CategoryCloneReqVO reqVO);
 
     void updateCategory(CategoryUpdateReqVO reqVO);
 

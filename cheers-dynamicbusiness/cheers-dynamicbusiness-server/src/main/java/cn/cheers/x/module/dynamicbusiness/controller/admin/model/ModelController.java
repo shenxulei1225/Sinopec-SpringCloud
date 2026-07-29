@@ -5,12 +5,13 @@ import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelAvailableFieldRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCloneReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelDomainChangePreviewRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelPageReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelUpdateReqVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelBatchSortReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelSortSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelService;
 import cn.cheers.x.module.dynamicbusiness.service.model.relation.ModelCategoryRelationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -70,6 +71,20 @@ public class ModelController {
      */
     public CommonResult<Long> createModel(@Valid @RequestBody ModelCreateReqVO reqVO) {
         return success(modelService.createModel(reqVO));
+    }
+
+    @PostMapping("/clone")
+    @Operation(
+        summary = "复制业务模型",
+        description = "基于已有模型复制一份新模型：拷贝字段分组、字段分配（含规则）与分类挂接，并重建 CRUD 表单。\n" +
+            "- 不复制实体实例\n" +
+            "- 不复制模型间关联定义\n" +
+            "- 新模型 code 重新生成；名称须在同业务类型下唯一"
+    )
+    @ApiAccessLog(operateType = CREATE)
+    @PreAuthorize("@ss.hasPermission('system:model:create')")
+    public CommonResult<Long> cloneModel(@Valid @RequestBody ModelCloneReqVO reqVO) {
+        return success(modelService.cloneModel(reqVO));
     }
 
     @PutMapping("/update")
@@ -296,13 +311,25 @@ public class ModelController {
         return success(modelService.pageModelByEntityTypeCode(reqVO));
     }
 
-    @PutMapping("/sort/batch")
-    @Operation(summary = "批量更新模型排序", description = "用于前端拖拽后一次提交模型排序，按业务类型维度重排 sort。")
+    @PutMapping("/sort")
+    @Operation(
+        summary = "更新模型排序（保存顺序）",
+        description = "拖拽调整列表顺序后，按提交的整份有序列表重写模型 sort。"
+    )
     @ApiAccessLog(operateType = UPDATE)
     @PreAuthorize("@ss.hasPermission('system:model:update')")
-    public CommonResult<Boolean> batchUpdateModelSort(@Valid @RequestBody ModelBatchSortReqVO reqVO) {
-        modelService.batchUpdateModelSort(reqVO);
+    public CommonResult<Boolean> saveModelSort(@Valid @RequestBody ModelSortSaveReqVO reqVO) {
+        modelService.saveModelSort(reqVO);
         return success(true);
+    }
+
+    /** @deprecated 使用 {@link #saveModelSort(ModelSortSaveReqVO)}（{@code PUT /sort}） */
+    @PutMapping("/sort/batch")
+    @Operation(summary = "更新模型排序（保存顺序，兼容旧路径）", deprecated = true)
+    @ApiAccessLog(operateType = UPDATE)
+    @PreAuthorize("@ss.hasPermission('system:model:update')")
+    public CommonResult<Boolean> saveModelSortLegacy(@Valid @RequestBody ModelSortSaveReqVO reqVO) {
+        return saveModelSort(reqVO);
     }
 
     @GetMapping("/search")

@@ -95,6 +95,8 @@ public class DynamicTableServiceImpl implements DynamicTableService {
         // 3. 检查表是否已存在
         if (tableExists(tableName)) {
             log.info("动态表 {} 已存在，跳过创建", tableName);
+            // 历史坏表可能无 id 默认值 / 序列落后：即使跳过 CREATE 也要校准
+            ensureDedicatedTableIdSerial(tableName);
             // 检查是否已有配置记录
             List<DynamicTableDO> existingTables = dynamicTableMapper.selectByEntityTypeCode(entityTypeCode);
             for (DynamicTableDO existing : existingTables) {
@@ -133,6 +135,9 @@ public class DynamicTableServiceImpl implements DynamicTableService {
                     "为业务类型 " + entityTypeCode + " 创建动态表: " + tableName,
                     null, createTableSql, createTableSql, "SUCCESS", null);
         }
+
+        // 新建或复用物理表后，统一保证 id 可自增（BIGSERIAL 正常；坏表可被修好）
+        ensureDedicatedTableIdSerial(tableName);
 
         // 7. 注册到 SQL 注入防护白名单，确保后续动态 SQL 可以正常访问
         try {
@@ -187,6 +192,7 @@ public class DynamicTableServiceImpl implements DynamicTableService {
             log.error("创建动态表失败: {}", tableName, e);
             throw new ServiceException(500, "创建动态表失败: " + e.getMessage());
         }
+        ensureDedicatedTableIdSerial(tableName);
 
         // 6. 记录审计日志
         saveAuditLog(dynamicTable.getId(), "CREATE_TABLE", 
@@ -711,39 +717,58 @@ public class DynamicTableServiceImpl implements DynamicTableService {
             throw new ServiceException(400, "字段定义不能为空");
         }
         
-        // 生成列名
+        // 列名与字段编码对齐：FLD-BASE-facility-REF_REGION → fld_base_facility_ref_region
         String columnName = baseField.getFieldCode().toLowerCase().replace("-", "_");
-        
+        String deprecatedColumnName = "_deprecated_" + columnName;
+
+        // 曾废弃：恢复列名
+        if (!columnExists(tableName, columnName) && columnExists(tableName, deprecatedColumnName)) {
+            String renameSql = String.format("ALTER TABLE %s RENAME COLUMN %s TO %s",
+                    tableName, deprecatedColumnName, columnName);
+            try {
+                jdbcTemplate.execute(renameSql);
+                log.info("恢复废弃列 {} -> {} (表: {})", deprecatedColumnName, columnName, tableName);
+            } catch (Exception e) {
+                log.error("恢复废弃列失败: {}", renameSql, e);
+                throw new ServiceException(500, "恢复废弃列失败: " + e.getMessage());
+            }
+            return;
+        }
+
         // 检查列是否已存在
         if (columnExists(tableName, columnName)) {
             log.warn("列 {} 已存在于表 {}", columnName, tableName);
             return;
         }
-        
+
         // 映射数据类型
         String dataType = mapFieldTypeToDbType(baseField.getDataType());
-        
+
         // 构建 ALTER TABLE SQL
         StringBuilder alterSql = new StringBuilder();
         alterSql.append("ALTER TABLE ").append(tableName);
         alterSql.append(" ADD COLUMN ").append(columnName).append(" ").append(dataType);
-        
+
         // 添加默认值（如果有）
         if (StrUtil.isNotBlank(baseField.getDefaultValue())) {
             alterSql.append(" DEFAULT '").append(baseField.getDefaultValue().replace("'", "''")).append("'");
         }
-        
+
         String executedSql = alterSql.toString();
         try {
             jdbcTemplate.execute(executedSql);
             log.info("成功添加列 {} 到表 {}", columnName, tableName);
-            
-            // 添加列注释（如果有描述）
-            if (StrUtil.isNotBlank(baseField.getDescription())) {
-                String commentSql = String.format("COMMENT ON COLUMN %s.%s IS '%s'",
-                        tableName, columnName, baseField.getDescription().replace("'", "''"));
-                jdbcTemplate.execute(commentSql);
+
+            // 添加列注释（字段编码 + 显示名）
+            String comment = StrUtil.blankToDefault(baseField.getFieldCode(), columnName);
+            if (StrUtil.isNotBlank(baseField.getFieldName())) {
+                comment = comment + "（" + baseField.getFieldName() + "）";
+            } else if (StrUtil.isNotBlank(baseField.getDescription())) {
+                comment = baseField.getDescription();
             }
+            String commentSql = String.format("COMMENT ON COLUMN %s.%s IS '%s'",
+                    tableName, columnName, comment.replace("'", "''"));
+            jdbcTemplate.execute(commentSql);
         } catch (Exception e) {
             log.error("添加列失败: {}", executedSql, e);
             throw new ServiceException(500, "添加列失败: " + e.getMessage());
@@ -991,6 +1016,67 @@ public class DynamicTableServiceImpl implements DynamicTableService {
     // ==================== 私有方法 ====================
 
     /**
+     * 保证专用表 {@code id} 具备 nextval 默认值，并将序列对齐到 {@code MAX(id)}。
+     *
+     * <p>新建表模板使用 {@code BIGSERIAL}，一般已自带序列；本方法覆盖两类缺口：</p>
+     * <ul>
+     *   <li>历史 Flyway / 手工建表只有 {@code id bigint NOT NULL}，无 DEFAULT；</li>
+     *   <li>seed 显式写入大 id 后序列未推进，后续插入主键冲突。</li>
+     * </ul>
+     */
+    private void ensureDedicatedTableIdSerial(String tableName) {
+        if (StrUtil.isBlank(tableName) || !tableName.matches("(?i)^[a-z][a-z0-9_]*$")) {
+            throw new ServiceException(400, "非法表名: " + tableName);
+        }
+        if (!tableExists(tableName) || !columnExists(tableName, "id")) {
+            return;
+        }
+        String safeTable = tableName.toLowerCase();
+        String seqQual = "dynamicbusiness." + safeTable + "_id_seq";
+        try {
+            String idDefault = jdbcTemplate.query(
+                    """
+                    SELECT pg_get_expr(d.adbin, d.adrelid)
+                    FROM pg_class c
+                    JOIN pg_namespace n ON n.oid = c.relnamespace
+                    JOIN pg_attribute a ON a.attrelid = c.oid AND a.attname = 'id'
+                        AND NOT a.attisdropped AND a.attnum > 0
+                    LEFT JOIN pg_attrdef d ON d.adrelid = c.oid AND d.adnum = a.attnum
+                    WHERE n.nspname = 'dynamicbusiness' AND c.relname = ?
+                    """,
+                    rs -> rs.next() ? rs.getString(1) : null,
+                    safeTable);
+            if (StrUtil.isNotBlank(idDefault) && idDefault.startsWith("nextval(")) {
+                int start = idDefault.indexOf('\'');
+                int end = idDefault.indexOf('\'', start + 1);
+                if (start >= 0 && end > start) {
+                    seqQual = idDefault.substring(start + 1, end);
+                }
+            } else {
+                jdbcTemplate.execute("CREATE SEQUENCE IF NOT EXISTS " + seqQual);
+                jdbcTemplate.execute(
+                        "ALTER TABLE dynamicbusiness." + safeTable
+                                + " ALTER COLUMN id SET DEFAULT nextval('" + seqQual + "'::regclass)");
+                try {
+                    jdbcTemplate.execute(
+                            "ALTER SEQUENCE " + seqQual + " OWNED BY dynamicbusiness." + safeTable + ".id");
+                } catch (Exception ownedEx) {
+                    log.debug("OWNED BY 可忽略: table={}, err={}", safeTable, ownedEx.getMessage());
+                }
+            }
+            jdbcTemplate.queryForObject(
+                    "SELECT setval(?::regclass, COALESCE((SELECT MAX(id) FROM dynamicbusiness." + safeTable + "), 1),"
+                            + " EXISTS (SELECT 1 FROM dynamicbusiness." + safeTable + "))",
+                    Long.class,
+                    seqQual);
+            log.info("[ensureDedicatedTableIdSerial] 已校准 id 序列: table={}, seq={}", safeTable, seqQual);
+        } catch (Exception e) {
+            log.error("[ensureDedicatedTableIdSerial] 校准失败: table={}", safeTable, e);
+            throw new ServiceException(500, "校准专用表主键序列失败: " + safeTable + " — " + e.getMessage());
+        }
+    }
+
+    /**
      * 生成表名
      */
     private String generateTableName(ModelDO model) {
@@ -1025,6 +1111,8 @@ public class DynamicTableServiceImpl implements DynamicTableService {
             case "BOOLEAN" -> "BOOLEAN";
             case "ENUM" -> "VARCHAR(100)";
             case "JSON" -> "JSONB";
+            case "REF", "ENTITY_REF" -> "BIGINT";
+            case "ENTITY_REF_MULTI", "MULTI_REF" -> "JSONB";
             default -> "VARCHAR(255)";
         };
     }

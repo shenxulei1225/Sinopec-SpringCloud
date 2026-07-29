@@ -161,7 +161,14 @@ public class FieldIndexServiceImpl implements FieldIndexService {
 
     @Override
     public boolean isFieldSearchable(Long modelId, String fieldCode) {
-        if (modelId == null || fieldCode == null || fieldCode.isEmpty()) {
+        if (fieldCode == null || fieldCode.isEmpty()) {
+            return false;
+        }
+        // 核心列始终可按名称等检索，不依赖模型分配上的可搜索开关
+        if (isCoreQueryableField(fieldCode)) {
+            return true;
+        }
+        if (modelId == null) {
             return false;
         }
 
@@ -186,6 +193,23 @@ public class FieldIndexServiceImpl implements FieldIndexService {
             isSearchable = smartSearchableService.getDefaultSearchable(field.getType());
         }
         return Boolean.TRUE.equals(isSearchable);
+    }
+
+    /**
+     * 实体核心列：不走扩展字段索引，但仍允许按字段查（如列表 keyword 匹配名称）。
+     */
+    private static boolean isCoreQueryableField(String fieldCode) {
+        String code = fieldCode.trim();
+        return "id".equals(code)
+                || "name".equals(code)
+                || "code".equals(code)
+                || "status".equals(code)
+                || "modelId".equals(code)
+                || "model_id".equals(code)
+                || "parentId".equals(code)
+                || "parent_id".equals(code)
+                || "entityTypeCode".equals(code)
+                || "entity_type_code".equals(code);
     }
 
     @Override

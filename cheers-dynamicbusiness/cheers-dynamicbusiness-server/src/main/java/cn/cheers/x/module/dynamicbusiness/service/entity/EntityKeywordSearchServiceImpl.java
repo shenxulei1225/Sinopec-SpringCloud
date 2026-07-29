@@ -1,8 +1,10 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity;
 
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityFieldIndexDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityFieldIndexMapper;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
+import cn.cheers.x.module.dynamicbusiness.service.entity.index.FieldIndexService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
@@ -14,7 +16,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 关键词搜索实现：索引表 + 实体名称双通道命中。
+ * 关键词搜索实现：索引表（仅可搜索字段）+ 实体名称双通道命中。
  */
 @Service
 public class EntityKeywordSearchServiceImpl implements EntityKeywordSearchService {
@@ -24,6 +26,9 @@ public class EntityKeywordSearchServiceImpl implements EntityKeywordSearchServic
 
     @Resource
     private EntityCoreService entityCoreService;
+
+    @Resource
+    private FieldIndexService fieldIndexService;
 
     @Override
     public Set<Long> searchMatchedEntityIds(String entityTypeCode, String keyword, List<Long> candidateEntityIds) {
@@ -41,12 +46,15 @@ public class EntityKeywordSearchServiceImpl implements EntityKeywordSearchServic
         Set<Long> candidateSet = new HashSet<>(candidateEntityIds);
         Set<Long> matched = new HashSet<>();
 
-        // 通道1：索引表（扩展字段 value_string）
-        List<Long> matchedFromIndex = entityFieldIndexMapper.selectEntityIdsByKeyword(k);
-        if (matchedFromIndex != null && !matchedFromIndex.isEmpty()) {
-            for (Long id : matchedFromIndex) {
-                if (id != null && candidateSet.contains(id)) {
-                    matched.add(id);
+        // 通道1：索引表（扩展字段 value_string），且该 model+field 必须仍可搜索
+        List<EntityFieldIndexDO> indexHits = entityFieldIndexMapper.selectRowsByKeyword(k);
+        if (indexHits != null && !indexHits.isEmpty()) {
+            for (EntityFieldIndexDO row : indexHits) {
+                if (row == null || row.getEntityId() == null || !candidateSet.contains(row.getEntityId())) {
+                    continue;
+                }
+                if (fieldIndexService.isFieldSearchable(row.getModelId(), row.getFieldCode())) {
+                    matched.add(row.getEntityId());
                 }
             }
         }

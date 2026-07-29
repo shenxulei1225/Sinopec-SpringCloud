@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryBatchDeleteRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryCloneReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryDeleteReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryRespVO;
@@ -241,6 +242,58 @@ public class CategoryServiceImpl implements CategoryService {
         }
         
         return categoryId;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long cloneCategory(CategoryCloneReqVO reqVO) {
+        CategoryRespVO source = getCategoryVO(reqVO.getSourceCategoryId());
+        CategoryCreateReqVO createReq = new CategoryCreateReqVO();
+        createReq.setName(reqVO.getName().trim());
+        createReq.setCategoryTypeCode(source.getCategoryTypeCode());
+        // 同级：挂到源节点同一父下
+        createReq.setParentId(source.getParentId() != null ? source.getParentId() : 0L);
+        createReq.setStatus(source.getStatus() != null ? source.getStatus() : 1);
+        createReq.setDescription(
+                reqVO.getDescription() != null ? reqVO.getDescription() : source.getDescription());
+        createReq.setCode(null);
+
+        String mode = resolveCategoryMode(source.getCategoryTypeCode());
+        if (CategoryModeSupport.isAdvanced(mode) && Boolean.TRUE.equals(source.getIsEntity())) {
+            createReq.setIsEntity(true);
+            createReq.setEntityModelId(source.getEntityModelId());
+            createReq.setCustomFields(source.getCustomFields());
+            // 把源实体基础字段带入，使新建实体尽量对齐源数据
+            CategoryEntityLinkDO link = categoryEntityLinkService.getLinkByCategoryId(source.getId());
+            if (link != null && link.getEntityId() != null && link.getEntityModelId() != null) {
+                ModelDO model = modelMapper.selectById(link.getEntityModelId());
+                if (model != null) {
+                    EntityDO entityDO = entityCoreService.get(link.getEntityId(), model.getEntityTypeCode());
+                    if (entityDO != null) {
+                        EntityRespVO entityResp =
+                                EntityDoVoHelper.toRespVO(entityDO, customFieldValidationService);
+                        Map<String, Object> baseOverlay = new LinkedHashMap<>(
+                                EntityFieldMapsSupport.normalizeMap(entityResp.getBaseFields()));
+                        for (String key : List.of(
+                                "id", "code", "guid", "name", "status", "entityTypeCode", "modelId",
+                                "createTime", "updateTime", "creator", "updater")) {
+                            baseOverlay.remove(key);
+                        }
+                        if (!baseOverlay.isEmpty()) {
+                            createReq.setEntityBaseFields(baseOverlay);
+                        }
+                        if (createReq.getCustomFields() == null && entityResp.getCustomFields() != null) {
+                            createReq.setCustomFields(new LinkedHashMap<>(entityResp.getCustomFields()));
+                        }
+                    }
+                }
+            }
+        }
+
+        Long newId = createCategory(createReq);
+        log.info("[cloneCategory][sourceId={}][newId={}][name={}]",
+                reqVO.getSourceCategoryId(), newId, reqVO.getName().trim());
+        return newId;
     }
 
     /**

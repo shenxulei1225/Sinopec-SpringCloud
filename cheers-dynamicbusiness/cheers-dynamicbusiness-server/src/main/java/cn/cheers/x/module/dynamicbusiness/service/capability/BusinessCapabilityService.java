@@ -77,7 +77,8 @@ public interface BusinessCapabilityService {
     void refreshModelCrudFormDefinition(Long modelId);
 
     /**
-     * 业务类型基础字段变更后，重建该业务类型能力（全集、投影、全部模型 CRUD 表单）。
+     * 业务类型基础字段（固定列）变更后，重建该类型能力全集与组件投影。
+     * 不批量重写各型号 CRUD 表单；表单在打开时按最新固定列/分配重建。
      */
     void refreshAfterEntityTypeFieldDefinitionChanged(String entityTypeCode);
 }

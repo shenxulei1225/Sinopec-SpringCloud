@@ -317,6 +317,8 @@ public class ArchitecturePatternController {
                 pageSize,
                 null,
                 null,
+                null,
+                null,
                 null
         );
         return success(resp.getPage() == null ? java.util.List.of() : resp.getPage().getList());

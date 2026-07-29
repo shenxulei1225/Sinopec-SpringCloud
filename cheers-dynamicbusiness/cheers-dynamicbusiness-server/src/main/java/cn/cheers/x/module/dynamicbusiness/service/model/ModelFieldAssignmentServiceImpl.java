@@ -45,6 +45,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeResolver;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.service.entity.index.FieldIndexService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeBaseFieldService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.capability.BusinessCapabilityService;
@@ -54,6 +55,8 @@ import cn.cheers.x.module.dynamicbusiness.service.relation.RelationFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.relation.RelationFieldLibraryService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 /**
@@ -104,12 +107,73 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
     @Resource
     @Lazy
     private BusinessCapabilityService businessCapabilityService;
+    @Resource
+    @Lazy
+    private FieldIndexService fieldIndexService;
 
     private void notifyModelFieldDefinitionChanged(Long modelId) {
         if (modelId == null) {
             return;
         }
         businessCapabilityService.refreshModelCrudFormDefinition(modelId);
+    }
+
+    private boolean resolveSearchable(Boolean configured, String fieldType) {
+        if (configured != null) {
+            return Boolean.TRUE.equals(configured);
+        }
+        return Boolean.TRUE.equals(smartSearchableService.getDefaultSearchable(fieldType));
+    }
+
+    /**
+     * 可搜索开关变更后，在事务提交后立即按模型增删扩展字段索引（dynamic_entity_field_index）。
+     */
+    private void scheduleSearchableIndexSync(Long fieldId, Long modelId, String fieldCode, boolean newSearchable) {
+        if (fieldId == null || modelId == null || !StringUtils.hasText(fieldCode)) {
+            return;
+        }
+        Runnable sync = () -> {
+            try {
+                fieldIndexService.onSearchableChanged(fieldId, modelId, fieldCode, newSearchable);
+            } catch (Exception e) {
+                log.error("[scheduleSearchableIndexSync] 同步扩展字段索引失败: modelId={}, fieldCode={}, searchable={}, error={}",
+                        modelId, fieldCode, newSearchable, e.getMessage(), e);
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    sync.run();
+                }
+            });
+        } else {
+            sync.run();
+        }
+    }
+
+    private void scheduleRemoveFieldIndex(Long modelId, String fieldCode) {
+        if (modelId == null || !StringUtils.hasText(fieldCode)) {
+            return;
+        }
+        Runnable sync = () -> {
+            try {
+                fieldIndexService.removeFieldIndex(modelId, fieldCode);
+            } catch (Exception e) {
+                log.error("[scheduleRemoveFieldIndex] 清理扩展字段索引失败: modelId={}, fieldCode={}, error={}",
+                        modelId, fieldCode, e.getMessage(), e);
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    sync.run();
+                }
+            });
+        } else {
+            sync.run();
+        }
     }
 
     /** 写入/更新分配时同步 model_id + model_code、field_id + field_code（迁移以 code 为幂等键）。 */
@@ -140,10 +204,14 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         }
 
         Long tenantId = getTenantId();
+        Boolean previousSearchableConfig = null;
+        boolean hadAssignment = false;
 
         // 检查是否已分配（正常记录）
         ModelFieldAssignmentDO exist = modelFieldAssignmentMapper.selectByModelIdAndFieldId(modelId, fieldId);
         if (exist != null) {
+            hadAssignment = true;
+            previousSearchableConfig = exist.getIsSearchable();
             // 已存在,更新业务规则
             exist.setRequired(required != null ? required : exist.getRequired());
             exist.setIsSearchable(isSearchable != null ? isSearchable : exist.getIsSearchable());
@@ -190,6 +258,13 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
             }
         }
         notifyModelFieldDefinitionChanged(modelId);
+
+        ModelFieldAssignmentDO latest = modelFieldAssignmentMapper.selectByModelIdAndFieldId(modelId, fieldId);
+        boolean newSearchable = latest != null && resolveSearchable(latest.getIsSearchable(), field.getType());
+        boolean oldSearchable = hadAssignment && resolveSearchable(previousSearchableConfig, field.getType());
+        if (newSearchable != oldSearchable) {
+            scheduleSearchableIndexSync(fieldId, modelId, field.getCode(), newSearchable);
+        }
     }
 
     @Override
@@ -202,6 +277,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         }
 
         Long tenantId = getTenantId();
+        Long modelId = reqVO.getModelId();
 
         // 批量分配字段
         int affectedCount = 0;
@@ -213,11 +289,15 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
             }
 
             boolean isEntityRef = FieldTypeEnum.isEntityRef(field.getType());
+            Boolean previousSearchableConfig = null;
+            boolean hadAssignment = false;
 
             // 检查是否已分配（正常记录）
             ModelFieldAssignmentDO exist = modelFieldAssignmentMapper.selectByModelIdAndFieldId(
-                    reqVO.getModelId(), item.getFieldId());
+                    modelId, item.getFieldId());
             if (exist != null) {
+                hadAssignment = true;
+                previousSearchableConfig = exist.getIsSearchable();
                 // 已存在,更新业务规则
                 exist.setRequired(item.getRequired());
                 exist.setIsSearchable(item.getIsSearchable());
@@ -243,7 +323,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
             } else {
                 // 不存在正常记录,检查是否有已删除的记录（用于恢复）
                 ModelFieldAssignmentDO deletedRecord = modelFieldAssignmentMapper.selectByModelIdAndFieldIdWithDeleted(
-                        reqVO.getModelId(), item.getFieldId(), tenantId);
+                        modelId, item.getFieldId(), tenantId);
                 if (deletedRecord != null) {
                     // 找到已删除的记录,使用原生 SQL 恢复它并更新业务规则
                     // 注意：不能使用 updateById,因为 MyBatis Plus 的逻辑删除机制会阻止更新已删除的记录
@@ -286,9 +366,16 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                     affectedCount++;
                 }
             }
+
+            ModelFieldAssignmentDO latest = modelFieldAssignmentMapper.selectByModelIdAndFieldId(modelId, item.getFieldId());
+            boolean newSearchable = latest != null && resolveSearchable(latest.getIsSearchable(), field.getType());
+            boolean oldSearchable = hadAssignment && resolveSearchable(previousSearchableConfig, field.getType());
+            if (newSearchable != oldSearchable) {
+                scheduleSearchableIndexSync(item.getFieldId(), modelId, field.getCode(), newSearchable);
+            }
         }
         if (affectedCount > 0) {
-            notifyModelFieldDefinitionChanged(reqVO.getModelId());
+            notifyModelFieldDefinitionChanged(modelId);
         }
         return affectedCount;
     }
@@ -327,8 +414,12 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         // 删除字段分配
         ModelFieldAssignmentDO assignment = modelFieldAssignmentMapper.selectByModelIdAndFieldId(modelId, fieldId);
         if (assignment != null) {
+            boolean wasSearchable = resolveSearchable(assignment.getIsSearchable(), field.getType());
             modelFieldAssignmentMapper.deleteById(assignment.getId());
             notifyModelFieldDefinitionChanged(modelId);
+            if (wasSearchable) {
+                scheduleRemoveFieldIndex(modelId, field.getCode());
+            }
         }
     }
 
@@ -377,12 +468,28 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         if (fieldIds.isEmpty()) {
             return 0;
         }
+        Map<Long, FieldDO> fieldById = fields.stream()
+                .collect(Collectors.toMap(FieldDO::getId, f -> f, (a, b) -> a));
+        List<ModelFieldAssignmentDO> toRemove = modelFieldAssignmentMapper.selectList(
+                new LambdaQueryWrapperX<ModelFieldAssignmentDO>()
+                        .eq(ModelFieldAssignmentDO::getModelId, modelId)
+                        .in(ModelFieldAssignmentDO::getFieldId, fieldIds));
+        List<String> searchableFieldCodes = new ArrayList<>();
+        for (ModelFieldAssignmentDO assignment : toRemove) {
+            FieldDO field = fieldById.get(assignment.getFieldId());
+            if (field != null && resolveSearchable(assignment.getIsSearchable(), field.getType())) {
+                searchableFieldCodes.add(field.getCode());
+            }
+        }
         int deleted = modelFieldAssignmentMapper.delete(
                 new LambdaQueryWrapperX<ModelFieldAssignmentDO>()
                         .eq(ModelFieldAssignmentDO::getModelId, modelId)
                         .in(ModelFieldAssignmentDO::getFieldId, fieldIds));
         if (deleted > 0) {
             notifyModelFieldDefinitionChanged(modelId);
+            for (String fieldCode : searchableFieldCodes) {
+                scheduleRemoveFieldIndex(modelId, fieldCode);
+            }
         }
         return deleted;
     }

@@ -54,6 +54,21 @@ public class CategoryController {
         return success(categoryService.createCategory(reqVO));
     }
 
+    @PostMapping("/clone")
+    @Operation(
+        summary = "复制分类",
+        description = """
+            基于源分类复制一个同级节点（同一父下），不复制子树。
+            - 简单分类：复制节点主数据
+            - 高级分类：一并按源关联实体字段值创建新实体并挂接
+            """
+    )
+    @ApiAccessLog(operateType = CREATE)
+    @PreAuthorize("@ss.hasPermission('system:category:create')")
+    public CommonResult<Long> cloneCategory(@Valid @RequestBody CategoryCloneReqVO reqVO) {
+        return success(categoryService.cloneCategory(reqVO));
+    }
+
     @PutMapping("/update")
     @Operation(
         summary = "更新分类",

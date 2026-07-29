@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -26,6 +27,20 @@ public interface ModelFieldAssignmentMapper extends BaseMapperX<ModelFieldAssign
                         .eq(ModelFieldAssignmentDO::getModelId, modelId)
                         .orderByAsc(ModelFieldAssignmentDO::getSort)
                         .orderByAsc(ModelFieldAssignmentDO::getId)); // sort 为 null 时按 id 排序
+        }
+
+        /**
+         * 按多个模型 ID 批量查询字段分配（重建能力投影时避免 N 次按模型查询）。
+         */
+        default List<ModelFieldAssignmentDO> selectByModelIds(Collection<Long> modelIds) {
+                if (modelIds == null || modelIds.isEmpty()) {
+                        return List.of();
+                }
+                return selectList(new LambdaQueryWrapperX<ModelFieldAssignmentDO>()
+                        .in(ModelFieldAssignmentDO::getModelId, modelIds)
+                        .orderByAsc(ModelFieldAssignmentDO::getModelId)
+                        .orderByAsc(ModelFieldAssignmentDO::getSort)
+                        .orderByAsc(ModelFieldAssignmentDO::getId));
         }
 
         /**

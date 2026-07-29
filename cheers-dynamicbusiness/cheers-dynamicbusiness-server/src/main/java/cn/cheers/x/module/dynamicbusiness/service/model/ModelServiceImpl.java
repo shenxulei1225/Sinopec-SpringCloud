@@ -7,6 +7,7 @@ import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCloneReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelDomainChangePreviewRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldAssignmentRespVO;
@@ -15,12 +16,13 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelPageReq
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelAvailableFieldRespVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelBatchSortReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelSortSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.convert.model.ModelConvert;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelCategoryRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelCategoryRelationMapper;
@@ -124,6 +126,10 @@ public class ModelServiceImpl implements ModelService {
     @Resource
     @Lazy // 避免与实体侧服务循环依赖
     private EntityCategoryRelationService entityCategoryRelationService;
+
+    @Resource
+    @Lazy
+    private cn.cheers.x.module.dynamicbusiness.service.capability.BusinessCapabilityService businessCapabilityService;
 
 
     /**
@@ -229,6 +235,116 @@ public class ModelServiceImpl implements ModelService {
         // 需求：FR-BDA-014
         publishRelationTargetCreatedEvent(model);
         
+        return model.getId();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long cloneModel(ModelCloneReqVO reqVO) {
+        ModelDO source = modelCoreService.get(reqVO.getSourceModelId());
+        if (source == null) {
+            throw new ServiceException(404, "源模型不存在");
+        }
+        String entityTypeCode = source.getEntityTypeCode();
+        if (!StringUtils.hasText(entityTypeCode)) {
+            throw new ServiceException(400, "源模型缺少业务类型编码");
+        }
+
+        String newName = reqVO.getName().trim();
+        try {
+            ModelDO existModel = modelCoreService.getByNameInEntityType(newName, entityTypeCode);
+            if (existModel != null) {
+                throw new ServiceException(400, "模型名称已存在：" + newName);
+            }
+        } catch (TooManyResultsException e) {
+            throw new ServiceException(400, "模型名称已存在：" + newName);
+        }
+
+        ModelDO model = new ModelDO();
+        model.setCode(generateCode());
+        model.setName(newName);
+        model.setEntityTypeCode(entityTypeCode);
+        model.setDomain(source.getDomain());
+        model.setDescription(reqVO.getDescription() != null ? reqVO.getDescription() : source.getDescription());
+        model.setStatus(reqVO.getStatus() != null ? reqVO.getStatus() : source.getStatus());
+        Integer maxSort = modelMapper.selectMaxSortByEntityTypeCode(entityTypeCode);
+        model.setSort(SparseSortUtils.next(maxSort));
+        // 分组 JSON 内 string id 不变 → 分配行 fieldGroupId（hash）无需 remap
+        model.setFieldGroupsConfig(source.getFieldGroupsConfig());
+        modelCoreService.create(model);
+
+        List<ModelFieldAssignmentDO> sourceAssignments =
+                modelFieldAssignmentMapper.selectByModelId(source.getId());
+        for (ModelFieldAssignmentDO src : sourceAssignments) {
+            if (src == null || src.getFieldId() == null) {
+                continue;
+            }
+            ModelFieldAssignmentDO copy = ModelFieldAssignmentDO.builder()
+                    .modelId(model.getId())
+                    .modelCode(model.getCode())
+                    .fieldId(src.getFieldId())
+                    .fieldCode(src.getFieldCode())
+                    .required(src.getRequired())
+                    .isSearchable(src.getIsSearchable())
+                    .isFilterable(src.getIsFilterable())
+                    .isSortable(src.getIsSortable())
+                    .defaultValue(src.getDefaultValue())
+                    .validationRules(src.getValidationRules())
+                    .sort(src.getSort())
+                    .fieldGroupId(src.getFieldGroupId())
+                    .fieldSource(src.getFieldSource())
+                    .refLibraryId(src.getRefLibraryId())
+                    .modelRelationId(null)
+                    .targetEntityType(src.getTargetEntityType())
+                    .build();
+            modelFieldAssignmentMapper.insert(copy);
+        }
+
+        LinkedHashSet<Long> categoryIds = new LinkedHashSet<>();
+        List<ModelCategoryRelationDO> sourceRels =
+                modelCategoryRelationMapper.selectByModelId(source.getId());
+        if (sourceRels != null) {
+            for (ModelCategoryRelationDO rel : sourceRels) {
+                if (rel != null && rel.getCategoryId() != null) {
+                    categoryIds.add(rel.getCategoryId());
+                }
+            }
+        }
+        if (reqVO.getCategoryIds() != null) {
+            for (Long categoryId : reqVO.getCategoryIds()) {
+                if (categoryId != null && categoryId > 0) {
+                    categoryIds.add(categoryId);
+                }
+            }
+        }
+        for (Long categoryIdToBind : categoryIds) {
+            CategoryDO category = categoryMapper.selectById(categoryIdToBind);
+            if (category == null) {
+                throw new ServiceException(404, "分类不存在,ID：" + categoryIdToBind);
+            }
+            ModelCategoryRelationDO relation = ModelCategoryRelationDO.builder()
+                    .modelId(model.getId())
+                    .modelCode(model.getCode())
+                    .categoryId(categoryIdToBind)
+                    .categoryCode(category.getCode())
+                    .entityTypeCode(entityTypeCode)
+                    .build();
+            modelCategoryRelationMapper.insert(relation);
+        }
+
+        try {
+            businessCapabilityService.refreshModelCrudFormDefinition(model.getId());
+        } catch (Exception e) {
+            log.warn("[cloneModel][刷新 CRUD 表单失败，不影响克隆主流程][newModelId={}][err={}]",
+                    model.getId(), e.getMessage());
+        }
+
+        publishModelCreatedEvent(model);
+        publishRelationTargetCreatedEvent(model);
+        log.info("[cloneModel][sourceId={}][newId={}][name={}][assignments={}][categories={}]",
+                source.getId(), model.getId(), newName,
+                sourceAssignments != null ? sourceAssignments.size() : 0,
+                categoryIds.size());
         return model.getId();
     }
 
@@ -873,17 +989,17 @@ public class ModelServiceImpl implements ModelService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void batchUpdateModelSort(ModelBatchSortReqVO reqVO) {
+    public void saveModelSort(ModelSortSaveReqVO reqVO) {
         if (reqVO == null || reqVO.getItems() == null || reqVO.getItems().isEmpty()) {
             throw new ServiceException(400, "模型排序列表不能为空");
         }
 
-        List<ModelBatchSortReqVO.Item> orderedItems = reqVO.getItems().stream()
+        List<ModelSortSaveReqVO.Item> orderedItems = reqVO.getItems().stream()
                 .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(ModelBatchSortReqVO.Item::getIndex))
+                .sorted(Comparator.comparing(ModelSortSaveReqVO.Item::getIndex))
                 .toList();
 
-        for (ModelBatchSortReqVO.Item item : orderedItems) {
+        for (ModelSortSaveReqVO.Item item : orderedItems) {
             ModelDO model = modelCoreService.get(item.getModelId());
             if (model == null) {
                 throw new ServiceException(404, "模型不存在: " + item.getModelId());
@@ -894,7 +1010,7 @@ public class ModelServiceImpl implements ModelService {
         }
 
         int idx = 0;
-        for (ModelBatchSortReqVO.Item item : orderedItems) {
+        for (ModelSortSaveReqVO.Item item : orderedItems) {
             ModelDO updateDO = new ModelDO();
             updateDO.setId(item.getModelId());
             updateDO.setSort(SparseSortUtils.reindexSortByPosition(idx++));

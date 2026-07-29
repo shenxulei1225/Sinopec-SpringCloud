@@ -7,6 +7,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityFieldIndexMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
+import cn.cheers.x.module.dynamicbusiness.service.entity.index.FieldIndexService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityRelationService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -43,13 +44,16 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
     @Resource
     private FieldMapper fieldMapper;
 
+    @Resource
+    private FieldIndexService fieldIndexService;
+
     /**
      * 全局关键词搜索（keyword）。
      *
      * <p>语义说明：</p>
      * <ul>
      *   <li>keyword 是“全局检索入口”，不限定单一 fieldCode；</li>
-     *   <li>当前实现覆盖：索引表 value_string + 实体 name；</li>
+     *   <li>当前实现覆盖：索引表 value_string（仅可搜索字段）+ 实体 name；</li>
      *   <li>与字段级 CONTAINS 的区别：字段级 CONTAINS 是高级筛选，必须指定 fieldCode。</li>
      * </ul>
      */
@@ -69,11 +73,15 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
         Set<Long> candidateSet = new HashSet<>(candidateEntityIds);
         Set<Long> matched = new HashSet<>();
 
-        List<Long> matchedFromIndex = entityFieldIndexMapper.selectEntityIdsByKeyword(k);
-        if (matchedFromIndex != null) {
-            for (Long id : matchedFromIndex) {
-                if (id != null && candidateSet.contains(id)) {
-                    matched.add(id);
+        // 索引命中必须再校验该行 model+field 仍可搜索，避免不可搜索字段残留索引被 keyword 命中
+        List<EntityFieldIndexDO> indexHits = entityFieldIndexMapper.selectRowsByKeyword(k);
+        if (indexHits != null) {
+            for (EntityFieldIndexDO row : indexHits) {
+                if (row == null || row.getEntityId() == null || !candidateSet.contains(row.getEntityId())) {
+                    continue;
+                }
+                if (fieldIndexService.isFieldSearchable(row.getModelId(), row.getFieldCode())) {
+                    matched.add(row.getEntityId());
                 }
             }
         }
@@ -132,10 +140,18 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
                     }
                     return Collections.emptySet();
                 }
+                Set<Long> matchedQueryable = retainQueryableByField(
+                        entityTypeCode, filter.getFieldCode(), new HashSet<>(matched), result);
+                if (matchedQueryable.isEmpty()) {
+                    if (isNegativeOp) {
+                        continue;
+                    }
+                    return Collections.emptySet();
+                }
                 if (isNegativeOp) {
-                    result.removeAll(new HashSet<>(matched));
+                    result.removeAll(matchedQueryable);
                 } else {
-                    result.retainAll(new HashSet<>(matched));
+                    result.retainAll(matchedQueryable);
                 }
                 if (result.isEmpty()) {
                     return Collections.emptySet();
@@ -148,7 +164,7 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
             if (isNegativeOp) {
                 effectiveFilter = cloneFilterWithOp(filter, "NOT_IN".equals(op) ? "IN" : "EQ");
             }
-            Set<Long> matchedByField = matchEntityIdsByFieldFilter(effectiveFilter, fieldCache, result);
+            Set<Long> matchedByField = matchEntityIdsByFieldFilter(entityTypeCode, effectiveFilter, fieldCache, result);
             if (matchedByField == null) {
                 continue;
             }
@@ -227,7 +243,11 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
      *   <li>返回非空集合：命中实体 ID。</li>
      * </ul>
      */
-    private Set<Long> matchEntityIdsByFieldFilter(FieldFilterReqVO filter, Map<String, FieldDO> fieldCache, Set<Long> candidateIds) {
+    private Set<Long> matchEntityIdsByFieldFilter(
+            String entityTypeCode,
+            FieldFilterReqVO filter,
+            Map<String, FieldDO> fieldCache,
+            Set<Long> candidateIds) {
         FieldDO field = fieldCache.computeIfAbsent(filter.getFieldCode(), fieldMapper::selectByCode);
         if (field == null || field.getType() == null) {
             return null;
@@ -235,31 +255,29 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
         String fieldType = field.getType().trim().toUpperCase(Locale.ROOT);
         String op = filter.getOp() == null ? "" : filter.getOp().trim().toUpperCase(Locale.ROOT);
 
+        Set<Long> matched;
         if (isNumberType(fieldType)) {
             BigDecimal[] range = normalizeNumberRange(op, filter.getValue());
             if (range == null) {
                 return null;
             }
             List<Long> ids = entityFieldIndexMapper.selectEntityIdsByNumberRange(filter.getFieldCode(), range[0], range[1]);
-            return new HashSet<>(ids);
-        }
-        if ("DATE".equals(fieldType)) {
+            matched = new HashSet<>(ids);
+        } else if ("DATE".equals(fieldType)) {
             LocalDate[] range = normalizeDateRange(op, filter.getValue());
             if (range == null) {
                 return null;
             }
             List<Long> ids = entityFieldIndexMapper.selectEntityIdsByDateRange(filter.getFieldCode(), range[0], range[1]);
-            return new HashSet<>(ids);
-        }
-        if ("DATETIME".equals(fieldType) || "TIMESTAMP".equals(fieldType)) {
+            matched = new HashSet<>(ids);
+        } else if ("DATETIME".equals(fieldType) || "TIMESTAMP".equals(fieldType)) {
             LocalDateTime[] range = normalizeDateTimeRange(op, filter.getValue());
             if (range == null) {
                 return null;
             }
             List<Long> ids = entityFieldIndexMapper.selectEntityIdsByDateTimeRange(filter.getFieldCode(), range[0], range[1]);
-            return new HashSet<>(ids);
-        }
-        if ("BOOLEAN".equals(fieldType) || "BOOL".equals(fieldType)) {
+            matched = new HashSet<>(ids);
+        } else if ("BOOLEAN".equals(fieldType) || "BOOL".equals(fieldType)) {
             if (!"EQ".equals(op)) {
                 return null;
             }
@@ -268,25 +286,64 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
                 return null;
             }
             List<Long> ids = entityFieldIndexMapper.selectEntityIdsByBooleanEquals(filter.getFieldCode(), boolVal);
-            return new HashSet<>(ids);
-        }
-        // 字符串存储族：按语义细分操作符
-        if (isStringStorageType(fieldType)) {
+            matched = new HashSet<>(ids);
+        } else if (isStringStorageType(fieldType)) {
             if (isTextLikeType(fieldType)) {
-                return matchStringWithTextOps(filter, op);
+                matched = matchStringWithTextOps(filter, op);
+            } else if (isSingleOptionType(fieldType)) {
+                matched = matchStringExactOnly(filter, op);
+            } else if (isMultiOptionType(fieldType)) {
+                matched = matchStringWithMultiSelectOps(filter, op, candidateIds);
+            } else if (isReferenceType(fieldType)) {
+                matched = matchStringExactOnly(filter, op);
+            } else {
+                matched = matchStringExactOnly(filter, op);
             }
-            if (isSingleOptionType(fieldType)) {
-                return matchStringExactOnly(filter, op);
+            if (matched == null) {
+                return null;
             }
-            if (isMultiOptionType(fieldType)) {
-                return matchStringWithMultiSelectOps(filter, op, candidateIds);
-            }
-            if (isReferenceType(fieldType)) {
-                return matchStringExactOnly(filter, op);
-            }
-            return matchStringExactOnly(filter, op);
+        } else {
+            return null;
         }
-        return null;
+
+        // 不可搜索字段不得按字段命中（含索引残留、跨模型同 fieldCode）
+        return retainQueryableByField(entityTypeCode, filter.getFieldCode(), matched, candidateIds);
+    }
+
+    /**
+     * 仅保留：在候选内、且该实体所属模型上该字段仍可搜索的实体。
+     */
+    private Set<Long> retainQueryableByField(
+            String entityTypeCode,
+            String fieldCode,
+            Set<Long> matchedIds,
+            Set<Long> candidateIds) {
+        if (matchedIds == null || matchedIds.isEmpty() || candidateIds == null || candidateIds.isEmpty()) {
+            return Collections.emptySet();
+        }
+        Set<Long> scoped = new HashSet<>();
+        for (Long id : matchedIds) {
+            if (id != null && candidateIds.contains(id)) {
+                scoped.add(id);
+            }
+        }
+        if (scoped.isEmpty()) {
+            return Collections.emptySet();
+        }
+        List<EntityDO> entities = entityCoreService.listByIds(List.copyOf(scoped), entityTypeCode);
+        if (entities == null || entities.isEmpty()) {
+            return Collections.emptySet();
+        }
+        Set<Long> allowed = new HashSet<>();
+        for (EntityDO entity : entities) {
+            if (entity == null || entity.getId() == null) {
+                continue;
+            }
+            if (fieldIndexService.isFieldSearchable(entity.getModelId(), fieldCode)) {
+                allowed.add(entity.getId());
+            }
+        }
+        return allowed;
     }
 
     private FieldFilterReqVO cloneFilterWithOp(FieldFilterReqVO origin, String op) {

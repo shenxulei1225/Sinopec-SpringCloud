@@ -76,19 +76,25 @@ public interface EntityFieldIndexMapper extends BaseMapperX<EntityFieldIndexDO> 
      * - 返回去重后的 entityId 列表。</p>
      */
     default List<Long> selectEntityIdsByKeyword(String keywordLower) {
+        return selectRowsByKeyword(keywordLower).stream()
+                .map(EntityFieldIndexDO::getEntityId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+    }
+
+    /**
+     * 按关键词命中的索引行（含 modelId/fieldCode，供上层校验可搜索）。
+     */
+    default List<EntityFieldIndexDO> selectRowsByKeyword(String keywordLower) {
         if (keywordLower == null || keywordLower.isBlank()) {
             return Collections.emptyList();
         }
         LambdaQueryWrapperX<EntityFieldIndexDO> wrapper = new LambdaQueryWrapperX<>();
-        wrapper.select(EntityFieldIndexDO::getEntityId);
         wrapper.isNotNull(EntityFieldIndexDO::getEntityId);
         wrapper.isNotNull(EntityFieldIndexDO::getValueString);
         wrapper.like(EntityFieldIndexDO::getValueString, keywordLower);
-        wrapper.groupBy(EntityFieldIndexDO::getEntityId);
-        return selectList(wrapper).stream()
-                .map(EntityFieldIndexDO::getEntityId)
-                .filter(Objects::nonNull)
-                .toList();
+        return selectList(wrapper);
     }
 
     /**

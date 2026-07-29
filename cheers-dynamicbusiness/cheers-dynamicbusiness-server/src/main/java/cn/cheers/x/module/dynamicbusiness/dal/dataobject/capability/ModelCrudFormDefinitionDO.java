@@ -32,7 +32,7 @@ import org.apache.ibatis.type.JdbcType;
  * </ul>
  */
 @TableName(value = "model_crud_form_definition", autoResultMap = true)
-@KeySequence("model_crud_form_definition_seq")
+@KeySequence("model_crud_form_definition_id_seq")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)

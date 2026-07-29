@@ -2,6 +2,8 @@ package cn.cheers.x.module.dynamicbusiness.service.entitytype;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
+import cn.cheers.x.framework.tenant.core.util.TenantUtils;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldBatchSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldSaveReqVO;
@@ -13,19 +15,26 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeBaseFieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
-import cn.cheers.x.module.dynamicbusiness.framework.field.BaseFieldLibraryTypes;
 import cn.cheers.x.module.dynamicbusiness.framework.field.EntityTypeFieldLabelHelper;
+import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityBaseFieldColumnNames;
 import cn.cheers.x.module.dynamicbusiness.service.capability.BusinessCapabilityService;
+import cn.cheers.x.module.dynamicbusiness.service.dynamictable.DynamicTableService;
+import cn.hutool.core.util.StrUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Executor;
 
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.cheers.x.module.dynamicbusiness.enums.ErrorCodeConstants.*;
@@ -46,12 +55,47 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
     @Resource
     @Lazy
     private BusinessCapabilityService businessCapabilityService;
+    @Resource
+    private DynamicTableService dynamicTableService;
+    @Resource
+    @Qualifier("systemAsyncExecutor")
+    private Executor systemAsyncExecutor;
 
+    /**
+     * 固定列变更后刷新能力投影 / 全型号 CRUD 表单。
+     * 设备等类型下型号很多时同步重建可达数十秒，会拖垮 save-batch / delete 直至代理超时；
+     * 因此事务提交后再异步执行，HTTP 先返回保存成功。
+     */
     private void notifyEntityTypeFieldDefinitionChanged(String entityTypeCode) {
         if (entityTypeCode == null || entityTypeCode.isBlank()) {
             return;
         }
-        businessCapabilityService.refreshAfterEntityTypeFieldDefinitionChanged(entityTypeCode.trim());
+        String code = entityTypeCode.trim();
+        Long tenantId = TenantContextHolder.getTenantId();
+        Runnable refresh = () -> {
+            try {
+                Runnable work = () -> businessCapabilityService
+                        .refreshAfterEntityTypeFieldDefinitionChanged(code);
+                if (tenantId != null) {
+                    TenantUtils.execute(tenantId, work);
+                } else {
+                    work.run();
+                }
+                log.info("[notifyEntityTypeFieldDefinitionChanged] 异步刷新完成 entityTypeCode={}", code);
+            } catch (Exception e) {
+                log.error("[notifyEntityTypeFieldDefinitionChanged] 异步刷新失败 entityTypeCode={}", code, e);
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    systemAsyncExecutor.execute(refresh);
+                }
+            });
+        } else {
+            systemAsyncExecutor.execute(refresh);
+        }
     }
 
     @Override
@@ -101,6 +145,8 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
             field.setSortOrder(baseFieldMapper.selectMaxSortOrder(reqVO.getEntityTypeCode()) + 1);
         }
         baseFieldMapper.insert(field);
+
+        syncDedicatedTableAddColumn(field);
 
         baseFieldLibrarySyncService.assignLibraryFieldToAllModels(
                 reqVO.getEntityTypeCode(), libraryField, field);
@@ -219,6 +265,8 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
         String entityTypeCode = field.getEntityTypeCode();
         Long libraryFieldId = field.getLibraryFieldId();
 
+        syncDedicatedTableDeprecateColumn(field);
+
         baseFieldMapper.deleteById(id);
 
         if (libraryFieldId != null) {
@@ -285,9 +333,59 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
         if (field == null) {
             throw new ServiceException(404, "固定列字段不存在");
         }
+        Integer previous = field.getStatus();
         field.setStatus(status);
         baseFieldMapper.updateById(field);
+        if (status != null && status == 0) {
+            syncDedicatedTableDeprecateColumn(field);
+        } else if (status != null && status == 1 && (previous == null || previous != 1)) {
+            syncDedicatedTableAddColumn(field);
+        }
         notifyEntityTypeFieldDefinitionChanged(field.getEntityTypeCode());
+    }
+
+    /** 专用表：基础字段新增 → 固定列（列名=字段编码规范化）。 */
+    private void syncDedicatedTableAddColumn(EntityTypeBaseFieldDO field) {
+        String tableName = resolveDedicatedTableName(field.getEntityTypeCode());
+        if (tableName == null) {
+            return;
+        }
+        dynamicTableService.addColumn(tableName, field);
+    }
+
+    /** 专用表：基础字段删除/停用 → 废弃列（_deprecated_ 前缀）。 */
+    private void syncDedicatedTableDeprecateColumn(EntityTypeBaseFieldDO field) {
+        String tableName = resolveDedicatedTableName(field.getEntityTypeCode());
+        if (tableName == null || field == null || StrUtil.isBlank(field.getFieldCode())) {
+            return;
+        }
+        String column = EntityBaseFieldColumnNames.toColumnName(field.getFieldCode());
+        dynamicTableService.deprecateColumn(tableName, column);
+    }
+
+    private String resolveDedicatedTableName(String entityTypeCode) {
+        if (StrUtil.isBlank(entityTypeCode)) {
+            return null;
+        }
+        EntityTypeDO entityType = entityTypeMapper.selectByCode(entityTypeCode.trim());
+        if (entityType == null) {
+            return null;
+        }
+        StorageTypeEnum storage = StorageTypeEnum.getByCode(entityType.getStorageType());
+        if (storage == null || !storage.isDedicated()) {
+            return null;
+        }
+        String table = entityType.getDedicatedTableName();
+        if (StrUtil.isBlank(table)) {
+            table = "ent_" + entityType.getCode();
+        } else if (!table.startsWith("ent_")) {
+            table = "ent_" + table;
+        }
+        if (!dynamicTableService.tableExists(table)) {
+            log.warn("专用表 {} 不存在，跳过基础字段改表 entityType={}", table, entityTypeCode);
+            return null;
+        }
+        return table;
     }
 
     @Override
@@ -417,7 +515,7 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
     private void syncLibraryIdentity(EntityTypeBaseFieldDO field, FieldDO libraryField) {
         field.setLibraryFieldId(libraryField.getId());
         field.setFieldCode(libraryField.getCode());
-        field.setDataType(BaseFieldLibraryTypes.toBaseDataType(libraryField.getType()));
+        field.setDataType(toBaseDataType(libraryField.getType()));
         if (field.getDescription() == null) {
             field.setDescription(libraryField.getDescription());
         }
@@ -430,7 +528,7 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
             return;
         }
         String expectedFieldCode = libraryField.getCode();
-        String expectedDataType = BaseFieldLibraryTypes.toBaseDataType(libraryField.getType());
+        String expectedDataType = toBaseDataType(libraryField.getType());
         boolean metadataChanged = (reqVO.getFieldCode() != null && !Objects.equals(reqVO.getFieldCode(), expectedFieldCode))
                 || (reqVO.getDataType() != null && !Objects.equals(reqVO.getDataType(), expectedDataType))
                 || (reqVO.getTypeConfig() != null && !Objects.equals(reqVO.getTypeConfig(), libraryField.getOptions()));
@@ -440,6 +538,25 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
         if (reqVO.getFieldCode() != null && !Objects.equals(existing.getFieldCode(), expectedFieldCode)) {
             throw exception(BASE_FIELD_LIBRARY_METADATA_READONLY);
         }
+    }
+
+    /** 字段库类型 → 固定列 data_type（与 BaseFieldLibraryTypes 同口径，内联避免运行时缺类）。 */
+    private static String toBaseDataType(String libraryType) {
+        if (libraryType == null || libraryType.isBlank()) {
+            return "TEXT";
+        }
+        return switch (libraryType.trim()) {
+            case "STRING", "TEXT", "LONG_TEXT" -> "TEXT";
+            case "NUMBER", "DECIMAL", "INTEGER" -> "NUMBER";
+            case "DATE" -> "DATE";
+            case "DATETIME" -> "DATETIME";
+            case "BOOLEAN" -> "BOOLEAN";
+            case "ENUM" -> "ENUM";
+            case "JSON" -> "JSON";
+            case "ENTITY_REF" -> "REF";
+            case "ENTITY_REF_MULTI" -> "REF_Multi";
+            default -> libraryType.trim();
+        };
     }
 
     private EntityTypeBaseFieldRespVO enrichLibraryInfo(EntityTypeBaseFieldRespVO vo) {

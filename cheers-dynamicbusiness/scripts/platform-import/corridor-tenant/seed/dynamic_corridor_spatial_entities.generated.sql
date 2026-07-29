@@ -92,13 +92,13 @@ WHERE category_type_code = 'zone' AND tenant_id = 2 AND deleted = false;
 -- ---------- 唯一 facility：武汉光谷管廊 ----------
 
 INSERT INTO ent_facility (
-  id, tenant_id, entity_type_code, model_id, name, code, status, region_id, sort, tree_path, creator
+  id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_facility_ref_region, sort, tree_path, creator
 ) VALUES (
   2000001, 2, 'facility', 1384,
   '武汉光谷管廊', 'FAC-CORRIDOR-WH-GGGL', 1, NULL, 0, '/2000001/', 'corridor-seed'
 )
 ON CONFLICT (code, tenant_id) WHERE deleted = false AND code IS NOT NULL
-DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, region_id = NULL,
+DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_facility_ref_region = NULL,
   deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
 

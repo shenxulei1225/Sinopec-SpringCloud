@@ -125,6 +125,15 @@ public interface EntityCategoryRelationService {
                 List<Long> entityIds, Long categoryId, String entityTypeCode);
 
         /**
+         * 批量关联多个实体到单个分类。
+         *
+         * @param entityAssociationMode SINGLE=单归属 / MULTI=多归属；null 时回退分类种类配置
+         */
+        BatchEntityCategoryAssociationRespVO batchAssociateEntitiesToCategory(
+                List<Long> entityIds, Long categoryId, String entityTypeCode,
+                String entityAssociationMode);
+
+        /**
         * 批量取消多个实体与单个分类的关联。
         *
         * <p><b>限制条件</b>：调用方需保证 {@code entityIds} 对应同一 {@code entityTypeCode}。</p>
@@ -153,6 +162,15 @@ public interface EntityCategoryRelationService {
          */
         BatchEntityCategoryAssociationRespVO batchAssociateEntitiesToCategories(
                 List<Long> entityIds, List<Long> categoryIds, String entityTypeCode);
+
+        /**
+         * 批量关联多个实体到多个分类。
+         *
+         * @param entityAssociationMode SINGLE/MULTI；null 时回退分类种类配置
+         */
+        BatchEntityCategoryAssociationRespVO batchAssociateEntitiesToCategories(
+                List<Long> entityIds, List<Long> categoryIds, String entityTypeCode,
+                String entityAssociationMode);
 
         /**
          * 批量取消多个实体与多个分类的关联（多对多）。
@@ -350,4 +368,15 @@ public interface EntityCategoryRelationService {
          * @return 实际更新的关联行数
          */
         int syncRelationDomainByEntityIds(List<Long> entityIds, String entityTypeCode, String domain);
+
+        /**
+         * 按提交顺序重写指定分类下实体关联的 sort（SparseSortUtils.reindexSortByPosition）。
+         *
+         * <p>仅更新 {@code dynamic_entity_category_relation.sort}，不改实体表 sort。</p>
+         *
+         * @param categoryId 分类 ID
+         * @param entityTypeCode 业务类型编码（存储类型）
+         * @param entityIdsInOrder 目标顺序的实体 ID 列表（从前往后为第 0、1、… 位）
+         */
+        void reindexEntitySortInCategory(Long categoryId, String entityTypeCode, List<Long> entityIdsInOrder);
 }

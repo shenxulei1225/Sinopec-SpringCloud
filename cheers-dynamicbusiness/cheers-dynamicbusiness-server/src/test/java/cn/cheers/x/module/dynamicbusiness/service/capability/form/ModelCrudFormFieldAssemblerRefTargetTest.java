@@ -98,4 +98,59 @@ class ModelCrudFormFieldAssemblerRefTargetTest {
         assertNotNull(binding);
         assertEquals("region", binding.get("entityTypeCode"));
     }
+
+    @Test
+    void buildFormRoot_baseFieldDataTypeRef_mapsToRefPickerWithInferredRegion() {
+        String fieldCode = "FLD-BASE-facility-REF_REGION";
+
+        EntityTypeBaseFieldDO baseField = new EntityTypeBaseFieldDO();
+        baseField.setFieldCode(fieldCode);
+        baseField.setFieldName("所属区域");
+        // 现网基础字段库常见缩写，此前会落到 input 从而界面显示裸 id
+        baseField.setDataType("REF");
+        baseField.setLibraryFieldId(3685L);
+        baseField.setStatus(1);
+        baseField.setSortOrder(10);
+
+        FieldDO field = new FieldDO();
+        field.setId(3685L);
+        field.setCode(fieldCode);
+        field.setName("所属区域");
+        field.setType("ENTITY_REF");
+        field.setProviderCode("dynamic-entity:region");
+
+        ModelFieldAssignmentDO assign = new ModelFieldAssignmentDO();
+        assign.setFieldId(3685L);
+        assign.setSort(10);
+
+        Map<String, Object> root = ModelCrudFormFieldAssembler.buildFormRoot(
+                917L,
+                "facility",
+                true,
+                List.of(assign),
+                Map.of(3685L, field),
+                Map.of(fieldCode, baseField),
+                List.of(),
+                ModelCrudFormFieldAssembler.RefResolveContext.empty(),
+                Map.of());
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> baseFieldDefs = (List<Map<String, Object>>) root.get("baseFieldDefs");
+        assertNotNull(baseFieldDefs);
+        Map<String, Object> regionField = baseFieldDefs.stream()
+                .filter(item -> fieldCode.equals(item.get("fieldKey")) || fieldCode.equals(item.get("fieldCode")))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals("ref-picker", regionField.get("renderAs"));
+        assertEquals("ENTITY_REF", regionField.get("fieldType"));
+        assertEquals("region", regionField.get("targetEntityTypeCode"));
+    }
+
+    @Test
+    void normalizeFieldType_refAliases() {
+        assertEquals("ENTITY_REF", ModelCrudFormFieldAssembler.normalizeFieldType("REF"));
+        assertEquals("ENTITY_REF_MULTI", ModelCrudFormFieldAssembler.normalizeFieldType("REF_MULTI"));
+        assertEquals("ENTITY_REF", ModelCrudFormFieldAssembler.normalizeFieldType("entity_ref"));
+    }
 }

@@ -28,4 +28,8 @@ public class EntityBatchCategoryRelationReqVO {
     @Schema(description = "目标分类ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "10")
     @NotNull(message = "目标分类ID不能为空")
     private Long categoryId;
+
+    @Schema(description = "分类关联：SINGLE=单归属（换挂），MULTI=多归属（加挂）。缺省时回退分类种类配置，再默认 MULTI",
+            example = "MULTI")
+    private String entityAssociationMode;
 }

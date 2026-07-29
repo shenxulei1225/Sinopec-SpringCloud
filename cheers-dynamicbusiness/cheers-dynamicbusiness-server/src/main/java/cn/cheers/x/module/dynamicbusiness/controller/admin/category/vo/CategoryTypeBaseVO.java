@@ -32,4 +32,11 @@ public class CategoryTypeBaseVO {
     )
     private String categoryMode;
 
+    @Schema(
+        description = "实体与分类挂靠：SINGLE=同一实体在本种类树上只能挂一个节点；MULTI=可挂多个。默认 MULTI。",
+        example = "MULTI",
+        allowableValues = {"SINGLE", "MULTI"}
+    )
+    private String entityAssociationMode;
+
 }

@@ -9,12 +9,14 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityBatch
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityBatchOperationRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityBatchReplaceCategoriesReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityBatchUpdateReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCloneReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityPageReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntitySearchReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntitySearchRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntitySceneQueryRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntitySortSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.CategoryIdGroupReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.AssociationCategoryViewReqVO;
@@ -66,6 +68,14 @@ public interface EntityService {
      * @return 实体ID
      */
     Long create(EntityCreateReqVO reqVO);
+
+    /**
+     * 复制实体：沿用源型号与字段值，写入新名称；分类挂接合并源实体分类与请求附加分类。
+     *
+     * @param reqVO 复制请求
+     * @return 新实体 ID
+     */
+    Long cloneEntity(EntityCloneReqVO reqVO);
 
     /**
      * 更新实体
@@ -241,7 +251,7 @@ public interface EntityService {
             List<Long> modelIds, List<Long> categoryIds, List<CategoryIdGroupReqVO> categoryIdGroups, String categoryViaRefPathCode,
             Long entityId, Long rootEntityId, String entitySourceEntityType,
             Integer pageNo, Integer pageSize, String keyword, String domain,
-            List<FieldFilterReqVO> filters);
+            List<FieldFilterReqVO> filters, String orderByColumn, Boolean isAsc);
 
 
     /**
@@ -334,6 +344,11 @@ public interface EntityService {
      * @return 预览信息
      */
     EntityBatchOperationRespVO getBatchOperationPreview(String entityTypeCode, List<Long> ids);
+
+    /**
+     * 更新实体排序（保存顺序）：拖拽后按提交的整份顺序重写 sort。
+     */
+    void saveEntitySort(EntitySortSaveReqVO reqVO);
 
     // ==================== 预计算相关方法 ====================
 

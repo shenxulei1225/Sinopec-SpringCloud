@@ -45,8 +45,12 @@
 | V28 | `V28__dm_data_tab_layout_rename.sql` | `dm_entity_dimension` → `dm_data_tab_layout` |
 | V29 | `V29__category_entity_link_entity_type_code.sql` | link 表 `storage_entity_type_code` → `entity_type_code`；索引重命名（合并时自对方原 V26 重编号，避免与布局迁移撞号） |
 | V30 | `V30__ent_structure.sql` | 构筑物（structure）专用表 `ent_structure`（`facility_id` 必填，`zone_id` 可选；合并时自对方原 V27 重编号） |
+| V31 | `V31__facility_ref_region_column_align.sql` | 设施 `region_id` → `fld_base_facility_ref_region`（对齐字段编码 `FLD-BASE-facility-REF_REGION`） |
+| V32 | `V32__category_type_entity_association_mode.sql` | 分类种类 `entity_association_mode`（SINGLE/MULTI）；`region` 默认单归属 |
+| V33 | `V33__ent_equipment_id_seq.sql` | 补齐 `ent_equipment.id` 自增序列与 DEFAULT（修创建设备 id 为 null） |
+| V34 | `V34__align_ent_and_capability_id_sequences.sql` | 全量校准 `ent_*` 与能力投影相关表的 id 序列（缺 DEFAULT / 序列落后） |
 
-下一新增版本应为 **V31**。  
+下一新增版本应为 **V35**。  
 
 > **跨机合并说明**：本机布局迁移已占用 V26–V28 且已执行；对方原 `V26__category_*` / `V27__ent_structure` 在合并后改为 V29/V30。若对方库已按旧文件名执行过 V26/V27，需对齐历史表 `version`/`script` 后 `flyway:repair`，再拉本分支。
 已停用脚本在 `db/backup/flyway-legacy-pre-seed/`，不得放回本目录。
@@ -87,6 +91,8 @@ PGPASSWORD=Coolhomer psql -h 127.0.0.1 -U postgres -d sinopec -c \
 
 | 日期 | 说明 |
 |------|------|
+| 2026-07-29 | V34：全量校准 `ent_*` / `model_crud_form_definition` / `business_capability` / `capability_component_projection` id 序列 |
+| 2026-07-29 | V33：`ent_equipment` 补 `ent_equipment_id_seq` 与 id DEFAULT（对齐其它 ent_*） |
 | 2026-07-28 | V28：`dm_entity_dimension` → `dm_data_tab_layout`；弃用 dimension 表述 |
 | 2026-07-28 | V27：`dm_model_tab_category` 独立表；布局表删除 `model_tab_category` |
 | 2026-07-28 | V26：浏览布局字段重命名对齐前端 |

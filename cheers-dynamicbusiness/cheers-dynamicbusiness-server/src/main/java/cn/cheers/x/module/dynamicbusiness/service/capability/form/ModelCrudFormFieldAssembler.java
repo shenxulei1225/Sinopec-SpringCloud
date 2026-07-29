@@ -3,6 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.service.capability.form;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldGroupRespVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
+import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityBaseFieldColumnNames;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.relation.RelationFieldLibraryDO;
@@ -296,19 +297,22 @@ public final class ModelCrudFormFieldAssembler {
             String fieldType,
             FieldDO libraryField,
             RefResolveContext refResolveContext) {
-        boolean multiRef = "REF_MULTI".equals(fieldType)
-                || FieldTypeEnum.isMultiEntityRef(fieldType)
-                || "BATCH_ENTITY_REF".equalsIgnoreCase(fieldType)
+        String normalizedType = normalizeFieldType(fieldType);
+        boolean multiRef = FieldTypeEnum.isMultiEntityRef(normalizedType)
+                || "BATCH_ENTITY_REF".equalsIgnoreCase(normalizedType)
                 || codeStartsWithRel(baseField.getFieldCode());
-        boolean singleRef = FieldTypeEnum.isSingleEntityRef(fieldType) || "REFERENCE".equals(fieldType);
+        boolean singleRef = FieldTypeEnum.isSingleEntityRef(normalizedType) || "REFERENCE".equals(normalizedType);
         if (multiRef) {
             item.put("renderAs", "ref-picker-multi");
             item.put("valueShape", "array");
+            item.put("fieldType", normalizedType);
         } else if (singleRef) {
             item.put("renderAs", "ref-picker");
+            item.put("fieldType", normalizedType);
         }
-        if (multiRef || singleRef || FieldTypeEnum.isEntityRef(fieldType)) {
-            putEntityRefTarget(item, entityTypeCode, libraryField, null, refResolveContext);
+        if (multiRef || singleRef || FieldTypeEnum.isEntityRef(normalizedType)) {
+            putEntityRefTarget(item, entityTypeCode, libraryField, null, refResolveContext,
+                    baseField != null ? baseField.getFieldCode() : null);
         }
     }
 
@@ -324,7 +328,7 @@ public final class ModelCrudFormFieldAssembler {
             List<ModelFieldGroupRespVO> groups,
             RefResolveContext refResolveContext) {
         String code = field.getCode().trim();
-        String fieldType = resolveFieldType(field, baseField);
+        String fieldType = normalizeFieldType(resolveFieldType(field, baseField));
         Map<String, Object> item = baseFieldItem(
                 code,
                 StringUtils.hasText(field.getName()) ? field.getName() : code,
@@ -373,16 +377,33 @@ public final class ModelCrudFormFieldAssembler {
         return field.getType() != null ? field.getType().trim().toUpperCase() : "TEXT";
     }
 
+    /**
+     * 基础字段库常用缩写 {@code REF} / {@code REF_MULTI}，与字段库 {@code ENTITY_REF*} 对齐。
+     */
+    public static String normalizeFieldType(String fieldType) {
+        if (!StringUtils.hasText(fieldType)) {
+            return "TEXT";
+        }
+        String t = fieldType.trim().toUpperCase();
+        if ("REF".equals(t)) {
+            return "ENTITY_REF";
+        }
+        if ("REF_MULTI".equals(t)) {
+            return "ENTITY_REF_MULTI";
+        }
+        return t;
+    }
+
     private static String mapControl(String fieldType) {
         if (!StringUtils.hasText(fieldType)) {
             return "input";
         }
-        return switch (fieldType.trim().toUpperCase()) {
+        return switch (normalizeFieldType(fieldType)) {
             case "BOOLEAN" -> "boolean";
             case "ENUM" -> "select";
             case "DATE", "DATETIME", "TIMESTAMP" -> "date";
             case "ENTITY_REF", "REFERENCE" -> "ref-picker";
-            case "ENTITY_REF_MULTI", "REF_MULTI" -> "ref-picker-multi";
+            case "ENTITY_REF_MULTI" -> "ref-picker-multi";
             default -> "input";
         };
     }
@@ -425,21 +446,23 @@ public final class ModelCrudFormFieldAssembler {
             String fieldType,
             ModelFieldAssignmentDO assign,
             RefResolveContext refResolveContext) {
-        if (FieldTypeEnum.isMultiEntityRef(fieldType)
-                || "REF_MULTI".equals(fieldType)
-                || "BATCH_ENTITY_REF".equalsIgnoreCase(fieldType)) {
+        String normalizedType = normalizeFieldType(fieldType);
+        if (FieldTypeEnum.isMultiEntityRef(normalizedType)
+                || "BATCH_ENTITY_REF".equalsIgnoreCase(normalizedType)) {
             item.put("renderAs", "ref-picker-multi");
             item.put("valueShape", "array");
             if (field.getMaxRelations() != null && field.getMaxRelations() > 0) {
                 item.put("max", field.getMaxRelations());
             }
-            putEntityRefTarget(item, entityTypeCode, field, assign, refResolveContext);
-        } else if (FieldTypeEnum.isSingleEntityRef(fieldType) || "REFERENCE".equals(fieldType)) {
+            putEntityRefTarget(item, entityTypeCode, field, assign, refResolveContext,
+                    field != null ? field.getCode() : null);
+        } else if (FieldTypeEnum.isSingleEntityRef(normalizedType) || "REFERENCE".equals(normalizedType)) {
             item.put("renderAs", "ref-picker");
-            putEntityRefTarget(item, entityTypeCode, field, assign, refResolveContext);
+            putEntityRefTarget(item, entityTypeCode, field, assign, refResolveContext,
+                    field != null ? field.getCode() : null);
         }
 
-        if ("ENUM".equals(fieldType) && field.getOptions() != null) {
+        if ("ENUM".equals(normalizedType) && field.getOptions() != null) {
             putStaticOptions(item, field.getOptions());
         }
     }
@@ -450,8 +473,19 @@ public final class ModelCrudFormFieldAssembler {
             FieldDO field,
             ModelFieldAssignmentDO assign,
             RefResolveContext refResolveContext) {
+        putEntityRefTarget(item, sourceEntityTypeCode, field, assign, refResolveContext,
+                field != null ? field.getCode() : null);
+    }
+
+    private static void putEntityRefTarget(
+            Map<String, Object> item,
+            String sourceEntityTypeCode,
+            FieldDO field,
+            ModelFieldAssignmentDO assign,
+            RefResolveContext refResolveContext,
+            String fieldCodeForInfer) {
         String targetEntityTypeCode = resolveRefTargetEntityTypeCode(
-                sourceEntityTypeCode, field, assign, refResolveContext);
+                sourceEntityTypeCode, field, assign, refResolveContext, fieldCodeForInfer);
         Map<String, Object> binding = new LinkedHashMap<>();
         binding.put("businessCategory", BusinessCategoryConstants.DYNAMIC);
         binding.put("dataKind", BusinessCategoryConstants.KIND_ENTITY);
@@ -474,6 +508,17 @@ public final class ModelCrudFormFieldAssembler {
             FieldDO field,
             ModelFieldAssignmentDO assign,
             RefResolveContext refResolveContext) {
+        return resolveRefTargetEntityTypeCode(
+                sourceEntityTypeCode, field, assign, refResolveContext,
+                field != null ? field.getCode() : null);
+    }
+
+    static String resolveRefTargetEntityTypeCode(
+            String sourceEntityTypeCode,
+            FieldDO field,
+            ModelFieldAssignmentDO assign,
+            RefResolveContext refResolveContext,
+            String fieldCodeForInfer) {
         RefResolveContext ctx = refResolveContext != null ? refResolveContext : RefResolveContext.empty();
         if (assign != null && assign.getRefLibraryId() != null) {
             RelationFieldLibraryDO lib = ctx.refLibraryById().get(assign.getRefLibraryId());
@@ -497,6 +542,13 @@ public final class ModelCrudFormFieldAssembler {
         String fromField = resolveTargetEntityTypeFromField(field);
         if (StringUtils.hasText(fromField)) {
             return fromField;
+        }
+        String code = StringUtils.hasText(fieldCodeForInfer)
+                ? fieldCodeForInfer
+                : (field != null ? field.getCode() : null);
+        String inferred = EntityBaseFieldColumnNames.inferRefTargetEntityType(code);
+        if (StringUtils.hasText(inferred)) {
+            return inferred;
         }
         return sourceEntityTypeCode;
     }

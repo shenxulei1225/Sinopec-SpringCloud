@@ -61,5 +61,10 @@ public class CategoryTypeDO extends TenantBaseDO {
      */
     private String categoryMode;
 
+    /**
+     * 实体与本种类分类树的挂靠方式：SINGLE（单归属/换挂）/ MULTI（多归属/加挂）。
+     */
+    private String entityAssociationMode;
+
 
 }

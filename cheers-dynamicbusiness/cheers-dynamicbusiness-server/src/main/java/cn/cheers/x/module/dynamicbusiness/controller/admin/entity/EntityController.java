@@ -101,6 +101,22 @@ public class EntityController {
         return success(entityService.create(reqVO));
     }
 
+    @PostMapping("/clone")
+    @Operation(
+        summary = "复制实体",
+        description = """
+            基于源实体复制一份新实例。
+            - 沿用源实体型号与字段值
+            - 须指定新名称；描述可选
+            - 分类挂接：合并源实体已有分类与请求附加 categoryIds
+            """
+    )
+    @ApiAccessLog(operateType = CREATE)
+    @PreAuthorize("@ss.hasPermission('system:entity:create')")
+    public CommonResult<Long> cloneEntity(@Valid @RequestBody EntityCloneReqVO reqVO) {
+        return success(entityService.cloneEntity(reqVO));
+    }
+
     @PutMapping("/update")
     @Operation(
         summary = "更新实体",
@@ -339,13 +355,15 @@ public class EntityController {
             @RequestParam(value = "pageSize", required = false) Integer pageSize,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "domain", required = false) String domain,
+            @RequestParam(value = "orderByColumn", required = false) String orderByColumn,
+            @RequestParam(value = "isAsc", required = false) Boolean isAsc,
             @RequestBody(required = false) List<FieldFilterReqVO> filters) {
         return queryEntitiesInternal(scene, resultShape, resultDetail, categoryTypeCode, entityTypeCode,
                 parseFlexibleIdList(modelIds), parseFlexibleIdList(categoryIds),
                 null,
                 categoryViaRefPathCode,
                 entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword, domain,
-                filters);
+                filters, orderByColumn, isAsc);
     }
 
     private CommonResult<EntitySceneQueryRespVO> queryEntitiesInternal(
@@ -365,13 +383,15 @@ public class EntityController {
             Integer pageSize,
             String keyword,
             String domain,
-            List<FieldFilterReqVO> filters) {
+            List<FieldFilterReqVO> filters,
+            String orderByColumn,
+            Boolean isAsc) {
         return success(entityService.queryEntities(scene, EntityQueryResultShape.ofNullable(resultShape).getCode(),
                 EntityQueryResultDetail.ofNullable(resultDetail).getCode(),
                 categoryTypeCode, entityTypeCode,
                 modelIds, categoryIds, categoryIdGroups, categoryViaRefPathCode,
                 entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword,
-                domain, filters));
+                domain, filters, orderByColumn, isAsc));
     }
 
     @PostMapping("/query-by-scene")
@@ -392,7 +412,7 @@ public class EntityController {
                 reqVO.getCategoryViaRefPathCode(),
                 reqVO.getEntityId(), reqVO.getRootEntityId(), reqVO.getEntitySourceEntityType(),
                 reqVO.getPageNo(), reqVO.getPageSize(), reqVO.getKeyword(), reqVO.getDomain(),
-                reqVO.getFieldFilters());
+                reqVO.getFieldFilters(), reqVO.getOrderByColumn(), reqVO.getIsAsc());
     }
 
     /**
@@ -630,6 +650,18 @@ public class EntityController {
     public CommonResult<BatchEntityCategoryAssociationRespVO> batchReplaceCategories(
             @Valid @RequestBody EntityBatchReplaceCategoriesReqVO reqVO) {
         return success(entityService.batchReplaceCategories(reqVO));
+    }
+
+    @PutMapping("/sort")
+    @Operation(
+        summary = "更新实体排序（保存顺序）",
+        description = "拖拽调整列表顺序后重写排序。有 categoryId 时写分类—实体关联 sort；否则写实体 sort。"
+    )
+    @ApiAccessLog(operateType = UPDATE)
+    @PreAuthorize("@ss.hasPermission('system:entity:update')")
+    public CommonResult<Boolean> saveEntitySort(@Valid @RequestBody EntitySortSaveReqVO reqVO) {
+        entityService.saveEntitySort(reqVO);
+        return success(true);
     }
 
     @PostMapping("/batch-preview")

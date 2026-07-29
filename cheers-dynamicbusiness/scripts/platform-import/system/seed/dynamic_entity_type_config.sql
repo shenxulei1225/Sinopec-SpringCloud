@@ -108,7 +108,7 @@ INSERT INTO dynamic_entity_type_config (
   'DEDICATED', 'ent_facility',
   NULL, TRUE,
   '设施点 ent_facility；站场/厂区多 Model', 1,
-  '{"address": {"type": "VARCHAR", "column": "address", "length": 500}, "latitude": {"type": "DECIMAL", "scale": 8, "column": "latitude", "precision": 12}, "longitude": {"type": "DECIMAL", "scale": 8, "column": "longitude", "precision": 12}, "region_id": {"type": "BIGINT", "column": "region_id"}, "facility_type": {"type": "VARCHAR", "column": "facility_type", "length": 100}}', 1, 'seed'
+  '{"address": {"type": "VARCHAR", "column": "address", "length": 500}, "latitude": {"type": "DECIMAL", "scale": 8, "column": "latitude", "precision": 12}, "longitude": {"type": "DECIMAL", "scale": 8, "column": "longitude", "precision": 12}, "FLD-BASE-facility-REF_REGION": {"type": "BIGINT", "column": "fld_base_facility_ref_region"}, "facility_type": {"type": "VARCHAR", "column": "facility_type", "length": 100}}', 1, 'seed'
 )
 ON CONFLICT (entity_type_code, tenant_id) WHERE deleted = false
 DO UPDATE SET

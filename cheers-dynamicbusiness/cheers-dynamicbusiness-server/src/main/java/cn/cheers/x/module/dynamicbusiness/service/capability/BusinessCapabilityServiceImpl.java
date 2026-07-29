@@ -51,13 +51,16 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -240,26 +243,33 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             rebuildSystemCapability(code);
             return;
         }
+        long newVersion = rebuildCapabilityAndProjections(code);
+        List<ModelDO> models = listModelsForCrudFormRebuild(code);
+        rebuildModelCrudFormsBatched(code, models, newVersion);
+    }
 
+    /**
+     * 仅重建能力全集与组件投影（list/tree/table/card），不写各型号 CRUD 表单。
+     * 固定列变更走此路径：列表投影需立刻更新；表单定义在打开时按需重建。
+     *
+     * @return 新写入的能力版本号
+     */
+    private long rebuildCapabilityAndProjections(String entityTypeCode) {
+        String code = requireEntityTypeCode(entityTypeCode);
         BusinessCapabilityDO existing = businessCapabilityMapper.selectByEntityTypeCode(code);
         long newVersion = existing == null || existing.getVersion() == null ? 1L : existing.getVersion() + 1L;
 
         String fullJson = buildCapabilityFullJson(code);
         upsertCapabilityFull(code, BusinessCategoryConstants.DYNAMIC, fullJson, newVersion, existing);
 
+        LinkedHashMap<String, Map<String, Object>> fieldMeta = collectFieldMeta(code);
         for (String componentCode : SUPPORTED_COMPONENT_CODES) {
-            String entityProjectionJson = buildEntityProjectionJson(code, componentCode, newVersion);
+            String entityProjectionJson = buildEntityProjectionJson(code, componentCode, newVersion, fieldMeta);
             upsertProjection(code, componentCode, BusinessCategoryConstants.KIND_ENTITY, entityProjectionJson, newVersion);
             String modelProjectionJson = buildModelProjectionJson(code, componentCode, newVersion);
             upsertProjection(code, componentCode, BusinessCategoryConstants.KIND_MODEL, modelProjectionJson, newVersion);
         }
-
-        List<ModelDO> models = listModelsForCrudFormRebuild(code);
-        for (ModelDO model : models) {
-            String formFieldEntityTypeCode = resolveFormFieldEntityTypeCode(code, model);
-            String formJson = buildModelCrudFormJson(model.getId(), formFieldEntityTypeCode);
-            upsertModelCrudForm(code, model.getId(), formJson, newVersion);
-        }
+        return newVersion;
     }
 
     @Override
@@ -329,7 +339,14 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void refreshAfterEntityTypeFieldDefinitionChanged(String entityTypeCode) {
-        rebuildByEntityTypeCode(requireEntityTypeCode(entityTypeCode));
+        String code = requireEntityTypeCode(entityTypeCode);
+        if (SystemCapabilityCatalog.isSystemCapability(code)) {
+            rebuildSystemCapability(code);
+            return;
+        }
+        // 固定列变更：只刷能力/列表投影。各型号 CRUD 表单在 getModelCrudFormDefinition 读路径按需重建，
+        // 避免对上百型号整份写表单拖垮 save-batch。
+        rebuildCapabilityAndProjections(code);
     }
 
     /**
@@ -362,10 +379,18 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
      * 构建 entity 组件投影 JSON（能力块模型：getList / filter / search / create 等）。
      */
     private String buildEntityProjectionJson(String entityTypeCode, String componentCode, Long version) {
-        List<Map<String, Object>> displayFields = buildDisplayFields(entityTypeCode, componentCode);
-        List<Map<String, Object>> filterFields = buildFilterFields(entityTypeCode);
-        List<String> searchableFieldKeys = collectFieldKeys(entityTypeCode, "searchable");
-        List<String> sortableFieldKeys = collectFieldKeys(entityTypeCode, "sortable");
+        return buildEntityProjectionJson(entityTypeCode, componentCode, version, collectFieldMeta(entityTypeCode));
+    }
+
+    private String buildEntityProjectionJson(
+            String entityTypeCode,
+            String componentCode,
+            Long version,
+            LinkedHashMap<String, Map<String, Object>> fieldMeta) {
+        List<Map<String, Object>> displayFields = buildDisplayFields(entityTypeCode, componentCode, fieldMeta);
+        List<Map<String, Object>> filterFields = buildFilterFields(fieldMeta);
+        List<String> searchableFieldKeys = collectFieldKeys(fieldMeta, "searchable");
+        List<String> sortableFieldKeys = collectSortableFieldKeys(fieldMeta);
         Map<String, Object> projection = CapabilityBlockProjectionBuilder.buildDynamicEntity(
                 entityTypeCode,
                 componentCode,
@@ -436,7 +461,10 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     }
 
     private List<String> collectFieldKeys(String entityTypeCode, String flagKey) {
-        LinkedHashMap<String, Map<String, Object>> byFieldKey = collectFieldMeta(entityTypeCode);
+        return collectFieldKeys(collectFieldMeta(entityTypeCode), flagKey);
+    }
+
+    private List<String> collectFieldKeys(LinkedHashMap<String, Map<String, Object>> byFieldKey, String flagKey) {
         List<String> keys = new ArrayList<>();
         for (Map<String, Object> meta : byFieldKey.values()) {
             if (Boolean.TRUE.equals(meta.get(flagKey))) {
@@ -446,13 +474,40 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         return keys;
     }
 
+    /**
+     * 可排序字段进入能力投影 sort.fields：核心列、勾选可排序的基础字段，以及勾选可排序的扩展字段（EVA 索引可排）。
+     */
+    private List<String> collectSortableFieldKeys(LinkedHashMap<String, Map<String, Object>> byFieldKey) {
+        LinkedHashSet<String> keys = new LinkedHashSet<>();
+        for (Map<String, Object> meta : byFieldKey.values()) {
+            if (!Boolean.TRUE.equals(meta.get("sortable"))) {
+                continue;
+            }
+            String fieldKey = String.valueOf(meta.get("fieldKey"));
+            if (StringUtils.hasText(fieldKey)) {
+                keys.add(fieldKey);
+            }
+        }
+        if (!keys.contains("name")) {
+            keys.add("name");
+        }
+        return new ArrayList<>(keys);
+    }
+
     @SuppressWarnings("unused")
     private String resolveReadEndpoint(String componentCode) {
         return "/dynamicbusiness/business/entities/query-by-scene";
     }
 
     private List<Map<String, Object>> buildDisplayFields(String entityTypeCode, String componentCode) {
-        LinkedHashMap<String, Map<String, Object>> byFieldKey = collectFieldMeta(entityTypeCode);
+        return buildDisplayFields(entityTypeCode, componentCode, collectFieldMeta(entityTypeCode));
+    }
+
+    private List<Map<String, Object>> buildDisplayFields(
+            String entityTypeCode,
+            String componentCode,
+            LinkedHashMap<String, Map<String, Object>> sourceMeta) {
+        LinkedHashMap<String, Map<String, Object>> byFieldKey = deepCopyFieldMeta(sourceMeta);
         mergeBusinessBaseFieldMeta(entityTypeCode, byFieldKey);
         ensureBuiltinDisplayField(byFieldKey, "id", "ID", 0);
         ensureBuiltinDisplayField(byFieldKey, "name", "名称", 1);
@@ -513,7 +568,10 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     }
 
     private List<Map<String, Object>> buildFilterFields(String entityTypeCode) {
-        LinkedHashMap<String, Map<String, Object>> byFieldKey = collectFieldMeta(entityTypeCode);
+        return buildFilterFields(collectFieldMeta(entityTypeCode));
+    }
+
+    private List<Map<String, Object>> buildFilterFields(LinkedHashMap<String, Map<String, Object>> byFieldKey) {
         List<Map<String, Object>> filters = new ArrayList<>();
         int order = 0;
         for (Map<String, Object> meta : byFieldKey.values()) {
@@ -542,10 +600,26 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     private LinkedHashMap<String, Map<String, Object>> collectFieldMeta(String entityTypeCode) {
         LinkedHashMap<String, Map<String, Object>> byFieldKey = new LinkedHashMap<>();
         List<ModelDO> models = modelMapper.selectByEntityTypeCode(entityTypeCode);
+        if (models == null || models.isEmpty()) {
+            return byFieldKey;
+        }
+        List<Long> modelIds = models.stream().map(ModelDO::getId).filter(Objects::nonNull).toList();
+        List<ModelFieldAssignmentDO> allAssigns = modelFieldAssignmentMapper.selectByModelIds(modelIds);
+        Map<Long, List<ModelFieldAssignmentDO>> assignsByModelId = groupAssignmentsByModelId(allAssigns);
+
+        Set<Long> fieldIds = new HashSet<>();
+        for (ModelFieldAssignmentDO assign : allAssigns) {
+            if (assign.getFieldId() != null) {
+                fieldIds.add(assign.getFieldId());
+            }
+        }
+        Map<Long, FieldDO> fieldById = loadFieldMapByIds(fieldIds);
+
         for (ModelDO model : models) {
-            List<ModelFieldAssignmentDO> assigns = modelFieldAssignmentMapper.selectByModelId(model.getId());
+            List<ModelFieldAssignmentDO> assigns =
+                    assignsByModelId.getOrDefault(model.getId(), List.of());
             for (ModelFieldAssignmentDO assign : assigns) {
-                FieldDO field = fieldMapper.selectById(assign.getFieldId());
+                FieldDO field = fieldById.get(assign.getFieldId());
                 if (field == null || !StringUtils.hasText(field.getCode())) {
                     continue;
                 }
@@ -571,12 +645,15 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                 existing.put("sortable", Boolean.TRUE.equals(existing.get("sortable"))
                         || Boolean.TRUE.equals(assign.getIsSortable()));
             }
-            applyModelGroupMeta(model.getId(), byFieldKey);
+            applyModelGroupMeta(model.getId(), byFieldKey, fieldById);
         }
         return byFieldKey;
     }
 
-    private void applyModelGroupMeta(Long modelId, LinkedHashMap<String, Map<String, Object>> byFieldKey) {
+    private void applyModelGroupMeta(
+            Long modelId,
+            LinkedHashMap<String, Map<String, Object>> byFieldKey,
+            Map<Long, FieldDO> fieldById) {
         List<ModelFieldGroupRespVO> groups;
         try {
             groups = modelFieldGroupService.listModelFieldGroupsByModelId(modelId);
@@ -597,7 +674,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                 if (ref.getFieldId() == null) {
                     continue;
                 }
-                FieldDO field = fieldMapper.selectById(ref.getFieldId());
+                FieldDO field = fieldById.get(ref.getFieldId());
                 if (field == null || !StringUtils.hasText(field.getCode())) {
                     continue;
                 }
@@ -638,6 +715,12 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             meta.put("fieldType", StringUtils.hasText(baseField.getDataType()) ? baseField.getDataType() : "TEXT");
             meta.put("sortOrder", baseField.getSortOrder() != null ? baseField.getSortOrder() : order++);
             meta.put("baseField", true);
+            meta.put("filterable", Boolean.TRUE.equals(baseField.getIsFilterable())
+                    || Boolean.TRUE.equals(meta.get("filterable")));
+            meta.put("searchable", Boolean.TRUE.equals(baseField.getIsSearchable())
+                    || Boolean.TRUE.equals(meta.get("searchable")));
+            meta.put("sortable", Boolean.TRUE.equals(baseField.getIsSortable())
+                    || Boolean.TRUE.equals(meta.get("sortable")));
             if (!meta.containsKey("groupName")) {
                 meta.put("groupName", "基础信息");
                 meta.put("groupSortOrder", 0);
@@ -667,7 +750,8 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             meta.put("groupSortOrder", 0);
             meta.put("filterable", false);
             meta.put("searchable", false);
-            meta.put("sortable", false);
+            // name 默认允许表头排序；其余内置列默认不可排，由基础字段 / 分配覆盖
+            meta.put("sortable", "name".equals(key));
             meta.put("baseField", true);
             return meta;
         });
@@ -714,13 +798,94 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         return toJson(root);
     }
 
+    /**
+     * 按类型批量重建各型号 CRUD 表单：分配/字段库/固定列/REF 一次拉齐，再按型号组装 JSON。
+     */
+    private void rebuildModelCrudFormsBatched(String registryEntityTypeCode, List<ModelDO> models, long version) {
+        if (models == null || models.isEmpty()) {
+            return;
+        }
+        List<Long> modelIds = models.stream().map(ModelDO::getId).filter(Objects::nonNull).toList();
+        List<ModelFieldAssignmentDO> allAssigns = modelFieldAssignmentMapper.selectByModelIds(modelIds);
+        Map<Long, List<ModelFieldAssignmentDO>> assignsByModelId = groupAssignmentsByModelId(allAssigns);
+
+        Set<Long> fieldIds = new HashSet<>();
+        for (ModelFieldAssignmentDO assign : allAssigns) {
+            if (assign != null && assign.getFieldId() != null) {
+                fieldIds.add(assign.getFieldId());
+            }
+        }
+
+        Map<String, Map<String, EntityTypeBaseFieldDO>> baseFieldsByEntityType = new HashMap<>();
+        Map<String, Boolean> includeBaseByEntityType = new HashMap<>();
+        Map<String, Map<String, String>> platformLabelsByEntityType = new HashMap<>();
+        for (ModelDO model : models) {
+            String formFieldEntityTypeCode = resolveFormFieldEntityTypeCode(registryEntityTypeCode, model);
+            if (!StringUtils.hasText(formFieldEntityTypeCode)) {
+                continue;
+            }
+            includeBaseByEntityType.computeIfAbsent(formFieldEntityTypeCode, this::shouldIncludeBaseFields);
+            if (Boolean.TRUE.equals(includeBaseByEntityType.get(formFieldEntityTypeCode))
+                    && !baseFieldsByEntityType.containsKey(formFieldEntityTypeCode)) {
+                Map<String, EntityTypeBaseFieldDO> baseFieldByCode = new LinkedHashMap<>();
+                List<EntityTypeBaseFieldDO> baseFields =
+                        entityTypeBaseFieldMapper.selectByEntityTypeCode(formFieldEntityTypeCode);
+                if (baseFields != null) {
+                    for (EntityTypeBaseFieldDO baseField : baseFields) {
+                        if (baseField != null && StringUtils.hasText(baseField.getFieldCode())) {
+                            baseFieldByCode.put(baseField.getFieldCode().trim(), baseField);
+                        }
+                        if (baseField != null && baseField.getLibraryFieldId() != null) {
+                            fieldIds.add(baseField.getLibraryFieldId());
+                        }
+                    }
+                }
+                baseFieldsByEntityType.put(formFieldEntityTypeCode, baseFieldByCode);
+            }
+            platformLabelsByEntityType.computeIfAbsent(formFieldEntityTypeCode, code -> {
+                EntityTypeDO entityType = entityTypeMapper.selectByCode(code);
+                return EntityTypeFieldLabelHelper.readLabels(entityType);
+            });
+        }
+
+        Map<Long, FieldDO> fieldById = loadFieldMapByIds(fieldIds);
+        ModelCrudFormFieldAssembler.RefResolveContext sharedRefContext = loadRefResolveContext(allAssigns);
+
+        for (ModelDO model : models) {
+            String formFieldEntityTypeCode = resolveFormFieldEntityTypeCode(registryEntityTypeCode, model);
+            List<ModelFieldAssignmentDO> assigns =
+                    assignsByModelId.getOrDefault(model.getId(), List.of());
+            boolean includeBaseFields = Boolean.TRUE.equals(includeBaseByEntityType.get(formFieldEntityTypeCode));
+            Map<String, EntityTypeBaseFieldDO> baseFieldByCode = includeBaseFields
+                    ? baseFieldsByEntityType.getOrDefault(formFieldEntityTypeCode, Map.of())
+                    : Map.of();
+            List<ModelFieldGroupRespVO> groups;
+            try {
+                groups = modelFieldGroupService.listModelFieldGroupsByModelId(model.getId());
+            } catch (Exception ex) {
+                log.debug("skip model field groups for modelId={}: {}", model.getId(), ex.getMessage());
+                groups = List.of();
+            }
+            Map<String, Object> root = ModelCrudFormFieldAssembler.buildFormRoot(
+                    model.getId(),
+                    formFieldEntityTypeCode,
+                    includeBaseFields,
+                    assigns,
+                    fieldById,
+                    baseFieldByCode,
+                    groups,
+                    sharedRefContext,
+                    platformLabelsByEntityType.getOrDefault(formFieldEntityTypeCode, Map.of()));
+            upsertModelCrudForm(registryEntityTypeCode, model.getId(), toJson(root), version);
+        }
+    }
+
     private CrudFormFieldContext loadCrudFormFieldContext(Long modelId, String entityTypeCode) {
         List<ModelFieldAssignmentDO> assigns = modelFieldAssignmentMapper.selectByModelId(modelId);
-        Map<Long, FieldDO> fieldById = new HashMap<>(Math.max(assigns.size(), 1));
+        Set<Long> fieldIds = new HashSet<>();
         for (ModelFieldAssignmentDO assign : assigns) {
-            FieldDO field = fieldMapper.selectById(assign.getFieldId());
-            if (field != null) {
-                fieldById.put(field.getId(), field);
+            if (assign.getFieldId() != null) {
+                fieldIds.add(assign.getFieldId());
             }
         }
         boolean includeBaseFields = shouldIncludeBaseFields(entityTypeCode);
@@ -732,18 +897,13 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                     if (baseField != null && StringUtils.hasText(baseField.getFieldCode())) {
                         baseFieldByCode.put(baseField.getFieldCode().trim(), baseField);
                     }
-                    // 基础字段库关联：即使尚未走分配行，也要带上 FieldDO.providerCode 供 REF 目标解析
-                    if (baseField != null
-                            && baseField.getLibraryFieldId() != null
-                            && !fieldById.containsKey(baseField.getLibraryFieldId())) {
-                        FieldDO libraryField = fieldMapper.selectById(baseField.getLibraryFieldId());
-                        if (libraryField != null) {
-                            fieldById.put(libraryField.getId(), libraryField);
-                        }
+                    if (baseField != null && baseField.getLibraryFieldId() != null) {
+                        fieldIds.add(baseField.getLibraryFieldId());
                     }
                 }
             }
         }
+        Map<Long, FieldDO> fieldById = loadFieldMapByIds(fieldIds);
         List<ModelFieldGroupRespVO> groups;
         try {
             groups = modelFieldGroupService.listModelFieldGroupsByModelId(modelId);
@@ -776,34 +936,83 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             }
         }
         Map<Long, RelationFieldLibraryDO> refLibraryById = new HashMap<>();
-        for (Long id : refLibraryIds) {
-            RelationFieldLibraryDO lib = relationFieldLibraryMapper.selectById(id);
-            if (lib != null) {
-                refLibraryById.put(id, lib);
+        if (!refLibraryIds.isEmpty()) {
+            for (RelationFieldLibraryDO lib : relationFieldLibraryMapper.selectByIds(refLibraryIds)) {
+                if (lib != null && lib.getId() != null) {
+                    refLibraryById.put(lib.getId(), lib);
+                }
             }
         }
         Map<Long, ModelRelationDO> modelRelationById = new HashMap<>();
         Map<String, String> modelCodeToEntityTypeCode = new HashMap<>();
-        for (Long id : modelRelationIds) {
-            ModelRelationDO rel = modelRelationMapper.selectById(id);
-            if (rel == null) {
-                continue;
+        if (!modelRelationIds.isEmpty()) {
+            List<ModelRelationDO> relations = modelRelationMapper.selectByIds(modelRelationIds);
+            Set<String> targetModelCodes = new HashSet<>();
+            for (ModelRelationDO rel : relations) {
+                if (rel == null || rel.getId() == null) {
+                    continue;
+                }
+                modelRelationById.put(rel.getId(), rel);
+                if (StringUtils.hasText(rel.getTargetModelCode())) {
+                    targetModelCodes.add(rel.getTargetModelCode().trim());
+                }
             }
-            modelRelationById.put(id, rel);
-            if (!StringUtils.hasText(rel.getTargetModelCode())) {
-                continue;
-            }
-            String modelCode = rel.getTargetModelCode().trim();
-            if (modelCodeToEntityTypeCode.containsKey(modelCode)) {
-                continue;
-            }
-            ModelDO targetModel = modelMapper.selectByCode(modelCode);
-            if (targetModel != null && StringUtils.hasText(targetModel.getEntityTypeCode())) {
-                modelCodeToEntityTypeCode.put(modelCode, targetModel.getEntityTypeCode().trim());
+            if (!targetModelCodes.isEmpty()) {
+                List<ModelDO> targetModels = modelMapper.selectList(new LambdaQueryWrapperX<ModelDO>()
+                        .in(ModelDO::getCode, targetModelCodes));
+                for (ModelDO targetModel : targetModels) {
+                    if (targetModel != null
+                            && StringUtils.hasText(targetModel.getCode())
+                            && StringUtils.hasText(targetModel.getEntityTypeCode())) {
+                        modelCodeToEntityTypeCode.put(
+                                targetModel.getCode().trim(),
+                                targetModel.getEntityTypeCode().trim());
+                    }
+                }
             }
         }
         return new ModelCrudFormFieldAssembler.RefResolveContext(
                 refLibraryById, modelRelationById, modelCodeToEntityTypeCode);
+    }
+
+    private Map<Long, FieldDO> loadFieldMapByIds(Collection<Long> fieldIds) {
+        if (fieldIds == null || fieldIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, FieldDO> fieldById = new HashMap<>(Math.max(fieldIds.size(), 1));
+        for (FieldDO field : fieldMapper.selectByIds(fieldIds)) {
+            if (field != null && field.getId() != null) {
+                fieldById.put(field.getId(), field);
+            }
+        }
+        return fieldById;
+    }
+
+    private Map<Long, List<ModelFieldAssignmentDO>> groupAssignmentsByModelId(
+            List<ModelFieldAssignmentDO> assigns) {
+        Map<Long, List<ModelFieldAssignmentDO>> byModelId = new HashMap<>();
+        if (assigns == null) {
+            return byModelId;
+        }
+        for (ModelFieldAssignmentDO assign : assigns) {
+            if (assign == null || assign.getModelId() == null) {
+                continue;
+            }
+            byModelId.computeIfAbsent(assign.getModelId(), key -> new ArrayList<>()).add(assign);
+        }
+        return byModelId;
+    }
+
+    private LinkedHashMap<String, Map<String, Object>> deepCopyFieldMeta(
+            LinkedHashMap<String, Map<String, Object>> source) {
+        LinkedHashMap<String, Map<String, Object>> copy = new LinkedHashMap<>();
+        if (source == null) {
+            return copy;
+        }
+        for (Map.Entry<String, Map<String, Object>> entry : source.entrySet()) {
+            copy.put(entry.getKey(), new LinkedHashMap<>(entry.getValue()));
+        }
+        return copy;
     }
 
     private boolean shouldIncludeBaseFields(String entityTypeCode) {

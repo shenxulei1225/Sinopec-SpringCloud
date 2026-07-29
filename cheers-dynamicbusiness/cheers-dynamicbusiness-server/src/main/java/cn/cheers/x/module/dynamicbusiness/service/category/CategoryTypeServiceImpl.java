@@ -51,6 +51,8 @@ public class CategoryTypeServiceImpl implements CategoryTypeService {
         // 按规范：topLevelCategoryId 由系统自动创建并写入，不允许前端传入
         categoryTypeDO.setTopLevelCategoryId(null);
         categoryTypeDO.setCategoryMode(CategoryModeSupport.normalizeForWrite(reqVO.getCategoryMode()));
+        categoryTypeDO.setEntityAssociationMode(
+                EntityAssociationModeSupport.normalizeForWrite(reqVO.getEntityAssociationMode()));
 
         if (categoryTypeDO.getStatus() == null) {
             categoryTypeDO.setStatus(1);
@@ -99,6 +101,10 @@ public class CategoryTypeServiceImpl implements CategoryTypeService {
         CategoryTypeDO updateDO = BeanUtils.toBean(reqVO, CategoryTypeDO.class);
         if (reqVO.getCategoryMode() != null) {
             updateDO.setCategoryMode(CategoryModeSupport.normalizeForWrite(reqVO.getCategoryMode()));
+        }
+        if (reqVO.getEntityAssociationMode() != null) {
+            updateDO.setEntityAssociationMode(
+                    EntityAssociationModeSupport.normalizeForWrite(reqVO.getEntityAssociationMode()));
         }
         categoryTypeMapper.updateById(updateDO);
     }

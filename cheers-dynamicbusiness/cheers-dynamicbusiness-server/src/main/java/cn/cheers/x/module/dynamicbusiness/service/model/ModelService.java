@@ -1,13 +1,14 @@
 package cn.cheers.x.module.dynamicbusiness.service.model;
 
 import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCloneReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelDomainChangePreviewRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelPageReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelAvailableFieldRespVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelBatchSortReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelSortSaveReqVO;
 
 import java.util.List;
 
@@ -37,6 +38,16 @@ public interface ModelService {
      * @return 模型ID
      */
     Long createModel(ModelCreateReqVO reqVO);
+
+    /**
+     * 复制业务模型：拷贝字段分组、字段分配（含规则）与分类挂接，并重建 CRUD 表单投影。
+     *
+     * <p>不复制实体实例与模型间关联定义。</p>
+     *
+     * @param reqVO 源模型与新名称等
+     * @return 新模型 ID
+     */
+    Long cloneModel(ModelCloneReqVO reqVO);
 
     /**
      * 更新业务模型
@@ -193,8 +204,8 @@ public interface ModelService {
                                                                 Integer pageNo, Integer pageSize);
 
     /**
-     * 批量更新模型在业务类型下的排序（用于拖拽后一次提交）。
+     * 更新模型排序（保存顺序）：拖拽后按提交的整份顺序重写 sort。
      */
-    void batchUpdateModelSort(ModelBatchSortReqVO reqVO);
+    void saveModelSort(ModelSortSaveReqVO reqVO);
 }
 

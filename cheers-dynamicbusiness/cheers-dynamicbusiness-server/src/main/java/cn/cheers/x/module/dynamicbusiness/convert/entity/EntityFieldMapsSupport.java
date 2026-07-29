@@ -12,7 +12,9 @@ import java.util.Set;
  * 实体 Write/Read 与 DO 之间的 baseFields / customFields 分桶转换。
  *
  * <p>固定列（含 entityTypeCode、modelId、name、code、status、parentId、domain）在 API 层进入 {@code baseFields}；
- * DO 表列存核心固定列，其余 base 扩展键暂合并进 customFields JSONB 持久化。</p>
+ * DO 表列存核心固定列。业务类型基础字段若已在专用表建列（列名=字段编码规范化），由
+ * {@link cn.cheers.x.module.dynamicbusiness.service.entity.EntityDedicatedColumnService} 读写，并从 customFields 剥离；
+ * 其余未建列的 base 扩展键仍合并进 customFields JSONB。</p>
  */
 public final class EntityFieldMapsSupport {
 
