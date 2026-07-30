@@ -397,15 +397,11 @@ public class EntityRepositoryImpl implements EntityRepository {
 
     /**
      * 按查询条件统计实体数量。
-     *
-     * <p>复用 {@link #buildQueryWrapper} 的过滤条件，但不继承其 ORDER BY：
-     * PostgreSQL 下 {@code SELECT COUNT(*) ... ORDER BY sort} 会报错。</p>
      */
     @Override
     public long count(EntityQuery query) {
         return withTableName(query.getEntityTypeCode(), () -> {
             LambdaQueryWrapperX<EntityDO> wrapper = buildQueryWrapper(query);
-            wrapper.getExpression().getOrderBy().clear();
             return entityMapper.selectCount(wrapper);
         });
     }
@@ -534,74 +530,6 @@ public class EntityRepositoryImpl implements EntityRepository {
                     .filter(java.util.Objects::nonNull)
                     .toList();
         });
-    }
-
-    @Override
-    public List<Long> findIdsByModelIdOrdered(Long modelId, String entityTypeCode, String domain,
-                                              String orderByColumn, boolean orderAsc) {
-        if (modelId == null || !org.springframework.util.StringUtils.hasText(entityTypeCode)) {
-            return Collections.emptyList();
-        }
-        String column = orderByColumn == null ? "" : orderByColumn.trim();
-        return withTableName(entityTypeCode, () -> {
-            LambdaQueryWrapperX<EntityDO> wrapper = new LambdaQueryWrapperX<>();
-            wrapper.select(EntityDO::getId);
-            wrapper.eq(EntityDO::getModelId, modelId);
-            wrapper.eq(EntityDO::getDeleted, false);
-            if (org.springframework.util.StringUtils.hasText(domain)) {
-                wrapper.eq(EntityDO::getDomain, domain.trim());
-            }
-            applyCoreOrder(wrapper, column, orderAsc);
-            List<EntityDO> rows = entityMapper.selectList(wrapper);
-            if (CollUtil.isEmpty(rows)) {
-                return Collections.emptyList();
-            }
-            return rows.stream()
-                    .map(EntityDO::getId)
-                    .filter(id -> id != null)
-                    .toList();
-        });
-    }
-
-    private static void applyCoreOrder(LambdaQueryWrapperX<EntityDO> wrapper, String column, boolean orderAsc) {
-        switch (column) {
-            case "name" -> {
-                if (orderAsc) {
-                    wrapper.orderByAsc(EntityDO::getName).orderByAsc(EntityDO::getId);
-                } else {
-                    wrapper.orderByDesc(EntityDO::getName).orderByAsc(EntityDO::getId);
-                }
-            }
-            case "code" -> {
-                if (orderAsc) {
-                    wrapper.orderByAsc(EntityDO::getCode).orderByAsc(EntityDO::getId);
-                } else {
-                    wrapper.orderByDesc(EntityDO::getCode).orderByAsc(EntityDO::getId);
-                }
-            }
-            case "status" -> {
-                if (orderAsc) {
-                    wrapper.orderByAsc(EntityDO::getStatus).orderByAsc(EntityDO::getId);
-                } else {
-                    wrapper.orderByDesc(EntityDO::getStatus).orderByAsc(EntityDO::getId);
-                }
-            }
-            case "id" -> {
-                if (orderAsc) {
-                    wrapper.orderByAsc(EntityDO::getId);
-                } else {
-                    wrapper.orderByDesc(EntityDO::getId);
-                }
-            }
-            case "sort" -> {
-                if (orderAsc) {
-                    wrapper.orderByAsc(EntityDO::getSort).orderByAsc(EntityDO::getId);
-                } else {
-                    wrapper.orderByDesc(EntityDO::getSort).orderByAsc(EntityDO::getId);
-                }
-            }
-            default -> throw new IllegalArgumentException("单型号 id 查询不支持按该字段排序: " + column);
-        }
     }
 
     @Override

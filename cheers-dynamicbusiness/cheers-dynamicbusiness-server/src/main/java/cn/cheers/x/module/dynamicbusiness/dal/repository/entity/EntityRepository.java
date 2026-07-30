@@ -233,15 +233,6 @@ public interface EntityRepository {
                                 java.util.List<Long> entityIds);
 
     /**
-     * 单型号下实体 id（仅 id 列），按核心列或 sort 在库内排序。
-     * <p>供场景 1「多型号拼接：先型号序、组内字段序」使用，避免全量装行再内存排序。</p>
-     *
-     * @param orderByColumn name / code / status / id / sort；非法列抛 IllegalArgumentException
-     */
-    List<Long> findIdsByModelIdOrdered(Long modelId, String entityTypeCode, String domain,
-                                       String orderByColumn, boolean orderAsc);
-
-    /**
      * 解析存储类型编码对应的物理表名（供需原生 SQL 的查询引擎使用）。
      * <p>业务层不得自行拼 {@code ent_*} 或回落已废止表；一律经本方法。</p>
      */
