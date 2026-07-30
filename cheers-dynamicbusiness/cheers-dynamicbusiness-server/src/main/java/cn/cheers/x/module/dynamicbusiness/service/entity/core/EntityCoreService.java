@@ -104,6 +104,18 @@ public interface EntityCoreService {
     List<EntityDO> listByIds(List<Long> ids, String entityTypeCode);
 
     /**
+     * 按有序 id 一次加载本页行：核心列 + 专用表基础字段列。
+     *
+     * <p>空 id 列表返回空；结果按 {@code orderedIds} 保序；
+     * 基础字段原始列值在 {@link EntityDO#getDedicatedBaseFieldValues()}。</p>
+     *
+     * @param orderedIds 本页实体 id（保序）
+     * @param entityTypeCode 业务类型编码
+     * @return 实体DO列表
+     */
+    List<EntityDO> listByIdsWithDedicatedBaseFields(List<Long> orderedIds, String entityTypeCode);
+
+    /**
      * 按实体本体条件分页查询。
      *
      * <p>仅作用于实体表本体字段（entityTypeCode / modelId / status / keyword），

@@ -88,4 +88,10 @@ public class EntityDO extends TenantBaseDO {
      */
     @TableField(typeHandler = JsonbMapTypeHandler.class)
     private Map<String, Object> customFields;
+
+    /**
+     * 专用表基础字段列值（非 MyBatis 表映射；列表一次加载填入，键为字段编码）
+     */
+    @TableField(exist = false)
+    private Map<String, Object> dedicatedBaseFieldValues;
 }

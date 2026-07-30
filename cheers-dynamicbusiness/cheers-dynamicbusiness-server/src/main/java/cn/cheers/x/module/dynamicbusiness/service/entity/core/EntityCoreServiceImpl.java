@@ -301,6 +301,14 @@ public class EntityCoreServiceImpl implements EntityCoreService {
     }
 
     @Override
+    public List<EntityDO> listByIdsWithDedicatedBaseFields(List<Long> orderedIds, String entityTypeCode) {
+        if (orderedIds == null || orderedIds.isEmpty() || entityTypeCode == null || entityTypeCode.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return entityRepository.findByIdsWithDedicatedBaseFields(orderedIds, entityTypeCode);
+    }
+
+    @Override
     public List<Long> getEntityIdsByModelId(Long modelId, String entityTypeCode) {
         if (modelId == null) {
             return Collections.emptyList();

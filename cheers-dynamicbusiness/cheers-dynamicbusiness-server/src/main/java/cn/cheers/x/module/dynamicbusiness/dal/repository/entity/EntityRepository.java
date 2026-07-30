@@ -59,6 +59,18 @@ public interface EntityRepository {
     List<EntityDO> findByIds(List<Long> ids, String entityTypeCode);
 
     /**
+     * 按有序 id 一次 SELECT 核心列 + 专用表基础字段列。
+     *
+     * <p>空 {@code orderedIds} 返回空列表；结果按 {@code orderedIds} 保序；
+     * 基础字段列值写入 {@link EntityDO#getDedicatedBaseFieldValues()}（键为字段编码）。</p>
+     *
+     * @param orderedIds 本页实体 id（保序）
+     * @param entityTypeCode 业务类型编码
+     * @return 实体列表（含 dedicatedBaseFieldValues）
+     */
+    List<EntityDO> findByIdsWithDedicatedBaseFields(List<Long> orderedIds, String entityTypeCode);
+
+    /**
      * 根据条件查询实体列表
      *
      * @param query 查询条件
@@ -219,6 +231,15 @@ public interface EntityRepository {
     java.util.List<cn.cheers.x.module.dynamicbusiness.service.entity.dto.EntityAggregationCountDTO<Long>>
             countGroupByModelId(String entityTypeCode, Long modelId, Integer status, String keyword,
                                 java.util.List<Long> entityIds);
+
+    /**
+     * 单型号下实体 id（仅 id 列），按核心列或 sort 在库内排序。
+     * <p>供场景 1「多型号拼接：先型号序、组内字段序」使用，避免全量装行再内存排序。</p>
+     *
+     * @param orderByColumn name / code / status / id / sort；非法列抛 IllegalArgumentException
+     */
+    List<Long> findIdsByModelIdOrdered(Long modelId, String entityTypeCode, String domain,
+                                       String orderByColumn, boolean orderAsc);
 
     /**
      * 解析存储类型编码对应的物理表名（供需原生 SQL 的查询引擎使用）。

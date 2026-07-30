@@ -4,16 +4,26 @@ import cn.hutool.core.collection.CollUtil;
 import cn.cheers.x.framework.common.pojo.PageParam;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.cheers.x.framework.mybatis.core.type.JsonbMapTypeHandler;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityMapper;
 import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityTableNameContext;
 import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityTableNameHandler;
+import cn.cheers.x.module.dynamicbusiness.service.entity.EntityDedicatedColumnService;
+import cn.cheers.x.module.dynamicbusiness.service.entity.EntityDedicatedColumnService.PhysicalFieldSpec;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
@@ -29,6 +39,8 @@ public class EntityRepositoryImpl implements EntityRepository {
     /** 实体基础 Mapper（实际表名由动态表名上下文决定）。 */
     private final EntityMapper entityMapper;
     private final EntityTableNameHandler entityTableNameHandler;
+    private final JdbcTemplate jdbcTemplate;
+    private final EntityDedicatedColumnService entityDedicatedColumnService;
 
     // ==================== 写入操作 ====================
 
@@ -80,6 +92,131 @@ public class EntityRepositoryImpl implements EntityRepository {
                 entityMapper.selectList(new LambdaQueryWrapperX<EntityDO>()
                         .in(EntityDO::getId, ids))
         );
+    }
+
+    /**
+     * 一次 SELECT：核心列 + 全部启用基础字段物理列；按 orderedIds 保序。
+     */
+    @Override
+    public List<EntityDO> findByIdsWithDedicatedBaseFields(List<Long> orderedIds, String entityTypeCode) {
+        if (CollUtil.isEmpty(orderedIds) || !org.springframework.util.StringUtils.hasText(entityTypeCode)) {
+            return Collections.emptyList();
+        }
+        List<Long> ids = orderedIds.stream().filter(Objects::nonNull).toList();
+        if (ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        String typeCode = entityTypeCode.trim();
+        List<PhysicalFieldSpec> specs = entityDedicatedColumnService.listEnabledPhysicalFields(typeCode);
+        String table = resolvePhysicalTableName(typeCode);
+
+        StringBuilder select = new StringBuilder(
+                "SELECT id, entity_type_code, model_id, name, code, status, parent_id, domain, sort, custom_fields");
+        for (PhysicalFieldSpec spec : specs) {
+            select.append(", ").append(spec.columnName());
+        }
+        String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
+        select.append(" FROM ").append(table)
+                .append(" WHERE deleted = false AND id IN (").append(placeholders).append(")");
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(select.toString(), ids.toArray());
+        Map<Long, EntityDO> byId = new HashMap<>(Math.max(16, rows.size() * 2));
+        for (Map<String, Object> row : rows) {
+            if (row == null) {
+                continue;
+            }
+            EntityDO entity = mapCoreRow(row);
+            if (entity.getId() == null) {
+                continue;
+            }
+            Map<String, Object> baseValues = new LinkedHashMap<>();
+            for (PhysicalFieldSpec spec : specs) {
+                Object dbVal = readColumn(row, spec.columnName());
+                if (dbVal != null) {
+                    baseValues.put(spec.fieldCode(), dbVal);
+                }
+            }
+            entity.setDedicatedBaseFieldValues(baseValues);
+            byId.put(entity.getId(), entity);
+        }
+
+        List<EntityDO> ordered = new ArrayList<>(ids.size());
+        for (Long id : ids) {
+            EntityDO entity = byId.get(id);
+            if (entity != null) {
+                ordered.add(entity);
+            }
+        }
+        return ordered;
+    }
+
+    private static EntityDO mapCoreRow(Map<String, Object> row) {
+        EntityDO entity = new EntityDO();
+        entity.setId(toLong(readColumn(row, "id")));
+        entity.setEntityTypeCode(toStringVal(readColumn(row, "entity_type_code")));
+        entity.setModelId(toLong(readColumn(row, "model_id")));
+        entity.setName(toStringVal(readColumn(row, "name")));
+        entity.setCode(toStringVal(readColumn(row, "code")));
+        entity.setStatus(toInteger(readColumn(row, "status")));
+        entity.setParentId(toLong(readColumn(row, "parent_id")));
+        entity.setDomain(toStringVal(readColumn(row, "domain")));
+        entity.setSort(toInteger(readColumn(row, "sort")));
+        Object custom = readColumn(row, "custom_fields");
+        if (custom != null) {
+            entity.setCustomFields(JsonbMapTypeHandler.parse(String.valueOf(custom)));
+        }
+        return entity;
+    }
+
+    private static Object readColumn(Map<String, Object> row, String column) {
+        Object dbVal = row.get(column);
+        if (dbVal == null) {
+            dbVal = row.get(column.toLowerCase(Locale.ROOT));
+        }
+        if (dbVal == null) {
+            dbVal = row.get(column.toUpperCase(Locale.ROOT));
+        }
+        return dbVal;
+    }
+
+    private static Long toLong(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        try {
+            String text = String.valueOf(value).trim();
+            if (text.isEmpty()) {
+                return null;
+            }
+            return Long.parseLong(text);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private static Integer toInteger(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        try {
+            String text = String.valueOf(value).trim();
+            if (text.isEmpty()) {
+                return null;
+            }
+            return Integer.parseInt(text);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private static String toStringVal(Object value) {
+        return value == null ? null : String.valueOf(value);
     }
 
     /**
@@ -260,11 +397,15 @@ public class EntityRepositoryImpl implements EntityRepository {
 
     /**
      * 按查询条件统计实体数量。
+     *
+     * <p>复用 {@link #buildQueryWrapper} 的过滤条件，但不继承其 ORDER BY：
+     * PostgreSQL 下 {@code SELECT COUNT(*) ... ORDER BY sort} 会报错。</p>
      */
     @Override
     public long count(EntityQuery query) {
         return withTableName(query.getEntityTypeCode(), () -> {
             LambdaQueryWrapperX<EntityDO> wrapper = buildQueryWrapper(query);
+            wrapper.getExpression().getOrderBy().clear();
             return entityMapper.selectCount(wrapper);
         });
     }
@@ -393,6 +534,74 @@ public class EntityRepositoryImpl implements EntityRepository {
                     .filter(java.util.Objects::nonNull)
                     .toList();
         });
+    }
+
+    @Override
+    public List<Long> findIdsByModelIdOrdered(Long modelId, String entityTypeCode, String domain,
+                                              String orderByColumn, boolean orderAsc) {
+        if (modelId == null || !org.springframework.util.StringUtils.hasText(entityTypeCode)) {
+            return Collections.emptyList();
+        }
+        String column = orderByColumn == null ? "" : orderByColumn.trim();
+        return withTableName(entityTypeCode, () -> {
+            LambdaQueryWrapperX<EntityDO> wrapper = new LambdaQueryWrapperX<>();
+            wrapper.select(EntityDO::getId);
+            wrapper.eq(EntityDO::getModelId, modelId);
+            wrapper.eq(EntityDO::getDeleted, false);
+            if (org.springframework.util.StringUtils.hasText(domain)) {
+                wrapper.eq(EntityDO::getDomain, domain.trim());
+            }
+            applyCoreOrder(wrapper, column, orderAsc);
+            List<EntityDO> rows = entityMapper.selectList(wrapper);
+            if (CollUtil.isEmpty(rows)) {
+                return Collections.emptyList();
+            }
+            return rows.stream()
+                    .map(EntityDO::getId)
+                    .filter(id -> id != null)
+                    .toList();
+        });
+    }
+
+    private static void applyCoreOrder(LambdaQueryWrapperX<EntityDO> wrapper, String column, boolean orderAsc) {
+        switch (column) {
+            case "name" -> {
+                if (orderAsc) {
+                    wrapper.orderByAsc(EntityDO::getName).orderByAsc(EntityDO::getId);
+                } else {
+                    wrapper.orderByDesc(EntityDO::getName).orderByAsc(EntityDO::getId);
+                }
+            }
+            case "code" -> {
+                if (orderAsc) {
+                    wrapper.orderByAsc(EntityDO::getCode).orderByAsc(EntityDO::getId);
+                } else {
+                    wrapper.orderByDesc(EntityDO::getCode).orderByAsc(EntityDO::getId);
+                }
+            }
+            case "status" -> {
+                if (orderAsc) {
+                    wrapper.orderByAsc(EntityDO::getStatus).orderByAsc(EntityDO::getId);
+                } else {
+                    wrapper.orderByDesc(EntityDO::getStatus).orderByAsc(EntityDO::getId);
+                }
+            }
+            case "id" -> {
+                if (orderAsc) {
+                    wrapper.orderByAsc(EntityDO::getId);
+                } else {
+                    wrapper.orderByDesc(EntityDO::getId);
+                }
+            }
+            case "sort" -> {
+                if (orderAsc) {
+                    wrapper.orderByAsc(EntityDO::getSort).orderByAsc(EntityDO::getId);
+                } else {
+                    wrapper.orderByDesc(EntityDO::getSort).orderByAsc(EntityDO::getId);
+                }
+            }
+            default -> throw new IllegalArgumentException("单型号 id 查询不支持按该字段排序: " + column);
+        }
     }
 
     @Override
