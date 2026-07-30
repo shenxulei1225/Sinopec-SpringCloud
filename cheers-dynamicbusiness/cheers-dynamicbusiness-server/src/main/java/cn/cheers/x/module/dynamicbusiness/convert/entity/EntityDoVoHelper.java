@@ -25,8 +25,9 @@ public final class EntityDoVoHelper {
     }
 
     /**
-     * 单条转换：优先使用已加载的 {@link EntityDO#getDedicatedBaseFieldValues()}；
-     * 若无则走一次按配置 SELECT 全部基础列（详情路径；禁止探列）。
+     * 单条转换：仅写入已加载的 {@link EntityDO#getDedicatedBaseFieldValues()}。
+     * <p>调用方须先 {@code listByIdsWithDedicatedBaseFields}（或等价一次加载）；
+     * 禁止在此按行 {@code mergePhysicalColumnsIntoBaseFields}。</p>
      */
     public static EntityRespVO toRespVO(EntityDO entity,
                                         CustomFieldValidationService customFieldValidationService,
@@ -41,9 +42,6 @@ public final class EntityDoVoHelper {
         if (hasDedicatedBaseFieldValues(entity) && dedicatedColumnService != null) {
             ensureBaseFieldsMap(respVO);
             dedicatedColumnService.applyDedicatedBaseFieldValues(entity, respVO.getBaseFields());
-            stripPhysicalKeysFromCustom(respVO);
-        } else if (dedicatedColumnService != null && respVO.getBaseFields() != null) {
-            dedicatedColumnService.mergePhysicalColumnsIntoBaseFields(entity, respVO.getBaseFields());
             stripPhysicalKeysFromCustom(respVO);
         }
         return respVO;
@@ -64,8 +62,6 @@ public final class EntityDoVoHelper {
         if (hasDedicatedBaseFieldValues(entity) && dedicatedColumnService != null) {
             ensureBaseFieldsMap(light);
             dedicatedColumnService.applyDedicatedBaseFieldValues(entity, light.getBaseFields());
-        } else if (dedicatedColumnService != null && light.getBaseFields() != null) {
-            dedicatedColumnService.mergePhysicalColumnsIntoBaseFields(entity, light.getBaseFields());
         }
         return light;
     }
@@ -106,7 +102,7 @@ public final class EntityDoVoHelper {
 
     /**
      * 列表转换：DO→VO 后把本页已加载的 dedicatedBaseFieldValues 写入 baseFields（含 REF API 形态）。
-     * 不调用 {@link EntityDedicatedColumnService#mergePhysicalColumnsIntoBaseFields}（禁止按行二次读列）。
+     * 禁止按行 {@code mergePhysicalColumnsIntoBaseFields}。
      */
     public static List<EntityRespVO> toRespVOList(List<EntityDO> entities,
                                                   CustomFieldValidationService customFieldValidationService,

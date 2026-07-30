@@ -1570,14 +1570,15 @@ public class EntityServiceImpl implements EntityService {
             return candidateIds;
         }
 
-        // Step 3) 非关联字段/keyword 存在时，回查实体详情进行匹配。
-        List<EntityDO> entities = entityCoreService.listByIds(candidateIds, entityTypeCode);
+        // Step 3) 非关联字段/keyword 存在时，一次加载本页候选（含基础字段列）再匹配；禁止按行 merge。
+        List<EntityDO> entities = entityCoreService.listByIdsWithDedicatedBaseFields(candidateIds, entityTypeCode);
         if (entities == null || entities.isEmpty()) {
             return Collections.emptyList();
         }
+        List<EntityRespVO> respList = EntityDoVoHelper.toRespVOList(
+                entities, customFieldValidationService, entityDedicatedColumnService);
         Map<Long, EntityRespVO> byId = new HashMap<>();
-        for (EntityDO entityDO : entities) {
-            EntityRespVO vo = EntityDoVoHelper.toRespVO(entityDO, customFieldValidationService, entityDedicatedColumnService);
+        for (EntityRespVO vo : respList) {
             if (vo != null && vo.getId() != null) {
                 byId.put(vo.getId(), vo);
             }
@@ -2607,16 +2608,17 @@ public class EntityServiceImpl implements EntityService {
         List<EntityBatchOperationRespVO.FailItem> previewItems = new ArrayList<>();
         int validCount = 0;
 
-        for (Long id : ids) {
-            EntityRespVO entity = null;
-            try {
-                EntityDO entityDO = entityCoreService.get(id, entityTypeCode);
-                if (entityDO != null) {
-                    entity = EntityDoVoHelper.toRespVO(entityDO, customFieldValidationService, entityDedicatedColumnService);
-                }
-            } catch (Exception e) {
-                log.debug("获取实体失败: id={}, entityTypeCode={}", id, entityTypeCode);
+        List<EntityDO> loaded = entityCoreService.listByIdsWithDedicatedBaseFields(ids, entityTypeCode);
+        Map<Long, EntityRespVO> byId = new HashMap<>();
+        for (EntityRespVO vo : EntityDoVoHelper.toRespVOList(
+                loaded, customFieldValidationService, entityDedicatedColumnService)) {
+            if (vo != null && vo.getId() != null) {
+                byId.put(vo.getId(), vo);
             }
+        }
+
+        for (Long id : ids) {
+            EntityRespVO entity = byId.get(id);
 
             if (entity == null) {
                 previewItems.add(EntityBatchOperationRespVO.FailItem.builder()

@@ -171,8 +171,8 @@ public class EntityDedicatedColumnService {
     }
 
     /**
-     * 单实体读：按配置列一次 SELECT 写入 baseFields（详情/单条；无 information_schema）。
-     * 列表路径不得调用本方法做「按本页 id 二次补列」；列表改走本页一次加载 + {@link #applyDedicatedBaseFieldValues}。
+     * 写路径 / 单实体旧值回读：按配置列一次 SELECT 写入字段袋（无 information_schema、不探列）。
+     * <p>列表与 VO 组装禁止调用；列表须本页一次加载 + {@link #applyDedicatedBaseFieldValues}。</p>
      */
     public void mergePhysicalColumnsIntoBaseFields(EntityDO entity, Map<String, Object> baseFields) {
         if (entity == null || entity.getId() == null || StrUtil.isBlank(entity.getEntityTypeCode()) || baseFields == null) {
@@ -261,13 +261,6 @@ public class EntityDedicatedColumnService {
             out.put(id, val);
         }
         return out;
-    }
-
-    /**
-     * 历史 API：探列已删除后无需清缓存；保留空实现以免改 DDL 调用方（Task 4 可再清）。
-     */
-    public void invalidateTableColumns(String tableName) {
-        // no-op
     }
 
     private Map<String, EntityTypeBaseFieldDO> indexEnabledBaseFields(String entityTypeCode) {
