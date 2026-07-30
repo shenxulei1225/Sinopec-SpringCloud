@@ -130,8 +130,49 @@ public class EntityDedicatedColumnService {
     }
 
     /**
+     * 将本页已加载的 {@link EntityDO#getDedicatedBaseFieldValues()} 写入 baseFields（含 REF API 形态）。
+     * 不做二次 SELECT；列表热路径专用。
+     */
+    public void applyDedicatedBaseFieldValues(EntityDO entity, Map<String, Object> baseFields) {
+        applyDedicatedBaseFieldValues(entity, baseFields, null);
+    }
+
+    /**
+     * @param metaByCodeOrNull 同一类型本页可复用的字段元数据；null 时按类型现查
+     */
+    public void applyDedicatedBaseFieldValues(EntityDO entity,
+                                              Map<String, Object> baseFields,
+                                              Map<String, EntityTypeBaseFieldDO> metaByCodeOrNull) {
+        if (entity == null || baseFields == null) {
+            return;
+        }
+        Map<String, Object> dedicated = entity.getDedicatedBaseFieldValues();
+        if (dedicated == null || dedicated.isEmpty()) {
+            return;
+        }
+        String typeCode = entity.getEntityTypeCode() == null ? "" : entity.getEntityTypeCode().trim();
+        Map<String, EntityTypeBaseFieldDO> metaByCode = metaByCodeOrNull != null
+                ? metaByCodeOrNull
+                : indexEnabledBaseFields(typeCode);
+        for (Map.Entry<String, Object> e : dedicated.entrySet()) {
+            if (e.getKey() == null || e.getValue() == null) {
+                continue;
+            }
+            baseFields.put(e.getKey(), toApiValue(metaByCode.get(e.getKey()), e.getValue()));
+        }
+    }
+
+    /** 列表组装时按类型复用：启用基础字段元数据（fieldCode → DO）。 */
+    public Map<String, EntityTypeBaseFieldDO> loadEnabledBaseFieldMeta(String entityTypeCode) {
+        if (StrUtil.isBlank(entityTypeCode)) {
+            return Map.of();
+        }
+        return indexEnabledBaseFields(entityTypeCode.trim());
+    }
+
+    /**
      * 单实体读：按配置列一次 SELECT 写入 baseFields（详情/单条；无 information_schema）。
-     * 列表路径不得调用本方法做「按本页 id 二次补列」；Task 2/3 改走本页一次加载。
+     * 列表路径不得调用本方法做「按本页 id 二次补列」；列表改走本页一次加载 + {@link #applyDedicatedBaseFieldValues}。
      */
     public void mergePhysicalColumnsIntoBaseFields(EntityDO entity, Map<String, Object> baseFields) {
         if (entity == null || entity.getId() == null || StrUtil.isBlank(entity.getEntityTypeCode()) || baseFields == null) {

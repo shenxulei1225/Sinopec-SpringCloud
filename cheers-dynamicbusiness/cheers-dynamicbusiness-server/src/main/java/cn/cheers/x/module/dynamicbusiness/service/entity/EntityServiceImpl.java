@@ -489,11 +489,16 @@ public class EntityServiceImpl implements EntityService {
     @Override
     public EntityRespVO get(Long id, String entityTypeCode, boolean includeAssociations,
             List<AssociationCategoryViewReqVO> associationCategoryViews) {
-        EntityDO entity = entityCoreService.get(id, entityTypeCode);
-        if (entity == null) {
+        if (id == null) {
             return null;
         }
-        EntityRespVO vo = EntityDoVoHelper.toRespVO(entity, customFieldValidationService, entityDedicatedColumnService);
+        List<EntityDO> loaded = entityCoreService.listByIdsWithDedicatedBaseFields(
+                Collections.singletonList(id), entityTypeCode);
+        if (loaded == null || loaded.isEmpty()) {
+            return null;
+        }
+        EntityRespVO vo = EntityDoVoHelper.toRespVO(
+                loaded.get(0), customFieldValidationService, entityDedicatedColumnService);
         if (includeAssociations) {
             fillAssociations(vo, id, associationCategoryViews);
         }
@@ -1412,9 +1417,12 @@ public class EntityServiceImpl implements EntityService {
                     .pageSize(pageSize)
                     .build();
             PageResult<EntityDO> pageResult = entityRepository.findPage(query);
-            List<EntityRespVO> list = pageResult.getList().stream()
-                    .map(entityDO -> EntityDoVoHelper.toRespVO(entityDO, customFieldValidationService, entityDedicatedColumnService))
+            List<Long> orderedIds = pageResult.getList().stream()
+                    .map(EntityDO::getId)
+                    .filter(Objects::nonNull)
                     .toList();
+            List<EntityRespVO> list = convertOrderedEntityIdsToRespList(
+                    orderedIds, model.getEntityTypeCode());
             return new PageResult<>(list, pageResult.getTotal());
         }
 
@@ -1436,9 +1444,11 @@ public class EntityServiceImpl implements EntityService {
                 pageNo,
                 pageSize
         );
-        List<EntityRespVO> list = pageResult.getList().stream()
-                .map(entityDO -> EntityDoVoHelper.toRespVO(entityDO, customFieldValidationService, entityDedicatedColumnService))
+        List<Long> orderedIds = pageResult.getList().stream()
+                .map(EntityDO::getId)
+                .filter(Objects::nonNull)
                 .toList();
+        List<EntityRespVO> list = convertOrderedEntityIdsToRespList(orderedIds, entityTypeCode);
         return new PageResult<>(list, pageResult.getTotal());
     }
 
@@ -1787,11 +1797,13 @@ public class EntityServiceImpl implements EntityService {
             return null;
         }
 
-        EntityDO entity = entityCoreService.get(link.getEntityId(), entityTypeCode);
-        if (entity == null) {
+        List<EntityDO> loaded = entityCoreService.listByIdsWithDedicatedBaseFields(
+                Collections.singletonList(link.getEntityId()), entityTypeCode);
+        if (loaded == null || loaded.isEmpty()) {
             return null;
         }
-        return EntityDoVoHelper.toRespVO(entity, customFieldValidationService, entityDedicatedColumnService);
+        return EntityDoVoHelper.toRespVO(
+                loaded.get(0), customFieldValidationService, entityDedicatedColumnService);
     }
 
     /** ----------------通过 categoryTypeCode 获取根分类ID（顶层分类）。-----------
@@ -1914,28 +1926,18 @@ public class EntityServiceImpl implements EntityService {
 
     /**
      * 将有序实体ID列表转换为VO列表，并保持输入顺序。
+     * 本页行一次加载核心列 + 基础字段列，再组装 VO（不再按行 merge）。
      */
     private List<EntityRespVO> convertOrderedEntityIdsToRespList(List<Long> orderedEntityIds, String entityTypeCode) {
         if (orderedEntityIds == null || orderedEntityIds.isEmpty()) {
             return new ArrayList<>();
         }
-        List<EntityDO> entities = entityCoreService.listByIds(orderedEntityIds, entityTypeCode);
-        if (entities == null || entities.isEmpty()) {
+        List<EntityDO> ordered = entityCoreService.listByIdsWithDedicatedBaseFields(
+                orderedEntityIds, entityTypeCode);
+        if (ordered == null || ordered.isEmpty()) {
             return new ArrayList<>();
         }
-
-        Map<Long, EntityDO> byId = entities.stream()
-                .filter(e -> e.getId() != null)
-                .collect(Collectors.toMap(EntityDO::getId, e -> e, (a, b) -> a));
-
-        List<EntityRespVO> result = new ArrayList<>();
-        for (Long id : orderedEntityIds) {
-            EntityDO entity = byId.get(id);
-            if (entity != null) {
-                result.add(EntityDoVoHelper.toRespVO(entity, customFieldValidationService, entityDedicatedColumnService));
-            }
-        }
-        return result;
+        return EntityDoVoHelper.toRespVOList(ordered, customFieldValidationService, entityDedicatedColumnService);
     }
 
     private boolean matchNonRelationFilter(EntityRespVO entity, String fieldCode, String fieldType, String op, Object expectedValue) {
@@ -2276,9 +2278,11 @@ public class EntityServiceImpl implements EntityService {
                 pageNo,
                 pageSize);
 
-        List<EntityRespVO> list = pageResult.getList().stream()
-                .map(entityDO -> EntityDoVoHelper.toRespVO(entityDO, customFieldValidationService, entityDedicatedColumnService))
+        List<Long> orderedIds = pageResult.getList().stream()
+                .map(EntityDO::getId)
+                .filter(Objects::nonNull)
                 .toList();
+        List<EntityRespVO> list = convertOrderedEntityIdsToRespList(orderedIds, reqVO.getEntityTypeCode());
         return new PageResult<>(list, pageResult.getTotal());
     }
 
@@ -2730,9 +2734,14 @@ public class EntityServiceImpl implements EntityService {
         if (rawEntities == null || rawEntities.isEmpty()) {
             return new ArrayList<>();
         }
+        List<Long> orderedIds = rawEntities.stream()
+                .map(EntityDO::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        List<EntityDO> loaded = entityCoreService.listByIdsWithDedicatedBaseFields(orderedIds, entityTypeCode);
         List<EntityRespVO> entities = detail == EntityQueryResultDetail.LIGHT
-                ? EntityDoVoHelper.toLightRespVOList(rawEntities, entityDedicatedColumnService)
-                : EntityDoVoHelper.toRespVOList(rawEntities, customFieldValidationService, entityDedicatedColumnService);
+                ? EntityDoVoHelper.toLightRespVOList(loaded, entityDedicatedColumnService)
+                : EntityDoVoHelper.toRespVOList(loaded, customFieldValidationService, entityDedicatedColumnService);
         entities = filterEntityRespList(entities, entityTypeCode, keyword, filters);
         entityRefDisplayEnrichService.enrich(entities);
 
@@ -2803,7 +2812,13 @@ public class EntityServiceImpl implements EntityService {
     @Override
     public List<EntityRespVO> getEntityTreeByModelId(String entityTypeCode, Long modelId) {
         List<EntityDO> entities = entityCoreService.listTreeEntities(entityTypeCode, modelId);
-        List<EntityRespVO> respVOList = EntityDoVoHelper.toRespVOList(entities, customFieldValidationService, entityDedicatedColumnService);
+        List<Long> orderedIds = entities == null ? List.of() : entities.stream()
+                .map(EntityDO::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        List<EntityDO> loaded = entityCoreService.listByIdsWithDedicatedBaseFields(orderedIds, entityTypeCode);
+        List<EntityRespVO> respVOList = EntityDoVoHelper.toRespVOList(
+                loaded, customFieldValidationService, entityDedicatedColumnService);
         // 模型树场景：采用“父节点内局部排序（sort）”策略
         return EntityTreeBuilder.buildTree(respVOList, EntityTreeBuilder.SortMode.LOCAL_SIBLING_SORT);
     }
