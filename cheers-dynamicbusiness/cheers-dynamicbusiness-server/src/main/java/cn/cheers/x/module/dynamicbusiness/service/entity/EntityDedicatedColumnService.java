@@ -1,7 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
@@ -15,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -91,16 +89,18 @@ public class EntityDedicatedColumnService {
         if (!isDedicated(entityType)) {
             return physical;
         }
-        List<PhysicalField> fields = resolvePhysicalFields(entityType);
-        if (fields.isEmpty()) {
+        List<PhysicalFieldSpec> specs = listEnabledPhysicalFields(entityTypeCode.trim());
+        if (specs.isEmpty()) {
             return physical;
         }
-        for (PhysicalField field : fields) {
-            if (!customFields.containsKey(field.fieldCode())) {
+        Map<String, EntityTypeBaseFieldDO> metaByCode = indexEnabledBaseFields(entityTypeCode.trim());
+        for (PhysicalFieldSpec spec : specs) {
+            if (!customFields.containsKey(spec.fieldCode())) {
                 continue;
             }
-            Object raw = customFields.remove(field.fieldCode());
-            physical.put(field.column(), toDbValue(field.meta(), raw));
+            Object raw = customFields.remove(spec.fieldCode());
+            EntityTypeBaseFieldDO meta = metaByCode.get(spec.fieldCode());
+            physical.put(spec.columnName(), toDbValue(meta, raw));
         }
         return physical;
     }
@@ -130,51 +130,42 @@ public class EntityDedicatedColumnService {
     }
 
     /**
-     * 单实体读：把已建固定列合并进 baseFields（详情/单条路径）。
-     *
-     * <p>按配置列一次 SELECT；Task 4 将改走本页一次加载后移除本合并路径。</p>
+     * 单实体读：按配置列一次 SELECT 写入 baseFields（详情/单条；无 information_schema）。
+     * 列表路径不得调用本方法做「按本页 id 二次补列」；Task 2/3 改走本页一次加载。
      */
     public void mergePhysicalColumnsIntoBaseFields(EntityDO entity, Map<String, Object> baseFields) {
         if (entity == null || entity.getId() == null || StrUtil.isBlank(entity.getEntityTypeCode()) || baseFields == null) {
             return;
         }
-        EntityRespVO stub = new EntityRespVO();
-        stub.setId(entity.getId());
-        stub.setBaseFields(baseFields);
-        if (baseFields.get("entityTypeCode") == null) {
-            baseFields.put("entityTypeCode", entity.getEntityTypeCode());
-        }
-        mergePhysicalColumnsIntoBaseFields(List.of(stub));
-    }
-
-    /**
-     * 列表读：按类型对本页 id 一次 SELECT 固定列，写入各 VO 的 baseFields。
-     *
-     * <p>列集合仅来自基础字段配置；Task 4 将拆除本过渡合并。</p>
-     */
-    public void mergePhysicalColumnsIntoBaseFields(List<EntityRespVO> entities) {
-        if (CollectionUtils.isEmpty(entities)) {
+        EntityTypeDO entityType = entityTypeMapper.selectByCode(entity.getEntityTypeCode());
+        if (!isDedicated(entityType)) {
             return;
         }
-        Map<String, List<EntityRespVO>> byType = new LinkedHashMap<>();
-        for (EntityRespVO vo : entities) {
-            if (vo == null || vo.getId() == null) {
-                continue;
-            }
-            String typeCode = vo.getEntityTypeCode();
-            if (!StringUtils.hasText(typeCode) && vo.getBaseFields() != null) {
-                Object raw = vo.getBaseFields().get("entityTypeCode");
-                if (raw != null) {
-                    typeCode = String.valueOf(raw).trim();
-                }
-            }
-            if (!StringUtils.hasText(typeCode)) {
-                continue;
-            }
-            byType.computeIfAbsent(typeCode.trim(), k -> new ArrayList<>()).add(vo);
+        List<PhysicalFieldSpec> specs = listEnabledPhysicalFields(entity.getEntityTypeCode().trim());
+        if (specs.isEmpty()) {
+            return;
         }
-        for (Map.Entry<String, List<EntityRespVO>> entry : byType.entrySet()) {
-            mergeForType(entry.getKey(), entry.getValue());
+        String table = resolveTableName(entityType);
+        StringBuilder select = new StringBuilder("SELECT ");
+        for (int i = 0; i < specs.size(); i++) {
+            if (i > 0) {
+                select.append(", ");
+            }
+            select.append(specs.get(i).columnName());
+        }
+        select.append(" FROM ").append(table).append(" WHERE id = ? AND deleted = false");
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(select.toString(), entity.getId());
+        if (rows.isEmpty()) {
+            return;
+        }
+        Map<String, Object> row = rows.get(0);
+        Map<String, EntityTypeBaseFieldDO> metaByCode = indexEnabledBaseFields(entity.getEntityTypeCode().trim());
+        for (PhysicalFieldSpec spec : specs) {
+            Object dbVal = readColumn(row, spec.columnName());
+            if (dbVal == null) {
+                continue;
+            }
+            baseFields.put(spec.fieldCode(), toApiValue(metaByCode.get(spec.fieldCode()), dbVal));
         }
     }
 
@@ -186,7 +177,7 @@ public class EntityDedicatedColumnService {
     }
 
     /**
-     * 批量读取某一基础字段固定列值，供列表字段排序。
+     * 批量读取某一基础字段固定列值，供列表字段排序（非 VO 二次补列）。
      */
     public Map<Long, Object> loadPhysicalFieldValues(String entityTypeCode,
                                                      String fieldCode,
@@ -232,97 +223,23 @@ public class EntityDedicatedColumnService {
     }
 
     /**
-     * 历史 API：探列缓存已删除；建列后无需再清缓存。保留空实现以免改 DDL 调用方。
+     * 历史 API：探列已删除后无需清缓存；保留空实现以免改 DDL 调用方（Task 4 可再清）。
      */
     public void invalidateTableColumns(String tableName) {
-        // no-op：列集合改为仅信基础字段配置
+        // no-op
     }
 
-    private void mergeForType(String entityTypeCode, List<EntityRespVO> vos) {
-        EntityTypeDO entityType = entityTypeMapper.selectByCode(entityTypeCode);
-        if (!isDedicated(entityType)) {
-            return;
-        }
-        List<PhysicalField> fields = resolvePhysicalFields(entityType);
-        if (fields.isEmpty()) {
-            return;
-        }
-        List<Long> ids = vos.stream().map(EntityRespVO::getId).filter(Objects::nonNull).distinct().toList();
-        if (ids.isEmpty()) {
-            return;
-        }
-        String table = resolveTableName(entityType);
-        StringBuilder select = new StringBuilder("SELECT id");
-        for (PhysicalField field : fields) {
-            select.append(", ").append(field.column());
-        }
-        select.append(" FROM ").append(table)
-                .append(" WHERE deleted = false AND id IN (")
-                .append(String.join(",", Collections.nCopies(ids.size(), "?")))
-                .append(")");
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(select.toString(), ids.toArray());
-        Map<Long, Map<String, Object>> rowById = new LinkedHashMap<>();
-        for (Map<String, Object> row : rows) {
-            Long id = toLong(row.get("id"));
-            if (id != null) {
-                rowById.put(id, row);
-            }
-        }
-        for (EntityRespVO vo : vos) {
-            Map<String, Object> row = rowById.get(vo.getId());
-            if (row == null) {
-                continue;
-            }
-            Map<String, Object> base = vo.getBaseFields();
-            if (base == null) {
-                base = new LinkedHashMap<>();
-                vo.setBaseFields(base);
-            }
-            for (PhysicalField field : fields) {
-                Object dbVal = readColumn(row, field.column());
-                if (dbVal == null) {
-                    continue;
-                }
-                base.put(field.fieldCode(), toApiValue(field.meta(), dbVal));
-            }
-            stripPhysicalKeysFromCustom(vo, base);
-        }
-    }
-
-    private static void stripPhysicalKeysFromCustom(EntityRespVO vo, Map<String, Object> base) {
-        if (vo.getCustomFields() == null || base == null) {
-            return;
-        }
-        for (String fieldCode : base.keySet()) {
-            if (fieldCode != null && fieldCode.startsWith("FLD-")) {
-                vo.getCustomFields().remove(fieldCode);
-            }
-        }
-    }
-
-    /**
-     * 启用基础字段 → 物理列；不探表列是否存在。
-     */
-    private List<PhysicalField> resolvePhysicalFields(EntityTypeDO entityType) {
-        String typeCode = entityType.getCode();
-        if (StrUtil.isBlank(typeCode)) {
-            return List.of();
-        }
-        List<EntityTypeBaseFieldDO> configured = baseFieldMapper.selectByEntityTypeCode(typeCode.trim());
+    private Map<String, EntityTypeBaseFieldDO> indexEnabledBaseFields(String entityTypeCode) {
+        List<EntityTypeBaseFieldDO> configured = baseFieldMapper.selectByEntityTypeCode(entityTypeCode);
+        Map<String, EntityTypeBaseFieldDO> out = new LinkedHashMap<>();
         if (CollectionUtils.isEmpty(configured)) {
-            return List.of();
+            return out;
         }
-        List<PhysicalField> out = new ArrayList<>();
         for (EntityTypeBaseFieldDO field : configured) {
             if (field == null || StrUtil.isBlank(field.getFieldCode()) || !field.isEnabled()) {
                 continue;
             }
-            String fieldCode = field.getFieldCode().trim();
-            String column = EntityBaseFieldColumnNames.toColumnName(fieldCode);
-            if (column == null) {
-                continue;
-            }
-            out.add(new PhysicalField(fieldCode, column, field));
+            out.put(field.getFieldCode().trim(), field);
         }
         return out;
     }
@@ -346,26 +263,26 @@ public class EntityDedicatedColumnService {
         return storage != null && storage.isDedicated();
     }
 
+    /** BASE 行为：dedicatedTableName 或 ent_{code}，保证 ent_ 前缀；不引入租户表名助手。 */
     private static String resolveTableName(EntityTypeDO entityType) {
         if (entityType == null) {
             throw new ServiceException(400, "业务类型不存在");
         }
-        if (StrUtil.isNotBlank(entityType.getDedicatedTableName())) {
-            return cn.cheers.x.module.dynamicbusiness.framework.tenant.TenantPhysicalTableNames
-                    .ensureTenantSuffix(entityType.getDedicatedTableName().trim());
+        String table = entityType.getDedicatedTableName();
+        if (StrUtil.isBlank(table)) {
+            table = "ent_" + entityType.getCode();
         }
-        String code = StrUtil.isNotBlank(entityType.getBaseEntityTypeCode())
-                ? entityType.getBaseEntityTypeCode()
-                : entityType.getCode();
-        return cn.cheers.x.module.dynamicbusiness.framework.tenant.TenantPhysicalTableNames
-                .entityPhysicalTable(code);
+        if (!table.startsWith("ent_")) {
+            table = "ent_" + table;
+        }
+        return table;
     }
 
     private static Object toDbValue(EntityTypeBaseFieldDO field, Object raw) {
         if (raw == null) {
             return null;
         }
-        if (isRefType(field.getDataType())) {
+        if (field != null && isRefType(field.getDataType())) {
             return extractRefId(raw);
         }
         return raw;
@@ -375,7 +292,7 @@ public class EntityDedicatedColumnService {
         if (dbVal == null) {
             return null;
         }
-        if (!isRefType(field.getDataType())) {
+        if (field == null || !isRefType(field.getDataType())) {
             return dbVal;
         }
         Long id = toLong(dbVal);
@@ -441,8 +358,5 @@ public class EntityDedicatedColumnService {
         } catch (NumberFormatException ex) {
             return null;
         }
-    }
-
-    private record PhysicalField(String fieldCode, String column, EntityTypeBaseFieldDO meta) {
     }
 }
