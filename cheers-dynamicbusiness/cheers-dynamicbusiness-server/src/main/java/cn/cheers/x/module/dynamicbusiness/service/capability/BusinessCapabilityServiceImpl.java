@@ -42,6 +42,7 @@ import cn.cheers.x.module.dynamicbusiness.service.capability.system.SystemCapabi
 import cn.cheers.x.module.dynamicbusiness.service.capability.system.SystemCapabilityProjectionBuilder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
@@ -194,6 +195,18 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             log.info("[getProjection][动态树读 URL 异常，触发重建][entityTypeCode={}][componentCode={}][dataKind={}]",
                     code, comp, kind);
             triggerRebuild(code);
+            data = capabilityComponentProjectionMapper.selectByEntityTypeComponentAndDataKind(code, comp, kind);
+        } else if (isEntityListProjectionMissingBaseFieldFlag(data.getComponentInterface(), comp, kind)) {
+            // 有 getList.fields 却普遍缺 baseField：投影语义过期，只刷投影（不拖垮全型号表单）
+            log.info("[getProjection][缺 baseField 标记，触发投影重建][entityTypeCode={}][componentCode={}][dataKind={}]",
+                    code, comp, kind);
+            rebuildCapabilityAndProjections(code);
+            data = capabilityComponentProjectionMapper.selectByEntityTypeComponentAndDataKind(code, comp, kind);
+        } else if (isEntityListProjectionFragmentedTypeBaseGroup(data.getComponentInterface(), comp, kind)) {
+            // 基础列同名「基础信息」却带多个型号 groupId：类型级分组被污染，须重建
+            log.info("[getProjection][基础信息分组被型号 groupId 拆散，触发投影重建][entityTypeCode={}][componentCode={}][dataKind={}]",
+                    code, comp, kind);
+            rebuildCapabilityAndProjections(code);
             data = capabilityComponentProjectionMapper.selectByEntityTypeComponentAndDataKind(code, comp, kind);
         }
         if (data == null) {
@@ -528,9 +541,14 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             item.put("renderAs", mapDisplayRenderAs(String.valueOf(meta.get("fieldType"))));
             item.put("sortOrder", meta.get("sortOrder") != null ? meta.get("sortOrder") : order++);
             item.put("defaultVisible", visibleByDefault);
-            item.put("baseField", Boolean.TRUE.equals(meta.get("baseField")) || BUILTIN_BASE_DISPLAY_KEYS.contains(fieldKey));
+            boolean baseField = Boolean.TRUE.equals(meta.get("baseField")) || BUILTIN_BASE_DISPLAY_KEYS.contains(fieldKey);
+            item.put("baseField", baseField);
             item.put("applicableViews", List.of(componentCode));
-            if (meta.get("groupId") != null) {
+            // 类型基础列：稳定「基础信息」，禁止型号本地 groupId 渗入配置器分桶
+            if (baseField) {
+                applyTypeBaseGroupMeta(meta);
+            }
+            if (!baseField && meta.get("groupId") != null) {
                 item.put("groupId", meta.get("groupId"));
             }
             if (meta.get("groupName") != null) {
@@ -652,57 +670,22 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                     applyFieldSemanticsAndRefTarget(existing, field);
                 }
             }
-            applyModelGroupMeta(model.getId(), byFieldKey, fieldById);
+            // 型号表单分组（field_groups_config）只服务型号 CRUD，不得抬到类型级列表投影。
         }
         return byFieldKey;
     }
 
-    private void applyModelGroupMeta(
-            Long modelId,
-            LinkedHashMap<String, Map<String, Object>> byFieldKey,
-            Map<Long, FieldDO> fieldById) {
-        List<ModelFieldGroupRespVO> groups;
-        try {
-            groups = modelFieldGroupService.listModelFieldGroupsByModelId(modelId);
-        } catch (Exception ex) {
-            log.debug("skip model group meta for modelId={}: {}", modelId, ex.getMessage());
+    /**
+     * 类型基础字段在类型级投影中固定归入「基础信息」，不使用型号本地 groupId。
+     * 一个数据类型只有一份基础字段；配置器按 groupId 分桶时必须看到同一段。
+     */
+    private void applyTypeBaseGroupMeta(Map<String, Object> meta) {
+        if (meta == null) {
             return;
         }
-        if (groups == null || groups.isEmpty()) {
-            return;
-        }
-        groups.sort(Comparator.comparingInt(group -> group.getSort() != null ? group.getSort() : 0));
-        for (ModelFieldGroupRespVO group : groups) {
-            if (group.getFields() == null || group.getFields().isEmpty()) {
-                continue;
-            }
-            int groupSort = group.getSort() != null ? group.getSort() : 0;
-            for (ModelFieldGroupRespVO.FieldRefVO ref : group.getFields()) {
-                if (ref.getFieldId() == null) {
-                    continue;
-                }
-                FieldDO field = fieldById.get(ref.getFieldId());
-                if (field == null || !StringUtils.hasText(field.getCode())) {
-                    continue;
-                }
-                String fieldKey = field.getCode().trim();
-                Map<String, Object> meta = byFieldKey.get(fieldKey);
-                if (meta == null) {
-                    continue;
-                }
-                int fieldSort = ref.getSort() != null ? ref.getSort() : 0;
-                Integer existingGroupSort = meta.get("groupSortOrder") instanceof Integer value ? value : null;
-                Integer existingSort = meta.get("sortOrder") instanceof Integer value ? value : null;
-                if (existingGroupSort == null
-                        || groupSort < existingGroupSort
-                        || (groupSort == existingGroupSort && (existingSort == null || fieldSort < existingSort))) {
-                    meta.put("groupId", group.getId());
-                    meta.put("groupName", group.getName());
-                    meta.put("groupSortOrder", groupSort);
-                    meta.put("sortOrder", fieldSort);
-                }
-            }
-        }
+        meta.remove("groupId");
+        meta.put("groupName", "基础信息");
+        meta.put("groupSortOrder", 0);
     }
 
     private void mergeBusinessBaseFieldMeta(String entityTypeCode, LinkedHashMap<String, Map<String, Object>> byFieldKey) {
@@ -728,10 +711,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                     || Boolean.TRUE.equals(meta.get("searchable")));
             meta.put("sortable", Boolean.TRUE.equals(baseField.getIsSortable())
                     || Boolean.TRUE.equals(meta.get("sortable")));
-            if (!meta.containsKey("groupName")) {
-                meta.put("groupName", "基础信息");
-                meta.put("groupSortOrder", 0);
-            }
+            applyTypeBaseGroupMeta(meta);
         }
         enrichBaseFieldSemanticsFromLibrary(byFieldKey);
     }
@@ -876,22 +856,18 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             meta.put("label", label);
             meta.put("fieldType", "TEXT");
             meta.put("sortOrder", sortOrder);
-            meta.put("groupName", "基础信息");
-            meta.put("groupSortOrder", 0);
             meta.put("filterable", false);
             meta.put("searchable", false);
             // name 默认允许表头排序；其余内置列默认不可排，由基础字段 / 分配覆盖
             meta.put("sortable", "name".equals(key));
             meta.put("baseField", true);
+            applyTypeBaseGroupMeta(meta);
             return meta;
         });
         Map<String, Object> meta = byFieldKey.get(fieldKey);
         if (meta != null) {
             meta.put("baseField", true);
-            if (meta.get("groupSortOrder") == null) {
-                meta.put("groupName", "基础信息");
-                meta.put("groupSortOrder", 0);
-            }
+            applyTypeBaseGroupMeta(meta);
         }
     }
 
@@ -1387,8 +1363,112 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     }
 
     /**
+     * entity + list/table/card：getList.fields 存在业务列却没有任何 baseField=true，
+     * 或全部字段都未带 baseField 属性 → 视为过期（配置器会降级成仅 id/name/code）。
+     */
+    private boolean isEntityListProjectionMissingBaseFieldFlag(
+            String componentInterface, String componentCode, String dataKind) {
+        if (!BusinessCategoryConstants.KIND_ENTITY.equals(dataKind)) {
+            return false;
+        }
+        if (!"list".equals(componentCode) && !"table".equals(componentCode) && !"card".equals(componentCode)) {
+            return false;
+        }
+        if (!StringUtils.hasText(componentInterface)) {
+            return false;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(componentInterface.trim());
+            JsonNode fields = root.path("getList").path("fields");
+            if (!fields.isArray() || fields.isEmpty()) {
+                return false;
+            }
+            boolean sawBusinessField = false;
+            boolean sawBaseFieldTrue = false;
+            boolean sawAnyBaseFieldProperty = false;
+            for (JsonNode field : fields) {
+                if (field == null || !field.isObject()) {
+                    continue;
+                }
+                String fieldKey = field.path("fieldKey").asText("").trim();
+                if (!StringUtils.hasText(fieldKey)) {
+                    continue;
+                }
+                if (field.has("baseField")) {
+                    sawAnyBaseFieldProperty = true;
+                    if (field.path("baseField").asBoolean(false)) {
+                        sawBaseFieldTrue = true;
+                    }
+                }
+                if (!BUILTIN_BASE_DISPLAY_KEYS.contains(fieldKey) && !"status".equals(fieldKey)) {
+                    sawBusinessField = true;
+                }
+            }
+            if (sawBusinessField && !sawBaseFieldTrue) {
+                return true;
+            }
+            return !sawAnyBaseFieldProperty;
+        } catch (Exception ex) {
+            log.warn("[isEntityListProjectionMissingBaseFieldFlag][解析失败，跳过过期判定][componentCode={}][dataKind={}]",
+                    componentCode, dataKind, ex);
+            return false;
+        }
+    }
+
+    /**
+     * entity + list/table/card：类型基础列名称均为「基础信息」却出现多个不同 groupId
+     * → 型号表单分组渗入了类型投影（配置器会拆成多段同名标题）。
+     */
+    private boolean isEntityListProjectionFragmentedTypeBaseGroup(
+            String componentInterface, String componentCode, String dataKind) {
+        if (!BusinessCategoryConstants.KIND_ENTITY.equals(dataKind)
+                && !BusinessCategoryConstants.KIND_MODEL.equals(dataKind)) {
+            return false;
+        }
+        if (!"list".equals(componentCode) && !"table".equals(componentCode) && !"card".equals(componentCode)) {
+            return false;
+        }
+        if (!StringUtils.hasText(componentInterface)) {
+            return false;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(componentInterface.trim());
+            JsonNode fields = root.path("getList").path("fields");
+            if (!fields.isArray() || fields.isEmpty()) {
+                return false;
+            }
+            Set<String> groupIds = new HashSet<>();
+            int baseNamedCount = 0;
+            for (JsonNode field : fields) {
+                if (field == null || !field.isObject()) {
+                    continue;
+                }
+                boolean baseField = field.path("baseField").asBoolean(false)
+                        || BUILTIN_BASE_DISPLAY_KEYS.contains(field.path("fieldKey").asText("").trim());
+                if (!baseField) {
+                    continue;
+                }
+                String groupName = field.path("groupName").asText("").trim();
+                if (!"基础信息".equals(groupName)) {
+                    continue;
+                }
+                baseNamedCount++;
+                if (field.hasNonNull("groupId") && StringUtils.hasText(field.get("groupId").asText())) {
+                    groupIds.add(field.get("groupId").asText().trim());
+                }
+            }
+            return baseNamedCount >= 2 && groupIds.size() >= 2;
+        } catch (Exception ex) {
+            log.warn("[isEntityListProjectionFragmentedTypeBaseGroup][解析失败，跳过过期判定][componentCode={}][dataKind={}]",
+                    componentCode, dataKind, ex);
+            return false;
+        }
+    }
+
+    /**
      * dynamic model/entity 树投影误用分类树读 URL 或缺少读端点（历史 POC 数据）。
-     * 分类域树（system/category）不在此判定，其 category/tree 为正确端点。
+     * 含历史路径 /system/category/tree 与现行 /dynamicbusiness/category/tree：
+     * 出现在 model/entity 投影中均视为损坏并触发重建。分类域投影本身应使用 dynamicbusiness 路径。
      */
     private boolean isBrokenDynamicTreeProjection(String componentInterface, String componentCode, String dataKind) {
         if (!"tree".equals(componentCode)) {
@@ -1402,6 +1482,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             return true;
         }
         String json = componentInterface.trim();
+        // 历史 /system/category 与误用的分类树 URL 一律判定损坏（不再运行时改写兼容）
         if (json.contains("/dynamicbusiness/category/tree") || json.contains("/system/category/tree")) {
             return true;
         }

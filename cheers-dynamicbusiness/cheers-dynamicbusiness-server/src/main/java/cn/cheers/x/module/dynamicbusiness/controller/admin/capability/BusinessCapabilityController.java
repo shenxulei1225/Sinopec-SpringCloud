@@ -116,6 +116,18 @@ public class BusinessCapabilityController {
         return success(true);
     }
 
+    @PostMapping("/internal/refresh/entity-type-projections")
+    @Operation(
+            summary = "按业务类型刷新能力投影（不含各型号 CRUD 表单）",
+            description = "类型基础字段保存后同步刷新 list/tree 等投影；失败时由调用方提示用户重试。")
+    @Parameter(name = "entityTypeCode", description = "业务类型编码", required = true, example = "equipment")
+    @ApiAccessLog(operateType = UPDATE)
+    @PreAuthorize("@ss.hasPermission('system:entity-type:update')")
+    public CommonResult<Boolean> refreshEntityTypeProjections(@RequestParam("entityTypeCode") String entityTypeCode) {
+        businessCapabilityService.refreshAfterEntityTypeFieldDefinitionChanged(entityTypeCode);
+        return success(true);
+    }
+
     @PostMapping("/internal/rebuild/model")
     @Operation(summary = "按模型触发能力重建")
     @Parameter(name = "modelId", description = "模型编号", required = true, example = "1001")

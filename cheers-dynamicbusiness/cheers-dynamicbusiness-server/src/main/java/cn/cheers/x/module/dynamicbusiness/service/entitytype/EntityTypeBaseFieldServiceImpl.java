@@ -346,6 +346,13 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
 
     /** 专用表：基础字段新增 → 固定列（列名=字段编码规范化）。 */
     private void syncDedicatedTableAddColumn(EntityTypeBaseFieldDO field) {
+        if (field == null) {
+            return;
+        }
+        String dt = field.getDataType() == null ? "" : field.getDataType().trim().toUpperCase().replace('-', '_');
+        if ("REF_MULTI".equals(dt) || "ENTITY_REF_MULTI".equals(dt) || "BATCH_ENTITY_REF".equals(dt)) {
+            return;
+        }
         String tableName = resolveDedicatedTableName(field.getEntityTypeCode());
         if (tableName == null) {
             return;
@@ -375,11 +382,16 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
         if (storage == null || !storage.isDedicated()) {
             return null;
         }
-        String table = entityType.getDedicatedTableName();
-        if (StrUtil.isBlank(table)) {
-            table = "ent_" + entityType.getCode();
-        } else if (!table.startsWith("ent_")) {
-            table = "ent_" + table;
+        String table;
+        if (StrUtil.isNotBlank(entityType.getDedicatedTableName())) {
+            table = cn.cheers.x.module.dynamicbusiness.framework.tenant.TenantPhysicalTableNames
+                    .ensureTenantSuffix(entityType.getDedicatedTableName().trim());
+        } else {
+            String code = StrUtil.isNotBlank(entityType.getBaseEntityTypeCode())
+                    ? entityType.getBaseEntityTypeCode()
+                    : entityType.getCode();
+            table = cn.cheers.x.module.dynamicbusiness.framework.tenant.TenantPhysicalTableNames
+                    .entityPhysicalTable(code);
         }
         if (!dynamicTableService.tableExists(table)) {
             log.warn("专用表 {} 不存在，跳过基础字段改表 entityType={}", table, entityTypeCode);

@@ -30,6 +30,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMa
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryDO;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.service.entitytype.BaseFieldLibrarySyncService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeBaseFieldService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryService;
@@ -91,6 +92,8 @@ public class ModelServiceImpl implements ModelService {
     private CategoryMapper categoryMapper;
     @Resource
     private EntityTypeBaseFieldService entityTypeBaseFieldService;
+    @Resource
+    private BaseFieldLibrarySyncService baseFieldLibrarySyncService;
     @Resource
     private EntityTypeMapper entityTypeMapper;
     @Resource
@@ -220,12 +223,15 @@ public class ModelServiceImpl implements ModelService {
             }
         }
         
-        // 为新模型自动创建默认“基础信息”分组（避免前端出现“未分组”）
+        // 型号表单默认「扩展信息」分组（类型基础字段不进型号分组，只在型号侧展示）
         ModelFieldGroupCreateReqVO defaultGroupReq = new ModelFieldGroupCreateReqVO();
         defaultGroupReq.setModelId(model.getId());
-        defaultGroupReq.setName("基础信息");
+        defaultGroupReq.setName("扩展信息");
         defaultGroupReq.setColor("#409eff");
         modelFieldGroupService.createModelFieldGroup(defaultGroupReq);
+
+        // 物化该业务类型已有固定列到本型号分配表（读路径不再虚合并 BASE）
+        baseFieldLibrarySyncService.assignAllBaseFieldsToModel(model.getId());
 
         // 发布 Model 创建事件（用于事件驱动机制）
         // 需求：FR-BDA-005, FR-BDA-023, FR-BDA-072
@@ -299,6 +305,8 @@ public class ModelServiceImpl implements ModelService {
                     .build();
             modelFieldAssignmentMapper.insert(copy);
         }
+        // 源型号若缺固定列分配，克隆后补齐（只插缺的，不覆盖已复制行的规则）
+        baseFieldLibrarySyncService.assignAllBaseFieldsToModel(model.getId());
 
         LinkedHashSet<Long> categoryIds = new LinkedHashSet<>();
         List<ModelCategoryRelationDO> sourceRels =
@@ -706,11 +714,16 @@ public class ModelServiceImpl implements ModelService {
      */
     @Override
     public List<ModelRespVO> listModelsByEntityType(String entityTypeCode) {
-        return listModelsByEntityType(entityTypeCode, null);
+        return listModelsByEntityType(entityTypeCode, null, null);
     }
 
     @Override
     public List<ModelRespVO> listModelsByEntityType(String entityTypeCode, String domain) {
+        return listModelsByEntityType(entityTypeCode, domain, null);
+    }
+
+    @Override
+    public List<ModelRespVO> listModelsByEntityType(String entityTypeCode, String domain, String categoryTypeCode) {
         List<ModelDO> list = filterModelDosByDomain(
                 modelCoreService.listByEntityTypeCode(entityTypeCode), domain);
         if (list.isEmpty()) {
@@ -719,7 +732,49 @@ public class ModelServiceImpl implements ModelService {
 
         List<ModelRespVO> result = ModelConvert.INSTANCE.convertList(list);
         fillModelCategoryIds(result);
+        if (StringUtils.hasText(categoryTypeCode)) {
+            return reorderModelsByCategoryTree(result, categoryTypeCode.trim(), entityTypeCode);
+        }
         return result;
+    }
+
+    /**
+     * 按分类树展示序分桶重排型号：根→子（同级 sort/id）展开后的分类—型号序，未挂分类的追加末尾。
+     * 分类体系无根或不存在时保持原序（不静默编造）。
+     */
+    private List<ModelRespVO> reorderModelsByCategoryTree(
+            List<ModelRespVO> models, String categoryTypeCode, String entityTypeCode) {
+        var categoryType = categoryTypeService.getCategoryTypeByCode(categoryTypeCode);
+        Long rootCategoryId = categoryType == null ? null : categoryType.getTopLevelCategoryId();
+        if (rootCategoryId == null) {
+            return models;
+        }
+        List<Long> orderedIds = modelCategoryRelationService.listModelIdsByCategoryIdWithDescendants(
+                rootCategoryId, entityTypeCode);
+        if (orderedIds == null || orderedIds.isEmpty()) {
+            return models;
+        }
+        Map<Long, ModelRespVO> byId = new java.util.LinkedHashMap<>();
+        for (ModelRespVO model : models) {
+            if (model.getId() != null) {
+                byId.putIfAbsent(model.getId(), model);
+            }
+        }
+        List<ModelRespVO> ordered = new ArrayList<>(models.size());
+        Set<Long> seen = new HashSet<>();
+        for (Long modelId : orderedIds) {
+            ModelRespVO vo = byId.get(modelId);
+            if (vo != null && seen.add(modelId)) {
+                ordered.add(vo);
+            }
+        }
+        for (ModelRespVO model : models) {
+            Long id = model.getId();
+            if (id != null && seen.add(id)) {
+                ordered.add(model);
+            }
+        }
+        return ordered;
     }
 
     private List<ModelDO> filterModelDosByDomain(List<ModelDO> models, String domain) {
@@ -769,6 +824,32 @@ public class ModelServiceImpl implements ModelService {
         }
         return allModels.stream()
                 .filter(model -> model.getId() != null && !categorized.contains(model.getId()))
+                .toList();
+    }
+
+    @Override
+    public List<ModelRespVO> listCategorizedModelsByCategoryType(
+            String categoryTypeCode, String entityTypeCode, String domain) {
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
+            throw new ServiceException(400, "entityTypeCode 不能为空");
+        }
+        if (categoryTypeCode == null || categoryTypeCode.isBlank()) {
+            throw new ServiceException(400, "categoryTypeCode 不能为空");
+        }
+        // 带 categoryTypeCode：先按分类树序分桶排序（与「全部」同序），再筛「已挂节点」
+        List<ModelRespVO> allModels = listModelsByEntityType(entityTypeCode, domain, categoryTypeCode);
+        if (allModels.isEmpty()) {
+            return allModels;
+        }
+        List<Long> categorizedModelIds = modelCategoryRelationMapper.selectDistinctModelIdsByCategoryTypeCode(
+                categoryTypeCode, entityTypeCode);
+        Set<Long> categorized = categorizedModelIds == null ? Set.of()
+                : categorizedModelIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+        if (categorized.isEmpty()) {
+            return List.of();
+        }
+        return allModels.stream()
+                .filter(model -> model.getId() != null && categorized.contains(model.getId()))
                 .toList();
     }
 
@@ -1175,10 +1256,10 @@ public class ModelServiceImpl implements ModelService {
         }
 
         // 转换为 VO 列表（entityTypeCode 已在 convert 方法中设置）
-        List<ModelRespVO> result = ModelConvert.INSTANCE.convertList(models);
+        List<ModelRespVO> loaded = ModelConvert.INSTANCE.convertList(models);
 
         // 批量查询所有模型的分类关联
-        List<Long> modelIds = result.stream().map(ModelRespVO::getId).toList();
+        List<Long> modelIds = loaded.stream().map(ModelRespVO::getId).toList();
         List<ModelCategoryRelationDO> allRelations = modelCategoryRelationMapper.selectList(
                 new LambdaQueryWrapperX<ModelCategoryRelationDO>()
                         .in(ModelCategoryRelationDO::getModelId, modelIds));
@@ -1194,13 +1275,31 @@ public class ModelServiceImpl implements ModelService {
                 ));
 
         // 设置每个模型的分类ID列表
-        result.forEach(model -> {
+        loaded.forEach(model -> {
             List<Long> categoryIds = modelCategoryIdsMap.get(model.getId());
             if (categoryIds != null && !categoryIds.isEmpty()) {
                 model.setCategoryIds(categoryIds);
             }
         });
 
+        // 按入参 ids 顺序回放（find-by-category 分桶序依赖此顺序，不能按 DB 返回序）
+        Map<Long, ModelRespVO> byId = new java.util.LinkedHashMap<>();
+        for (ModelRespVO model : loaded) {
+            if (model.getId() != null) {
+                byId.putIfAbsent(model.getId(), model);
+            }
+        }
+        List<ModelRespVO> result = new ArrayList<>(ids.size());
+        Set<Long> seen = new HashSet<>();
+        for (Long id : ids) {
+            if (id == null || !seen.add(id)) {
+                continue;
+            }
+            ModelRespVO vo = byId.get(id);
+            if (vo != null) {
+                result.add(vo);
+            }
+        }
         return result;
     }
 

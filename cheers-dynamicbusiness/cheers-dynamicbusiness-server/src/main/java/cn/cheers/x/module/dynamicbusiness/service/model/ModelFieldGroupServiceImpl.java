@@ -1,10 +1,13 @@
 package cn.cheers.x.module.dynamicbusiness.service.model;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldAssignmentRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldGroupCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldGroupRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldGroupUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.util.SparseSortUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -16,9 +19,11 @@ import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -31,6 +36,7 @@ import java.util.stream.Collectors;
  * 2. 分组信息只属于 Model，不依赖任何字段
  * 3. 字段与分组的关联通过 Model.fieldGroupsConfig（JSON）中的 fields 引用列表实现
  * 4. 字段库是全局通用的，不存储任何与 model 相关的内容
+ * 5. 类型基础字段不属于型号分组：分组仅排扩展/关联字段；「基础信息」是类型级语义，不是每型号一套
  * 
  * 职责：
  * - 只负责管理分组信息（创建、更新、删除、查询）
@@ -41,10 +47,14 @@ import java.util.stream.Collectors;
 @Validated
 public class ModelFieldGroupServiceImpl implements ModelFieldGroupService {
 
-    private static final String DEFAULT_BASE_GROUP_NAME = "基础信息";
+    /** 型号表单默认分组：扩展字段排版用，勿与类型「基础信息」混淆 */
+    private static final String DEFAULT_EXTENSION_GROUP_NAME = "扩展信息";
 
     @Resource
     private ModelMapper modelMapper;
+
+    @Resource
+    private ModelFieldAssignmentMapper modelFieldAssignmentMapper;
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -435,8 +445,10 @@ public class ModelFieldGroupServiceImpl implements ModelFieldGroupService {
         // 读取配置
         FieldGroupsConfig config = readFieldGroupsConfig(modelId);
 
-        // 自动补齐默认“基础信息”分组（避免前端出现“未分组”）
-        ensureDefaultBaseGroup(modelId, config);
+        // 自动补齐默认「扩展信息」分组（避免扩展字段无处可放）
+        ensureDefaultExtensionGroup(modelId, config);
+        // 历史脏数据：BASE 字段引用不得留在型号分组 JSON 中
+        stripBaseFieldRefsFromGroups(modelId, config);
 
         // 转换为 VO 列表
         return config.getGroups().stream()
@@ -471,38 +483,71 @@ public class ModelFieldGroupServiceImpl implements ModelFieldGroupService {
     }
 
     /**
-     * 确保存在默认“基础信息”分组。
-     * 若不存在则自动创建并持久化，避免前端出现“未分组”桶。
+     * 确保存在默认「扩展信息」分组。
+     * 若已有任意分组（含历史「基础信息」桶）则不追加，避免重复默认组。
      */
-    private void ensureDefaultBaseGroup(Long modelId, FieldGroupsConfig config) {
+    private void ensureDefaultExtensionGroup(Long modelId, FieldGroupsConfig config) {
         if (config == null) {
             return;
         }
         if (config.getGroups() == null) {
             config.setGroups(new ArrayList<>());
         }
-        boolean exists = config.getGroups().stream()
-                .anyMatch(g -> g != null && DEFAULT_BASE_GROUP_NAME.equals(g.getName()));
-        if (exists) {
+        if (!config.getGroups().isEmpty()) {
             return;
         }
 
-        FieldGroupItem baseGroup = new FieldGroupItem();
-        baseGroup.setId(generateGroupId(config.getGroups()));
-        baseGroup.setName(DEFAULT_BASE_GROUP_NAME);
-        baseGroup.setColor("#409eff");
-        baseGroup.setFields(new ArrayList<>());
+        FieldGroupItem extensionGroup = new FieldGroupItem();
+        extensionGroup.setId(generateGroupId(config.getGroups()));
+        extensionGroup.setName(DEFAULT_EXTENSION_GROUP_NAME);
+        extensionGroup.setColor("#409eff");
+        extensionGroup.setFields(new ArrayList<>());
+        extensionGroup.setSort(SparseSortUtils.next(null));
 
-        Integer currentMax = config.getGroups().stream()
-                .map(FieldGroupItem::getSort)
-                .filter(Objects::nonNull)
-                .max(Integer::compareTo)
-                .orElse(null);
-        baseGroup.setSort(SparseSortUtils.next(currentMax));
-
-        config.getGroups().add(baseGroup);
-        config.getGroups().sort(Comparator.comparingInt(g -> g.getSort() != null ? g.getSort() : 0));
+        config.getGroups().add(extensionGroup);
         saveFieldGroupsConfig(modelId, config);
+    }
+
+    /** 从型号分组 JSON 中剔除类型基础字段引用（类型一份基础字段，不进型号分组）。 */
+    private void stripBaseFieldRefsFromGroups(Long modelId, FieldGroupsConfig config) {
+        if (config == null || config.getGroups() == null || config.getGroups().isEmpty()) {
+            return;
+        }
+        Set<Long> baseFieldIds = loadBaseAssignmentFieldIds(modelId);
+        if (baseFieldIds.isEmpty()) {
+            return;
+        }
+        boolean changed = false;
+        for (FieldGroupItem group : config.getGroups()) {
+            if (group.getFields() == null || group.getFields().isEmpty()) {
+                continue;
+            }
+            boolean removed = group.getFields().removeIf(
+                    ref -> ref != null && ref.getFieldId() != null && baseFieldIds.contains(ref.getFieldId()));
+            if (removed) {
+                changed = true;
+            }
+        }
+        if (changed) {
+            saveFieldGroupsConfig(modelId, config);
+        }
+    }
+
+    private Set<Long> loadBaseAssignmentFieldIds(Long modelId) {
+        Set<Long> ids = new HashSet<>();
+        List<ModelFieldAssignmentDO> assigns = modelFieldAssignmentMapper.selectByModelId(modelId);
+        if (assigns == null) {
+            return ids;
+        }
+        for (ModelFieldAssignmentDO assign : assigns) {
+            if (assign == null || assign.getFieldId() == null) {
+                continue;
+            }
+            if (ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE.equals(assign.getFieldSource())) {
+                ids.add(assign.getFieldId());
+            }
+        }
+        return ids;
     }
 
     @Override
@@ -510,6 +555,12 @@ public class ModelFieldGroupServiceImpl implements ModelFieldGroupService {
         Objects.requireNonNull(modelId, "modelId 不能为空");
         Objects.requireNonNull(fieldId, "fieldId 不能为空");
         Objects.requireNonNull(groupId, "groupId 不能为空");
+
+        ModelFieldAssignmentDO assignment = modelFieldAssignmentMapper.selectByModelIdAndFieldId(modelId, fieldId);
+        if (assignment != null
+                && ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE.equals(assignment.getFieldSource())) {
+            throw new ServiceException(400, "类型基础字段不属于型号分组，请在「基础信息」中维护启用集");
+        }
 
         FieldGroupsConfig config = readFieldGroupsConfig(modelId);
         List<FieldGroupItem> groups = config.getGroups();

@@ -365,7 +365,14 @@ public final class ModelCrudFormFieldAssembler {
         }
         applyFieldTypeExtensions(item, entityTypeCode, field, fieldType, assign, refResolveContext);
 
-        applyGroupMeta(item, field.getId(), groups);
+        // 类型基础字段固定「基础信息」；型号本地分组只排扩展/关联字段
+        if (baseField != null) {
+            item.put("groupName", "基础信息");
+            item.put("groupSortOrder", 0);
+            item.remove("panelId");
+        } else {
+            applyGroupMeta(item, field.getId(), groups);
+        }
         String defaultValue = assign.getDefaultValue();
         if (!StringUtils.hasText(defaultValue) && baseField != null) {
             defaultValue = baseField.getDefaultValue();
