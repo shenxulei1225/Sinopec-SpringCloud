@@ -248,10 +248,11 @@ public interface EntityService {
      * @param categoryViaRefPathCode 经 REF 反查路径；非空时走 Category-via-Ref（与直接挂靠互斥）
      */
     EntitySceneQueryRespVO queryEntities(EntityQueryScene scene, String resultShape, String resultDetail, String categoryTypeCode, String entityTypeCode,
-            List<Long> modelIds, List<Long> categoryIds, List<CategoryIdGroupReqVO> categoryIdGroups, String categoryViaRefPathCode,
+            List<Long> modelIds, String modelEntityTypeCode, List<Long> categoryIds, List<CategoryIdGroupReqVO> categoryIdGroups, String categoryViaRefPathCode,
             Long entityId, Long rootEntityId, String entitySourceEntityType,
             Integer pageNo, Integer pageSize, String keyword, String domain,
-            List<FieldFilterReqVO> filters, String orderByColumn, Boolean isAsc);
+            List<FieldFilterReqVO> filters, String orderByColumn, Boolean isAsc,
+            List<String> searchFieldCodes);
 
 
     /**
@@ -349,6 +350,16 @@ public interface EntityService {
      * 更新实体排序（保存顺序）：拖拽后按提交的整份顺序重写 sort。
      */
     void saveEntitySort(EntitySortSaveReqVO reqVO);
+
+    /**
+     * 按分类范围（单维或 categoryIdGroups 求交）取候选实体，再按实体出现顺序去重 model_id。
+     * <p>数据管理多分类栏型号列：候选来自分类—实体交集，不走分类—型号名单。</p>
+     */
+    List<Long> listDistinctModelIdsByCategoryScope(String entityTypeCode,
+                                                   List<Long> categoryIds,
+                                                   List<CategoryIdGroupReqVO> categoryIdGroups,
+                                                   String categoryTypeCode,
+                                                   String domain);
 
     // ==================== 预计算相关方法 ====================
 

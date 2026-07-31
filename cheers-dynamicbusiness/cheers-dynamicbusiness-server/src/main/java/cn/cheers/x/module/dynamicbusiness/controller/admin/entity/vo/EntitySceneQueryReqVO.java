@@ -35,6 +35,10 @@ public class EntitySceneQueryReqVO extends PageParam {
     @Schema(description = "模型 ID 列表", example = "[48, 47]")
     private List<Long> modelIds;
 
+    @Schema(description = "型号所属实际存储类型。与 entityTypeCode 不同时，ENTITIES_BY_MODEL 走型号—实体关联表（跨类型挂靠）；缺省或相同时仍按实体表 model_id 归属查询",
+            example = "equipment")
+    private String modelEntityTypeCode;
+
     @Schema(description = "分类 ID 列表", example = "[1, 2]")
     private List<Long> categoryIds;
 
@@ -56,6 +60,9 @@ public class EntitySceneQueryReqVO extends PageParam {
 
     @Schema(description = "搜索关键词", example = "泵")
     private String keyword;
+
+    @Schema(description = "关键词搜索字段编码（多列 OR）；空则默认仅 name。示例：[\"id\",\"name\"]")
+    private List<String> searchFieldCodes;
 
     @Schema(description = "结构化字段筛选条件")
     private List<FieldFilterReqVO> fieldFilters;

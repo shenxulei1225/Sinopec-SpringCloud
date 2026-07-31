@@ -59,7 +59,7 @@ public interface EntityRepository {
     List<EntityDO> findByIds(List<Long> ids, String entityTypeCode);
 
     /**
-     * 按有序 id 一次 SELECT 核心列 + 专用表基础字段列。
+     * 按有序 id 一次 SELECT 核心列 + 专用表基础字段列（含 custom_fields）。
      *
      * <p>空 {@code orderedIds} 返回空列表；结果按 {@code orderedIds} 保序；
      * 基础字段列值写入 {@link EntityDO#getDedicatedBaseFieldValues()}（键为字段编码）。</p>
@@ -69,6 +69,13 @@ public interface EntityRepository {
      * @return 实体列表（含 dedicatedBaseFieldValues）
      */
     List<EntityDO> findByIdsWithDedicatedBaseFields(List<Long> orderedIds, String entityTypeCode);
+
+    /**
+     * 同 {@link #findByIdsWithDedicatedBaseFields(List, String)}；
+     * {@code includeCustomFields=false} 时列表热路径不取 {@code custom_fields}（单选 REF 已在专用列）。
+     */
+    List<EntityDO> findByIdsWithDedicatedBaseFields(List<Long> orderedIds, String entityTypeCode,
+                                                    boolean includeCustomFields);
 
     /**
      * 根据条件查询实体列表
@@ -85,6 +92,11 @@ public interface EntityRepository {
      * @return 分页结果
      */
     PageResult<EntityDO> findPage(EntityQuery query);
+
+    /**
+     * 分页只取实体 id（库内 ORDER BY + LIMIT），供列表热路径再一次装 VO。
+     */
+    PageResult<Long> findPageIds(EntityQuery query);
 
     /**
      * 根据模型ID查询实体列表
@@ -118,6 +130,44 @@ public interface EntityRepository {
     PageResult<EntityDO> findPageByModelIds(List<Long> modelIds, String entityTypeCode,
                                             Integer status, String keyword, String domain,
                                             Integer pageNo, Integer pageSize);
+
+    /**
+     * 按模型 ID 列表分页；可选库内排序（核心列或已校验的专用表物理列名）。
+     *
+     * @param orderByColumn 核心列或物理列名；空则按 sort
+     * @param orderAsc      是否升序；orderByColumn 为空时忽略
+     */
+    PageResult<EntityDO> findPageByModelIds(List<Long> modelIds, String entityTypeCode,
+                                            Integer status, String keyword, String domain,
+                                            Integer pageNo, Integer pageSize,
+                                            String orderByColumn, Boolean orderAsc);
+
+    /**
+     * 按模型 ID 列表分页只取实体 id（列表热路径，避免本页双载）。
+     */
+    PageResult<Long> findPageIdsByModelIds(List<Long> modelIds, String entityTypeCode,
+                                           Integer status, String keyword, String domain,
+                                           Integer pageNo, Integer pageSize,
+                                           String orderByColumn, Boolean orderAsc);
+
+    /**
+     * 同 {@link #findPageIdsByModelIds}，可叠加已校验的物理列 EQ·IN。
+     */
+    PageResult<Long> findPageIdsByModelIds(List<Long> modelIds, String entityTypeCode,
+                                           Integer status, String keyword, String domain,
+                                           Integer pageNo, Integer pageSize,
+                                           String orderByColumn, Boolean orderAsc,
+                                           java.util.List<PhysicalColumnFilter> physicalFilters);
+
+    /**
+     * 同 {@link #findPageIdsByModelIds}，关键词按 {@link KeywordSearchSpec} 多列 OR。
+     */
+    PageResult<Long> findPageIdsByModelIds(List<Long> modelIds, String entityTypeCode,
+                                           Integer status, String keyword, String domain,
+                                           Integer pageNo, Integer pageSize,
+                                           String orderByColumn, Boolean orderAsc,
+                                           java.util.List<PhysicalColumnFilter> physicalFilters,
+                                           KeywordSearchSpec keywordSearch);
 
     /**
      * 根据树路径查询所有子孙实体
@@ -233,6 +283,12 @@ public interface EntityRepository {
                                 java.util.List<Long> entityIds);
 
     /**
+     * 按实体 id 出现顺序去重收集 model_id（跳过空 / 非法）。
+     * <p>用于多栏分类求交后派生型号列，只查 id+model_id，不装完整实体。</p>
+     */
+    List<Long> listDistinctModelIdsPreservingEntityOrder(List<Long> orderedEntityIds, String entityTypeCode);
+
+    /**
      * 解析存储类型编码对应的物理表名（供需原生 SQL 的查询引擎使用）。
      * <p>业务层不得自行拼 {@code ent_*} 或回落已废止表；一律经本方法。</p>
      */
@@ -260,12 +316,27 @@ public interface EntityRepository {
         private Integer status;
         /** 关键词搜索 */
         private String keyword;
+        /**
+         * 关键词多列搜索计划；空则 keyword 仅按 name LIKE（历史行为）。
+         */
+        private KeywordSearchSpec keywordSearch;
         /** 业务域（Domain），可选 */
         private String domain;
         /** 页码（从1开始） */
         private Integer pageNo;
         /** 每页条数 */
         private Integer pageSize;
+        /**
+         * 库内排序列：核心列名或已校验的专用表物理列名；空则按 sort。
+         * 禁止传入任意 SQL 片段。
+         */
+        private String orderByColumn;
+        /** 与 orderByColumn 配套；null 视为升序 */
+        private Boolean orderAsc;
+        /**
+         * 已校验的专用/核心物理列 EQ·IN 筛选；由上层保证列名安全。
+         */
+        private java.util.List<PhysicalColumnFilter> physicalFilters;
     }
 }
 

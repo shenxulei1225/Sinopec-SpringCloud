@@ -28,8 +28,13 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeBaseFieldMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.CategoryScopedEntityQueryRepository;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.DataMgmtEntityQueryRepository;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
+import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EvaFieldOrderEntityQueryRepository;
+import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.PhysicalColumnFilter;
+import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.KeywordSearchSpec;
+import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.UncategorizedEntityQueryRepository;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryService;
@@ -48,6 +53,7 @@ import cn.cheers.x.module.dynamicbusiness.service.entity.refdisplay.EntityRefDis
 import cn.cheers.x.module.dynamicbusiness.service.entity.index.FieldIndexService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.sync.EntitySyncService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelService;
+import cn.cheers.x.module.dynamicbusiness.service.model.relation.ModelEntityRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryEntityLinkService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryTypeService;
 import cn.cheers.x.module.dynamicbusiness.util.DataMgmtCategoryReservedNodes;
@@ -144,6 +150,9 @@ public class EntityServiceImpl implements EntityService {
     private ModelService modelService;
 
     @Resource
+    private ModelEntityRelationService modelEntityRelationService;
+
+    @Resource
     @Lazy
     private EntityRelationService entityRelationService;
 
@@ -180,6 +189,15 @@ public class EntityServiceImpl implements EntityService {
 
     @Resource
     private DataMgmtEntityQueryRepository dataMgmtEntityQueryRepository;
+
+    @Resource
+    private UncategorizedEntityQueryRepository uncategorizedEntityQueryRepository;
+
+    @Resource
+    private CategoryScopedEntityQueryRepository categoryScopedEntityQueryRepository;
+
+    @Resource
+    private EvaFieldOrderEntityQueryRepository evaFieldOrderEntityQueryRepository;
 
     @Resource
     private CategoryViaRefQueryService categoryViaRefQueryService;
@@ -537,10 +555,11 @@ public class EntityServiceImpl implements EntityService {
 
     @Override
     public EntitySceneQueryRespVO queryEntities(EntityQueryScene scene, String resultShape, String resultDetail, String categoryTypeCode, String entityTypeCode,
-            List<Long> modelIds, List<Long> categoryIds, List<CategoryIdGroupReqVO> categoryIdGroups, String categoryViaRefPathCode,
+            List<Long> modelIds, String modelEntityTypeCode, List<Long> categoryIds, List<CategoryIdGroupReqVO> categoryIdGroups, String categoryViaRefPathCode,
             Long entityId, Long rootEntityId, String entitySourceEntityType,
             Integer pageNo, Integer pageSize, String keyword, String domain,
-            List<FieldFilterReqVO> filters, String orderByColumn, Boolean isAsc) {
+            List<FieldFilterReqVO> filters, String orderByColumn, Boolean isAsc,
+            List<String> searchFieldCodes) {
 
         if (scene == null) throw new ServiceException(400, "查询场景 scene 参数不能为空");
 
@@ -563,6 +582,7 @@ public class EntityServiceImpl implements EntityService {
         String storageEntityTypeCode = resolved.entityTypeCode();
         String normalizedDomain = resolved.domain();
         String normalizedScopeCode = resolved.scopeRegistryCode();
+        KeywordSearchSpec keywordSearch = resolveKeywordSearchSpec(storageEntityTypeCode, searchFieldCodes);
 
         switch (scene) {
             case ENTITIES_BY_CATEGORY: {
@@ -591,13 +611,13 @@ public class EntityServiceImpl implements EntityService {
                     PageResult<EntityRespVO> paged = queryDataMgmtEntitiesByCategoryModel(
                             categoryIds, categoryIdGroups, resolvedCategoryTypeCode, storageEntityTypeCode, modelIds,
                             keyword, filters, effectivePageNo, effectivePageSize, true,
-                            normalizedDomain, normalizedScopeCode, fieldOrderColumn, orderAsc);
+                            normalizedDomain, normalizedScopeCode, fieldOrderColumn, orderAsc, keywordSearch);
                     return EntitySceneQueryRespVO.page(applyResultDetail(paged, detail), detail.getCode());
                 }
                 PageResult<EntityRespVO> full = queryDataMgmtEntitiesByCategoryModel(
                         categoryIds, categoryIdGroups, resolvedCategoryTypeCode, storageEntityTypeCode, modelIds,
                         keyword, filters, null, null, false,
-                        normalizedDomain, normalizedScopeCode, fieldOrderColumn, orderAsc);
+                        normalizedDomain, normalizedScopeCode, fieldOrderColumn, orderAsc, keywordSearch);
                 List<EntityRespVO> entities = full.getList();
                 if (shape == EntityQueryResultShape.TREE) {
                     return EntitySceneQueryRespVO.tree(
@@ -613,6 +633,27 @@ public class EntityServiceImpl implements EntityService {
                 }
                 List<Long> normalizedModelIds = normalizeModelIds(modelIds);
                 if (!normalizedModelIds.isEmpty()) {
+                    // 场景 8 跨类型：modelIds 为外类型型号；本类实体经挂钩表取 id，再装本类实体（含 name）。
+                    // 禁止用外类型 modelId 筛本类实体表 model_id（本类 model_id 只表示本类型号归属）。
+                    if (isCrossTypeModelEntityQuery(modelEntityTypeCode, storageEntityTypeCode)) {
+                        PageResult<EntityRespVO> relatedPage = handleCrossTypeModelRelatedEntities(
+                                normalizedModelIds, modelEntityTypeCode.trim(), storageEntityTypeCode,
+                                keyword, filters,
+                                shape == EntityQueryResultShape.PAGE ? effectivePageNo : 1,
+                                shape == EntityQueryResultShape.PAGE ? effectivePageSize : fullPageSize,
+                                normalizedDomain, normalizedScopeCode,
+                                manualSortOrder ? null : normalizedOrderByColumn, orderAsc, keywordSearch);
+                        if (shape == EntityQueryResultShape.PAGE) {
+                            return EntitySceneQueryRespVO.page(applyResultDetail(relatedPage, detail), detail.getCode());
+                        }
+                        if (shape == EntityQueryResultShape.TREE) {
+                            return EntitySceneQueryRespVO.tree(
+                                    applyResultDetail(EntityTreeBuilder.buildTree(relatedPage.getList(),
+                                            EntityTreeBuilder.SortMode.LOCAL_SIBLING_SORT), detail),
+                                    detail.getCode());
+                        }
+                        return EntitySceneQueryRespVO.list(applyResultDetail(relatedPage.getList(), detail), detail.getCode());
+                    }
                     if (shape == EntityQueryResultShape.TREE && normalizedModelIds.size() == 1
                             && !StringUtils.hasText(normalizedDomain) && !StringUtils.hasText(normalizedScopeCode)
                             && (manualSortOrder || !StringUtils.hasText(normalizedOrderByColumn))) {
@@ -625,7 +666,7 @@ public class EntityServiceImpl implements EntityService {
                             shape == EntityQueryResultShape.PAGE ? effectivePageNo : 1,
                             shape == EntityQueryResultShape.PAGE ? effectivePageSize : fullPageSize,
                             normalizedDomain, normalizedScopeCode,
-                            manualSortOrder ? null : normalizedOrderByColumn, orderAsc);
+                            manualSortOrder ? null : normalizedOrderByColumn, orderAsc, keywordSearch);
                     if (shape == EntityQueryResultShape.PAGE) {
                         return EntitySceneQueryRespVO.page(applyResultDetail(modelPage, detail), detail.getCode());
                     }
@@ -645,6 +686,54 @@ public class EntityServiceImpl implements EntityService {
                             effectivePageNo, resolveTreeRootPageSize(pageSize));
                     return EntitySceneQueryRespVO.tree(applyResultDetail(treeRoots, detail), detail.getCode());
                 }
+                // 类型全量 + 可下推排序 + 筛可下推/无筛 + 无划分：库内 ORDER BY + LIMIT（keyword 用 name LIKE）
+                List<PhysicalColumnFilter> typePushFilters =
+                        resolvePushablePhysicalFilters(storageEntityTypeCode, filters);
+                boolean typeFiltersOk = typePushFilters != null;
+                String typeDbOrder = !manualSortOrder
+                        ? resolveDbOrderColumn(storageEntityTypeCode, normalizedOrderByColumn)
+                        : null;
+                boolean typeNoPushFilters = typeFiltersOk && typePushFilters.isEmpty();
+                String typeEvaValueCol = !manualSortOrder && !StringUtils.hasText(typeDbOrder) && typeNoPushFilters
+                        ? resolveEvaIndexValueColumn(storageEntityTypeCode, normalizedOrderByColumn)
+                        : null;
+                boolean typeKeywordPushOk = !StringUtils.hasText(keyword) || keywordSearch.canPushFullyToEntityTable();
+                boolean typeKeywordEvaOk = !StringUtils.hasText(keyword) || keywordSearch.isNameOnlyLike();
+                if (shape == EntityQueryResultShape.PAGE
+                        && typeFiltersOk
+                        && typeKeywordPushOk
+                        && !StringUtils.hasText(normalizedScopeCode)
+                        && (StringUtils.hasText(typeDbOrder)
+                            || (StringUtils.hasText(typeEvaValueCol) && typeKeywordEvaOk))) {
+                    long t0 = System.nanoTime();
+                    PageResult<EntityRespVO> typedPage;
+                    String pathTag;
+                    if (StringUtils.hasText(typeDbOrder)) {
+                        typedPage = pageEntitiesByEntityTypeDbOrder(
+                                storageEntityTypeCode, keyword, normalizedDomain,
+                                effectivePageNo, effectivePageSize,
+                                typeDbOrder, orderAsc, typePushFilters, keywordSearch);
+                        pathTag = "TYPE_DB_ORDER_PAGE";
+                    } else {
+                        typedPage = pageEntitiesByEvaOrder(
+                                storageEntityTypeCode, null, keyword, normalizedDomain,
+                                normalizedOrderByColumn.trim(), typeEvaValueCol,
+                                effectivePageNo, effectivePageSize, orderAsc);
+                        pathTag = "TYPE_EVA_ORDER_PAGE";
+                    }
+                    long t1 = System.nanoTime();
+                    PageResult<EntityRespVO> shaped = applyResultDetail(typedPage, detail);
+                    long t2 = System.nanoTime();
+                    log.info("[query-by-scene timing] path={} type={} order={} page={}/{} rows={} "
+                                    + "pageAndConvert={}ms enrichAndLight={}ms total={}ms detail={}",
+                            pathTag, storageEntityTypeCode,
+                            StringUtils.hasText(typeDbOrder) ? typeDbOrder : normalizedOrderByColumn,
+                            effectivePageNo, effectivePageSize,
+                            shaped.getList() != null ? shaped.getList().size() : 0,
+                            (t1 - t0) / 1_000_000L, (t2 - t1) / 1_000_000L, (t2 - t0) / 1_000_000L,
+                            detail);
+                    return EntitySceneQueryRespVO.page(shaped, detail.getCode());
+                }
                 List<Long> allEntityIds = collectPatternAbcAllCandidateEntityIds(
                         storageEntityTypeCode, modelIds, normalizedDomain, normalizedScopeCode);
                 allEntityIds = applyFieldOrderToCandidateIds(
@@ -653,7 +742,8 @@ public class EntityServiceImpl implements EntityService {
                 PageResult<EntityRespVO> result = queryEntitiesByOrderedCandidateIds(
                         allEntityIds, storageEntityTypeCode, keyword, filters,
                         shape == EntityQueryResultShape.PAGE ? effectivePageNo : null,
-                        shape == EntityQueryResultShape.PAGE ? effectivePageSize : null);
+                        shape == EntityQueryResultShape.PAGE ? effectivePageSize : null,
+                        keywordSearch);
                 if (shape == EntityQueryResultShape.PAGE) {
                     return EntitySceneQueryRespVO.page(applyResultDetail(result, detail), detail.getCode());
                 }
@@ -889,6 +979,7 @@ public class EntityServiceImpl implements EntityService {
     /**
      * 数据管理「未分类」：类型范围内实体 − 已挂接当前 categoryTypeCode 任一节点（relation ∪ link）。
      * 可叠 modelIds / domain / 划分；保留桶节点（code 含 UNCATEGORIZED）不算「已分类」。
+     * <p>无搜无筛且排序可下推时走 {@link UncategorizedEntityQueryRepository} 库内 NOT EXISTS + LIMIT。</p>
      */
     private PageResult<EntityRespVO> queryUncategorizedEntitiesByCategoryType(
             String categoryTypeCode,
@@ -907,25 +998,33 @@ public class EntityServiceImpl implements EntityService {
                 || categoryTypeCode == null || categoryTypeCode.isBlank()) {
             return new PageResult<>(new ArrayList<>(), 0L);
         }
-        List<Long> allCandidateIds = collectPatternAbcAllCandidateEntityIds(
-                entityTypeCode, modelIds, domain, scopeRegistryCode);
-        if (allCandidateIds.isEmpty()) {
+        String dbOrder = resolveDbOrderColumn(entityTypeCode, orderByColumn);
+        if (allowDirectPaging && canPageDirectly(keyword, filters)
+                && StringUtils.hasText(dbOrder)
+                && uncategorizedEntityQueryRepository.supportsSqlOrder(dbOrder)) {
+            Integer pn = normalizePageNo(pageNo);
+            Integer ps = normalizePageSize(pageSize);
+            long t0 = System.nanoTime();
+            PageResult<Long> pageIds = uncategorizedEntityQueryRepository.pageUncategorizedEntityIds(
+                    categoryTypeCode, entityTypeCode, modelIds, domain, scopeRegistryCode,
+                    dbOrder, orderAsc, pn, ps);
+            List<Long> orderedIds = pageIds.getList() != null ? pageIds.getList() : List.of();
+            List<EntityRespVO> list = convertOrderedEntityIdsToRespList(orderedIds, entityTypeCode);
+            if (log.isInfoEnabled()) {
+                log.info("[query-by-scene timing] path=UNCATEGORIZED_DB_PAGE type={} order={} "
+                                + "page={}/{} rows={} total={} elapsed={}ms",
+                        entityTypeCode, dbOrder, pn, ps, list.size(), pageIds.getTotal(),
+                        (System.nanoTime() - t0) / 1_000_000L);
+            }
+            return new PageResult<>(list, pageIds.getTotal());
+        }
+
+        // 慢路径：先取未分类 id（不装行），再内存排序 / 过滤 / 切页
+        List<Long> uncategorizedIds = uncategorizedEntityQueryRepository.listUncategorizedEntityIds(
+                categoryTypeCode, entityTypeCode, modelIds, domain, scopeRegistryCode);
+        if (uncategorizedIds.isEmpty()) {
             return new PageResult<>(new ArrayList<>(), 0L);
         }
-        Set<Long> categorized = new HashSet<>();
-        List<Long> fromRelation = entityCategoryRelationMapper.selectDistinctEntityIdsByCategoryTypeCode(
-                categoryTypeCode, entityTypeCode);
-        if (fromRelation != null) {
-            categorized.addAll(fromRelation.stream().filter(Objects::nonNull).toList());
-        }
-        List<Long> fromLink = categoryEntityLinkMapper.selectDistinctEntityIdsByCategoryTypeCode(
-                categoryTypeCode, entityTypeCode);
-        if (fromLink != null) {
-            categorized.addAll(fromLink.stream().filter(Objects::nonNull).toList());
-        }
-        List<Long> uncategorizedIds = allCandidateIds.stream()
-                .filter(id -> id != null && !categorized.contains(id))
-                .toList();
         uncategorizedIds = applyFieldOrderToCandidateIds(
                 uncategorizedIds, entityTypeCode, orderByColumn, orderAsc);
         if (allowDirectPaging && canPageDirectly(keyword, filters)) {
@@ -949,14 +1048,74 @@ public class EntityServiceImpl implements EntityService {
                                                                           String keyword, List<FieldFilterReqVO> filters,
                                                                           Integer pageNo, Integer pageSize, boolean allowDirectPaging,
                                                                           String domain, String scopeRegistryCode,
-                                                                          String orderByColumn, boolean orderAsc) {
+                                                                          String orderByColumn, boolean orderAsc,
+                                                                          KeywordSearchSpec keywordSearch) {
         if (entityTypeCode == null || entityTypeCode.isBlank()) {
             return new PageResult<>(new ArrayList<>(), 0L);
         }
 
+        // 单组分类范围：可下推排序 + 筛可下推 → 库内 EXISTS + ORDER BY + LIMIT
+        List<List<Long>> expandedGroups = expandCategoryIdGroups(
+                categoryIds, categoryIdGroups, categoryTypeCode);
+        if (expandedGroups.isEmpty()) {
+            return new PageResult<>(new ArrayList<>(), 0L);
+        }
+        List<PhysicalColumnFilter> pushFilters = resolvePushablePhysicalFilters(entityTypeCode, filters);
+        String dbOrder = resolveDbOrderColumn(entityTypeCode, orderByColumn);
+        KeywordSearchSpec effectiveKeywordSearch =
+                keywordSearch != null ? keywordSearch : KeywordSearchSpec.nameOnly();
+        boolean keywordPushOk = !StringUtils.hasText(keyword) || effectiveKeywordSearch.canPushFullyToEntityTable();
+        if (allowDirectPaging
+                && expandedGroups.size() == 1
+                && pushFilters != null
+                && keywordPushOk
+                && StringUtils.hasText(dbOrder)
+                && categoryScopedEntityQueryRepository.supportsSqlOrder(dbOrder)) {
+            Integer pn = normalizePageNo(pageNo);
+            Integer ps = normalizePageSize(pageSize);
+            long t0 = System.nanoTime();
+            PageResult<Long> pageIds = categoryScopedEntityQueryRepository.pageEntityIdsByCategoryScope(
+                    expandedGroups.get(0), entityTypeCode, normalizeModelIds(modelIds),
+                    domain, scopeRegistryCode, dbOrder, orderAsc, pushFilters, keyword,
+                    effectiveKeywordSearch, pn, ps);
+            List<Long> orderedIds = pageIds.getList() != null ? pageIds.getList() : List.of();
+            List<EntityRespVO> list = convertOrderedEntityIdsToRespList(orderedIds, entityTypeCode);
+            if (log.isInfoEnabled()) {
+                log.info("[query-by-scene timing] path=CATEGORY_DB_ORDER_PAGE type={} order={} "
+                                + "page={}/{} rows={} total={} elapsed={}ms",
+                        entityTypeCode, dbOrder, pn, ps, list.size(), pageIds.getTotal(),
+                        (System.nanoTime() - t0) / 1_000_000L);
+            }
+            return new PageResult<>(list, pageIds.getTotal());
+        }
+
         List<Long> orderedCandidateEntityIds;
+        if (expandedGroups.size() == 1) {
+            orderedCandidateEntityIds = dataMgmtEntityQueryRepository.listOrderedEntityIdsByCategoryScope(
+                    expandedGroups.get(0), entityTypeCode, normalizeModelIds(modelIds), domain, scopeRegistryCode);
+        } else {
+            orderedCandidateEntityIds = dataMgmtEntityQueryRepository.listOrderedEntityIdsByIntersectingCategoryGroups(
+                    expandedGroups, entityTypeCode, normalizeModelIds(modelIds), domain, scopeRegistryCode);
+        }
+
+        orderedCandidateEntityIds = applyFieldOrderToCandidateIds(
+                orderedCandidateEntityIds, entityTypeCode, orderByColumn, orderAsc);
+
+        if (allowDirectPaging && canPageDirectly(keyword, filters)) {
+            Integer pn = normalizePageNo(pageNo);
+            Integer ps = normalizePageSize(pageSize);
+            return pageByOrderedIds(orderedCandidateEntityIds, entityTypeCode, pn, ps);
+        }
+        return queryEntitiesByOrderedCandidateIds(
+                orderedCandidateEntityIds, entityTypeCode, keyword, filters, pageNo, pageSize,
+                effectiveKeywordSearch);
+    }
+
+    private List<List<Long>> expandCategoryIdGroups(List<Long> categoryIds,
+                                                    List<CategoryIdGroupReqVO> categoryIdGroups,
+                                                    String categoryTypeCode) {
+        List<List<Long>> expandedGroups = new ArrayList<>();
         if (categoryIdGroups != null && !categoryIdGroups.isEmpty()) {
-            List<List<Long>> expandedGroups = new ArrayList<>();
             for (CategoryIdGroupReqVO group : categoryIdGroups) {
                 if (group == null) {
                     continue;
@@ -973,34 +1132,17 @@ public class EntityServiceImpl implements EntityService {
                     expandedGroups.add(expanded);
                 }
             }
-            if (expandedGroups.isEmpty()) {
-                return new PageResult<>(new ArrayList<>(), 0L);
-            }
-            orderedCandidateEntityIds = dataMgmtEntityQueryRepository.listOrderedEntityIdsByIntersectingCategoryGroups(
-                    expandedGroups, entityTypeCode, normalizeModelIds(modelIds), domain, scopeRegistryCode);
-        } else {
-            List<Long> normalizedCategoryIds = normalizeCategoryIdsOrUseRootCategory(categoryIds, categoryTypeCode);
-            if (normalizedCategoryIds.isEmpty()) {
-                return new PageResult<>(new ArrayList<>(), 0L);
-            }
-            List<Long> expandedCategoryIds = expandCategoryIdsWithDescendants(normalizedCategoryIds, categoryTypeCode);
-            if (expandedCategoryIds.isEmpty()) {
-                return new PageResult<>(new ArrayList<>(), 0L);
-            }
-            orderedCandidateEntityIds = dataMgmtEntityQueryRepository.listOrderedEntityIdsByCategoryScope(
-                    expandedCategoryIds, entityTypeCode, normalizeModelIds(modelIds), domain, scopeRegistryCode);
+            return expandedGroups;
         }
-
-        orderedCandidateEntityIds = applyFieldOrderToCandidateIds(
-                orderedCandidateEntityIds, entityTypeCode, orderByColumn, orderAsc);
-
-        if (allowDirectPaging && canPageDirectly(keyword, filters)) {
-            Integer pn = normalizePageNo(pageNo);
-            Integer ps = normalizePageSize(pageSize);
-            return pageByOrderedIds(orderedCandidateEntityIds, entityTypeCode, pn, ps);
+        List<Long> normalizedCategoryIds = normalizeCategoryIdsOrUseRootCategory(categoryIds, categoryTypeCode);
+        if (normalizedCategoryIds.isEmpty()) {
+            return List.of();
         }
-        return queryEntitiesByOrderedCandidateIds(
-                orderedCandidateEntityIds, entityTypeCode, keyword, filters, pageNo, pageSize);
+        List<Long> expandedCategoryIds = expandCategoryIdsWithDescendants(normalizedCategoryIds, categoryTypeCode);
+        if (expandedCategoryIds.isEmpty()) {
+            return List.of();
+        }
+        return List.of(expandedCategoryIds);
     }
 
     /** 兼容旧调用：无 categoryIdGroups / 无字段排序 */
@@ -1010,7 +1152,8 @@ public class EntityServiceImpl implements EntityService {
                                                                           Integer pageNo, Integer pageSize, boolean allowDirectPaging,
                                                                           String domain, String scopeRegistryCode) {
         return queryDataMgmtEntitiesByCategoryModel(categoryIds, null, categoryTypeCode, entityTypeCode, modelIds,
-                keyword, filters, pageNo, pageSize, allowDirectPaging, domain, scopeRegistryCode, null, true);
+                keyword, filters, pageNo, pageSize, allowDirectPaging, domain, scopeRegistryCode, null, true,
+                null);
     }
 
     /** 保留 primary 顺序，追加 supplemental 中未出现的 id。 */
@@ -1154,6 +1297,14 @@ public class EntityServiceImpl implements EntityService {
     private PageResult<EntityRespVO> queryEntitiesByOrderedCandidateIds(List<Long> orderedCandidateEntityIds,
                                                                         String entityTypeCode, String keyword, List<FieldFilterReqVO> filters,
                                                                         Integer pageNo, Integer pageSize) {
+        return queryEntitiesByOrderedCandidateIds(
+                orderedCandidateEntityIds, entityTypeCode, keyword, filters, pageNo, pageSize, null);
+    }
+
+    private PageResult<EntityRespVO> queryEntitiesByOrderedCandidateIds(List<Long> orderedCandidateEntityIds,
+                                                                        String entityTypeCode, String keyword, List<FieldFilterReqVO> filters,
+                                                                        Integer pageNo, Integer pageSize,
+                                                                        KeywordSearchSpec keywordSearch) {
         if (orderedCandidateEntityIds == null || orderedCandidateEntityIds.isEmpty()) {
             return new PageResult<>(new ArrayList<>(), 0L);
         }
@@ -1171,7 +1322,8 @@ public class EntityServiceImpl implements EntityService {
             searchedAndFilteredEntities = fetchEntitiesByOrderedIds(orderedCandidateEntityIds, entityTypeCode);
         } else {
             // 有搜索/筛选时，直接返回过滤后的 VO 列表，避免后续再按 ID 二次回查实体
-            searchedAndFilteredEntities = filterCandidateEntities(orderedCandidateEntityIds, entityTypeCode, filters, keyword);
+            searchedAndFilteredEntities = filterCandidateEntities(
+                    orderedCandidateEntityIds, entityTypeCode, filters, keyword, keywordSearch);
         }
         if (pageNo == null || pageSize == null) {
             return new PageResult<>(searchedAndFilteredEntities, (long) searchedAndFilteredEntities.size());
@@ -1198,13 +1350,47 @@ public class EntityServiceImpl implements EntityService {
                                                                     String keyword, List<FieldFilterReqVO> filters,
                                                                     Integer pageNo, Integer pageSize,
                                                                     String domain, String scopeRegistryCode,
-                                                                    String orderByColumn, boolean orderAsc) {
-        boolean hasFilters = filters != null && !filters.isEmpty();
+                                                                    String orderByColumn, boolean orderAsc,
+                                                                    KeywordSearchSpec keywordSearch) {
         boolean hasScope = StringUtils.hasText(scopeRegistryCode);
         boolean hasFieldOrder = StringUtils.hasText(orderByColumn);
-        // 无业务 fieldFilters、无划分、无字段排序：可走实体表直分页（含 domain / keyword）
-        if (!hasFilters && !hasScope && !hasFieldOrder) {
-            return pageEntitiesByModelIds(modelIds, keyword, pageNo, pageSize, domain);
+        List<PhysicalColumnFilter> pushFilters = resolvePushablePhysicalFilters(entityTypeCode, filters);
+        String dbOrder = hasFieldOrder ? resolveDbOrderColumn(entityTypeCode, orderByColumn) : null;
+        boolean noPushFilters = pushFilters != null && pushFilters.isEmpty();
+        String evaValueCol = hasFieldOrder && !StringUtils.hasText(dbOrder) && noPushFilters
+                ? resolveEvaIndexValueColumn(entityTypeCode, orderByColumn) : null;
+        KeywordSearchSpec effectiveKeywordSearch =
+                keywordSearch != null ? keywordSearch : KeywordSearchSpec.nameOnly();
+        boolean keywordPushOk = !StringUtils.hasText(keyword) || effectiveKeywordSearch.canPushFullyToEntityTable();
+        boolean keywordEvaOk = !StringUtils.hasText(keyword) || effectiveKeywordSearch.isNameOnlyLike();
+        // 筛可下推（或无筛）、无划分：实体表 / EVA 直分页（keyword 多列 OR，默认可 name）。
+        if (pushFilters != null && !hasScope && keywordPushOk
+                && (!hasFieldOrder || StringUtils.hasText(dbOrder)
+                    || (StringUtils.hasText(evaValueCol) && keywordEvaOk))) {
+            long t0 = System.nanoTime();
+            PageResult<EntityRespVO> page;
+            String path;
+            if (StringUtils.hasText(evaValueCol) && !StringUtils.hasText(dbOrder) && keywordEvaOk) {
+                page = pageEntitiesByEvaOrder(
+                        entityTypeCode, modelIds, keyword, domain,
+                        orderByColumn.trim(), evaValueCol, pageNo, pageSize, orderAsc);
+                path = "MODEL_EVA_ORDER_PAGE";
+            } else {
+                page = pageEntitiesByModelIds(
+                        modelIds, keyword, pageNo, pageSize, domain,
+                        dbOrder, orderAsc, pushFilters, effectiveKeywordSearch);
+                path = "MODEL_IDS_DB_PAGE";
+            }
+            if (log.isInfoEnabled()) {
+                int n = page.getList() != null ? page.getList().size() : 0;
+                log.info("[query-by-scene timing] path={} models={} keyword={} "
+                                + "order={} rows={} total={} elapsed={}ms",
+                        path, modelIds != null ? modelIds.size() : 0,
+                        keyword != null && !keyword.isBlank(),
+                        dbOrder != null ? dbOrder : (evaValueCol != null ? orderByColumn : "sort"),
+                        n, page.getTotal(), (System.nanoTime() - t0) / 1_000_000L);
+            }
+            return page;
         }
         List<Long> candidateIds = collectCandidateEntityIdsByModelIds(modelIds, entityTypeCode);
         candidateIds = dataMgmtEntityQueryRepository.retainOrderedIdsByDomainAndScope(
@@ -1212,14 +1398,82 @@ public class EntityServiceImpl implements EntityService {
         if (candidateIds.isEmpty()) {
             return new PageResult<>(new ArrayList<>(), 0L);
         }
+        boolean hasFilters = filters != null && !filters.isEmpty();
         if (hasFilters || (keyword != null && !keyword.trim().isEmpty())) {
-            candidateIds = filterCandidateEntityIds(candidateIds, entityTypeCode, filters, keyword);
+            candidateIds = filterCandidateEntityIds(
+                    candidateIds, entityTypeCode, filters, keyword, effectiveKeywordSearch);
             if (candidateIds.isEmpty()) {
                 return new PageResult<>(new ArrayList<>(), 0L);
             }
         }
         candidateIds = applyFieldOrderToCandidateIds(candidateIds, entityTypeCode, orderByColumn, orderAsc);
         return pageByOrderedIds(candidateIds, entityTypeCode, pageNo, pageSize);
+    }
+
+    /**
+     * 场景 8：外类型型号上下文 vs 本类实体（如 equipment 型号 vs inspection_item）。
+     */
+    private boolean isCrossTypeModelEntityQuery(String modelEntityTypeCode, String entityTypeCode) {
+        if (!StringUtils.hasText(modelEntityTypeCode) || !StringUtils.hasText(entityTypeCode)) {
+            return false;
+        }
+        ResolvedQueryType modelResolved = resolveQueryEntityType(modelEntityTypeCode.trim(), null);
+        String modelStorage = modelResolved.entityTypeCode();
+        if (!StringUtils.hasText(modelStorage)) {
+            return false;
+        }
+        return !modelStorage.equalsIgnoreCase(entityTypeCode.trim());
+    }
+
+    /**
+     * 外类型型号 → 本类实体：挂钩表取 id，再按本类实体表装 VO（含 name）。
+     * <p>本类 {@code model_id} 只表示本类型号归属，禁止用外类型 modelId 去筛。</p>
+     */
+    private PageResult<EntityRespVO> handleCrossTypeModelRelatedEntities(
+            List<Long> modelIds,
+            String modelEntityTypeCode,
+            String entityTypeCode,
+            String keyword,
+            List<FieldFilterReqVO> filters,
+            Integer pageNo,
+            Integer pageSize,
+            String domain,
+            String scopeRegistryCode,
+            String orderByColumn,
+            boolean orderAsc,
+            KeywordSearchSpec keywordSearch) {
+        long t0 = System.nanoTime();
+        ResolvedQueryType modelResolved = resolveQueryEntityType(modelEntityTypeCode, null);
+        String modelStorage = modelResolved.entityTypeCode();
+        if (!StringUtils.hasText(modelStorage)) {
+            throw new ServiceException(400, "modelEntityTypeCode 无法解析为存储类型");
+        }
+        List<Long> candidateIds = modelEntityRelationService.listEntityIdsByModelIds(
+                modelIds, modelStorage, entityTypeCode);
+        candidateIds = dataMgmtEntityQueryRepository.retainOrderedIdsByDomainAndScope(
+                candidateIds, entityTypeCode, domain, scopeRegistryCode);
+        if (candidateIds.isEmpty()) {
+            return new PageResult<>(new ArrayList<>(), 0L);
+        }
+        boolean hasFilters = filters != null && !filters.isEmpty();
+        if (hasFilters || (keyword != null && !keyword.trim().isEmpty())) {
+            candidateIds = filterCandidateEntityIds(
+                    candidateIds, entityTypeCode, filters, keyword, keywordSearch);
+            if (candidateIds.isEmpty()) {
+                return new PageResult<>(new ArrayList<>(), 0L);
+            }
+        }
+        candidateIds = applyFieldOrderToCandidateIds(candidateIds, entityTypeCode, orderByColumn, orderAsc);
+        PageResult<EntityRespVO> page = queryEntitiesByOrderedCandidateIds(
+                candidateIds, entityTypeCode, null, null, pageNo, pageSize, keywordSearch);
+        if (log.isInfoEnabled()) {
+            int n = page.getList() != null ? page.getList().size() : 0;
+            log.info("[query-by-scene timing] path=CROSS_TYPE_MODEL_RELATION models={} entityType={} "
+                            + "rows={} total={} elapsed={}ms",
+                    modelIds != null ? modelIds.size() : 0, entityTypeCode,
+                    n, page.getTotal(), (System.nanoTime() - t0) / 1_000_000L);
+        }
+        return page;
     }
 
     /**----3. 分类即实体（Category Link Entity）视图下的分类详情查询
@@ -1399,8 +1653,37 @@ public class EntityServiceImpl implements EntityService {
     private PageResult<EntityRespVO> pageEntitiesByModelIds(List<Long> modelIds,
                                                                 String keyword, Integer pageNo, Integer pageSize,
                                                                 String domain) {
+        return pageEntitiesByModelIds(modelIds, keyword, pageNo, pageSize, domain, null, true);
+    }
+
+    /**
+     * 按型号直分页；orderByColumn 为可下推列（核心列或物理列名）时走库内 ORDER BY + LIMIT。
+     */
+    private PageResult<EntityRespVO> pageEntitiesByModelIds(List<Long> modelIds,
+                                                                String keyword, Integer pageNo, Integer pageSize,
+                                                                String domain, String orderByColumn, boolean orderAsc) {
+        return pageEntitiesByModelIds(modelIds, keyword, pageNo, pageSize, domain,
+                orderByColumn, orderAsc, null);
+    }
+
+    private PageResult<EntityRespVO> pageEntitiesByModelIds(List<Long> modelIds,
+                                                                String keyword, Integer pageNo, Integer pageSize,
+                                                                String domain, String orderByColumn, boolean orderAsc,
+                                                                List<PhysicalColumnFilter> physicalFilters) {
+        return pageEntitiesByModelIds(modelIds, keyword, pageNo, pageSize, domain,
+                orderByColumn, orderAsc, physicalFilters, null);
+    }
+
+    private PageResult<EntityRespVO> pageEntitiesByModelIds(List<Long> modelIds,
+                                                                String keyword, Integer pageNo, Integer pageSize,
+                                                                String domain, String orderByColumn, boolean orderAsc,
+                                                                List<PhysicalColumnFilter> physicalFilters,
+                                                                KeywordSearchSpec keywordSearch) {
         List<Long> normalizedModelIds = requireModelIds(modelIds, "modelIds 不能为空");
         String normalizedDomain = EntityTypeScopeContext.normalizeDomain(domain);
+        String coreOrder = StringUtils.hasText(orderByColumn) ? orderByColumn.trim() : null;
+        KeywordSearchSpec effectiveKeywordSearch =
+                keywordSearch != null ? keywordSearch : KeywordSearchSpec.nameOnly();
 
         if (normalizedModelIds.size() == 1) {
             Long singleModelId = normalizedModelIds.get(0);
@@ -1412,18 +1695,19 @@ public class EntityServiceImpl implements EntityService {
                     .entityTypeCode(model.getEntityTypeCode())
                     .modelId(singleModelId)
                     .keyword(keyword)
+                    .keywordSearch(effectiveKeywordSearch)
                     .domain(normalizedDomain)
                     .pageNo(pageNo)
                     .pageSize(pageSize)
+                    .orderByColumn(coreOrder)
+                    .orderAsc(orderAsc)
+                    .physicalFilters(physicalFilters)
                     .build();
-            PageResult<EntityDO> pageResult = entityRepository.findPage(query);
-            List<Long> orderedIds = pageResult.getList().stream()
-                    .map(EntityDO::getId)
-                    .filter(Objects::nonNull)
-                    .toList();
+            PageResult<Long> pageIds = entityRepository.findPageIds(query);
+            List<Long> orderedIds = pageIds.getList() != null ? pageIds.getList() : List.of();
             List<EntityRespVO> list = convertOrderedEntityIdsToRespList(
                     orderedIds, model.getEntityTypeCode());
-            return new PageResult<>(list, pageResult.getTotal());
+            return new PageResult<>(list, pageIds.getTotal());
         }
 
         List<ModelDO> models = modelMapper.selectByIds(normalizedModelIds);
@@ -1435,21 +1719,83 @@ public class EntityServiceImpl implements EntityService {
             throw new ServiceException(400, "业务类型不能为空");
         }
 
-        PageResult<EntityDO> pageResult = entityRepository.findPageByModelIds(
+        PageResult<Long> pageIds = entityRepository.findPageIdsByModelIds(
                 normalizedModelIds,
                 entityTypeCode,
                 null,
                 keyword,
                 normalizedDomain,
                 pageNo,
-                pageSize
+                pageSize,
+                coreOrder,
+                orderAsc,
+                physicalFilters,
+                effectiveKeywordSearch
         );
-        List<Long> orderedIds = pageResult.getList().stream()
-                .map(EntityDO::getId)
-                .filter(Objects::nonNull)
-                .toList();
+        List<Long> orderedIds = pageIds.getList() != null ? pageIds.getList() : List.of();
         List<EntityRespVO> list = convertOrderedEntityIdsToRespList(orderedIds, entityTypeCode);
-        return new PageResult<>(list, pageResult.getTotal());
+        return new PageResult<>(list, pageIds.getTotal());
+    }
+
+    /**
+     * 未限定型号时：整业务类型库内按可下推列排序分页（ORDER BY + LIMIT）。
+     * {@code orderByColumn} 须已是核心列名或专用表物理列名。
+     */
+    private PageResult<EntityRespVO> pageEntitiesByEntityTypeDbOrder(String entityTypeCode,
+                                                                     String keyword,
+                                                                     String domain,
+                                                                     Integer pageNo,
+                                                                     Integer pageSize,
+                                                                     String orderByColumn,
+                                                                     boolean orderAsc,
+                                                                     List<PhysicalColumnFilter> physicalFilters,
+                                                                     KeywordSearchSpec keywordSearch) {
+        if (!StringUtils.hasText(entityTypeCode) || !StringUtils.hasText(orderByColumn)) {
+            return new PageResult<>(new ArrayList<>(), 0L);
+        }
+        EntityRepository.EntityQuery query = EntityRepository.EntityQuery.builder()
+                .entityTypeCode(entityTypeCode.trim())
+                .keyword(keyword)
+                .keywordSearch(keywordSearch != null ? keywordSearch : KeywordSearchSpec.nameOnly())
+                .domain(EntityTypeScopeContext.normalizeDomain(domain))
+                .pageNo(pageNo)
+                .pageSize(pageSize)
+                .orderByColumn(orderByColumn.trim())
+                .orderAsc(orderAsc)
+                .physicalFilters(physicalFilters)
+                .build();
+        long t0 = System.nanoTime();
+        PageResult<Long> pageIds = entityRepository.findPageIds(query);
+        long t1 = System.nanoTime();
+        List<Long> orderedIds = pageIds.getList() != null ? pageIds.getList() : List.of();
+        List<EntityRespVO> list = convertOrderedEntityIdsToRespList(orderedIds, entityTypeCode.trim());
+        long t2 = System.nanoTime();
+        log.info("[query-by-scene timing] stage=pageEntitiesByEntityTypeDbOrder findPageIds={}ms "
+                        + "convert={}ms order={} ids={} totalRows={}",
+                (t1 - t0) / 1_000_000L, (t2 - t1) / 1_000_000L, orderByColumn,
+                orderedIds.size(), pageIds.getTotal());
+        return new PageResult<>(list, pageIds.getTotal());
+    }
+
+    private PageResult<EntityRespVO> pageEntitiesByEvaOrder(String entityTypeCode,
+                                                            List<Long> modelIds,
+                                                            String keyword,
+                                                            String domain,
+                                                            String fieldCode,
+                                                            String indexValueColumn,
+                                                            Integer pageNo,
+                                                            Integer pageSize,
+                                                            boolean orderAsc) {
+        if (!StringUtils.hasText(entityTypeCode) || !StringUtils.hasText(fieldCode)
+                || !StringUtils.hasText(indexValueColumn)) {
+            return new PageResult<>(new ArrayList<>(), 0L);
+        }
+        PageResult<Long> pageIds = evaFieldOrderEntityQueryRepository.pageEntityIdsByEvaOrder(
+                entityTypeCode.trim(), modelIds, domain, fieldCode.trim(), indexValueColumn,
+                orderAsc, keyword, normalizePageNo(pageNo), normalizePageSize(pageSize));
+        List<Long> orderedIds = pageIds.getList() != null ? pageIds.getList() : List.of();
+        List<EntityRespVO> list = convertOrderedEntityIdsToRespList(orderedIds, entityTypeCode.trim());
+        return new PageResult<>(list, pageIds.getTotal());
     }
 
     // ==================== 列表查询辅助函数（按阶段） ====================
@@ -1523,108 +1869,33 @@ public class EntityServiceImpl implements EntityService {
             List<FieldFilterReqVO> filters,
             String keyword
     ) {
-        // Step 1) 判空：候选为空直接返回。
+        return filterCandidateEntityIds(candidateIds, entityTypeCode, filters, keyword, null);
+    }
+
+    private List<Long> filterCandidateEntityIds(
+            List<Long> candidateIds,
+            String entityTypeCode,
+            List<FieldFilterReqVO> filters,
+            String keyword,
+            KeywordSearchSpec keywordSearch
+    ) {
+        // 与分类有筛路径一致：走字段查询引擎（索引表 + keyword），避免型号路径再装全量 VO 内存匹配。
         if (candidateIds == null || candidateIds.isEmpty()) {
             return Collections.emptyList();
         }
-
-        // Step 2) 关联字段筛选：通过 dynamic_entity_relation 反查 source_entity_id，再与候选做交集（保序）。
-        if (filters != null && !filters.isEmpty()) {
-            for (FieldFilterReqVO filter : filters) {
-                if (filter == null || filter.getFieldCode() == null || filter.getFieldCode().isBlank()) {
-                    continue;
-                }
-                if (!Boolean.TRUE.equals(filter.getRelationField())) {
-                    continue;
-                }
-                if (!isRelationFilterSupported(filter.getOp())) {
-                    continue;
-                }
-                List<Long> targetEntityIds = normalizeEntityIds(filter.getValue());
-                if (targetEntityIds.isEmpty()) {
-                    return Collections.emptyList();
-                }
-                List<Long> matchedSourceIds = entityRelationService
-                        .listEntityIdsByRelationFieldAndRelatedIds(filter.getFieldCode(), targetEntityIds);
-                if (matchedSourceIds == null || matchedSourceIds.isEmpty()) {
-                    return Collections.emptyList();
-                }
-                Set<Long> matchedSet = new HashSet<>(matchedSourceIds);
-                candidateIds = candidateIds.stream()
-                        .filter(id -> id != null && matchedSet.contains(id))
-                        .toList();
-                if (candidateIds.isEmpty()) {
-                    return Collections.emptyList();
-                }
-                // 不可搜索的关联字段不得作为筛选入口
-                candidateIds = retainCandidatesQueryableByField(candidateIds, entityTypeCode, filter.getFieldCode());
-                if (candidateIds.isEmpty()) {
-                    return Collections.emptyList();
-                }
-            }
-        }
-
         boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
-        boolean hasNonRelationFilters = filters != null && filters.stream().anyMatch(f -> f != null && !Boolean.TRUE.equals(f.getRelationField()));
-        if (!hasKeyword && !hasNonRelationFilters) {
+        boolean hasFilters = filters != null && !filters.isEmpty();
+        if (!hasKeyword && !hasFilters) {
             return candidateIds;
         }
-
-        // Step 3) 非关联字段/keyword 存在时，一次加载本页候选（含基础字段列）再匹配；禁止按行 merge。
-        List<EntityDO> entities = entityCoreService.listByIdsWithDedicatedBaseFields(candidateIds, entityTypeCode);
-        if (entities == null || entities.isEmpty()) {
+        Set<Long> matchedIds = entityFieldQueryEngine.searchAndFilterEntityIds(
+                entityTypeCode, keyword, filters, candidateIds, toSearchFieldCodes(keywordSearch));
+        if (matchedIds == null || matchedIds.isEmpty()) {
             return Collections.emptyList();
         }
-        List<EntityRespVO> respList = EntityDoVoHelper.toRespVOList(
-                entities, customFieldValidationService, entityDedicatedColumnService);
-        Map<Long, EntityRespVO> byId = new HashMap<>();
-        for (EntityRespVO vo : respList) {
-            if (vo != null && vo.getId() != null) {
-                byId.put(vo.getId(), vo);
-            }
-        }
-
-        Map<Long, Set<String>> searchableCodesByModel = new HashMap<>();
-        String k = hasKeyword ? Objects.requireNonNull(keyword).trim().toLowerCase() : null;
-        List<Long> filteredIds = new ArrayList<>();
-        for (Long id : candidateIds) {
-            EntityRespVO vo = byId.get(id);
-            if (vo == null) {
-                continue;
-            }
-            // Step 3.1) 非关联字段过滤（AND 语义）；不可搜索字段不得命中。
-            if (hasNonRelationFilters) {
-                boolean pass = true;
-                for (FieldFilterReqVO filter : Objects.requireNonNullElse(filters, Collections.<FieldFilterReqVO>emptyList())) {
-                    if (filter == null || filter.getFieldCode() == null || filter.getFieldCode().isBlank()) {
-                        continue;
-                    }
-                    if (Boolean.TRUE.equals(filter.getRelationField())) {
-                        continue;
-                    }
-                    if (!isFieldQueryableForEntity(vo, filter.getFieldCode(), searchableCodesByModel)) {
-                        pass = false;
-                        break;
-                    }
-                    FieldDO fieldDO = fieldMapper.selectByCode(filter.getFieldCode());
-                    String fieldType = fieldDO == null ? null : fieldDO.getType();
-                    String op = filter.getOp() == null ? "" : filter.getOp().trim().toUpperCase();
-                    if (!matchNonRelationFilter(vo, filter.getFieldCode(), fieldType, op, filter.getValue())) {
-                        pass = false;
-                        break;
-                    }
-                }
-                if (!pass) {
-                    continue;
-                }
-            }
-            // Step 3.2) keyword：名称 + 可搜索字段值（禁止整包扫 customFields）。
-            if (k != null && !matchesKeywordOnQueryableFields(vo, k, searchableCodesByModel)) {
-                continue;
-            }
-            filteredIds.add(id);
-        }
-        return filteredIds;
+        return candidateIds.stream()
+                .filter(id -> id != null && matchedIds.contains(id))
+                .toList();
     }
 
     private List<Long> retainCandidatesQueryableByField(List<Long> candidateIds, String entityTypeCode, String fieldCode) {
@@ -1725,6 +1996,16 @@ public class EntityServiceImpl implements EntityService {
             List<FieldFilterReqVO> filters,
             String keyword
     ) {
+        return filterCandidateEntities(candidateIds, entityTypeCode, filters, keyword, null);
+    }
+
+    private List<EntityRespVO> filterCandidateEntities(
+            List<Long> candidateIds,
+            String entityTypeCode,
+            List<FieldFilterReqVO> filters,
+            String keyword,
+            KeywordSearchSpec keywordSearch
+    ) {
         if (candidateIds == null || candidateIds.isEmpty()) {
             return new ArrayList<>();
         }
@@ -1733,7 +2014,8 @@ public class EntityServiceImpl implements EntityService {
                 entityTypeCode,
                 keyword,
                 filters,
-                candidateIds
+                candidateIds,
+                toSearchFieldCodes(keywordSearch)
         );
         if (matchedIds == null || matchedIds.isEmpty()) {
             return new ArrayList<>();
@@ -1929,16 +2211,239 @@ public class EntityServiceImpl implements EntityService {
      * 将有序实体ID列表转换为VO列表，并保持输入顺序。
      * 本页行一次加载核心列 + 基础字段列，再组装 VO（不再按行 merge）。
      */
+    /**
+     * 列表装 VO：本页一次带基础字段；不查型号扩展字段配置（列表不展示扩展字段）。
+     * <p>无启用 MultiRef 基础字段时不取 {@code custom_fields}（单选 REF 已在专用列）；
+     * 有 MultiRef 时仍取 JSON，供 LIGHT 提升进 baseFields。</p>
+     */
     private List<EntityRespVO> convertOrderedEntityIdsToRespList(List<Long> orderedEntityIds, String entityTypeCode) {
         if (orderedEntityIds == null || orderedEntityIds.isEmpty()) {
             return new ArrayList<>();
         }
+        long t0 = System.nanoTime();
+        boolean includeCustom = entityDedicatedColumnService.hasEnabledMultiRefBaseField(entityTypeCode);
         List<EntityDO> ordered = entityCoreService.listByIdsWithDedicatedBaseFields(
-                orderedEntityIds, entityTypeCode);
+                orderedEntityIds, entityTypeCode, includeCustom);
+        long t1 = System.nanoTime();
         if (ordered == null || ordered.isEmpty()) {
             return new ArrayList<>();
         }
-        return EntityDoVoHelper.toRespVOList(ordered, customFieldValidationService, entityDedicatedColumnService);
+        List<EntityRespVO> vos = EntityDoVoHelper.toRespVOListSkipCustomPresent(
+                ordered, entityDedicatedColumnService);
+        long t2 = System.nanoTime();
+        if (log.isInfoEnabled() && orderedEntityIds.size() >= 20) {
+            log.info("[query-by-scene timing] stage=convertOrderedEntityIds loadDedicated={}ms toVO={}ms "
+                            + "ids={} includeCustomFields={}",
+                    (t1 - t0) / 1_000_000L, (t2 - t1) / 1_000_000L, orderedEntityIds.size(), includeCustom);
+        }
+        return vos;
+    }
+
+    /**
+     * 将配置器搜索范围解析为可下推列 + 扩展字段；空范围默认仅 name。
+     */
+    private KeywordSearchSpec resolveKeywordSearchSpec(String entityTypeCode, List<String> searchFieldCodes) {
+        if (searchFieldCodes == null || searchFieldCodes.isEmpty()) {
+            return KeywordSearchSpec.nameOnly();
+        }
+        List<String> likeColumns = new ArrayList<>();
+        List<String> extensionFieldCodes = new ArrayList<>();
+        boolean matchId = false;
+        for (String raw : searchFieldCodes) {
+            if (raw == null || raw.isBlank()) {
+                continue;
+            }
+            String code = raw.trim();
+            String lower = code.toLowerCase(Locale.ROOT);
+            if ("id".equals(lower)) {
+                matchId = true;
+                continue;
+            }
+            if ("name".equals(lower) || "code".equals(lower) || "status".equals(lower)) {
+                if (!likeColumns.contains(lower)) {
+                    likeColumns.add(lower);
+                }
+                continue;
+            }
+            String physical = null;
+            if (StringUtils.hasText(entityTypeCode)) {
+                physical = entityDedicatedColumnService.resolvePhysicalColumn(entityTypeCode.trim(), code);
+            }
+            if (StringUtils.hasText(physical)) {
+                String col = physical.trim().toLowerCase(Locale.ROOT);
+                if (!likeColumns.contains(col)) {
+                    likeColumns.add(col);
+                }
+            } else if (!extensionFieldCodes.contains(code)) {
+                extensionFieldCodes.add(code);
+            }
+        }
+        if (!matchId && likeColumns.isEmpty() && extensionFieldCodes.isEmpty()) {
+            return KeywordSearchSpec.nameOnly();
+        }
+        return new KeywordSearchSpec(likeColumns, matchId, extensionFieldCodes);
+    }
+
+    private List<String> toSearchFieldCodes(KeywordSearchSpec keywordSearch) {
+        if (keywordSearch == null) {
+            return null;
+        }
+        List<String> codes = new ArrayList<>();
+        if (keywordSearch.matchId()) {
+            codes.add("id");
+        }
+        if (keywordSearch.likeColumns() != null) {
+            codes.addAll(keywordSearch.likeColumns());
+        }
+        if (keywordSearch.extensionFieldCodes() != null) {
+            codes.addAll(keywordSearch.extensionFieldCodes());
+        }
+        return codes.isEmpty() ? null : codes;
+    }
+
+    /**
+     * 可下推库内 ORDER BY 的列名：核心列原样；可排序基础字段 → 物理列名；否则 null（走内存/慢路径）。
+     */
+    private String resolveDbOrderColumn(String entityTypeCode, String orderByColumn) {
+        if (!StringUtils.hasText(orderByColumn)) {
+            return null;
+        }
+        String column = orderByColumn.trim();
+        if ("sort".equals(column)) {
+            return null;
+        }
+        if (CORE_ORDER_BY_COLUMNS.contains(column)) {
+            return column;
+        }
+        if (!StringUtils.hasText(entityTypeCode)) {
+            return null;
+        }
+        return entityDedicatedColumnService.resolveSortablePhysicalColumn(entityTypeCode.trim(), column);
+    }
+
+    /**
+     * 全部 fieldFilters 可下推到实体表物理列（EQ/IN）时返回筛选列表；无筛返回空列表；
+     * 任一不可下推返回 null（整单走慢路径，禁止半下推）。
+     */
+    private List<PhysicalColumnFilter> resolvePushablePhysicalFilters(
+            String entityTypeCode, List<FieldFilterReqVO> filters) {
+        if (filters == null || filters.isEmpty()) {
+            return List.of();
+        }
+        if (!StringUtils.hasText(entityTypeCode)) {
+            return null;
+        }
+        List<PhysicalColumnFilter> out = new ArrayList<>();
+        for (FieldFilterReqVO filter : filters) {
+            if (filter == null || !StringUtils.hasText(filter.getFieldCode())
+                    || !StringUtils.hasText(filter.getOp())) {
+                return null;
+            }
+            if (Boolean.TRUE.equals(filter.getRelationField())) {
+                return null;
+            }
+            String op = filter.getOp().trim().toUpperCase(Locale.ROOT);
+            if (!"EQ".equals(op) && !"IN".equals(op)) {
+                return null;
+            }
+            String fieldCode = filter.getFieldCode().trim();
+            String column;
+            if (CORE_ORDER_BY_COLUMNS.contains(fieldCode)) {
+                column = fieldCode;
+            } else {
+                column = entityDedicatedColumnService.resolvePhysicalColumn(entityTypeCode.trim(), fieldCode);
+            }
+            if (!StringUtils.hasText(column)) {
+                return null;
+            }
+            Object value = filter.getValue();
+            if ("IN".equals(op)) {
+                List<Object> values = normalizeFilterInValues(value);
+                if (values.isEmpty()) {
+                    return null;
+                }
+                out.add(new PhysicalColumnFilter(column, op, values));
+            } else {
+                if (value == null) {
+                    return null;
+                }
+                out.add(new PhysicalColumnFilter(column, op, value));
+            }
+        }
+        return out;
+    }
+
+    private static List<Object> normalizeFilterInValues(Object value) {
+        if (value == null) {
+            return List.of();
+        }
+        if (value instanceof Collection<?> collection) {
+            return collection.stream().filter(Objects::nonNull).map(v -> (Object) v).toList();
+        }
+        if (value.getClass().isArray()) {
+            int len = java.lang.reflect.Array.getLength(value);
+            List<Object> out = new ArrayList<>(len);
+            for (int i = 0; i < len; i++) {
+                Object item = java.lang.reflect.Array.get(value, i);
+                if (item != null) {
+                    out.add(item);
+                }
+            }
+            return out;
+        }
+        return List.of(value);
+    }
+
+    /**
+     * 可下推 EVA 索引排序时返回索引值列名；字段未标记可排序或不在索引策略内则 null。
+     * <p><b>非列表入口预留</b>：{@link #validateOrderByColumn} 已禁止列表按扩展字段排序，
+     * query-by-scene 列表路径不会走到此方法；实现与 {@code EvaFieldOrderEntityQueryRepository} 保留供将来其它场景复用。</p>
+     */
+    private String resolveEvaIndexValueColumn(String entityTypeCode, String orderByColumn) {
+        if (!StringUtils.hasText(orderByColumn) || !StringUtils.hasText(entityTypeCode)) {
+            return null;
+        }
+        String column = orderByColumn.trim();
+        if ("sort".equals(column) || CORE_ORDER_BY_COLUMNS.contains(column)) {
+            return null;
+        }
+        // 基础字段走物理列，不走 EVA
+        if (entityDedicatedColumnService.resolvePhysicalColumn(entityTypeCode.trim(), column) != null) {
+            return null;
+        }
+        FieldDO field = fieldMapper.selectByCode(column);
+        if (field == null || field.getId() == null) {
+            return null;
+        }
+        List<ModelFieldAssignmentDO> assignments = modelFieldAssignmentMapper.selectByFieldId(field.getId());
+        boolean sortable = false;
+        if (assignments != null) {
+            for (ModelFieldAssignmentDO assignment : assignments) {
+                if (assignment == null || !Boolean.TRUE.equals(assignment.getIsSortable())) {
+                    continue;
+                }
+                if (assignment.getModelId() == null) {
+                    sortable = true;
+                    break;
+                }
+                ModelDO model = modelMapper.selectById(assignment.getModelId());
+                if (model != null && entityTypeCode.trim().equals(model.getEntityTypeCode())) {
+                    sortable = true;
+                    break;
+                }
+            }
+        }
+        if (!sortable) {
+            return null;
+        }
+        String type = field.getType() == null ? "" : field.getType().trim().toUpperCase(Locale.ROOT);
+        return switch (type) {
+            case "NUMBER", "INTEGER", "DECIMAL", "LONG", "DOUBLE", "FLOAT" -> "value_number";
+            case "DATE" -> "value_date";
+            case "DATETIME", "TIMESTAMP" -> "value_datetime";
+            case "BOOLEAN", "BOOL" -> "value_boolean";
+            default -> "value_string";
+        };
     }
 
     private boolean matchNonRelationFilter(EntityRespVO entity, String fieldCode, String fieldType, String op, Object expectedValue) {
@@ -2847,12 +3352,24 @@ public class EntityServiceImpl implements EntityService {
         if (entities == null || entities.isEmpty()) {
             return new ArrayList<>();
         }
+        long t0 = System.nanoTime();
         // 列表查询增强：REF 契约对象批量补 name（LIGHT / FULL 均需要）
         entityRefDisplayEnrichService.enrich(entities);
+        long t1 = System.nanoTime();
         if (detail != EntityQueryResultDetail.LIGHT) {
+            if (log.isInfoEnabled() && entities.size() >= 20) {
+                log.info("[query-by-scene timing] stage=applyResultDetail enrich={}ms rows={} detail={}",
+                        (t1 - t0) / 1_000_000L, entities.size(), detail);
+            }
             return entities;
         }
-        return entities.stream().map(this::toLightRespVO).toList();
+        List<EntityRespVO> light = entities.stream().map(this::toLightRespVO).toList();
+        long t2 = System.nanoTime();
+        if (log.isInfoEnabled() && entities.size() >= 20) {
+            log.info("[query-by-scene timing] stage=applyResultDetail enrich={}ms toLight={}ms rows={} detail=LIGHT",
+                    (t1 - t0) / 1_000_000L, (t2 - t1) / 1_000_000L, entities.size());
+        }
+        return light;
     }
 
     @Override
@@ -2921,7 +3438,9 @@ public class EntityServiceImpl implements EntityService {
     }
 
     /**
-     * 校验 orderByColumn：核心列、勾了可排序的基础字段（专用表固定列）、或勾了可排序的扩展字段（EVA 索引/customFields）。
+     * 列表场景校验 orderByColumn：仅核心列、可排序基础字段（专用表固定列）、或手动 sort。
+     * <p>扩展字段不进实体列表，禁止按扩展字段排序（400）。EVA 库内排序实现仍保留，供将来非列表入口复用，
+     * 不由本校验放行。</p>
      */
     private void validateOrderByColumn(String entityTypeCode, String orderByColumn) {
         if (!StringUtils.hasText(orderByColumn)) {
@@ -2946,31 +3465,13 @@ public class EntityServiceImpl implements EntityService {
             }
             return;
         }
+        // 非基础字段 = 型号扩展字段（或未知编码）：列表场景一律拒绝
         FieldDO field = fieldMapper.selectByCode(column);
-        if (field == null || field.getId() == null) {
-            throw new ServiceException(400, "不支持按该字段排序: " + column);
+        if (field != null) {
+            throw new ServiceException(400,
+                    "列表不支持按扩展字段排序（扩展字段不进实体列表）: " + column);
         }
-        List<ModelFieldAssignmentDO> assignments = modelFieldAssignmentMapper.selectByFieldId(field.getId());
-        boolean sortable = false;
-        if (assignments != null) {
-            for (ModelFieldAssignmentDO assignment : assignments) {
-                if (assignment == null || !Boolean.TRUE.equals(assignment.getIsSortable())) {
-                    continue;
-                }
-                if (assignment.getModelId() == null) {
-                    sortable = true;
-                    break;
-                }
-                ModelDO model = modelMapper.selectById(assignment.getModelId());
-                if (model != null && typeCode.equals(model.getEntityTypeCode())) {
-                    sortable = true;
-                    break;
-                }
-            }
-        }
-        if (!sortable) {
-            throw new ServiceException(400, "该字段未标记为可排序: " + column);
-        }
+        throw new ServiceException(400, "不支持按该字段排序: " + column);
     }
 
     /**
@@ -3232,6 +3733,36 @@ public class EntityServiceImpl implements EntityService {
         if (value != null) {
             target.put(key, value);
         }
+    }
+
+    @Override
+    public List<Long> listDistinctModelIdsByCategoryScope(String entityTypeCode,
+                                                          List<Long> categoryIds,
+                                                          List<CategoryIdGroupReqVO> categoryIdGroups,
+                                                          String categoryTypeCode,
+                                                          String domain) {
+        if (!StringUtils.hasText(entityTypeCode)) {
+            throw new ServiceException(400, "entityTypeCode 不能为空");
+        }
+        String storage = entityTypeCode.trim();
+        List<List<Long>> expandedGroups = expandCategoryIdGroups(
+                categoryIds, categoryIdGroups, categoryTypeCode);
+        if (expandedGroups.isEmpty()) {
+            return List.of();
+        }
+        List<Long> orderedEntityIds;
+        if (expandedGroups.size() == 1) {
+            // 与实体列分类快路径同一套库内 EXISTS，避免关联 Mapper 与列表口径漂移
+            orderedEntityIds = categoryScopedEntityQueryRepository.listEntityIdsByCategoryScope(
+                    expandedGroups.get(0), storage, null, domain, null);
+        } else {
+            orderedEntityIds = dataMgmtEntityQueryRepository.listOrderedEntityIdsByIntersectingCategoryGroups(
+                    expandedGroups, storage, null, domain, null);
+        }
+        if (orderedEntityIds == null || orderedEntityIds.isEmpty()) {
+            return List.of();
+        }
+        return entityRepository.listDistinctModelIdsPreservingEntityOrder(orderedEntityIds, storage);
     }
 
 }

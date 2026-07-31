@@ -17,6 +17,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -95,10 +97,19 @@ public class EntityRepositoryImpl implements EntityRepository {
     }
 
     /**
-     * 一次 SELECT：核心列 + 全部启用基础字段物理列；按 orderedIds 保序。
+     * 一次 SELECT：核心列 + 全部启用基础字段物理列；按 orderedIds 保序（含 custom_fields）。
      */
     @Override
     public List<EntityDO> findByIdsWithDedicatedBaseFields(List<Long> orderedIds, String entityTypeCode) {
+        return findByIdsWithDedicatedBaseFields(orderedIds, entityTypeCode, true);
+    }
+
+    /**
+     * 一次 SELECT：核心列 + 启用基础字段物理列；列表热路径可省略 custom_fields。
+     */
+    @Override
+    public List<EntityDO> findByIdsWithDedicatedBaseFields(List<Long> orderedIds, String entityTypeCode,
+                                                           boolean includeCustomFields) {
         if (CollUtil.isEmpty(orderedIds) || !org.springframework.util.StringUtils.hasText(entityTypeCode)) {
             return Collections.emptyList();
         }
@@ -111,7 +122,10 @@ public class EntityRepositoryImpl implements EntityRepository {
         String table = resolvePhysicalTableName(typeCode);
 
         StringBuilder select = new StringBuilder(
-                "SELECT id, entity_type_code, model_id, name, code, status, parent_id, domain, sort, custom_fields");
+                "SELECT id, entity_type_code, model_id, name, code, status, parent_id, domain, sort");
+        if (includeCustomFields) {
+            select.append(", custom_fields");
+        }
         for (PhysicalFieldSpec spec : specs) {
             select.append(", ").append(spec.columnName());
         }
@@ -125,7 +139,7 @@ public class EntityRepositoryImpl implements EntityRepository {
             if (row == null) {
                 continue;
             }
-            EntityDO entity = mapCoreRow(row);
+            EntityDO entity = mapCoreRow(row, includeCustomFields);
             if (entity.getId() == null) {
                 continue;
             }
@@ -150,7 +164,7 @@ public class EntityRepositoryImpl implements EntityRepository {
         return ordered;
     }
 
-    private static EntityDO mapCoreRow(Map<String, Object> row) {
+    private static EntityDO mapCoreRow(Map<String, Object> row, boolean includeCustomFields) {
         EntityDO entity = new EntityDO();
         entity.setId(toLong(readColumn(row, "id")));
         entity.setEntityTypeCode(toStringVal(readColumn(row, "entity_type_code")));
@@ -161,9 +175,11 @@ public class EntityRepositoryImpl implements EntityRepository {
         entity.setParentId(toLong(readColumn(row, "parent_id")));
         entity.setDomain(toStringVal(readColumn(row, "domain")));
         entity.setSort(toInteger(readColumn(row, "sort")));
-        Object custom = readColumn(row, "custom_fields");
-        if (custom != null) {
-            entity.setCustomFields(JsonbMapTypeHandler.parse(String.valueOf(custom)));
+        if (includeCustomFields) {
+            Object custom = readColumn(row, "custom_fields");
+            if (custom != null) {
+                entity.setCustomFields(JsonbMapTypeHandler.parse(String.valueOf(custom)));
+            }
         }
         return entity;
     }
@@ -245,6 +261,28 @@ public class EntityRepositoryImpl implements EntityRepository {
     }
 
     /**
+     * 分页只查 id，避免先装全行再丢弃。
+     */
+    @Override
+    public PageResult<Long> findPageIds(EntityQuery query) {
+        return withTableName(query.getEntityTypeCode(), () -> {
+            LambdaQueryWrapperX<EntityDO> wrapper = buildQueryWrapper(query);
+            wrapper.select(EntityDO::getId);
+            PageParam pageParam = new PageParam();
+            pageParam.setPageNo(query.getPageNo() != null ? query.getPageNo() : 1);
+            pageParam.setPageSize(query.getPageSize() != null ? query.getPageSize() : 10);
+            PageResult<EntityDO> page = entityMapper.selectPage(pageParam, wrapper);
+            List<Long> ids = page.getList() == null
+                    ? Collections.emptyList()
+                    : page.getList().stream()
+                    .map(EntityDO::getId)
+                    .filter(Objects::nonNull)
+                    .toList();
+            return new PageResult<>(ids, page.getTotal());
+        });
+    }
+
+    /**
      * 按模型 ID 查询实体列表。
      */
     @Override
@@ -274,28 +312,102 @@ public class EntityRepositoryImpl implements EntityRepository {
     }
 
     /**
-     * 按模型 ID 列表分页查询实体。
+     * 按模型 ID 列表分页查询实体（默认按 sort）。
      */
     @Override
     public PageResult<EntityDO> findPageByModelIds(List<Long> modelIds, String entityTypeCode,
                                                     Integer status, String keyword, String domain,
                                                     Integer pageNo, Integer pageSize) {
+        return findPageByModelIds(modelIds, entityTypeCode, status, keyword, domain,
+                pageNo, pageSize, null, null);
+    }
+
+    /**
+     * 按模型 ID 列表分页；可按核心列库内 ORDER BY + LIMIT。
+     */
+    @Override
+    public PageResult<EntityDO> findPageByModelIds(List<Long> modelIds, String entityTypeCode,
+                                                    Integer status, String keyword, String domain,
+                                                    Integer pageNo, Integer pageSize,
+                                                    String orderByColumn, Boolean orderAsc) {
         if (CollUtil.isEmpty(modelIds)) {
             return new PageResult<>(Collections.emptyList(), 0L);
         }
         return withTableName(entityTypeCode, () -> {
-            LambdaQueryWrapperX<EntityDO> wrapper = new LambdaQueryWrapperX<>();
-            wrapper.in(EntityDO::getModelId, modelIds)
-                    .eqIfPresent(EntityDO::getStatus, status)
-                    .eqIfPresent(EntityDO::getDomain, domain != null ? domain.trim() : null)
-                    .likeIfPresent(EntityDO::getName, keyword)
-                    .eq(EntityDO::getDeleted, false);
-            wrapper.orderByAsc(EntityDO::getSort);
+            LambdaQueryWrapperX<EntityDO> wrapper = buildModelIdsPageWrapper(
+                    modelIds, status, keyword, domain, orderByColumn, orderAsc, null, null);
             PageParam pageParam = new PageParam();
             pageParam.setPageNo(pageNo != null && pageNo > 0 ? pageNo : 1);
             pageParam.setPageSize(pageSize != null && pageSize > 0 ? pageSize : 20);
             return entityMapper.selectPage(pageParam, wrapper);
         });
+    }
+
+    @Override
+    public PageResult<Long> findPageIdsByModelIds(List<Long> modelIds, String entityTypeCode,
+                                                   Integer status, String keyword, String domain,
+                                                   Integer pageNo, Integer pageSize,
+                                                   String orderByColumn, Boolean orderAsc) {
+        return findPageIdsByModelIds(modelIds, entityTypeCode, status, keyword, domain,
+                pageNo, pageSize, orderByColumn, orderAsc, null);
+    }
+
+    @Override
+    public PageResult<Long> findPageIdsByModelIds(List<Long> modelIds, String entityTypeCode,
+                                                   Integer status, String keyword, String domain,
+                                                   Integer pageNo, Integer pageSize,
+                                                   String orderByColumn, Boolean orderAsc,
+                                                   List<PhysicalColumnFilter> physicalFilters) {
+        return findPageIdsByModelIds(modelIds, entityTypeCode, status, keyword, domain,
+                pageNo, pageSize, orderByColumn, orderAsc, physicalFilters, null);
+    }
+
+    @Override
+    public PageResult<Long> findPageIdsByModelIds(List<Long> modelIds, String entityTypeCode,
+                                                   Integer status, String keyword, String domain,
+                                                   Integer pageNo, Integer pageSize,
+                                                   String orderByColumn, Boolean orderAsc,
+                                                   List<PhysicalColumnFilter> physicalFilters,
+                                                   KeywordSearchSpec keywordSearch) {
+        if (CollUtil.isEmpty(modelIds)) {
+            return new PageResult<>(Collections.emptyList(), 0L);
+        }
+        return withTableName(entityTypeCode, () -> {
+            LambdaQueryWrapperX<EntityDO> wrapper = buildModelIdsPageWrapper(
+                    modelIds, status, keyword, domain, orderByColumn, orderAsc,
+                    physicalFilters, keywordSearch);
+            wrapper.select(EntityDO::getId);
+            PageParam pageParam = new PageParam();
+            pageParam.setPageNo(pageNo != null && pageNo > 0 ? pageNo : 1);
+            pageParam.setPageSize(pageSize != null && pageSize > 0 ? pageSize : 20);
+            PageResult<EntityDO> page = entityMapper.selectPage(pageParam, wrapper);
+            List<Long> ids = page.getList() == null
+                    ? Collections.emptyList()
+                    : page.getList().stream()
+                    .map(EntityDO::getId)
+                    .filter(Objects::nonNull)
+                    .toList();
+            return new PageResult<>(ids, page.getTotal());
+        });
+    }
+
+    private LambdaQueryWrapperX<EntityDO> buildModelIdsPageWrapper(List<Long> modelIds,
+                                                                   Integer status,
+                                                                   String keyword,
+                                                                   String domain,
+                                                                   String orderByColumn,
+                                                                   Boolean orderAsc,
+                                                                   List<PhysicalColumnFilter> physicalFilters,
+                                                                   KeywordSearchSpec keywordSearch) {
+        LambdaQueryWrapperX<EntityDO> wrapper = new LambdaQueryWrapperX<>();
+        wrapper.in(EntityDO::getModelId, modelIds)
+                .eqIfPresent(EntityDO::getStatus, status)
+                .eqIfPresent(EntityDO::getDomain, domain != null ? domain.trim() : null)
+                .eq(EntityDO::getDeleted, false);
+        KeywordSearchSql.applyToWrapper(wrapper, keyword, keywordSearch);
+        applyPhysicalFilters(wrapper, physicalFilters);
+        applyCoreOrSortOrder(wrapper, orderByColumn, orderAsc);
+        return wrapper;
     }
 
     /**
@@ -533,6 +645,53 @@ public class EntityRepositoryImpl implements EntityRepository {
     }
 
     @Override
+    public List<Long> listDistinctModelIdsPreservingEntityOrder(List<Long> orderedEntityIds, String entityTypeCode) {
+        if (CollUtil.isEmpty(orderedEntityIds) || !org.springframework.util.StringUtils.hasText(entityTypeCode)) {
+            return Collections.emptyList();
+        }
+        List<Long> normalizedIds = orderedEntityIds.stream()
+                .filter(java.util.Objects::nonNull)
+                .filter(id -> id > 0)
+                .distinct()
+                .toList();
+        if (normalizedIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        // 与分类范围列表同一套物理表解析，避免 MP selectMaps 键名/动态表名边缘问题
+        String entityTable = resolvePhysicalTableName(entityTypeCode);
+        java.util.Map<Long, Long> modelIdByEntityId = new java.util.HashMap<>();
+        final int chunkSize = 1000;
+        for (int i = 0; i < normalizedIds.size(); i += chunkSize) {
+            List<Long> chunk = normalizedIds.subList(i, Math.min(i + chunkSize, normalizedIds.size()));
+            String placeholders = String.join(",", java.util.Collections.nCopies(chunk.size(), "?"));
+            String sql = "SELECT id, model_id FROM " + entityTable
+                    + " WHERE deleted = false AND id IN (" + placeholders + ")";
+            List<Object> args = new ArrayList<>(chunk);
+            jdbcTemplate.query(sql, args.toArray(), rs -> {
+                long entityId = rs.getLong("id");
+                long modelId = rs.getLong("model_id");
+                if (!rs.wasNull() && modelId > 0) {
+                    modelIdByEntityId.put(entityId, modelId);
+                }
+            });
+        }
+        if (modelIdByEntityId.isEmpty()) {
+            return Collections.emptyList();
+        }
+        java.util.LinkedHashSet<Long> orderedModelIds = new java.util.LinkedHashSet<>();
+        for (Long entityId : orderedEntityIds) {
+            if (entityId == null) {
+                continue;
+            }
+            Long modelId = modelIdByEntityId.get(entityId);
+            if (modelId != null) {
+                orderedModelIds.add(modelId);
+            }
+        }
+        return new ArrayList<>(orderedModelIds);
+    }
+
+    @Override
     public String resolvePhysicalTableName(String entityTypeCode) {
         if (!org.springframework.util.StringUtils.hasText(entityTypeCode)) {
             throw new IllegalArgumentException("entityTypeCode 不能为空：实体访问必须经 EntityRepository 并指定存储类型");
@@ -557,6 +716,10 @@ public class EntityRepositoryImpl implements EntityRepository {
         }
     }
 
+    private static final Set<String> CORE_ORDER_BY_COLUMNS = Set.of("name", "code", "status", "id");
+    private static final java.util.regex.Pattern SAFE_PHYSICAL_COLUMN =
+            java.util.regex.Pattern.compile("^[a-z][a-z0-9_]*$");
+
     /**
      * 根据 EntityQuery 构建通用查询条件。
      */
@@ -567,14 +730,107 @@ public class EntityRepositoryImpl implements EntityRepository {
         wrapper.eqIfPresent(EntityDO::getStatus, query.getStatus());
         wrapper.eqIfPresent(EntityDO::getDomain,
                 query.getDomain() != null && !query.getDomain().isBlank() ? query.getDomain().trim() : null);
-        wrapper.likeIfPresent(EntityDO::getName, query.getKeyword());
+        KeywordSearchSql.applyToWrapper(wrapper, query.getKeyword(), query.getKeywordSearch());
         wrapper.eq(EntityDO::getDeleted, false);
-        wrapper.orderByAsc(EntityDO::getSort);
+        applyPhysicalFilters(wrapper, query.getPhysicalFilters());
+        applyCoreOrSortOrder(wrapper, query.getOrderByColumn(), query.getOrderAsc());
         if (Boolean.TRUE.equals(query.getRootOnly())) {
             wrapper.isNull(EntityDO::getParentId);
         } else {
             wrapper.eqIfPresent(EntityDO::getParentId, query.getParentId());
         }
         return wrapper;
+    }
+
+    private void applyPhysicalFilters(LambdaQueryWrapperX<EntityDO> wrapper,
+                                      List<PhysicalColumnFilter> physicalFilters) {
+        if (physicalFilters == null || physicalFilters.isEmpty()) {
+            return;
+        }
+        for (PhysicalColumnFilter filter : physicalFilters) {
+            if (filter == null || filter.column() == null
+                    || !SAFE_PHYSICAL_COLUMN.matcher(filter.column()).matches()) {
+                continue;
+            }
+            String col = filter.column();
+            String op = filter.op() == null ? "" : filter.op().trim().toUpperCase(Locale.ROOT);
+            if ("EQ".equals(op)) {
+                wrapper.apply(col + " = {0}", filter.value());
+            } else if ("IN".equals(op) && filter.value() instanceof Collection<?> collection) {
+                List<Object> values = new ArrayList<>();
+                for (Object v : collection) {
+                    if (v != null) {
+                        values.add(v);
+                    }
+                }
+                if (values.isEmpty()) {
+                    wrapper.apply("1 = 0");
+                    continue;
+                }
+                StringBuilder sql = new StringBuilder(col).append(" IN (");
+                for (int i = 0; i < values.size(); i++) {
+                    if (i > 0) {
+                        sql.append(", ");
+                    }
+                    sql.append("{").append(i).append("}");
+                }
+                sql.append(")");
+                wrapper.apply(sql.toString(), values.toArray());
+            }
+        }
+    }
+
+    /**
+     * 核心列或已校验物理列走库内排序并加 id 稳定次序；否则按 sort。
+     * 非核心物理列须由上层先校验为可排序基础字段列名。
+     */
+    private void applyCoreOrSortOrder(LambdaQueryWrapperX<EntityDO> wrapper,
+                                      String orderByColumn, Boolean orderAsc) {
+        String column = orderByColumn != null ? orderByColumn.trim() : "";
+        boolean asc = orderAsc == null || orderAsc;
+        if (CORE_ORDER_BY_COLUMNS.contains(column)) {
+            switch (column) {
+                case "name" -> {
+                    if (asc) {
+                        wrapper.orderByAsc(EntityDO::getName);
+                    } else {
+                        wrapper.orderByDesc(EntityDO::getName);
+                    }
+                }
+                case "code" -> {
+                    if (asc) {
+                        wrapper.orderByAsc(EntityDO::getCode);
+                    } else {
+                        wrapper.orderByDesc(EntityDO::getCode);
+                    }
+                }
+                case "status" -> {
+                    if (asc) {
+                        wrapper.orderByAsc(EntityDO::getStatus);
+                    } else {
+                        wrapper.orderByDesc(EntityDO::getStatus);
+                    }
+                }
+                case "id" -> {
+                    if (asc) {
+                        wrapper.orderByAsc(EntityDO::getId);
+                    } else {
+                        wrapper.orderByDesc(EntityDO::getId);
+                    }
+                }
+                default -> wrapper.orderByAsc(EntityDO::getSort);
+            }
+            if (!"id".equals(column)) {
+                wrapper.orderByAsc(EntityDO::getId);
+            }
+            return;
+        }
+        String physical = column.toLowerCase(Locale.ROOT);
+        if (SAFE_PHYSICAL_COLUMN.matcher(physical).matches()) {
+            String dir = asc ? "ASC" : "DESC";
+            wrapper.last("ORDER BY " + physical + " " + dir + " NULLS LAST, id ASC");
+            return;
+        }
+        wrapper.orderByAsc(EntityDO::getSort);
     }
 }

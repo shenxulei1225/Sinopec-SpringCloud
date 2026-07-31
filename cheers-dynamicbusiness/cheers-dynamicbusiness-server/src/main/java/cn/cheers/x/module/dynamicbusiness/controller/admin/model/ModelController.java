@@ -12,6 +12,8 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelPageReq
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelSortSaveReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFromEntityCategoryGroupsReqVO;
+import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelService;
 import cn.cheers.x.module.dynamicbusiness.service.model.relation.ModelCategoryRelationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -52,6 +54,9 @@ public class ModelController {
 
     @Resource
     private ModelCategoryRelationService modelCategoryRelationService;
+
+    @Resource
+    private EntityService entityService;
 
     @PostMapping("/create")
     @Operation(
@@ -247,17 +252,20 @@ public class ModelController {
     @Operation(
         summary = "按业务类型编码获取模型列表",
         description = "根据 entityTypeCode 返回该业务类型下的所有模型列表（扁平列表，不构建树结构）。"
+            + "传入 categoryTypeCode 时按该分类体系树序分桶排序，未挂分类的型号排在末尾。"
     )
     @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
+    @Parameter(name = "categoryTypeCode", description = "分类体系编码（可选；有则按分类树分桶排序）", example = "equipment")
     @PreAuthorize("@ss.hasPermission('system:model:query')")
     /**
      * 用途：按业务类型查询模型列表。
-     * Service 映射：{@link ModelService#listModelsByEntityType(String, String)}。
+     * Service 映射：{@link ModelService#listModelsByEntityType(String, String, String)}。
      */
     public CommonResult<List<ModelRespVO>> listModelsByEntityType(
             @RequestParam("entityTypeCode") String entityTypeCode,
-            @RequestParam(value = "domain", required = false) String domain) {
-        return success(modelService.listModelsByEntityType(entityTypeCode, domain));
+            @RequestParam(value = "domain", required = false) String domain,
+            @RequestParam(value = "categoryTypeCode", required = false) String categoryTypeCode) {
+        return success(modelService.listModelsByEntityType(entityTypeCode, domain, categoryTypeCode));
     }
 
     @GetMapping("/list-uncategorized-by-category-type")
@@ -273,6 +281,21 @@ public class ModelController {
             @RequestParam("categoryTypeCode") String categoryTypeCode,
             @RequestParam(value = "domain", required = false) String domain) {
         return success(modelService.listUncategorizedModelsByCategoryType(categoryTypeCode, entityTypeCode, domain));
+    }
+
+    @GetMapping("/list-categorized-by-category-type")
+    @Operation(
+        summary = "按分类体系查询已挂分类的模型",
+        description = "数据管理「已分类」：返回当前 categoryTypeCode 下已绑定至少一个分类节点的模型列表。"
+    )
+    @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
+    @Parameter(name = "categoryTypeCode", description = "分类体系编码（必填）", required = true, example = "equipment")
+    @PreAuthorize("@ss.hasPermission('system:model:query')")
+    public CommonResult<List<ModelRespVO>> listCategorizedModelsByCategoryType(
+            @RequestParam("entityTypeCode") String entityTypeCode,
+            @RequestParam("categoryTypeCode") String categoryTypeCode,
+            @RequestParam(value = "domain", required = false) String domain) {
+        return success(modelService.listCategorizedModelsByCategoryType(categoryTypeCode, entityTypeCode, domain));
     }
 
     @GetMapping("/list-all")
@@ -385,6 +408,28 @@ public class ModelController {
      */
     public CommonResult<List<ModelRespVO>> getModelsByIds(@RequestParam("ids") List<Long> ids) {
         return success(modelService.getModelsByIds(ids));
+    }
+
+    @PostMapping("/list-from-entity-category-groups")
+    @Operation(
+        summary = "按分类—实体求交结果派生型号列表",
+        description = "数据管理多分类栏：先按 categoryIdGroups（组间 AND）得到实体候选，再去重 model_id 返回型号。"
+            + "不走分类—型号关联；与实体列多维求交底集一致。"
+    )
+    @PreAuthorize("@ss.hasPermission('system:model:query')")
+    public CommonResult<List<ModelRespVO>> listModelsFromEntityCategoryGroups(
+            @Valid @RequestBody ModelFromEntityCategoryGroupsReqVO reqVO) {
+        List<Long> modelIds = entityService.listDistinctModelIdsByCategoryScope(
+                reqVO.getEntityTypeCode(),
+                reqVO.getCategoryIds(),
+                reqVO.getCategoryIdGroups(),
+                reqVO.getCategoryTypeCode(),
+                reqVO.getDomain());
+        if (modelIds.isEmpty()) {
+            return success(List.of());
+        }
+        List<ModelRespVO> models = modelService.getModelsByIds(modelIds);
+        return success(modelService.filterModelsByDomain(models, reqVO.getDomain()));
     }
 }
 
