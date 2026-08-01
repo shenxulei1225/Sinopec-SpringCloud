@@ -81,3 +81,7 @@ __pycache__/
 # IDE Eclipse output (stale package copies)
 **/bin/
 logs/
+
+# Local WIP
+.superpowers/
+
