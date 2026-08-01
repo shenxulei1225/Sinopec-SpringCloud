@@ -58,8 +58,9 @@
 | V41 | `V41__drop_equipment_orphan_facility_column.sql` | 删除设备表历史孤儿设施列（若存在） |
 | V42 | `V42__ent_code_unique_indexes.sql` | 实体 `code` 租户内唯一索引 |
 | V43 | `V43__ent_inspection_method.sql` | 检查方法专用表 `ent_inspection_method`（`is_template` / `action_duration_sec`）+ 租户分表 |
+| V44 | `V44__ent_inspection_item_method_template_id.sql` | 检查内容表增加 `method_template_id`（REF → `inspection_method`） |
 
-下一新增版本应为 **V44**。  
+下一新增版本应为 **V45**。  
 
 > **跨机合并说明**：本机布局迁移已占用 V26–V28 且已执行；对方原 `V26__category_*` / `V27__ent_structure` 在合并后改为 V29/V30。若对方库已按旧文件名执行过 V26/V27，需对齐历史表 `version`/`script` 后 `flyway:repair`，再拉本分支。
 已停用脚本在 `db/backup/flyway-legacy-pre-seed/`，不得放回本目录。

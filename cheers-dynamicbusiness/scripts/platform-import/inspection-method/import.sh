@@ -28,4 +28,10 @@ run "${SCRIPT_DIR}/03_base_fields.sql"
 echo "== inspection-method: model =="
 run "${SCRIPT_DIR}/04_model.sql"
 
+echo "== inspection-method: patch inspection_item method_template_id =="
+run "${SCRIPT_DIR}/05_patch_inspection_item_method_ref.sql"
+
+echo "== inspection-method: sample bind (optional) =="
+run "${SCRIPT_DIR}/06_sample_bind.sql"
+
 echo "done: inspection-method seed"
