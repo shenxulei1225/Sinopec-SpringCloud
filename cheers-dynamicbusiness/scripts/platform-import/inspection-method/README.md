@@ -18,8 +18,20 @@
 | `06_sample_bind.sql` | 样例模板 + 绑定 `INS-ITEM-101`（验收用） |
 | `07_sample_templates.sql` | 扩展标准库方法模板（目视/仪表/机泵阀门/视频门禁等）+ 首轮名称绑定 |
 | `08_bind_inspection_items.sql` | 补齐缺口模板 + 检查内容↔方法模板语义绑定（仅填空，不整库兜底） |
+| `09_apply_equipment_inspection_packages.py` | **全量设备型号检查包**：按专业类别创建 `INSP-PKG-*` 检查内容、绑定方法模板，并严格同步型号—实体关联（卸错挂） |
 
 **不在本包**：`equipment_id`（Wave 2）；角度等实例参数字段（待字段契约）。
+
+### 全量检查包（09）
+
+```bash
+# 预览归类
+python inspection-method/09_apply_equipment_inspection_packages.py --dry-run
+# 写入 tenant=1
+python inspection-method/09_apply_equipment_inspection_packages.py
+```
+
+关键类加深：储罐 12、机泵 10、UPS 9、阀门/摄像/门禁/入侵/可燃气体 8；其余类别 5～8。跳过型号名「测试模型」「单独」。
 
 ## 执行
 

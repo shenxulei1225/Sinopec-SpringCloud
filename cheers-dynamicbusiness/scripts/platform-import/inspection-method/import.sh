@@ -40,4 +40,7 @@ run "${SCRIPT_DIR}/07_sample_templates.sql"
 echo "== inspection-method: bind inspection items to method templates (optional) =="
 run "${SCRIPT_DIR}/08_bind_inspection_items.sql"
 
+echo "== inspection-method: equipment inspection packages (optional, python) =="
+python "${SCRIPT_DIR}/09_apply_equipment_inspection_packages.py"
+
 echo "done: inspection-method seed"
