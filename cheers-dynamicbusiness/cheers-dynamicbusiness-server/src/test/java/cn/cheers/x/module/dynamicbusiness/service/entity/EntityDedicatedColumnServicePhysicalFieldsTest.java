@@ -38,7 +38,7 @@ class EntityDedicatedColumnServicePhysicalFieldsTest {
     private EntityDedicatedColumnService service;
 
     @Test
-    void listEnabledPhysicalFields_usesFieldCodes_notInformationSchema() {
+    void listEnabledPhysicalFields_usesFieldCodes_skipsMultiRef() {
         EntityTypeDO type = new EntityTypeDO();
         type.setCode("equipment");
         type.setStorageType(StorageTypeEnum.DEDICATED.getCode());
@@ -46,27 +46,26 @@ class EntityDedicatedColumnServicePhysicalFieldsTest {
         when(entityTypeMapper.selectByCode("equipment")).thenReturn(type);
 
         EntityTypeBaseFieldDO zone = new EntityTypeBaseFieldDO();
-        zone.setFieldCode("FLD-BASE-equipment-REF_ZONE");
+        zone.setFieldCode("zone_id");
         zone.setDataType("ENTITY_REF");
         zone.setStatus(1);
         zone.setSortOrder(1);
 
-        EntityTypeBaseFieldDO region = new EntityTypeBaseFieldDO();
-        region.setFieldCode("FLD-BASE-equipment-REF_REGION");
-        region.setDataType("ENTITY_REF");
-        region.setStatus(1);
-        region.setSortOrder(2);
+        EntityTypeBaseFieldDO regionMulti = new EntityTypeBaseFieldDO();
+        regionMulti.setFieldCode("region_ids");
+        regionMulti.setDataType("REF_Multi");
+        regionMulti.setStatus(1);
+        regionMulti.setSortOrder(2);
 
-        when(baseFieldMapper.selectByEntityTypeCode("equipment")).thenReturn(List.of(zone, region));
+        when(baseFieldMapper.selectByEntityTypeCode("equipment")).thenReturn(List.of(zone, regionMulti));
 
         List<EntityDedicatedColumnService.PhysicalFieldSpec> specs =
                 service.listEnabledPhysicalFields("equipment");
 
-        assertEquals(2, specs.size());
-        assertEquals("FLD-BASE-equipment-REF_ZONE", specs.get(0).fieldCode());
-        assertEquals("fld_base_equipment_ref_zone", specs.get(0).columnName());
+        assertEquals(1, specs.size());
+        assertEquals("zone_id", specs.get(0).fieldCode());
+        assertEquals("zone_id", specs.get(0).columnName());
         assertEquals("ENTITY_REF", specs.get(0).dataType());
-        assertEquals("fld_base_equipment_ref_region", specs.get(1).columnName());
 
         verifyNoInteractions(jdbcTemplate);
     }
@@ -74,7 +73,7 @@ class EntityDedicatedColumnServicePhysicalFieldsTest {
     @Test
     void applyDedicatedBaseFieldValues_convertsRefToApiShape_withoutJdbc() {
         EntityTypeBaseFieldDO zone = new EntityTypeBaseFieldDO();
-        zone.setFieldCode("FLD-BASE-equipment-REF_ZONE");
+        zone.setFieldCode("zone_id");
         zone.setDataType("ENTITY_REF");
         zone.setStatus(1);
         when(baseFieldMapper.selectByEntityTypeCode("equipment")).thenReturn(List.of(zone));
@@ -82,14 +81,14 @@ class EntityDedicatedColumnServicePhysicalFieldsTest {
         EntityDO entity = new EntityDO();
         entity.setEntityTypeCode("equipment");
         Map<String, Object> dedicated = new LinkedHashMap<>();
-        dedicated.put("FLD-BASE-equipment-REF_ZONE", 101L);
+        dedicated.put("zone_id", 101L);
         entity.setDedicatedBaseFieldValues(dedicated);
 
         Map<String, Object> baseFields = new LinkedHashMap<>();
         service.applyDedicatedBaseFieldValues(entity, baseFields);
 
         @SuppressWarnings("unchecked")
-        Map<String, Object> ref = (Map<String, Object>) baseFields.get("FLD-BASE-equipment-REF_ZONE");
+        Map<String, Object> ref = (Map<String, Object>) baseFields.get("zone_id");
         assertEquals("zone", ref.get("entityTypeCode"));
         assertEquals(101L, ref.get("id"));
         verifyNoInteractions(jdbcTemplate);

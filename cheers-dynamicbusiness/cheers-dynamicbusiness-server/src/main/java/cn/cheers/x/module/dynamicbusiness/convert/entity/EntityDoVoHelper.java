@@ -101,19 +101,30 @@ public final class EntityDoVoHelper {
     }
 
     /**
-     * 列表转换：DO→VO 后把本页已加载的 dedicatedBaseFieldValues 写入 baseFields（含 REF API 形态）。
+     * 列表转换：核心列 + 本页已加载基础字段（含 REF API 形态）。
+     * <p>不做扩展字段加解密 / 键映射（不调 getFieldConfigs）：列表不展示扩展字段，
+     * 与浏览流程无关；详情单条仍走 {@link #toRespVO}。</p>
      * 禁止按行 {@code mergePhysicalColumnsIntoBaseFields}。
      */
     public static List<EntityRespVO> toRespVOList(List<EntityDO> entities,
                                                   CustomFieldValidationService customFieldValidationService,
                                                   EntityDedicatedColumnService dedicatedColumnService) {
+        // customFieldValidationService 保留参数以兼容旧调用方；列表路径刻意不使用
+        return toRespVOListSkipCustomPresent(entities, dedicatedColumnService);
+    }
+
+    /**
+     * 列表装 VO：扩展字段原样保留（仅供 LIGHT 偶发从 custom 提升 REF）；不做型号字段配置查询。
+     */
+    public static List<EntityRespVO> toRespVOListSkipCustomPresent(List<EntityDO> entities,
+                                                                   EntityDedicatedColumnService dedicatedColumnService) {
         if (entities == null || entities.isEmpty()) {
             return new ArrayList<>();
         }
         Map<String, Map<String, EntityTypeBaseFieldDO>> metaByType = new HashMap<>();
         List<EntityRespVO> result = new ArrayList<>(entities.size());
         for (EntityDO entity : entities) {
-            EntityRespVO respVO = convertWithoutPhysicalMerge(entity, customFieldValidationService);
+            EntityRespVO respVO = EntityConvert.INSTANCE.convert(entity);
             if (respVO == null) {
                 continue;
             }
@@ -130,6 +141,10 @@ public final class EntityDoVoHelper {
         return result;
     }
 
+    /**
+     * 详情/写读回显：扩展字段按型号配置解密并规范为 fieldCode。
+     * 仅单条路径使用；列表禁止走此逻辑。
+     */
     private static EntityRespVO convertWithoutPhysicalMerge(EntityDO entity,
                                                             CustomFieldValidationService customFieldValidationService) {
         EntityRespVO respVO = EntityConvert.INSTANCE.convert(entity);

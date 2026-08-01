@@ -1561,9 +1561,16 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         // 查询分类的当前最大排序值
         List<Map<String, Object>> rows = relationMapper.selectMaxSortByCategoryIds(dedupCategoryIds);
         for (Map<String, Object> row : rows) {
-            Long categoryId = ((Number) row.get("categoryId")).longValue();
-            int maxSort = ((Number) row.get("maxSort")).intValue();
-            baseSortMap.put(categoryId, maxSort);
+            if (row == null || row.isEmpty()) {
+                continue;
+            }
+            // PG / MyBatis 可能返回 categoryid、maxsort 等小写键，不能写死 camelCase
+            Number categoryIdNum = firstNumber(row, "categoryId", "categoryid", "category_id");
+            Number maxSortNum = firstNumber(row, "maxSort", "maxsort", "max_sort");
+            if (categoryIdNum == null) {
+                continue;
+            }
+            baseSortMap.put(categoryIdNum.longValue(), maxSortNum != null ? maxSortNum.intValue() : 0);
         }
 
         // 对于当前无历史关联的分类，补 0 基线
@@ -1572,6 +1579,33 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         }
 
         return baseSortMap;
+    }
+
+    private static Number firstNumber(Map<String, Object> row, String... keys) {
+        if (row == null || keys == null) {
+            return null;
+        }
+        for (String key : keys) {
+            if (key == null) {
+                continue;
+            }
+            Object value = row.get(key);
+            if (value instanceof Number number) {
+                return number;
+            }
+        }
+        for (Map.Entry<String, Object> entry : row.entrySet()) {
+            if (entry.getKey() == null || !(entry.getValue() instanceof Number number)) {
+                continue;
+            }
+            String normalized = entry.getKey().replace("_", "").toLowerCase();
+            for (String key : keys) {
+                if (key != null && normalized.equals(key.replace("_", "").toLowerCase())) {
+                    return number;
+                }
+            }
+        }
+        return null;
     }
 
     /**

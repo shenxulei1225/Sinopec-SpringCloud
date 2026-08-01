@@ -329,28 +329,27 @@ public interface EntityCategoryRelationService {
         void deleteAllByEntityIds(List<Long> entityIds);
 
         /**
-         * 删除分类的所有实体关联（用于删除分类时级联清理）
+         * 删除分类的所有实体关联（用于删除分类时级联清理）。
+         * 先按边回写清 REF，再删关系行；须在清掉分类即实体 link 之前调用。
          *
          * @param categoryId 分类ID
-         * @param entityTypeCode 业务类型编码
          */
         void deleteAllByCategoryId(Long categoryId);
 
         /**
-         * 删除分类在指定业务下的所有实体关联。
+         * 删除分类在指定业务下的所有实体关联（先回写 REF 再拆边）。
          */
         void deleteAllByCategoryIdInBusiness(Long categoryId, String entityTypeCode);
 
         /**
-         * 批量删除多个分类的所有实体关联（按业务类型隔离）
+         * 批量删除多个分类的所有实体关联（全业务级联；先回写 REF 再拆边）。
          *
          * @param categoryIds 分类ID列表
-         * @param entityTypeCode 业务类型编码
          */
         void deleteAllByCategoryIds(List<Long> categoryIds);
 
         /**
-         * 批量删除多个分类在指定业务下的所有实体关联。
+         * 批量删除多个分类在指定业务下的所有实体关联（先回写 REF 再拆边）。
          */
         void deleteAllByCategoryIdsInBusiness(List<Long> categoryIds, String entityTypeCode);
 

@@ -78,4 +78,10 @@ public class EntityTypeBaseVO {
     @Schema(description = "是否启用规则引擎", example = "false")
     private Boolean enableRuleEngine;
 
+    @Schema(
+            description = "型号工作台模式：MULTI=多型号（默认）；SINGLE=单型号（创建自动带唯一型号、界面不选手动选型号）",
+            example = "MULTI")
+    @Size(max = 16, message = "型号工作台模式长度不能超过16")
+    private String modelWorkbenchMode;
+
 }

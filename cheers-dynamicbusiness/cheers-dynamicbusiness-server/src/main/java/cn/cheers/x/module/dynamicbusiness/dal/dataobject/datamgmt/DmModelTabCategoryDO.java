@@ -30,4 +30,7 @@ public class DmModelTabCategoryDO extends TenantBaseDO {
     private String categoryTypeCode;
 
     private Long propsId;
+
+    /** 模型管理 Tab 型号列表 component-props id（与数据 Tab MODEL 列分离） */
+    private Long modelListPropsId;
 }

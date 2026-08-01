@@ -23,4 +23,7 @@ public class DmModelTabCategorySaveReqVO {
 
     @Schema(description = "分类树 propsId")
     private Long propsId;
+
+    @Schema(description = "模型管理 Tab 型号列表 propsId（与数据 Tab 型号列分离）")
+    private Long modelListPropsId;
 }

@@ -60,6 +60,7 @@ public class DmModelTabCategoryServiceImpl implements DmModelTabCategoryService 
         row.setLabel(trimToNull(reqVO.getLabel()));
         row.setCategoryTypeCode(trimToNull(reqVO.getCategoryTypeCode()));
         row.setPropsId(reqVO.getPropsId());
+        row.setModelListPropsId(reqVO.getModelListPropsId());
     }
 
     private DmModelTabCategoryRespVO emptyResp(String entityTypeCode) {
@@ -79,6 +80,7 @@ public class DmModelTabCategoryServiceImpl implements DmModelTabCategoryService 
         vo.setLabel(row.getLabel());
         vo.setCategoryTypeCode(row.getCategoryTypeCode());
         vo.setPropsId(row.getPropsId());
+        vo.setModelListPropsId(row.getModelListPropsId());
         return vo;
     }
 

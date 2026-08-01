@@ -148,7 +148,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
     }
 
     /**
-     * 建立分类–实体关联时，同步把该实体所属型号挂到同一分类（分类–型号）。
+     * 建立分类–实体关联时，同步把该实体所属型号关联到同一分类（分类–型号）。
      * <p>场景 2：点分区能看到区内站场类型，依赖型号列按分类–型号过滤；
      * 幂等，已存在则跳过。实体无型号时不写。</p>
      */
@@ -174,6 +174,107 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                 continue;
             }
             syncEntityModelToCategory(entityId, categoryId, storageEntityTypeCode);
+        }
+    }
+
+    /**
+     * 与 {@link #syncEntityModelToCategory} 对称：解除分类–实体后，
+     * 仅当该分类下已无该实体所属型号的其它实体仍关联时，才解除型号–分类。
+     * <p>须在分类–实体关系行已删除之后调用。</p>
+     */
+    private void unsyncEntityModelFromCategoryIfLast(Long entityId, Long categoryId, String storageEntityTypeCode) {
+        if (entityId == null || categoryId == null || !StringUtils.hasText(storageEntityTypeCode)) {
+            return;
+        }
+        String storage = storageEntityTypeCode.trim();
+        EntityDO entity = entityCoreService.get(entityId, storage);
+        if (entity == null || entity.getModelId() == null) {
+            return;
+        }
+        unsyncModelFromCategoryIfNoRemainingEntities(entity.getModelId(), categoryId, storage);
+    }
+
+    /**
+     * 该分类 + 存储类型下，若已无指定型号的其它实体关联，则解除型号–分类。
+     */
+    private void unsyncModelFromCategoryIfNoRemainingEntities(Long modelId, Long categoryId,
+                                                              String storageEntityTypeCode) {
+        if (modelId == null || categoryId == null || !StringUtils.hasText(storageEntityTypeCode)) {
+            return;
+        }
+        String storage = storageEntityTypeCode.trim();
+        List<EntityCategoryRelationDO> remaining =
+                relationMapper.selectByCategoryIdAndEntityType(categoryId, storage);
+        if (remaining != null && !remaining.isEmpty()) {
+            List<Long> remainingIds = remaining.stream()
+                    .map(EntityCategoryRelationDO::getEntityId)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .toList();
+            if (!remainingIds.isEmpty()) {
+                List<EntityDO> ents = entityCoreService.listByIds(remainingIds, storage);
+                if (ents != null) {
+                    for (EntityDO e : ents) {
+                        if (e != null && modelId.equals(e.getModelId())) {
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        modelCategoryRelationService.disassociate(modelId, categoryId, storage);
+        log.info("末实例解除型号-分类关联: modelId={}, categoryId={}, entityTypeCode={}",
+                modelId, categoryId, storage);
+    }
+
+    /**
+     * 批量：已拆除的分类–实体边对应的型号，按「末实例」规则尝试解除型号–分类。
+     */
+    private void unsyncModelsAfterRemovedEntityCategoryEdges(List<EntityCategoryRelationDO> removedEdges) {
+        if (removedEdges == null || removedEdges.isEmpty()) {
+            return;
+        }
+        Map<String, Set<Long>> entityIdsByStorage = new LinkedHashMap<>();
+        List<EntityCategoryRelationDO> typedEdges = new ArrayList<>();
+        for (EntityCategoryRelationDO rel : removedEdges) {
+            if (rel == null || rel.getEntityId() == null || rel.getCategoryId() == null
+                    || !StringUtils.hasText(rel.getEntityTypeCode())) {
+                continue;
+            }
+            String storage = rel.getEntityTypeCode().trim();
+            entityIdsByStorage.computeIfAbsent(storage, k -> new LinkedHashSet<>()).add(rel.getEntityId());
+            typedEdges.add(rel);
+        }
+        if (typedEdges.isEmpty()) {
+            return;
+        }
+        Map<String, Map<Long, Long>> modelByEntityByStorage = new HashMap<>();
+        for (Map.Entry<String, Set<Long>> entry : entityIdsByStorage.entrySet()) {
+            Map<Long, Long> modelByEntity = new HashMap<>();
+            List<EntityDO> ents = entityCoreService.listByIds(new ArrayList<>(entry.getValue()), entry.getKey());
+            if (ents != null) {
+                for (EntityDO ent : ents) {
+                    if (ent != null && ent.getId() != null && ent.getModelId() != null) {
+                        modelByEntity.put(ent.getId(), ent.getModelId());
+                    }
+                }
+            }
+            modelByEntityByStorage.put(entry.getKey(), modelByEntity);
+        }
+        Set<String> seen = new LinkedHashSet<>();
+        for (EntityCategoryRelationDO rel : typedEdges) {
+            String storage = rel.getEntityTypeCode().trim();
+            Long modelId = modelByEntityByStorage
+                    .getOrDefault(storage, Map.of())
+                    .get(rel.getEntityId());
+            if (modelId == null) {
+                continue;
+            }
+            String key = modelId + "|" + rel.getCategoryId() + "|" + storage;
+            if (!seen.add(key)) {
+                continue;
+            }
+            unsyncModelFromCategoryIfNoRemainingEntities(modelId, rel.getCategoryId(), storage);
         }
     }
 
@@ -460,6 +561,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             // 仅删除 entity-category 关联（按实际存储类型过滤）
             relationMapper.deleteByEntityAndCategory(entityId, categoryId, storageEntityTypeCode);
             entityCategoryRefWritebackService.afterDisassociated(entityId, categoryId, storageEntityTypeCode);
+            unsyncEntityModelFromCategoryIfLast(entityId, categoryId, storageEntityTypeCode);
         }
 
         log.info("批量取消实体与分类的关联: entityId={}, categoryIds={}, entityTypeCode={}", entityId, categoryIds, storageEntityTypeCode);
@@ -547,9 +649,16 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                 .filter(id -> !activeCategoryIds.contains(id) && !restoreCandidates.contains(id))
                 .toList();
 
-        // Step 6: 删除移除项（仅删除差集，不影响 toKeep）
+        // Step 6: 删除移除项（仅删除差集，不影响 toKeep）；REF 回写 + 末实例解除型号–分类
         if (!toDelete.isEmpty()) {
             relationMapper.deleteByEntityAndCategoryIds(entityId, toDelete);
+            for (Long categoryId : toDelete) {
+                if (categoryId == null) {
+                    continue;
+                }
+                entityCategoryRefWritebackService.afterDisassociated(entityId, categoryId, storageEntityTypeCode);
+                unsyncEntityModelFromCategoryIfLast(entityId, categoryId, storageEntityTypeCode);
+            }
         }
         // Step 7: 先完成状态变更（恢复 + 新增），不在此阶段分段编号
         if (!toRestore.isEmpty()) {
@@ -660,7 +769,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         log.info("批量取消实体与分类的关联: entityIds={}, categoryId={}, entityTypeCode={}",
                 entityIds, categoryId, storageEntityTypeCode);
 
-        // 与单条 disassociate 一致：解绑后回写 REF（单选清空 / MultiRef 删对应条）
+        // 与单条 disassociate 一致：回写 REF（末实例解除型号–分类已在 markEntitiesExcludedFromCategory 内）
         for (Long entityId : entityIds) {
             if (entityId == null) {
                 continue;
@@ -680,7 +789,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
 
     /**
      * 解除实体与分类关联：删除有效关联；若无有效关联则写入 deleted=true 排除标记，
-     * 防止实体仍通过「型号挂分类」出现在该分类范围内。
+     * 防止实体仍通过「型号关联分类」出现在该分类范围内。
      *
      * @param storageEntityTypeCode 实际存储类型，调用方须先归一（注册编码不入库）
      */
@@ -694,6 +803,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             EntityCategoryRelationDO active = relationMapper.selectByEntityAndCategory(entityId, categoryId, storageEntityTypeCode);
             if (active != null) {
                 relationMapper.deleteByEntityAndCategory(entityId, categoryId, storageEntityTypeCode);
+                unsyncEntityModelFromCategoryIfLast(entityId, categoryId, storageEntityTypeCode);
             } else {
                 List<EntityCategoryRelationDO> deletedRelations = relationMapper
                         .selectByEntityAndCategoryIdsIncludingDeleted(entityId, List.of(categoryId), storageEntityTypeCode);
@@ -942,6 +1052,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             for (Long categoryId : categoryIds) {
                 relationMapper.deleteByEntityAndCategory(entityId, categoryId, storageEntityTypeCode);
                 entityCategoryRefWritebackService.afterDisassociated(entityId, categoryId, storageEntityTypeCode);
+                unsyncEntityModelFromCategoryIfLast(entityId, categoryId, storageEntityTypeCode);
                 entitySuccessCount++;
             }
 
@@ -1165,7 +1276,12 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         // 删实体时按「实际存储类型 + 实体编号」清理，不按业务域收窄：
         // 实体没了，它在其它业务域视角下的关联同样应当消失。
         String storageEntityTypeCode = resolveStorageEntityTypeCode(entityTypeCode);
+        List<EntityCategoryRelationDO> edges = relationMapper.selectByEntityId(entityId).stream()
+                .filter(rel -> rel != null && storageEntityTypeCode.equals(
+                        rel.getEntityTypeCode() != null ? rel.getEntityTypeCode().trim() : null))
+                .toList();
         relationMapper.deleteByEntityId(entityId, storageEntityTypeCode);
+        unsyncModelsAfterRemovedEntityCategoryEdges(edges);
         log.info("删除实体的分类关联(按存储类型隔离): entityId={}, entityTypeCode={}", entityId, storageEntityTypeCode);
     }
 
@@ -1185,6 +1301,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
 
     /**
      * 删除单个分类的所有实体关联（全业务清理，级联清理入口）。
+     * <p>与显式解绑一致：先按边回写清 REF，再删关系行（须在清掉分类即实体 link 之前调用）。</p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -1192,8 +1309,10 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         if (categoryId == null) {
             return;
         }
-
+        List<EntityCategoryRelationDO> edges = relationMapper.selectByCategoryId(categoryId);
+        writebackRefBeforeDeletingCategoryRelations(edges);
         relationMapper.deleteByCategoryId(categoryId);
+        unsyncModelsAfterRemovedEntityCategoryEdges(edges);
         log.info("删除分类的所有实体关联(全业务): categoryId={}", categoryId);
     }
 
@@ -1206,12 +1325,17 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
 
         // 分类编号全局唯一：删除分类节点要清掉该存储类型下的全部业务域关联，不按 domain 收窄。
         String storageEntityTypeCode = resolveStorageEntityTypeCode(entityTypeCode);
+        List<EntityCategoryRelationDO> edges =
+                relationMapper.selectByCategoryIdAndEntityType(categoryId, storageEntityTypeCode);
+        writebackRefBeforeDeletingCategoryRelations(edges);
         relationMapper.deleteByCategoryId(categoryId, storageEntityTypeCode);
+        unsyncModelsAfterRemovedEntityCategoryEdges(edges);
         log.info("删除分类的所有实体关联(按存储类型隔离): categoryId={}, entityTypeCode={}", categoryId, storageEntityTypeCode);
     }
 
     /**
      * 批量删除多个分类的所有实体关联（全业务清理级联清理入口）。
+     * <p>与显式解除一致：先按边回写清 REF，再删关系行（须在清掉分类即实体 link 之前调用）。</p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -1219,8 +1343,10 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         if (categoryIds == null || categoryIds.isEmpty()) {
             return;
         }
-
+        List<EntityCategoryRelationDO> edges = relationMapper.selectByCategoryIds(categoryIds);
+        writebackRefBeforeDeletingCategoryRelations(edges);
         relationMapper.deleteByCategoryIds(categoryIds);
+        unsyncModelsAfterRemovedEntityCategoryEdges(edges);
         log.info("批量删除分类的所有实体关联(全业务): categoryIds={}", categoryIds);
     }
 
@@ -1232,8 +1358,35 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         }
 
         String storageEntityTypeCode = resolveStorageEntityTypeCode(entityTypeCode);
+        List<EntityCategoryRelationDO> edges =
+                relationMapper.selectByCategoryIds(categoryIds, storageEntityTypeCode);
+        writebackRefBeforeDeletingCategoryRelations(edges);
         relationMapper.deleteByCategoryIds(categoryIds, storageEntityTypeCode);
+        unsyncModelsAfterRemovedEntityCategoryEdges(edges);
         log.info("批量删除分类的所有实体关联(按存储类型隔离): categoryIds={}, entityTypeCode={}", categoryIds, storageEntityTypeCode);
+    }
+
+    /**
+     * 删分类级联拆边前：对每条分类—实体边走与解绑相同的 REF 回写（单选清空 / MultiRef 删对应条）。
+     * 依赖分类即实体 link 仍在；调用方须保证尚未 unlink。
+     */
+    private void writebackRefBeforeDeletingCategoryRelations(List<EntityCategoryRelationDO> relations) {
+        if (relations == null || relations.isEmpty()) {
+            return;
+        }
+        for (EntityCategoryRelationDO rel : relations) {
+            if (rel == null || rel.getEntityId() == null || rel.getCategoryId() == null) {
+                continue;
+            }
+            String typeCode = rel.getEntityTypeCode();
+            if (!StringUtils.hasText(typeCode)) {
+                log.warn("级联删分类—实体边时缺少 entityTypeCode，跳过 REF 回写: entityId={}, categoryId={}",
+                        rel.getEntityId(), rel.getCategoryId());
+                continue;
+            }
+            entityCategoryRefWritebackService.afterDisassociated(
+                    rel.getEntityId(), rel.getCategoryId(), typeCode.trim());
+        }
     }
 
     @Override

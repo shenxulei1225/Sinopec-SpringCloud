@@ -38,6 +38,7 @@ import cn.cheers.x.module.dynamicbusiness.service.entity.EntityBusinessHelper;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityCacheEvictionService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityLifecycleEventPublisher;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityRelationSyncService;
+import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategoryRelationService;
@@ -93,6 +94,10 @@ public class CategoryServiceImpl implements CategoryService {
     private EntityRelationMapper entityRelationMapper;
     @Resource
     private EntityCoreService entityCoreService;
+
+    @Resource
+    @Lazy
+    private EntityService entityService;
 
     @Resource
     private EntityBusinessHelper entityBusinessHelper;
@@ -488,7 +493,10 @@ public class CategoryServiceImpl implements CategoryService {
      */
     private Long createEntityForCategory(CategoryCreateReqVO reqVO) {
         ModelDO model = modelMapper.selectById(reqVO.getEntityModelId());
-        
+        if (model == null) {
+            throw new ServiceException(404, "模型不存在");
+        }
+
         Map<String, Object> baseOverlay = new LinkedHashMap<>();
         if (reqVO.getEntityBaseFields() != null && !reqVO.getEntityBaseFields().isEmpty()) {
             baseOverlay.putAll(reqVO.getEntityBaseFields());
@@ -496,6 +504,7 @@ public class CategoryServiceImpl implements CategoryService {
         if (StrUtil.isNotBlank(reqVO.getCode())) {
             baseOverlay.put("code", reqVO.getCode().trim());
         }
+        // 与台账新建共用 EntityService.create：必填校验、固定列同 INSERT、关联同步
         EntityCreateReqVO entityReqVO = EntityWriteReqMaps.createReq(
                 model.getEntityTypeCode(),
                 reqVO.getEntityModelId(),
@@ -504,35 +513,7 @@ public class CategoryServiceImpl implements CategoryService {
                 null,
                 baseOverlay.isEmpty() ? null : baseOverlay,
                 reqVO.getCustomFields());
-        
-        // 1. 使用 Helper 准备实体数据（验证、转换、加密）
-        EntityDO data = entityBusinessHelper.prepareCreateEntity(entityReqVO);
-
-        // 2. 使用 Repository 保存 to get ID
-        entityCoreService.create(data);
-        Long entityId = data.getId();
-
-        // 3. 设置 treePath
-        entityCoreService.moveEntity(entityId, data.getEntityTypeCode(), data.getParentId());
-
-        // 4. 同步关联关系
-        // 使用已查询的 model 变量，无需再次查询
-        Map<String, Object> customFieldsMap = entityBusinessHelper.emptyIfNull(entityReqVO.getCustomFields());
-        entityRelationSyncService.syncRelationsOnCreate(data, model, customFieldsMap);
-
-        // 5. 清除缓存
-        entityCacheEvictionService.evictEntityCaches(
-                EntityFieldMapsSupport.getRequiredModelId(entityReqVO.getBaseFields()),
-                EntityFieldMapsSupport.getRequiredEntityTypeCode(entityReqVO.getBaseFields()));
-
-        // 6. 发布事件
-        entityLifecycleEventPublisher.publishEntityCreatedEvent(
-                EntityFieldMapsSupport.getRequiredModelId(entityReqVO.getBaseFields()),
-                entityId,
-                EntityFieldMapsSupport.getRequiredEntityTypeCode(entityReqVO.getBaseFields()),
-                data);
-
-        return entityId;
+        return entityService.create(entityReqVO);
     }
 
     @Override
@@ -628,12 +609,22 @@ public class CategoryServiceImpl implements CategoryService {
         if (model == null) {
             throw new ServiceException(404, "高级分类关联的 Model 不存在");
         }
-        EntityDO entityDO = entityCoreService.get(link.getEntityId(), model.getEntityTypeCode());
-        EntityRespVO existingEntity = entityDO != null ? EntityDoVoHelper.toRespVO(entityDO, customFieldValidationService) : null;
+        EntityRespVO existingEntity = entityService.get(link.getEntityId(), model.getEntityTypeCode());
         if (existingEntity == null) {
             throw new ServiceException(404, "高级分类关联的实体不存在");
         }
 
+        Map<String, Object> baseOverlay = new LinkedHashMap<>();
+        if (reqVO.getEntityBaseFields() != null && !reqVO.getEntityBaseFields().isEmpty()) {
+            baseOverlay.putAll(reqVO.getEntityBaseFields());
+        } else if (existingEntity.getBaseFields() != null) {
+            // 未传实体基础字段时保留原值（含固定列），避免更新把必填列清空
+            for (Map.Entry<String, Object> e : existingEntity.getBaseFields().entrySet()) {
+                if (e.getKey() != null && !EntityFieldMapsSupport.isCoreBaseFieldKey(e.getKey())) {
+                    baseOverlay.put(e.getKey(), e.getValue());
+                }
+            }
+        }
         EntityUpdateReqVO entityUpdateReqVO = EntityWriteReqMaps.updateReq(
                 link.getEntityId(),
                 existingEntity.getEntityTypeCode(),
@@ -641,36 +632,9 @@ public class CategoryServiceImpl implements CategoryService {
                 reqVO.getName() != null ? reqVO.getName() : existingEntity.getName(),
                 reqVO.getStatus() != null ? reqVO.getStatus() : existingEntity.getStatus(),
                 existingEntity.getParentId(),
-                null,
+                baseOverlay.isEmpty() ? null : baseOverlay,
                 reqVO.getCustomFields() != null ? reqVO.getCustomFields() : existingEntity.getCustomFields());
-
-        // Replicate the update logic from EntityServiceImpl
-        EntityDO db = entityCoreService.get(entityUpdateReqVO.getId(), existingEntity.getEntityTypeCode());
-        if (db == null) {
-            throw new ServiceException(404, "实体不存在");
-        }
-        String oldName = db.getName();
-        Map<String, Object> oldCustomFields = entityBusinessHelper.emptyIfNull(db.getCustomFields());
-
-        EntityDO update = entityBusinessHelper.prepareUpdateEntity(entityUpdateReqVO, db);
-        entityCoreService.update(update);
-
-        Map<String, Object> newCustomFields = entityBusinessHelper.emptyIfNull(entityUpdateReqVO.getCustomFields());
-        entityRelationSyncService.syncRelationsOnUpdate(update, model, newCustomFields, oldCustomFields);
-
-        entityCacheEvictionService.evictEntityCaches(model.getId(), model.getEntityTypeCode());
-        entityCacheEvictionService.evictEntity(entityUpdateReqVO.getId());
-
-        List<String> changedFields = entityBusinessHelper.extractFieldCodes(
-                entityUpdateReqVO.getBaseFields(), entityUpdateReqVO.getCustomFields());
-        entityLifecycleEventPublisher.publishEntityUpdatedEvent(model.getId(), entityUpdateReqVO.getId(), model.getEntityTypeCode(), changedFields, update);
-
-        String newName = EntityFieldMapsSupport.asStringFromMap(entityUpdateReqVO.getBaseFields(), "name");
-        if (newName != null && !newName.equals(oldName)) {
-            entityLifecycleEventPublisher.publishEntityNameChangedEvent(
-                    entityUpdateReqVO.getId(), oldName, newName,
-                    model.getEntityTypeCode(), model.getCode(), db.getTenantId());
-        }
+        entityService.update(entityUpdateReqVO);
     }
 
     @Override
@@ -678,6 +642,7 @@ public class CategoryServiceImpl implements CategoryService {
     public void deleteCategory(CategoryDeleteReqVO reqVO) {
         Long id = reqVO.getId();
         boolean cascade = Boolean.TRUE.equals(reqVO.getCascade());
+        boolean forceDelete = Boolean.TRUE.equals(reqVO.getForceDelete());
         String categoryTypeCode = reqVO.getCategoryTypeCode();
         
         // 获取分类信息
@@ -721,11 +686,11 @@ public class CategoryServiceImpl implements CategoryService {
         // 级联删除关联关系（在删除分类之前）
         // - Model-Category 关联：批量清理
         modelCategoryRelationService.deleteAllByCategoryIds(categoryIdsToDelete);
-        // - Entity-Category 关联：批量清理（用于删除分类树时一次性解除所有下级分类与实体的关联）
+        // - Entity-Category 关联：批量清理（拆边前按「解除分类」回写 REF：单选清空 / MultiRef 只去本条）
         entityCategoryRelationService.deleteAllByCategoryIds(categoryIdsToDelete);
 
         // 按种类 mode 处理 1:1 实体：高级删实体；简单禁止存在 link
-        deleteEntityLinksByCategoryMode(categoryIdsToDelete, type, mode);
+        deleteEntityLinksByCategoryMode(categoryIdsToDelete, type, mode, forceDelete);
         
         core.deleteCategory(id, cascade);
     }
@@ -774,8 +739,10 @@ public class CategoryServiceImpl implements CategoryService {
      * 结构根（顶层节点）允许无实体；高级业务节点有实体则一并删除；
      * 高级业务节点缺 link 视为历史脏数据，允许删节点本体，避免永久锁死。
      * 简单节点不得有 1:1 link。
+     * <p>删节点前必须清掉分类即实体 link；高级业务节点无论实体是否已删，最终都 unlink。</p>
      */
-    private void deleteEntityLinksByCategoryMode(List<Long> categoryIdsToDelete, CategoryTypeDO type, String mode) {
+    private void deleteEntityLinksByCategoryMode(List<Long> categoryIdsToDelete, CategoryTypeDO type, String mode,
+                                                 boolean forceDelete) {
         Map<Long, CategoryDO> categoryMap = categoryMapper.selectByIds(categoryIdsToDelete).stream()
                 .filter(Objects::nonNull)
                 .collect(Collectors.toMap(CategoryDO::getId, c -> c, (a, b) -> a));
@@ -797,10 +764,14 @@ public class CategoryServiceImpl implements CategoryService {
                                     ? "高级分类顶层节点不应绑定实体，数据异常，拒绝删除"
                                     : "简单分类节点不应绑定实体，数据异常，拒绝删除");
                 }
+                // 脏 link（无实体 id）：删分类前仍清掉，避免残留
+                if (link != null) {
+                    categoryEntityLinkService.unlinkCategoryEntity(categoryId);
+                }
                 continue;
             }
 
-            if (link == null || link.getEntityId() == null) {
+            if (link == null) {
                 // 脏数据：种类已是 ADVANCED，但历史节点未写 1:1 link。
                 // 拒绝删除会永久锁死；允许删节点本体以清理，新建仍强制选模型+建实体。
                 log.warn(
@@ -809,12 +780,30 @@ public class CategoryServiceImpl implements CategoryService {
                         type != null ? type.getCategoryTypeCode() : null);
                 continue;
             }
+
+            if (link.getEntityId() == null) {
+                log.warn(
+                        "高级分类业务节点 link 无实体 id，仅清理 link: categoryId={}, categoryTypeCode={}",
+                        categoryId,
+                        type != null ? type.getCategoryTypeCode() : null);
+                categoryEntityLinkService.unlinkCategoryEntity(categoryId);
+                continue;
+            }
+
             ModelDO model = modelMapper.selectById(link.getEntityModelId());
             if (model == null) {
                 throw new ServiceException(404, "高级分类关联的 Model 不存在");
             }
-            deleteEntityForCategory(link.getEntityId(), model.getEntityTypeCode(), false);
+            deleteEntityForCategory(link.getEntityId(), model.getEntityTypeCode(), forceDelete);
             categoryEntityLinkService.unlinkCategoryEntity(categoryId);
+        }
+
+        // 兜底：待删节点上不得残留 link（例如实体侧已 unlink 但按 categoryId 仍有行）
+        for (Long categoryId : categoryIdsToDelete) {
+            CategoryEntityLinkDO leftover = categoryEntityLinkService.getLinkByCategoryId(categoryId);
+            if (leftover != null) {
+                categoryEntityLinkService.unlinkCategoryEntity(categoryId);
+            }
         }
     }
 
@@ -1103,6 +1092,10 @@ public class CategoryServiceImpl implements CategoryService {
         return collectCategoryIdsByParentLink(categoryId, effectiveCategoryTypeCode);
     }
 
+    /**
+     * 按 parent_id 展开子树，顺序与分类树 UI 一致：同级按 sort、id，深度优先。
+     * <p>不得使用无序 Set 拼子孙，否则「按分类分桶」的跨分类顺序会漂。</p>
+     */
     private List<Long> collectCategoryIdsByParentLink(Long rootCategoryId, String categoryTypeCode) {
         List<CategoryDO> all = categoryMapper.selectByCategoryTypeCode(categoryTypeCode);
         if (all == null || all.isEmpty()) {
@@ -1110,12 +1103,36 @@ public class CategoryServiceImpl implements CategoryService {
         }
         Map<Long, List<CategoryDO>> childrenMap = all.stream()
                 .collect(Collectors.groupingBy(item -> item.getParentId() == null ? 0L : item.getParentId()));
+        for (List<CategoryDO> siblings : childrenMap.values()) {
+            siblings.sort(Comparator
+                    .comparing(CategoryDO::getSort, Comparator.nullsLast(Integer::compareTo))
+                    .thenComparing(CategoryDO::getId, Comparator.nullsLast(Long::compareTo)));
+        }
         LinkedHashSet<Long> orderedIds = new LinkedHashSet<>();
-        orderedIds.add(rootCategoryId);
-        Set<Long> descendantIds = new HashSet<>();
-        collectDescendantIds(rootCategoryId, childrenMap, descendantIds);
-        orderedIds.addAll(descendantIds);
+        collectCategoryIdsDepthFirst(rootCategoryId, childrenMap, orderedIds);
+        if (orderedIds.isEmpty()) {
+            return List.of(rootCategoryId);
+        }
         return new ArrayList<>(orderedIds);
+    }
+
+    /** 深度优先写入有序集合；同级顺序由调用方事先按 sort/id 排好。 */
+    private void collectCategoryIdsDepthFirst(
+            Long categoryId,
+            Map<Long, List<CategoryDO>> childrenMap,
+            LinkedHashSet<Long> orderedIds) {
+        if (categoryId == null || !orderedIds.add(categoryId)) {
+            return;
+        }
+        List<CategoryDO> children = childrenMap.get(categoryId);
+        if (children == null || children.isEmpty()) {
+            return;
+        }
+        for (CategoryDO child : children) {
+            if (child.getId() != null) {
+                collectCategoryIdsDepthFirst(child.getId(), childrenMap, orderedIds);
+            }
+        }
     }
 
     @Override
@@ -1463,29 +1480,20 @@ public class CategoryServiceImpl implements CategoryService {
             return;
         }
 
-        // 2. 检查关联关系（如果不是强制删除）
-        if (!Boolean.TRUE.equals(forceDelete)) {
-            Long relationCount = entityRelationMapper.countByEntityId(id);
-            if (relationCount != null && relationCount > 0) {
-                throw new ServiceException(400, "实体存在关联关系，无法删除。如需强制删除，请设置 forceDelete=true");
+        // 2. 未二次确认时：仅拦「别人指向本台账」的入站关联。
+        // 自身发出的 REF（如所属设施）不在此拦：交给实体删除清理（syncRelationsOnDelete）必清。
+        boolean clearInbound = Boolean.TRUE.equals(forceDelete);
+        if (!clearInbound) {
+            Long inboundCount = entityRelationMapper.countByTargetEntityId(id);
+            if (inboundCount != null && inboundCount > 0) {
+                throw new ServiceException(400,
+                        "仍有其它台账引用该分类绑定的数据。继续删除将自动解除这些引用（不会删除其它设备或型号本身），"
+                                + "然后删除本分类及其绑定台账。");
             }
         }
 
-        // 3. 删除关联关系（带 storage 类型，避免跨表同 id）
-        entityCategoryRelationService.deleteAllByEntityIdInBusiness(id, entityTypeCode);
-        categoryEntityLinkService.unlinkEntityCategory(id, entityTypeCode);
-        entityTypeScopeMapper.deleteByEntityIdAndCodes(id, listScopeCodesForStorage(entityTypeCode));
-        entityRelationMapper.deleteByEntityId(id);
-
-        // 4. 使用 CoreService 删除实体
-        entityCoreService.delete(id, entityTypeCode);
-
-        // 5. 清除缓存
-        entityCacheEvictionService.evictEntityCaches(db.getModelId(), entityTypeCode);
-        entityCacheEvictionService.evictEntity(id);
-
-        // 6. 发布事件
-        entityLifecycleEventPublisher.publishEntityDeletedEvent(db.getModelId(), id, entityTypeCode);
+        // 3. 走实体删除统一清理：先清自身 REF 关系镜像（所属设施等）→ 再删存储行（行内 REF 列随行删除）
+        entityService.deleteEntityWithAssociationCleanup(id, entityTypeCode, clearInbound);
     }
 
     private void linkCategoryEntityWithStorage(Long categoryId, Long entityId, Long entityModelId) {

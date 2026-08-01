@@ -304,7 +304,7 @@ start_service() {
         platform-routing|routing|bmp-routing|\
         alarm|bmp-alarm|work-order|bmp-work-order|maintenance|bmp-maintenance|\
         scene|scene-3d|gis|bmp-gis|\
-        twin|cheers-twin|dynamic|inspection)
+        twin|cheers-twin|dynamic|inspection|bpm|system)
             echo -e "${BLUE}   安装 ${service_path} 及依赖到 ${MAVEN_REPO_LOCAL}（-am install -DskipTests）...${NC}"
             (
                 cd "$SCRIPT_DIR" || exit 1
@@ -330,7 +330,8 @@ start_service() {
     # 每次启动覆盖写日志，只保留本次运行；避免历史 ERROR 堆积干扰排查
     # 后台启动；disown 避免启动脚本 shell 退出时 SIGHUP 带走 Maven/Spring Boot
     # nohup 不能调用 shell 函数，须直接写 mvn + -Dmaven.repo.local（所有服务共用）
-    nohup mvn -Dmaven.repo.local="$MAVEN_REPO_LOCAL" spring-boot:run -Dspring-boot.run.profiles=local > "$log_file" 2>&1 &
+    # maven.test.skip：本地启动不编/不跑测试，避免测试缺类挡住 spring-boot:run
+    nohup mvn -Dmaven.repo.local="$MAVEN_REPO_LOCAL" spring-boot:run -Dspring-boot.run.profiles=local -Dmaven.test.skip=true > "$log_file" 2>&1 &
     local pid=$!
     disown -h "$pid" 2>/dev/null || true
     

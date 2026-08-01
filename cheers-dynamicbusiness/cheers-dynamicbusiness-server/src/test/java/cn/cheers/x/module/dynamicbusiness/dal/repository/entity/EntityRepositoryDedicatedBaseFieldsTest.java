@@ -55,8 +55,8 @@ class EntityRepositoryDedicatedBaseFieldsTest {
     @Test
     void oneSelect_fillsDedicatedValues_andPreservesOrder() {
         when(entityDedicatedColumnService.listEnabledPhysicalFields("equipment")).thenReturn(List.of(
-                new PhysicalFieldSpec("FLD-BASE-equipment-REF_ZONE", "fld_base_equipment_ref_zone", "ENTITY_REF"),
-                new PhysicalFieldSpec("FLD-BASE-equipment-REF_REGION", "fld_base_equipment_ref_region", "ENTITY_REF")
+                new PhysicalFieldSpec("zone_id", "zone_id", "ENTITY_REF"),
+                new PhysicalFieldSpec("facility_id", "facility_id", "ENTITY_REF")
         ));
         when(entityTableNameHandler.resolvePhysicalTableName("equipment")).thenReturn("ent_equipment_t1");
 
@@ -71,8 +71,8 @@ class EntityRepositoryDedicatedBaseFieldsTest {
         row2.put("domain", "d");
         row2.put("sort", 2);
         row2.put("custom_fields", "{}");
-        row2.put("fld_base_equipment_ref_zone", 100L);
-        row2.put("fld_base_equipment_ref_region", 200L);
+        row2.put("zone_id", 100L);
+        row2.put("facility_id", 200L);
 
         Map<String, Object> row1 = new LinkedHashMap<>();
         row1.put("id", 1L);
@@ -85,23 +85,23 @@ class EntityRepositoryDedicatedBaseFieldsTest {
         row1.put("domain", "d");
         row1.put("sort", 1);
         row1.put("custom_fields", "{}");
-        row1.put("fld_base_equipment_ref_zone", 101L);
-        row1.put("fld_base_equipment_ref_region", null);
+        row1.put("zone_id", 101L);
+        row1.put("facility_id", null);
 
         when(jdbcTemplate.queryForList(anyString(), any(Object[].class))).thenReturn(List.of(row2, row1));
 
         List<EntityDO> result = repository.findByIdsWithDedicatedBaseFields(List.of(1L, 2L), "equipment");
 
         assertEquals(List.of(1L, 2L), result.stream().map(EntityDO::getId).toList());
-        assertEquals(101L, result.get(0).getDedicatedBaseFieldValues().get("FLD-BASE-equipment-REF_ZONE"));
-        assertEquals(100L, result.get(1).getDedicatedBaseFieldValues().get("FLD-BASE-equipment-REF_ZONE"));
-        assertEquals(200L, result.get(1).getDedicatedBaseFieldValues().get("FLD-BASE-equipment-REF_REGION"));
+        assertEquals(101L, result.get(0).getDedicatedBaseFieldValues().get("zone_id"));
+        assertEquals(100L, result.get(1).getDedicatedBaseFieldValues().get("zone_id"));
+        assertEquals(200L, result.get(1).getDedicatedBaseFieldValues().get("facility_id"));
 
         ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
         verify(jdbcTemplate).queryForList(sqlCaptor.capture(), eq(new Object[]{1L, 2L}));
         String sql = sqlCaptor.getValue();
-        assertTrue(sql.contains("fld_base_equipment_ref_zone"));
-        assertTrue(sql.contains("fld_base_equipment_ref_region"));
+        assertTrue(sql.contains("zone_id"));
+        assertTrue(sql.contains("facility_id"));
         assertTrue(sql.contains("custom_fields"));
         assertTrue(sql.contains("FROM ent_equipment_t1"));
         assertTrue(sql.contains("deleted = false"));

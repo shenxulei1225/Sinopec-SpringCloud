@@ -46,6 +46,66 @@ public class EntityDedicatedColumnService {
     }
 
     /**
+     * 可下推库内 ORDER BY 的基础字段物理列名；不可排序 / MultiRef / 未启用则 null。
+     */
+    public String resolveSortablePhysicalColumn(String entityTypeCode, String fieldCode) {
+        String column = resolvePhysicalColumn(entityTypeCode, fieldCode);
+        if (column == null) {
+            return null;
+        }
+        EntityTypeBaseFieldDO field = baseFieldMapper.selectByEntityTypeCodeAndFieldCode(
+                entityTypeCode.trim(), fieldCode.trim());
+        if (field == null || Boolean.FALSE.equals(field.getIsSortable())) {
+            return null;
+        }
+        return column;
+    }
+
+    /**
+     * 启用基础字段对应的物理列名（筛选用，不要求 isSortable）；MultiRef / 未启用则 null。
+     */
+    public String resolvePhysicalColumn(String entityTypeCode, String fieldCode) {
+        if (StrUtil.isBlank(entityTypeCode) || StrUtil.isBlank(fieldCode)) {
+            return null;
+        }
+        EntityTypeBaseFieldDO field = baseFieldMapper.selectByEntityTypeCodeAndFieldCode(
+                entityTypeCode.trim(), fieldCode.trim());
+        if (field == null || !field.isEnabled()) {
+            return null;
+        }
+        if (isMultiRefType(field.getDataType())) {
+            return null;
+        }
+        String column = EntityBaseFieldColumnNames.toColumnName(field.getFieldCode());
+        if (column == null || !SAFE_PHYSICAL_COLUMN.matcher(column).matches()) {
+            return null;
+        }
+        return column;
+    }
+
+    /**
+     * 类型是否配置了启用的多选关联基础字段（列表仍可能依赖 custom_fields 提升）。
+     */
+    public boolean hasEnabledMultiRefBaseField(String entityTypeCode) {
+        if (StrUtil.isBlank(entityTypeCode)) {
+            return false;
+        }
+        List<EntityTypeBaseFieldDO> configured = baseFieldMapper.selectByEntityTypeCode(entityTypeCode.trim());
+        if (CollectionUtils.isEmpty(configured)) {
+            return false;
+        }
+        for (EntityTypeBaseFieldDO field : configured) {
+            if (field != null && field.isEnabled() && isMultiRefType(field.getDataType())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static final java.util.regex.Pattern SAFE_PHYSICAL_COLUMN =
+            java.util.regex.Pattern.compile("^[a-z][a-z0-9_]*$");
+
+    /**
      * 按类型基础字段配置解析启用字段的物理列；不得探 {@code information_schema}。
      */
     public List<PhysicalFieldSpec> listEnabledPhysicalFields(String entityTypeCode) {
@@ -63,6 +123,10 @@ public class EntityDedicatedColumnService {
         List<PhysicalFieldSpec> out = new ArrayList<>();
         for (EntityTypeBaseFieldDO field : configured) {
             if (field == null || StrUtil.isBlank(field.getFieldCode()) || !field.isEnabled()) {
+                continue;
+            }
+            // 多选关联不落单列；编码可为 equipment_ids，存关联表
+            if (isMultiRefType(field.getDataType())) {
                 continue;
             }
             String fieldCode = field.getFieldCode().trim();
@@ -218,6 +282,87 @@ public class EntityDedicatedColumnService {
     }
 
     /**
+     * 创建时一条 INSERT 写入核心列 + 固定列（满足专用表 NOT NULL）。
+     *
+     * @param physicalColumns 列名 → 库值（与 {@link #extractPhysicalValuesAndStrip} 一致）
+     * @return 新实体 id
+     */
+    public Long insertEntityRow(EntityDO entity, Map<String, Object> physicalColumns) {
+        if (entity == null || StrUtil.isBlank(entity.getEntityTypeCode())) {
+            throw new ServiceException(400, "实体数据不能为空");
+        }
+        EntityTypeDO entityType = entityTypeMapper.selectByCode(entity.getEntityTypeCode().trim());
+        if (!isDedicated(entityType)) {
+            throw new ServiceException(400, "非专用表实体不能走固定列 INSERT");
+        }
+        String table = resolveTableName(entityType);
+        if (!table.matches("^[a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)?$")) {
+            throw new ServiceException(500, "专用表名非法");
+        }
+
+        LinkedHashMap<String, Object> columns = new LinkedHashMap<>();
+        columns.put("tenant_id", entity.getTenantId() != null ? entity.getTenantId() : 0L);
+        columns.put("entity_type_code", entity.getEntityTypeCode());
+        columns.put("model_id", entity.getModelId());
+        columns.put("name", entity.getName());
+        columns.put("code", entity.getCode());
+        columns.put("status", entity.getStatus() != null ? entity.getStatus() : 1);
+        columns.put("parent_id", entity.getParentId() != null ? entity.getParentId() : 0L);
+        columns.put("sort", entity.getSort() != null ? entity.getSort() : 0);
+        columns.put("domain", entity.getDomain());
+        columns.put("custom_fields", entity.getCustomFields() == null
+                ? "{}"
+                : com.alibaba.fastjson2.JSON.toJSONString(entity.getCustomFields()));
+        columns.put("deleted", false);
+        Long loginUserId = cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId();
+        String operator = loginUserId != null ? String.valueOf(loginUserId) : null;
+        columns.put("creator", operator);
+        columns.put("updater", operator);
+
+        if (physicalColumns != null) {
+            for (Map.Entry<String, Object> e : physicalColumns.entrySet()) {
+                String col = e.getKey() == null ? "" : e.getKey().trim().toLowerCase(Locale.ROOT);
+                if (!SAFE_PHYSICAL_COLUMN.matcher(col).matches()) {
+                    throw new ServiceException(500, "固定列名非法: " + e.getKey());
+                }
+                if (columns.containsKey(col)) {
+                    continue;
+                }
+                columns.put(col, e.getValue());
+            }
+        }
+
+        StringBuilder colSql = new StringBuilder();
+        StringBuilder valSql = new StringBuilder();
+        List<Object> args = new ArrayList<>(columns.size());
+        boolean first = true;
+        for (Map.Entry<String, Object> e : columns.entrySet()) {
+            if (!first) {
+                colSql.append(", ");
+                valSql.append(", ");
+            }
+            first = false;
+            colSql.append(e.getKey());
+            if ("custom_fields".equals(e.getKey())) {
+                valSql.append("?::jsonb");
+            } else {
+                valSql.append("?");
+            }
+            args.add(e.getValue());
+        }
+        colSql.append(", create_time, update_time");
+        valSql.append(", CURRENT_TIMESTAMP, CURRENT_TIMESTAMP");
+
+        String sql = "INSERT INTO " + table + " (" + colSql + ") VALUES (" + valSql + ") RETURNING id";
+        Long id = jdbcTemplate.queryForObject(sql, Long.class, args.toArray());
+        if (id == null) {
+            throw new ServiceException(500, "写入实体失败：未返回主键");
+        }
+        entity.setId(id);
+        return id;
+    }
+
+    /**
      * 批量读取某一基础字段固定列值，供列表字段排序（非 VO 二次补列）。
      */
     public Map<Long, Object> loadPhysicalFieldValues(String entityTypeCode,
@@ -342,6 +487,16 @@ public class EntityDedicatedColumnService {
         return ref;
     }
 
+    private static boolean isMultiRefType(String dataType) {
+        if (dataType == null) {
+            return false;
+        }
+        String t = dataType.trim().toUpperCase(Locale.ROOT).replace('-', '_');
+        return "REF_MULTI".equals(t)
+                || "ENTITY_REF_MULTI".equals(t)
+                || "BATCH_ENTITY_REF".equals(t);
+    }
+
     private static boolean isRefType(String dataType) {
         if (dataType == null) {
             return false;
@@ -349,10 +504,8 @@ public class EntityDedicatedColumnService {
         String t = dataType.trim().toUpperCase(Locale.ROOT).replace('-', '_');
         return "REF".equals(t)
                 || "ENTITY_REF".equals(t)
-                || "REF_MULTI".equals(t)
-                || "ENTITY_REF_MULTI".equals(t)
-                || "BATCH_ENTITY_REF".equals(t)
-                || "REFERENCE".equals(t);
+                || "REFERENCE".equals(t)
+                || isMultiRefType(dataType);
     }
 
     private static Long extractRefId(Object raw) {

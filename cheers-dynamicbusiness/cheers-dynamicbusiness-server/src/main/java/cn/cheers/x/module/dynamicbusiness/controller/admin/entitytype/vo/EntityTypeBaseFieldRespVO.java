@@ -97,7 +97,7 @@ public class EntityTypeBaseFieldRespVO {
     @Schema(description = "字段库字段 ID", example = "3681")
     private Long libraryFieldId;
 
-    @Schema(description = "字段库 code", example = "FLD-BASE-facility-address")
+    @Schema(description = "字段库 code", example = "region_id")
     private String libraryFieldCode;
 
     @Schema(description = "字段库默认名称", example = "联系电话")

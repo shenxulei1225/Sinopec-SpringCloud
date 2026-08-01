@@ -4,6 +4,7 @@ import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -52,6 +53,15 @@ public interface EntityCoreService {
      * @return 新增实体ID
      */
     Long create(EntityDO entity);
+
+    /**
+     * 创建实体；{@code physicalColumns} 非空时与核心列同 INSERT（专用表 NOT NULL 固定列）。
+     *
+     * @param entity 实体DO
+     * @param physicalColumns 列名 → 库值；可空
+     * @return 新增实体ID
+     */
+    Long create(EntityDO entity, Map<String, Object> physicalColumns);
 
     /**
      * 更新实体（仅实体本体字段）。
@@ -104,7 +114,7 @@ public interface EntityCoreService {
     List<EntityDO> listByIds(List<Long> ids, String entityTypeCode);
 
     /**
-     * 按有序 id 一次加载本页行：核心列 + 专用表基础字段列。
+     * 按有序 id 一次加载本页行：核心列 + 专用表基础字段列（含 custom_fields）。
      *
      * <p>空 id 列表返回空；结果按 {@code orderedIds} 保序；
      * 基础字段原始列值在 {@link EntityDO#getDedicatedBaseFieldValues()}。</p>
@@ -114,6 +124,13 @@ public interface EntityCoreService {
      * @return 实体DO列表
      */
     List<EntityDO> listByIdsWithDedicatedBaseFields(List<Long> orderedIds, String entityTypeCode);
+
+    /**
+     * 同 {@link #listByIdsWithDedicatedBaseFields(List, String)}；
+     * {@code includeCustomFields=false} 供列表热路径省略 JSON 列。
+     */
+    List<EntityDO> listByIdsWithDedicatedBaseFields(List<Long> orderedIds, String entityTypeCode,
+                                                    boolean includeCustomFields);
 
     /**
      * 按实体本体条件分页查询。

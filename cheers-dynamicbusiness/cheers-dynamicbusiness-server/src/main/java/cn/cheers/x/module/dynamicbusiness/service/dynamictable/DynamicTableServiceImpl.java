@@ -78,10 +78,12 @@ public class DynamicTableServiceImpl implements DynamicTableService {
         if (StrUtil.isBlank(tableName)) {
             throw new ServiceException(400, "表名不能为空");
         }
-        // 业务类型专用表名必须带 ent_ 前缀
-        if (!StrUtil.startWith(tableName, "ent_")) {
+        // 业务类型专用表：ent_{code}_t{tenantId}，禁止无租户后缀的共享表
+        if (!StrUtil.startWithIgnoreCase(tableName, "ent_")) {
             tableName = "ent_" + tableName;
         }
+        tableName = cn.cheers.x.module.dynamicbusiness.framework.tenant.TenantPhysicalTableNames
+                .ensureTenantSuffix(tableName);
 
         // 2. 验证物理列映射配置（如果有）
         if (CollUtil.isNotEmpty(physicalColumnMapping)) {
@@ -92,7 +94,7 @@ public class DynamicTableServiceImpl implements DynamicTableService {
             }
         }
 
-        // 3. 检查表是否已存在
+        // 3. 本租户物理表已存在则跳过 CREATE（不得复用其它租户或无后缀共享表）
         if (tableExists(tableName)) {
             log.info("动态表 {} 已存在，跳过创建", tableName);
             // 历史坏表可能无 id 默认值 / 序列落后：即使跳过 CREATE 也要校准
@@ -119,9 +121,17 @@ public class DynamicTableServiceImpl implements DynamicTableService {
         dynamicTable.setTenantId(getTenantId());
         dynamicTableMapper.insert(dynamicTable);
 
-        // 5. 创建物理表（如果不存在）
+        // 5. 创建物理表（如果不存在）：优先 LIKE 无后缀模板表，否则按标准 DDL 建表
         if (!tableExists(tableName)) {
-            String createTableSql = buildCreateTableSql(tableName, dynamicTable.getTableComment(), physicalColumnMapping);
+            String baseTemplate = tableName.replaceFirst("_t\\d+$", "");
+            String createTableSql;
+            if (tableExists(baseTemplate) && !baseTemplate.equals(tableName)) {
+                createTableSql = String.format(
+                        "CREATE TABLE %s (LIKE %s INCLUDING DEFAULTS INCLUDING CONSTRAINTS INCLUDING INDEXES)",
+                        tableName, baseTemplate);
+            } else {
+                createTableSql = buildCreateTableSql(tableName, dynamicTable.getTableComment(), physicalColumnMapping);
+            }
             try {
                 jdbcTemplate.execute(createTableSql);
                 log.info("成功创建动态表: {}", tableName);
@@ -717,8 +727,12 @@ public class DynamicTableServiceImpl implements DynamicTableService {
             throw new ServiceException(400, "字段定义不能为空");
         }
         
-        // 列名与字段编码对齐：FLD-BASE-facility-REF_REGION → fld_base_facility_ref_region
-        String columnName = baseField.getFieldCode().toLowerCase().replace("-", "_");
+        // 列名与字段编码对齐（短名 / region_id / equipment_ids）
+        String columnName = cn.cheers.x.module.dynamicbusiness.framework.entity.EntityBaseFieldColumnNames
+                .toColumnName(baseField.getFieldCode());
+        if (StrUtil.isBlank(columnName)) {
+            throw new ServiceException(400, "字段编码不能为空");
+        }
         String deprecatedColumnName = "_deprecated_" + columnName;
 
         // 曾废弃：恢复列名
@@ -1032,37 +1046,18 @@ public class DynamicTableServiceImpl implements DynamicTableService {
             return;
         }
         String safeTable = tableName.toLowerCase();
+        // 租户表必须自有序列，禁止 LIKE 模板后仍 nextval 共享表序列
         String seqQual = "dynamicbusiness." + safeTable + "_id_seq";
         try {
-            String idDefault = jdbcTemplate.query(
-                    """
-                    SELECT pg_get_expr(d.adbin, d.adrelid)
-                    FROM pg_class c
-                    JOIN pg_namespace n ON n.oid = c.relnamespace
-                    JOIN pg_attribute a ON a.attrelid = c.oid AND a.attname = 'id'
-                        AND NOT a.attisdropped AND a.attnum > 0
-                    LEFT JOIN pg_attrdef d ON d.adrelid = c.oid AND d.adnum = a.attnum
-                    WHERE n.nspname = 'dynamicbusiness' AND c.relname = ?
-                    """,
-                    rs -> rs.next() ? rs.getString(1) : null,
-                    safeTable);
-            if (StrUtil.isNotBlank(idDefault) && idDefault.startsWith("nextval(")) {
-                int start = idDefault.indexOf('\'');
-                int end = idDefault.indexOf('\'', start + 1);
-                if (start >= 0 && end > start) {
-                    seqQual = idDefault.substring(start + 1, end);
-                }
-            } else {
-                jdbcTemplate.execute("CREATE SEQUENCE IF NOT EXISTS " + seqQual);
+            jdbcTemplate.execute("CREATE SEQUENCE IF NOT EXISTS " + seqQual);
+            jdbcTemplate.execute(
+                    "ALTER TABLE dynamicbusiness." + safeTable
+                            + " ALTER COLUMN id SET DEFAULT nextval('" + seqQual + "'::regclass)");
+            try {
                 jdbcTemplate.execute(
-                        "ALTER TABLE dynamicbusiness." + safeTable
-                                + " ALTER COLUMN id SET DEFAULT nextval('" + seqQual + "'::regclass)");
-                try {
-                    jdbcTemplate.execute(
-                            "ALTER SEQUENCE " + seqQual + " OWNED BY dynamicbusiness." + safeTable + ".id");
-                } catch (Exception ownedEx) {
-                    log.debug("OWNED BY 可忽略: table={}, err={}", safeTable, ownedEx.getMessage());
-                }
+                        "ALTER SEQUENCE " + seqQual + " OWNED BY dynamicbusiness." + safeTable + ".id");
+            } catch (Exception ownedEx) {
+                log.debug("OWNED BY 可忽略: table={}, err={}", safeTable, ownedEx.getMessage());
             }
             jdbcTemplate.queryForObject(
                     "SELECT setval(?::regclass, COALESCE((SELECT MAX(id) FROM dynamicbusiness." + safeTable + "), 1),"

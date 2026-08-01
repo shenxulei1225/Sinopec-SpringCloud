@@ -135,20 +135,22 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int backfillFacilityRegionCategoryRelations() {
+        String facilityTable = cn.cheers.x.module.dynamicbusiness.framework.tenant.TenantPhysicalTableNames
+                .entityPhysicalTable("facility");
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                 """
-                SELECT id, fld_base_facility_ref_region AS fld_base_facility_ref_region
-                FROM ent_facility
+                SELECT id, region_id
+                FROM %s
                 WHERE deleted = false
-                  AND fld_base_facility_ref_region IS NOT NULL
-                """);
+                  AND region_id IS NOT NULL
+                """.formatted(facilityTable));
         if (CollectionUtils.isEmpty(rows)) {
             return 0;
         }
         int ok = 0;
         for (Map<String, Object> row : rows) {
             Long facilityEntityId = toLong(row.get("id"));
-            Long regionEntityId = toLong(row.get("fld_base_facility_ref_region"));
+            Long regionEntityId = toLong(row.get("region_id"));
             if (facilityEntityId == null || regionEntityId == null) {
                 continue;
             }

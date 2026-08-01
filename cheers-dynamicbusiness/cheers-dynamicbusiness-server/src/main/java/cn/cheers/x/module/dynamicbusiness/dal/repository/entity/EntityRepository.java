@@ -4,6 +4,7 @@ import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 实体 Repository 接口
@@ -30,6 +31,15 @@ public interface EntityRepository {
      * @return 保存后的实体ID
      */
     Long save(EntityDO entity);
+
+    /**
+     * 保存实体；若 {@code physicalColumns} 非空，则一条 INSERT 同时写入专用表固定列。
+     *
+     * @param entity 实体对象（必须包含 entityTypeCode）
+     * @param physicalColumns 列名 → 库值；空则等价于 {@link #save(EntityDO)}
+     * @return 保存后的实体ID
+     */
+    Long save(EntityDO entity, Map<String, Object> physicalColumns);
 
     /**
      * 批量保存实体
@@ -262,6 +272,12 @@ public interface EntityRepository {
      * 同模型下是否存在同名实体（精确匹配，用于 CRUD 异步校验）。
      */
     boolean existsByExactName(String entityTypeCode, Long modelId, String name, Long excludeId);
+
+    /**
+     * 当前实体类型物理表内是否存在相同编码（精确匹配，未删除；用于编码唯一校验 / 提交兜底）。
+     * 作用域与库条件唯一索引一致：同表 + deleted=false + code 非空。
+     */
+    boolean existsByExactCode(String entityTypeCode, String code, Long excludeId);
 
     /**
      * 型号下是否仍存在未删除实体（删型号前护栏）。

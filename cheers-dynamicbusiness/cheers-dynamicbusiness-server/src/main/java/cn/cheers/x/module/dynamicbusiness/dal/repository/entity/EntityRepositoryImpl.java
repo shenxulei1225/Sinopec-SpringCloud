@@ -51,6 +51,14 @@ public class EntityRepositoryImpl implements EntityRepository {
      */
     @Override
     public Long save(EntityDO entity) {
+        return save(entity, null);
+    }
+
+    @Override
+    public Long save(EntityDO entity, Map<String, Object> physicalColumns) {
+        if (physicalColumns != null && !physicalColumns.isEmpty()) {
+            return entityDedicatedColumnService.insertEntityRow(entity, physicalColumns);
+        }
         return withTableName(entity.getEntityTypeCode(), () -> {
             entityMapper.insert(entity);
             return entity.getId();
@@ -566,6 +574,21 @@ public class EntityRepositoryImpl implements EntityRepository {
     }
 
     @Override
+    public boolean existsByExactCode(String entityTypeCode, String code, Long excludeId) {
+        if (!org.springframework.util.StringUtils.hasText(entityTypeCode)
+                || !org.springframework.util.StringUtils.hasText(code)) {
+            return false;
+        }
+        return withTableName(entityTypeCode, () ->
+                entityMapper.selectOne(new LambdaQueryWrapperX<EntityDO>()
+                        .eq(EntityDO::getCode, code.trim())
+                        .neIfPresent(EntityDO::getId, excludeId)
+                        .eq(EntityDO::getDeleted, false)
+                        .last("LIMIT 1")) != null
+        );
+    }
+
+    @Override
     public boolean existsByModelId(Long modelId, String entityTypeCode) {
         if (modelId == null || !org.springframework.util.StringUtils.hasText(entityTypeCode)) {
             return false;
@@ -756,7 +779,8 @@ public class EntityRepositoryImpl implements EntityRepository {
             String op = filter.op() == null ? "" : filter.op().trim().toUpperCase(Locale.ROOT);
             if ("EQ".equals(op)) {
                 wrapper.apply(col + " = {0}", filter.value());
-            } else if ("IN".equals(op) && filter.value() instanceof Collection<?> collection) {
+            } else if (("IN".equals(op) || "NOT_IN".equals(op))
+                    && filter.value() instanceof Collection<?> collection) {
                 List<Object> values = new ArrayList<>();
                 for (Object v : collection) {
                     if (v != null) {
@@ -764,10 +788,14 @@ public class EntityRepositoryImpl implements EntityRepository {
                     }
                 }
                 if (values.isEmpty()) {
-                    wrapper.apply("1 = 0");
+                    // IN () → 无命中；NOT_IN () → 不过滤
+                    if ("IN".equals(op)) {
+                        wrapper.apply("1 = 0");
+                    }
                     continue;
                 }
-                StringBuilder sql = new StringBuilder(col).append(" IN (");
+                StringBuilder sql = new StringBuilder(col)
+                        .append("NOT_IN".equals(op) ? " NOT IN (" : " IN (");
                 for (int i = 0; i < values.size(); i++) {
                     if (i > 0) {
                         sql.append(", ");

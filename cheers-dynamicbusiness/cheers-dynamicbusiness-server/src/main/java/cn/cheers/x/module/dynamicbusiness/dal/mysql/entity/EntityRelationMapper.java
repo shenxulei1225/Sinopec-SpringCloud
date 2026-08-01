@@ -162,7 +162,7 @@ public interface EntityRelationMapper extends BaseMapperX<EntityRelationDO> {
         }
 
         /**
-         * 统计实体的关联关系数量
+         * 统计实体的关联关系数量（自己发出 + 别人指向，双向）
          */
         default Long countByEntityId(Long entityId) {
                 return selectCount(new LambdaQueryWrapperX<EntityRelationDO>()
@@ -170,6 +170,19 @@ public interface EntityRelationMapper extends BaseMapperX<EntityRelationDO> {
                                 .eq(EntityRelationDO::getSourceEntityId, entityId)
                                 .or()
                                 .eq(EntityRelationDO::getTargetEntityId, entityId))
+                        .eq(EntityRelationDO::getDeleted, false));
+        }
+
+        /**
+         * 统计「别人指向本实体」的关联数量（入站）。
+         * 不含本实体自己发出的 REF（如分区的所属设施），那些随实体删除自动清理，无需二次确认。
+         */
+        default Long countByTargetEntityId(Long targetEntityId) {
+                if (targetEntityId == null) {
+                        return 0L;
+                }
+                return selectCount(new LambdaQueryWrapperX<EntityRelationDO>()
+                        .eq(EntityRelationDO::getTargetEntityId, targetEntityId)
                         .eq(EntityRelationDO::getDeleted, false));
         }
 

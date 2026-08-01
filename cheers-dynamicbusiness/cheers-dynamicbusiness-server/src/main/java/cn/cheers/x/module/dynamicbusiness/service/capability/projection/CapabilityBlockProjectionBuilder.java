@@ -576,7 +576,7 @@ public final class CapabilityBlockProjectionBuilder {
 
     /** 动态实体 CRUD 弹窗异步校验（与前端 AsyncFieldCheck 契约对齐）。 */
     private static void appendEntityAsyncChecks(Map<String, Object> projection) {
-        List<Map<String, Object>> checks = new ArrayList<>(1);
+        List<Map<String, Object>> checks = new ArrayList<>(2);
         Map<String, Object> nameUnique = new LinkedHashMap<>();
         nameUnique.put("id", "check-entity-name-unique");
         nameUnique.put("fieldKey", "name");
@@ -587,6 +587,18 @@ public final class CapabilityBlockProjectionBuilder {
                 "url", ENTITY_CHECK_FIELD_UNIQUE_URL,
                 "method", "GET"));
         checks.add(nameUnique);
+
+        Map<String, Object> codeUnique = new LinkedHashMap<>();
+        codeUnique.put("id", "check-entity-code-unique");
+        codeUnique.put("fieldKey", "code");
+        codeUnique.put("trigger", "blur");
+        codeUnique.put("appliesTo", List.of("create", "update"));
+        codeUnique.put("message", "编码已存在");
+        codeUnique.put("endpoint", Map.of(
+                "url", ENTITY_CHECK_FIELD_UNIQUE_URL,
+                "method", "GET"));
+        checks.add(codeUnique);
+
         projection.put("asyncChecks", checks);
     }
 

@@ -81,6 +81,9 @@ public class EntityTypeServiceImpl implements EntityTypeService {
     @Resource
     private GroupMapper groupMapper;
 
+    @Resource
+    private cn.cheers.x.module.dynamicbusiness.framework.tenant.TenantAssociationTableService tenantAssociationTableService;
+
     /**
      * 创建业务类型。
      *
@@ -117,6 +120,9 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         entityType.setEntryKind(EntityTypeDO.ENTRY_KIND_NATIVE);
         entityType.setBaseEntityTypeCode(null);
         entityType.setDomain(null);
+        if (!StringUtils.hasText(entityType.getModelWorkbenchMode())) {
+            entityType.setModelWorkbenchMode(EntityTypeDO.MODEL_WORKBENCH_MULTI);
+        }
         ensureEntityTypeGroupRegistered(entityType.getGroupName());
         entityTypeMapper.insert(entityType);
 
@@ -124,9 +130,10 @@ public class EntityTypeServiceImpl implements EntityTypeService {
 
         StorageTypeEnum storageType = StorageTypeEnum.getByCode(entityType.getStorageType());
         if (storageType != null && storageType.isDedicated()) {
-            String tableName = StringUtils.hasText(entityType.getDedicatedTableName())
-                    ? entityType.getDedicatedTableName()
-                    : "ent_" + entityType.getCode().toLowerCase();
+            String tableName = cn.cheers.x.module.dynamicbusiness.framework.tenant.TenantPhysicalTableNames
+                    .entityPhysicalTable(entityType.getCode());
+            entityType.setDedicatedTableName(tableName);
+            entityTypeMapper.updateById(entityType);
             dynamicTableService.createDynamicTableForEntityType(
                     entityType.getCode(),
                     tableName,
@@ -135,6 +142,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
             );
         }
 
+        ensureTenantAssociationTablesQuietly();
         entityTypeCategoryBootstrapService.ensureForEntityTypeCode(entityType.getCode());
 
         return entityType.getId();
@@ -227,9 +235,10 @@ public class EntityTypeServiceImpl implements EntityTypeService {
 
         StorageTypeEnum storageType = StorageTypeEnum.getByCode(entityType.getStorageType());
         if (storageType != null && storageType.isDedicated()) {
-            String tableName = StringUtils.hasText(entityType.getDedicatedTableName())
-                    ? entityType.getDedicatedTableName()
-                    : "ent_" + entityType.getCode().toLowerCase();
+            String tableName = cn.cheers.x.module.dynamicbusiness.framework.tenant.TenantPhysicalTableNames
+                    .entityPhysicalTable(entityType.getCode());
+            entityType.setDedicatedTableName(tableName);
+            entityTypeMapper.updateById(entityType);
             dynamicTableService.createDynamicTableForEntityType(
                     entityType.getCode(),
                     tableName,
@@ -238,6 +247,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
             );
         }
 
+        ensureTenantAssociationTablesQuietly();
         entityTypeCategoryBootstrapService.ensureForEntityTypeCode(entityType.getCode());
 
         return entityType.getId();
@@ -257,9 +267,26 @@ public class EntityTypeServiceImpl implements EntityTypeService {
 
     private void inheritStorageFromBase(EntityTypeDO entityType, EntityTypeDO baseType) {
         entityType.setStorageType(baseType.getStorageType());
-        entityType.setDedicatedTableName(baseType.getDedicatedTableName());
+        // 子类型复用基础类型存储，但物理表必须是「当前租户」后缀，禁止抄到其它租户的 _t{id}
+        StorageTypeEnum inheritedStorage = StorageTypeEnum.getByCode(baseType.getStorageType());
+        if (inheritedStorage != null && inheritedStorage.isDedicated()) {
+            String baseCode = StringUtils.hasText(baseType.getCode()) ? baseType.getCode() : entityType.getBaseEntityTypeCode();
+            entityType.setDedicatedTableName(
+                    cn.cheers.x.module.dynamicbusiness.framework.tenant.TenantPhysicalTableNames
+                            .entityPhysicalTable(baseCode));
+        } else {
+            entityType.setDedicatedTableName(baseType.getDedicatedTableName());
+        }
         entityType.setPhysicalColumnMapping(baseType.getPhysicalColumnMapping());
         entityType.setEnableRuleEngine(baseType.getEnableRuleEngine());
+    }
+
+    private void ensureTenantAssociationTablesQuietly() {
+        try {
+            tenantAssociationTableService.ensureCurrentTenantAssociationTables();
+        } catch (Exception e) {
+            log.warn("[tenant-table] 创建类型后补齐关联表失败: {}", e.getMessage());
+        }
     }
 
     private boolean existsDomainEntry(String baseEntityTypeCode, String domain, Long excludeId) {
@@ -367,6 +394,13 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         }
         if (reqVO.getEnableRuleEngine() != null) {
             entityType.setEnableRuleEngine(reqVO.getEnableRuleEngine());
+        }
+        if (StringUtils.hasText(reqVO.getModelWorkbenchMode())) {
+            String mode = reqVO.getModelWorkbenchMode().trim().toUpperCase();
+            if (EntityTypeDO.MODEL_WORKBENCH_SINGLE.equals(mode)
+                    || EntityTypeDO.MODEL_WORKBENCH_MULTI.equals(mode)) {
+                entityType.setModelWorkbenchMode(mode);
+            }
         }
     }
 
@@ -833,6 +867,13 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         entityType.setDedicatedTableName(reqVO.getDedicatedTableName());
         entityType.setPhysicalColumnMapping(normalizeJsonFieldString(reqVO.getPhysicalColumnMapping()));
         entityType.setEnableRuleEngine(reqVO.getEnableRuleEngine());
+        if (StringUtils.hasText(reqVO.getModelWorkbenchMode())) {
+            String mode = reqVO.getModelWorkbenchMode().trim().toUpperCase();
+            if (EntityTypeDO.MODEL_WORKBENCH_SINGLE.equals(mode)
+                    || EntityTypeDO.MODEL_WORKBENCH_MULTI.equals(mode)) {
+                entityType.setModelWorkbenchMode(mode);
+            }
+        }
         requireDedicatedStorage(entityType);
     }
 
@@ -879,6 +920,10 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         vo.setDedicatedTableName(entityType.getDedicatedTableName());
         vo.setPhysicalColumnMapping(entityType.getPhysicalColumnMapping());
         vo.setEnableRuleEngine(entityType.getEnableRuleEngine());
+        vo.setModelWorkbenchMode(
+                StringUtils.hasText(entityType.getModelWorkbenchMode())
+                        ? entityType.getModelWorkbenchMode()
+                        : EntityTypeDO.MODEL_WORKBENCH_MULTI);
         return vo;
     }
 

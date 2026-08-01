@@ -16,6 +16,11 @@ public class CategoryDeleteReqVO {
     @Schema(description = "是否级联删除子分类", example = "false")
     private Boolean cascade = false;
 
+    @Schema(
+            description = "用户已二次确认：删除绑定台账时自动解除实体关联（不会删除其它设备/型号本体）",
+            example = "false")
+    private Boolean forceDelete = false;
+
     @Schema(description = "分类类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
     @NotNull(message = "分类类型编码不能为空")
     private String categoryTypeCode;

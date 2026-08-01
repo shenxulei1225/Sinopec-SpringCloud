@@ -172,14 +172,27 @@ public class EntityTypeCategoryBootstrapService {
             ensureCategoryAsEntityLayoutRows(code, entityType.getName());
             return;
         }
-        // 基础数据标准场景：分类 | 型号 | 实体 | 详情（自带同编码分类维）
-        ensureNativeFourColumnLayoutRows(code, entityType.getName());
+        // DOMAIN：分类树挂在基础类型种类上（与 ensureCategoryType / 域分组一致），不得写注册编码
+        if (kind.isDomainEntry()) {
+            String baseCode = entityType.getBaseEntityTypeCode();
+            if (!StringUtils.hasText(baseCode)) {
+                log.warn("子数据类型 {} 缺少基础数据类型编码，跳过布局 bootstrap", code);
+                return;
+            }
+            ensureNativeFourColumnLayoutRows(code, entityType.getName(), baseCode.trim());
+            return;
+        }
+        // 基础数据 / 划分数据：分类 | 型号 | 实体 | 详情（自带同编码分类维）
+        ensureNativeFourColumnLayoutRows(code, entityType.getName(), code);
     }
 
     /**
-     * 基础数据默认四栏。空布局或旧「仅型号+实体」种子可一次写入；已有 CATEGORY 等不覆盖。
+     * 默认四栏。空布局或旧「仅型号+实体」种子可一次写入；已有 CATEGORY 等不覆盖。
+     *
+     * @param categoryTypeCode 分类列绑定的种类编码；DOMAIN 必须传基础类型编码，NATIVE/SCOPE 传自身编码
      */
-    private void ensureNativeFourColumnLayoutRows(String entityTypeCode, String typeName) {
+    private void ensureNativeFourColumnLayoutRows(String entityTypeCode, String typeName,
+                                                  String categoryTypeCode) {
         List<DmDataTabLayoutDO> existing =
                 dmDataTabLayoutMapper.selectListByEntityTypeCode(entityTypeCode);
         if (!existing.isEmpty() && !isLegacyModelEntityOnlySeed(existing)) {
@@ -196,9 +209,11 @@ public class EntityTypeCategoryBootstrapService {
             }
         }
         String perspectiveId = defaultPerspectiveId(entityTypeCode);
+        String resolvedCategoryTypeCode = StringUtils.hasText(categoryTypeCode)
+                ? categoryTypeCode.trim() : entityTypeCode;
         Map<String, Object> categoryMeta = Map.of(
                 "label", StringUtils.hasText(typeName) ? typeName : entityTypeCode,
-                "categoryTypeCode", entityTypeCode
+                "categoryTypeCode", resolvedCategoryTypeCode
         );
         insertLayoutRow(entityTypeCode, DmDataTabLayoutKindEnum.CATEGORY.getCode(),
                 perspectiveId, categoryMeta, true);

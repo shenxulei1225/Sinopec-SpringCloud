@@ -71,7 +71,7 @@ class CategoryViaRefQueryServiceTest {
                 "region",
                 TargetEntityResolveMode.CATEGORY_ENTITY_LINK,
                 "region",
-                "FLD-BASE-facility-REF_REGION",
+                "region_id",
                 "facility");
         when(pathRegistry.require(CategoryViaRefQueryPathRegistry.FACILITY_VIA_REGION_CATEGORY))
                 .thenReturn(path);
@@ -85,7 +85,7 @@ class CategoryViaRefQueryServiceTest {
         when(categoryEntityLinkService.getLinksByCategoryIds(List.of(20L, 21L)))
                 .thenReturn(List.of(link));
         when(entityRelationService.listSubjectEntityIdsByRefFieldAndTargetIds(
-                eq("FLD-BASE-facility-REF_REGION"), eq("facility"), eq(List.of(200L))))
+                eq("region_id"), eq("facility"), eq(List.of(200L))))
                 .thenReturn(List.of(3001L));
 
         assertEquals(List.of(3001L),

@@ -57,11 +57,16 @@ public class EntityCoreServiceImpl implements EntityCoreService {
 
     @Override
     public Long create(EntityDO entity) {
+        return create(entity, null);
+    }
+
+    @Override
+    public Long create(EntityDO entity, Map<String, Object> physicalColumns) {
         if (entity == null) {
             throw new ServiceException(400, "实体数据不能为空");
         }
-        // 1. 保存以获取 ID
-        entityRepository.save(entity);
+        // 1. 保存以获取 ID（有固定列时与核心列同 INSERT）
+        entityRepository.save(entity, physicalColumns);
         Long entityId = entity.getId();
 
         // 2. 默认生成自身 treePath（/id/）
@@ -302,10 +307,17 @@ public class EntityCoreServiceImpl implements EntityCoreService {
 
     @Override
     public List<EntityDO> listByIdsWithDedicatedBaseFields(List<Long> orderedIds, String entityTypeCode) {
+        return listByIdsWithDedicatedBaseFields(orderedIds, entityTypeCode, true);
+    }
+
+    @Override
+    public List<EntityDO> listByIdsWithDedicatedBaseFields(List<Long> orderedIds, String entityTypeCode,
+                                                           boolean includeCustomFields) {
         if (orderedIds == null || orderedIds.isEmpty() || entityTypeCode == null || entityTypeCode.isEmpty()) {
             return Collections.emptyList();
         }
-        return entityRepository.findByIdsWithDedicatedBaseFields(orderedIds, entityTypeCode);
+        return entityRepository.findByIdsWithDedicatedBaseFields(
+                orderedIds, entityTypeCode, includeCustomFields);
     }
 
     @Override

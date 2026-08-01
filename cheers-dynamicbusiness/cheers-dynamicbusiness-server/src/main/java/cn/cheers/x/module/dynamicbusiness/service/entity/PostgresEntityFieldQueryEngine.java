@@ -59,6 +59,12 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
      */
     @Override
     public Set<Long> searchEntityIdsByKeyword(String entityTypeCode, String keyword, List<Long> candidateEntityIds) {
+        return searchEntityIdsByKeyword(entityTypeCode, keyword, candidateEntityIds, null);
+    }
+
+    @Override
+    public Set<Long> searchEntityIdsByKeyword(String entityTypeCode, String keyword,
+                                              List<Long> candidateEntityIds, List<String> searchFieldCodes) {
         if (entityTypeCode == null || entityTypeCode.isBlank()) {
             return Collections.emptySet();
         }
@@ -72,16 +78,23 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
         String k = keyword.trim().toLowerCase(Locale.ROOT);
         Set<Long> candidateSet = new HashSet<>(candidateEntityIds);
         Set<Long> matched = new HashSet<>();
+        Set<String> allowed = normalizeSearchFieldCodes(searchFieldCodes);
+        boolean restrict = allowed != null;
 
         // 索引命中必须再校验该行 model+field 仍可搜索，避免不可搜索字段残留索引被 keyword 命中
-        List<EntityFieldIndexDO> indexHits = entityFieldIndexMapper.selectRowsByKeyword(k);
-        if (indexHits != null) {
-            for (EntityFieldIndexDO row : indexHits) {
-                if (row == null || row.getEntityId() == null || !candidateSet.contains(row.getEntityId())) {
-                    continue;
-                }
-                if (fieldIndexService.isFieldSearchable(row.getModelId(), row.getFieldCode())) {
-                    matched.add(row.getEntityId());
+        if (!restrict || !allowed.isEmpty()) {
+            List<EntityFieldIndexDO> indexHits = entityFieldIndexMapper.selectRowsByKeyword(k);
+            if (indexHits != null) {
+                for (EntityFieldIndexDO row : indexHits) {
+                    if (row == null || row.getEntityId() == null || !candidateSet.contains(row.getEntityId())) {
+                        continue;
+                    }
+                    if (restrict && (row.getFieldCode() == null || !allowed.contains(row.getFieldCode()))) {
+                        continue;
+                    }
+                    if (fieldIndexService.isFieldSearchable(row.getModelId(), row.getFieldCode())) {
+                        matched.add(row.getEntityId());
+                    }
                 }
             }
         }
@@ -89,15 +102,59 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
         List<EntityDO> entities = entityCoreService.listByIds(candidateEntityIds, entityTypeCode);
         if (entities != null) {
             for (EntityDO e : entities) {
-                if (e == null || e.getId() == null || e.getName() == null) {
+                if (e == null || e.getId() == null) {
                     continue;
                 }
-                if (e.getName().toLowerCase(Locale.ROOT).contains(k)) {
+                if (matchesCoreKeyword(e, k, allowed, restrict)) {
                     matched.add(e.getId());
                 }
             }
         }
         return matched;
+    }
+
+    private static Set<String> normalizeSearchFieldCodes(List<String> searchFieldCodes) {
+        if (searchFieldCodes == null || searchFieldCodes.isEmpty()) {
+            return null;
+        }
+        Set<String> out = new HashSet<>();
+        for (String raw : searchFieldCodes) {
+            if (raw == null || raw.isBlank()) {
+                continue;
+            }
+            out.add(raw.trim());
+            out.add(raw.trim().toLowerCase(Locale.ROOT));
+        }
+        return out.isEmpty() ? null : out;
+    }
+
+    private static boolean matchesCoreKeyword(EntityDO e, String keywordLower,
+                                              Set<String> allowed, boolean restrict) {
+        if (!restrict || allowedContains(allowed, "name")) {
+            if (e.getName() != null && e.getName().toLowerCase(Locale.ROOT).contains(keywordLower)) {
+                return true;
+            }
+        }
+        if (!restrict || allowedContains(allowed, "code")) {
+            if (e.getCode() != null && e.getCode().toLowerCase(Locale.ROOT).contains(keywordLower)) {
+                return true;
+            }
+        }
+        if (!restrict || allowedContains(allowed, "status")) {
+            if (e.getStatus() != null && String.valueOf(e.getStatus()).contains(keywordLower)) {
+                return true;
+            }
+        }
+        if (!restrict || allowedContains(allowed, "id")) {
+            if (e.getId() != null && String.valueOf(e.getId()).contains(keywordLower)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean allowedContains(Set<String> allowed, String code) {
+        return allowed != null && (allowed.contains(code) || allowed.contains(code.toLowerCase(Locale.ROOT)));
     }
 
     @Override
@@ -201,6 +258,12 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
      */
     @Override
     public Set<Long> searchAndFilterEntityIds(String entityTypeCode, String keyword, List<FieldFilterReqVO> filters, List<Long> candidateEntityIds) {
+        return searchAndFilterEntityIds(entityTypeCode, keyword, filters, candidateEntityIds, null);
+    }
+
+    @Override
+    public Set<Long> searchAndFilterEntityIds(String entityTypeCode, String keyword, List<FieldFilterReqVO> filters,
+                                              List<Long> candidateEntityIds, List<String> searchFieldCodes) {
         Set<Long> byFilter = filterEntityIdsByFilters(entityTypeCode, filters, candidateEntityIds);
         if (byFilter.isEmpty()) {
             return Collections.emptySet();
@@ -208,7 +271,8 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
         if (keyword == null || keyword.trim().isEmpty()) {
             return byFilter;
         }
-        Set<Long> byKeyword = searchEntityIdsByKeyword(entityTypeCode, keyword, List.copyOf(byFilter));
+        Set<Long> byKeyword = searchEntityIdsByKeyword(
+                entityTypeCode, keyword, List.copyOf(byFilter), searchFieldCodes);
         if (byKeyword.isEmpty()) {
             return Collections.emptySet();
         }

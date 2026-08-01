@@ -39,7 +39,7 @@ public class CategoryViaRefQueryPathRegistry {
      * <ul>
      *   <li>{@code dynamic_category_type} — 维度为运营区域高级分类（region，ADVANCED）</li>
      *   <li>{@code dynamic_category_entity_link} — 分类节点绑定的区域实体 id（含子树）</li>
-     *   <li>{@code dynamic_entity_relation}（或等价 REF 存储）— 设施 {@code FLD-BASE-facility-REF_REGION} 指向的区域 id</li>
+     *   <li>设施专用表 {@code region_id}（所属区域，单选 REF）</li>
      * </ul>
      * <p>
      * 当前字段分配下任务无区域 REF，故主体为 facility 而非 task。
@@ -72,7 +72,7 @@ public class CategoryViaRefQueryPathRegistry {
                 "region",
                 TargetEntityResolveMode.CATEGORY_ENTITY_LINK,
                 "region",
-                "FLD-BASE-facility-REF_REGION",
+                "region_id",
                 "facility"
         );
     }

@@ -49,7 +49,7 @@ class ModelCrudFormFieldAssemblerRefTargetTest {
 
     @Test
     void buildFormRoot_assignmentOverridesBaseRefWithoutTarget() {
-        String fieldCode = "FLD-BASE-equipment-REF_REGION";
+        String fieldCode = "region_ids";
 
         EntityTypeBaseFieldDO baseField = new EntityTypeBaseFieldDO();
         baseField.setFieldCode(fieldCode);
@@ -101,7 +101,7 @@ class ModelCrudFormFieldAssemblerRefTargetTest {
 
     @Test
     void buildFormRoot_baseFieldDataTypeRef_mapsToRefPickerWithInferredRegion() {
-        String fieldCode = "FLD-BASE-facility-REF_REGION";
+        String fieldCode = "region_id";
 
         EntityTypeBaseFieldDO baseField = new EntityTypeBaseFieldDO();
         baseField.setFieldCode(fieldCode);

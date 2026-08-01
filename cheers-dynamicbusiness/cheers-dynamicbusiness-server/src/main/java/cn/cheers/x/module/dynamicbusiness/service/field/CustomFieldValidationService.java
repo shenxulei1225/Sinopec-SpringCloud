@@ -3,6 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.service.field;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +32,11 @@ public interface CustomFieldValidationService {
     List<FieldValidationConfig> getFieldConfigs(Long modelId);
 
     /**
+     * 按多个型号一次加载字段配置（列表装 VO 用，避免按行 N+1）。
+     */
+    Map<Long, List<FieldValidationConfig>> getFieldConfigsByModelIds(Collection<Long> modelIds);
+
+    /**
      * 规范化并加密自定义字段数据
      */
     Map<String, Object> normalizeAndEncryptCustomFields(Map<String, Object> customFields, Long modelId);
@@ -41,10 +47,20 @@ public interface CustomFieldValidationService {
     Map<String, Object> decryptCustomFields(Map<String, Object> customFields, Long modelId);
 
     /**
+     * 解密：使用预加载的型号字段配置（列表热路径）。
+     */
+    Map<String, Object> decryptCustomFields(Map<String, Object> customFields, List<FieldValidationConfig> configs);
+
+    /**
      * 将 customFields 的键规范为字段编码（fieldCode），供 API / 列表列展示使用。
      * 库内仍以字段 ID 为键存储时，读路径在此做 ID → code 映射。
      */
     Map<String, Object> presentCustomFieldsForApi(Map<String, Object> customFields, Long modelId);
+
+    /**
+     * 展示键规范化：使用预加载的型号字段配置（列表热路径）。
+     */
+    Map<String, Object> presentCustomFieldsForApi(Map<String, Object> customFields, List<FieldValidationConfig> configs);
 
     class FieldValidationConfig {
         private final FieldDO field;

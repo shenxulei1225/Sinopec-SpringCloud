@@ -92,8 +92,8 @@ public class ModelFieldAssignmentController {
     @Operation(
         summary = "解除模型与字段的关联（单个）",
         description = "解除模型与单个字段的关联关系。\n" +
-            "- 解除前会检查是否有业务实体使用该字段，如果存在则提示用户\n" +
-            "- 解除关联后，使用该模型的实体将不再包含此字段"
+            "- 只删除型号上的字段分配；不因已有业务实体而拒绝\n" +
+            "- 解除后，表单/列表不再使用该字段；已有实体上该字段内容不再展示与编辑"
     )
     @ApiAccessLog(operateType = UPDATE)
     @PreAuthorize("@ss.hasPermission('system:model-field-assignment:update')")
@@ -107,8 +107,8 @@ public class ModelFieldAssignmentController {
         summary = "批量解除模型与字段的关联",
         description = "批量解除模型与多个字段的关联关系。\n" +
             "- 支持一次解除多个字段的关联\n" +
-            "- 解除前会检查是否有业务实体使用该模型，如果存在则提示用户\n" +
-            "- 解除关联后，使用该模型的实体将不再包含这些字段"
+            "- 只删除型号上的字段分配；不因已有业务实体而拒绝\n" +
+            "- 解除后，表单/列表不再使用这些字段；已有实体上对应字段内容不再展示与编辑"
     )
     @ApiAccessLog(operateType = UPDATE)
     @PreAuthorize("@ss.hasPermission('system:model-field-assignment:update')")

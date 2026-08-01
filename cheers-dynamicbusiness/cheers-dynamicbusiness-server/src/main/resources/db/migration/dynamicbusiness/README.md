@@ -51,8 +51,12 @@
 | V34 | `V34__align_ent_and_capability_id_sequences.sql` | 全量校准 `ent_*` 与能力投影相关表的 id 序列（缺 DEFAULT / 序列落后） |
 | V35 | `V35__align_ref_base_field_columns.sql` | 废除 REF 捷径列 `zone_id`/`region_id`/`facility_id` → `fld_base_*`（对齐字段编码） |
 | V36 | `V36__ent_core_columns_align_entity_do.sql` | 全量 `ent_*` 补齐 `domain` / `tree_path` / `sort`（对齐 EntityDO；修新建类型 query-by-scene 500） |
+| V37 | `V37__tenant_physical_isolation.sql` | 实体专用表 + 运行时关联表按租户拆为 `*_t{tenantId}`；基表清空作模板；元数据表名补后缀 |
+| V38 | `V38__model_entity_relation.sql` | 型号—实体多对多关联基表 + 按租户拆 `dynamic_model_entity_relation_t{id}` |
+| V39 | `V39__dm_model_tab_model_list_props.sql` | 模型管理 Tab 型号列表独立 `model_list_props_id`（与数据 Tab MODEL 列解耦） |
+| V40 | `V40__entity_type_model_workbench_mode.sql` | 数据类型 `model_workbench_mode`（MULTI/SINGLE）；`inspection_item` 置为 SINGLE |
 
-下一新增版本应为 **V37**。  
+下一新增版本应为 **V41**。  
 
 > **跨机合并说明**：本机布局迁移已占用 V26–V28 且已执行；对方原 `V26__category_*` / `V27__ent_structure` 在合并后改为 V29/V30。若对方库已按旧文件名执行过 V26/V27，需对齐历史表 `version`/`script` 后 `flyway:repair`，再拉本分支。
 已停用脚本在 `db/backup/flyway-legacy-pre-seed/`，不得放回本目录。

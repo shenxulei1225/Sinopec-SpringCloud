@@ -34,7 +34,6 @@ import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategory
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
 import cn.cheers.x.module.dynamicbusiness.service.model.relation.ModelCategoryRelationService;
-import cn.cheers.x.module.dynamicbusiness.service.model.relation.ModelCategoryRelationService;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -154,32 +153,60 @@ public class EntityModelChangeServiceImpl implements EntityModelChangeService {
     /**
      * 按实体当前分类关联，把目标型号关联到这些分类（已存在则跳过）。
      * 否则分类浏览时型号列只有旧型号，新型号下的实体会「看不见型号入口」。
+     *
+     * <p>分类 ID 直接读实体–分类关联表（按存储类型过滤），不用
+     * {@code listCategoryIdsByEntityId} 的反向校验——该校验在跨视角分类上可能漏掉有效关联，
+     * 导致补建根本不执行。</p>
+     *
+     * <p>写入与「实体挂分类时同步型号–分类」同一条
+     * {@link ModelCategoryRelationService#associate} 路径，避免批量关联里硬编码基表名 /
+     * 排序 Map 取值 NPE，在租户物理表 {@code *_t{id}} 下整笔换型号回滚。</p>
      */
     private int ensureTargetModelLinkedToEntityCategories(MigrationContext ctx) {
         if (ctx == null || ctx.targetModel == null || ctx.targetModel.getId() == null) {
             return 0;
         }
-        List<Long> categoryIds = entityCategoryRelationService.listCategoryIdsByEntityId(
-                ctx.entityId, ctx.entityTypeCode);
-        if (categoryIds == null || categoryIds.isEmpty()) {
+        List<Long> categoryIds = listEntityCategoryIdsForModelLink(ctx.entityId, ctx.entityTypeCode);
+        if (categoryIds.isEmpty()) {
             return 0;
         }
         Long targetModelId = ctx.targetModel.getId();
-        List<Long> missing = new ArrayList<>();
+        int linked = 0;
         for (Long categoryId : categoryIds) {
             if (categoryId == null || categoryId <= 0) {
                 continue;
             }
-            if (!modelCategoryRelationService.existsRelation(targetModelId, categoryId, ctx.entityTypeCode)) {
-                missing.add(categoryId);
+            if (modelCategoryRelationService.existsRelation(targetModelId, categoryId, ctx.entityTypeCode)) {
+                continue;
             }
+            modelCategoryRelationService.associate(targetModelId, categoryId, ctx.entityTypeCode);
+            linked++;
         }
-        if (missing.isEmpty()) {
-            return 0;
+        return linked;
+    }
+
+    /** 实体已挂分类（同存储类型），供型号–分类补建使用。 */
+    private List<Long> listEntityCategoryIdsForModelLink(Long entityId, String storageEntityTypeCode) {
+        if (entityId == null || !StringUtils.hasText(storageEntityTypeCode)) {
+            return List.of();
         }
-        modelCategoryRelationService.batchAssociateModelToCategories(
-                targetModelId, missing, ctx.entityTypeCode);
-        return missing.size();
+        var relations = entityCategoryRelationMapper.selectByEntityId(entityId);
+        if (relations == null || relations.isEmpty()) {
+            return List.of();
+        }
+        String type = storageEntityTypeCode.trim();
+        LinkedHashSet<Long> ids = new LinkedHashSet<>();
+        for (var relation : relations) {
+            if (relation == null || relation.getCategoryId() == null) {
+                continue;
+            }
+            String relType = relation.getEntityTypeCode();
+            if (StringUtils.hasText(relType) && !type.equals(relType.trim())) {
+                continue;
+            }
+            ids.add(relation.getCategoryId());
+        }
+        return List.copyOf(ids);
     }
 
     @Override

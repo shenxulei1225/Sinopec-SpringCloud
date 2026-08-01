@@ -217,9 +217,14 @@ public class EntityServiceImpl implements EntityService {
                 entityBusinessHelper.emptyIfNull(data.getCustomFields()));
         Map<String, Object> physicalColumns = entityDedicatedColumnService.extractPhysicalValuesAndStrip(
                 data.getEntityTypeCode(), data.getCustomFields());
-        Long entityId = entityCoreService.create(data);
+        Long entityId;
+        try {
+            // 固定列与核心列同 INSERT，避免专用表 NOT NULL 列在「先插后更」时失败
+            entityId = entityCoreService.create(data, physicalColumns);
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            throw translateDataIntegrityError(ex, data.getEntityTypeCode());
+        }
         data.setId(entityId);
-        entityDedicatedColumnService.applyAfterPersist(data, physicalColumns);
 
         ModelDO model = modelMapper.selectById(EntityFieldMapsSupport.getRequiredModelId(reqVO.getBaseFields()));
         entityRelationSyncService.syncRelationsOnCreate(data, model, fieldValues);
@@ -342,11 +347,16 @@ public class EntityServiceImpl implements EntityService {
         Map<String, Object> physicalColumns = entityDedicatedColumnService.extractPhysicalValuesAndStrip(
                 data.getEntityTypeCode() != null ? data.getEntityTypeCode() : oldEntity.getEntityTypeCode(),
                 data.getCustomFields());
-        entityCoreService.update(data);
-        if (data.getId() == null) {
-            data.setId(reqVO.getId());
+        try {
+            entityCoreService.update(data);
+            if (data.getId() == null) {
+                data.setId(reqVO.getId());
+            }
+            entityDedicatedColumnService.applyAfterPersist(data, physicalColumns);
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            throw translateDataIntegrityError(ex,
+                    data.getEntityTypeCode() != null ? data.getEntityTypeCode() : oldEntity.getEntityTypeCode());
         }
-        entityDedicatedColumnService.applyAfterPersist(data, physicalColumns);
 
         Long modelId = data.getModelId() != null ? data.getModelId() : oldEntity.getModelId();
         ModelDO model = modelMapper.selectById(modelId);
@@ -401,13 +411,33 @@ public class EntityServiceImpl implements EntityService {
             return;
         }
 
-        // 2) 先清理关系，再删本体，避免关系悬挂
-        cleanupAssociationsOnEntityDelete(reqVO.getId(), reqVO.getEntityTypeCode());
+        // 2) 先清理关系（含自身发出的 REF），再删本体，避免关系悬挂
+        boolean clearInbound = Boolean.TRUE.equals(reqVO.getForceDelete());
+        cleanupAssociationsOnEntityDelete(reqVO.getId(), reqVO.getEntityTypeCode(), clearInbound);
         entityCoreService.delete(reqVO.getId(), reqVO.getEntityTypeCode());
 
         // 3) 写后副作用：缓存失效 + 删除事件
         entityCacheEvictionService.evictEntityCaches(existingEntity.getModelId(), reqVO.getEntityTypeCode());
+        entityCacheEvictionService.evictEntity(reqVO.getId());
         entityLifecycleEventPublisher.publishEntityDeletedEvent(existingEntity.getModelId(), reqVO.getId(), reqVO.getEntityTypeCode());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteEntityWithAssociationCleanup(Long id, String entityTypeCode, boolean clearInboundRelations) {
+        if (id == null || !StringUtils.hasText(entityTypeCode)) {
+            return;
+        }
+        EntityDO existingEntity = entityCoreService.get(id, entityTypeCode.trim());
+        if (existingEntity == null) {
+            return;
+        }
+        cleanupAssociationsOnEntityDelete(id, entityTypeCode.trim(), clearInboundRelations);
+        entityCoreService.delete(id, entityTypeCode.trim());
+        entityCacheEvictionService.evictEntityCaches(existingEntity.getModelId(), entityTypeCode.trim());
+        entityCacheEvictionService.evictEntity(id);
+        entityLifecycleEventPublisher.publishEntityDeletedEvent(
+                existingEntity.getModelId(), id, entityTypeCode.trim());
     }
 
     /**
@@ -420,23 +450,35 @@ public class EntityServiceImpl implements EntityService {
         if (category == null) {
             throw new ServiceException(400, "分类即实体绑定的分类不存在，拒绝删除以免留下脏数据");
         }
-        cleanupAssociationsOnEntityDelete(reqVO.getId(), reqVO.getEntityTypeCode());
+        boolean clearInbound = Boolean.TRUE.equals(reqVO.getForceDelete());
+        cleanupAssociationsOnEntityDelete(reqVO.getId(), reqVO.getEntityTypeCode(), clearInbound);
         entityCoreService.delete(reqVO.getId(), reqVO.getEntityTypeCode());
         categoryEntityLinkService.unlinkCategoryEntity(boundLink.getCategoryId());
         categoryService.deleteCategoryNodeAfterEntityRemoved(
                 boundLink.getCategoryId(), category.getCategoryTypeCode());
 
         entityCacheEvictionService.evictEntityCaches(existingEntity.getModelId(), reqVO.getEntityTypeCode());
+        entityCacheEvictionService.evictEntity(reqVO.getId());
         entityLifecycleEventPublisher.publishEntityDeletedEvent(
                 existingEntity.getModelId(), reqVO.getId(), reqVO.getEntityTypeCode());
     }
 
     /**
-     * 实体删除前级联清理：实体–实体关系、分类–实体关联、节点绑实体、划分成员。
-     * 关联清理带 storage 类型，避免跨表同 id 误删。
+     * 实体删除前级联清理（关联清理带 storage 类型，避免跨表同 id 误删）：
+     * <ol>
+     *   <li>本实体发出的 REF 关系镜像（如分区所属设施）——必清，属实体删除内建步骤</li>
+     *   <li>可选：其它实体指向本实体的入站关系镜像</li>
+     *   <li>实体–分类挂靠、分类即实体 link、划分成员</li>
+     * </ol>
+     * 专用表行上的自身 REF 列随后续 {@code entityCoreService.delete} 整行删除，无需单独置空。
      */
-    private void cleanupAssociationsOnEntityDelete(Long entityId, String entityTypeCode) {
+    private void cleanupAssociationsOnEntityDelete(Long entityId, String entityTypeCode,
+                                                   boolean clearInboundRelations) {
+        // 自身发出的 REF（所属设施等）→ 关系镜像表按 source 删除
         entityRelationSyncService.syncRelationsOnDelete(entityId, entityTypeCode);
+        if (clearInboundRelations) {
+            entityRelationMapper.deleteByTargetEntityId(entityId);
+        }
         entityCategoryRelationService.deleteAllByEntityIdInBusiness(entityId, entityTypeCode);
         categoryEntityLinkService.unlinkEntityCategory(entityId, entityTypeCode);
         deleteScopeMembershipForStorageEntity(entityId, entityTypeCode);
@@ -475,18 +517,26 @@ public class EntityServiceImpl implements EntityService {
                 || !org.springframework.util.StringUtils.hasText(value)) {
             return new EntityFieldAvailabilityRespVO(true, null);
         }
-        String code = entityTypeCode.trim();
+        String typeCode = entityTypeCode.trim();
         String key = fieldKey.trim();
         String trimmedValue = value.trim();
-        if (!"name".equals(key)) {
+        if ("name".equals(key)) {
+            if (modelId == null) {
+                return new EntityFieldAvailabilityRespVO(false, "缺少 modelId，无法校验名称唯一性");
+            }
+            boolean exists = entityRepository.existsByExactName(typeCode, modelId, trimmedValue, excludeId);
+            if (exists) {
+                return new EntityFieldAvailabilityRespVO(false, "名称已存在");
+            }
             return new EntityFieldAvailabilityRespVO(true, null);
         }
-        if (modelId == null) {
-            return new EntityFieldAvailabilityRespVO(false, "缺少 modelId，无法校验名称唯一性");
-        }
-        boolean exists = entityRepository.existsByExactName(code, modelId, trimmedValue, excludeId);
-        if (exists) {
-            return new EntityFieldAvailabilityRespVO(false, "名称已存在");
+        if ("code".equals(key)) {
+            // 编码唯一：同实体类型物理表（租户表）内，不按型号收窄
+            boolean exists = entityRepository.existsByExactCode(typeCode, trimmedValue, excludeId);
+            if (exists) {
+                return new EntityFieldAvailabilityRespVO(false, "编码已存在");
+            }
+            return new EntityFieldAvailabilityRespVO(true, null);
         }
         return new EntityFieldAvailabilityRespVO(true, null);
     }
@@ -2322,7 +2372,7 @@ public class EntityServiceImpl implements EntityService {
     }
 
     /**
-     * 全部 fieldFilters 可下推到实体表物理列（EQ/IN）时返回筛选列表；无筛返回空列表；
+     * 全部 fieldFilters 可下推到实体表物理列（EQ/IN/NOT_IN）时返回筛选列表；无筛返回空列表；
      * 任一不可下推返回 null（整单走慢路径，禁止半下推）。
      */
     private List<PhysicalColumnFilter> resolvePushablePhysicalFilters(
@@ -2343,7 +2393,7 @@ public class EntityServiceImpl implements EntityService {
                 return null;
             }
             String op = filter.getOp().trim().toUpperCase(Locale.ROOT);
-            if (!"EQ".equals(op) && !"IN".equals(op)) {
+            if (!"EQ".equals(op) && !"IN".equals(op) && !"NOT_IN".equals(op)) {
                 return null;
             }
             String fieldCode = filter.getFieldCode().trim();
@@ -2357,10 +2407,12 @@ public class EntityServiceImpl implements EntityService {
                 return null;
             }
             Object value = filter.getValue();
-            if ("IN".equals(op)) {
+            if ("IN".equals(op) || "NOT_IN".equals(op)) {
                 List<Object> values = normalizeFilterInValues(value);
-                if (values.isEmpty()) {
-                    return null;
+                // IN 空集 → 无命中；NOT_IN 空集 → 不过滤（仍下推，由仓储跳过条件）
+                if ("IN".equals(op) && values.isEmpty()) {
+                    out.add(new PhysicalColumnFilter(column, op, List.of()));
+                    continue;
                 }
                 out.add(new PhysicalColumnFilter(column, op, values));
             } else {
@@ -3028,7 +3080,7 @@ public class EntityServiceImpl implements EntityService {
                     continue;
                 }
 
-                cleanupAssociationsOnEntityDelete(id, entityTypeCode);
+                cleanupAssociationsOnEntityDelete(id, entityTypeCode, Boolean.TRUE.equals(forceDelete));
                 entityCoreService.delete(id, entityTypeCode);
                 successCount++;
             } catch (Exception e) {
@@ -3763,6 +3815,74 @@ public class EntityServiceImpl implements EntityService {
             return List.of();
         }
         return entityRepository.listDistinctModelIdsPreservingEntityOrder(orderedEntityIds, storage);
+    }
+
+    /**
+     * 将库约束异常转成可读业务错误（仍优先靠提交前校验拦住；此处兜底未覆盖的约束）。
+     */
+    private ServiceException translateDataIntegrityError(
+            org.springframework.dao.DataIntegrityViolationException ex, String entityTypeCode) {
+        Throwable root = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause() : ex;
+        String raw = root.getMessage() == null ? "" : root.getMessage();
+        String lower = raw.toLowerCase(Locale.ROOT);
+        if (lower.contains("violates not-null constraint") || lower.contains("not-null")) {
+            String column = extractQuotedToken(raw, "column \"");
+            if (column == null) {
+                column = extractQuotedToken(raw, "列\"");
+            }
+            String label = resolvePhysicalColumnLabel(entityTypeCode, column);
+            if (label != null) {
+                return new ServiceException(400, "必填字段未填写：" + label);
+            }
+            if (column != null) {
+                return new ServiceException(400, "必填字段未填写：" + column);
+            }
+            return new ServiceException(400, "存在必填字段未填写");
+        }
+        if (lower.contains("duplicate key") || lower.contains("unique constraint") || lower.contains("唯一")) {
+            String column = extractQuotedToken(raw, "Key (");
+            if (column != null) {
+                return new ServiceException(400, "字段值已存在，请更换：" + column);
+            }
+            return new ServiceException(400, "字段值与已有数据冲突，请检查编码等唯一字段");
+        }
+        if (lower.contains("foreign key") || lower.contains("violates foreign key")) {
+            return new ServiceException(400, "关联目标不存在或不可用，请检查引用字段");
+        }
+        log.error("[translateDataIntegrityError] 未识别的数据完整性异常 entityTypeCode={}", entityTypeCode, ex);
+        return new ServiceException(500, "数据保存失败，请检查必填项与唯一约束后重试");
+    }
+
+    private String resolvePhysicalColumnLabel(String entityTypeCode, String column) {
+        if (!StringUtils.hasText(entityTypeCode) || !StringUtils.hasText(column)) {
+            return null;
+        }
+        String code = column.trim();
+        EntityTypeBaseFieldDO field = entityTypeBaseFieldMapper.selectByEntityTypeCodeAndFieldCode(
+                entityTypeCode.trim(), code);
+        if (field == null || !StringUtils.hasText(field.getFieldName())) {
+            return null;
+        }
+        return field.getFieldName().trim();
+    }
+
+    private static String extractQuotedToken(String raw, String marker) {
+        if (raw == null || marker == null) {
+            return null;
+        }
+        int start = raw.indexOf(marker);
+        if (start < 0) {
+            return null;
+        }
+        start += marker.length();
+        int end = raw.indexOf('"', start);
+        if (end < 0) {
+            end = raw.indexOf(')', start);
+        }
+        if (end <= start) {
+            return null;
+        }
+        return raw.substring(start, end).trim();
     }
 
 }

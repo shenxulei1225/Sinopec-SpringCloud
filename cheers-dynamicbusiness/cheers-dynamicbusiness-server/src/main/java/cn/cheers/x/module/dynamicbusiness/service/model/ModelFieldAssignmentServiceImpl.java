@@ -41,8 +41,6 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMa
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.relation.RelationFieldLibraryMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
-import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeResolver;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.service.entity.index.FieldIndexService;
@@ -80,10 +78,6 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
     private ModelMapper modelMapper;
     @Resource
     private FieldMapper fieldMapper;
-    @Resource
-    private EntityRepository entityRepository;
-    @Resource
-    private EntityTypeScopeResolver entityTypeScopeResolver;
     @Resource
     private EntityTypeBaseFieldService entityTypeBaseFieldService;
     @Resource
@@ -397,21 +391,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
             throw new ServiceException(404, "字段不存在：" + fieldId);
         }
 
-        // 检查是否有Entity使用该字段
-        String storageType = entityTypeScopeResolver.resolveStorageEntityTypeCode(model.getEntityTypeCode());
-        if (!StringUtils.hasText(storageType)) {
-            storageType = model.getEntityTypeCode();
-        }
-        long entityCount = entityRepository.count(EntityRepository.EntityQuery.builder()
-                .entityTypeCode(storageType)
-                .modelId(modelId)
-                .build());
-        if (entityCount > 0) {
-            // 提示用户受影响Entity的数量
-            throw new ServiceException(400, "模型存在关联的业务实体（数量：" + entityCount + "）,解除字段分配前请先处理这些实体的字段数据");
-        }
-
-        // 删除字段分配
+        // 删除字段分配（不因型号下已有实体而拒绝；界面不再使用该字段即可）
         ModelFieldAssignmentDO assignment = modelFieldAssignmentMapper.selectByModelIdAndFieldId(modelId, fieldId);
         if (assignment != null) {
             boolean wasSearchable = resolveSearchable(assignment.getIsSearchable(), field.getType());
@@ -450,21 +430,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
             throw new ServiceException(404, "部分字段不存在：" + invalidFieldIds);
         }
 
-        // 检查是否有Entity使用该模型
-        String storageType = entityTypeScopeResolver.resolveStorageEntityTypeCode(model.getEntityTypeCode());
-        if (!StringUtils.hasText(storageType)) {
-            storageType = model.getEntityTypeCode();
-        }
-        long entityCount = entityRepository.count(EntityRepository.EntityQuery.builder()
-                .entityTypeCode(storageType)
-                .modelId(modelId)
-                .build());
-        if (entityCount > 0) {
-            // 提示用户受影响Entity的数量
-            throw new ServiceException(400, "模型存在关联的业务实体（数量：" + entityCount + "）,解除字段分配前请先处理这些实体的字段数据");
-        }
-
-        // 批量删除字段分配（使用 IN 查询提高效率）
+        // 批量删除字段分配（不因型号下已有实体而拒绝）
         if (fieldIds.isEmpty()) {
             return 0;
         }
@@ -503,9 +469,8 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         }
 
         List<ModelFieldAssignmentRespVO> result = new ArrayList<>();
-        Set<String> coveredBaseLibraryCodes = new HashSet<>();
 
-        // 1. 模型字段分配（含固定列 BASE 与扩展 CUSTOM / 关联 RELATION）
+        // 只读模型字段分配表；固定列必须在创建/同步型号时写入分配，禁止读路径再补 BASE
         List<ModelFieldAssignmentDO> assignments = modelFieldAssignmentMapper.selectByModelId(modelId);
         if (!assignments.isEmpty()) {
             // 查询字段详情
@@ -528,6 +493,8 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 }
 
                 ModelFieldAssignmentRespVO respVO = new ModelFieldAssignmentRespVO();
+                respVO.setId(assignment.getId());
+                respVO.setFieldId(assignment.getFieldId());
                 respVO.setField(FieldConvert.INSTANCE.convert(field));
                 respVO.setRequired(assignment.getRequired());
                 // 优先使用模型字段分配中的配置,如果为 null 则使用智能默认值
@@ -547,17 +514,22 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 respVO.setDefaultValue(assignment.getDefaultValue());
                 respVO.setValidationRules(assignment.getValidationRules());
                 respVO.setSort(assignment.getSort());
+                // LIBRARY / 已登记为基础字段的分配，均按 BASE 展示（不另读固定列表补行）
+                String registeredFieldCode = findRegisteredBaseFieldCode(model.getEntityTypeCode(), field);
                 boolean isBaseAssignment =
-                        ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE.equals(assignment.getFieldSource());
+                        ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE.equals(assignment.getFieldSource())
+                                || "LIBRARY".equalsIgnoreCase(assignment.getFieldSource())
+                                || registeredFieldCode != null;
                 if (isBaseAssignment) {
                     respVO.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE);
                     // 固定列不可从模型移除，但模型级规则（必填/搜索/排序/筛选）可在此配置
                     respVO.setEditable(true);
                     respVO.setDeletable(false);
-                    String registeredFieldCode = registeredFieldCodeForLibrary(model.getEntityTypeCode(), field);
-                    respVO.setFieldCode(registeredFieldCode);
-                    coveredBaseLibraryCodes.add(field.getCode());
-                    applyBaseFieldDisplayAlias(respVO, model.getEntityTypeCode(), registeredFieldCode);
+                    String fieldCode = StringUtils.hasText(registeredFieldCode)
+                            ? registeredFieldCode
+                            : registeredFieldCodeForLibrary(model.getEntityTypeCode(), field);
+                    respVO.setFieldCode(fieldCode);
+                    applyBaseFieldDisplayAlias(respVO, model.getEntityTypeCode(), fieldCode);
                 } else {
                     respVO.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_CUSTOM);
                     respVO.setEditable(true);
@@ -585,7 +557,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                             }
                         }
                     } else if (assignment.getTargetEntityType() != null) {
-                        // 2. 兜底方式：字段分配记录中保存了目标业务类型
+                        // 分配行自身已存目标类型（非另表补造）
                         respVO.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_RELATION);
                         respVO.setTargetEntityType(assignment.getTargetEntityType());
                         EntityTypeDO targetEntityType = entityTypeMapper.selectByCode(assignment.getTargetEntityType());
@@ -601,28 +573,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
             }
         }
 
-        // 2. 兜底：尚未写入模型分配的固定列（专用表自动继承）
-        if (model.getEntityTypeCode() != null) {
-            EntityTypeDO entityType = entityTypeMapper.selectByCode(model.getEntityTypeCode());
-            if (entityType != null) {
-                StorageTypeEnum storageType = StorageTypeEnum.getByCode(entityType.getStorageType());
-                if (storageType != null && storageType.isDedicated()) {
-                    List<EntityTypeBaseFieldRespVO> baseFields =
-                            entityTypeBaseFieldService.listByEntityTypeCode(model.getEntityTypeCode());
-                    for (EntityTypeBaseFieldRespVO baseField : baseFields) {
-                        String libraryCode = baseField.getLibraryFieldCode() != null
-                                ? baseField.getLibraryFieldCode()
-                                : baseField.getFieldCode();
-                        if (libraryCode != null && coveredBaseLibraryCodes.contains(libraryCode)) {
-                            continue;
-                        }
-                        result.add(convertBaseFieldToAssignmentRespVO(baseField, model.getEntityTypeCode()));
-                    }
-                }
-            }
-        }
-
-        // 3. 按 sort 排序返回
+        // 按 sort 排序返回
         // 固定列字段使用 sortOrder,扩展字段使用 sort
         // 固定列字段排在前面（sort 值较小）,扩展字段排在后面
         result.sort((a, b) -> {
@@ -677,6 +628,17 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
     }
 
     private String registeredFieldCodeForLibrary(String entityTypeCode, FieldDO libraryField) {
+        String registered = findRegisteredBaseFieldCode(entityTypeCode, libraryField);
+        if (StringUtils.hasText(registered)) {
+            return registered;
+        }
+        return libraryField != null ? libraryField.getCode() : null;
+    }
+
+    /**
+     * 若字段库字段已登记为该业务类型固定列，返回固定列 fieldCode；否则 null。
+     */
+    private String findRegisteredBaseFieldCode(String entityTypeCode, FieldDO libraryField) {
         if (libraryField == null || !StringUtils.hasText(entityTypeCode)) {
             return null;
         }
@@ -685,8 +647,12 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                     && Objects.equals(baseField.getLibraryFieldId(), libraryField.getId())) {
                 return baseField.getFieldCode();
             }
+            if (StringUtils.hasText(baseField.getFieldCode())
+                    && baseField.getFieldCode().equals(libraryField.getCode())) {
+                return baseField.getFieldCode();
+            }
         }
-        return libraryField.getCode();
+        return null;
     }
 
     private ModelFieldAssignmentRespVO convertBaseFieldToAssignmentRespVO(EntityTypeBaseFieldRespVO baseField, String sourceEntityTypeCode) {
@@ -698,6 +664,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 : (StringUtils.hasText(baseField.getFieldCode()) ? fieldMapper.selectByCode(baseField.getFieldCode()) : null);
         if (libraryField != null) {
             fieldRespVO = FieldConvert.INSTANCE.convert(libraryField);
+            respVO.setFieldId(libraryField.getId());
             if (StringUtils.hasText(baseField.getFieldName())
                     && !Objects.equals(baseField.getFieldName(), libraryField.getName())) {
                 fieldRespVO.setName(baseField.getFieldName());

@@ -8,10 +8,13 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdat
 import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityConvert;
 import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityFieldMapsSupport;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeBaseFieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
 import cn.cheers.x.framework.mybatis.core.type.JsonbMapTypeHandler;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
@@ -33,7 +36,9 @@ public class EntityBusinessHelper {
 
     private final ModelMapper modelMapper;
     private final EntityTypeMapper entityTypeMapper;
+    private final EntityTypeBaseFieldMapper entityTypeBaseFieldMapper;
     private final CustomFieldValidationService customFieldValidationService;
+    private final EntityRepository entityRepository;
 
     public ModelDO validateModelExists(Long modelId) {
         ModelDO model = modelMapper.selectById(modelId);
@@ -57,17 +62,89 @@ public class EntityBusinessHelper {
     }
 
     public void validateBaseFields(String entityTypeCode, Map<String, Object> baseFields) {
+        validateBaseFields(entityTypeCode, baseFields, null);
+    }
+
+    /**
+     * 校验核心列 + 业务类型必填基础字段；{@code customFields} 一并参与取值（写前分桶前后都可调用）。
+     */
+    public void validateBaseFields(String entityTypeCode,
+                                   Map<String, Object> baseFields,
+                                   Map<String, Object> customFields) {
         EntityFieldMapsSupport.getRequiredEntityTypeCode(baseFields);
+        EntityFieldMapsSupport.getRequiredModelId(baseFields);
         Map<String, Object> base = EntityFieldMapsSupport.normalizeMap(baseFields);
-        Object entityName = base.get("name");
-        if (entityName == null || String.valueOf(entityName).isBlank()) {
-            throw new ServiceException(400, "baseFields.name 不能为空");
+        Map<String, Object> custom = EntityFieldMapsSupport.normalizeMap(customFields);
+
+        List<String> missing = new ArrayList<>();
+        if (isBlankScalar(base.get("name"))) {
+            missing.add("名称");
         }
         if (base.get("status") == null) {
-            throw new ServiceException(400, "baseFields.status 不能为空");
+            missing.add("状态");
         }
-        EntityFieldMapsSupport.getRequiredModelId(baseFields);
-        // TODO: 与 BaseFieldValidationService 对齐后在此实现业务基础列校验
+
+        if (StrUtil.isNotBlank(entityTypeCode)) {
+            List<EntityTypeBaseFieldDO> configured =
+                    entityTypeBaseFieldMapper.selectByEntityTypeCode(entityTypeCode.trim());
+            Set<String> seen = new HashSet<>();
+            if (configured != null) {
+                for (EntityTypeBaseFieldDO field : configured) {
+                    if (field == null || !field.isEnabled() || !Boolean.TRUE.equals(field.getRequired())) {
+                        continue;
+                    }
+                    String code = field.getFieldCode() == null ? "" : field.getFieldCode().trim();
+                    if (code.isEmpty() || !seen.add(code)) {
+                        continue;
+                    }
+                    if (EntityFieldMapsSupport.isCoreBaseFieldKey(code)) {
+                        continue;
+                    }
+                    Object value = base.containsKey(code) ? base.get(code) : custom.get(code);
+                    if (isEmptyWriteValue(value, field.getDataType())) {
+                        String label = StrUtil.isNotBlank(field.getFieldName())
+                                ? field.getFieldName().trim()
+                                : code;
+                        missing.add(label);
+                    }
+                }
+            }
+        }
+
+        if (!missing.isEmpty()) {
+            throw new ServiceException(400, "以下必填字段未填写：" + String.join("、", missing));
+        }
+    }
+
+    private static boolean isBlankScalar(Object value) {
+        return value == null || String.valueOf(value).isBlank();
+    }
+
+    private static boolean isEmptyWriteValue(Object value, String dataType) {
+        if (value == null) {
+            return true;
+        }
+        if (value instanceof String text) {
+            return text.isBlank();
+        }
+        if (value instanceof Collection<?> collection) {
+            return collection.isEmpty();
+        }
+        if (value instanceof Map<?, ?> map) {
+            if (map.isEmpty()) {
+                return true;
+            }
+            Object id = map.get("id");
+            if (id == null) {
+                id = map.get("entityId");
+            }
+            return id == null || String.valueOf(id).isBlank();
+        }
+        String type = dataType == null ? "" : dataType.trim().toUpperCase(Locale.ROOT).replace('-', '_');
+        if ("REF_MULTI".equals(type) || "ENTITY_REF_MULTI".equals(type) || "BATCH_ENTITY_REF".equals(type)) {
+            return false;
+        }
+        return false;
     }
 
     public void validateEntityReferences(EntityDO entity, ModelDO model,
@@ -83,7 +160,7 @@ public class EntityBusinessHelper {
         ModelDO model = validateModelExists(modelId);
         validateModelEntityType(modelId, entityTypeCode);
         validateRequestedDomainMatchesModel(baseFields, model);
-        validateBaseFields(entityTypeCode, baseFields);
+        validateBaseFields(entityTypeCode, baseFields, reqVO.getCustomFields());
         validateCustomFields(modelId, reqVO.getCustomFields());
 
         EntityDO data = EntityConvert.INSTANCE.convert(reqVO);
@@ -91,6 +168,7 @@ public class EntityBusinessHelper {
         // 业务域（Domain）最终以型号为准写入；请求域仅作选项校验
         data.setDomain(normalizeDomain(model.getDomain()));
         ensureDedicatedEntityCode(data, entityTypeCode);
+        validateEntityCodeUnique(data, entityTypeCode, null);
 
         validateEntityReferences(data, model, data.getCustomFields(), entityTypeCode);
 
@@ -118,7 +196,7 @@ public class EntityBusinessHelper {
         ModelDO model = validateModelExists(modelId);
         validateModelEntityType(modelId, entityTypeCode);
         validateRequestedDomainMatchesModel(baseFields, model);
-        validateBaseFields(entityTypeCode, baseFields);
+        validateBaseFields(entityTypeCode, baseFields, reqVO.getCustomFields());
         validateCustomFields(modelId, reqVO.getCustomFields());
 
         reqVO.setBaseFields(baseFields);
@@ -126,6 +204,11 @@ public class EntityBusinessHelper {
         update.setTenantId(dbEntity.getTenantId());
         // 业务域（Domain）随当前型号抄写
         update.setDomain(normalizeDomain(model.getDomain()));
+        // 未传编码时沿用原值，避免把唯一校验落在空串上
+        if (StrUtil.isBlank(update.getCode()) && StrUtil.isNotBlank(dbEntity.getCode())) {
+            update.setCode(dbEntity.getCode());
+        }
+        validateEntityCodeUnique(update, entityTypeCode, dbEntity.getId());
 
         validateEntityReferences(update, model, update.getCustomFields(), entityTypeCode);
 
@@ -182,6 +265,20 @@ public class EntityBusinessHelper {
             throw new ServiceException(400, "实体类型未使用专用表存储，无法写入实体：" + entityTypeCode);
         }
         data.setCode(entityTypeCode + "-" + IdUtil.fastSimpleUUID());
+    }
+
+    /**
+     * 提交兜底：同实体类型物理表内编码唯一（与 uk_ent_*_code_tenant 口径一致）。
+     */
+    private void validateEntityCodeUnique(EntityDO data, String entityTypeCode, Long excludeId) {
+        if (data == null || !StrUtil.isNotBlank(data.getCode()) || !StrUtil.isNotBlank(entityTypeCode)) {
+            return;
+        }
+        String code = data.getCode().trim();
+        data.setCode(code);
+        if (entityRepository.existsByExactCode(entityTypeCode.trim(), code, excludeId)) {
+            throw new ServiceException(400, "编码已存在");
+        }
     }
 
     /**

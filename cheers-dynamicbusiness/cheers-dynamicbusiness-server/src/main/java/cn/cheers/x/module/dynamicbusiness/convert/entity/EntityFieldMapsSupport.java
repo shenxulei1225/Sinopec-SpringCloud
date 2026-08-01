@@ -51,7 +51,7 @@ public final class EntityFieldMapsSupport {
     public static Long getRequiredModelId(Map<String, Object> baseFields) {
         Long modelId = getModelId(baseFields);
         if (modelId == null) {
-            throw new ServiceException(400, "baseFields.modelId 不能为空");
+            throw new ServiceException(400, "型号不能为空");
         }
         return modelId;
     }
@@ -59,7 +59,7 @@ public final class EntityFieldMapsSupport {
     public static String getRequiredEntityTypeCode(Map<String, Object> baseFields) {
         String code = getEntityTypeCode(baseFields);
         if (code == null || code.isBlank()) {
-            throw new ServiceException(400, "baseFields.entityTypeCode 不能为空");
+            throw new ServiceException(400, "业务类型不能为空");
         }
         return code.trim();
     }

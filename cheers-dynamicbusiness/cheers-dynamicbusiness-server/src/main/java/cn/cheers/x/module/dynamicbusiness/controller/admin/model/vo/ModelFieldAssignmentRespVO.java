@@ -18,6 +18,12 @@ import lombok.Data;
 @Data
 public class ModelFieldAssignmentRespVO {
 
+    @Schema(description = "分配记录编号（固定列兜底条目可为空）", example = "1001")
+    private Long id;
+
+    @Schema(description = "字段库字段编号", example = "4392")
+    private Long fieldId;
+
     @Schema(description = "字段信息")
     private FieldRespVO field;
 

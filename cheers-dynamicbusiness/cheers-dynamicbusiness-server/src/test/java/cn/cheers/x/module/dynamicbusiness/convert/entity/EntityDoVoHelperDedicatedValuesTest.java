@@ -36,7 +36,7 @@ class EntityDoVoHelperDedicatedValuesTest {
         entity.setEntityTypeCode("equipment");
         entity.setName("泵-1");
         Map<String, Object> dedicated = new LinkedHashMap<>();
-        dedicated.put("FLD-BASE-equipment-REF_ZONE", 101L);
+        dedicated.put("zone_id", 101L);
         entity.setDedicatedBaseFieldValues(dedicated);
 
         when(dedicatedColumnService.loadEnabledBaseFieldMeta("equipment")).thenReturn(Map.of());

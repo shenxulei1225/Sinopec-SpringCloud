@@ -22,12 +22,16 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 自定义字段校验服务实现
@@ -55,10 +59,6 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
 
     @Override
     public void validateCustomFields(Long modelId, Map<String, Object> customFields) {
-        if (customFields == null || customFields.isEmpty()) {
-            return;
-        }
-
         List<FieldValidationConfig> configs = getFieldConfigs(modelId);
         if (configs.isEmpty()) {
             return;
@@ -78,51 +78,95 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
     public void validateCustomFields(Map<Long, FieldDO> fieldMap,
                                      Map<Long, ModelFieldAssignmentDO> assignmentMap,
                                      Map<String, Object> customFields) {
-        if (customFields == null || customFields.isEmpty()) {
+        if (fieldMap == null || fieldMap.isEmpty()) {
             return;
+        }
+        Map<String, Object> values = customFields == null ? Collections.emptyMap() : customFields;
+
+        List<String> missingRequired = new ArrayList<>();
+        for (Map.Entry<Long, FieldDO> entry : fieldMap.entrySet()) {
+            Long fieldId = entry.getKey();
+            FieldDO field = entry.getValue();
+            ModelFieldAssignmentDO assignment = assignmentMap.get(fieldId);
+            if (assignment == null || !Boolean.TRUE.equals(assignment.getRequired())) {
+                continue;
+            }
+            Object value = resolveCustomFieldValue(values, fieldId, field);
+            if (isRequiredValueMissing(field, value)) {
+                String label = field.getName() != null && !field.getName().isBlank()
+                        ? field.getName().trim()
+                        : (field.getCode() != null ? field.getCode() : String.valueOf(fieldId));
+                missingRequired.add(label);
+            }
+        }
+        if (!missingRequired.isEmpty()) {
+            throw new ServiceException(400, "以下必填字段未填写：" + String.join("、", missingRequired));
         }
 
         for (Map.Entry<Long, FieldDO> entry : fieldMap.entrySet()) {
             Long fieldId = entry.getKey();
             FieldDO field = entry.getValue();
             ModelFieldAssignmentDO assignment = assignmentMap.get(fieldId);
-
-            String idKey = String.valueOf(fieldId);
-            String codeKey = field.getCode();
-            Object value = customFields.get(idKey);
-            if (value == null && codeKey != null) {
-                value = customFields.get(codeKey);
+            Object value = resolveCustomFieldValue(values, fieldId, field);
+            // 必填已在上方汇总；此处只做有值时的类型/规则校验
+            if (value != null && !(value instanceof String && ((String) value).isEmpty())) {
+                validateValueType(field, value);
+                if (assignment != null) {
+                    validateValueWithRules(field, value, assignment);
+                }
+                if (FieldTypeEnum.isMultiEntityRef(field.getType())) {
+                    validateEntityRefMultiField(field, assignment, value);
+                }
             }
-
-            validateFieldValue(field, assignment, value);
         }
+    }
+
+    private static Object resolveCustomFieldValue(Map<String, Object> customFields, Long fieldId, FieldDO field) {
+        String idKey = String.valueOf(fieldId);
+        Object value = customFields.get(idKey);
+        if (value == null && field != null && field.getCode() != null) {
+            value = customFields.get(field.getCode());
+        }
+        return value;
+    }
+
+    private boolean isRequiredValueMissing(FieldDO field, Object value) {
+        if (value == null || (value instanceof String && ((String) value).isEmpty())) {
+            return true;
+        }
+        if (field != null && FieldTypeEnum.isMultiEntityRef(field.getType())) {
+            List<Long> ids = parseEntityIdList(value);
+            return CollectionUtils.isEmpty(ids);
+        }
+        if (value instanceof Map<?, ?> map) {
+            if (map.isEmpty()) {
+                return true;
+            }
+            Object id = map.get("id");
+            if (id == null) {
+                id = map.get("entityId");
+            }
+            return id == null || String.valueOf(id).isBlank();
+        }
+        return false;
     }
 
     @Override
     public void validateFieldValue(FieldDO field, ModelFieldAssignmentDO assignment, Object value) {
-        // 必填验证
-        if (assignment != null && Boolean.TRUE.equals(assignment.getRequired())) {
-            if (value == null || (value instanceof String && ((String) value).isEmpty())) {
-                throw new ServiceException(400, String.format("字段[%s]为必填项", field.getName()));
-            }
-            // 多选关联字段的必填验证：空数组也视为未填写
-            if (FieldTypeEnum.isMultiEntityRef(field.getType())) {
-                List<Long> ids = parseEntityIdList(value);
-                if (CollectionUtils.isEmpty(ids)) {
-                    throw new ServiceException(400, String.format("字段[%s]为必填项", field.getName()));
-                }
-            }
+        if (assignment != null && Boolean.TRUE.equals(assignment.getRequired())
+                && isRequiredValueMissing(field, value)) {
+            String label = field != null && field.getName() != null && !field.getName().isBlank()
+                    ? field.getName().trim()
+                    : "未命名字段";
+            throw new ServiceException(400, "以下必填字段未填写：" + label);
         }
 
         // 如果字段有值，进行类型和规则校验
         if (value != null && !(value instanceof String && ((String) value).isEmpty())) {
-            // 数据类型验证
             validateValueType(field, value);
-            // 业务规则验证
             if (assignment != null) {
                 validateValueWithRules(field, value, assignment);
             }
-            // 多选关联字段特殊验证
             if (FieldTypeEnum.isMultiEntityRef(field.getType())) {
                 validateEntityRefMultiField(field, assignment, value);
             }
@@ -131,23 +175,57 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
 
     @Override
     public List<FieldValidationConfig> getFieldConfigs(Long modelId) {
-        List<FieldValidationConfig> configs = new ArrayList<>();
-
-        // 查询模型字段分配列表
-        List<ModelFieldAssignmentDO> assignments = modelFieldAssignmentMapper.selectByModelId(modelId);
-        if (assignments.isEmpty()) {
-            return configs;
+        if (modelId == null) {
+            return new ArrayList<>();
         }
+        return getFieldConfigsByModelIds(Collections.singletonList(modelId))
+                .getOrDefault(modelId, new ArrayList<>());
+    }
 
-        // 查询字段定义并构建配置
-        for (ModelFieldAssignmentDO assignment : assignments) {
-            FieldDO field = fieldMapper.selectById(assignment.getFieldId());
-            if (field != null) {
-                configs.add(new FieldValidationConfig(field, assignment));
+    @Override
+    public Map<Long, List<FieldValidationConfig>> getFieldConfigsByModelIds(Collection<Long> modelIds) {
+        Map<Long, List<FieldValidationConfig>> out = new LinkedHashMap<>();
+        if (CollectionUtils.isEmpty(modelIds)) {
+            return out;
+        }
+        List<Long> ids = modelIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (ids.isEmpty()) {
+            return out;
+        }
+        for (Long id : ids) {
+            out.put(id, new ArrayList<>());
+        }
+        List<ModelFieldAssignmentDO> assignments = modelFieldAssignmentMapper.selectByModelIds(ids);
+        if (CollectionUtils.isEmpty(assignments)) {
+            return out;
+        }
+        Set<Long> fieldIds = assignments.stream()
+                .map(ModelFieldAssignmentDO::getFieldId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, FieldDO> fieldById = new HashMap<>();
+        if (!fieldIds.isEmpty()) {
+            List<FieldDO> fields = fieldMapper.selectBatchIds(fieldIds);
+            if (fields != null) {
+                for (FieldDO field : fields) {
+                    if (field != null && field.getId() != null) {
+                        fieldById.put(field.getId(), field);
+                    }
+                }
             }
         }
-
-        return configs;
+        for (ModelFieldAssignmentDO assignment : assignments) {
+            if (assignment == null || assignment.getModelId() == null || assignment.getFieldId() == null) {
+                continue;
+            }
+            FieldDO field = fieldById.get(assignment.getFieldId());
+            if (field == null) {
+                continue;
+            }
+            out.computeIfAbsent(assignment.getModelId(), k -> new ArrayList<>())
+                    .add(new FieldValidationConfig(field, assignment));
+        }
+        return out;
     }
 
     @Override
@@ -186,32 +264,42 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
 
     @Override
     public Map<String, Object> decryptCustomFields(Map<String, Object> customFields, Long modelId) {
+        if (customFields == null || customFields.isEmpty() || modelId == null) {
+            return customFields;
+        }
+        return decryptCustomFields(customFields, getFieldConfigs(modelId));
+    }
+
+    @Override
+    public Map<String, Object> decryptCustomFields(Map<String, Object> customFields,
+                                                   List<FieldValidationConfig> configs) {
         if (customFields == null || customFields.isEmpty()) {
+            return customFields;
+        }
+        if (CollectionUtils.isEmpty(configs)) {
             return customFields;
         }
 
         try {
             Map<String, Object> result = new HashMap<>(customFields);
-            List<FieldValidationConfig> configs = getFieldConfigs(modelId);
-
             boolean modified = false;
             for (FieldValidationConfig config : configs) {
                 FieldDO field = config.getField();
-
-                if (isSensitiveField(field)) {
-                    String idKey = String.valueOf(field.getId());
-                    Object val = result.get(idKey);
-                    if (val == null && field.getCode() != null) {
-                        idKey = field.getCode();
-                        val = result.get(idKey);
-                    }
-                    if (val instanceof String) {
-                        result.put(idKey, SensitiveDataEncryptor.decrypt((String) val));
-                        modified = true;
-                    }
+                if (field == null || !isSensitiveField(field)) {
+                    continue;
+                }
+                String idKey = String.valueOf(field.getId());
+                Object val = result.get(idKey);
+                String writeKey = idKey;
+                if (val == null && field.getCode() != null) {
+                    writeKey = field.getCode();
+                    val = result.get(writeKey);
+                }
+                if (val instanceof String) {
+                    result.put(writeKey, SensitiveDataEncryptor.decrypt((String) val));
+                    modified = true;
                 }
             }
-
             return modified ? result : customFields;
         } catch (Exception e) {
             return customFields;
@@ -223,16 +311,31 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
         if (customFields == null || customFields.isEmpty()) {
             return customFields;
         }
+        List<FieldValidationConfig> configs = modelId == null
+                ? Collections.emptyList()
+                : getFieldConfigs(modelId);
+        return presentCustomFieldsForApi(customFields, configs);
+    }
+
+    @Override
+    public Map<String, Object> presentCustomFieldsForApi(Map<String, Object> customFields,
+                                                         List<FieldValidationConfig> configs) {
+        if (customFields == null || customFields.isEmpty()) {
+            return customFields;
+        }
 
         Map<String, Object> presented = new LinkedHashMap<>();
         Set<String> mappedKeys = new HashSet<>();
+        Map<Long, String> fieldIdToCode = new HashMap<>();
 
-        if (modelId != null) {
-            List<FieldValidationConfig> configs = getFieldConfigs(modelId);
+        if (!CollectionUtils.isEmpty(configs)) {
             for (FieldValidationConfig config : configs) {
                 FieldDO field = config.getField();
                 if (field == null || !StringUtils.hasText(field.getCode())) {
                     continue;
+                }
+                if (field.getId() != null) {
+                    fieldIdToCode.put(field.getId(), field.getCode());
                 }
                 String idKey = String.valueOf(field.getId());
                 String codeKey = field.getCode();
@@ -253,7 +356,7 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
                 continue;
             }
             String storageKey = entry.getKey();
-            String codeKey = resolveFieldCodeByStorageKey(storageKey);
+            String codeKey = resolveFieldCodeByStorageKey(storageKey, fieldIdToCode);
             if (StringUtils.hasText(codeKey)) {
                 presented.putIfAbsent(codeKey, entry.getValue());
                 mappedKeys.add(storageKey);
@@ -269,6 +372,10 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
      * 将 customFields 存储键（字段 id 或历史 code）解析为对外 fieldCode。
      */
     private String resolveFieldCodeByStorageKey(String storageKey) {
+        return resolveFieldCodeByStorageKey(storageKey, Collections.emptyMap());
+    }
+
+    private String resolveFieldCodeByStorageKey(String storageKey, Map<Long, String> fieldIdToCode) {
         if (!StringUtils.hasText(storageKey)) {
             return null;
         }
@@ -278,6 +385,10 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
         }
         try {
             long fieldId = Long.parseLong(trimmed);
+            String cached = fieldIdToCode.get(fieldId);
+            if (StringUtils.hasText(cached)) {
+                return cached;
+            }
             FieldDO field = fieldMapper.selectById(fieldId);
             if (field != null && StringUtils.hasText(field.getCode())) {
                 return field.getCode();

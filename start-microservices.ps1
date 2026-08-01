@@ -464,12 +464,29 @@ function Start-SingleService {
     if ($ServiceName -in @(
             "topology", "platform-topology", "routing", "platform-routing",
             "maintenance", "bmp-maintenance",
-            "work-order", "bmp-work-order"
+            "work-order", "bmp-work-order",
+            "bpm", "dynamic", "system",
+            "platform", "resource", "bmp-resource"
         )) {
-        $platformRoot = Join-Path $ScriptDir "cheers-business-middle-platform"
-        $artifactId = Split-Path $config.Path -Leaf
+        $needsPlatformRoot = $ServiceName -in @(
+            "topology", "platform-topology", "routing", "platform-routing",
+            "maintenance", "bmp-maintenance",
+            "work-order", "bmp-work-order",
+            "platform", "resource", "bmp-resource"
+        )
+        $installRoot = if ($needsPlatformRoot) {
+            Join-Path $ScriptDir "cheers-business-middle-platform"
+        } else {
+            $ScriptDir
+        }
+        $artifactId = if ($needsPlatformRoot) {
+            Split-Path $config.Path -Leaf
+        } else {
+            # 仓库根 -pl 相对路径（如 cheers-bpm\cheers-bpm-server）
+            ($config.Path -replace '\\', '/')
+        }
         Write-Info "安装 $artifactId 及依赖到本地 Maven（-am install -DskipTests）..."
-        Push-Location $platformRoot
+        Push-Location $installRoot
         try {
             & mvn -pl $artifactId -am install -DskipTests -q
             if ($LASTEXITCODE -ne 0) {
@@ -484,7 +501,8 @@ function Start-SingleService {
     }
     
     $logFile = Join-Path $LogDir "$ServiceName-server.log"
-    $mavenCommand = "mvn spring-boot:run `"-Dspring-boot.run.profiles=local`" `"-Dfile.encoding=UTF-8`" `"-Dsun.jnu.encoding=UTF-8`""
+    # maven.test.skip：本地启动不编/不跑测试，避免测试缺类挡住 spring-boot:run
+    $mavenCommand = "mvn spring-boot:run `"-Dspring-boot.run.profiles=local`" `"-Dmaven.test.skip=true`" `"-Dfile.encoding=UTF-8`" `"-Dsun.jnu.encoding=UTF-8`""
     $workingDirectory = $servicePath
 
     # 启动前校验 pom，避免落到已迁走/空壳目录时只看到健康检查超时

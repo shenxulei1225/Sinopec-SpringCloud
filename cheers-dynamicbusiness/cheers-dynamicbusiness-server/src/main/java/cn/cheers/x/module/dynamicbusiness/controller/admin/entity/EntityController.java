@@ -239,19 +239,21 @@ public class EntityController {
     @Operation(
         summary = "校验实体字段值是否可用",
         description = """
-            CRUD 弹窗异步校验。当前支持 fieldKey=name：同 entityTypeCode + modelId 下名称唯一。
+            CRUD 弹窗异步校验。
+            - fieldKey=name：同 entityTypeCode + modelId 下名称唯一（须传 modelId）
+            - fieldKey=code：同实体类型物理表内编码唯一（不按型号收窄）
             excludeId 用于编辑时排除自身。
             """
     )
     @Parameter(name = "entityTypeCode", required = true, example = "equipment")
-    @Parameter(name = "modelId", required = true, example = "157")
+    @Parameter(name = "modelId", description = "名称唯一时必填；编码唯一可不传", example = "157")
     @Parameter(name = "fieldKey", required = true, example = "name")
     @Parameter(name = "value", required = true, example = "测试设备")
     @Parameter(name = "excludeId", description = "编辑时排除的实体 id")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<EntityFieldAvailabilityRespVO> checkFieldUnique(
             @RequestParam("entityTypeCode") String entityTypeCode,
-            @RequestParam("modelId") Long modelId,
+            @RequestParam(value = "modelId", required = false) Long modelId,
             @RequestParam("fieldKey") String fieldKey,
             @RequestParam("value") String value,
             @RequestParam(value = "excludeId", required = false) Long excludeId) {
@@ -272,7 +274,7 @@ public class EntityController {
     @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
     @Parameter(name = "modelId", description = "模型ID（可选，用于查询特定模型下的实体）", example = "1")
     @Parameter(name = "status", description = "状态（可选，0-禁用，1-启用）", example = "1")
-    @Parameter(name = "keyword", description = "关键词（可选，模糊匹配实体名称）", example = "设备")
+    @Parameter(name = "keyword", description = "关键词（可选；配合 searchFieldCodes 多列 OR，默认仅 name）", example = "设备")
     @Parameter(name = "pageNo", description = "页码（默认1）", example = "1")
     @Parameter(name = "pageSize", description = "每页条数（默认10）", example = "10")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
@@ -356,7 +358,7 @@ public class EntityController {
             - modelIds / categoryIds 支持重复 query 参数（modelIds=1&modelIds=2）或逗号分隔单参数（modelIds=1,2,3）
             - 多选 ID 较多时建议使用 POST /query-by-scene + JSON body
             - ENTITIES_BY_CATEGORY：按分类查实体（含子树；未选≡整树）；可叠 modelIds；categoryTypeCode 必填（禁止默认成 entityTypeCode）；传 categoryViaRefPathCode 时走经 REF 反查
-            - ENTITIES_BY_MODEL：按型号或类型查实体
+            - ENTITIES_BY_MODEL：按型号或类型查实体；传 modelEntityTypeCode 且与 entityTypeCode 不同时走型号—实体关联表（跨类型挂靠）
             - ENTITIES_UNCATEGORIZED：当前分类种类下未挂任何节点的实体（差集）；categoryTypeCode 必填；可叠 modelIds
             - ENTITIES_BY_CATEGORY_LINK：分类节点绑定实体
             - ENTITIES_DETAIL：实体详情
@@ -370,6 +372,7 @@ public class EntityController {
             @RequestParam(value = "categoryTypeCode", required = false) String categoryTypeCode,
             @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode,
             @RequestParam(value = "modelIds", required = false) List<String> modelIds,
+            @RequestParam(value = "modelEntityTypeCode", required = false) String modelEntityTypeCode,
             @RequestParam(value = "categoryIds", required = false) List<String> categoryIds,
             @RequestParam(value = "categoryViaRefPathCode", required = false) String categoryViaRefPathCode,
             @RequestParam(value = "entityId", required = false) Long entityId,
@@ -378,16 +381,17 @@ public class EntityController {
             @RequestParam(value = "pageNo", required = false) Integer pageNo,
             @RequestParam(value = "pageSize", required = false) Integer pageSize,
             @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "searchFieldCodes", required = false) List<String> searchFieldCodes,
             @RequestParam(value = "domain", required = false) String domain,
             @RequestParam(value = "orderByColumn", required = false) String orderByColumn,
             @RequestParam(value = "isAsc", required = false) Boolean isAsc,
             @RequestBody(required = false) List<FieldFilterReqVO> filters) {
         return queryEntitiesInternal(scene, resultShape, resultDetail, categoryTypeCode, entityTypeCode,
-                parseFlexibleIdList(modelIds), parseFlexibleIdList(categoryIds),
+                parseFlexibleIdList(modelIds), modelEntityTypeCode, parseFlexibleIdList(categoryIds),
                 null,
                 categoryViaRefPathCode,
                 entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword, domain,
-                filters, orderByColumn, isAsc);
+                filters, orderByColumn, isAsc, searchFieldCodes);
     }
 
     private CommonResult<EntitySceneQueryRespVO> queryEntitiesInternal(
@@ -397,6 +401,7 @@ public class EntityController {
             String categoryTypeCode,
             String entityTypeCode,
             List<Long> modelIds,
+            String modelEntityTypeCode,
             List<Long> categoryIds,
             List<CategoryIdGroupReqVO> categoryIdGroups,
             String categoryViaRefPathCode,
@@ -409,13 +414,14 @@ public class EntityController {
             String domain,
             List<FieldFilterReqVO> filters,
             String orderByColumn,
-            Boolean isAsc) {
+            Boolean isAsc,
+            List<String> searchFieldCodes) {
         return success(entityService.queryEntities(scene, EntityQueryResultShape.ofNullable(resultShape).getCode(),
                 EntityQueryResultDetail.ofNullable(resultDetail).getCode(),
                 categoryTypeCode, entityTypeCode,
-                modelIds, categoryIds, categoryIdGroups, categoryViaRefPathCode,
+                modelIds, modelEntityTypeCode, categoryIds, categoryIdGroups, categoryViaRefPathCode,
                 entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword,
-                domain, filters, orderByColumn, isAsc));
+                domain, filters, orderByColumn, isAsc, searchFieldCodes));
     }
 
     @PostMapping("/query-by-scene")
@@ -425,6 +431,7 @@ public class EntityController {
             与 GET /query-by-scene 语义一致，通过 JSON body 传 scene、modelIds[]、categoryIds[] 等。
             - 适用场景：型号/分类多选、fieldFilters 较多，避免超长 query string
             - body 示例：{"scene":"ENTITIES_BY_MODEL","entityTypeCode":"equipment","modelIds":[48,47],"pageNo":1,"pageSize":10}
+            - 跨类型挂靠示例：{"scene":"ENTITIES_BY_MODEL","entityTypeCode":"inspection_item","modelEntityTypeCode":"equipment","modelIds":[48],"pageNo":1,"pageSize":10}
             - 划分数据：entityTypeCode 传 SCOPE 入口编码，后端按成员表收窄，勿再传 scopeEntityTypeCode
             """
     )
@@ -432,11 +439,12 @@ public class EntityController {
     public CommonResult<EntitySceneQueryRespVO> queryEntitiesByBody(@Valid @RequestBody EntitySceneQueryReqVO reqVO) {
         return queryEntitiesInternal(reqVO.getScene(), reqVO.getResultShape(), reqVO.getResultDetail(),
                 reqVO.getCategoryTypeCode(), reqVO.getEntityTypeCode(),
-                reqVO.getModelIds(), reqVO.getCategoryIds(), reqVO.getCategoryIdGroups(),
+                reqVO.getModelIds(), reqVO.getModelEntityTypeCode(), reqVO.getCategoryIds(), reqVO.getCategoryIdGroups(),
                 reqVO.getCategoryViaRefPathCode(),
                 reqVO.getEntityId(), reqVO.getRootEntityId(), reqVO.getEntitySourceEntityType(),
                 reqVO.getPageNo(), reqVO.getPageSize(), reqVO.getKeyword(), reqVO.getDomain(),
-                reqVO.getFieldFilters(), reqVO.getOrderByColumn(), reqVO.getIsAsc());
+                reqVO.getFieldFilters(), reqVO.getOrderByColumn(), reqVO.getIsAsc(),
+                reqVO.getSearchFieldCodes());
     }
 
     /**

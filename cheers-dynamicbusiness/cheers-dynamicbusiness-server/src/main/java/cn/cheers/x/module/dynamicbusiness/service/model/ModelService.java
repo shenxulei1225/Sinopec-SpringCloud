@@ -112,11 +112,19 @@ public interface ModelService {
     List<ModelRespVO> listModelsByEntityType(String entityTypeCode, String domain);
 
     /**
+     * 按业务类型列型号；若传入分类体系编码，则按该体系分类树（同级 sort、深度优先）分桶排序，
+     * 未挂任何该体系节点的型号排在末尾。
+     */
+    List<ModelRespVO> listModelsByEntityType(String entityTypeCode, String domain, String categoryTypeCode);
+
+    /**
      * 按分类体系查询未挂接任何分类节点的模型（Pattern B 数据管理「未分类」）。
      */
     List<ModelRespVO> listUncategorizedModelsByCategoryType(String categoryTypeCode, String entityTypeCode);
 
     List<ModelRespVO> listUncategorizedModelsByCategoryType(String categoryTypeCode, String entityTypeCode, String domain);
+
+    List<ModelRespVO> listCategorizedModelsByCategoryType(String categoryTypeCode, String entityTypeCode, String domain);
 
     List<ModelRespVO> filterModelsByDomain(List<ModelRespVO> models, String domain);
 

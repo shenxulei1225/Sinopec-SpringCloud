@@ -105,6 +105,14 @@ public interface EntityService {
     void delete(EntityDeleteReqVO reqVO);
 
     /**
+     * 删除实体存储行，并做删除前关联清理（不删分类树节点）。
+     * <p>必清：本实体发出的 REF 关系镜像（如分区「所属设施」）。
+     * 可选：其它实体指向本实体的入站关系镜像（{@code clearInboundRelations=true}）。</p>
+     * <p>供分类删除等编排复用，避免走 {@link #delete} 时再删分类节点造成递归。</p>
+     */
+    void deleteEntityWithAssociationCleanup(Long id, String entityTypeCode, boolean clearInboundRelations);
+
+    /**
      * CRUD 弹窗字段异步校验：当前支持实体 name 在同 model 下唯一。
      */
     EntityFieldAvailabilityRespVO checkFieldUnique(

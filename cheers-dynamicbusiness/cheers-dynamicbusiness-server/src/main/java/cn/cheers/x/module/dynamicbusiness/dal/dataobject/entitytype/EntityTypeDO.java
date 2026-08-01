@@ -154,10 +154,19 @@ public class EntityTypeDO extends TenantBaseDO {
     private Boolean enableRuleEngine;
 
     /**
+     * 型号工作台模式：{@link #MODEL_WORKBENCH_MULTI} / {@link #MODEL_WORKBENCH_SINGLE}
+     */
+    @TableField("model_workbench_mode")
+    private String modelWorkbenchMode;
+
+    /**
      * 物理列映射配置(JSON 格式)
      */
     @TableField(value = "physical_column_mapping", typeHandler = JsonbStringTypeHandler.class)
     private String physicalColumnMapping;
+
+    public static final String MODEL_WORKBENCH_MULTI = "MULTI";
+    public static final String MODEL_WORKBENCH_SINGLE = "SINGLE";
 
     /**
      * 判断是否启用

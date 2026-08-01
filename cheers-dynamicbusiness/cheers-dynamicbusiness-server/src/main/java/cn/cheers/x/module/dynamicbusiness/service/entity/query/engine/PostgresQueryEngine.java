@@ -324,18 +324,7 @@ public class PostgresQueryEngine implements QueryEngine {
     /**
      * 使用索引表查询（范围查询/排序）
      *
-     * 通过 JOIN entity_field_index 表实现范围查询和排序
-     * 示例 SQL：
-     * SELECT e.* FROM {ent_*} e
-     * WHERE e.model_id = ? AND e.deleted = false
-     *   AND e.id IN (
-     *     SELECT entity_id FROM dynamic_entity_field_index
-     *     WHERE model_id = ? AND field_code = ? AND value_number > ?
-     *   )
-     * ORDER BY (
-     *   SELECT value_number FROM dynamic_entity_field_index
-     *   WHERE entity_id = e.id AND field_code = ?
-     * ) ASC
+     * 通过 JOIN 字段索引表实现范围查询和排序（物理表带租户后缀）。
      */
     PageResult<EntityDO> queryByIndexTable(FieldQueryRequest request) {
         StringBuilder sql = new StringBuilder();
@@ -409,7 +398,7 @@ public class PostgresQueryEngine implements QueryEngine {
         String valueColumn = determineValueColumn(fieldCode, modelId, value);
 
         StringBuilder subQuery = new StringBuilder();
-        subQuery.append("e.id IN (SELECT entity_id FROM dynamic_entity_field_index WHERE tenant_id = ? AND model_id = ? AND field_code = ?");
+        subQuery.append("e.id IN (SELECT entity_id FROM " + fieldIndexTable() + " WHERE tenant_id = ? AND model_id = ? AND field_code = ?");
         params.add(TenantContextHolder.getRequiredTenantId());
         params.add(modelId);
         params.add(fieldCode);
@@ -529,7 +518,7 @@ public class PostgresQueryEngine implements QueryEngine {
         params.add(fieldCode);
 
         return String.format(
-            "(SELECT %s FROM dynamic_entity_field_index WHERE tenant_id = ? AND entity_id = e.id AND field_code = ?) %s %s",
+            "(SELECT %s FROM " + fieldIndexTable() + " WHERE tenant_id = ? AND entity_id = e.id AND field_code = ?) %s %s",
             valueColumn, direction, nullsOrder
         );
     }
@@ -555,7 +544,7 @@ public class PostgresQueryEngine implements QueryEngine {
      */
     private String buildNumericSortClause(String fieldCode, String direction) {
         return String.format(
-            "(SELECT value_number FROM dynamic_entity_field_index WHERE entity_id = e.id AND field_code = '%s') %s NULLS LAST",
+            "(SELECT value_number FROM " + fieldIndexTable() + " WHERE entity_id = e.id AND field_code = '%s') %s NULLS LAST",
             fieldCode, direction
         );
     }
@@ -565,7 +554,7 @@ public class PostgresQueryEngine implements QueryEngine {
      */
     private String buildStringSortClause(String fieldCode, String direction) {
         return String.format(
-            "(SELECT value_string FROM dynamic_entity_field_index WHERE entity_id = e.id AND field_code = '%s') %s NULLS LAST",
+            "(SELECT value_string FROM " + fieldIndexTable() + " WHERE entity_id = e.id AND field_code = '%s') %s NULLS LAST",
             fieldCode, direction
         );
     }
@@ -575,7 +564,7 @@ public class PostgresQueryEngine implements QueryEngine {
      */
     private String buildDateSortClause(String fieldCode, String direction) {
         return String.format(
-            "(SELECT value_date FROM dynamic_entity_field_index WHERE entity_id = e.id AND field_code = '%s') %s NULLS LAST",
+            "(SELECT value_date FROM " + fieldIndexTable() + " WHERE entity_id = e.id AND field_code = '%s') %s NULLS LAST",
             fieldCode, direction
         );
     }
@@ -585,7 +574,7 @@ public class PostgresQueryEngine implements QueryEngine {
      */
     private String buildDateTimeSortClause(String fieldCode, String direction) {
         return String.format(
-            "(SELECT value_datetime FROM dynamic_entity_field_index WHERE entity_id = e.id AND field_code = '%s') %s NULLS LAST",
+            "(SELECT value_datetime FROM " + fieldIndexTable() + " WHERE entity_id = e.id AND field_code = '%s') %s NULLS LAST",
             fieldCode, direction
         );
     }
@@ -688,7 +677,7 @@ public class PostgresQueryEngine implements QueryEngine {
 
         // 构建 SQL
         sql.append("SELECT ").append(aggFunction).append(" AS agg_value, COUNT(*) AS total_count ");
-        sql.append("FROM dynamic_entity_field_index i ");
+        sql.append("FROM " + fieldIndexTable() + " i ");
         sql.append("WHERE i.model_id = ? AND i.field_code = ?");
         params.add(request.getModelId());
         params.add(fieldCode);
@@ -780,7 +769,7 @@ public class PostgresQueryEngine implements QueryEngine {
             // COUNT 不指定字段时，统计每个分组的 Entity 数量
             sql.append("SELECT ").append(groupValueColumn).append(" AS group_key, ");
             sql.append("COUNT(DISTINCT g.entity_id) AS agg_value, COUNT(DISTINCT g.entity_id) AS count ");
-            sql.append("FROM dynamic_entity_field_index g ");
+            sql.append("FROM " + fieldIndexTable() + " g ");
             sql.append("WHERE g.model_id = ? AND g.field_code = ?");
             params.add(request.getModelId());
             params.add(groupByFieldCode);
@@ -788,8 +777,8 @@ public class PostgresQueryEngine implements QueryEngine {
             // 其他聚合类型，需要 JOIN 聚合字段和分组字段
             sql.append("SELECT ").append(groupValueColumn).append(" AS group_key, ");
             sql.append(aggFunction).append(" AS agg_value, COUNT(*) AS count ");
-            sql.append("FROM dynamic_entity_field_index i ");
-            sql.append("JOIN dynamic_entity_field_index g ON i.entity_id = g.entity_id AND g.model_id = i.model_id ");
+            sql.append("FROM " + fieldIndexTable() + " i ");
+            sql.append("JOIN " + fieldIndexTable() + " g ON i.entity_id = g.entity_id AND g.model_id = i.model_id ");
             sql.append("WHERE i.model_id = ? AND i.field_code = ? ");
             sql.append("AND g.field_code = ?");
             params.add(request.getModelId());
@@ -899,7 +888,7 @@ public class PostgresQueryEngine implements QueryEngine {
 
         for (FieldCondition condition : request.getConditions()) {
             // 这里简化处理，使用索引表条件
-            subQuery.append(" AND e.id IN (SELECT entity_id FROM dynamic_entity_field_index WHERE model_id = ? AND field_code = ?");
+            subQuery.append(" AND e.id IN (SELECT entity_id FROM " + fieldIndexTable() + " WHERE model_id = ? AND field_code = ?");
 
             String valueColumn = determineValueColumn(condition.getFieldCode(), request.getModelId(), condition.getValue());
             Operator operator = condition.getOperator();
@@ -1059,6 +1048,11 @@ public class PostgresQueryEngine implements QueryEngine {
 
     private String entityTable(String entityTypeCode) {
         return entityRepository.resolvePhysicalTableName(entityTypeCode);
+    }
+
+    private String fieldIndexTable() {
+        return cn.cheers.x.module.dynamicbusiness.framework.tenant.TenantPhysicalTableNames
+                .requirePhysical("dynamic_entity_field_index");
     }
 
 
