@@ -34,4 +34,7 @@ run "${SCRIPT_DIR}/05_patch_inspection_item_method_ref.sql"
 echo "== inspection-method: sample bind (optional) =="
 run "${SCRIPT_DIR}/06_sample_bind.sql"
 
+echo "== inspection-method: sample templates library (optional) =="
+run "${SCRIPT_DIR}/07_sample_templates.sql"
+
 echo "done: inspection-method seed"

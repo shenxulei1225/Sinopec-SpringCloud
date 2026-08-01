@@ -16,8 +16,9 @@
 | `04_model.sql` | 规范型号 `code=inspection_method` + 字段分配 |
 | `05_patch_inspection_item_method_ref.sql` | 字段库/基础字段/型号分配 `method_template_id`；停用旧 `FLD-INS-003` |
 | `06_sample_bind.sql` | 样例模板 + 绑定 `INS-ITEM-101`（验收用） |
+| `07_sample_templates.sql` | 扩展标准库方法模板（目视/仪表/机泵阀门/视频门禁等）+ 按名称语义填空绑定检查内容 |
 
-**不在本包**：`equipment_id`（Wave 2）。
+**不在本包**：`equipment_id`（Wave 2）；角度等实例参数字段（待字段契约）。
 
 ## 执行
 
