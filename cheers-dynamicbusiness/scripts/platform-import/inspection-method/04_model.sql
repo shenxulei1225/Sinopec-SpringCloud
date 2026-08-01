@@ -28,9 +28,9 @@ DO UPDATE SET
 INSERT INTO dynamic_model_field_assignment (
   model_id, field_id, model_code, field_code,
   required, is_searchable, is_filterable, is_sortable, sort,
-  default_value, target_entity_type, tenant_id, creator
+  default_value, target_entity_type, field_source, tenant_id, creator
 )
-SELECT m.id, f.id, m.code, f.code, false, true, true, false, 10, 'false', NULL, 1, 'seed'
+SELECT m.id, f.id, m.code, f.code, false, true, true, false, 10, 'false', NULL, 'BASE', 1, 'seed'
 FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1 AND f.code = 'is_template'
 WHERE m.deleted = false AND m.tenant_id = 1 AND m.code = 'inspection_method'
@@ -42,15 +42,16 @@ DO UPDATE SET
   is_searchable = EXCLUDED.is_searchable,
   is_filterable = EXCLUDED.is_filterable,
   default_value = EXCLUDED.default_value,
+  field_source = EXCLUDED.field_source,
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
 INSERT INTO dynamic_model_field_assignment (
   model_id, field_id, model_code, field_code,
   required, is_searchable, is_filterable, is_sortable, sort,
-  default_value, target_entity_type, tenant_id, creator
+  default_value, target_entity_type, field_source, tenant_id, creator
 )
-SELECT m.id, f.id, m.code, f.code, false, false, true, true, 20, NULL, NULL, 1, 'seed'
+SELECT m.id, f.id, m.code, f.code, false, false, true, true, 20, NULL, NULL, 'BASE', 1, 'seed'
 FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1 AND f.code = 'action_duration_sec'
 WHERE m.deleted = false AND m.tenant_id = 1 AND m.code = 'inspection_method'
@@ -60,5 +61,6 @@ DO UPDATE SET
   sort = EXCLUDED.sort,
   is_filterable = EXCLUDED.is_filterable,
   is_sortable = EXCLUDED.is_sortable,
+  field_source = EXCLUDED.field_source,
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
