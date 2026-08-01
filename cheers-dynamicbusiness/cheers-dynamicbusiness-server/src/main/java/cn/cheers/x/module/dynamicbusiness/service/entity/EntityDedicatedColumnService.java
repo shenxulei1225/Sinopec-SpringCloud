@@ -4,8 +4,10 @@ import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeBaseFieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityBaseFieldColumnNames;
 import cn.hutool.core.util.StrUtil;
@@ -18,11 +20,14 @@ import org.springframework.util.CollectionUtils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * 专用表基础字段固定列读写：列名跟字段编码对齐；REF 列存目标实体 id。
@@ -35,8 +40,11 @@ import java.util.Objects;
 @Slf4j
 public class EntityDedicatedColumnService {
 
+    private static final String DYNAMIC_ENTITY_PROVIDER_PREFIX = "dynamic-entity:";
+
     private final EntityTypeMapper entityTypeMapper;
     private final EntityTypeBaseFieldMapper baseFieldMapper;
+    private final FieldMapper fieldMapper;
     private final JdbcTemplate jdbcTemplate;
 
     /**
@@ -218,11 +226,13 @@ public class EntityDedicatedColumnService {
         Map<String, EntityTypeBaseFieldDO> metaByCode = metaByCodeOrNull != null
                 ? metaByCodeOrNull
                 : indexEnabledBaseFields(typeCode);
+        Map<Long, String> targetByLibraryFieldId = loadRefTargetsByLibraryFieldId(metaByCode.values());
         for (Map.Entry<String, Object> e : dedicated.entrySet()) {
             if (e.getKey() == null || e.getValue() == null) {
                 continue;
             }
-            baseFields.put(e.getKey(), toApiValue(metaByCode.get(e.getKey()), e.getValue()));
+            baseFields.put(e.getKey(), toApiValue(
+                    metaByCode.get(e.getKey()), e.getValue(), targetByLibraryFieldId));
         }
     }
 
@@ -265,12 +275,14 @@ public class EntityDedicatedColumnService {
         }
         Map<String, Object> row = rows.get(0);
         Map<String, EntityTypeBaseFieldDO> metaByCode = indexEnabledBaseFields(entity.getEntityTypeCode().trim());
+        Map<Long, String> targetByLibraryFieldId = loadRefTargetsByLibraryFieldId(metaByCode.values());
         for (PhysicalFieldSpec spec : specs) {
             Object dbVal = readColumn(row, spec.columnName());
             if (dbVal == null) {
                 continue;
             }
-            baseFields.put(spec.fieldCode(), toApiValue(metaByCode.get(spec.fieldCode()), dbVal));
+            baseFields.put(spec.fieldCode(), toApiValue(
+                    metaByCode.get(spec.fieldCode()), dbVal, targetByLibraryFieldId));
         }
     }
 
@@ -467,7 +479,52 @@ public class EntityDedicatedColumnService {
         return raw;
     }
 
-    private static Object toApiValue(EntityTypeBaseFieldDO field, Object dbVal) {
+    /**
+     * 批量解析 REF 目标类型：优先字段库 provider_code（dynamic-entity:{type}），
+     * 避免 method_template_id 被编码推断成 method_template。
+     */
+    private Map<Long, String> loadRefTargetsByLibraryFieldId(Collection<EntityTypeBaseFieldDO> fields) {
+        if (CollectionUtils.isEmpty(fields)) {
+            return Map.of();
+        }
+        Set<Long> libraryIds = new HashSet<>();
+        for (EntityTypeBaseFieldDO field : fields) {
+            if (field == null || field.getLibraryFieldId() == null || !isRefType(field.getDataType())) {
+                continue;
+            }
+            libraryIds.add(field.getLibraryFieldId());
+        }
+        if (libraryIds.isEmpty()) {
+            return Map.of();
+        }
+        List<FieldDO> rows = fieldMapper.selectBatchIds(libraryIds);
+        if (CollectionUtils.isEmpty(rows)) {
+            return Map.of();
+        }
+        Map<Long, String> out = new HashMap<>();
+        for (FieldDO row : rows) {
+            if (row == null || row.getId() == null) {
+                continue;
+            }
+            String target = resolveTargetEntityTypeFromProvider(row.getProviderCode());
+            if (StrUtil.isNotBlank(target)) {
+                out.put(row.getId(), target);
+            }
+        }
+        return out;
+    }
+
+    private static String resolveTargetEntityTypeFromProvider(String providerCode) {
+        if (StrUtil.isBlank(providerCode) || !providerCode.startsWith(DYNAMIC_ENTITY_PROVIDER_PREFIX)) {
+            return null;
+        }
+        String code = providerCode.substring(DYNAMIC_ENTITY_PROVIDER_PREFIX.length()).trim();
+        return StrUtil.isNotBlank(code) ? code : null;
+    }
+
+    private static Object toApiValue(EntityTypeBaseFieldDO field,
+                                    Object dbVal,
+                                    Map<Long, String> targetByLibraryFieldId) {
         if (dbVal == null) {
             return null;
         }
@@ -478,7 +535,14 @@ public class EntityDedicatedColumnService {
         if (id == null) {
             return null;
         }
-        String target = EntityBaseFieldColumnNames.inferRefTargetEntityType(field.getFieldCode());
+        String target = null;
+        if (field.getLibraryFieldId() != null && targetByLibraryFieldId != null) {
+            target = targetByLibraryFieldId.get(field.getLibraryFieldId());
+        }
+        if (StrUtil.isBlank(target)) {
+            // 常规 region_id → region；非常规编码（如 method_template_id）须靠字段库 provider
+            target = EntityBaseFieldColumnNames.inferRefTargetEntityType(field.getFieldCode());
+        }
         Map<String, Object> ref = new LinkedHashMap<>();
         if (StrUtil.isNotBlank(target)) {
             ref.put("entityTypeCode", target);

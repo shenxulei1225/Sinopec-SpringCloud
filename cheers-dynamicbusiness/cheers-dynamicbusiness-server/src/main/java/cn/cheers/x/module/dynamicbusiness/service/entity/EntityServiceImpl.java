@@ -567,6 +567,8 @@ public class EntityServiceImpl implements EntityService {
         }
         EntityRespVO vo = EntityDoVoHelper.toRespVO(
                 loaded.get(0), customFieldValidationService, entityDedicatedColumnService);
+        // 详情读路径与列表一致：REF 只存 id，展示名在此补齐（不写库）
+        entityRefDisplayEnrichService.enrich(Collections.singletonList(vo));
         if (includeAssociations) {
             fillAssociations(vo, id, associationCategoryViews);
         }
