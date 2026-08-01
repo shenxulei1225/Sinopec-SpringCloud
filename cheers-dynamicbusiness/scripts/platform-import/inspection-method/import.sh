@@ -43,4 +43,7 @@ run "${SCRIPT_DIR}/08_bind_inspection_items.sql"
 echo "== inspection-method: equipment inspection packages (optional, python) =="
 python "${SCRIPT_DIR}/09_apply_equipment_inspection_packages.py"
 
+echo "== inspection-method: DOMAIN equipment inspection entry =="
+run "${SCRIPT_DIR}/10_domain_equipment_inspection_item.sql"
+
 echo "done: inspection-method seed"

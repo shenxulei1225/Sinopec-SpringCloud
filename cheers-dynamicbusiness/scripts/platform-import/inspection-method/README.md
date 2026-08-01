@@ -19,8 +19,9 @@
 | `07_sample_templates.sql` | 扩展标准库方法模板（目视/仪表/机泵阀门/视频门禁等）+ 首轮名称绑定 |
 | `08_bind_inspection_items.sql` | 补齐缺口模板 + 检查内容↔方法模板语义绑定（仅填空，不整库兜底） |
 | `09_apply_equipment_inspection_packages.py` | **全量设备型号检查包**：按专业类别创建 `INSP-PKG-*` 检查内容、绑定方法模板，并严格同步型号—实体关联（卸错挂） |
+| `10_domain_equipment_inspection_item.sql` | DOMAIN「设备检查内容」`inspection_item_equipment`（base=`inspection_item`，domain=`equipment`，分组「流程规范」）；现有实体 domain 填空 |
 
-**不在本包**：`equipment_id`（Wave 2）；角度等实例参数字段（待字段契约）。
+**不在本包**：`equipment_id`（Wave 2）；角度等实例参数字段（待字段契约）；标准库左树借设备产品分类（另步）。
 
 ### 全量检查包（09）
 
