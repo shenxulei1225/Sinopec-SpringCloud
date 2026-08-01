@@ -37,4 +37,7 @@ run "${SCRIPT_DIR}/06_sample_bind.sql"
 echo "== inspection-method: sample templates library (optional) =="
 run "${SCRIPT_DIR}/07_sample_templates.sql"
 
+echo "== inspection-method: bind inspection items to method templates (optional) =="
+run "${SCRIPT_DIR}/08_bind_inspection_items.sql"
+
 echo "done: inspection-method seed"
