@@ -11,7 +11,8 @@ platform-import/
   system/import.sh       仅 seed，不含建表
   smart-corridor/seed/   管廊产品增量
   smart-station/         站场产品包（04–07，由 generate-smart-station-import.py 维护）
-  import-dev-all.sh      system + corridor + station
+  inspection-method/     检查方法类型与字段（01–04；前置 Flyway V43）
+  import-dev-all.sh      system + corridor + station + inspection-method
 ```
 
 ## 新空库部署（推荐）
