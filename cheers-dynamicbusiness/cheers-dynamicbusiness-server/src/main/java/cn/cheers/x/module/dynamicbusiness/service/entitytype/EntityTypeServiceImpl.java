@@ -336,6 +336,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         newEntityType.setDedicatedTableName(oldEntityType.getDedicatedTableName());
         newEntityType.setPhysicalColumnMapping(oldEntityType.getPhysicalColumnMapping());
         newEntityType.setEnableRuleEngine(oldEntityType.getEnableRuleEngine());
+        newEntityType.setWorkScope(oldEntityType.getWorkScope());
 
         updateBTFromVO(newEntityType, reqVO);
 
@@ -401,6 +402,9 @@ public class EntityTypeServiceImpl implements EntityTypeService {
                     || EntityTypeDO.MODEL_WORKBENCH_MULTI.equals(mode)) {
                 entityType.setModelWorkbenchMode(mode);
             }
+        }
+        if (reqVO.getWorkScope() != null) {
+            entityType.setWorkScope(resolveWorkScope(reqVO.getWorkScope()));
         }
     }
 
