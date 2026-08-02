@@ -67,6 +67,12 @@ public class EntityTypeDO extends TenantBaseDO {
     private String entryKind;
 
     /**
+     * 目录作用域：NETWORK=全网；FACILITY=站场级
+     */
+    @TableField("work_scope")
+    private String workScope;
+
+    /**
      * 子数据类型/划分/分类数据时指向的存储数据类型编码（如 task、equipment）
      */
     @TableField("base_entity_type_code")
@@ -126,6 +132,11 @@ public class EntityTypeDO extends TenantBaseDO {
     public static final String ENTRY_KIND_SCOPE = "SCOPE";
     /** 旧「分类即实体」入口；新划分数据请用 {@link #ENTRY_KIND_SCOPE} */
     public static final String ENTRY_KIND_CATEGORY = "CATEGORY";
+
+    /** 目录作用域：全网 */
+    public static final String WORK_SCOPE_NETWORK = "NETWORK";
+    /** 目录作用域：站场级（默认） */
+    public static final String WORK_SCOPE_FACILITY = "FACILITY";
 
     /**
      * 可用的关联字段定义(JSON格式)

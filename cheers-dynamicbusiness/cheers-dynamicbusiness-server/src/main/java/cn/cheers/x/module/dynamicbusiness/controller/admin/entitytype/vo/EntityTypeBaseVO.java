@@ -39,6 +39,10 @@ public class EntityTypeBaseVO {
     @Size(max = 16, message = "入口类型长度不能超过16")
     private String entryKind;
 
+    @Schema(description = "目录作用域：NETWORK=全网；FACILITY=站场级", example = "FACILITY")
+    @Size(max = 16, message = "目录作用域长度不能超过16")
+    private String workScope;
+
     @Schema(description = "子类型/划分数据/旧分类数据时指向的存储数据类型编码", example = "task")
     @Size(max = 100, message = "基础数据类型编码长度不能超过100")
     private String baseEntityTypeCode;

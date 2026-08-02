@@ -859,6 +859,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
                 StringUtils.hasText(reqVO.getEntryKind())
                         ? EntityTypeEntryKindEnum.fromCode(reqVO.getEntryKind()).getCode()
                         : EntityTypeDO.ENTRY_KIND_NATIVE);
+        entityType.setWorkScope(resolveWorkScope(reqVO.getWorkScope()));
         entityType.setBaseEntityTypeCode(
                 StringUtils.hasText(reqVO.getBaseEntityTypeCode()) ? reqVO.getBaseEntityTypeCode().trim() : null);
         entityType.setDomain(EntityTypeScopeContext.normalizeDomain(reqVO.getDomain()));
@@ -875,6 +876,21 @@ public class EntityTypeServiceImpl implements EntityTypeService {
             }
         }
         requireDedicatedStorage(entityType);
+    }
+
+    /**
+     * 解析目录作用域：空 → FACILITY；仅允许 NETWORK / FACILITY；非法值 400。
+     */
+    private String resolveWorkScope(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return EntityTypeDO.WORK_SCOPE_FACILITY;
+        }
+        String scope = raw.trim().toUpperCase();
+        if (EntityTypeDO.WORK_SCOPE_NETWORK.equals(scope)
+                || EntityTypeDO.WORK_SCOPE_FACILITY.equals(scope)) {
+            return scope;
+        }
+        throw new ServiceException(400, "目录作用域仅支持 NETWORK 或 FACILITY");
     }
 
     /** 动态业务仅允许专用表；显式 GENERIC 拒绝，缺省补为 DEDICATED。 */
@@ -912,6 +928,10 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         vo.setParentId(entityType.getParentId());
         vo.setGroupName(entityType.getGroupName());
         vo.setEntryKind(entityType.getEntryKind());
+        vo.setWorkScope(
+                StringUtils.hasText(entityType.getWorkScope())
+                        ? entityType.getWorkScope()
+                        : EntityTypeDO.WORK_SCOPE_FACILITY);
         vo.setBaseEntityTypeCode(entityType.getBaseEntityTypeCode());
         vo.setDomain(entityType.getDomain());
         vo.setCreateTime(entityType.getCreateTime());

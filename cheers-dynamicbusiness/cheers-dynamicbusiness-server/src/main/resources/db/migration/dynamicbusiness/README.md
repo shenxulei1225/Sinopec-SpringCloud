@@ -59,8 +59,10 @@
 | V42 | `V42__ent_code_unique_indexes.sql` | 实体 `code` 租户内唯一索引 |
 | V43 | `V43__ent_inspection_method.sql` | 检查方法专用表 `ent_inspection_method`（`is_template` / `action_duration_sec`）+ 租户分表 |
 | V44 | `V44__ent_inspection_item_method_template_id.sql` | 检查内容表增加 `method_template_id`（REF → `inspection_method`） |
+| V45 | `V45__category_category_relation.sql` | 分类—分类跨种类关联基表 + 按租户拆 `dynamic_category_category_relation_t{id}`；同种类禁止（须用 parent_id） |
+| V46 | `V46__entity_type_work_scope.sql` | 数据类型 `work_scope`（NETWORK=全网；FACILITY=站场级，默认） |
 
-下一新增版本应为 **V45**。  
+下一新增版本应为 **V47**。  
 
 > **跨机合并说明**：本机布局迁移已占用 V26–V28 且已执行；对方原 `V26__category_*` / `V27__ent_structure` 在合并后改为 V29/V30。若对方库已按旧文件名执行过 V26/V27，需对齐历史表 `version`/`script` 后 `flyway:repair`，再拉本分支。
 已停用脚本在 `db/backup/flyway-legacy-pre-seed/`，不得放回本目录。
@@ -101,6 +103,8 @@ PGPASSWORD=Coolhomer psql -h 127.0.0.1 -U postgres -d sinopec -c \
 
 | 日期 | 说明 |
 |------|------|
+| 2026-08-02 | V46：数据类型 `work_scope`（NETWORK/FACILITY）；API 字段 `workScope`，空默认 FACILITY，非法值 400 |
+| 2026-08-01 | V45：分类—分类跨种类关联 `dynamic_category_category_relation` + 租户分表；同种类 CHECK + 服务端拒绝（须用 parent_id） |
 | 2026-07-29 | V36：`ent_*` 补齐 `domain`/`tree_path`/`sort`；同步修正运行时建表模板（修 standard 等新建类型 query-by-scene 500） |
 | 2026-07-29 | V34：全量校准 `ent_*` / `model_crud_form_definition` / `business_capability` / `capability_component_projection` id 序列 |
 | 2026-07-29 | V33：`ent_equipment` 补 `ent_equipment_id_seq` 与 id DEFAULT（对齐其它 ent_*） |
