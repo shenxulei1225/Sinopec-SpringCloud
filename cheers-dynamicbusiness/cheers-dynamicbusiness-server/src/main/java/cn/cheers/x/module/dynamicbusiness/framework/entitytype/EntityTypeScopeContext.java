@@ -9,8 +9,8 @@ import org.springframework.util.StringUtils;
 /**
  * 解析数据类型入口与存储类型、业务域（Domain）、划分（Scope）的对应关系。
  * <p>
- * domainEntry 与 scopeEntry 互斥；normalizeDomain / domainsEqual 为业务域工具，
- * 保留在本类便于调用方就地使用（与入口解析同包）。
+ * domainEntry 与 scopeEntry 互斥；REUSE 亦复用底座但不带域、不圈选。
+ * normalizeDomain / domainsEqual 为业务域工具，保留在本类便于调用方就地使用。
  */
 @Value
 @Builder
@@ -23,7 +23,9 @@ public class EntityTypeScopeContext {
     boolean domainEntry;
     /** 划分数据入口：复用基础类型存储，成员由 dynamic_entity_type_scope 维护。 */
     boolean scopeEntry;
-    /** 分类数据入口：复用基础类型存储，不按业务域过滤。 */
+    /** 使用已有数据入口：复用基础类型存储，可读写，无 domain / scope 过滤。 */
+    boolean reuseEntry;
+    /** 分类数据入口：自有存储；树节点 1:1 绑实体。 */
     boolean categoryLinked;
 
     public static EntityTypeScopeContext from(EntityTypeDO entityType) {
@@ -38,6 +40,7 @@ public class EntityTypeScopeContext {
                     .domain(kind.isDomainEntry() ? normalizeDomain(entityType.getDomain()) : null)
                     .domainEntry(kind.isDomainEntry())
                     .scopeEntry(kind.isScopeEntry())
+                    .reuseEntry(kind.isReuseEntry())
                     .categoryLinked(kind.isCategory())
                     .build();
         }
@@ -47,7 +50,8 @@ public class EntityTypeScopeContext {
                 .domain(null)
                 .domainEntry(false)
                 .scopeEntry(false)
-                .categoryLinked(false)
+                .reuseEntry(false)
+                .categoryLinked(kind.isCategory())
                 .build();
     }
 

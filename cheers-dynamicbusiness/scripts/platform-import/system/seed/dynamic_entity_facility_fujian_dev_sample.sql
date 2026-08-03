@@ -8,13 +8,13 @@ SET search_path TO dynamicbusiness;
 
 INSERT INTO ent_facility (
     id, entity_type_code, model_id, name, code, tenant_id, creator,
-    tree_path, sort, status, deleted, fld_base_facility_ref_region, address, longitude, latitude,
+    tree_path, sort, status, deleted, region_id, address, longitude, latitude,
     facility_type, custom_fields
 )
 OVERRIDING SYSTEM VALUE
 SELECT
     v.id, 'facility', m.id, v.name, v.code, 1, 'seed',
-    v.tree_path, v.sort, 1, false, v.fld_base_facility_ref_region, v.address, v.longitude, v.latitude,
+    v.tree_path, v.sort, 1, false, v.region_id, v.address, v.longitude, v.latitude,
     v.facility_type, '{}'::jsonb
 FROM (
     VALUES
@@ -281,15 +281,15 @@ FROM (
         (
             19,
             'FAC-FJ-HX2-004',
-            '天宝站',
+            '天宝清管站',
             '/19/',
             4,
-            'MODEL-FACILITY-NG-DISTRIBUTION',
+            'MODEL-FACILITY-NG-PIGGING',
             100024,
             '福建省',
             NULL::numeric,
             NULL::numeric,
-            'ng_distribution'
+            'ng_pigging'
         ),
         (
             20,
@@ -498,9 +498,61 @@ FROM (
             NULL::numeric,
             NULL::numeric,
             'ng_distribution'
+        ),
+        (
+            49,
+            'FAC-FJ-CPY-005',
+            '厦门集美分输阀室',
+            '/49/',
+            5,
+            'MODEL-FACILITY-CP-DISTRIBUTION',
+            100024,
+            '福建省',
+            NULL::numeric,
+            NULL::numeric,
+            'cp_distribution'
+        ),
+        (
+            46,
+            'FAC-FJ-HX2-019',
+            '漳州首站',
+            '/46/',
+            19,
+            'MODEL-FACILITY-NG-HEAD',
+            100024,
+            '福建省',
+            NULL::numeric,
+            NULL::numeric,
+            'ng_head'
+        ),
+        (
+            47,
+            'FAC-FJ-HX2-020',
+            '水头分输站',
+            '/47/',
+            20,
+            'MODEL-FACILITY-NG-DISTRIBUTION',
+            100024,
+            '福建省',
+            NULL::numeric,
+            NULL::numeric,
+            'ng_distribution'
+        ),
+        (
+            48,
+            'FAC-FJ-LNGL-003',
+            '漳州LNG接收站',
+            '/48/',
+            0,
+            'MODEL-FACILITY-NG-RECEIVING',
+            100024,
+            '福建省',
+            NULL::numeric,
+            NULL::numeric,
+            'ng_receiving'
         )
 ) AS v(
-    id, code, name, tree_path, sort, model_code, fld_base_facility_ref_region,
+    id, code, name, tree_path, sort, model_code, region_id,
     address, longitude, latitude, facility_type
 )
 JOIN dynamic_model m
@@ -509,7 +561,7 @@ ON CONFLICT (id) DO UPDATE SET
     model_id = EXCLUDED.model_id,
     name = EXCLUDED.name,
     code = EXCLUDED.code,
-    fld_base_facility_ref_region = EXCLUDED.fld_base_facility_ref_region,
+    region_id = EXCLUDED.region_id,
     facility_type = EXCLUDED.facility_type,
     deleted = false,
     updater = 'seed',
@@ -517,5 +569,5 @@ ON CONFLICT (id) DO UPDATE SET
 
 SELECT setval(
     pg_get_serial_sequence('dynamicbusiness.ent_facility', 'id'),
-    GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_facility), 43)
+    GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_facility), 49)
 );

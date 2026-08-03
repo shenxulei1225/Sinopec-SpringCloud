@@ -60,8 +60,13 @@
 | V43 | `V43__ent_inspection_method.sql` | 检查方法专用表 `ent_inspection_method`（`is_template` / `action_duration_sec`）+ 租户分表 |
 | V44 | `V44__ent_inspection_item_method_template_id.sql` | 检查内容表增加 `method_template_id`（REF → `inspection_method`） |
 | V46 | `V46__entity_type_work_scope.sql` | 数据类型 `work_scope`（NETWORK=全网；FACILITY=站场级，默认） |
+| V47 | `V47__seed_network_work_scope_samples.sql` | 样例：`region`/`facility` 标 `NETWORK` |
+| V48 | `V48__facility_owning_field_and_network_seeds.sql` | `facility_id` 显示名曾写「所属站场」；应急/标准/检查内容等样例标 `NETWORK` |
+| V49 | `V49__facility_owning_display_name_changzhan.sql` | 统一 `facility_id` 展示名为「所属场站」（REF→facility 不变） |
+| V50 | `V50__inspection_method_instance_refs.sql` | 检查方法表增加实例 REF 列 `equipment_id` / `inspection_item_id`（模板行为空） |
+| V51 | `V51__dm_five_w_orchestration.sql` | 五维编排 bundle 语义块 + Who 槽位表（与 data-tab-layout 分表） |
 
-> **版本号说明**：本仓库已登记 **V46**。若本地另有未入库的 `V45__*.sql`，不得在本节写成已登记版本，也不得据此写「下一版本 V47」；补齐 V45 或占用空号须另任务提交后再更新本节。  
+> **版本号说明**：本仓库已登记至 **V50**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。  
 
 
 > **跨机合并说明**：本机布局迁移已占用 V26–V28 且已执行；对方原 `V26__category_*` / `V27__ent_structure` 在合并后改为 V29/V30。若对方库已按旧文件名执行过 V26/V27，需对齐历史表 `version`/`script` 后 `flyway:repair`，再拉本分支。
@@ -104,6 +109,7 @@ PGPASSWORD=Coolhomer psql -h 127.0.0.1 -U postgres -d sinopec -c \
 | 日期 | 说明 |
 |------|------|
 | 2026-08-02 | V46：数据类型 `work_scope`（NETWORK/FACILITY）；API 字段 `workScope`，空默认 FACILITY，非法值 400 |
+| 2026-08-02 | V47：样例全网目录 `region`/`facility` 写入 `work_scope=NETWORK` |
 | 2026-07-29 | V36：`ent_*` 补齐 `domain`/`tree_path`/`sort`；同步修正运行时建表模板（修 standard 等新建类型 query-by-scene 500） |
 | 2026-07-29 | V34：全量校准 `ent_*` / `model_crud_form_definition` / `business_capability` / `capability_component_projection` id 序列 |
 | 2026-07-29 | V33：`ent_equipment` 补 `ent_equipment_id_seq` 与 id DEFAULT（对齐其它 ent_*） |

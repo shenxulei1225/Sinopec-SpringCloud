@@ -17,6 +17,8 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
 import cn.cheers.x.framework.mybatis.core.type.JsonbMapTypeHandler;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
+import cn.cheers.x.module.dynamicbusiness.service.entitytype.FacilityOwningFieldEnsureService;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
@@ -39,6 +41,8 @@ public class EntityBusinessHelper {
     private final EntityTypeBaseFieldMapper entityTypeBaseFieldMapper;
     private final CustomFieldValidationService customFieldValidationService;
     private final EntityRepository entityRepository;
+    private final EntityDedicatedColumnService entityDedicatedColumnService;
+    private final FacilityOwningFieldEnsureService facilityOwningFieldEnsureService;
 
     public ModelDO validateModelExists(Long modelId) {
         ModelDO model = modelMapper.selectById(modelId);
@@ -157,6 +161,9 @@ public class EntityBusinessHelper {
         Long modelId = EntityFieldMapsSupport.getRequiredModelId(baseFields);
         String entityTypeCode = EntityFieldMapsSupport.getRequiredEntityTypeCode(baseFields);
 
+        applyFacilityOwningOnCreate(baseFields, reqVO.getCustomFields(), entityTypeCode);
+        reqVO.setBaseFields(baseFields);
+
         ModelDO model = validateModelExists(modelId);
         validateModelEntityType(modelId, entityTypeCode);
         validateRequestedDomainMatchesModel(baseFields, model);
@@ -193,6 +200,9 @@ public class EntityBusinessHelper {
             baseFields.put("entityTypeCode", entityTypeCode);
         }
 
+        applyFacilityOwningOnUpdate(baseFields, reqVO.getCustomFields(), entityTypeCode, dbEntity);
+        reqVO.setBaseFields(baseFields);
+
         ModelDO model = validateModelExists(modelId);
         validateModelEntityType(modelId, entityTypeCode);
         validateRequestedDomainMatchesModel(baseFields, model);
@@ -218,6 +228,83 @@ public class EntityBusinessHelper {
         }
 
         return update;
+    }
+
+    /**
+     * 站场级创建：请求须显式带所属场站；规范化为 REF 对象写入 baseFields。
+     */
+    private void applyFacilityOwningOnCreate(
+            Map<String, Object> baseFields, Map<String, Object> customFields, String entityTypeCode) {
+        if (!requiresFacilityOwning(entityTypeCode)) {
+            return;
+        }
+        facilityOwningFieldEnsureService.ensureForEntityTypeCode(entityTypeCode);
+        Object raw = firstFacilityOwningRaw(baseFields, customFields);
+        Long facilityId = FacilityOwningFieldCodes.extractId(raw);
+        if (facilityId == null) {
+            throw new ServiceException(400, "站场级数据须指定所属场站，请先选择要管理的场站");
+        }
+        baseFields.put(FacilityOwningFieldCodes.FIELD_CODE, FacilityOwningFieldCodes.toApiRef(facilityId));
+        if (customFields != null) {
+            customFields.remove(FacilityOwningFieldCodes.FIELD_CODE);
+        }
+    }
+
+    /**
+     * 站场级更新：所属场站只读；试图改站则 400；未传则回填原值。
+     */
+    private void applyFacilityOwningOnUpdate(
+            Map<String, Object> baseFields,
+            Map<String, Object> customFields,
+            String entityTypeCode,
+            EntityDO dbEntity) {
+        if (!requiresFacilityOwning(entityTypeCode)) {
+            return;
+        }
+        Map<String, Object> oldBag = new LinkedHashMap<>(emptyIfNull(dbEntity.getCustomFields()));
+        entityDedicatedColumnService.mergePhysicalColumnsIntoBaseFields(dbEntity, oldBag);
+        Long oldId = FacilityOwningFieldCodes.extractId(oldBag.get(FacilityOwningFieldCodes.FIELD_CODE));
+        Object requestedRaw = firstFacilityOwningRaw(baseFields, customFields);
+        Long requestedId = FacilityOwningFieldCodes.extractId(requestedRaw);
+
+        if (oldId != null && requestedId != null && !Objects.equals(oldId, requestedId)) {
+            throw new ServiceException(400, "所属场站创建后不可修改（挪站请走迁移能力）");
+        }
+        Long lockedId = oldId != null ? oldId : requestedId;
+        if (lockedId != null) {
+            baseFields.put(FacilityOwningFieldCodes.FIELD_CODE, FacilityOwningFieldCodes.toApiRef(lockedId));
+            if (customFields != null) {
+                customFields.remove(FacilityOwningFieldCodes.FIELD_CODE);
+            }
+        }
+    }
+
+    private boolean requiresFacilityOwning(String entityTypeCode) {
+        if (StrUtil.isBlank(entityTypeCode)) {
+            return false;
+        }
+        EntityTypeDO entityType = entityTypeMapper.selectByCode(entityTypeCode.trim());
+        if (entityType == null) {
+            return false;
+        }
+        if (FacilityOwningFieldCodes.TARGET_ENTITY_TYPE.equalsIgnoreCase(entityType.getCode())) {
+            return false;
+        }
+        String scope = entityType.getWorkScope();
+        if (StrUtil.isBlank(scope)) {
+            scope = EntityTypeDO.WORK_SCOPE_FACILITY;
+        }
+        return EntityTypeDO.WORK_SCOPE_FACILITY.equalsIgnoreCase(scope.trim());
+    }
+
+    private static Object firstFacilityOwningRaw(Map<String, Object> baseFields, Map<String, Object> customFields) {
+        if (baseFields != null && baseFields.containsKey(FacilityOwningFieldCodes.FIELD_CODE)) {
+            return baseFields.get(FacilityOwningFieldCodes.FIELD_CODE);
+        }
+        if (customFields != null) {
+            return customFields.get(FacilityOwningFieldCodes.FIELD_CODE);
+        }
+        return null;
     }
 
     /**

@@ -76,6 +76,12 @@ public class EntityTypeServiceImpl implements EntityTypeService {
     private EntityTypeCategoryBootstrapService entityTypeCategoryBootstrapService;
 
     @Resource
+    private EntityTypeOrchestrationBootstrapService entityTypeOrchestrationBootstrapService;
+
+    @Resource
+    private FacilityOwningFieldEnsureService facilityOwningFieldEnsureService;
+
+    @Resource
     private GroupService groupService;
 
     @Resource
@@ -96,6 +102,9 @@ public class EntityTypeServiceImpl implements EntityTypeService {
     @Transactional(rollbackFor = Exception.class)
     public Long create(EntityTypeCreateReqVO reqVO) {
         EntityTypeEntryKindEnum entryKind = EntityTypeEntryKindEnum.fromCode(reqVO.getEntryKind());
+        if (entryKind.isReuseEntry()) {
+            return createReuseEntityType(reqVO);
+        }
         if (entryKind.isDomainEntry()) {
             return createDomainEntityType(reqVO);
         }
@@ -144,6 +153,8 @@ public class EntityTypeServiceImpl implements EntityTypeService {
 
         ensureTenantAssociationTablesQuietly();
         entityTypeCategoryBootstrapService.ensureForEntityTypeCode(entityType.getCode());
+        entityTypeOrchestrationBootstrapService.ensureForEntityTypeCode(entityType.getCode());
+        facilityOwningFieldEnsureService.ensureForEntityTypeCode(entityType.getCode());
 
         return entityType.getId();
     }
@@ -178,6 +189,39 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         entityTypeMapper.insert(entityType);
 
         entityTypeCategoryBootstrapService.ensureForEntityTypeCode(entityType.getCode());
+        entityTypeOrchestrationBootstrapService.ensureForEntityTypeCode(entityType.getCode());
+
+        return entityType.getId();
+    }
+
+    /**
+     * 使用已有数据（REUSE）：复用基础类型存储，不建新表、不打业务域、不靠成员圈选；
+     * 本入口可读写底座同表，差异在目录名与默认布局/工作台。
+     */
+    private Long createReuseEntityType(EntityTypeCreateReqVO reqVO) {
+        if (!StringUtils.hasText(reqVO.getBaseEntityTypeCode())) {
+            throw new ServiceException(400, "使用已有数据必须指定基础数据类型编码");
+        }
+        if (entityTypeMapper.existsByCode(reqVO.getCode())) {
+            throw new ServiceException(400, "业务类型编码已存在");
+        }
+
+        String baseCode = reqVO.getBaseEntityTypeCode().trim();
+        EntityTypeDO baseType = requireNativeBaseEntityType(baseCode, "使用已有数据");
+
+        EntityTypeDO entityType = new EntityTypeDO();
+        copyBaseFields(entityType, reqVO);
+        entityType.setTypeLevel(EntityTypeDO.TYPE_LEVEL_USER);
+        entityType.setParentId(null);
+        entityType.setEntryKind(EntityTypeDO.ENTRY_KIND_REUSE);
+        entityType.setBaseEntityTypeCode(baseCode);
+        entityType.setDomain(null);
+        inheritStorageFromBase(entityType, baseType);
+        ensureEntityTypeGroupRegistered(entityType.getGroupName());
+        entityTypeMapper.insert(entityType);
+
+        entityTypeCategoryBootstrapService.ensureForEntityTypeCode(entityType.getCode());
+        entityTypeOrchestrationBootstrapService.ensureForEntityTypeCode(entityType.getCode());
 
         return entityType.getId();
     }
@@ -209,6 +253,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         entityTypeMapper.insert(entityType);
 
         entityTypeCategoryBootstrapService.ensureForEntityTypeCode(entityType.getCode());
+        entityTypeOrchestrationBootstrapService.ensureForEntityTypeCode(entityType.getCode());
 
         return entityType.getId();
     }
@@ -249,6 +294,8 @@ public class EntityTypeServiceImpl implements EntityTypeService {
 
         ensureTenantAssociationTablesQuietly();
         entityTypeCategoryBootstrapService.ensureForEntityTypeCode(entityType.getCode());
+        entityTypeOrchestrationBootstrapService.ensureForEntityTypeCode(entityType.getCode());
+        facilityOwningFieldEnsureService.ensureForEntityTypeCode(entityType.getCode());
 
         return entityType.getId();
     }
@@ -352,6 +399,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
 
         // 持久化保存
         entityTypeMapper.updateById(newEntityType);
+        facilityOwningFieldEnsureService.ensureForEntityTypeCode(newEntityType.getCode());
     }
 
     private void updateBTFromVO(EntityTypeDO entityType, EntityTypeUpdateReqVO reqVO) {

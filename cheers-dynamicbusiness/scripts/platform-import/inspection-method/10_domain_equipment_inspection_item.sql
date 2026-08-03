@@ -1,12 +1,12 @@
 -- ============================================================================
 -- inspection-method · 10 DOMAIN「设备检查内容」入口（复用 inspection_item 存储）
--- 学习入口：流程规范 → 设备检查内容（前端直接进标准库）
--- 底座 NATIVE「检查内容」仍保留在设备管理，供按型号配置
+-- 【已废】最终定稿见 12_retire_inspection_item_domains.sql（不再用 DOMAIN 管检查内容）
+-- 保留本文件仅供历史 import 顺序幂等；12 会软删本入口并清空实体 domain。
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;
 
--- 1) DOMAIN 注册项
+-- 1) DOMAIN 注册项（设备管理）
 INSERT INTO dynamic_entity_type (
   code, name, parent_id, description, icon, alias, sort, status, type_level,
   association_fields, storage_type, dedicated_table_name, enable_rule_engine,
@@ -17,10 +17,10 @@ SELECT
   'inspection_item_equipment',
   '设备检查内容',
   NULL,
-  '检查内容底座的设备业务域入口；复用 ent_inspection_item；标准库学习入口挂流程规范',
+  '检查内容底座的设备业务域；配置入口挂设备管理',
   COALESCE(b.icon, 'fa:calendar-check-o'),
   '设备检查内容',
-  15,
+  21,
   'active',
   'USER',
   '{}',
@@ -32,7 +32,7 @@ SELECT
   'DOMAIN',
   'inspection_item',
   'equipment',
-  '流程规范',
+  '设备管理',
   1,
   'seed'
 FROM dynamic_entity_type b
@@ -50,8 +50,8 @@ SET
   entry_kind = 'DOMAIN',
   base_entity_type_code = 'inspection_item',
   domain = 'equipment',
-  group_name = '流程规范',
-  sort = 15,
+  group_name = '设备管理',
+  sort = 21,
   model_workbench_mode = COALESCE(model_workbench_mode, 'SINGLE'),
   dedicated_table_name = (
     SELECT b.dedicated_table_name FROM dynamic_entity_type b

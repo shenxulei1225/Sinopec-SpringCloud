@@ -16,7 +16,7 @@ public class DmDataTabLayoutRespVO {
     @Schema(description = "列种类 CATEGORY|MODEL|ENTITY|DETAIL")
     private String columnKind;
 
-    @Schema(description = "分类列视角 id，仅 CATEGORY")
+    @Schema(description = "视角 id：CATEGORY / MODEL / ENTITY 多列")
     private String perspectiveId;
 
     @Schema(description = "组件配置 propsId")

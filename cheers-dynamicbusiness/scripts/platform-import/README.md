@@ -12,7 +12,8 @@ platform-import/
   smart-corridor/seed/   管廊产品增量
   smart-station/         站场产品包（04–07，由 generate-smart-station-import.py 维护）
   inspection-method/     检查方法类型与字段（01–04；前置 Flyway V43）
-  import-dev-all.sh      system + corridor + station + inspection-method
+  five-w-orchestration/  五维编排 bundle seed（前置 Flyway V51）
+  import-dev-all.sh      system + corridor + station + inspection-method + five-w-orchestration
 ```
 
 ## 新空库部署（推荐）

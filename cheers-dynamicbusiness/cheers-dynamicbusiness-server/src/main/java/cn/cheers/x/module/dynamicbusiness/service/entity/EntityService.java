@@ -369,6 +369,17 @@ public interface EntityService {
                                                    String categoryTypeCode,
                                                    String domain);
 
+    /**
+     * 同 {@link #listDistinctModelIdsByCategoryScope(String, List, List, String, String)}，
+     * 可关闭分类子树展开（includeDescendants=false 时仅用传入 id）。
+     */
+    List<Long> listDistinctModelIdsByCategoryScope(String entityTypeCode,
+                                                   List<Long> categoryIds,
+                                                   List<CategoryIdGroupReqVO> categoryIdGroups,
+                                                   String categoryTypeCode,
+                                                   String domain,
+                                                   Boolean includeDescendants);
+
     // ==================== 预计算相关方法 ====================
 
 

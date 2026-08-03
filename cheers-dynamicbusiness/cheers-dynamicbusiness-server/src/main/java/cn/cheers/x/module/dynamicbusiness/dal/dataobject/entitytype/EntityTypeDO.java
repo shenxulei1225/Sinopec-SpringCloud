@@ -128,6 +128,8 @@ public class EntityTypeDO extends TenantBaseDO {
     public static final String TYPE_LEVEL_USER = "USER";
 
     public static final String ENTRY_KIND_NATIVE = "NATIVE";
+    /** 使用已有数据：复用基础 NATIVE 存储，可读写；不打 domain、非 SCOPE 圈选 */
+    public static final String ENTRY_KIND_REUSE = "REUSE";
     public static final String ENTRY_KIND_DOMAIN = "DOMAIN";
     public static final String ENTRY_KIND_SCOPE = "SCOPE";
     /** 旧「分类即实体」入口；新划分数据请用 {@link #ENTRY_KIND_SCOPE} */

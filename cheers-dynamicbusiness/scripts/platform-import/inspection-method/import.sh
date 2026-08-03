@@ -43,7 +43,20 @@ run "${SCRIPT_DIR}/08_bind_inspection_items.sql"
 echo "== inspection-method: equipment inspection packages (optional, python) =="
 python "${SCRIPT_DIR}/09_apply_equipment_inspection_packages.py"
 
-echo "== inspection-method: DOMAIN equipment inspection entry =="
+echo "== inspection-method: (legacy 10/11 DOMAIN IA — superseded by 12) =="
 run "${SCRIPT_DIR}/10_domain_equipment_inspection_item.sql"
+run "${SCRIPT_DIR}/11_flip_inspection_catalog_ia.sql"
+
+echo "== inspection-method: retire inspection_item DOMAIN entries + clear entity domain =="
+run "${SCRIPT_DIR}/12_retire_inspection_item_domains.sql"
+
+echo "== inspection-method: catalog fix — 检查方法 → 知识库 =="
+run "${SCRIPT_DIR}/13_fix_inspection_method_catalog.sql"
+
+echo "== inspection-method: categories + entity links (optional, python) =="
+python "${SCRIPT_DIR}/14_seed_inspection_method_categories.py"
+
+echo "== inspection-method: instance REF fields (equipment_id / inspection_item_id) =="
+run "${SCRIPT_DIR}/15_instance_fields.sql"
 
 echo "done: inspection-method seed"

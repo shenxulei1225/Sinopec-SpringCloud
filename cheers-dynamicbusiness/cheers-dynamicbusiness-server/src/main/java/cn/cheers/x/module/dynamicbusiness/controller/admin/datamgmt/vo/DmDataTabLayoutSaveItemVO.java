@@ -12,7 +12,7 @@ public class DmDataTabLayoutSaveItemVO {
     @NotBlank(message = "columnKind 不能为空")
     private String columnKind;
 
-    @Schema(description = "分类列视角 id，仅 CATEGORY")
+    @Schema(description = "视角 id：CATEGORY 必填；MODEL/ENTITY 多列时填写；DETAIL 勿填")
     private String perspectiveId;
 
     @Schema(description = "组件配置 propsId")
@@ -21,6 +21,6 @@ public class DmDataTabLayoutSaveItemVO {
     @Schema(description = "是否启用")
     private Boolean enabled;
 
-    @Schema(description = "「数据」Tab 分类列设置 JSON，仅 CATEGORY")
+    @Schema(description = "列扩展 JSON：CATEGORY 为分类列设置；MODEL 多 Tab 时可存 { label }")
     private Object categoryColumn;
 }

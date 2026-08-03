@@ -8,13 +8,14 @@ SET search_path TO dynamicbusiness;
 INSERT INTO dynamic_entity_type (
   code, name, parent_id, description, icon, alias, sort, status, type_level,
   association_fields, storage_type, dedicated_table_name, enable_rule_engine,
-  physical_column_mapping, model_workbench_mode, tenant_id, creator
+  physical_column_mapping, model_workbench_mode, group_name, work_scope,
+  tenant_id, creator
 ) VALUES (
   'inspection_method', '检查方法', NULL,
-  '检查方法：同表承载方法模板与按台实例；标准库只展示 is_template=true；Wave 1 不挂 equipment_id',
+  '全网通用标准检查方法（模板/实例同表）；标准库只展示 is_template=true；由检查内容 method_template_id 引用',
   'fa:wrench', '检查方法', 21, 'active', 'USER',
   '{}', 'DEDICATED', 'ent_inspection_method', FALSE,
-  NULL, 'SINGLE', 1, 'seed'
+  NULL, 'SINGLE', '知识库', 'NETWORK', 1, 'seed'
 )
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
@@ -28,6 +29,8 @@ DO UPDATE SET
   dedicated_table_name = EXCLUDED.dedicated_table_name,
   enable_rule_engine = EXCLUDED.enable_rule_engine,
   model_workbench_mode = EXCLUDED.model_workbench_mode,
+  group_name = EXCLUDED.group_name,
+  work_scope = EXCLUDED.work_scope,
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 

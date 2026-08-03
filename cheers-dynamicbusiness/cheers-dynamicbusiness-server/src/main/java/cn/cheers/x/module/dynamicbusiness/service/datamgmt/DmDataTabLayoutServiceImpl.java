@@ -125,8 +125,11 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
                     && !StringUtils.hasText(item.getPerspectiveId())) {
                 throw new ServiceException(400, "CATEGORY 列必须提供 perspectiveId");
             }
-            if (!DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(kind)
-                    && StringUtils.hasText(item.getPerspectiveId())) {
+            // CATEGORY / MODEL / ENTITY 可带不同 perspectiveId（多栏/多实体列）；DETAIL 仍禁止
+            boolean allowsPerspective = DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(kind)
+                    || DmDataTabLayoutKindEnum.MODEL.getCode().equals(kind)
+                    || DmDataTabLayoutKindEnum.ENTITY.getCode().equals(kind);
+            if (!allowsPerspective && StringUtils.hasText(item.getPerspectiveId())) {
                 throw new ServiceException(400, kind + " 列不应设置 perspectiveId");
             }
             String scope = scopeKey(kind, normalizePerspectiveId(item.getPerspectiveId()));

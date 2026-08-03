@@ -6,11 +6,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[4]
-SEED_DIR = (
-    ROOT
-    / "Sinopec-SpringCloud/cheers-module-dynamicbusiness/scripts/platform-import/system/seed"
-)
+SEED_DIR = Path(__file__).resolve().parent / "system" / "seed"
 FACILITY_OUT = SEED_DIR / "dynamic_entity_facility_fujian_dev_sample.sql"
 CATEGORY_OUT = SEED_DIR / "dynamic_category_facility_fujian.sql"
 
@@ -69,7 +65,7 @@ PIPELINES = {
             "旧镇分输站",
             "常山分输站",
             "诏安末站",
-            "天宝站",
+            "天宝清管站",
             "南靖站",
             "龙岩站",
             "德化站",
@@ -100,6 +96,42 @@ PIPELINES = {
         ],
     },
 }
+
+# 追加站场使用固定 id/code，避免重排已有 16–39 号实体
+EXTRA_STATIONS = [
+    {
+        "pipe_key": "CPY",
+        "id": 49,
+        "code": "FAC-FJ-CPY-005",
+        "name": "厦门集美分输阀室",
+        "category_code": "FAC-CAT-ST-FJ-CPY-005",
+        "sort": 5,
+    },
+    {
+        "pipe_key": "HX2",
+        "id": 46,
+        "code": "FAC-FJ-HX2-019",
+        "name": "漳州首站",
+        "category_code": "FAC-CAT-ST-FJ-HX2-019",
+        "sort": 19,
+    },
+    {
+        "pipe_key": "HX2",
+        "id": 47,
+        "code": "FAC-FJ-HX2-020",
+        "name": "水头分输站",
+        "category_code": "FAC-CAT-ST-FJ-HX2-020",
+        "sort": 20,
+    },
+    {
+        "pipe_key": "LNGL",
+        "id": 48,
+        "code": "FAC-FJ-LNGL-003",
+        "name": "漳州LNG接收站",
+        "category_code": "FAC-CAT-ST-FJ-LNGL-003",
+        "sort": 0,
+    },
+]
 
 STATION_ID_START = {
     "CPY": 34,
@@ -234,6 +266,39 @@ def build_station_rows() -> tuple[list[str], list[dict], int]:
             max_id = max(max_id, facility_id)
             facility_id += 1
 
+    for extra in EXTRA_STATIONS:
+        pipe = PIPELINES[extra["pipe_key"]]
+        medium = pipe.get("medium", "ng")
+        model = infer_model(extra["name"], medium)
+        facility_id = extra["id"]
+        rows.append(
+            "        (\n"
+            f"            {facility_id},\n"
+            f"            '{extra['code']}',\n"
+            f"            '{extra['name']}',\n"
+            f"            '/{facility_id}/',\n"
+            f"            {extra['sort']},\n"
+            f"            '{model}',\n"
+            f"            {REG_PROV_FJ_ENTITY_ID},\n"
+            f"            '福建省',\n"
+            f"            NULL::numeric,\n"
+            f"            NULL::numeric,\n"
+            f"            '{facility_type(model)}'\n"
+            "        )"
+        )
+        stations_meta.append(
+            {
+                "pipe_key": extra["pipe_key"],
+                "entity_id": facility_id,
+                "entity_code": extra["code"],
+                "name": extra["name"],
+                "model": model,
+                "category_code": extra["category_code"],
+                "sort": extra["sort"],
+            }
+        )
+        max_id = max(max_id, facility_id)
+
     return rows, stations_meta, max_id
 
 
@@ -286,7 +351,7 @@ SELECT setval(
     print(f"wrote {FACILITY_OUT} ({len(rows)} stations)")
 
 
-def write_category_sql(stations_meta: list[dict]) -> None:
+def write_category_sql(stations_meta: list[dict], max_id: int) -> None:
     pattern_c_rows = []
 
     for pipe_key, pipe in PIPELINES.items():
@@ -489,7 +554,7 @@ WHERE entity_type_code = 'facility' AND dimension_kind = 'MODEL' AND deleted = f
 
 SELECT setval(
   pg_get_serial_sequence('dynamicbusiness.ent_facility', 'id'),
-  GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_facility), 43)
+  GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_facility), {max_id})
 );
 """
     CATEGORY_OUT.write_text(sql, encoding="utf-8")
@@ -499,7 +564,7 @@ SELECT setval(
 def main() -> None:
     rows, stations_meta, max_id = build_station_rows()
     write_facility_sql(rows, max_id)
-    write_category_sql(stations_meta)
+    write_category_sql(stations_meta, max_id)
 
 
 if __name__ == "__main__":

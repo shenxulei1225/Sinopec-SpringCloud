@@ -26,6 +26,7 @@ public final class TenantPhysicalTableNames {
             "dynamic_entity_field_index",
             "dynamic_model_category_relation",
             "dynamic_model_entity_relation",
+            "dynamic_category_category_relation",
             "dynamic_entity_access_permission",
             "dynamic_entity_field_permission",
             "dynamic_entity_operation_permission",

@@ -18,6 +18,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.framework.field.EntityTypeFieldLabelHelper;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityBaseFieldColumnNames;
+import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.capability.BusinessCapabilityService;
 import cn.cheers.x.module.dynamicbusiness.service.dynamictable.DynamicTableService;
 import cn.hutool.core.util.StrUtil;
@@ -32,6 +33,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executor;
@@ -57,6 +59,9 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
     private BusinessCapabilityService businessCapabilityService;
     @Resource
     private DynamicTableService dynamicTableService;
+    @Resource
+    @Lazy
+    private FacilityOwningFieldEnsureService facilityOwningFieldEnsureService;
     @Resource
     @Qualifier("systemAsyncExecutor")
     private Executor systemAsyncExecutor;
@@ -262,6 +267,7 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
         if (field == null) {
             return;
         }
+        assertFacilityOwningFieldDeletable(field);
         String entityTypeCode = field.getEntityTypeCode();
         Long libraryFieldId = field.getLibraryFieldId();
 
@@ -271,6 +277,18 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
 
         if (libraryFieldId != null) {
             baseFieldLibrarySyncService.removeLibraryFieldFromAllModels(entityTypeCode, libraryFieldId);
+        }
+    }
+
+    /** 站场级类型的所属场站系统字段不可删。 */
+    private void assertFacilityOwningFieldDeletable(EntityTypeBaseFieldDO field) {
+        if (field == null || !FacilityOwningFieldCodes.FIELD_CODE.equals(
+                field.getFieldCode() == null ? "" : field.getFieldCode().trim())) {
+            return;
+        }
+        EntityTypeDO entityType = entityTypeMapper.selectByCode(field.getEntityTypeCode());
+        if (FacilityOwningFieldEnsureService.shouldEnsure(entityType)) {
+            throw new ServiceException(400, "站场级类型不可删除所属场站系统字段");
         }
     }
 
@@ -429,9 +447,26 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
     @Override
     public List<EntityTypePlatformFieldRespVO> listPlatformFields(String entityTypeCode) {
         EntityTypeDO entityType = requireEntityType(entityTypeCode);
-        return List.of(
-                buildPlatformField(entityType, "name", "名称", "TEXT"),
-                buildPlatformField(entityType, "status", "状态", "NUMBER"));
+        // 打开基础信息时幂等补齐存量站场级类型的所属场站（写路径 create/update 也会 ensure）
+        if (FacilityOwningFieldEnsureService.shouldEnsure(entityType)) {
+            facilityOwningFieldEnsureService.ensureForEntityTypeCode(entityType.getCode());
+        }
+        List<EntityTypePlatformFieldRespVO> fields = new ArrayList<>(4);
+        fields.add(buildPlatformField(entityType, "name", "名称", "TEXT"));
+        fields.add(buildPlatformField(entityType, "status", "状态", "NUMBER"));
+        if (FacilityOwningFieldEnsureService.shouldEnsure(entityType)) {
+            String owningLabel = FacilityOwningFieldCodes.DISPLAY_NAME;
+            FieldDO libraryField = fieldMapper.selectByCode(FacilityOwningFieldCodes.FIELD_CODE);
+            if (libraryField != null && StringUtils.hasText(libraryField.getName())) {
+                owningLabel = libraryField.getName().trim();
+            }
+            fields.add(buildPlatformField(
+                    entityType,
+                    FacilityOwningFieldCodes.FIELD_CODE,
+                    owningLabel,
+                    "REF"));
+        }
+        return fields;
     }
 
     @Override
@@ -630,6 +665,13 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
             vo.setIsFilterable(true);
             return;
         }
+        if (FacilityOwningFieldCodes.FIELD_CODE.equals(fieldCode)) {
+            vo.setRequired(true);
+            vo.setIsSearchable(false);
+            vo.setIsSortable(true);
+            vo.setIsFilterable(true);
+            return;
+        }
         vo.setRequired(true);
         vo.setIsSearchable(true);
         vo.setIsSortable(true);
@@ -637,7 +679,10 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
     }
 
     private boolean isSupportedPlatformField(String fieldCode) {
-        return "name".equals(fieldCode) || "status".equals(fieldCode) || "code".equals(fieldCode);
+        return "name".equals(fieldCode)
+                || "status".equals(fieldCode)
+                || "code".equals(fieldCode)
+                || FacilityOwningFieldCodes.FIELD_CODE.equals(fieldCode);
     }
 
     private EntityTypeBaseFieldDO resolveRegisteredBaseField(

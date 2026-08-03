@@ -19,9 +19,25 @@
 | `07_sample_templates.sql` | 扩展标准库方法模板（目视/仪表/机泵阀门/视频门禁等）+ 首轮名称绑定 |
 | `08_bind_inspection_items.sql` | 补齐缺口模板 + 检查内容↔方法模板语义绑定（仅填空，不整库兜底） |
 | `09_apply_equipment_inspection_packages.py` | **全量设备型号检查包**：按专业类别创建 `INSP-PKG-*` 检查内容、绑定方法模板，并严格同步型号—实体关联（卸错挂） |
-| `10_domain_equipment_inspection_item.sql` | DOMAIN「设备检查内容」`inspection_item_equipment`（base=`inspection_item`，domain=`equipment`，分组「流程规范」）；现有实体 domain 填空 |
+| `10_domain_equipment_inspection_item.sql` | **已废**：曾建 DOMAIN「设备检查内容」并填 `domain=equipment`（由 12 收口） |
+| `11_flip_inspection_catalog_ia.sql` | **已废**：曾把 NATIVE/DOMAIN 分挂知识库与设备·管线（由 12 收口） |
+| `12_retire_inspection_item_domains.sql` | **定稿**：软删检查内容 DOMAIN 入口；清空检查内容实体 `domain`；保留知识库 NATIVE |
+| `13_fix_inspection_method_catalog.sql` | **定稿**：`inspection_method` 名称「检查方法」、分组「知识库」、`work_scope=NETWORK`（纠正误标「检查内容」/站场管理） |
+| `14_seed_inspection_method_categories.py` | **定稿**：检查方法分类树（手段分组）+ `dynamic_entity_category_relation` 关联模板 |
+| `15_instance_fields.sql` | **Wave 2**：字段库/基础字段/型号分配 `equipment_id`、`inspection_item_id`（前置 Flyway V50） |
 
-**不在本包**：`equipment_id`（Wave 2）；角度等实例参数字段（待字段契约）；标准库左树借设备产品分类（另步）。
+**目录定稿**
+
+| 侧栏 | 入口名 | 类型 |
+|------|--------|------|
+| 知识库 | 标准检查内容库 | NATIVE `inspection_item`（直接标准库；唯一管理入口） |
+| 知识库 | 检查方法 | NATIVE `inspection_method`（全网方法模板库；内容经 `method_template_id` 引用） |
+
+站场管理**不**挂检查方法入口；站场侧「设备检查内容」目录本期不做（适用检查项仍在巡检任务新建等业务页）。
+
+**检查方法分类（14）**：根下按手段分 9 类——通用外观与记录、仪表读数、机泵阀门与附件、视频安防、通信与网络、门禁与通道、消防报警、电气与电源、软件与系统；38 条方法模板均已挂到对应分类。
+
+**不在本包**：角度等实例参数字段（待字段契约）；标准库左树借设备产品分类（另步）。`equipment_id` / `inspection_item_id` 见 `15_instance_fields.sql`（Wave 2）。
 
 ### 全量检查包（09）
 

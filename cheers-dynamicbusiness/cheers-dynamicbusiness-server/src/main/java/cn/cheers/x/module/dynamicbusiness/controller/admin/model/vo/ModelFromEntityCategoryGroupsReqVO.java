@@ -26,4 +26,7 @@ public class ModelFromEntityCategoryGroupsReqVO {
 
     @Schema(description = "业务域（可选）", example = "巡检")
     private String domain;
+
+    @Schema(description = "是否按分类树展开子孙后再求交（默认 true；false 时仅用传入的分类 id）", example = "true")
+    private Boolean includeDescendants;
 }

@@ -1,6 +1,6 @@
 -- 福建设施 Pattern C：管道线路（facility 管道模型）→ 站场（facility 站型模型）
 -- 前置：dynamic_entity_facility_fujian_dev_sample.sql、dynamic_model_facility.sql（含 PIPELINE 模型）
--- 组织维度：站场 fld_base_facility_ref_region 已在设施 seed 挂 REG-PROV-FJ（100024）
+-- 组织维度：站场 region_id 已在设施 seed 挂 REG-PROV-FJ（100024）
 
 SET search_path TO dynamicbusiness;
 
@@ -32,7 +32,7 @@ FROM (VALUES
   ('FAC-CAT-ST-FJ-HX2-001', '旧镇分输站', 16, 'FAC-FJ-HX2-001', 'MODEL-FACILITY-NG-DISTRIBUTION', 1, 'FAC-CAT-PIPE-FJ-HX2'),
   ('FAC-CAT-ST-FJ-HX2-002', '常山分输站', 17, 'FAC-FJ-HX2-002', 'MODEL-FACILITY-NG-DISTRIBUTION', 2, 'FAC-CAT-PIPE-FJ-HX2'),
   ('FAC-CAT-ST-FJ-HX2-003', '诏安末站', 18, 'FAC-FJ-HX2-003', 'MODEL-FACILITY-NG-TERMINAL', 3, 'FAC-CAT-PIPE-FJ-HX2'),
-  ('FAC-CAT-ST-FJ-HX2-004', '天宝站', 19, 'FAC-FJ-HX2-004', 'MODEL-FACILITY-NG-DISTRIBUTION', 4, 'FAC-CAT-PIPE-FJ-HX2'),
+  ('FAC-CAT-ST-FJ-HX2-004', '天宝清管站', 19, 'FAC-FJ-HX2-004', 'MODEL-FACILITY-NG-PIGGING', 4, 'FAC-CAT-PIPE-FJ-HX2'),
   ('FAC-CAT-ST-FJ-HX2-005', '南靖站', 20, 'FAC-FJ-HX2-005', 'MODEL-FACILITY-NG-DISTRIBUTION', 5, 'FAC-CAT-PIPE-FJ-HX2'),
   ('FAC-CAT-ST-FJ-HX2-006', '龙岩站', 21, 'FAC-FJ-HX2-006', 'MODEL-FACILITY-NG-DISTRIBUTION', 6, 'FAC-CAT-PIPE-FJ-HX2'),
   ('FAC-CAT-ST-FJ-HX2-007', '德化站', 22, 'FAC-FJ-HX2-007', 'MODEL-FACILITY-NG-DISTRIBUTION', 7, 'FAC-CAT-PIPE-FJ-HX2'),
@@ -48,7 +48,11 @@ FROM (VALUES
   ('FAC-CAT-ST-FJ-HX2-017', '南安分输站', 32, 'FAC-FJ-HX2-017', 'MODEL-FACILITY-NG-DISTRIBUTION', 17, 'FAC-CAT-PIPE-FJ-HX2'),
   ('FAC-CAT-ST-FJ-HX2-018', '永春分输站', 33, 'FAC-FJ-HX2-018', 'MODEL-FACILITY-NG-DISTRIBUTION', 18, 'FAC-CAT-PIPE-FJ-HX2'),
   ('FAC-CAT-ST-FJ-LNGL-001', '程溪分输站', 38, 'FAC-FJ-LNGL-001', 'MODEL-FACILITY-NG-DISTRIBUTION', 1, 'FAC-CAT-PIPE-FJ-LNGL'),
-  ('FAC-CAT-ST-FJ-LNGL-002', '港尾分输站', 39, 'FAC-FJ-LNGL-002', 'MODEL-FACILITY-NG-DISTRIBUTION', 2, 'FAC-CAT-PIPE-FJ-LNGL')
+  ('FAC-CAT-ST-FJ-LNGL-002', '港尾分输站', 39, 'FAC-FJ-LNGL-002', 'MODEL-FACILITY-NG-DISTRIBUTION', 2, 'FAC-CAT-PIPE-FJ-LNGL'),
+  ('FAC-CAT-ST-FJ-CPY-005', '厦门集美分输阀室', 49, 'FAC-FJ-CPY-005', 'MODEL-FACILITY-CP-DISTRIBUTION', 5, 'FAC-CAT-PIPE-FJ-CPY'),
+  ('FAC-CAT-ST-FJ-HX2-019', '漳州首站', 46, 'FAC-FJ-HX2-019', 'MODEL-FACILITY-NG-HEAD', 19, 'FAC-CAT-PIPE-FJ-HX2'),
+  ('FAC-CAT-ST-FJ-HX2-020', '水头分输站', 47, 'FAC-FJ-HX2-020', 'MODEL-FACILITY-NG-DISTRIBUTION', 20, 'FAC-CAT-PIPE-FJ-HX2'),
+  ('FAC-CAT-ST-FJ-LNGL-003', '漳州LNG接收站', 48, 'FAC-FJ-LNGL-003', 'MODEL-FACILITY-NG-RECEIVING', 0, 'FAC-CAT-PIPE-FJ-LNGL')
 ) AS v(
   category_code, display_name, entity_id, entity_code, model_code, sort_order, parent_code
 );
@@ -56,7 +60,7 @@ FROM (VALUES
 -- 1) 管道线路实体（facility · 管道模型）
 INSERT INTO ent_facility (
   id, entity_type_code, model_id, name, code, tenant_id, creator,
-  tree_path, sort, status, deleted, fld_base_facility_ref_region, facility_type, custom_fields
+  tree_path, sort, status, deleted, region_id, facility_type, custom_fields
 )
 SELECT
   n.entity_id, 'facility', m.id, n.display_name,
@@ -76,7 +80,7 @@ ON CONFLICT (id) DO UPDATE SET
   model_id = EXCLUDED.model_id,
   name = EXCLUDED.name,
   code = EXCLUDED.code,
-  fld_base_facility_ref_region = EXCLUDED.fld_base_facility_ref_region,
+  region_id = EXCLUDED.region_id,
   facility_type = EXCLUDED.facility_type,
   deleted = false,
   updater = 'seed',
@@ -215,22 +219,7 @@ UPDATE dm_entity_dimension
 SET enabled = false, updater = 'seed', update_time = CURRENT_TIMESTAMP
 WHERE entity_type_code = 'facility' AND dimension_kind = 'MODEL' AND deleted = false;
 
-UPDATE dm_entity_dimension
-SET enabled = false, updater = 'seed', update_time = CURRENT_TIMESTAMP
-WHERE entity_type_code = 'facility' AND dimension_kind = 'ENTITY' AND deleted = false;
-
-INSERT INTO dm_entity_dimension (entity_type_code, dimension_kind, enabled, tenant_id, creator, deleted)
-SELECT 'facility', 'DETAIL', true, 1, 'seed', false
-WHERE NOT EXISTS (
-  SELECT 1 FROM dm_entity_dimension
-  WHERE entity_type_code = 'facility' AND dimension_kind = 'DETAIL' AND deleted = false
-);
-
-UPDATE dm_entity_dimension
-SET enabled = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
-WHERE entity_type_code = 'facility' AND dimension_kind = 'DETAIL' AND deleted = false;
-
 SELECT setval(
   pg_get_serial_sequence('dynamicbusiness.ent_facility', 'id'),
-  GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_facility), 43)
+  GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_facility), 49)
 );

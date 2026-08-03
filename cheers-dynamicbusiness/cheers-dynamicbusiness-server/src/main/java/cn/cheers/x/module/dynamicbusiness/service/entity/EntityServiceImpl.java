@@ -900,6 +900,7 @@ public class EntityServiceImpl implements EntityService {
      * <ul>
      *   <li>SCOPE 入口：storage=base，scopeRegistry=自身 code</li>
      *   <li>DOMAIN 入口：storage=base，domain=入口域（请求域若传则须一致）</li>
+     *   <li>REUSE 入口：storage=base，无 domain / scope 过滤（同表可读写）</li>
      *   <li>其余：storage=请求 code，domain=请求域</li>
      * </ul>
      */
@@ -1166,6 +1167,13 @@ public class EntityServiceImpl implements EntityService {
     private List<List<Long>> expandCategoryIdGroups(List<Long> categoryIds,
                                                     List<CategoryIdGroupReqVO> categoryIdGroups,
                                                     String categoryTypeCode) {
+        return expandCategoryIdGroups(categoryIds, categoryIdGroups, categoryTypeCode, true);
+    }
+
+    private List<List<Long>> expandCategoryIdGroups(List<Long> categoryIds,
+                                                    List<CategoryIdGroupReqVO> categoryIdGroups,
+                                                    String categoryTypeCode,
+                                                    boolean includeDescendants) {
         List<List<Long>> expandedGroups = new ArrayList<>();
         if (categoryIdGroups != null && !categoryIdGroups.isEmpty()) {
             for (CategoryIdGroupReqVO group : categoryIdGroups) {
@@ -1175,26 +1183,47 @@ public class EntityServiceImpl implements EntityService {
                 String groupTypeCode = (group.getCategoryTypeCode() == null || group.getCategoryTypeCode().isBlank())
                         ? categoryTypeCode
                         : group.getCategoryTypeCode().trim();
-                List<Long> normalized = normalizeCategoryIdsOrUseRootCategory(group.getCategoryIds(), groupTypeCode);
+                List<Long> normalized = includeDescendants
+                        ? normalizeCategoryIdsOrUseRootCategory(group.getCategoryIds(), groupTypeCode)
+                        : normalizePositiveCategoryIds(group.getCategoryIds());
                 if (normalized.isEmpty()) {
                     continue;
                 }
-                List<Long> expanded = expandCategoryIdsWithDescendants(normalized, groupTypeCode);
+                List<Long> expanded = includeDescendants
+                        ? expandCategoryIdsWithDescendants(normalized, groupTypeCode)
+                        : normalized;
                 if (!expanded.isEmpty()) {
                     expandedGroups.add(expanded);
                 }
             }
             return expandedGroups;
         }
-        List<Long> normalizedCategoryIds = normalizeCategoryIdsOrUseRootCategory(categoryIds, categoryTypeCode);
+        List<Long> normalizedCategoryIds = includeDescendants
+                ? normalizeCategoryIdsOrUseRootCategory(categoryIds, categoryTypeCode)
+                : normalizePositiveCategoryIds(categoryIds);
         if (normalizedCategoryIds.isEmpty()) {
             return List.of();
         }
-        List<Long> expandedCategoryIds = expandCategoryIdsWithDescendants(normalizedCategoryIds, categoryTypeCode);
+        List<Long> expandedCategoryIds = includeDescendants
+                ? expandCategoryIdsWithDescendants(normalizedCategoryIds, categoryTypeCode)
+                : normalizedCategoryIds;
         if (expandedCategoryIds.isEmpty()) {
             return List.of();
         }
         return List.of(expandedCategoryIds);
+    }
+
+    private List<Long> normalizePositiveCategoryIds(List<Long> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return List.of();
+        }
+        LinkedHashSet<Long> out = new LinkedHashSet<>();
+        for (Long id : categoryIds) {
+            if (id != null && id > 0) {
+                out.add(id);
+            }
+        }
+        return new ArrayList<>(out);
     }
 
     /** 兼容旧调用：无 categoryIdGroups / 无字段排序 */
@@ -3795,12 +3824,24 @@ public class EntityServiceImpl implements EntityService {
                                                           List<CategoryIdGroupReqVO> categoryIdGroups,
                                                           String categoryTypeCode,
                                                           String domain) {
+        return listDistinctModelIdsByCategoryScope(
+                entityTypeCode, categoryIds, categoryIdGroups, categoryTypeCode, domain, true);
+    }
+
+    @Override
+    public List<Long> listDistinctModelIdsByCategoryScope(String entityTypeCode,
+                                                          List<Long> categoryIds,
+                                                          List<CategoryIdGroupReqVO> categoryIdGroups,
+                                                          String categoryTypeCode,
+                                                          String domain,
+                                                          Boolean includeDescendants) {
         if (!StringUtils.hasText(entityTypeCode)) {
             throw new ServiceException(400, "entityTypeCode 不能为空");
         }
         String storage = entityTypeCode.trim();
+        boolean withDescendants = includeDescendants == null || includeDescendants;
         List<List<Long>> expandedGroups = expandCategoryIdGroups(
-                categoryIds, categoryIdGroups, categoryTypeCode);
+                categoryIds, categoryIdGroups, categoryTypeCode, withDescendants);
         if (expandedGroups.isEmpty()) {
             return List.of();
         }

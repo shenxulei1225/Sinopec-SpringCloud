@@ -204,18 +204,19 @@ public class ModelController {
         description = "根据分类ID（单个或多个）和业务类型编码，查找该业务下与分类关联的模型列表（通过 ModelCategoryRelation 关联）。\n" +
             "- entityTypeCode 必填，按业务类型命中关系表索引\n" +
             "- categoryIds 优先；为空时回退 categoryId（兼容旧调用）\n" +
-            "- 多分类：合并各分类含子树的模型 ID，稳定去重\n" +
+            "- includeDescendants 默认 true：合并各分类含子树的模型 ID；false 时仅精确匹配传入的分类 id（场景 9 前端已与关联白名单求交后使用）\n" +
             "- 聚合链路：先查 model_category_relation 的 modelId 列表，再批量查询 model 详情"
     )
     @Parameter(name = "categoryIds", description = "分类ID列表（优先；支持重复 query 参数或逗号分隔）", example = "1,2")
     @Parameter(name = "categoryId", description = "单个分类ID（兼容旧版；categoryIds 为空时使用）", example = "1")
     @Parameter(name = "entityTypeCode", description = "业务类型编码（必填，用于关系过滤并命中索引）", required = true, example = "equipment")
+    @Parameter(name = "includeDescendants", description = "是否含子树（默认 true）", example = "true")
     @PreAuthorize("@ss.hasPermission('system:model:query')")
     /**
      * 用途：查找指定业务下分类关联的模型（Controller 聚合接口）。
      * Service 映射：
      * 1) {@link ModelCategoryRelationService#listModelIdsByCategoryIdWithDescendants(Long, String)}
-     *    或 {@link ModelCategoryRelationService#listModelIdsByCategoryIdsWithDescendants(List, String)}
+     *    / {@link ModelCategoryRelationService#listModelIdsByCategoryIdsOnly(List, String)} 等
      * 2) {@link ModelService#getModelsByIds(List)}
      * 边界：本接口返回模型详情；关系服务只返回 ID 序列。
      */
@@ -223,7 +224,9 @@ public class ModelController {
             @RequestParam(value = "categoryIds", required = false) List<Long> categoryIds,
             @RequestParam(value = "categoryId", required = false) Long categoryId,
             @RequestParam("entityTypeCode") String entityTypeCode,
-            @RequestParam(value = "domain", required = false) String domain) {
+            @RequestParam(value = "domain", required = false) String domain,
+            @RequestParam(value = "includeDescendants", required = false, defaultValue = "true")
+                    Boolean includeDescendants) {
         List<Long> resolvedCategoryIds = new ArrayList<>();
         if (categoryIds != null) {
             for (Long id : categoryIds) {
@@ -239,11 +242,21 @@ public class ModelController {
             throw new ServiceException(400, "categoryIds 或 categoryId 不能为空");
         }
 
-        List<Long> modelIds = resolvedCategoryIds.size() == 1
-                ? modelCategoryRelationService.listModelIdsByCategoryIdWithDescendants(
-                        resolvedCategoryIds.get(0), entityTypeCode)
-                : modelCategoryRelationService.listModelIdsByCategoryIdsWithDescendants(
-                        resolvedCategoryIds, entityTypeCode);
+        boolean withDescendants = includeDescendants == null || includeDescendants;
+        List<Long> modelIds;
+        if (withDescendants) {
+            modelIds = resolvedCategoryIds.size() == 1
+                    ? modelCategoryRelationService.listModelIdsByCategoryIdWithDescendants(
+                            resolvedCategoryIds.get(0), entityTypeCode)
+                    : modelCategoryRelationService.listModelIdsByCategoryIdsWithDescendants(
+                            resolvedCategoryIds, entityTypeCode);
+        } else {
+            modelIds = resolvedCategoryIds.size() == 1
+                    ? modelCategoryRelationService.listModelIdsByCategoryIdOnly(
+                            resolvedCategoryIds.get(0), entityTypeCode)
+                    : modelCategoryRelationService.listModelIdsByCategoryIdsOnly(
+                            resolvedCategoryIds, entityTypeCode);
+        }
         List<ModelRespVO> models = modelIds.isEmpty() ? List.of() : modelService.getModelsByIds(modelIds);
         return success(modelService.filterModelsByDomain(models, domain));
     }
@@ -424,7 +437,8 @@ public class ModelController {
                 reqVO.getCategoryIds(),
                 reqVO.getCategoryIdGroups(),
                 reqVO.getCategoryTypeCode(),
-                reqVO.getDomain());
+                reqVO.getDomain(),
+                reqVO.getIncludeDescendants());
         if (modelIds.isEmpty()) {
             return success(List.of());
         }

@@ -6,7 +6,7 @@ import lombok.Getter;
 /**
  * 数据类型侧边栏入口类型。
  * <p>
- * 产品文案：NATIVE=新建数据；DOMAIN=子数据类型；SCOPE=划分数据；
+ * 产品文案：NATIVE=新建数据；REUSE=使用已有数据；DOMAIN=子数据类型；SCOPE=划分数据；
  * CATEGORY=分类绑定实体（树节点 1:1 绑实体，自有存储；勿与 SCOPE 混用）。
  */
 @Getter
@@ -14,6 +14,11 @@ import lombok.Getter;
 public enum EntityTypeEntryKindEnum {
 
     NATIVE("NATIVE"),
+    /**
+     * 使用已有数据：复用基础 NATIVE 存储与读写，不打业务域、不靠成员圈选；
+     * 仅另挂目录入口与默认布局/工作台。
+     */
+    REUSE("REUSE"),
     DOMAIN("DOMAIN"),
     SCOPE("SCOPE"),
     /** 分类绑定实体：自有存储 + 同名高级分类；勿与 SCOPE 混用。 */
@@ -44,12 +49,17 @@ public enum EntityTypeEntryKindEnum {
         return this == SCOPE;
     }
 
+    /** 使用已有数据入口（entry_kind=REUSE）。 */
+    public boolean isReuseEntry() {
+        return this == REUSE;
+    }
+
     public boolean isCategory() {
         return this == CATEGORY;
     }
 
-    /** 子数据类型、划分数据复用基础类型的存储表；分类绑定实体自有存储。 */
+    /** 子数据类型、划分数据、使用已有数据复用基础类型的存储表；分类绑定实体自有存储。 */
     public boolean reusesBaseStorage() {
-        return this == DOMAIN || this == SCOPE;
+        return this == DOMAIN || this == SCOPE || this == REUSE;
     }
 }
