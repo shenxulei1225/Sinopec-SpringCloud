@@ -267,13 +267,150 @@ public class CategoryCategoryRelationServiceImpl implements CategoryCategoryRela
             return ok("BATCH_DISASSOCIATE", null, null, 0, 1, List.of(),
                     List.of("hostCategoryId 不能为空"), start);
         }
-        List<Long> ids = normalizeIds(memberCategoryIds);
-        List<Long> okIds = new ArrayList<>();
-        for (Long memberId : ids) {
-            relationMapper.softDelete(hostCategoryId, memberId, hostType, memberType);
-            okIds.add(memberId);
+        List<Long> excludeRoots = normalizeIds(memberCategoryIds);
+        if (excludeRoots.isEmpty()) {
+            return ok("BATCH_DISASSOCIATE", hostCategoryId, null, 0, 0, List.of(), List.of(), start);
         }
-        return ok("BATCH_DISASSOCIATE", hostCategoryId, null, okIds.size(), 0, okIds, List.of(), start);
+
+        LinkedHashSet<Long> removedMemberIds = new LinkedHashSet<>();
+        LinkedHashSet<Long> reassociatedIds = new LinkedHashSet<>();
+        List<String> fails = new ArrayList<>();
+        for (Long excludeId : excludeRoots) {
+            try {
+                ExcludeSplitResult one = excludeMemberWithSplit(
+                        hostCategoryId, excludeId, hostType, memberType);
+                removedMemberIds.addAll(one.removedMemberIds());
+                reassociatedIds.addAll(one.reassociatedMemberIds());
+                if (one.removedMemberIds().isEmpty() && one.reassociatedMemberIds().isEmpty()) {
+                    fails.add("成员 " + excludeId + " 相对该宿主无覆盖性关联可排除");
+                }
+            } catch (ServiceException ex) {
+                fails.add(Objects.toString(ex.getMessage(), "排除失败: " + excludeId));
+            } catch (Exception ex) {
+                fails.add("排除失败: " + excludeId + " / " + ex.getMessage());
+            }
+        }
+
+        if (removedMemberIds.isEmpty() && reassociatedIds.isEmpty()) {
+            return ok("BATCH_DISASSOCIATE", hostCategoryId, null, 0, Math.max(1, fails.size()),
+                    List.of(),
+                    fails.isEmpty() ? List.of("所选成员相对该宿主无关联可排除") : fails,
+                    start);
+        }
+
+        log.info("批量排除成员并拆分祖先行: hostId={}, exclude={}, removed={}, reassociated={}",
+                hostCategoryId, excludeRoots, removedMemberIds, reassociatedIds);
+        // successCount 以删掉的覆盖行数为主，便于前端提示
+        return ok("BATCH_DISASSOCIATE", hostCategoryId, null, removedMemberIds.size(), fails.size(),
+                new ArrayList<>(removedMemberIds), fails, start);
+    }
+
+    private record ExcludeSplitResult(List<Long> removedMemberIds, List<Long> reassociatedMemberIds) {}
+
+    /**
+     * 排除成员 T：删 T 子树挂靠；若祖先有挂靠则删祖先行并沿路径拆分重挂其余兄弟支。
+     */
+    private ExcludeSplitResult excludeMemberWithSplit(
+            Long hostCategoryId, Long excludeId, String hostType, String memberType) {
+        if (excludeId == null || excludeId <= 0) {
+            return new ExcludeSplitResult(List.of(), List.of());
+        }
+
+        List<Long> subtree = categoryService.getAllCategoryIdsIncludingChildren(excludeId, memberType);
+        if (subtree == null || subtree.isEmpty()) {
+            subtree = List.of(excludeId);
+        }
+
+        List<Long> ancestorsRootToNear = listAncestorsRootToNear(excludeId, memberType);
+        List<Long> covering = new ArrayList<>();
+        for (Long ancestorId : ancestorsRootToNear) {
+            if (existsRelation(hostCategoryId, ancestorId, hostType, memberType)) {
+                covering.add(ancestorId);
+            }
+        }
+
+        LinkedHashSet<Long> toRemove = new LinkedHashSet<>();
+        List<Long> subtreeRows = relationMapper
+                .selectByHostAndMembers(hostCategoryId, subtree, hostType, memberType)
+                .stream()
+                .map(CategoryCategoryRelationDO::getMemberCategoryId)
+                .filter(Objects::nonNull)
+                .toList();
+        toRemove.addAll(subtreeRows);
+        toRemove.addAll(covering);
+
+        if (!toRemove.isEmpty()) {
+            relationMapper.softDeleteByHostAndMembers(
+                    hostCategoryId, new ArrayList<>(toRemove), hostType, memberType);
+        }
+
+        LinkedHashSet<Long> reassociated = new LinkedHashSet<>();
+        if (!covering.isEmpty()) {
+            Long top = covering.get(0);
+            distributeExcept(hostCategoryId, top, excludeId, hostType, memberType, reassociated);
+        }
+
+        return new ExcludeSplitResult(new ArrayList<>(toRemove), new ArrayList<>(reassociated));
+    }
+
+    /** 从根到父（不含自身）的祖先链。 */
+    private List<Long> listAncestorsRootToNear(Long categoryId, String memberType) {
+        List<Long> nearToRoot = new ArrayList<>();
+        CategoryDO cur = categoryMapper.selectByIdAndCategoryTypeCode(categoryId, memberType);
+        if (cur == null) {
+            return List.of();
+        }
+        Long parentId = cur.getParentId();
+        int guard = 0;
+        while (parentId != null && parentId > 0 && guard++ < 64) {
+            nearToRoot.add(parentId);
+            CategoryDO parent = categoryMapper.selectByIdAndCategoryTypeCode(parentId, memberType);
+            if (parent == null) {
+                break;
+            }
+            parentId = parent.getParentId();
+        }
+        java.util.Collections.reverse(nearToRoot);
+        return nearToRoot;
+    }
+
+    /**
+     * node 本身不挂靠；给「除通向 exclude 的那一支外」的直接子挂靠，路径中段继续拆分。
+     */
+    private void distributeExcept(
+            Long hostCategoryId,
+            Long nodeId,
+            Long excludeId,
+            String hostType,
+            String memberType,
+            Set<Long> reassociatedOut) {
+        List<Long> pathRootToExclude = new ArrayList<>(listAncestorsRootToNear(excludeId, memberType));
+        pathRootToExclude.add(excludeId);
+        int idx = pathRootToExclude.indexOf(nodeId);
+        Long pathChild = (idx >= 0 && idx + 1 < pathRootToExclude.size())
+                ? pathRootToExclude.get(idx + 1)
+                : null;
+
+        List<CategoryDO> children =
+                categoryMapper.selectByParentIdAndCategoryTypeCode(nodeId, memberType);
+        if (children == null || children.isEmpty()) {
+            return;
+        }
+        for (CategoryDO child : children) {
+            if (child == null || child.getId() == null) {
+                continue;
+            }
+            Long childId = child.getId();
+            if (pathChild != null && childId.equals(pathChild)) {
+                if (childId.equals(excludeId)) {
+                    continue;
+                }
+                distributeExcept(hostCategoryId, childId, excludeId, hostType, memberType, reassociatedOut);
+            } else {
+                associate(hostCategoryId, childId, hostType, memberType);
+                reassociatedOut.add(childId);
+            }
+        }
     }
 
     @Override

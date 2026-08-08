@@ -80,7 +80,7 @@ public class CategoryCategoryRelationController {
     }
 
     @DeleteMapping("/host/{hostCategoryId}/members")
-    @Operation(summary = "批量取消多个成员分类与单个宿主的关联")
+    @Operation(summary = "批量排除成员（含子树行；覆盖性祖先行拆分重挂其余兄弟支）")
     @PreAuthorize("@ss.hasPermission('system:category:update')")
     public CommonResult<CategoryCategoryAssociationRespVO> batchDisassociate(
             @PathVariable("hostCategoryId") Long hostCategoryId,

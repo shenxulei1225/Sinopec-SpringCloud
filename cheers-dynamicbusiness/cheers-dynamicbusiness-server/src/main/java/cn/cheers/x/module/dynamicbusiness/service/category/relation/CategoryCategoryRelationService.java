@@ -31,6 +31,10 @@ public interface CategoryCategoryRelationService {
                                                                   String hostCategoryTypeCode,
                                                                   String memberCategoryTypeCode);
 
+    /**
+     * 批量排除成员：对每个要排除的成员根，去掉其自身/下级挂靠，并对覆盖它的祖先行做
+     * 「拆分重挂」（删祖先、补挂除排除支以外的兄弟），使排除节点在含子树展示下不再出现。
+     */
     CategoryCategoryAssociationRespVO batchDisassociateMembersFromHost(Long hostCategoryId,
                                                                        List<Long> memberCategoryIds,
                                                                        String hostCategoryTypeCode,
