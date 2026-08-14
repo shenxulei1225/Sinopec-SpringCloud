@@ -57,16 +57,21 @@
 | V40 | `V40__entity_type_model_workbench_mode.sql` | 数据类型 `model_workbench_mode`（MULTI/SINGLE）；`inspection_item` 置为 SINGLE |
 | V41 | `V41__drop_equipment_orphan_facility_column.sql` | 删除设备表历史孤儿设施列（若存在） |
 | V42 | `V42__ent_code_unique_indexes.sql` | 实体 `code` 租户内唯一索引 |
-| V43 | `V43__ent_inspection_method.sql` | 检查方法专用表 `ent_inspection_method`（`is_template` / `action_duration_sec`）+ 租户分表 |
-| V44 | `V44__ent_inspection_item_method_template_id.sql` | 检查内容表增加 `method_template_id`（REF → `inspection_method`） |
+| V43 | `V43__ent_field_work_standard.sql` | 现场作业标准（SOP）专用表 `ent_field_work_standard`（`version_no` / `publish_status` / `steps_json`）+ 租户分表 |
+| V44 | `V44__inspection_sop_relations.sql` | 检查项—SOP、实体—SOP 关联表（租户物理表 `*_t{tenantId}`） |
 | V46 | `V46__entity_type_work_scope.sql` | 数据类型 `work_scope`（NETWORK=全网；FACILITY=站场级，默认） |
 | V47 | `V47__seed_network_work_scope_samples.sql` | 样例：`region`/`facility` 标 `NETWORK` |
 | V48 | `V48__facility_owning_field_and_network_seeds.sql` | `facility_id` 显示名曾写「所属站场」；应急/标准/检查内容等样例标 `NETWORK` |
 | V49 | `V49__facility_owning_display_name_changzhan.sql` | 统一 `facility_id` 展示名为「所属场站」（REF→facility 不变） |
-| V50 | `V50__inspection_method_instance_refs.sql` | 检查方法表增加实例 REF 列 `equipment_id` / `inspection_item_id`（模板行为空） |
+| V50 | `V50__inspection_method_instance_refs.sql` | **占位**（原 inspection_method 实例列方案已废弃；清理由 V55 执行） |
 | V51 | `V51__dm_five_w_orchestration.sql` | 五维编排 bundle 语义块 + Who 槽位表（与 data-tab-layout 分表） |
+| V52 | `V52__inspection_item_pure_standard_library.sql` | 标准检查内容库改回纯库编排（实体层 + 看详情；Who 本类分类+实体） |
+| V53 | `V53__inspection_item_native_cascade_layout.sql` | 标准检查内容库普通三 Tab；数据区检查分类宿主+设备分类成员级联；型号关 |
+| V54 | `V54__ent_task_execution_step.sql` | 任务执行步骤 `ent_task_execution_step`（租户分表；执行记录表已存在，不在此迁移建） |
+| V55 | `V55__retire_inspection_method_legacy.sql` | 删除 `inspection_method` / `method_template_id` 遗留；可选从旧模板迁移至 SOP |
+| V56 | `V56__rename_field_work_standard_to_sop.sql` | SOP 真源统一为 `sop`：表 `ent_sop*`、类型/型号改码，软删重复入口 |
 
-> **版本号说明**：本仓库已登记至 **V50**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。  
+> **版本号说明**：本仓库已登记至 **V56**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。  
 
 
 > **跨机合并说明**：本机布局迁移已占用 V26–V28 且已执行；对方原 `V26__category_*` / `V27__ent_structure` 在合并后改为 V29/V30。若对方库已按旧文件名执行过 V26/V27，需对齐历史表 `version`/`script` 后 `flyway:repair`，再拉本分支。

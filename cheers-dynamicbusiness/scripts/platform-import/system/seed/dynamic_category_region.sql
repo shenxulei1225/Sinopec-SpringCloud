@@ -1,6 +1,7 @@
 -- ============================================================================
 -- 系统 · region Pattern C（分类即实体）
--- 国家管网运维组织：集团 → 区域/省公司 → 作业区
+-- 国家管网运维组织：集团 → 省公司/区域公司 →（可选）分公司/地区 → 作业区
+-- 北方管道京津冀豫片区：招标文件点名的分公司/地区 + 作业区（与北京管道/东部储运同名作业区分码）
 -- 每个分类节点（除 region_root）同步创建 ent_region + dynamic_category_entity_link
 -- ============================================================================
 
@@ -26,7 +27,7 @@ INSERT INTO dynamic_category_type (
   category_type_code, name, description, status, top_level_category_id, tenant_id, creator
 ) VALUES (
   'region', '运营区域分类',
-  '国家管网组织层级：集团 → 区域/省公司 → 作业区；Pattern C 分类即实体', 1,
+  '国家管网组织层级：集团 → 省公司/区域公司 →（可选）分公司/地区 → 作业区；Pattern C 分类即实体', 1,
   (SELECT c.id FROM dynamic_category c
    WHERE c.deleted = false AND c.tenant_id = 1 AND c.code = 'region_root' LIMIT 1),
   1, 'seed'
@@ -63,11 +64,46 @@ FROM (VALUES
   ('REG-CAT-PROV-ZJ', 'REG-CAT-GROUP-001', '浙江省天然气管网有限公司', 100025, 'REG-PROV-ZJ', 'provincial', 'MODEL-REGION-PROVINCIAL', 150),
   ('REG-CAT-PROV-HN', 'REG-CAT-GROUP-001', '湖南分公司', 100026, 'REG-PROV-HN', 'provincial', 'MODEL-REGION-PROVINCIAL', 160),
   ('REG-CAT-PROV-XJ', 'REG-CAT-GROUP-001', '新疆煤制天然气外输管道有限责任公司', 100027, 'REG-PROV-XJ', 'provincial', 'MODEL-REGION-PROVINCIAL', 170),
+  -- 北方：分公司 / 地区（京津冀豫招标片区）+ 既有黑河作业区（仍挂省公司）
+  ('REG-CAT-BR-NORTH-TJ', 'REG-CAT-PROV-NORTH', '天津分公司', 100030, 'REG-BR-NORTH-TJ', 'branch', 'MODEL-REGION-BRANCH', 10),
+  ('REG-CAT-BR-NORTH-BJ', 'REG-CAT-PROV-NORTH', '北京分公司', 100031, 'REG-BR-NORTH-BJ', 'branch', 'MODEL-REGION-BRANCH', 20),
+  ('REG-CAT-BR-NORTH-ZZ', 'REG-CAT-PROV-NORTH', '郑州分公司', 100032, 'REG-BR-NORTH-ZZ', 'branch', 'MODEL-REGION-BRANCH', 30),
+  ('REG-CAT-BR-NORTH-QHD', 'REG-CAT-PROV-NORTH', '秦皇岛地区', 100033, 'REG-BR-NORTH-QHD', 'branch', 'MODEL-REGION-BRANCH', 40),
+  ('REG-CAT-BR-NORTH-SJZ', 'REG-CAT-PROV-NORTH', '石家庄分公司', 100034, 'REG-BR-NORTH-SJZ', 'branch', 'MODEL-REGION-BRANCH', 50),
+  ('REG-CAT-OP-NORTH-HH', 'REG-CAT-PROV-NORTH', '黑河作业区', 100105, 'REG-OP-NORTH-HH', 'operation', 'MODEL-REGION-OPERATION', 1),
+  -- 北京分公司作业区（≠ 北京管道公司永清作业区）
+  ('REG-CAT-OP-NORTH-BJ-YQ', 'REG-CAT-BR-NORTH-BJ', '永清作业区', 100114, 'REG-OP-NORTH-BJ-YQ', 'operation', 'MODEL-REGION-OPERATION', 1),
+  ('REG-CAT-OP-NORTH-BJ-BD', 'REG-CAT-BR-NORTH-BJ', '保定作业区', 100115, 'REG-OP-NORTH-BJ-BD', 'operation', 'MODEL-REGION-OPERATION', 2),
+  ('REG-CAT-OP-NORTH-BJ-BJ', 'REG-CAT-BR-NORTH-BJ', '北京作业区', 100116, 'REG-OP-NORTH-BJ-BJ', 'operation', 'MODEL-REGION-OPERATION', 3),
+  ('REG-CAT-OP-NORTH-BJ-CZ', 'REG-CAT-BR-NORTH-BJ', '沧州作业区', 100117, 'REG-OP-NORTH-BJ-CZ', 'operation', 'MODEL-REGION-OPERATION', 4),
+  ('REG-CAT-OP-NORTH-BJ-RQ', 'REG-CAT-BR-NORTH-BJ', '任丘作业区', 100118, 'REG-OP-NORTH-BJ-RQ', 'operation', 'MODEL-REGION-OPERATION', 5),
+  ('REG-CAT-OP-NORTH-BJ-HUANGHUA', 'REG-CAT-BR-NORTH-BJ', '黄骅作业区', 100119, 'REG-OP-NORTH-BJ-HUANGHUA', 'operation', 'MODEL-REGION-OPERATION', 6),
+  -- 郑州分公司作业区（≠ 东部原油储运洛阳作业区）
+  ('REG-CAT-OP-NORTH-ZZ-SMX', 'REG-CAT-BR-NORTH-ZZ', '三门峡作业区', 100120, 'REG-OP-NORTH-ZZ-SMX', 'operation', 'MODEL-REGION-OPERATION', 1),
+  ('REG-CAT-OP-NORTH-ZZ-LY', 'REG-CAT-BR-NORTH-ZZ', '洛阳作业区', 100121, 'REG-OP-NORTH-ZZ-LY', 'operation', 'MODEL-REGION-OPERATION', 2),
+  ('REG-CAT-OP-NORTH-ZZ-XX', 'REG-CAT-BR-NORTH-ZZ', '新乡作业区', 100122, 'REG-OP-NORTH-ZZ-XX', 'operation', 'MODEL-REGION-OPERATION', 3),
+  ('REG-CAT-OP-NORTH-ZZ-AY', 'REG-CAT-BR-NORTH-ZZ', '安阳作业区', 100123, 'REG-OP-NORTH-ZZ-AY', 'operation', 'MODEL-REGION-OPERATION', 4),
+  ('REG-CAT-OP-NORTH-ZZ-XY', 'REG-CAT-BR-NORTH-ZZ', '信阳作业区', 100124, 'REG-OP-NORTH-ZZ-XY', 'operation', 'MODEL-REGION-OPERATION', 5),
+  ('REG-CAT-OP-NORTH-ZZ-NY', 'REG-CAT-BR-NORTH-ZZ', '南阳作业区', 100125, 'REG-OP-NORTH-ZZ-NY', 'operation', 'MODEL-REGION-OPERATION', 6),
+  ('REG-CAT-OP-NORTH-ZZ-KF', 'REG-CAT-BR-NORTH-ZZ', '开封作业区', 100126, 'REG-OP-NORTH-ZZ-KF', 'operation', 'MODEL-REGION-OPERATION', 7),
+  ('REG-CAT-OP-NORTH-ZZ-PDS', 'REG-CAT-BR-NORTH-ZZ', '平顶山作业区', 100127, 'REG-OP-NORTH-ZZ-PDS', 'operation', 'MODEL-REGION-OPERATION', 8),
+  ('REG-CAT-OP-NORTH-ZZ-ZK', 'REG-CAT-BR-NORTH-ZZ', '周口作业区', 100128, 'REG-OP-NORTH-ZZ-ZK', 'operation', 'MODEL-REGION-OPERATION', 9),
+  ('REG-CAT-OP-NORTH-ZZ-JZ', 'REG-CAT-BR-NORTH-ZZ', '焦作作业区', 100129, 'REG-OP-NORTH-ZZ-JZ', 'operation', 'MODEL-REGION-OPERATION', 10),
+  ('REG-CAT-OP-NORTH-ZZ-ZZ', 'REG-CAT-BR-NORTH-ZZ', '郑州作业区', 100130, 'REG-OP-NORTH-ZZ-ZZ', 'operation', 'MODEL-REGION-OPERATION', 11),
+  ('REG-CAT-OP-NORTH-ZZ-XZ', 'REG-CAT-BR-NORTH-ZZ', '新郑作业区', 100131, 'REG-OP-NORTH-ZZ-XZ', 'operation', 'MODEL-REGION-OPERATION', 12),
+  ('REG-CAT-OP-NORTH-ZZ-XC', 'REG-CAT-BR-NORTH-ZZ', '许昌作业区', 100132, 'REG-OP-NORTH-ZZ-XC', 'operation', 'MODEL-REGION-OPERATION', 13),
+  ('REG-CAT-OP-NORTH-ZZ-PY', 'REG-CAT-BR-NORTH-ZZ', '濮阳作业区', 100133, 'REG-OP-NORTH-ZZ-PY', 'operation', 'MODEL-REGION-OPERATION', 14),
+  ('REG-CAT-OP-NORTH-ZZ-ZMD', 'REG-CAT-BR-NORTH-ZZ', '驻马店作业区', 100134, 'REG-OP-NORTH-ZZ-ZMD', 'operation', 'MODEL-REGION-OPERATION', 15),
+  -- 秦皇岛地区作业区
+  ('REG-CAT-OP-NORTH-QHD-QHD', 'REG-CAT-BR-NORTH-QHD', '秦皇岛作业区', 100135, 'REG-OP-NORTH-QHD-QHD', 'operation', 'MODEL-REGION-OPERATION', 1),
+  ('REG-CAT-OP-NORTH-QHD-QA', 'REG-CAT-BR-NORTH-QHD', '迁安作业区', 100136, 'REG-OP-NORTH-QHD-QA', 'operation', 'MODEL-REGION-OPERATION', 2),
+  ('REG-CAT-OP-NORTH-QHD-TS', 'REG-CAT-BR-NORTH-QHD', '唐山作业区', 100137, 'REG-OP-NORTH-QHD-TS', 'operation', 'MODEL-REGION-OPERATION', 3),
+  ('REG-CAT-OP-NORTH-QHD-CFD', 'REG-CAT-BR-NORTH-QHD', '曹妃甸作业区', 100138, 'REG-OP-NORTH-QHD-CFD', 'operation', 'MODEL-REGION-OPERATION', 4),
+  -- 其他省公司下作业区（样例）
   ('REG-CAT-OP-SD-DY', 'REG-CAT-PROV-SD', '东营作业区', 100101, 'REG-OP-SD-DY', 'operation', 'MODEL-REGION-OPERATION', 1),
   ('REG-CAT-OP-SD-DZ', 'REG-CAT-PROV-SD', '德州作业区', 100102, 'REG-OP-SD-DZ', 'operation', 'MODEL-REGION-OPERATION', 2),
   ('REG-CAT-OP-SD-ZZ', 'REG-CAT-PROV-SD', '枣庄作业区', 100103, 'REG-OP-SD-ZZ', 'operation', 'MODEL-REGION-OPERATION', 3),
   ('REG-CAT-OP-SD-TA', 'REG-CAT-PROV-SD', '泰安作业区', 100104, 'REG-OP-SD-TA', 'operation', 'MODEL-REGION-OPERATION', 4),
-  ('REG-CAT-OP-NORTH-HH', 'REG-CAT-PROV-NORTH', '黑河作业区', 100105, 'REG-OP-NORTH-HH', 'operation', 'MODEL-REGION-OPERATION', 5),
   ('REG-CAT-OP-WGAS-GL', 'REG-CAT-PROV-WESTGAS', '高陵作业区', 100106, 'REG-OP-WGAS-GL', 'operation', 'MODEL-REGION-OPERATION', 6),
   ('REG-CAT-OP-WEST-LZ', 'REG-CAT-PROV-WEST', '兰州作业区', 100107, 'REG-OP-WEST-LZ', 'operation', 'MODEL-REGION-OPERATION', 7),
   ('REG-CAT-OP-BJ-AP', 'REG-CAT-PROV-BJPIPE', '安平作业区', 100108, 'REG-OP-BJ-AP', 'operation', 'MODEL-REGION-OPERATION', 8),
@@ -82,6 +118,25 @@ FROM (VALUES
 );
 
 -- 1) 分类树
+INSERT INTO dynamic_category (
+  parent_id, name, code, category_type_code, sort, status, tenant_id, creator, parent_code
+)
+SELECT
+  p.id, n.display_name, n.category_code, 'region', n.sort_order, 1, 1, 'seed', n.parent_code
+FROM tmp_region_pattern_c n
+JOIN dynamic_category p
+  ON p.deleted = false AND p.tenant_id = 1 AND p.code = n.parent_code
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  parent_id = EXCLUDED.parent_id,
+  name = EXCLUDED.name,
+  sort = EXCLUDED.sort,
+  parent_code = EXCLUDED.parent_code,
+  deleted = false,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+-- 同一语句内新建的父节点对后续行不可见（如分公司下作业区）。再插一遍补齐子节点。
 INSERT INTO dynamic_category (
   parent_id, name, code, category_type_code, sort, status, tenant_id, creator, parent_code
 )
@@ -165,10 +220,11 @@ SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
 WHERE deleted = false AND tenant_id = 1
   AND code IN ('REG-CAT-BR-DY', 'REG-CAT-OP-DY', 'REG-CAT-PROV-SD-LEGACY');
 
+-- 仅清理改革前样例分类码；MODEL-REGION-BRANCH 已重新启用为「分公司」型号
 UPDATE dynamic_model_category_relation r
 SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
 WHERE r.deleted = false AND r.tenant_id = 1
-  AND (r.model_code = 'MODEL-REGION-BRANCH' OR r.category_code IN ('REG-CAT-BR-DY', 'REG-CAT-OP-DY'));
+  AND r.category_code IN ('REG-CAT-BR-DY', 'REG-CAT-OP-DY');
 
 UPDATE ent_region
 SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
@@ -176,7 +232,7 @@ WHERE tenant_id = 1 AND id IN (100002, 100003) AND deleted = false;
 
 SELECT setval(
   pg_get_serial_sequence('dynamicbusiness.ent_region', 'id'),
-  GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_region), 100113)
+  GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_region), 100138)
 );
 
 -- 清理历史误挂的 region 管道节点（现由 facility Pattern C 承担）

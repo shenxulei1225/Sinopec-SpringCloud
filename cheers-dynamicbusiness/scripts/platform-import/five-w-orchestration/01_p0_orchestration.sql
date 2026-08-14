@@ -130,11 +130,12 @@ BEGIN
   ) THEN
     RAISE NOTICE 'skip P0 inspection_content: dynamic_entity_type 不存在';
   ELSE
+    -- 检查内容：选设备型号 → 按设备分类浏览检查项并勾选适用（模型—实体异类型）
     UPDATE dm_five_w_orchestration
     SET enabled = true,
-        selection_level = 'ENTITY',
-        what_mode = 'SITE_PREP',
-        what_config = '{"bindLayer":"ENTITY","candidateEntityTypeCode":"inspection_item"}'::jsonb,
+        selection_level = 'MODEL',
+        what_mode = 'PICK_ENTITY',
+        what_config = '{"bindLayer":"MODEL","candidateEntityTypeCode":"inspection_item","relationKind":"MODEL_ENTITY","candidateCategoryTypeCode":"equipment"}'::jsonb,
         how_mode = 'AFTER_WHAT_ITEM',
         how_config = '{}'::jsonb,
         deleted = false,
@@ -147,8 +148,8 @@ BEGIN
         entity_type_code, enabled, selection_level, what_mode, what_config,
         how_mode, how_config, tenant_id, creator, deleted
       ) VALUES (
-        'inspection_content', true, 'ENTITY', 'SITE_PREP',
-        '{"bindLayer":"ENTITY","candidateEntityTypeCode":"inspection_item"}'::jsonb,
+        'inspection_content', true, 'MODEL', 'PICK_ENTITY',
+        '{"bindLayer":"MODEL","candidateEntityTypeCode":"inspection_item","relationKind":"MODEL_ENTITY","candidateCategoryTypeCode":"equipment"}'::jsonb,
         'AFTER_WHAT_ITEM', '{}'::jsonb, v_tenant, 'seed', false
       );
     END IF;
@@ -162,7 +163,8 @@ BEGIN
       '{"label":"设备分类","categoryTypeCode":"equipment"}'::jsonb);
     PERFORM _seed_five_w_who_slot(v_tenant, 'inspection_content', 'MODEL', 'inspection_content-model', NULL,
       true, '["modelId"]'::jsonb, NULL, NULL);
+    -- 实体列默认关闭：本场景 What 锚模型，不要求选台账实体
     PERFORM _seed_five_w_who_slot(v_tenant, 'inspection_content', 'ENTITY', 'inspection_content-entity', NULL,
-      true, '["entityId"]'::jsonb, 'rowSelection', NULL);
+      false, '["entityId"]'::jsonb, 'rowSelection', NULL);
   END IF;
 END $$;

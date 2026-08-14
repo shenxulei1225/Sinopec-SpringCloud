@@ -13,6 +13,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelSortSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFromEntityCategoryGroupsReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFromModelCategoryGroupsReqVO;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelService;
 import cn.cheers.x.module.dynamicbusiness.service.model.relation.ModelCategoryRelationService;
@@ -421,6 +422,22 @@ public class ModelController {
      */
     public CommonResult<List<ModelRespVO>> getModelsByIds(@RequestParam("ids") List<Long> ids) {
         return success(modelService.getModelsByIds(ids));
+    }
+
+    @PostMapping("/list-from-model-category-groups")
+    @Operation(
+        summary = "按多组分类—型号关联求交型号列表",
+        description = "数据管理级联或多分类栏：每组内按分类—型号关联取并集，组间取型号交集。"
+            + "不读取分类—实体关联。"
+    )
+    @PreAuthorize("@ss.hasPermission('system:model:query')")
+    public CommonResult<List<ModelRespVO>> listModelsFromModelCategoryGroups(
+            @Valid @RequestBody ModelFromModelCategoryGroupsReqVO reqVO) {
+        return success(modelService.listModelsByIntersectingCategoryGroups(
+                reqVO.getCategoryIdGroups(),
+                reqVO.getEntityTypeCode(),
+                reqVO.getDomain(),
+                reqVO.getIncludeDescendants()));
     }
 
     @PostMapping("/list-from-entity-category-groups")

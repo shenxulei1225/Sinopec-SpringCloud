@@ -206,7 +206,7 @@ public class EntityDedicatedColumnService {
      * 不做二次 SELECT；列表热路径专用。
      */
     public void applyDedicatedBaseFieldValues(EntityDO entity, Map<String, Object> baseFields) {
-        applyDedicatedBaseFieldValues(entity, baseFields, null);
+        applyDedicatedBaseFieldValues(entity, baseFields, null, null);
     }
 
     /**
@@ -215,6 +215,17 @@ public class EntityDedicatedColumnService {
     public void applyDedicatedBaseFieldValues(EntityDO entity,
                                               Map<String, Object> baseFields,
                                               Map<String, EntityTypeBaseFieldDO> metaByCodeOrNull) {
+        applyDedicatedBaseFieldValues(entity, baseFields, metaByCodeOrNull, null);
+    }
+
+    /**
+     * @param metaByCodeOrNull     同一类型本页可复用的字段元数据；null 时按类型现查
+     * @param refTargetsOrNull     同一类型本页可复用的 REF 目标类型；null 时按元数据现查
+     */
+    public void applyDedicatedBaseFieldValues(EntityDO entity,
+                                              Map<String, Object> baseFields,
+                                              Map<String, EntityTypeBaseFieldDO> metaByCodeOrNull,
+                                              Map<Long, String> refTargetsOrNull) {
         if (entity == null || baseFields == null) {
             return;
         }
@@ -226,7 +237,9 @@ public class EntityDedicatedColumnService {
         Map<String, EntityTypeBaseFieldDO> metaByCode = metaByCodeOrNull != null
                 ? metaByCodeOrNull
                 : indexEnabledBaseFields(typeCode);
-        Map<Long, String> targetByLibraryFieldId = loadRefTargetsByLibraryFieldId(metaByCode.values());
+        Map<Long, String> targetByLibraryFieldId = refTargetsOrNull != null
+                ? refTargetsOrNull
+                : loadRefTargetsByLibraryFieldId(metaByCode.values());
         for (Map.Entry<String, Object> e : dedicated.entrySet()) {
             if (e.getKey() == null || e.getValue() == null) {
                 continue;
@@ -242,6 +255,14 @@ public class EntityDedicatedColumnService {
             return Map.of();
         }
         return indexEnabledBaseFields(entityTypeCode.trim());
+    }
+
+    /** 列表组装时按类型复用：REF 字段库 → 目标实体类型编码。 */
+    public Map<Long, String> loadRefTargetsForBaseFieldMeta(Map<String, EntityTypeBaseFieldDO> metaByCode) {
+        if (metaByCode == null || metaByCode.isEmpty()) {
+            return Map.of();
+        }
+        return loadRefTargetsByLibraryFieldId(metaByCode.values());
     }
 
     /**

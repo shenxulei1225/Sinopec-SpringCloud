@@ -40,13 +40,36 @@ class EntityDoVoHelperDedicatedValuesTest {
         entity.setDedicatedBaseFieldValues(dedicated);
 
         when(dedicatedColumnService.loadEnabledBaseFieldMeta("equipment")).thenReturn(Map.of());
+        when(dedicatedColumnService.loadRefTargetsForBaseFieldMeta(any())).thenReturn(Map.of());
 
         List<EntityRespVO> list = EntityDoVoHelper.toRespVOList(
                 List.of(entity), null, dedicatedColumnService);
 
         assertEquals(1, list.size());
         assertNotNull(list.get(0).getBaseFields());
-        verify(dedicatedColumnService).applyDedicatedBaseFieldValues(eq(entity), any(), any());
+        verify(dedicatedColumnService).applyDedicatedBaseFieldValues(eq(entity), any(), any(), any());
+        verify(dedicatedColumnService, never()).mergePhysicalColumnsIntoBaseFields(any(), any());
+    }
+
+    @Test
+    void toLightRespVOList_appliesDedicatedValues_withTypeCache() {
+        EntityDO entity = new EntityDO();
+        entity.setId(2L);
+        entity.setEntityTypeCode("inspection_item");
+        entity.setName("检查项-1");
+        Map<String, Object> dedicated = new LinkedHashMap<>();
+        dedicated.put("zone_id", 202L);
+        entity.setDedicatedBaseFieldValues(dedicated);
+
+        when(dedicatedColumnService.loadEnabledBaseFieldMeta("inspection_item")).thenReturn(Map.of());
+        when(dedicatedColumnService.loadRefTargetsForBaseFieldMeta(any())).thenReturn(Map.of());
+
+        List<EntityRespVO> list = EntityDoVoHelper.toLightRespVOList(
+                List.of(entity), dedicatedColumnService);
+
+        assertEquals(1, list.size());
+        assertNotNull(list.get(0).getBaseFields());
+        verify(dedicatedColumnService).applyDedicatedBaseFieldValues(eq(entity), any(), any(), any());
         verify(dedicatedColumnService, never()).mergePhysicalColumnsIntoBaseFields(any(), any());
     }
 }

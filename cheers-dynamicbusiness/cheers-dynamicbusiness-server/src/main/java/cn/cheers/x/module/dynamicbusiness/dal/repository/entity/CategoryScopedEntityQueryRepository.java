@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 /**
  * 分类范围内实体：EXISTS（relation ∪ link）+ 库内 ORDER BY + LIMIT。
  *
- * <p>用于数据管理点分类后按字段排序分页，避免先拉全量候选再内存重排。</p>
+ * <p>单组与多组求交共用同一套分页快路径，避免先拉全量候选再内存重排。</p>
  */
 @Repository
 @RequiredArgsConstructor
@@ -32,7 +32,7 @@ public class CategoryScopedEntityQueryRepository {
     private final EntityTableNameHandler entityTableNameHandler;
 
     /**
-     * 无不可下推筛时的快路径：COUNT + ORDER BY + LIMIT，只回本页 id。
+     * 单组分类范围：COUNT + ORDER BY + LIMIT，只回本页 id。
      *
      * @param physicalFilters 已校验的专用列/核心列 EQ·IN；可为 null
      */
@@ -66,8 +66,32 @@ public class CategoryScopedEntityQueryRepository {
             KeywordSearchSpec keywordSearch,
             int pageNo,
             int pageSize) {
-        if (expandedCategoryIds == null || expandedCategoryIds.isEmpty()
-                || !StringUtils.hasText(entityTypeCode)) {
+        if (expandedCategoryIds == null || expandedCategoryIds.isEmpty()) {
+            return new PageResult<>(List.of(), 0L);
+        }
+        return pageEntityIdsByIntersectingCategoryGroups(
+                List.of(expandedCategoryIds), entityTypeCode, modelIds, domain, scopeRegistryCode,
+                orderByColumn, orderAsc, physicalFilters, keyword, keywordSearch, pageNo, pageSize);
+    }
+
+    /**
+     * 多独立栏分类求交：每组 EXISTS（relation ∪ link），组间 AND，再 COUNT + ORDER BY + LIMIT。
+     * 单组时与 {@link #pageEntityIdsByCategoryScope} 等价。
+     */
+    public PageResult<Long> pageEntityIdsByIntersectingCategoryGroups(
+            List<List<Long>> expandedGroups,
+            String entityTypeCode,
+            List<Long> modelIds,
+            String domain,
+            String scopeRegistryCode,
+            String orderByColumn,
+            boolean orderAsc,
+            List<PhysicalColumnFilter> physicalFilters,
+            String keyword,
+            KeywordSearchSpec keywordSearch,
+            int pageNo,
+            int pageSize) {
+        if (!StringUtils.hasText(entityTypeCode)) {
             return new PageResult<>(List.of(), 0L);
         }
         String sqlOrderColumn = resolveSqlOrderColumn(orderByColumn);
@@ -76,7 +100,7 @@ public class CategoryScopedEntityQueryRepository {
         }
 
         QueryParts parts = buildQueryParts(
-                expandedCategoryIds, entityTypeCode.trim(), modelIds, domain, scopeRegistryCode,
+                expandedGroups, entityTypeCode.trim(), modelIds, domain, scopeRegistryCode,
                 physicalFilters, keyword, keywordSearch);
         if (parts == null) {
             return new PageResult<>(List.of(), 0L);
@@ -118,7 +142,7 @@ public class CategoryScopedEntityQueryRepository {
             return List.of();
         }
         QueryParts parts = buildQueryParts(
-                expandedCategoryIds, entityTypeCode.trim(), modelIds, domain, scopeRegistryCode,
+                List.of(expandedCategoryIds), entityTypeCode.trim(), modelIds, domain, scopeRegistryCode,
                 null, null, null);
         if (parts == null) {
             return List.of();
@@ -133,7 +157,7 @@ public class CategoryScopedEntityQueryRepository {
     }
 
     private QueryParts buildQueryParts(
-            List<Long> expandedCategoryIds,
+            List<List<Long>> expandedGroups,
             String entityTypeCode,
             List<Long> modelIds,
             String domain,
@@ -141,8 +165,8 @@ public class CategoryScopedEntityQueryRepository {
             List<PhysicalColumnFilter> physicalFilters,
             String keyword,
             KeywordSearchSpec keywordSearch) {
-        List<Long> cats = normalizeIds(expandedCategoryIds);
-        if (cats.isEmpty()) {
+        List<List<Long>> groups = normalizeGroups(expandedGroups);
+        if (groups.isEmpty()) {
             return null;
         }
         String entityTable = entityTableNameHandler.resolvePhysicalTableName(entityTypeCode);
@@ -177,31 +201,33 @@ public class CategoryScopedEntityQueryRepository {
             args.add(scopeRegistryCode.trim());
         }
 
-        String inClause = placeholders(cats.size());
-        where.append("""
-                 AND (
-                    EXISTS (
-                        SELECT 1
-                        FROM %s ecr
-                        WHERE ecr.deleted = false
-                          AND ecr.entity_id = e.id
-                          AND ecr.entity_type_code = ?
-                          AND ecr.category_id IN (%s)
+        for (List<Long> cats : groups) {
+            String inClause = placeholders(cats.size());
+            where.append("""
+                     AND (
+                        EXISTS (
+                            SELECT 1
+                            FROM %s ecr
+                            WHERE ecr.deleted = false
+                              AND ecr.entity_id = e.id
+                              AND ecr.entity_type_code = ?
+                              AND ecr.category_id IN (%s)
+                        )
+                        OR EXISTS (
+                            SELECT 1
+                            FROM %s cel
+                            WHERE cel.deleted = false
+                              AND cel.entity_id = e.id
+                              AND cel.entity_type_code = ?
+                              AND cel.category_id IN (%s)
+                        )
                     )
-                    OR EXISTS (
-                        SELECT 1
-                        FROM %s cel
-                        WHERE cel.deleted = false
-                          AND cel.entity_id = e.id
-                          AND cel.entity_type_code = ?
-                          AND cel.category_id IN (%s)
-                    )
-                )
-                """.formatted(relationTable, inClause, linkTable, inClause));
-        args.add(entityTypeCode);
-        args.addAll(cats);
-        args.add(entityTypeCode);
-        args.addAll(cats);
+                    """.formatted(relationTable, inClause, linkTable, inClause));
+            args.add(entityTypeCode);
+            args.addAll(cats);
+            args.add(entityTypeCode);
+            args.addAll(cats);
+        }
 
         KeywordSearchSql.appendToNativeWhere(where, args, keyword, keywordSearch);
 
@@ -255,6 +281,23 @@ public class CategoryScopedEntityQueryRepository {
             return column;
         }
         return null;
+    }
+
+    private static List<List<Long>> normalizeGroups(List<List<Long>> expandedGroups) {
+        if (expandedGroups == null || expandedGroups.isEmpty()) {
+            return List.of();
+        }
+        List<List<Long>> out = new ArrayList<>();
+        for (List<Long> group : expandedGroups) {
+            if (group == null) {
+                continue;
+            }
+            List<Long> normalized = normalizeIds(group);
+            if (!normalized.isEmpty()) {
+                out.add(normalized);
+            }
+        }
+        return out;
     }
 
     private static List<Long> normalizeIds(List<Long> ids) {

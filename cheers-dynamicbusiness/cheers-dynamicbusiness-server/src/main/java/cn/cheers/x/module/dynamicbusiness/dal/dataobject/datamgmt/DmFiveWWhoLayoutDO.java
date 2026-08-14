@@ -1,12 +1,12 @@
 package cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt;
 
+import cn.cheers.x.framework.mybatis.core.type.JsonbListStringTypeHandler;
 import cn.cheers.x.framework.mybatis.core.type.JsonbMapTypeHandler;
 import cn.cheers.x.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.*;
 
 import java.util.List;
@@ -37,7 +37,7 @@ public class DmFiveWWhoLayoutDO extends TenantBaseDO {
 
     private Boolean enabled;
 
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(typeHandler = JsonbListStringTypeHandler.class)
     private List<String> contextOutputs;
 
     private String entityIdRule;

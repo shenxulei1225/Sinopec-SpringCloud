@@ -7,6 +7,7 @@
 --   · 集团规模：pipechina.com.cn 集团简介 / 业务领域（公开页 2025 口径）
 --   · 二级单位简介：公开转载的二级单位介绍（廊坊北方、徐州东部储运、西气东输、西部/西南/北京管道、华南/华中/华东/华北、LNG 接收站管理等）
 --   · 山东省公司：鲁网/青岛新闻网报道（管道总里程超 8200 公里等）
+--   · 北方管道分公司/作业区：参考资料《北方管道公司2026年管道线路视频监控招标项目-发售版》片区1–8 组织名单
 -- 幂等：jsonb || 合并；可重复执行覆盖同键
 -- ============================================================================
 
@@ -42,7 +43,7 @@ SELECT tmp_region_intro_merge(100001, jsonb_build_object(
   'FLD-BASE-region-storage_count', 8,
   'FLD-BASE-region-lng_terminal_count', 10,
   'FLD-BASE-region-coverage_note', '管网覆盖全国30个省市区及香港特别行政区',
-  'FLD-BASE-region-org_mode_note', '集团 → 省公司/区域公司 → 作业区（对标国家管网运维组织）',
+  'FLD-BASE-region-org_mode_note', '集团 → 省公司/区域公司 →（可选）分公司/地区 → 作业区',
   'FLD-BASE-region-establish_date', '2019-12-09',
   'FLD-BASE-region-centroid_lng', 116.4074,
   'FLD-BASE-region-centroid_lat', 39.9042,
@@ -58,10 +59,10 @@ SELECT tmp_region_intro_merge(100011, jsonb_build_object(
   'FLD-BASE-region-hq_location', '河北省廊坊市',
   'FLD-BASE-region-pipeline_km_total', 25000,
   'FLD-BASE-region-coverage_note', '所辖管道主要分布在东北三省、京津冀和鲁豫等，部分延伸至陕甘宁、湘鄂',
-  'FLD-BASE-region-org_mode_note', '区域公司 — 作业区（如黑河作业区）',
+  'FLD-BASE-region-org_mode_note', '省公司 — 分公司/地区 — 作业区（京津冀豫片区见北方管道视频监控招标组织口径；黑河作业区仍直属省公司）',
   'FLD-BASE-region-centroid_lng', 116.6838,
   'FLD-BASE-region-centroid_lat', 39.5380,
-  'FLD-BASE-region-remark', '简介与约2.5万公里口径来自公开二级单位介绍转载；未配置边界 GeoJSON。'
+  'FLD-BASE-region-remark', '简介与约2.5万公里口径来自公开二级单位介绍转载；分公司/作业区清单来自《北方管道公司2026年管道线路视频监控招标项目》发售版片区说明。未配置边界 GeoJSON。'
 ));
 
 SELECT tmp_region_intro_merge(100012, jsonb_build_object(
@@ -405,9 +406,267 @@ SELECT tmp_region_intro_merge(100113, jsonb_build_object(
   'FLD-BASE-region-remark', '公开驻地坐标未核实，不填质心；未编造里程与边界。'
 ));
 
+-- ---------- 北方管道 · 分公司 / 地区（招标片区口径） ----------
+SELECT tmp_region_intro_merge(100030, jsonb_build_object(
+  'FLD-BASE-region-mission_summary', '北方管道天津片区运维',
+  'FLD-BASE-region-description', '国家管网集团北方管道有限责任公司天津分公司。招标文件将其列为京津冀豫管道沿线视频监控建设片区之一（片区1：天津分公司所辖）。',
+  'FLD-BASE-region-hq_location', '天津市',
+  'FLD-BASE-region-coverage_note', '天津分公司所辖管道（招标未列下属作业区名称）',
+  'FLD-BASE-region-org_mode_note', '省公司 — 分公司 — 作业区',
+  'FLD-BASE-region-centroid_lng', 117.2010,
+  'FLD-BASE-region-centroid_lat', 39.0842,
+  'FLD-BASE-region-remark', '组织名称来自北方管道2026年线路视频监控招标发售版；下属作业区未公开点名，不编造。'
+));
+SELECT tmp_region_intro_merge(100031, jsonb_build_object(
+  'FLD-BASE-region-mission_summary', '北方管道北京片区运维',
+  'FLD-BASE-region-description', '国家管网集团北方管道有限责任公司北京分公司。招标文件点名其下永清、保定、北京、沧州、任丘、黄骅作业区，分属片区2与片区6。',
+  'FLD-BASE-region-hq_location', '北京市',
+  'FLD-BASE-region-coverage_note', '北京分公司所辖：永清、保定、北京、沧州、任丘、黄骅作业区管段',
+  'FLD-BASE-region-org_mode_note', '省公司 — 分公司 — 作业区',
+  'FLD-BASE-region-centroid_lng', 116.4074,
+  'FLD-BASE-region-centroid_lat', 39.9042,
+  'FLD-BASE-region-remark', '组织与作业区名单来自北方管道2026年线路视频监控招标发售版；与北京管道公司下「永清作业区」分属不同二级单位，编码分离。'
+));
+SELECT tmp_region_intro_merge(100032, jsonb_build_object(
+  'FLD-BASE-region-mission_summary', '北方管道郑州片区运维',
+  'FLD-BASE-region-description', '国家管网集团北方管道有限责任公司郑州分公司。招标文件点名其下三门峡、洛阳、新乡、安阳、信阳、南阳、开封、平顶山、周口、焦作、郑州、新郑、许昌、濮阳、驻马店共15个作业区（片区3–5）。',
+  'FLD-BASE-region-hq_location', '河南省郑州市',
+  'FLD-BASE-region-coverage_note', '郑州分公司所辖河南方向上述15个作业区管段',
+  'FLD-BASE-region-org_mode_note', '省公司 — 分公司 — 作业区',
+  'FLD-BASE-region-centroid_lng', 113.6254,
+  'FLD-BASE-region-centroid_lat', 34.7466,
+  'FLD-BASE-region-remark', '组织与作业区名单来自北方管道2026年线路视频监控招标发售版；与东部原油储运「洛阳作业区」分码。'
+));
+SELECT tmp_region_intro_merge(100033, jsonb_build_object(
+  'FLD-BASE-region-mission_summary', '北方管道秦皇岛地区运维',
+  'FLD-BASE-region-description', '北方管道公司秦皇岛地区运维单元。招标文件片区7点名秦皇岛、迁安、唐山、曹妃甸作业区；型号归「分公司」层，展示名保留「秦皇岛地区」。',
+  'FLD-BASE-region-hq_location', '河北省秦皇岛市',
+  'FLD-BASE-region-coverage_note', '秦皇岛、迁安、唐山、曹妃甸作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '省公司 — 地区 — 作业区',
+  'FLD-BASE-region-centroid_lng', 119.6005,
+  'FLD-BASE-region-centroid_lat', 39.9354,
+  'FLD-BASE-region-remark', '组织与作业区名单来自北方管道2026年线路视频监控招标发售版。'
+));
+SELECT tmp_region_intro_merge(100034, jsonb_build_object(
+  'FLD-BASE-region-mission_summary', '北方管道石家庄片区运维',
+  'FLD-BASE-region-description', '国家管网集团北方管道有限责任公司石家庄分公司。招标文件将其列为京津冀豫管道沿线视频监控建设片区之一（片区8：石家庄分公司所辖）。',
+  'FLD-BASE-region-hq_location', '河北省石家庄市',
+  'FLD-BASE-region-coverage_note', '石家庄分公司所辖管道（招标未列下属作业区名称）',
+  'FLD-BASE-region-org_mode_note', '省公司 — 分公司 — 作业区',
+  'FLD-BASE-region-centroid_lng', 114.5149,
+  'FLD-BASE-region-centroid_lat', 38.0428,
+  'FLD-BASE-region-remark', '组织名称来自北方管道2026年线路视频监控招标发售版；下属作业区未公开点名，不编造。'
+));
+
+-- ---------- 北方 · 北京分公司作业区 ----------
+SELECT tmp_region_intro_merge(100114, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道北京分公司下属永清作业区（招标片区2）。',
+  'FLD-BASE-region-hq_location', '河北省廊坊市永清县',
+  'FLD-BASE-region-coverage_note', '永清作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '永清属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；与北京管道公司永清作业区分码；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100115, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道北京分公司下属保定作业区（招标片区2）。',
+  'FLD-BASE-region-hq_location', '河北省保定市',
+  'FLD-BASE-region-coverage_note', '保定作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '保定属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100116, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道北京分公司下属北京作业区（招标片区2）。',
+  'FLD-BASE-region-hq_location', '北京市',
+  'FLD-BASE-region-coverage_note', '北京作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '北京属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100117, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道北京分公司下属沧州作业区（招标片区6）。',
+  'FLD-BASE-region-hq_location', '河北省沧州市',
+  'FLD-BASE-region-coverage_note', '沧州作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '沧州属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100118, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道北京分公司下属任丘作业区（招标片区6）。',
+  'FLD-BASE-region-hq_location', '河北省沧州市任丘市',
+  'FLD-BASE-region-coverage_note', '任丘作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '任丘属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100119, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道北京分公司下属黄骅作业区（招标片区6）。',
+  'FLD-BASE-region-hq_location', '河北省沧州市黄骅市',
+  'FLD-BASE-region-coverage_note', '黄骅作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '黄骅属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+
+-- ---------- 北方 · 郑州分公司作业区 ----------
+SELECT tmp_region_intro_merge(100120, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道郑州分公司下属三门峡作业区（招标片区3）。',
+  'FLD-BASE-region-hq_location', '河南省三门峡市',
+  'FLD-BASE-region-coverage_note', '三门峡作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '三门峡属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100121, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道郑州分公司下属洛阳作业区（招标片区3）。与东部原油储运洛阳作业区分码。',
+  'FLD-BASE-region-hq_location', '河南省洛阳市',
+  'FLD-BASE-region-coverage_note', '洛阳作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '洛阳属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100122, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道郑州分公司下属新乡作业区（招标片区3）。',
+  'FLD-BASE-region-hq_location', '河南省新乡市',
+  'FLD-BASE-region-coverage_note', '新乡作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '新乡属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100123, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道郑州分公司下属安阳作业区（招标片区3）。',
+  'FLD-BASE-region-hq_location', '河南省安阳市',
+  'FLD-BASE-region-coverage_note', '安阳作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '安阳属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100124, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道郑州分公司下属信阳作业区（招标片区3）。',
+  'FLD-BASE-region-hq_location', '河南省信阳市',
+  'FLD-BASE-region-coverage_note', '信阳作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '信阳属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100125, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道郑州分公司下属南阳作业区（招标片区4）。',
+  'FLD-BASE-region-hq_location', '河南省南阳市',
+  'FLD-BASE-region-coverage_note', '南阳作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '南阳属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100126, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道郑州分公司下属开封作业区（招标片区4）。',
+  'FLD-BASE-region-hq_location', '河南省开封市',
+  'FLD-BASE-region-coverage_note', '开封作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '开封属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100127, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道郑州分公司下属平顶山作业区（招标片区4）。',
+  'FLD-BASE-region-hq_location', '河南省平顶山市',
+  'FLD-BASE-region-coverage_note', '平顶山作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '平顶山属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100128, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道郑州分公司下属周口作业区（招标片区4）。',
+  'FLD-BASE-region-hq_location', '河南省周口市',
+  'FLD-BASE-region-coverage_note', '周口作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '周口属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100129, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道郑州分公司下属焦作作业区（招标片区4）。',
+  'FLD-BASE-region-hq_location', '河南省焦作市',
+  'FLD-BASE-region-coverage_note', '焦作作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '焦作属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100130, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道郑州分公司下属郑州作业区（招标片区5）。',
+  'FLD-BASE-region-hq_location', '河南省郑州市',
+  'FLD-BASE-region-coverage_note', '郑州作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '郑州属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100131, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道郑州分公司下属新郑作业区（招标片区5）。',
+  'FLD-BASE-region-hq_location', '河南省郑州市新郑市',
+  'FLD-BASE-region-coverage_note', '新郑作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '新郑属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100132, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道郑州分公司下属许昌作业区（招标片区5）。',
+  'FLD-BASE-region-hq_location', '河南省许昌市',
+  'FLD-BASE-region-coverage_note', '许昌作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '许昌属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100133, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道郑州分公司下属濮阳作业区（招标片区5）。',
+  'FLD-BASE-region-hq_location', '河南省濮阳市',
+  'FLD-BASE-region-coverage_note', '濮阳作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '濮阳属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100134, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道郑州分公司下属驻马店作业区（招标片区5）。',
+  'FLD-BASE-region-hq_location', '河南省驻马店市',
+  'FLD-BASE-region-coverage_note', '驻马店作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '分公司 — 作业区',
+  'FLD-BASE-region-mission_summary', '驻马店属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+
+-- ---------- 北方 · 秦皇岛地区作业区 ----------
+SELECT tmp_region_intro_merge(100135, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道秦皇岛地区下属秦皇岛作业区（招标片区7）。',
+  'FLD-BASE-region-hq_location', '河北省秦皇岛市',
+  'FLD-BASE-region-coverage_note', '秦皇岛作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '地区 — 作业区',
+  'FLD-BASE-region-mission_summary', '秦皇岛属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100136, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道秦皇岛地区下属迁安作业区（招标片区7）。',
+  'FLD-BASE-region-hq_location', '河北省唐山市迁安市',
+  'FLD-BASE-region-coverage_note', '迁安作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '地区 — 作业区',
+  'FLD-BASE-region-mission_summary', '迁安属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100137, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道秦皇岛地区下属唐山作业区（招标片区7）。',
+  'FLD-BASE-region-hq_location', '河北省唐山市',
+  'FLD-BASE-region-coverage_note', '唐山作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '地区 — 作业区',
+  'FLD-BASE-region-mission_summary', '唐山属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+SELECT tmp_region_intro_merge(100138, jsonb_build_object(
+  'FLD-BASE-region-description', '北方管道秦皇岛地区下属曹妃甸作业区（招标片区7）。',
+  'FLD-BASE-region-hq_location', '河北省唐山市曹妃甸区',
+  'FLD-BASE-region-coverage_note', '曹妃甸作业区所辖管段',
+  'FLD-BASE-region-org_mode_note', '地区 — 作业区',
+  'FLD-BASE-region-mission_summary', '曹妃甸属地运维单元',
+  'FLD-BASE-region-remark', '名称来自招标片区说明；未编造里程与边界。'
+));
+
 DROP FUNCTION tmp_region_intro_merge(bigint, jsonb);
 
--- 自检：介绍字段非空实体数
+-- 自检：介绍字段非空实体数（集团+省公司+北方分公司/作业区增量）
 DO $$
 DECLARE filled integer;
 BEGIN
@@ -415,9 +674,9 @@ BEGIN
   FROM ent_region
   WHERE deleted = false
     AND tenant_id = 1
-    AND id BETWEEN 100001 AND 100113
+    AND id BETWEEN 100001 AND 100138
     AND custom_fields ? 'FLD-BASE-region-description';
-  IF filled < 28 THEN
+  IF filled < 55 THEN
     RAISE EXCEPTION 'region intro seed incomplete: only % entities have description', filled;
   END IF;
   RAISE NOTICE 'region intro seed ok: % entities with description', filled;

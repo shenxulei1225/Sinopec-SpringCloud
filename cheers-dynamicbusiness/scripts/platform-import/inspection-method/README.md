@@ -18,7 +18,14 @@
 | `06_sample_bind.sql` | 样例模板 + 绑定 `INS-ITEM-101`（验收用） |
 | `07_sample_templates.sql` | 扩展标准库方法模板（目视/仪表/机泵阀门/视频门禁等）+ 首轮名称绑定 |
 | `08_bind_inspection_items.sql` | 补齐缺口模板 + 检查内容↔方法模板语义绑定（仅填空，不整库兜底） |
-| `09_apply_equipment_inspection_packages.py` | **全量设备型号检查包**：按专业类别创建 `INSP-PKG-*` 检查内容、绑定方法模板，并严格同步型号—实体关联（卸错挂） |
+| `09_apply_equipment_inspection_packages.py` | **按分类—实体关联同步型号适用集合**（不再创建 `INSP-PKG-*`，不用型号名猜类） |
+| `16_fix_video_monitoring_leaf_items.py` | **视频监控叶子整理**：父类清挂；按叶子显式映射创建「内容（分类名）」检查项；编码稳定数字码；同义不合并 |
+| `17_dedupe_and_suffix_inspection_items.py` | **全库检查项**：同名克隆软删；单叶子/单前沿改「内容（分类名）」；多叶子糊挂按叶拆分；清无设备挂接短名 |
+| `18_fix_security_specialty_leaf_items.py` | **安防专业叶子**：入侵报警/出入口控制/可视对讲/人员定位/大屏与显控；清 L3 糊挂；双挂安防系统检查；同步型号适用 |
+| `19_fix_remaining_security_leaf_items.py` | **安防剩余专业叶子**：周界/广播/巡更/综合管理/传输机柜/停车场/一卡通/安检/无人机；同 18 口径 |
+| `20_fix_instrumentation_leaf_items.py` | **仪器仪表与自动化叶子**：清 L3 糊挂；按叶子挂「内容（叶子名）」；双挂「仪表与自动化检查」；软删 L3 无后缀短名 |
+| `21_fill_remaining_equipment_leaf_items.py` | **其余设备专业空叶子补全**：供配电/电气/动静设备/消防/通信/机房/暖通/给排水/管线监测/自动化/计算等；按 L3 角色模板挂叶子 |
+| `22_sync_inspection_category_links_from_cascade.py` | **按级联补检查分类挂接**：已有「检查分类→设备分类」级联边时，把成员设备分类（含子孙）上的检查项挂到宿主检查分类；不臆造级联 |
 | `10_domain_equipment_inspection_item.sql` | **已废**：曾建 DOMAIN「设备检查内容」并填 `domain=equipment`（由 12 收口） |
 | `11_flip_inspection_catalog_ia.sql` | **已废**：曾把 NATIVE/DOMAIN 分挂知识库与设备·管线（由 12 收口） |
 | `12_retire_inspection_item_domains.sql` | **定稿**：软删检查内容 DOMAIN 入口；清空检查内容实体 `domain`；保留知识库 NATIVE |
@@ -39,16 +46,51 @@
 
 **不在本包**：角度等实例参数字段（待字段契约）；标准库左树借设备产品分类（另步）。`equipment_id` / `inspection_item_id` 见 `15_instance_fields.sql`（Wave 2）。
 
-### 全量检查包（09）
+### 检查项编码与分类挂接（定稿 2026-08-11）
+
+| 规则 | 说明 |
+|------|------|
+| 编码 | 稳定数字码 `INSP-#######`；不当说明书，改名称不改码 |
+| 名称 | 表达检查内容；按分类区分时用 `内容（叶子分类名）` |
+| 分类 | 只认分类—实体关联；**禁止**用编码前缀 /「规范包」推断所属分类 |
+| 同义项 | **不合并**（便于后续配不同检查方法） |
+| 粒度 | 有叶子挂叶子；无叶子可留 L3；父类糊清单不盲拷子类 |
 
 ```bash
-# 预览归类
+# 视频监控叶子挂接（幂等）
+python inspection-method/16_fix_video_monitoring_leaf_items.py --dry-run
+python inspection-method/16_fix_video_monitoring_leaf_items.py
+
+# 全库同名去重 + 按叶子/前沿补后缀 + 多叶拆分（幂等）
+python inspection-method/17_dedupe_and_suffix_inspection_items.py --dry-run
+python inspection-method/17_dedupe_and_suffix_inspection_items.py
+
+# 安防专业叶子（入侵报警/门禁/对讲/定位/大屏，幂等）
+python inspection-method/18_fix_security_specialty_leaf_items.py --dry-run
+python inspection-method/18_fix_security_specialty_leaf_items.py
+
+# 安防剩余专业叶子（周界/广播/巡更/综合管理/传输机柜/停车场/一卡通/安检/无人机，幂等）
+python inspection-method/19_fix_remaining_security_leaf_items.py --dry-run
+python inspection-method/19_fix_remaining_security_leaf_items.py
+
+# 仪器仪表与自动化叶子（幂等）
+python inspection-method/20_fix_instrumentation_leaf_items.py --dry-run
+python inspection-method/20_fix_instrumentation_leaf_items.py
+
+# 其余设备专业空叶子补全（幂等）
+python inspection-method/21_fill_remaining_equipment_leaf_items.py --dry-run
+python inspection-method/21_fill_remaining_equipment_leaf_items.py
+
+# 按检查分类↔设备分类级联，补检查项→检查分类挂接（幂等；不臆造级联）
+python inspection-method/22_sync_inspection_category_links_from_cascade.py --dry-run
+python inspection-method/22_sync_inspection_category_links_from_cascade.py
+
+# 再按分类—实体同步型号适用
 python inspection-method/09_apply_equipment_inspection_packages.py --dry-run
-# 写入 tenant=1
 python inspection-method/09_apply_equipment_inspection_packages.py
 ```
 
-关键类加深：储罐 12、机泵 10、UPS 9、阀门/摄像/门禁/入侵/可燃气体 8；其余类别 5～8。跳过型号名「测试模型」「单独」。
+历史 `INSP-PKG-*` / `INS-ITEM-*` / `INSP-SEED-*` 已由 16 改为数字码；09 不再重建包编码。
 
 ## 执行
 

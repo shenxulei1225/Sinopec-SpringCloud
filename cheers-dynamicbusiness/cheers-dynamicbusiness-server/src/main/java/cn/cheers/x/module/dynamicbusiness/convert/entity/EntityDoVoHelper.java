@@ -72,12 +72,16 @@ public final class EntityDoVoHelper {
 
     /**
      * 轻量列表：仅写入已加载的 dedicatedBaseFieldValues，不调用按行 merge。
+     * <p>按类型缓存字段元数据与 REF 目标，避免本页每行重复查库；
+     * 若 DO 带 customFields（MultiRef），原样挂上供后续 LIGHT 提升进 baseFields。</p>
      */
     public static List<EntityRespVO> toLightRespVOList(List<EntityDO> entities,
                                                        EntityDedicatedColumnService dedicatedColumnService) {
         if (entities == null || entities.isEmpty()) {
             return new ArrayList<>();
         }
+        Map<String, Map<String, EntityTypeBaseFieldDO>> metaByType = new HashMap<>();
+        Map<String, Map<Long, String>> refTargetsByType = new HashMap<>();
         List<EntityRespVO> result = new ArrayList<>(entities.size());
         for (EntityDO entity : entities) {
             if (entity == null) {
@@ -87,9 +91,9 @@ public final class EntityDoVoHelper {
             light.setId(entity.getId());
             light.setSort(entity.getSort());
             light.setBaseFields(EntityFieldMapsSupport.buildBaseFieldsFromEntityDO(entity));
-            if (hasDedicatedBaseFieldValues(entity) && dedicatedColumnService != null) {
-                ensureBaseFieldsMap(light);
-                dedicatedColumnService.applyDedicatedBaseFieldValues(entity, light.getBaseFields());
+            applyDedicatedCached(entity, light, dedicatedColumnService, metaByType, refTargetsByType);
+            if (entity.getCustomFields() != null && !entity.getCustomFields().isEmpty()) {
+                light.setCustomFields(entity.getCustomFields());
             }
             result.add(light);
         }
@@ -115,6 +119,7 @@ public final class EntityDoVoHelper {
 
     /**
      * 列表装 VO：扩展字段原样保留（仅供 LIGHT 偶发从 custom 提升 REF）；不做型号字段配置查询。
+     * <p>按类型缓存字段元数据与 REF 目标，避免本页每行重复查库。</p>
      */
     public static List<EntityRespVO> toRespVOListSkipCustomPresent(List<EntityDO> entities,
                                                                    EntityDedicatedColumnService dedicatedColumnService) {
@@ -122,23 +127,44 @@ public final class EntityDoVoHelper {
             return new ArrayList<>();
         }
         Map<String, Map<String, EntityTypeBaseFieldDO>> metaByType = new HashMap<>();
+        Map<String, Map<Long, String>> refTargetsByType = new HashMap<>();
         List<EntityRespVO> result = new ArrayList<>(entities.size());
         for (EntityDO entity : entities) {
             EntityRespVO respVO = EntityConvert.INSTANCE.convert(entity);
             if (respVO == null) {
                 continue;
             }
+            applyDedicatedCached(entity, respVO, dedicatedColumnService, metaByType, refTargetsByType);
             if (hasDedicatedBaseFieldValues(entity) && dedicatedColumnService != null) {
-                ensureBaseFieldsMap(respVO);
-                String typeCode = entity.getEntityTypeCode() == null ? "" : entity.getEntityTypeCode().trim();
-                Map<String, EntityTypeBaseFieldDO> meta = metaByType.computeIfAbsent(
-                        typeCode, dedicatedColumnService::loadEnabledBaseFieldMeta);
-                dedicatedColumnService.applyDedicatedBaseFieldValues(entity, respVO.getBaseFields(), meta);
                 stripPhysicalKeysFromCustom(respVO);
             }
             result.add(respVO);
         }
         return result;
+    }
+
+    /**
+     * 本页按 entityTypeCode 复用元数据 + REF 目标，再写入 dedicated 值。
+     */
+    private static void applyDedicatedCached(EntityDO entity,
+                                             EntityRespVO respVO,
+                                             EntityDedicatedColumnService dedicatedColumnService,
+                                             Map<String, Map<String, EntityTypeBaseFieldDO>> metaByType,
+                                             Map<String, Map<Long, String>> refTargetsByType) {
+        if (!hasDedicatedBaseFieldValues(entity) || dedicatedColumnService == null || respVO == null) {
+            return;
+        }
+        ensureBaseFieldsMap(respVO);
+        String typeCode = entity.getEntityTypeCode() == null ? "" : entity.getEntityTypeCode().trim();
+        Map<String, EntityTypeBaseFieldDO> meta = metaByType.computeIfAbsent(
+                typeCode, dedicatedColumnService::loadEnabledBaseFieldMeta);
+        Map<Long, String> refTargets = refTargetsByType.get(typeCode);
+        if (refTargets == null) {
+            refTargets = dedicatedColumnService.loadRefTargetsForBaseFieldMeta(meta);
+            refTargetsByType.put(typeCode, refTargets);
+        }
+        dedicatedColumnService.applyDedicatedBaseFieldValues(
+                entity, respVO.getBaseFields(), meta, refTargets);
     }
 
     /**

@@ -40,4 +40,7 @@ public class EntityRelationCreateReqVO {
 
     @Schema(description = "关联属性（JSON格式）", example = "{\"priority\": 1}")
     private String relationAttributes;
+
+    @Schema(description = "关联来源字段编码（有 REF/MultiRef 时写入，便于按字段反查）", example = "patrol_equipment")
+    private String fieldCode;
 }

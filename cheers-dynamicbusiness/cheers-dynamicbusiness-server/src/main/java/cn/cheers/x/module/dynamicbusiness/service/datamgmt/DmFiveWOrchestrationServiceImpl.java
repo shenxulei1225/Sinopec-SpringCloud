@@ -205,6 +205,7 @@ public class DmFiveWOrchestrationServiceImpl implements DmFiveWOrchestrationServ
         vo.setDetailPropsId(longVal(cfg.get("detailPropsId")));
         vo.setListPropsId(longVal(cfg.get("listPropsId")));
         vo.setCandidateEntityTypeCode(stringVal(cfg.get("candidateEntityTypeCode")));
+        vo.setCandidateCategoryTypeCode(stringVal(cfg.get("candidateCategoryTypeCode")));
         vo.setDetailReadonly(boolVal(cfg.get("detailReadonly")));
         vo.setPanelPropsId(longVal(cfg.get("panelPropsId")));
         vo.setDomain(stringVal(cfg.get("domain")));
@@ -224,6 +225,7 @@ public class DmFiveWOrchestrationServiceImpl implements DmFiveWOrchestrationServ
         putIfNonNull(map, "detailPropsId", slot.getDetailPropsId());
         putIfNonNull(map, "listPropsId", slot.getListPropsId());
         putIfText(map, "candidateEntityTypeCode", slot.getCandidateEntityTypeCode());
+        putIfText(map, "candidateCategoryTypeCode", slot.getCandidateCategoryTypeCode());
         putIfNonNull(map, "detailReadonly", slot.getDetailReadonly());
         putIfNonNull(map, "panelPropsId", slot.getPanelPropsId());
         putIfText(map, "domain", slot.getDomain());

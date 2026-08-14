@@ -71,7 +71,11 @@ public class EntityRelationServiceImpl implements EntityRelationService {
             targetEntityTypeCode = targetEntity.getEntityTypeCode();
         }
 
-        // 创建关联关系
+        // 创建关联关系（可选 fieldCode：与 REF 字段对齐，供按字段反查）
+        String fieldCode = reqVO.getFieldCode() == null ? null : reqVO.getFieldCode().trim();
+        if (fieldCode != null && fieldCode.isEmpty()) {
+            fieldCode = null;
+        }
         EntityRelationDO relation = EntityRelationDO.builder()
                 .sourceEntityId(reqVO.getSourceEntityId())
                 .targetEntityId(reqVO.getTargetEntityId())
@@ -81,6 +85,7 @@ public class EntityRelationServiceImpl implements EntityRelationService {
                 .relationName(reqVO.getRelationName())
                 .description(reqVO.getDescription())
                 .relationAttributes(reqVO.getRelationAttributes())
+                .fieldCode(fieldCode)
                 .status(1)
                 .build();
         relation.setTenantId(getTenantId());

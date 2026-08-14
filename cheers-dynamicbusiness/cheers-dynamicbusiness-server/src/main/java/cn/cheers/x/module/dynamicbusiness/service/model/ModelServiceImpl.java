@@ -7,6 +7,7 @@ import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.CategoryIdGroupReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCloneReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelDomainChangePreviewRespVO;
@@ -1341,5 +1342,70 @@ public class ModelServiceImpl implements ModelService {
         }
         int to = Math.min(from + effectivePageSize, orderedModelIds.size());
         return new PageResult<>(orderedModelIds.subList(from, to), (long) orderedModelIds.size());
+    }
+
+    @Override
+    public List<ModelRespVO> listModelsByIntersectingCategoryGroups(
+            List<CategoryIdGroupReqVO> categoryIdGroups,
+            String entityTypeCode,
+            String domain,
+            Boolean includeDescendants) {
+        if (!StringUtils.hasText(entityTypeCode)) {
+            throw new ServiceException(400, "entityTypeCode 不能为空");
+        }
+        if (categoryIdGroups == null || categoryIdGroups.isEmpty()) {
+            throw new ServiceException(400, "categoryIdGroups 不能为空");
+        }
+
+        boolean withDescendants = includeDescendants == null || includeDescendants;
+        LinkedHashSet<Long> intersection = null;
+        for (CategoryIdGroupReqVO group : categoryIdGroups) {
+            if (group == null) {
+                throw new ServiceException(400, "categoryIdGroups 不能包含空组");
+            }
+            List<Long> categoryIds = group.getCategoryIds() == null
+                    ? List.of()
+                    : group.getCategoryIds().stream()
+                            .filter(Objects::nonNull)
+                            .filter(id -> id > 0)
+                            .distinct()
+                            .toList();
+
+            List<Long> groupModelIds;
+            if (categoryIds.isEmpty()) {
+                if (!StringUtils.hasText(group.getCategoryTypeCode())) {
+                    throw new ServiceException(400, "空分类组必须提供 categoryTypeCode");
+                }
+                groupModelIds = queryOrderedModelIdsByCategoriesInBusiness(
+                        List.of(), group.getCategoryTypeCode().trim(), entityTypeCode.trim(), null, null).getList();
+            } else if (withDescendants) {
+                groupModelIds = categoryIds.size() == 1
+                        ? modelCategoryRelationService.listModelIdsByCategoryIdWithDescendants(
+                                categoryIds.get(0), entityTypeCode.trim())
+                        : modelCategoryRelationService.listModelIdsByCategoryIdsWithDescendants(
+                                categoryIds, entityTypeCode.trim());
+            } else {
+                groupModelIds = categoryIds.size() == 1
+                        ? modelCategoryRelationService.listModelIdsByCategoryIdOnly(
+                                categoryIds.get(0), entityTypeCode.trim())
+                        : modelCategoryRelationService.listModelIdsByCategoryIdsOnly(
+                                categoryIds, entityTypeCode.trim());
+            }
+
+            if (intersection == null) {
+                intersection = new LinkedHashSet<>(groupModelIds);
+            } else {
+                intersection.retainAll(new HashSet<>(groupModelIds));
+            }
+            if (intersection.isEmpty()) {
+                return List.of();
+            }
+        }
+
+        if (intersection == null || intersection.isEmpty()) {
+            return List.of();
+        }
+        List<ModelRespVO> models = getModelsByIds(new ArrayList<>(intersection));
+        return filterModelsByDomain(models, domain);
     }
 }

@@ -663,13 +663,13 @@ public class EntityServiceImpl implements EntityService {
                     PageResult<EntityRespVO> paged = queryDataMgmtEntitiesByCategoryModel(
                             categoryIds, categoryIdGroups, resolvedCategoryTypeCode, storageEntityTypeCode, modelIds,
                             keyword, filters, effectivePageNo, effectivePageSize, true,
-                            normalizedDomain, normalizedScopeCode, fieldOrderColumn, orderAsc, keywordSearch);
+                            normalizedDomain, normalizedScopeCode, fieldOrderColumn, orderAsc, keywordSearch, detail);
                     return EntitySceneQueryRespVO.page(applyResultDetail(paged, detail), detail.getCode());
                 }
                 PageResult<EntityRespVO> full = queryDataMgmtEntitiesByCategoryModel(
                         categoryIds, categoryIdGroups, resolvedCategoryTypeCode, storageEntityTypeCode, modelIds,
                         keyword, filters, null, null, false,
-                        normalizedDomain, normalizedScopeCode, fieldOrderColumn, orderAsc, keywordSearch);
+                        normalizedDomain, normalizedScopeCode, fieldOrderColumn, orderAsc, keywordSearch, detail);
                 List<EntityRespVO> entities = full.getList();
                 if (shape == EntityQueryResultShape.TREE) {
                     return EntitySceneQueryRespVO.tree(
@@ -718,7 +718,7 @@ public class EntityServiceImpl implements EntityService {
                             shape == EntityQueryResultShape.PAGE ? effectivePageNo : 1,
                             shape == EntityQueryResultShape.PAGE ? effectivePageSize : fullPageSize,
                             normalizedDomain, normalizedScopeCode,
-                            manualSortOrder ? null : normalizedOrderByColumn, orderAsc, keywordSearch);
+                            manualSortOrder ? null : normalizedOrderByColumn, orderAsc, keywordSearch, detail);
                     if (shape == EntityQueryResultShape.PAGE) {
                         return EntitySceneQueryRespVO.page(applyResultDetail(modelPage, detail), detail.getCode());
                     }
@@ -764,13 +764,13 @@ public class EntityServiceImpl implements EntityService {
                         typedPage = pageEntitiesByEntityTypeDbOrder(
                                 storageEntityTypeCode, keyword, normalizedDomain,
                                 effectivePageNo, effectivePageSize,
-                                typeDbOrder, orderAsc, typePushFilters, keywordSearch);
+                                typeDbOrder, orderAsc, typePushFilters, keywordSearch, detail);
                         pathTag = "TYPE_DB_ORDER_PAGE";
                     } else {
                         typedPage = pageEntitiesByEvaOrder(
                                 storageEntityTypeCode, null, keyword, normalizedDomain,
                                 normalizedOrderByColumn.trim(), typeEvaValueCol,
-                                effectivePageNo, effectivePageSize, orderAsc);
+                                effectivePageNo, effectivePageSize, orderAsc, detail);
                         pathTag = "TYPE_EVA_ORDER_PAGE";
                     }
                     long t1 = System.nanoTime();
@@ -1092,7 +1092,7 @@ public class EntityServiceImpl implements EntityService {
     /**
      * 数据管理三栏：分类定范围（含子树，空 categoryIds 回退根分类）+ 可选 modelIds 过滤。
      * <p>右栏实体只取分类范围内的 relation / link 关联，不做 modelId 全局扫表。</p>
-     * <p>{@code categoryIdGroups} 非空时按多独立栏求交（组间 AND）。</p>
+     * <p>{@code categoryIdGroups} 非空时按多独立栏求交（组间 AND）。可下推时走库内 EXISTS + ORDER BY + LIMIT（多组同快路径）。</p>
      */
     private PageResult<EntityRespVO> queryDataMgmtEntitiesByCategoryModel(List<Long> categoryIds,
                                                                           List<CategoryIdGroupReqVO> categoryIdGroups,
@@ -1103,11 +1103,27 @@ public class EntityServiceImpl implements EntityService {
                                                                           String domain, String scopeRegistryCode,
                                                                           String orderByColumn, boolean orderAsc,
                                                                           KeywordSearchSpec keywordSearch) {
+        return queryDataMgmtEntitiesByCategoryModel(
+                categoryIds, categoryIdGroups, categoryTypeCode, entityTypeCode, modelIds,
+                keyword, filters, pageNo, pageSize, allowDirectPaging, domain, scopeRegistryCode,
+                orderByColumn, orderAsc, keywordSearch, EntityQueryResultDetail.FULL);
+    }
+
+    private PageResult<EntityRespVO> queryDataMgmtEntitiesByCategoryModel(List<Long> categoryIds,
+                                                                          List<CategoryIdGroupReqVO> categoryIdGroups,
+                                                                          String categoryTypeCode,
+                                                                          String entityTypeCode, List<Long> modelIds,
+                                                                          String keyword, List<FieldFilterReqVO> filters,
+                                                                          Integer pageNo, Integer pageSize, boolean allowDirectPaging,
+                                                                          String domain, String scopeRegistryCode,
+                                                                          String orderByColumn, boolean orderAsc,
+                                                                          KeywordSearchSpec keywordSearch,
+                                                                          EntityQueryResultDetail detail) {
         if (entityTypeCode == null || entityTypeCode.isBlank()) {
             return new PageResult<>(new ArrayList<>(), 0L);
         }
 
-        // 单组分类范围：可下推排序 + 筛可下推 → 库内 EXISTS + ORDER BY + LIMIT
+        // 单组 / 多组求交：可下推排序 + 筛可下推 → 库内 EXISTS(AND) + ORDER BY + LIMIT
         List<List<Long>> expandedGroups = expandCategoryIdGroups(
                 categoryIds, categoryIdGroups, categoryTypeCode);
         if (expandedGroups.isEmpty()) {
@@ -1118,8 +1134,9 @@ public class EntityServiceImpl implements EntityService {
         KeywordSearchSpec effectiveKeywordSearch =
                 keywordSearch != null ? keywordSearch : KeywordSearchSpec.nameOnly();
         boolean keywordPushOk = !StringUtils.hasText(keyword) || effectiveKeywordSearch.canPushFullyToEntityTable();
+        EntityQueryResultDetail effectiveDetail =
+                detail != null ? detail : EntityQueryResultDetail.FULL;
         if (allowDirectPaging
-                && expandedGroups.size() == 1
                 && pushFilters != null
                 && keywordPushOk
                 && StringUtils.hasText(dbOrder)
@@ -1127,16 +1144,17 @@ public class EntityServiceImpl implements EntityService {
             Integer pn = normalizePageNo(pageNo);
             Integer ps = normalizePageSize(pageSize);
             long t0 = System.nanoTime();
-            PageResult<Long> pageIds = categoryScopedEntityQueryRepository.pageEntityIdsByCategoryScope(
-                    expandedGroups.get(0), entityTypeCode, normalizeModelIds(modelIds),
+            PageResult<Long> pageIds = categoryScopedEntityQueryRepository.pageEntityIdsByIntersectingCategoryGroups(
+                    expandedGroups, entityTypeCode, normalizeModelIds(modelIds),
                     domain, scopeRegistryCode, dbOrder, orderAsc, pushFilters, keyword,
                     effectiveKeywordSearch, pn, ps);
             List<Long> orderedIds = pageIds.getList() != null ? pageIds.getList() : List.of();
-            List<EntityRespVO> list = convertOrderedEntityIdsToRespList(orderedIds, entityTypeCode);
+            List<EntityRespVO> list = convertOrderedEntityIdsToRespList(orderedIds, entityTypeCode, effectiveDetail);
             if (log.isInfoEnabled()) {
-                log.info("[query-by-scene timing] path=CATEGORY_DB_ORDER_PAGE type={} order={} "
+                log.info("[query-by-scene timing] path={} type={} groups={} order={} "
                                 + "page={}/{} rows={} total={} elapsed={}ms",
-                        entityTypeCode, dbOrder, pn, ps, list.size(), pageIds.getTotal(),
+                        expandedGroups.size() > 1 ? "CATEGORY_GROUPS_DB_ORDER_PAGE" : "CATEGORY_DB_ORDER_PAGE",
+                        entityTypeCode, expandedGroups.size(), dbOrder, pn, ps, list.size(), pageIds.getTotal(),
                         (System.nanoTime() - t0) / 1_000_000L);
             }
             return new PageResult<>(list, pageIds.getTotal());
@@ -1157,11 +1175,11 @@ public class EntityServiceImpl implements EntityService {
         if (allowDirectPaging && canPageDirectly(keyword, filters)) {
             Integer pn = normalizePageNo(pageNo);
             Integer ps = normalizePageSize(pageSize);
-            return pageByOrderedIds(orderedCandidateEntityIds, entityTypeCode, pn, ps);
+            return pageByOrderedIds(orderedCandidateEntityIds, entityTypeCode, pn, ps, effectiveDetail);
         }
         return queryEntitiesByOrderedCandidateIds(
                 orderedCandidateEntityIds, entityTypeCode, keyword, filters, pageNo, pageSize,
-                effectiveKeywordSearch);
+                effectiveKeywordSearch, effectiveDetail);
     }
 
     private List<List<Long>> expandCategoryIdGroups(List<Long> categoryIds,
@@ -1386,21 +1404,34 @@ public class EntityServiceImpl implements EntityService {
                                                                         String entityTypeCode, String keyword, List<FieldFilterReqVO> filters,
                                                                         Integer pageNo, Integer pageSize,
                                                                         KeywordSearchSpec keywordSearch) {
+        return queryEntitiesByOrderedCandidateIds(
+                orderedCandidateEntityIds, entityTypeCode, keyword, filters, pageNo, pageSize,
+                keywordSearch, EntityQueryResultDetail.FULL);
+    }
+
+    private PageResult<EntityRespVO> queryEntitiesByOrderedCandidateIds(List<Long> orderedCandidateEntityIds,
+                                                                        String entityTypeCode, String keyword, List<FieldFilterReqVO> filters,
+                                                                        Integer pageNo, Integer pageSize,
+                                                                        KeywordSearchSpec keywordSearch,
+                                                                        EntityQueryResultDetail detail) {
         if (orderedCandidateEntityIds == null || orderedCandidateEntityIds.isEmpty()) {
             return new PageResult<>(new ArrayList<>(), 0L);
         }
         boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
         boolean hasFilters = filters != null && !filters.isEmpty();
+        EntityQueryResultDetail effectiveDetail =
+                detail != null ? detail : EntityQueryResultDetail.FULL;
 
         // 性能优化：无 keyword/filters 且请求分页时，直接在有序 ID 上分页切片后回查，
         // 避免“先全量转 VO 再内存分页”导致大分类场景响应过慢。
         if (!hasKeyword && !hasFilters && pageNo != null && pageSize != null) {
-            return pageByOrderedIds(orderedCandidateEntityIds, entityTypeCode, pageNo, pageSize);
+            return pageByOrderedIds(orderedCandidateEntityIds, entityTypeCode, pageNo, pageSize, effectiveDetail);
         }
 
         List<EntityRespVO> searchedAndFilteredEntities;
         if (!hasKeyword && !hasFilters) {
-            searchedAndFilteredEntities = fetchEntitiesByOrderedIds(orderedCandidateEntityIds, entityTypeCode);
+            searchedAndFilteredEntities = convertOrderedEntityIdsToRespList(
+                    orderedCandidateEntityIds, entityTypeCode, effectiveDetail);
         } else {
             // 有搜索/筛选时，直接返回过滤后的 VO 列表，避免后续再按 ID 二次回查实体
             searchedAndFilteredEntities = filterCandidateEntities(
@@ -1433,6 +1464,18 @@ public class EntityServiceImpl implements EntityService {
                                                                     String domain, String scopeRegistryCode,
                                                                     String orderByColumn, boolean orderAsc,
                                                                     KeywordSearchSpec keywordSearch) {
+        return handlePatternBModelEntities(
+                modelIds, entityTypeCode, keyword, filters, pageNo, pageSize, domain, scopeRegistryCode,
+                orderByColumn, orderAsc, keywordSearch, EntityQueryResultDetail.FULL);
+    }
+
+    private PageResult<EntityRespVO> handlePatternBModelEntities(List<Long> modelIds, String entityTypeCode,
+                                                                    String keyword, List<FieldFilterReqVO> filters,
+                                                                    Integer pageNo, Integer pageSize,
+                                                                    String domain, String scopeRegistryCode,
+                                                                    String orderByColumn, boolean orderAsc,
+                                                                    KeywordSearchSpec keywordSearch,
+                                                                    EntityQueryResultDetail detail) {
         boolean hasScope = StringUtils.hasText(scopeRegistryCode);
         boolean hasFieldOrder = StringUtils.hasText(orderByColumn);
         List<PhysicalColumnFilter> pushFilters = resolvePushablePhysicalFilters(entityTypeCode, filters);
@@ -1444,6 +1487,8 @@ public class EntityServiceImpl implements EntityService {
                 keywordSearch != null ? keywordSearch : KeywordSearchSpec.nameOnly();
         boolean keywordPushOk = !StringUtils.hasText(keyword) || effectiveKeywordSearch.canPushFullyToEntityTable();
         boolean keywordEvaOk = !StringUtils.hasText(keyword) || effectiveKeywordSearch.isNameOnlyLike();
+        EntityQueryResultDetail effectiveDetail =
+                detail != null ? detail : EntityQueryResultDetail.FULL;
         // 筛可下推（或无筛）、无划分：实体表 / EVA 直分页（keyword 多列 OR，默认可 name）。
         if (pushFilters != null && !hasScope && keywordPushOk
                 && (!hasFieldOrder || StringUtils.hasText(dbOrder)
@@ -1454,12 +1499,12 @@ public class EntityServiceImpl implements EntityService {
             if (StringUtils.hasText(evaValueCol) && !StringUtils.hasText(dbOrder) && keywordEvaOk) {
                 page = pageEntitiesByEvaOrder(
                         entityTypeCode, modelIds, keyword, domain,
-                        orderByColumn.trim(), evaValueCol, pageNo, pageSize, orderAsc);
+                        orderByColumn.trim(), evaValueCol, pageNo, pageSize, orderAsc, effectiveDetail);
                 path = "MODEL_EVA_ORDER_PAGE";
             } else {
                 page = pageEntitiesByModelIds(
                         modelIds, keyword, pageNo, pageSize, domain,
-                        dbOrder, orderAsc, pushFilters, effectiveKeywordSearch);
+                        dbOrder, orderAsc, pushFilters, effectiveKeywordSearch, effectiveDetail);
                 path = "MODEL_IDS_DB_PAGE";
             }
             if (log.isInfoEnabled()) {
@@ -1760,11 +1805,23 @@ public class EntityServiceImpl implements EntityService {
                                                                 String domain, String orderByColumn, boolean orderAsc,
                                                                 List<PhysicalColumnFilter> physicalFilters,
                                                                 KeywordSearchSpec keywordSearch) {
+        return pageEntitiesByModelIds(modelIds, keyword, pageNo, pageSize, domain,
+                orderByColumn, orderAsc, physicalFilters, keywordSearch, EntityQueryResultDetail.FULL);
+    }
+
+    private PageResult<EntityRespVO> pageEntitiesByModelIds(List<Long> modelIds,
+                                                                String keyword, Integer pageNo, Integer pageSize,
+                                                                String domain, String orderByColumn, boolean orderAsc,
+                                                                List<PhysicalColumnFilter> physicalFilters,
+                                                                KeywordSearchSpec keywordSearch,
+                                                                EntityQueryResultDetail detail) {
         List<Long> normalizedModelIds = requireModelIds(modelIds, "modelIds 不能为空");
         String normalizedDomain = EntityTypeScopeContext.normalizeDomain(domain);
         String coreOrder = StringUtils.hasText(orderByColumn) ? orderByColumn.trim() : null;
         KeywordSearchSpec effectiveKeywordSearch =
                 keywordSearch != null ? keywordSearch : KeywordSearchSpec.nameOnly();
+        EntityQueryResultDetail effectiveDetail =
+                detail != null ? detail : EntityQueryResultDetail.FULL;
 
         if (normalizedModelIds.size() == 1) {
             Long singleModelId = normalizedModelIds.get(0);
@@ -1787,7 +1844,7 @@ public class EntityServiceImpl implements EntityService {
             PageResult<Long> pageIds = entityRepository.findPageIds(query);
             List<Long> orderedIds = pageIds.getList() != null ? pageIds.getList() : List.of();
             List<EntityRespVO> list = convertOrderedEntityIdsToRespList(
-                    orderedIds, model.getEntityTypeCode());
+                    orderedIds, model.getEntityTypeCode(), effectiveDetail);
             return new PageResult<>(list, pageIds.getTotal());
         }
 
@@ -1814,7 +1871,7 @@ public class EntityServiceImpl implements EntityService {
                 effectiveKeywordSearch
         );
         List<Long> orderedIds = pageIds.getList() != null ? pageIds.getList() : List.of();
-        List<EntityRespVO> list = convertOrderedEntityIdsToRespList(orderedIds, entityTypeCode);
+        List<EntityRespVO> list = convertOrderedEntityIdsToRespList(orderedIds, entityTypeCode, effectiveDetail);
         return new PageResult<>(list, pageIds.getTotal());
     }
 
@@ -1831,6 +1888,21 @@ public class EntityServiceImpl implements EntityService {
                                                                      boolean orderAsc,
                                                                      List<PhysicalColumnFilter> physicalFilters,
                                                                      KeywordSearchSpec keywordSearch) {
+        return pageEntitiesByEntityTypeDbOrder(
+                entityTypeCode, keyword, domain, pageNo, pageSize, orderByColumn, orderAsc,
+                physicalFilters, keywordSearch, EntityQueryResultDetail.FULL);
+    }
+
+    private PageResult<EntityRespVO> pageEntitiesByEntityTypeDbOrder(String entityTypeCode,
+                                                                     String keyword,
+                                                                     String domain,
+                                                                     Integer pageNo,
+                                                                     Integer pageSize,
+                                                                     String orderByColumn,
+                                                                     boolean orderAsc,
+                                                                     List<PhysicalColumnFilter> physicalFilters,
+                                                                     KeywordSearchSpec keywordSearch,
+                                                                     EntityQueryResultDetail detail) {
         if (!StringUtils.hasText(entityTypeCode) || !StringUtils.hasText(orderByColumn)) {
             return new PageResult<>(new ArrayList<>(), 0L);
         }
@@ -1849,7 +1921,8 @@ public class EntityServiceImpl implements EntityService {
         PageResult<Long> pageIds = entityRepository.findPageIds(query);
         long t1 = System.nanoTime();
         List<Long> orderedIds = pageIds.getList() != null ? pageIds.getList() : List.of();
-        List<EntityRespVO> list = convertOrderedEntityIdsToRespList(orderedIds, entityTypeCode.trim());
+        List<EntityRespVO> list = convertOrderedEntityIdsToRespList(
+                orderedIds, entityTypeCode.trim(), detail != null ? detail : EntityQueryResultDetail.FULL);
         long t2 = System.nanoTime();
         log.info("[query-by-scene timing] stage=pageEntitiesByEntityTypeDbOrder findPageIds={}ms "
                         + "convert={}ms order={} ids={} totalRows={}",
@@ -1867,6 +1940,21 @@ public class EntityServiceImpl implements EntityService {
                                                             Integer pageNo,
                                                             Integer pageSize,
                                                             boolean orderAsc) {
+        return pageEntitiesByEvaOrder(
+                entityTypeCode, modelIds, keyword, domain, fieldCode, indexValueColumn,
+                pageNo, pageSize, orderAsc, EntityQueryResultDetail.FULL);
+    }
+
+    private PageResult<EntityRespVO> pageEntitiesByEvaOrder(String entityTypeCode,
+                                                            List<Long> modelIds,
+                                                            String keyword,
+                                                            String domain,
+                                                            String fieldCode,
+                                                            String indexValueColumn,
+                                                            Integer pageNo,
+                                                            Integer pageSize,
+                                                            boolean orderAsc,
+                                                            EntityQueryResultDetail detail) {
         if (!StringUtils.hasText(entityTypeCode) || !StringUtils.hasText(fieldCode)
                 || !StringUtils.hasText(indexValueColumn)) {
             return new PageResult<>(new ArrayList<>(), 0L);
@@ -1875,7 +1963,8 @@ public class EntityServiceImpl implements EntityService {
                 entityTypeCode.trim(), modelIds, domain, fieldCode.trim(), indexValueColumn,
                 orderAsc, keyword, normalizePageNo(pageNo), normalizePageSize(pageSize));
         List<Long> orderedIds = pageIds.getList() != null ? pageIds.getList() : List.of();
-        List<EntityRespVO> list = convertOrderedEntityIdsToRespList(orderedIds, entityTypeCode.trim());
+        List<EntityRespVO> list = convertOrderedEntityIdsToRespList(
+                orderedIds, entityTypeCode.trim(), detail != null ? detail : EntityQueryResultDetail.FULL);
         return new PageResult<>(list, pageIds.getTotal());
     }
 
@@ -2126,6 +2215,11 @@ public class EntityServiceImpl implements EntityService {
      * <p><b>返回约定</b>：total 使用过滤后的 ID 总数，确保分页总数准确。</p>
      */
     private PageResult<EntityRespVO> pageByOrderedIds(List<Long> orderedIds, String entityTypeCode, Integer pageNo, Integer pageSize) {
+        return pageByOrderedIds(orderedIds, entityTypeCode, pageNo, pageSize, EntityQueryResultDetail.FULL);
+    }
+
+    private PageResult<EntityRespVO> pageByOrderedIds(List<Long> orderedIds, String entityTypeCode, Integer pageNo, Integer pageSize,
+                                                      EntityQueryResultDetail detail) {
         // Step 1) 标准化分页参数。
         Integer pn = normalizePageNo(pageNo);
         Integer ps = normalizePageSize(pageSize);
@@ -2140,7 +2234,7 @@ public class EntityServiceImpl implements EntityService {
 
         // Step 3) 回查实体详情并按切片顺序返回。
         PageResult<Long> pagedEntityIds = new PageResult<>(pageIds, (long) orderedIds.size());
-        return fetchEntityPageByOrderedIds(pagedEntityIds, entityTypeCode);
+        return fetchEntityPageByOrderedIds(pagedEntityIds, entityTypeCode, detail);
     }
 
     private List<EntityRespVO> fetchEntitiesByOrderedIds(List<Long> orderedIds, String entityTypeCode) {
@@ -2281,10 +2375,17 @@ public class EntityServiceImpl implements EntityService {
     /** ----------------按有序 entityId 分页结果回查实体详情并保序返回。-----------
      */
     private PageResult<EntityRespVO> fetchEntityPageByOrderedIds(PageResult<Long> pagedEntityIds, String entityTypeCode) {
+        return fetchEntityPageByOrderedIds(pagedEntityIds, entityTypeCode, EntityQueryResultDetail.FULL);
+    }
+
+    private PageResult<EntityRespVO> fetchEntityPageByOrderedIds(PageResult<Long> pagedEntityIds,
+                                                                 String entityTypeCode,
+                                                                 EntityQueryResultDetail detail) {
         if (pagedEntityIds == null || pagedEntityIds.getList() == null || pagedEntityIds.getList().isEmpty()) {
             return new PageResult<>(new ArrayList<>(), pagedEntityIds == null ? 0L : pagedEntityIds.getTotal());
         }
-        List<EntityRespVO> result = convertOrderedEntityIdsToRespList(pagedEntityIds.getList(), entityTypeCode);
+        List<EntityRespVO> result = convertOrderedEntityIdsToRespList(
+                pagedEntityIds.getList(), entityTypeCode, detail);
         return new PageResult<>(result, pagedEntityIds.getTotal());
     }
 
@@ -2296,8 +2397,15 @@ public class EntityServiceImpl implements EntityService {
      * 列表装 VO：本页一次带基础字段；不查型号扩展字段配置（列表不展示扩展字段）。
      * <p>无启用 MultiRef 基础字段时不取 {@code custom_fields}（单选 REF 已在专用列）；
      * 有 MultiRef 时仍取 JSON，供 LIGHT 提升进 baseFields。</p>
+     * <p>{@code detail=LIGHT} 时直接装轻量 VO，避免 MapStruct 全量转换后再剥字段。</p>
      */
     private List<EntityRespVO> convertOrderedEntityIdsToRespList(List<Long> orderedEntityIds, String entityTypeCode) {
+        return convertOrderedEntityIdsToRespList(orderedEntityIds, entityTypeCode, EntityQueryResultDetail.FULL);
+    }
+
+    private List<EntityRespVO> convertOrderedEntityIdsToRespList(List<Long> orderedEntityIds,
+                                                                  String entityTypeCode,
+                                                                  EntityQueryResultDetail detail) {
         if (orderedEntityIds == null || orderedEntityIds.isEmpty()) {
             return new ArrayList<>();
         }
@@ -2309,13 +2417,16 @@ public class EntityServiceImpl implements EntityService {
         if (ordered == null || ordered.isEmpty()) {
             return new ArrayList<>();
         }
-        List<EntityRespVO> vos = EntityDoVoHelper.toRespVOListSkipCustomPresent(
-                ordered, entityDedicatedColumnService);
+        boolean light = detail == EntityQueryResultDetail.LIGHT;
+        List<EntityRespVO> vos = light
+                ? EntityDoVoHelper.toLightRespVOList(ordered, entityDedicatedColumnService)
+                : EntityDoVoHelper.toRespVOListSkipCustomPresent(ordered, entityDedicatedColumnService);
         long t2 = System.nanoTime();
         if (log.isInfoEnabled() && orderedEntityIds.size() >= 20) {
             log.info("[query-by-scene timing] stage=convertOrderedEntityIds loadDedicated={}ms toVO={}ms "
-                            + "ids={} includeCustomFields={}",
-                    (t1 - t0) / 1_000_000L, (t2 - t1) / 1_000_000L, orderedEntityIds.size(), includeCustom);
+                            + "ids={} includeCustomFields={} detail={}",
+                    (t1 - t0) / 1_000_000L, (t2 - t1) / 1_000_000L, orderedEntityIds.size(), includeCustom,
+                    detail != null ? detail.getCode() : "FULL");
         }
         return vos;
     }

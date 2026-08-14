@@ -57,6 +57,8 @@ public class DmFiveWOrchestrationBundleRespVO {
         private Long detailPropsId;
         private Long listPropsId;
         private String candidateEntityTypeCode;
+        /** 候选库左侧分类种类（可与候选实体类型不同，如检查项按设备分类浏览） */
+        private String candidateCategoryTypeCode;
         private Boolean detailReadonly;
         private Long panelPropsId;
         private String domain;

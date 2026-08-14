@@ -9,6 +9,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelAvailableFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelSortSaveReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.CategoryIdGroupReqVO;
 
 import java.util.List;
 
@@ -210,6 +211,16 @@ public interface ModelService {
      */
     PageResult<Long> queryOrderedModelIdsByCategoriesInBusiness(List<Long> categoryIds, String categoryTypeCode, String entityTypeCode,
                                                                 Integer pageNo, Integer pageSize);
+
+    /**
+     * 按多组分类—型号关联查询型号。
+     *
+     * <p>每组内多个分类节点取型号并集，不同组之间取型号交集；不读取分类—实体关联。</p>
+     */
+    List<ModelRespVO> listModelsByIntersectingCategoryGroups(List<CategoryIdGroupReqVO> categoryIdGroups,
+                                                              String entityTypeCode,
+                                                              String domain,
+                                                              Boolean includeDescendants);
 
     /**
      * 更新模型排序（保存顺序）：拖拽后按提交的整份顺序重写 sort。
