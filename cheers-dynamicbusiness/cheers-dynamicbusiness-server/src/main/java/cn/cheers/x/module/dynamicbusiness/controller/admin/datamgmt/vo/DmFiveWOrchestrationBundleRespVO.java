@@ -19,7 +19,10 @@ public class DmFiveWOrchestrationBundleRespVO {
     @Schema(description = "语义块")
     private Semantic semantic;
 
-    @Schema(description = "Who 槽位")
+    @Schema(description = "筛选槽（分类器）")
+    private List<FilterSlot> filterSlots;
+
+    @Schema(description = "Who 槽位（型号 / 实体）")
     private List<WhoSlot> whoSlots;
 
     @Schema(description = "What 槽位")
@@ -36,16 +39,31 @@ public class DmFiveWOrchestrationBundleRespVO {
     }
 
     @Data
-    public static class WhoSlot {
+    public static class FilterSlot {
         private Long id;
         private String slotRef;
-        /** CATEGORY | MODEL | ENTITY */
+        /** 当前仅 CATEGORY */
         private String columnKind;
         private String perspectiveId;
         private Long propsId;
         private Boolean enabled;
         private List<String> contextOutputs;
-        /** rowSelection | categoryLinkedEntity */
+        /** 分类即实体：categoryLinkedEntity；普通范围筛选为空 */
+        private String entityIdRule;
+        private Map<String, Object> categoryColumn;
+    }
+
+    @Data
+    public static class WhoSlot {
+        private Long id;
+        private String slotRef;
+        /** MODEL | ENTITY */
+        private String columnKind;
+        private String perspectiveId;
+        private Long propsId;
+        private Boolean enabled;
+        private List<String> contextOutputs;
+        /** rowSelection */
         private String entityIdRule;
         private Map<String, Object> categoryColumn;
     }

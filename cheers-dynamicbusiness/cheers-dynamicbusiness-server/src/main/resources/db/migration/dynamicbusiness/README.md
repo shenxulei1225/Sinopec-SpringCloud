@@ -70,8 +70,10 @@
 | V54 | `V54__ent_task_execution_step.sql` | 任务执行步骤 `ent_task_execution_step`（租户分表；执行记录表已存在，不在此迁移建） |
 | V55 | `V55__retire_inspection_method_legacy.sql` | 删除 `inspection_method` / `method_template_id` 遗留；可选从旧模板迁移至 SOP |
 | V56 | `V56__rename_field_work_standard_to_sop.sql` | SOP 真源统一为 `sop`：表 `ent_sop*`、类型/型号改码，软删重复入口 |
+| V57 | `V57__dm_five_w_filter_layout.sql` | 分类筛选槽从 Who 布局拆出；`categoryLinkedEntity` 仍保证分类即实体 1:1 |
+| V58 | `V58__ent_region_intro_base_field_columns.sql` | 运营区域介绍页 `FLD-BASE-region-*` 补专用表物理列（seed 当时只写了元数据） |
 
-> **版本号说明**：本仓库已登记至 **V56**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。  
+> **版本号说明**：本仓库已登记至 **V58**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。  
 
 
 > **跨机合并说明**：本机布局迁移已占用 V26–V28 且已执行；对方原 `V26__category_*` / `V27__ent_structure` 在合并后改为 V29/V30。若对方库已按旧文件名执行过 V26/V27，需对齐历史表 `version`/`script` 后 `flyway:repair`，再拉本分支。
@@ -113,6 +115,7 @@ PGPASSWORD=Coolhomer psql -h 127.0.0.1 -U postgres -d sinopec -c \
 
 | 日期 | 说明 |
 |------|------|
+| 2026-08-14 | V58：运营区域介绍页基础字段补 `ent_region` / `ent_region_t*` 物理列，并从 `custom_fields` 回填 |
 | 2026-08-02 | V46：数据类型 `work_scope`（NETWORK/FACILITY）；API 字段 `workScope`，空默认 FACILITY，非法值 400 |
 | 2026-08-02 | V47：样例全网目录 `region`/`facility` 写入 `work_scope=NETWORK` |
 | 2026-07-29 | V36：`ent_*` 补齐 `domain`/`tree_path`/`sort`；同步修正运行时建表模板（修 standard 等新建类型 query-by-scene 500） |

@@ -24,6 +24,8 @@ public class DmFiveWOrchestrationBundleSaveReqVO {
     @Valid
     private DmFiveWOrchestrationBundleRespVO.Semantic semantic;
 
+    private List<DmFiveWOrchestrationBundleRespVO.FilterSlot> filterSlots;
+
     @NotNull(message = "whoSlots 不能为空")
     private List<DmFiveWOrchestrationBundleRespVO.WhoSlot> whoSlots;
 

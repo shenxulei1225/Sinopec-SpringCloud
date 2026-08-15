@@ -2,6 +2,7 @@
 -- 运营区域介绍页字段补强（2026-07-27）
 -- 依赖：dynamic_entity_type_base_field / dynamic_field / dynamic_model(region) 已导入
 -- 幂等：可重复执行；不写 surrogate id
+-- 物理列不在本文件创建（seed 禁止 DDL）。专用表列见 Flyway V58。
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;

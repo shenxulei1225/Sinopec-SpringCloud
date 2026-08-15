@@ -14,6 +14,8 @@
 | `03_p1_zone_constructure.sql` | P1：`zone` + `Constructure` |
 | `04_p1_inspection_patrol.sql` | P1：`inspection_method`、`patrol_equipment`、`task_patrol`、`task_maintenance` |
 | `05_p2_ledger_backfill.sql` | P2：**批量回填**其余无 bundle 的 `dynamic_entity_type`（不覆盖已有行） |
+| `06_inspection_item_who_entity_layout.sql` | 标准检查库：Who 实体列对齐（关误配 MODEL、开 ENTITY+WHO 盖章） |
+| `07_stamp_workspace_band_who.sql` | 历史 MODEL/ENTITY 无盖章 → 一律补 `workspaceBand=WHO`（视角列须在视角配置重存为 FILTER） |
 
 ## 配方对照
 

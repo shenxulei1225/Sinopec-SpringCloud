@@ -12,21 +12,21 @@ import lombok.*;
 import java.util.List;
 import java.util.Map;
 
-@TableName(value = "dm_five_w_who_layout", autoResultMap = true)
+@TableName(value = "dm_five_w_filter_layout", autoResultMap = true)
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DmFiveWWhoLayoutDO extends TenantBaseDO {
+public class DmFiveWFilterLayoutDO extends TenantBaseDO {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
     private String entityTypeCode;
 
-    /** MODEL | ENTITY（分类已迁至 dm_five_w_filter_layout） */
+    /** 筛选槽种类：CATEGORY | MODEL | ENTITY */
     private String columnKind;
 
     private String slotRef;
@@ -40,6 +40,7 @@ public class DmFiveWWhoLayoutDO extends TenantBaseDO {
     @TableField(typeHandler = JsonbListStringTypeHandler.class)
     private List<String> contextOutputs;
 
+    /** 分类即实体时为 categoryLinkedEntity，保证点分类只同步一条 Who 实体 */
     private String entityIdRule;
 
     @TableField(typeHandler = JsonbMapTypeHandler.class)

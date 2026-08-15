@@ -3,11 +3,12 @@ package cn.cheers.x.module.dynamicbusiness.service.datamgmt;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmFiveWOrchestrationBundleRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmFiveWOrchestrationBundleSaveReqVO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmFiveWFilterLayoutDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmFiveWOrchestrationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmFiveWWhoLayoutDO;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmFiveWFilterLayoutMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmFiveWOrchestrationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmFiveWWhoLayoutMapper;
-import cn.cheers.x.module.dynamicbusiness.enums.datamgmt.DmDataTabLayoutKindEnum;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +25,8 @@ public class DmFiveWOrchestrationServiceImpl implements DmFiveWOrchestrationServ
     private static final Set<String> WHAT_MODES = Set.of(
             "VIEW_DETAIL", "PICK_ENTITY", "PICK_MODEL", "PICK_CATEGORY", "SITE_PREP", "NONE");
     private static final Set<String> HOW_MODES = Set.of("NONE", "AFTER_WHAT_ITEM");
-    private static final Set<String> ENTITY_ID_RULES = Set.of("rowSelection", "categoryLinkedEntity");
+    private static final Set<String> WHO_KINDS = Set.of("MODEL", "ENTITY");
+    private static final Set<String> FILTER_KINDS = Set.of("CATEGORY", "MODEL", "ENTITY");
     private static final Set<String> CONTEXT_OUTPUT_KEYS = Set.of("categoryId", "modelId", "entityId");
 
     @Resource
@@ -33,18 +35,22 @@ public class DmFiveWOrchestrationServiceImpl implements DmFiveWOrchestrationServ
     @Resource
     private DmFiveWWhoLayoutMapper whoLayoutMapper;
 
+    @Resource
+    private DmFiveWFilterLayoutMapper filterLayoutMapper;
+
     @Override
     public DmFiveWOrchestrationBundleRespVO getBundle(String registryCode) {
         String code = normalizeCode(registryCode);
         DmFiveWOrchestrationDO head = orchestrationMapper.selectByEntityTypeCode(code);
         List<DmFiveWWhoLayoutDO> whoRows = whoLayoutMapper.selectListByEntityTypeCode(code);
-        if (head == null && whoRows.isEmpty()) {
+        List<DmFiveWFilterLayoutDO> filterRows = filterLayoutMapper.selectListByEntityTypeCode(code);
+        if (head == null && whoRows.isEmpty() && filterRows.isEmpty()) {
             throw new ServiceException(404, "五维编排 bundle 未配置：" + code);
         }
         if (head == null) {
-            throw new ServiceException(500, "五维编排 Who 槽位存在但语义块缺失：" + code);
+            throw new ServiceException(500, "五维编排槽位存在但语义块缺失：" + code);
         }
-        return assembleBundle(code, code, head, whoRows);
+        return assembleBundle(code, code, head, whoRows, filterRows);
     }
 
     @Override
@@ -71,20 +77,23 @@ public class DmFiveWOrchestrationServiceImpl implements DmFiveWOrchestrationServ
             orchestrationMapper.updateById(head);
         }
 
+        upsertWhoSlots(code, reqVO.getWhoSlots());
+        upsertFilterSlots(code, reqVO.getFilterSlots() == null ? List.of() : reqVO.getFilterSlots());
+    }
+
+    private void upsertWhoSlots(String code, List<DmFiveWOrchestrationBundleRespVO.WhoSlot> slots) {
         List<DmFiveWWhoLayoutDO> existing = whoLayoutMapper.selectListByEntityTypeCode(code);
         Map<String, DmFiveWWhoLayoutDO> existingByScope = new LinkedHashMap<>();
         for (DmFiveWWhoLayoutDO row : existing) {
             existingByScope.put(scopeKey(row.getColumnKind(), row.getPerspectiveId(), row.getSlotRef()), row);
         }
-
         Set<String> savedScopes = new HashSet<>();
-        for (DmFiveWOrchestrationBundleRespVO.WhoSlot slot : reqVO.getWhoSlots()) {
+        for (DmFiveWOrchestrationBundleRespVO.WhoSlot slot : slots) {
             String kind = slot.getColumnKind().trim().toUpperCase();
             String perspectiveId = normalizeOptional(slot.getPerspectiveId());
             String slotRef = normalizeOptional(slot.getSlotRef());
             String scope = scopeKey(kind, perspectiveId, slotRef);
             savedScopes.add(scope);
-
             DmFiveWWhoLayoutDO row = existingByScope.get(scope);
             if (row == null) {
                 row = new DmFiveWWhoLayoutDO();
@@ -98,14 +107,12 @@ public class DmFiveWOrchestrationServiceImpl implements DmFiveWOrchestrationServ
             row.setContextOutputs(normalizeOutputs(slot.getContextOutputs()));
             row.setEntityIdRule(normalizeOptional(slot.getEntityIdRule()));
             row.setCategoryColumn(slot.getCategoryColumn());
-
             if (row.getId() == null) {
                 whoLayoutMapper.insert(row);
             } else {
                 whoLayoutMapper.updateById(row);
             }
         }
-
         for (DmFiveWWhoLayoutDO row : existing) {
             String scope = scopeKey(row.getColumnKind(), row.getPerspectiveId(), row.getSlotRef());
             if (!savedScopes.contains(scope)) {
@@ -114,11 +121,52 @@ public class DmFiveWOrchestrationServiceImpl implements DmFiveWOrchestrationServ
         }
     }
 
+    private void upsertFilterSlots(String code, List<DmFiveWOrchestrationBundleRespVO.FilterSlot> slots) {
+        List<DmFiveWFilterLayoutDO> existing = filterLayoutMapper.selectListByEntityTypeCode(code);
+        Map<String, DmFiveWFilterLayoutDO> existingByScope = new LinkedHashMap<>();
+        for (DmFiveWFilterLayoutDO row : existing) {
+            existingByScope.put(scopeKey(row.getColumnKind(), row.getPerspectiveId(), row.getSlotRef()), row);
+        }
+        Set<String> savedScopes = new HashSet<>();
+        for (DmFiveWOrchestrationBundleRespVO.FilterSlot slot : slots) {
+            String kind = slot.getColumnKind().trim().toUpperCase();
+            String perspectiveId = normalizeOptional(slot.getPerspectiveId());
+            String slotRef = normalizeOptional(slot.getSlotRef());
+            String scope = scopeKey(kind, perspectiveId, slotRef);
+            savedScopes.add(scope);
+            DmFiveWFilterLayoutDO row = existingByScope.get(scope);
+            if (row == null) {
+                row = new DmFiveWFilterLayoutDO();
+                row.setEntityTypeCode(code);
+                row.setColumnKind(kind);
+                row.setPerspectiveId(perspectiveId);
+                row.setSlotRef(slotRef);
+            }
+            row.setPropsId(slot.getPropsId());
+            row.setEnabled(slot.getEnabled() == null || slot.getEnabled());
+            row.setContextOutputs(normalizeOutputs(slot.getContextOutputs()));
+            row.setEntityIdRule(normalizeOptional(slot.getEntityIdRule()));
+            row.setCategoryColumn(slot.getCategoryColumn());
+            if (row.getId() == null) {
+                filterLayoutMapper.insert(row);
+            } else {
+                filterLayoutMapper.updateById(row);
+            }
+        }
+        for (DmFiveWFilterLayoutDO row : existing) {
+            String scope = scopeKey(row.getColumnKind(), row.getPerspectiveId(), row.getSlotRef());
+            if (!savedScopes.contains(scope)) {
+                filterLayoutMapper.deleteById(row.getId());
+            }
+        }
+    }
+
     private DmFiveWOrchestrationBundleRespVO assembleBundle(
             String registryCode,
             String storageCode,
             DmFiveWOrchestrationDO head,
-            List<DmFiveWWhoLayoutDO> whoRows) {
+            List<DmFiveWWhoLayoutDO> whoRows,
+            List<DmFiveWFilterLayoutDO> filterRows) {
         DmFiveWOrchestrationBundleRespVO bundle = new DmFiveWOrchestrationBundleRespVO();
         bundle.setRegistryCode(registryCode);
         bundle.setStorageEntityTypeCode(storageCode);
@@ -128,6 +176,7 @@ public class DmFiveWOrchestrationServiceImpl implements DmFiveWOrchestrationServ
         semantic.setSelectionLevel(head.getSelectionLevel());
         bundle.setSemantic(semantic);
 
+        bundle.setFilterSlots(filterRows.stream().map(this::toFilterSlotVO).toList());
         bundle.setWhoSlots(whoRows.stream().map(this::toWhoSlotVO).toList());
         bundle.setWhatSlot(toWhatSlotVO(head));
         bundle.setHowSlot(toHowSlotVO(head));
@@ -151,36 +200,82 @@ public class DmFiveWOrchestrationServiceImpl implements DmFiveWOrchestrationServ
         }
 
         boolean anyEntityIdOutput = false;
+        boolean categoryLinkedEntity = false;
+
+        List<DmFiveWOrchestrationBundleRespVO.FilterSlot> filterSlots =
+                reqVO.getFilterSlots() == null ? List.of() : reqVO.getFilterSlots();
+        for (DmFiveWOrchestrationBundleRespVO.FilterSlot slot : filterSlots) {
+            if (slot.getEnabled() != null && !slot.getEnabled()) {
+                continue;
+            }
+            String kind = slot.getColumnKind().trim().toUpperCase();
+            if (!FILTER_KINDS.contains(kind)) {
+                throw new ServiceException(400, "筛选槽 columnKind 无效: " + kind);
+            }
+            List<String> outputs = normalizeOutputs(slot.getContextOutputs());
+            for (String key : outputs) {
+                if ("CATEGORY".equals(kind) && !"categoryId".equals(key)) {
+                    throw new ServiceException(400, "分类筛选槽只能输出 categoryId: " + key);
+                }
+                if ("MODEL".equals(kind) && !"modelId".equals(key)) {
+                    throw new ServiceException(400, "型号筛选槽只能输出 modelId: " + key);
+                }
+                if ("ENTITY".equals(kind) && !"entityId".equals(key)) {
+                    throw new ServiceException(400, "实体筛选槽只能输出 entityId: " + key);
+                }
+            }
+            String rule = normalizeOptional(slot.getEntityIdRule());
+            if (rule != null) {
+                if (!"CATEGORY".equals(kind) || !"categoryLinkedEntity".equals(rule)) {
+                    throw new ServiceException(400, "筛选槽 entityIdRule 仅允许分类槽 categoryLinkedEntity");
+                }
+                categoryLinkedEntity = true;
+            }
+        }
+
         for (DmFiveWOrchestrationBundleRespVO.WhoSlot slot : reqVO.getWhoSlots()) {
             if (slot.getEnabled() != null && !slot.getEnabled()) {
                 continue;
             }
             String kind = slot.getColumnKind().trim().toUpperCase();
-            if (!DmDataTabLayoutKindEnum.isValid(kind)
-                    || DmDataTabLayoutKindEnum.DETAIL.getCode().equals(kind)) {
-                throw new ServiceException(400, "Who 槽位 columnKind 无效: " + kind);
+            if (!WHO_KINDS.contains(kind)) {
+                throw new ServiceException(400, "Who 槽位 columnKind 无效（分类请写入 filterSlots）: " + kind);
             }
             List<String> outputs = normalizeOutputs(slot.getContextOutputs());
             for (String key : outputs) {
-                if (!CONTEXT_OUTPUT_KEYS.contains(key)) {
-                    throw new ServiceException(400, "无效的 contextOutput: " + key);
+                if (!CONTEXT_OUTPUT_KEYS.contains(key) || "categoryId".equals(key)) {
+                    throw new ServiceException(400, "Who 槽位无效的 contextOutput: " + key);
                 }
             }
             if (outputs.contains("entityId")) {
                 anyEntityIdOutput = true;
                 String rule = normalizeOptional(slot.getEntityIdRule());
-                if (!StringUtils.hasText(rule) || !ENTITY_ID_RULES.contains(rule)) {
-                    throw new ServiceException(400, "输出 entityId 的槽位必须设置 entityIdRule");
+                if (!"rowSelection".equals(rule)) {
+                    throw new ServiceException(400, "Who 实体槽 entityIdRule 须为 rowSelection");
                 }
             }
         }
 
-        if ("ENTITY".equals(selectionLevel) && !anyEntityIdOutput) {
-            throw new ServiceException(400, "selectionLevel=ENTITY 时须至少一个启用槽输出 entityId");
+        if ("ENTITY".equals(selectionLevel) && !anyEntityIdOutput && !categoryLinkedEntity) {
+            throw new ServiceException(400, "selectionLevel=ENTITY 时须 Who 实体槽输出 entityId，或筛选槽设置 categoryLinkedEntity");
         }
         if ("MODEL".equals(selectionLevel) && anyEntityIdOutput) {
-            throw new ServiceException(400, "selectionLevel=MODEL 时不得有槽输出 entityId");
+            throw new ServiceException(400, "selectionLevel=MODEL 时不得有 Who 槽输出 entityId");
         }
+    }
+
+    private DmFiveWOrchestrationBundleRespVO.FilterSlot toFilterSlotVO(DmFiveWFilterLayoutDO row) {
+        DmFiveWOrchestrationBundleRespVO.FilterSlot vo = new DmFiveWOrchestrationBundleRespVO.FilterSlot();
+        vo.setId(row.getId());
+        vo.setSlotRef(row.getSlotRef());
+        vo.setColumnKind(row.getColumnKind());
+        vo.setPerspectiveId(row.getPerspectiveId());
+        vo.setPropsId(row.getPropsId());
+        vo.setEnabled(row.getEnabled());
+        vo.setContextOutputs(row.getContextOutputs());
+        vo.setEntityIdRule(row.getEntityIdRule());
+        vo.setCategoryColumn(row.getCategoryColumn());
+        return vo;
     }
 
     private DmFiveWOrchestrationBundleRespVO.WhoSlot toWhoSlotVO(DmFiveWWhoLayoutDO row) {

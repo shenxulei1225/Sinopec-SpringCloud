@@ -38,8 +38,8 @@ BEGIN
       );
     END IF;
 
-    PERFORM _seed_five_w_who_slot(v_tenant, 'equipment', 'CATEGORY', 'equipment-category', NULL,
-      true, '["categoryId"]'::jsonb, NULL,
+    PERFORM _seed_five_w_filter_slot(v_tenant, 'equipment', 'equipment-category', NULL,
+      true, NULL,
       '{"label":"设备","categoryTypeCode":"equipment"}'::jsonb);
     PERFORM _seed_five_w_who_slot(v_tenant, 'equipment', 'MODEL', 'equipment-model', NULL,
       true, '["modelId"]'::jsonb, NULL, NULL);
@@ -78,9 +78,12 @@ BEGIN
     UPDATE dm_five_w_who_layout
     SET deleted = true, updater = 'seed-replace', update_time = CURRENT_TIMESTAMP
     WHERE entity_type_code = 'region' AND tenant_id = v_tenant AND deleted = false;
+    UPDATE dm_five_w_filter_layout
+    SET deleted = true, updater = 'seed-replace', update_time = CURRENT_TIMESTAMP
+    WHERE entity_type_code = 'region' AND tenant_id = v_tenant AND deleted = false;
 
-    PERFORM _seed_five_w_who_slot(v_tenant, 'region', 'CATEGORY', 'region-tree', NULL,
-      true, '["categoryId","entityId"]'::jsonb, 'categoryLinkedEntity',
+    PERFORM _seed_five_w_filter_slot(v_tenant, 'region', 'region-tree', NULL,
+      true, 'categoryLinkedEntity',
       '{"label":"区域","categoryTypeCode":"region"}'::jsonb);
   END IF;
 
@@ -90,12 +93,13 @@ BEGIN
   ) THEN
     RAISE NOTICE 'skip P0 inspection_item: dynamic_entity_type 不存在';
   ELSE
+    -- 标准检查库：本页目标=检查项；Who=检查项实体；视角=检查分类宿主+设备分类成员；What=看详情
     UPDATE dm_five_w_orchestration
     SET enabled = true,
-        selection_level = 'MODEL',
-        what_mode = 'PICK_ENTITY',
-        what_config = '{"bindLayer":"MODEL","candidateEntityTypeCode":"inspection_item","relationKind":"MODEL_ENTITY"}'::jsonb,
-        how_mode = 'AFTER_WHAT_ITEM',
+        selection_level = 'ENTITY',
+        what_mode = 'VIEW_DETAIL',
+        what_config = '{"bindLayer":"ENTITY"}'::jsonb,
+        how_mode = 'NONE',
         how_config = '{}'::jsonb,
         deleted = false,
         updater = 'seed',
@@ -107,21 +111,27 @@ BEGIN
         entity_type_code, enabled, selection_level, what_mode, what_config,
         how_mode, how_config, tenant_id, creator, deleted
       ) VALUES (
-        'inspection_item', true, 'MODEL', 'PICK_ENTITY',
-        '{"bindLayer":"MODEL","candidateEntityTypeCode":"inspection_item","relationKind":"MODEL_ENTITY"}'::jsonb,
-        'AFTER_WHAT_ITEM', '{}'::jsonb, v_tenant, 'seed', false
+        'inspection_item', true, 'ENTITY', 'VIEW_DETAIL',
+        '{"bindLayer":"ENTITY"}'::jsonb,
+        'NONE', '{}'::jsonb, v_tenant, 'seed', false
       );
     END IF;
 
     UPDATE dm_five_w_who_layout
     SET deleted = true, updater = 'seed-replace', update_time = CURRENT_TIMESTAMP
     WHERE entity_type_code = 'inspection_item' AND tenant_id = v_tenant AND deleted = false;
+    UPDATE dm_five_w_filter_layout
+    SET deleted = true, updater = 'seed-replace', update_time = CURRENT_TIMESTAMP
+    WHERE entity_type_code = 'inspection_item' AND tenant_id = v_tenant AND deleted = false;
 
-    PERFORM _seed_five_w_who_slot(v_tenant, 'inspection_item', 'CATEGORY', 'inspection_item-category', NULL,
-      true, '["categoryId"]'::jsonb, NULL,
-      '{"label":"设备分类","categoryTypeCode":"equipment"}'::jsonb);
-    PERFORM _seed_five_w_who_slot(v_tenant, 'inspection_item', 'MODEL', 'inspection_item-model', NULL,
-      true, '["modelId"]'::jsonb, NULL, NULL);
+    PERFORM _seed_five_w_filter_slot(v_tenant, 'inspection_item', 'inspection_item-host', 'inspection_item-host',
+      true, NULL,
+      '{"label":"检查分类","columnKey":"col-insp-host","columnOrder":0,"relationMode":"cascade","relationRole":"host","categoryTypeCode":"inspection_item"}'::jsonb);
+    PERFORM _seed_five_w_filter_slot(v_tenant, 'inspection_item', 'inspection_item-equipment-member', 'inspection_item-equipment-member',
+      true, NULL,
+      '{"label":"设备分类","columnKey":"col-equip-member","columnOrder":1,"relationMode":"cascade","relationRole":"member","categoryTypeCode":"equipment"}'::jsonb);
+    PERFORM _seed_five_w_who_slot(v_tenant, 'inspection_item', 'ENTITY', 'inspection_item-entity', NULL,
+      true, '["entityId"]'::jsonb, 'rowSelection', NULL);
   END IF;
 
   IF NOT EXISTS (
@@ -130,13 +140,13 @@ BEGIN
   ) THEN
     RAISE NOTICE 'skip P0 inspection_content: dynamic_entity_type 不存在';
   ELSE
-    -- 检查内容：选设备型号 → 按设备分类浏览检查项并勾选适用（模型—实体异类型）
+    -- 检查内容：本页目标=检查项；Who=检查项实体；视角=设备分类/型号/设备；What=看详情（适用勾选另配，不把检查项划给 What 候选）
     UPDATE dm_five_w_orchestration
     SET enabled = true,
-        selection_level = 'MODEL',
-        what_mode = 'PICK_ENTITY',
-        what_config = '{"bindLayer":"MODEL","candidateEntityTypeCode":"inspection_item","relationKind":"MODEL_ENTITY","candidateCategoryTypeCode":"equipment"}'::jsonb,
-        how_mode = 'AFTER_WHAT_ITEM',
+        selection_level = 'ENTITY',
+        what_mode = 'VIEW_DETAIL',
+        what_config = '{"bindLayer":"ENTITY"}'::jsonb,
+        how_mode = 'NONE',
         how_config = '{}'::jsonb,
         deleted = false,
         updater = 'seed',
@@ -148,23 +158,27 @@ BEGIN
         entity_type_code, enabled, selection_level, what_mode, what_config,
         how_mode, how_config, tenant_id, creator, deleted
       ) VALUES (
-        'inspection_content', true, 'MODEL', 'PICK_ENTITY',
-        '{"bindLayer":"MODEL","candidateEntityTypeCode":"inspection_item","relationKind":"MODEL_ENTITY","candidateCategoryTypeCode":"equipment"}'::jsonb,
-        'AFTER_WHAT_ITEM', '{}'::jsonb, v_tenant, 'seed', false
+        'inspection_content', true, 'ENTITY', 'VIEW_DETAIL',
+        '{"bindLayer":"ENTITY"}'::jsonb,
+        'NONE', '{}'::jsonb, v_tenant, 'seed', false
       );
     END IF;
 
     UPDATE dm_five_w_who_layout
     SET deleted = true, updater = 'seed-replace', update_time = CURRENT_TIMESTAMP
     WHERE entity_type_code = 'inspection_content' AND tenant_id = v_tenant AND deleted = false;
+    UPDATE dm_five_w_filter_layout
+    SET deleted = true, updater = 'seed-replace', update_time = CURRENT_TIMESTAMP
+    WHERE entity_type_code = 'inspection_content' AND tenant_id = v_tenant AND deleted = false;
 
-    PERFORM _seed_five_w_who_slot(v_tenant, 'inspection_content', 'CATEGORY', 'inspection_content-category', NULL,
-      true, '["categoryId"]'::jsonb, NULL,
+    PERFORM _seed_five_w_filter_slot(v_tenant, 'inspection_content', 'inspection_content-category', NULL,
+      true, NULL,
       '{"label":"设备分类","categoryTypeCode":"equipment"}'::jsonb);
-    PERFORM _seed_five_w_who_slot(v_tenant, 'inspection_content', 'MODEL', 'inspection_content-model', NULL,
-      true, '["modelId"]'::jsonb, NULL, NULL);
-    -- 实体列默认关闭：本场景 What 锚模型，不要求选台账实体
-    PERFORM _seed_five_w_who_slot(v_tenant, 'inspection_content', 'ENTITY', 'inspection_content-entity', NULL,
-      false, '["entityId"]'::jsonb, 'rowSelection', NULL);
+    PERFORM _seed_five_w_filter_slot(v_tenant, 'inspection_content', 'inspection_content-model', NULL,
+      true, NULL, '{"label":"设备型号"}'::jsonb, 'MODEL', '["modelId"]'::jsonb);
+    PERFORM _seed_five_w_filter_slot(v_tenant, 'inspection_content', 'inspection_content-entity', NULL,
+      true, NULL, '{"label":"设备"}'::jsonb, 'ENTITY', '["entityId"]'::jsonb);
+    PERFORM _seed_five_w_who_slot(v_tenant, 'inspection_content', 'ENTITY', 'inspection_content-item', NULL,
+      true, '["entityId"]'::jsonb, 'rowSelection', NULL);
   END IF;
 END $$;

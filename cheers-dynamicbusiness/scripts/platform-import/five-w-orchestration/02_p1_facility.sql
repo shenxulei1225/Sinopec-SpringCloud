@@ -42,9 +42,12 @@ BEGIN
   UPDATE dm_five_w_who_layout
   SET deleted = true, updater = 'seed-replace', update_time = CURRENT_TIMESTAMP
   WHERE entity_type_code = 'facility' AND tenant_id = v_tenant AND deleted = false;
+  UPDATE dm_five_w_filter_layout
+  SET deleted = true, updater = 'seed-replace', update_time = CURRENT_TIMESTAMP
+  WHERE entity_type_code = 'facility' AND tenant_id = v_tenant AND deleted = false;
 
-  PERFORM _seed_five_w_who_slot(v_tenant, 'facility', 'CATEGORY', 'region-filter', NULL,
-    true, '["categoryId"]'::jsonb, NULL,
+  PERFORM _seed_five_w_filter_slot(v_tenant, 'facility', 'region-filter', NULL,
+    true, NULL,
     '{"label":"运营区域","categoryTypeCode":"region"}'::jsonb);
   PERFORM _seed_five_w_who_slot(v_tenant, 'facility', 'ENTITY', 'facility-entity', NULL,
     true, '["entityId"]'::jsonb, 'rowSelection', NULL);

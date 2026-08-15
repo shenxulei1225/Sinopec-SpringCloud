@@ -34,4 +34,10 @@ run "${SCRIPT_DIR}/04_p1_inspection_patrol.sql"
 echo "== five-w-orchestration: P2 (backfill missing entity types) =="
 run "${SCRIPT_DIR}/05_p2_ledger_backfill.sql"
 
+echo "== five-w-orchestration: inspection_item Who entity layout =="
+run "${SCRIPT_DIR}/06_inspection_item_who_entity_layout.sql"
+
+echo "== five-w-orchestration: stamp workspaceBand WHO on unstamped model/entity =="
+run "${SCRIPT_DIR}/07_stamp_workspace_band_who.sql"
+
 echo "done: five-w-orchestration seed"

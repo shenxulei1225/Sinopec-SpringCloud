@@ -40,9 +40,12 @@ BEGIN
     UPDATE dm_five_w_who_layout
     SET deleted = true, updater = 'seed-replace', update_time = CURRENT_TIMESTAMP
     WHERE entity_type_code = 'zone' AND tenant_id = v_tenant AND deleted = false;
+    UPDATE dm_five_w_filter_layout
+    SET deleted = true, updater = 'seed-replace', update_time = CURRENT_TIMESTAMP
+    WHERE entity_type_code = 'zone' AND tenant_id = v_tenant AND deleted = false;
 
-    PERFORM _seed_five_w_who_slot(v_tenant, 'zone', 'CATEGORY', 'zone-category', NULL,
-      true, '["categoryId"]'::jsonb, NULL,
+    PERFORM _seed_five_w_filter_slot(v_tenant, 'zone', 'zone-category', NULL,
+      true, NULL,
       '{"label":"站场分区","categoryTypeCode":"zone"}'::jsonb);
     PERFORM _seed_five_w_who_slot(v_tenant, 'zone', 'ENTITY', 'zone-entity', NULL,
       true, '["entityId"]'::jsonb, 'rowSelection', NULL);
@@ -79,9 +82,12 @@ BEGIN
     UPDATE dm_five_w_who_layout
     SET deleted = true, updater = 'seed-replace', update_time = CURRENT_TIMESTAMP
     WHERE entity_type_code = 'Constructure' AND tenant_id = v_tenant AND deleted = false;
+    UPDATE dm_five_w_filter_layout
+    SET deleted = true, updater = 'seed-replace', update_time = CURRENT_TIMESTAMP
+    WHERE entity_type_code = 'Constructure' AND tenant_id = v_tenant AND deleted = false;
 
-    PERFORM _seed_five_w_who_slot(v_tenant, 'Constructure', 'CATEGORY', 'Constructure-category', NULL,
-      true, '["categoryId"]'::jsonb, NULL,
+    PERFORM _seed_five_w_filter_slot(v_tenant, 'Constructure', 'Constructure-category', NULL,
+      true, NULL,
       '{"label":"构筑物分类","categoryTypeCode":"Constructure"}'::jsonb);
     PERFORM _seed_five_w_who_slot(v_tenant, 'Constructure', 'MODEL', 'Constructure-model', NULL,
       true, '["modelId"]'::jsonb, NULL, NULL);

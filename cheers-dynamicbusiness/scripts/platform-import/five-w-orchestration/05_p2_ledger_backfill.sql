@@ -41,9 +41,10 @@ BEGIN
         '{"bindLayer":"ENTITY","candidateEntityTypeCode":"inspection_item"}'::jsonb,
         'AFTER_WHAT_ITEM', '{}'::jsonb);
       PERFORM dynamicbusiness._seed_five_w_replace_who_slots(v_tenant, r.code);
-      PERFORM dynamicbusiness._seed_five_w_who_slot(
-        v_tenant, r.code, 'CATEGORY', 'Inspection_content-category', NULL,
-        true, '["categoryId"]'::jsonb, NULL,
+      PERFORM dynamicbusiness._seed_five_w_replace_filter_slots(v_tenant, r.code);
+      PERFORM dynamicbusiness._seed_five_w_filter_slot(
+        v_tenant, r.code, 'Inspection_content-category', NULL,
+        true, NULL,
         '{"label":"设备分类","categoryTypeCode":"equipment"}'::jsonb);
       PERFORM dynamicbusiness._seed_five_w_who_slot(
         v_tenant, r.code, 'MODEL', 'Inspection_content-model', NULL,
