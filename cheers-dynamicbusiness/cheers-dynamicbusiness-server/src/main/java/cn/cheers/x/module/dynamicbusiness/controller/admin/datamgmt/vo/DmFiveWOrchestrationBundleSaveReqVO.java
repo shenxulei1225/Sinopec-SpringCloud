@@ -6,9 +6,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
-import java.util.List;
-import java.util.Map;
-
 @Schema(description = "五维编排 - bundle 保存")
 @Data
 public class DmFiveWOrchestrationBundleSaveReqVO {
@@ -24,10 +21,8 @@ public class DmFiveWOrchestrationBundleSaveReqVO {
     @Valid
     private DmFiveWOrchestrationBundleRespVO.Semantic semantic;
 
-    private List<DmFiveWOrchestrationBundleRespVO.FilterSlot> filterSlots;
-
-    @NotNull(message = "whoSlots 不能为空")
-    private List<DmFiveWOrchestrationBundleRespVO.WhoSlot> whoSlots;
+    /** 当前对象从哪来：LIST_ROW / CATEGORY_NODE */
+    private String objectPickFrom;
 
     @NotNull(message = "whatSlot 不能为空")
     private DmFiveWOrchestrationBundleRespVO.WhatSlot whatSlot;

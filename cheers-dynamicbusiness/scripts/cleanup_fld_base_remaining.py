@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-继续清理：布局 category_column、物理列映射、CRUD 表单、关系/索引中的 FLD-BASE-*。
+继续清理：布局 column_meta、物理列映射、CRUD 表单、关系/索引中的 FLD-BASE-*。
 各段独立 commit；唯一键冲突时删除旧 FLD-BASE 行（短码行已存在）。
 """
 

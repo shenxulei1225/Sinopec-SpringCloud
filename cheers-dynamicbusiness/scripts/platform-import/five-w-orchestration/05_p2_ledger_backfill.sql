@@ -1,7 +1,8 @@
 -- ============================================================================
 -- five-w-orchestration · 05 P2 批量回填
--- 为尚未有 dm_five_w_orchestration 行的目录补默认 bundle（幂等；不覆盖已有行）
+-- 为尚未有 dm_five_w_orchestration 行的目录补默认编排头（幂等；不覆盖已有行）
 -- 规则对齐 EntityTypeOrchestrationBootstrapService + 产品配置表 §2～§36
+-- 开哪些栏认 dm_data_tab_layout，本包不写槽表。
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;
@@ -32,26 +33,14 @@ BEGIN
     RAISE NOTICE 'backfill five-w bundle: % (entry_kind=%)', r.code, r.entry_kind;
 
     IF r.entry_kind = 'CATEGORY' THEN
-      PERFORM dynamicbusiness._seed_five_w_recipe_category_linked_entity(
+      PERFORM dynamicbusiness._seed_five_w_recipe_category_as_object(
         v_tenant, r.code, r.code, v_name);
 
     ELSIF r.code = 'Inspection_content' THEN
       PERFORM dynamicbusiness._seed_five_w_semantic(
-        v_tenant, r.code, 'ENTITY', 'SITE_PREP',
+        v_tenant, r.code, 'SITE_PREP',
         '{"bindLayer":"ENTITY","candidateEntityTypeCode":"inspection_item"}'::jsonb,
-        'AFTER_WHAT_ITEM', '{}'::jsonb);
-      PERFORM dynamicbusiness._seed_five_w_replace_who_slots(v_tenant, r.code);
-      PERFORM dynamicbusiness._seed_five_w_replace_filter_slots(v_tenant, r.code);
-      PERFORM dynamicbusiness._seed_five_w_filter_slot(
-        v_tenant, r.code, 'Inspection_content-category', NULL,
-        true, NULL,
-        '{"label":"设备分类","categoryTypeCode":"equipment"}'::jsonb);
-      PERFORM dynamicbusiness._seed_five_w_who_slot(
-        v_tenant, r.code, 'MODEL', 'Inspection_content-model', NULL,
-        true, '["modelId"]'::jsonb, NULL, NULL);
-      PERFORM dynamicbusiness._seed_five_w_who_slot(
-        v_tenant, r.code, 'ENTITY', 'Inspection_content-entity', NULL,
-        true, '["entityId"]'::jsonb, 'rowSelection', NULL);
+        'FOLLOW_WHAT', '{}'::jsonb, 'LIST_ROW');
 
     ELSIF r.entry_kind IN ('SCOPE', 'DOMAIN', 'REUSE') AND v_base IS NOT NULL THEN
       IF r.code IN (

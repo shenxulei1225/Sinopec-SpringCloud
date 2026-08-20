@@ -23,6 +23,9 @@ public class EntityTypeRespVO extends EntityTypeBaseVO {
     @Schema(description = "业务类型级别", example = "USER")
     private String typeLevel;
 
+    @Schema(description = "该目录「数据」页签引用的工作台布局实例 id")
+    private Long dataLayoutId;
+
     @Schema(description = "子业务类型列表")
     private List<EntityTypeRespVO> children;
 

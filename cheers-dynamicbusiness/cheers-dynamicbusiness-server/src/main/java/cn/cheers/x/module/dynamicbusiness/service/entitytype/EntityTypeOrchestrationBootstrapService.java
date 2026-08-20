@@ -87,7 +87,7 @@ public class EntityTypeOrchestrationBootstrapService {
         if (kind.isDomainEntry() || kind.isReuseEntry() || kind.isScopeEntry()) {
             String baseCode = entityType.getBaseEntityTypeCode();
             if (!StringUtils.hasText(baseCode)) {
-                log.warn("数据类型 {} 缺少 baseEntityTypeCode，五维 bootstrap 分类槽回退为自身编码", code);
+                log.warn("数据类型 {} 缺少 baseEntityTypeCode，五维 bootstrap 分类种类回退为自身编码", code);
                 builder.categoryTypeCode(code);
             } else {
                 builder.categoryTypeCode(baseCode.trim());

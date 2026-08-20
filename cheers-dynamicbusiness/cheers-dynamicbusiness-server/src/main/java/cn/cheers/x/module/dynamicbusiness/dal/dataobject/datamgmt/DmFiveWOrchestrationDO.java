@@ -26,9 +26,6 @@ public class DmFiveWOrchestrationDO extends TenantBaseDO {
 
     private Boolean enabled;
 
-    /** MODEL | ENTITY */
-    private String selectionLevel;
-
     private String whatMode;
 
     @TableField(typeHandler = JsonbMapTypeHandler.class)
@@ -38,4 +35,7 @@ public class DmFiveWOrchestrationDO extends TenantBaseDO {
 
     @TableField(typeHandler = JsonbMapTypeHandler.class)
     private Map<String, Object> howConfig;
+
+    /** 当前对象从哪来：LIST_ROW=点列表这一行；CATEGORY_NODE=点树上这个节点 */
+    private String objectPickFrom;
 }

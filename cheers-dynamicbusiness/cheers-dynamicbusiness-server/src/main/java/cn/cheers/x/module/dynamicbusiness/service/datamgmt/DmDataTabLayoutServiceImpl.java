@@ -4,7 +4,10 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmDataTab
 import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmDataTabLayoutSaveItemVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmDataTabLayoutSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmDataTabLayoutDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmWorkbenchLayoutDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmDataTabLayoutMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.datamgmt.DmDataTabLayoutKindEnum;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeCategoryBootstrapService;
 import cn.cheers.x.framework.common.exception.ServiceException;
@@ -31,68 +34,107 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
     private DmDataTabLayoutMapper dmDataTabLayoutMapper;
 
     @Resource
+    private DmWorkbenchLayoutService dmWorkbenchLayoutService;
+
+    @Resource
     private EntityTypeCategoryBootstrapService entityTypeCategoryBootstrapService;
 
+    @Resource
+    private EntityTypeMapper entityTypeMapper;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Override
+    public List<DmDataTabLayoutRespVO> listByLayoutId(Long layoutId) {
+        dmWorkbenchLayoutService.requireLayout(layoutId);
+        return dmDataTabLayoutMapper.selectListByLayoutId(layoutId).stream()
+                .map(this::toRespVO)
+                .toList();
+    }
 
     @Override
     public List<DmDataTabLayoutRespVO> listByEntityTypeCode(String entityTypeCode) {
         String code = normalizeEntityTypeCode(entityTypeCode);
         entityTypeCategoryBootstrapService.ensureForEntityTypeCode(code);
-        List<DmDataTabLayoutDO> rows = dmDataTabLayoutMapper.selectListByEntityTypeCode(code);
-        if (rows.isEmpty()) {
-            return buildDefaultColumns(code);
+        EntityTypeDO entityType = entityTypeMapper.selectByCode(code);
+        if (entityType == null || entityType.getDataLayoutId() == null) {
+            throw new ServiceException(400, "数据类型尚未挂载 dataLayoutId：" + code);
         }
-        return rows.stream().map(this::toRespVO).toList();
+        return listByLayoutId(entityType.getDataLayoutId());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveLayouts(DmDataTabLayoutSaveReqVO reqVO) {
-        String code = normalizeEntityTypeCode(reqVO.getEntityTypeCode());
+        Long layoutId = resolveSaveLayoutId(reqVO);
+        DmWorkbenchLayoutDO header = dmWorkbenchLayoutService.requireLayout(layoutId);
+        if (Boolean.TRUE.equals(header.getIsTemplate())) {
+            throw new ServiceException(400, "禁止直接改写模版栏行；请改实例");
+        }
+
         List<DmDataTabLayoutSaveItemVO> items = dedupeSaveItems(reqVO.getLayouts());
         validateSaveItems(items);
 
-        List<DmDataTabLayoutDO> existing = dmDataTabLayoutMapper.selectListByEntityTypeCode(code);
+        String entityTypeCode = StringUtils.hasText(reqVO.getEntityTypeCode())
+                ? reqVO.getEntityTypeCode().trim()
+                : null;
+
+        List<DmDataTabLayoutDO> existing = dmDataTabLayoutMapper.selectListByLayoutId(layoutId);
         Map<String, DmDataTabLayoutDO> existingByScope = new LinkedHashMap<>();
         for (DmDataTabLayoutDO row : existing) {
-            existingByScope.put(scopeKey(row.getColumnKind(), row.getPerspectiveId()), row);
+            existingByScope.put(scopeKey(row.getColumnKind(), row.getTabId()), row);
         }
 
         Set<String> savedScopes = new HashSet<>();
         for (DmDataTabLayoutSaveItemVO item : items) {
             String kind = item.getColumnKind().trim().toUpperCase();
-            String perspectiveId = normalizePerspectiveId(item.getPerspectiveId());
-            String scope = scopeKey(kind, perspectiveId);
+            String tabId = normalizeTabId(item.getTabId());
+            String scope = scopeKey(kind, tabId);
             savedScopes.add(scope);
 
             DmDataTabLayoutDO row = existingByScope.get(scope);
             if (row != null) {
                 row.setPropsId(item.getPropsId());
                 row.setEnabled(item.getEnabled() == null || item.getEnabled());
-                row.setCategoryColumn(toMetaMap(item.getCategoryColumn()));
+                row.setColumnMeta(toMetaMap(item.getColumnMeta()));
+                if (entityTypeCode != null) {
+                    row.setEntityTypeCode(entityTypeCode);
+                }
                 dmDataTabLayoutMapper.updateById(row);
                 continue;
             }
 
             DmDataTabLayoutDO insert = new DmDataTabLayoutDO();
-            insert.setEntityTypeCode(code);
+            insert.setLayoutId(layoutId);
+            insert.setEntityTypeCode(entityTypeCode);
             insert.setColumnKind(kind);
-            insert.setPerspectiveId(perspectiveId);
+            insert.setTabId(tabId);
             insert.setPropsId(item.getPropsId());
             insert.setEnabled(item.getEnabled() == null || item.getEnabled());
-            insert.setCategoryColumn(toMetaMap(item.getCategoryColumn()));
+            insert.setColumnMeta(toMetaMap(item.getColumnMeta()));
             dmDataTabLayoutMapper.insert(insert);
         }
 
         for (DmDataTabLayoutDO row : existing) {
-            String scope = scopeKey(row.getColumnKind(), row.getPerspectiveId());
+            String scope = scopeKey(row.getColumnKind(), row.getTabId());
             if (!savedScopes.contains(scope)) {
                 dmDataTabLayoutMapper.deleteById(row.getId());
             }
         }
 
-        dmDataTabLayoutMapper.deletePhysicalSoftDeletedByEntityTypeCode(code);
+        dmDataTabLayoutMapper.deletePhysicalSoftDeletedByLayoutId(layoutId);
+    }
+
+    private Long resolveSaveLayoutId(DmDataTabLayoutSaveReqVO reqVO) {
+        if (reqVO.getLayoutId() != null) {
+            return reqVO.getLayoutId();
+        }
+        if (!StringUtils.hasText(reqVO.getEntityTypeCode())) {
+            throw new ServiceException(400, "layoutId 与 entityTypeCode 不能同时为空");
+        }
+        String code = reqVO.getEntityTypeCode().trim();
+        entityTypeCategoryBootstrapService.ensureForEntityTypeCode(code);
+        return dmWorkbenchLayoutService.resolveLayoutIdForEntityType(code);
     }
 
     private List<DmDataTabLayoutSaveItemVO> dedupeSaveItems(List<DmDataTabLayoutSaveItemVO> layouts) {
@@ -102,16 +144,16 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
         Map<String, DmDataTabLayoutSaveItemVO> deduped = new LinkedHashMap<>();
         for (DmDataTabLayoutSaveItemVO item : layouts) {
             String kind = item.getColumnKind() == null ? "" : item.getColumnKind().trim().toUpperCase();
-            String perspectiveId = normalizePerspectiveId(item.getPerspectiveId());
-            deduped.put(scopeKey(kind, perspectiveId), item);
+            String tabId = normalizeTabId(item.getTabId());
+            deduped.put(scopeKey(kind, tabId), item);
         }
         return new ArrayList<>(deduped.values());
     }
 
-    private String scopeKey(String columnKind, String perspectiveId) {
+    private String scopeKey(String columnKind, String tabId) {
         String kind = columnKind == null ? "" : columnKind.trim().toUpperCase();
-        String perspective = perspectiveId == null ? "" : perspectiveId.trim();
-        return kind + "|" + perspective;
+        String tab = tabId == null ? "" : tabId.trim();
+        return kind + "|" + tab;
     }
 
     private void validateSaveItems(List<DmDataTabLayoutSaveItemVO> layouts) {
@@ -122,48 +164,33 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
             }
             String kind = item.getColumnKind().trim().toUpperCase();
             if (DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(kind)
-                    && !StringUtils.hasText(item.getPerspectiveId())) {
-                throw new ServiceException(400, "CATEGORY 列必须提供 perspectiveId");
+                    && !StringUtils.hasText(item.getTabId())) {
+                throw new ServiceException(400, "分类列必须提供标签页编号");
             }
-            // CATEGORY / MODEL / ENTITY 可带不同 perspectiveId（多栏/多实体列）；DETAIL 仍禁止
-            boolean allowsPerspective = DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(kind)
+            boolean allowsTabId = DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(kind)
                     || DmDataTabLayoutKindEnum.MODEL.getCode().equals(kind)
                     || DmDataTabLayoutKindEnum.ENTITY.getCode().equals(kind);
-            if (!allowsPerspective && StringUtils.hasText(item.getPerspectiveId())) {
-                throw new ServiceException(400, kind + " 列不应设置 perspectiveId");
+            if (!allowsTabId && StringUtils.hasText(item.getTabId())) {
+                throw new ServiceException(400, kind + " 列不应设置标签页编号");
             }
-            String scope = scopeKey(kind, normalizePerspectiveId(item.getPerspectiveId()));
+            String scope = scopeKey(kind, normalizeTabId(item.getTabId()));
             if (!scopes.add(scope)) {
                 throw new ServiceException(400, "数据 Tab 布局重复：" + kind
-                        + (StringUtils.hasText(item.getPerspectiveId()) ? " / " + item.getPerspectiveId() : ""));
+                        + (StringUtils.hasText(item.getTabId()) ? " / " + item.getTabId() : ""));
             }
         }
-    }
-
-    private List<DmDataTabLayoutRespVO> buildDefaultColumns(String entityTypeCode) {
-        List<DmDataTabLayoutRespVO> list = new ArrayList<>();
-        list.add(defaultSimpleColumn(entityTypeCode, DmDataTabLayoutKindEnum.MODEL.getCode()));
-        list.add(defaultSimpleColumn(entityTypeCode, DmDataTabLayoutKindEnum.ENTITY.getCode()));
-        return list;
-    }
-
-    private DmDataTabLayoutRespVO defaultSimpleColumn(String entityTypeCode, String kind) {
-        DmDataTabLayoutRespVO row = new DmDataTabLayoutRespVO();
-        row.setEntityTypeCode(entityTypeCode);
-        row.setColumnKind(kind);
-        row.setEnabled(true);
-        return row;
     }
 
     private DmDataTabLayoutRespVO toRespVO(DmDataTabLayoutDO row) {
         DmDataTabLayoutRespVO vo = new DmDataTabLayoutRespVO();
         vo.setId(row.getId());
+        vo.setLayoutId(row.getLayoutId());
         vo.setEntityTypeCode(row.getEntityTypeCode());
         vo.setColumnKind(row.getColumnKind());
-        vo.setPerspectiveId(row.getPerspectiveId());
+        vo.setTabId(row.getTabId());
         vo.setPropsId(row.getPropsId());
         vo.setEnabled(row.getEnabled());
-        vo.setCategoryColumn(row.getCategoryColumn());
+        vo.setColumnMeta(row.getColumnMeta());
         return vo;
     }
 
@@ -195,10 +222,10 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
         return entityTypeCode.trim();
     }
 
-    private String normalizePerspectiveId(String perspectiveId) {
-        if (!StringUtils.hasText(perspectiveId)) {
+    private String normalizeTabId(String tabId) {
+        if (!StringUtils.hasText(tabId)) {
             return null;
         }
-        return perspectiveId.trim();
+        return tabId.trim();
     }
 }

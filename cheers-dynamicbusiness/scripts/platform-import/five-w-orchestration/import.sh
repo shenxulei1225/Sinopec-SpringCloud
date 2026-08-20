@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 五维编排 bundle seed（P0 平台目录 + P1 facility）
-# 前置：Flyway V51；system seed 已导入 entity_type
+# 前置：Flyway V63；system seed 已导入 entity_type
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -37,7 +37,7 @@ run "${SCRIPT_DIR}/05_p2_ledger_backfill.sql"
 echo "== five-w-orchestration: inspection_item Who entity layout =="
 run "${SCRIPT_DIR}/06_inspection_item_who_entity_layout.sql"
 
-echo "== five-w-orchestration: stamp workspaceBand WHO on unstamped model/entity =="
-run "${SCRIPT_DIR}/07_stamp_workspace_band_who.sql"
+echo "== five-w-orchestration: stamp columnSection=OBJECT on unstamped model/entity (migrate off workspaceBand) =="
+run "${SCRIPT_DIR}/07_stamp_column_section_object.sql"
 
 echo "done: five-w-orchestration seed"

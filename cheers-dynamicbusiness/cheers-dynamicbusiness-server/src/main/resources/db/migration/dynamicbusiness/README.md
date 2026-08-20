@@ -72,8 +72,17 @@
 | V56 | `V56__rename_field_work_standard_to_sop.sql` | SOP 真源统一为 `sop`：表 `ent_sop*`、类型/型号改码，软删重复入口 |
 | V57 | `V57__dm_five_w_filter_layout.sql` | 分类筛选槽从 Who 布局拆出；`categoryLinkedEntity` 仍保证分类即实体 1:1 |
 | V58 | `V58__ent_region_intro_base_field_columns.sql` | 运营区域介绍页 `FLD-BASE-region-*` 补专用表物理列（seed 当时只写了元数据） |
+| V59 | `V59__dm_data_tab_layout_scene_and_column_key.sql` | 布局表加 **布局场景（layoutScene）**（`DATA_TAB` / `INSPECTION_PICKER`）；旧行标数据 Tab；无栏分组键的分类行按场景补同一键 |
+| V60 | `V60__drop_five_w_orchestration_selection_level.sql` | 删除编排语义块 `selection_level`；开列认布局，What 绑层认 `bindLayer` |
+| V61 | `V61__rename_layout_perspective_id_to_tab_id.sql` | 布局行标签页编号：`perspective_id` → `tab_id`（数据 Tab / Who / 筛选槽） |
+| V62 | `V62__rename_object_pick_from_and_how_mode.sql` | 槽位 `entity_id_rule` → `object_pick_from`；取值 `LIST_ROW` / `CATEGORY_NODE`；如何栏 `FOLLOW_WHAT` |
+| V63 | `V63__orchestration_object_pick_from_on_head.sql` | 编排头加 `object_pick_from`；删除与布局重复的筛选槽/谁槽表 |
+| V64 | `V64__dm_data_tab_layout_column_meta.sql` | 布局行扩展 jsonb：`category_column` → **列扩展（column_meta）**（按 column_kind 存各栏扩展，非仅分类） |
+| V65 | `V65__dm_data_tab_column_relation.sql` | **栏间关系声明**表：列身份对、关联种类、启用交互等；按数据类型与布局场景分页配置 |
+| V66 | `V66__workbench_layout_template_instance.sql` | 工作台布局头（模版/实例）、页面布局引用、栏行改挂 layout_id、类型挂 data_layout_id；废止 layout_scene |
+| V67 | `V67__retire_embed_pick_page_key.sql` | 废止过渡 page_key `catalog:*:embed-pick` 与「嵌入勾选·」实例；嵌入改复用目录 dataLayoutId |
 
-> **版本号说明**：本仓库已登记至 **V58**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。  
+> **版本号说明**：本仓库已登记至 **V67**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。  
 
 
 > **跨机合并说明**：本机布局迁移已占用 V26–V28 且已执行；对方原 `V26__category_*` / `V27__ent_structure` 在合并后改为 V29/V30。若对方库已按旧文件名执行过 V26/V27，需对齐历史表 `version`/`script` 后 `flyway:repair`，再拉本分支。
@@ -115,6 +124,7 @@ PGPASSWORD=Coolhomer psql -h 127.0.0.1 -U postgres -d sinopec -c \
 
 | 日期 | 说明 |
 |------|------|
+| 2026-08-15 | V60：删除 `dm_five_w_orchestration.selection_level`；开列认布局，What 绑层认 `bindLayer` |
 | 2026-08-14 | V58：运营区域介绍页基础字段补 `ent_region` / `ent_region_t*` 物理列，并从 `custom_fields` 回填 |
 | 2026-08-02 | V46：数据类型 `work_scope`（NETWORK/FACILITY）；API 字段 `workScope`，空默认 FACILITY，非法值 400 |
 | 2026-08-02 | V47：样例全网目录 `region`/`facility` 写入 `work_scope=NETWORK` |

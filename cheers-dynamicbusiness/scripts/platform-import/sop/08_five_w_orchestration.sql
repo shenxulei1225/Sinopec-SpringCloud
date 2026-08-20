@@ -1,8 +1,7 @@
 -- ============================================================================
 -- sop · 08 五维编排（数据 Tab Who/What）
--- 配方对齐设备台账：选实体看详情；分类 / 型号 / 实体三栏
--- 修复：V56 软删空壳编排头后，可能留下「有 Who、无语义块」→ getBundle 500
--- 前置：类型 sop 已存在；库内已有 _seed_five_w_* 辅助函数（Flyway five-w）
+-- 配方对齐设备台账：点列表这一行是当前对象；分类 / 型号 / 实体三栏认布局
+-- 前置：类型 sop 已存在；库内已有 _seed_five_w_* 辅助函数
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;
@@ -23,32 +22,19 @@ BEGIN
   PERFORM _seed_five_w_semantic(
     v_tenant,
     'sop',
-    'ENTITY',
     'VIEW_DETAIL',
     '{"bindLayer":"ENTITY"}'::jsonb,
     'NONE',
-    '{}'::jsonb
+    '{}'::jsonb,
+    'LIST_ROW'
   );
 
-  PERFORM _seed_five_w_replace_who_slots(v_tenant, 'sop');
-
-  PERFORM _seed_five_w_who_slot(
-    v_tenant, 'sop', 'CATEGORY', 'sop-category', NULL,
-    true, '["categoryId"]'::jsonb, NULL,
-    '{"label":"标准作业流程SOP","categoryTypeCode":"sop"}'::jsonb);
-  PERFORM _seed_five_w_who_slot(
-    v_tenant, 'sop', 'MODEL', 'sop-model', NULL,
-    true, '["modelId"]'::jsonb, NULL, NULL);
-  PERFORM _seed_five_w_who_slot(
-    v_tenant, 'sop', 'ENTITY', 'sop-entity', NULL,
-    true, '["entityId"]'::jsonb, 'rowSelection', NULL);
-
-  -- 数据 Tab 布局：V56 只改了 entity_type_code，category_column 里可能仍写 field_work_standard
+  -- 数据 Tab 布局：V56 只改了 entity_type_code，列扩展里可能仍写 field_work_standard
   UPDATE dm_data_tab_layout
   SET
-    category_column = jsonb_set(
+    column_meta = jsonb_set(
       jsonb_set(
-        COALESCE(category_column, '{}'::jsonb),
+        COALESCE(column_meta, '{}'::jsonb),
         '{categoryTypeCode}',
         '"sop"'::jsonb,
         true
@@ -64,8 +50,8 @@ BEGIN
     AND deleted = false
     AND column_kind = 'CATEGORY'
     AND (
-      category_column IS NULL
-      OR category_column->>'categoryTypeCode' IS DISTINCT FROM 'sop'
-      OR category_column->>'categoryTypeCode' = 'field_work_standard'
+      column_meta IS NULL
+      OR column_meta->>'categoryTypeCode' IS DISTINCT FROM 'sop'
+      OR column_meta->>'categoryTypeCode' = 'field_work_standard'
     );
 END $$;

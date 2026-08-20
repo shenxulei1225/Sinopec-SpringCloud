@@ -1,6 +1,6 @@
 -- ============================================================================
 -- five-w-orchestration · 06 标准检查库 Who 实体列对齐
--- 原则：编排语义在 dm_five_w_*；画面 Who 列当前仍读 dm_data_tab_layout。
+-- 原则：编排规则在 dm_five_w_orchestration；画面 Who 列当前仍读 dm_data_tab_layout。
 -- 本页目标=检查项 → layout 须有开启的 ENTITY 行；不得用 MODEL 行冒充检查项。
 -- 前置：01_p0 已把 inspection_item 选层/What 配成实体层+看详情。
 -- ============================================================================
@@ -49,8 +49,8 @@ BEGIN
       AND deleted = false
   ) THEN
     INSERT INTO dm_data_tab_layout (
-      tenant_id, entity_type_code, column_kind, perspective_id, props_id,
-      enabled, category_column, creator, deleted
+      tenant_id, entity_type_code, column_kind, tab_id, props_id,
+      enabled, column_meta, creator, deleted
     ) VALUES (
       v_tenant,
       'inspection_item',
@@ -58,7 +58,7 @@ BEGIN
       'entity-default',
       v_props,
       true,
-      '{"label":"检查项","widthPx":320,"columnOrder":0,"workspaceBand":"WHO","entityEntityTypeCode":"inspection_item"}'::jsonb,
+      '{"label":"检查项","widthPx":320,"columnOrder":0,"columnSection":"OBJECT","entityEntityTypeCode":"inspection_item"}'::jsonb,
       'seed-06',
       false
     );
@@ -66,9 +66,9 @@ BEGIN
     UPDATE dm_data_tab_layout
     SET enabled = true,
         props_id = COALESCE(props_id, v_props),
-        category_column = COALESCE(
-          category_column,
-          '{"label":"检查项","widthPx":320,"columnOrder":0,"workspaceBand":"WHO","entityEntityTypeCode":"inspection_item"}'::jsonb
+        column_meta = COALESCE(
+          column_meta,
+          '{"label":"检查项","widthPx":320,"columnOrder":0,"columnSection":"OBJECT","entityEntityTypeCode":"inspection_item"}'::jsonb
         ),
         updater = 'seed-06',
         update_time = CURRENT_TIMESTAMP

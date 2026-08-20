@@ -10,18 +10,18 @@ import lombok.Value;
 @Builder
 public class FiveWRecipeParams {
 
-    /** 目录注册编码（dm_five_w_* 的 entity_type_code） */
+    /** 目录注册编码（dm_five_w_orchestration 的 entity_type_code） */
     String registryCode;
 
     /** 存储类型编码；与 registry 相同时可省略，由模板默认 */
     String storageEntityTypeCode;
 
-    /** 分类槽绑定的 categoryTypeCode */
+    /** 分类种类编码（布局种子用；编排头不再写槽） */
     String categoryTypeCode;
 
-    /** 分类槽 / 实体槽展示标签 */
+    /** 展示标签（布局种子用；编排头不再写槽） */
     String typeName;
 
-    /** 分类即实体配方：Who 分类槽 slotRef */
+    /** 分类即对象时布局分类栏编号（布局种子用；编排头不再写槽） */
     String categorySlotRef;
 }

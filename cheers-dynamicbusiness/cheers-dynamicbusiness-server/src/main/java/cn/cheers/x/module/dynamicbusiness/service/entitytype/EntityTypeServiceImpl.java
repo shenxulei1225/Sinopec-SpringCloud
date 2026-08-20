@@ -996,6 +996,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
                 StringUtils.hasText(entityType.getModelWorkbenchMode())
                         ? entityType.getModelWorkbenchMode()
                         : EntityTypeDO.MODEL_WORKBENCH_MULTI);
+        vo.setDataLayoutId(entityType.getDataLayoutId());
         return vo;
     }
 

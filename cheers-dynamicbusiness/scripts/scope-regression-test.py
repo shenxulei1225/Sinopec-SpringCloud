@@ -176,7 +176,7 @@ def main() -> int:
     def p0_abc_all_patrol():
         total = query_total(
             {
-                "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
+                "scene": "ENTITIES_BY_MODEL",
                 "entityTypeCode": "task",
                 "domain": "巡检",
                 "pageNo": 1,
@@ -189,7 +189,7 @@ def main() -> int:
     def p0_abc_all_maint():
         total = query_total(
             {
-                "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
+                "scene": "ENTITIES_BY_MODEL",
                 "entityTypeCode": "task",
                 "domain": "维修",
                 "pageNo": 1,
@@ -202,7 +202,7 @@ def main() -> int:
     def p0_abc_all_native():
         total = query_total(
             {
-                "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
+                "scene": "ENTITIES_BY_MODEL",
                 "entityTypeCode": "task",
                 "pageNo": 1,
                 "pageSize": 100,
@@ -214,7 +214,7 @@ def main() -> int:
     def p0_abc_empty_scope():
         total = query_total(
             {
-                "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
+                "scene": "ENTITIES_BY_MODEL",
                 "entityTypeCode": "task",
                 "domain": "空域测试",
                 "pageNo": 1,
@@ -227,7 +227,7 @@ def main() -> int:
     def p0_abc_tree_patrol():
         total = query_total(
             {
-                "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
+                "scene": "ENTITIES_BY_MODEL",
                 "entityTypeCode": "task",
                 "domain": "巡检",
                 "resultShape": "TREE",
@@ -241,7 +241,7 @@ def main() -> int:
     def p0_pattern_b_scope():
         total = query_total(
             {
-                "scene": "PATTERN_B_ENTITIES_BY_MODEL",
+                "scene": "ENTITIES_BY_MODEL",
                 "entityTypeCode": "task",
                 "domain": "巡检",
                 "pageNo": 1,
@@ -256,7 +256,7 @@ def main() -> int:
             return False, "patrol_task model missing"
         total = query_total(
             {
-                "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
+                "scene": "ENTITIES_BY_MODEL",
                 "entityTypeCode": "task",
                 "modelIds": [patrol_model["id"]],
                 "domain": "维修",  # 应被忽略
@@ -270,7 +270,7 @@ def main() -> int:
     def p0_dm_category_scope():
         total = query_total(
             {
-                "scene": "DATA_MGMT_ENTITIES_BY_CATEGORY_MODEL",
+                "scene": "ENTITIES_BY_CATEGORY",
                 "entityTypeCode": "task",
                 "categoryTypeCode": "task",
                 "categoryIds": [cat_daily],
@@ -286,7 +286,7 @@ def main() -> int:
     def p0_dm_uncategorized_scope():
         total = query_total(
             {
-                "scene": "DATA_MGMT_ENTITIES_UNCATEGORIZED",
+                "scene": "ENTITIES_UNCATEGORIZED",
                 "entityTypeCode": "task",
                 "categoryTypeCode": "task",
                 "domain": "巡检",
@@ -301,7 +301,7 @@ def main() -> int:
     def p0_pattern_ac_category_scope():
         total = query_total(
             {
-                "scene": "PATTERN_A_C_ENTITIES_BY_CATEGORY",
+                "scene": "ENTITIES_BY_CATEGORY",
                 "entityTypeCode": "task",
                 "categoryTypeCode": "task",
                 "categoryIds": [cat_daily],
@@ -317,7 +317,7 @@ def main() -> int:
     def p0_pattern_b_category():
         total = query_total(
             {
-                "scene": "PATTERN_B_ENTITIES_BY_CATEGORY",
+                "scene": "ENTITIES_BY_CATEGORY",
                 "entityTypeCode": "task",
                 "categoryTypeCode": "task",
                 "categoryIds": [cat_daily],
@@ -348,7 +348,7 @@ def main() -> int:
     def p0_record_abc_all():
         total = query_total(
             {
-                "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
+                "scene": "ENTITIES_BY_MODEL",
                 "entityTypeCode": "task_excution_record",
                 "pageNo": 1,
                 "pageSize": 100,
@@ -360,7 +360,7 @@ def main() -> int:
     def p0_record_abc_patrol():
         total = query_total(
             {
-                "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
+                "scene": "ENTITIES_BY_MODEL",
                 "entityTypeCode": "task_excution_record",
                 "domain": "巡检",
                 "pageNo": 1,
@@ -373,7 +373,7 @@ def main() -> int:
     def p0_record_abc_maint():
         total = query_total(
             {
-                "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
+                "scene": "ENTITIES_BY_MODEL",
                 "entityTypeCode": "task_excution_record",
                 "domain": "维修",
                 "pageNo": 1,
@@ -397,7 +397,7 @@ def main() -> int:
     def p0_record_scope_isolation():
         patrol_total = query_total(
             {
-                "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
+                "scene": "ENTITIES_BY_MODEL",
                 "entityTypeCode": "task_excution_record",
                 "domain": "巡检",
                 "pageNo": 1,
@@ -407,7 +407,7 @@ def main() -> int:
         )
         maint_total = query_total(
             {
-                "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
+                "scene": "ENTITIES_BY_MODEL",
                 "entityTypeCode": "task_excution_record",
                 "domain": "维修",
                 "pageNo": 1,
@@ -489,7 +489,7 @@ def main() -> int:
     def p1_maint_category_entities():
         total = query_total(
             {
-                "scene": "PATTERN_A_C_ENTITIES_BY_CATEGORY",
+                "scene": "ENTITIES_BY_CATEGORY",
                 "entityTypeCode": "task",
                 "categoryTypeCode": "task",
                 "categoryIds": [cat_maint],
@@ -522,7 +522,7 @@ def main() -> int:
     def p2_general_not_in_patrol_scope():
         total = query_total(
             {
-                "scene": "PATTERN_B_ENTITIES_BY_MODEL",
+                "scene": "ENTITIES_BY_MODEL",
                 "entityTypeCode": "task",
                 "domain": "巡检",
                 "pageNo": 1,
@@ -538,7 +538,7 @@ def main() -> int:
     def p2_task_scope_isolation():
         patrol_total = query_total(
             {
-                "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
+                "scene": "ENTITIES_BY_MODEL",
                 "entityTypeCode": "task",
                 "domain": "巡检",
                 "pageNo": 1,
@@ -548,7 +548,7 @@ def main() -> int:
         )
         maint_total = query_total(
             {
-                "scene": "PATTERN_ABC_ALL_ENTITIES_BY_BUSINESS_TYPE",
+                "scene": "ENTITIES_BY_MODEL",
                 "entityTypeCode": "task",
                 "domain": "维修",
                 "pageNo": 1,

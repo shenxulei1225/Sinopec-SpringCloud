@@ -12,37 +12,28 @@ import java.util.List;
 @Mapper
 public interface DmDataTabLayoutMapper extends BaseMapperX<DmDataTabLayoutDO> {
 
-    default List<DmDataTabLayoutDO> selectListByEntityTypeCode(String entityTypeCode) {
+    default List<DmDataTabLayoutDO> selectListByLayoutId(Long layoutId) {
         return selectList(new LambdaQueryWrapperX<DmDataTabLayoutDO>()
-                .eq(DmDataTabLayoutDO::getEntityTypeCode, entityTypeCode)
+                .eq(DmDataTabLayoutDO::getLayoutId, layoutId)
                 .eq(DmDataTabLayoutDO::getDeleted, false)
                 .orderByAsc(DmDataTabLayoutDO::getColumnKind)
-                .orderByAsc(DmDataTabLayoutDO::getPerspectiveId)
+                .orderByAsc(DmDataTabLayoutDO::getTabId)
                 .orderByAsc(DmDataTabLayoutDO::getId));
     }
 
-    default boolean existsByScope(String entityTypeCode, String columnKind, String perspectiveId) {
+    default boolean existsByLayoutScope(Long layoutId, String columnKind, String tabId) {
         LambdaQueryWrapperX<DmDataTabLayoutDO> wrapper = new LambdaQueryWrapperX<DmDataTabLayoutDO>()
-                .eq(DmDataTabLayoutDO::getEntityTypeCode, entityTypeCode)
+                .eq(DmDataTabLayoutDO::getLayoutId, layoutId)
                 .eq(DmDataTabLayoutDO::getColumnKind, columnKind)
                 .eq(DmDataTabLayoutDO::getDeleted, false);
-        if (perspectiveId == null) {
-            wrapper.isNull(DmDataTabLayoutDO::getPerspectiveId);
+        if (tabId == null) {
+            wrapper.isNull(DmDataTabLayoutDO::getTabId);
         } else {
-            wrapper.eq(DmDataTabLayoutDO::getPerspectiveId, perspectiveId);
+            wrapper.eq(DmDataTabLayoutDO::getTabId, tabId);
         }
         return selectCount(wrapper) > 0;
     }
 
-    /** MODEL / ENTITY 等非 CATEGORY 列：任一有效行存在即视为已初始化 */
-    default boolean existsByKind(String entityTypeCode, String columnKind) {
-        return selectCount(new LambdaQueryWrapperX<DmDataTabLayoutDO>()
-                .eq(DmDataTabLayoutDO::getEntityTypeCode, entityTypeCode)
-                .eq(DmDataTabLayoutDO::getColumnKind, columnKind)
-                .eq(DmDataTabLayoutDO::getDeleted, false)) > 0;
-    }
-
-    /** 保存后清理同 entity_type_code 下已逻辑删除的历史行，避免表无限膨胀 */
-    @Delete("DELETE FROM dm_data_tab_layout WHERE entity_type_code = #{entityTypeCode} AND deleted = true")
-    void deletePhysicalSoftDeletedByEntityTypeCode(@Param("entityTypeCode") String entityTypeCode);
+    @Delete("DELETE FROM dm_data_tab_layout WHERE layout_id = #{layoutId} AND deleted = true")
+    void deletePhysicalSoftDeletedByLayoutId(@Param("layoutId") Long layoutId);
 }
