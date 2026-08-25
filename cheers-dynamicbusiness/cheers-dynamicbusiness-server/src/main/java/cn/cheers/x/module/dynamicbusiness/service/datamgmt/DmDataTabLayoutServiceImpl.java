@@ -42,6 +42,9 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
     @Resource
     private EntityTypeMapper entityTypeMapper;
 
+    @Resource
+    private DmDataTabColumnRelationBootstrapService dmDataTabColumnRelationBootstrapService;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -123,6 +126,7 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
         }
 
         dmDataTabLayoutMapper.deletePhysicalSoftDeletedByLayoutId(layoutId);
+        dmDataTabColumnRelationBootstrapService.pruneOrphanColumnRelations(layoutId);
     }
 
     private Long resolveSaveLayoutId(DmDataTabLayoutSaveReqVO reqVO) {

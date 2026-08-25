@@ -19,6 +19,8 @@ public class DmDataTabColumnRelationRespVO {
     private String relationKind;
     private String fromTypeCode;
     private String toTypeCode;
+    /** filter=条件筛选；write=修改关联 */
+    private String edgeRole;
     /** 启用的交互方式编码列表 */
     private List<String> enabledInteractions;
     /** 可选：引用字段编码列表；空则运行时按两端类型合并同目标 REF */

@@ -78,23 +78,24 @@ public class EntityTypeOrchestrationBootstrapService {
         String code = entityType.getCode().trim();
         String name = StringUtils.hasText(entityType.getName()) ? entityType.getName().trim() : code;
 
-        FiveWRecipeParams.FiveWRecipeParamsBuilder builder = FiveWRecipeParams.builder()
-                .registryCode(code)
-                .storageEntityTypeCode(code)
-                .typeName(name);
-
         EntityTypeEntryKindEnum kind = EntityTypeEntryKindEnum.fromCode(entityType.getEntryKind());
-        if (kind.isDomainEntry() || kind.isReuseEntry() || kind.isScopeEntry()) {
+        String storageCode = code;
+        String categoryTypeCode = code;
+        if (kind.reusesBaseStorage()) {
             String baseCode = entityType.getBaseEntityTypeCode();
             if (!StringUtils.hasText(baseCode)) {
-                log.warn("数据类型 {} 缺少 baseEntityTypeCode，五维 bootstrap 分类种类回退为自身编码", code);
-                builder.categoryTypeCode(code);
+                log.warn("数据类型 {} 缺少 baseEntityTypeCode，五维 bootstrap 存储/分类回退为自身编码", code);
             } else {
-                builder.categoryTypeCode(baseCode.trim());
+                storageCode = baseCode.trim();
+                categoryTypeCode = storageCode;
             }
-        } else {
-            builder.categoryTypeCode(code);
         }
+
+        FiveWRecipeParams.FiveWRecipeParamsBuilder builder = FiveWRecipeParams.builder()
+                .registryCode(code)
+                .storageEntityTypeCode(storageCode)
+                .categoryTypeCode(categoryTypeCode)
+                .typeName(name);
 
         if (recipeId == FiveWRecipeIdEnum.CATEGORY_AS_ENTITY) {
             builder.categorySlotRef(code + "-tree");

@@ -5,10 +5,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmDataTab
 import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmDataTabColumnRelationSaveItemVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmDataTabColumnRelationSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmDataTabColumnRelationDO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmDataTabLayoutDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmDataTabColumnRelationMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmDataTabLayoutMapper;
-import cn.cheers.x.module.dynamicbusiness.enums.datamgmt.DmDataTabLayoutKindEnum;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeCategoryBootstrapService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -17,6 +14,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -49,11 +47,18 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
             "ownershipWrite"
     );
 
-    @Resource
-    private DmDataTabColumnRelationMapper dmDataTabColumnRelationMapper;
+    private static final Set<String> WRITE_INTERACTIONS = Set.of(
+            "dragAssociate",
+            "unbindChecked",
+            "checkboxSet",
+            "refFieldPick",
+            "ownershipWrite"
+    );
+
+    private static final Set<String> ALLOWED_EDGE_ROLES = Set.of("filter", "write");
 
     @Resource
-    private DmDataTabLayoutMapper dmDataTabLayoutMapper;
+    private DmDataTabColumnRelationMapper dmDataTabColumnRelationMapper;
 
     @Resource
     private DmWorkbenchLayoutService dmWorkbenchLayoutService;
@@ -64,21 +69,9 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
     @Override
     public List<DmDataTabColumnRelationRespVO> listByLayoutId(Long layoutId) {
         dmWorkbenchLayoutService.requireLayout(layoutId);
-        String code = resolveEntityTypeCodeForLayout(layoutId);
-        ensureDefaultLedgerBrowseRelations(layoutId, code);
-        return dmDataTabColumnRelationMapper.selectListByLayoutId(layoutId).stream()
+        return dedupeByPairKey(dmDataTabColumnRelationMapper.selectListByLayoutId(layoutId)).stream()
                 .map(this::toRespVO)
                 .toList();
-    }
-
-    private String resolveEntityTypeCodeForLayout(Long layoutId) {
-        List<DmDataTabLayoutDO> layouts = dmDataTabLayoutMapper.selectListByLayoutId(layoutId);
-        for (DmDataTabLayoutDO row : layouts) {
-            if (StringUtils.hasText(row.getEntityTypeCode())) {
-                return row.getEntityTypeCode().trim();
-            }
-        }
-        return null;
     }
 
     @Override
@@ -86,162 +79,33 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
         String code = normalizeEntityTypeCode(entityTypeCode);
         entityTypeCategoryBootstrapService.ensureForEntityTypeCode(code);
         Long layoutId = dmWorkbenchLayoutService.resolveLayoutIdForEntityType(code);
-        ensureDefaultLedgerBrowseRelations(layoutId, code);
         return listByLayoutId(layoutId);
     }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void ensureDefaultLedgerBrowseRelations(Long layoutId, String entityTypeCode) {
-        if (layoutId == null) {
-            return;
+    private static String edgeRoleFromMeta(Map<String, Object> meta) {
+        if (meta == null) {
+            return "filter";
         }
-        dmWorkbenchLayoutService.requireLayout(layoutId);
-        List<DmDataTabLayoutDO> layouts = dmDataTabLayoutMapper.selectListByLayoutId(layoutId);
-        if (layouts.isEmpty()) {
-            return;
-        }
-
-        String pageCode = StringUtils.hasText(entityTypeCode) ? entityTypeCode.trim() : null;
-        List<ColumnEndpoint> categories = new ArrayList<>();
-        List<ColumnEndpoint> models = new ArrayList<>();
-        List<ColumnEndpoint> entities = new ArrayList<>();
-        for (DmDataTabLayoutDO row : layouts) {
-            if (Boolean.FALSE.equals(row.getEnabled())) {
-                continue;
-            }
-            ColumnEndpoint endpoint = toEndpoint(row, pageCode);
-            if (endpoint == null) {
-                continue;
-            }
-            switch (endpoint.kind()) {
-                case CATEGORY -> categories.add(endpoint);
-                case MODEL -> models.add(endpoint);
-                case ENTITY -> entities.add(endpoint);
-                default -> {
-                }
+        Object role = meta.get("edgeRole");
+        if (role != null) {
+            String text = String.valueOf(role).trim();
+            if ("write".equals(text) || "filter".equals(text)) {
+                return text;
             }
         }
-
-        Set<String> existingPairs = new HashSet<>();
-        for (DmDataTabColumnRelationDO row :
-                dmDataTabColumnRelationMapper.selectListByLayoutId(layoutId)) {
-            existingPairs.add(pairKey(row.getFromColumnIdentity(), row.getToColumnIdentity()));
-        }
-
-        // 只补通用台账缺的「分类→型号」「型号→实体」；已有用户边（如分类→实体）不删不改
-        List<DmDataTabColumnRelationDO> toInsert = new ArrayList<>();
-        for (ColumnEndpoint category : categories) {
-            for (ColumnEndpoint model : models) {
-                if (existingPairs.contains(pairKey(category.identity(), model.identity()))) {
+        Object interactions = meta.get("enabledInteractions");
+        if (interactions instanceof List<?> list) {
+            for (Object item : list) {
+                if (item == null) {
                     continue;
                 }
-                toInsert.add(newBrowseRelation(
-                        layoutId, pageCode, category, model, "CATEGORY_MODEL"));
+                String code = String.valueOf(item).trim();
+                if (WRITE_INTERACTIONS.contains(code)) {
+                    return "write";
+                }
             }
         }
-        for (ColumnEndpoint model : models) {
-            for (ColumnEndpoint entity : entities) {
-                if (existingPairs.contains(pairKey(model.identity(), entity.identity()))) {
-                    continue;
-                }
-                toInsert.add(newBrowseRelation(
-                        layoutId, pageCode, model, entity, "MODEL_ENTITY"));
-            }
-        }
-        for (DmDataTabColumnRelationDO row : toInsert) {
-            dmDataTabColumnRelationMapper.insert(row);
-        }
-    }
-
-    private static String pairKey(String from, String to) {
-        return (from == null ? "" : from.trim()) + "=>" + (to == null ? "" : to.trim());
-    }
-
-    private DmDataTabColumnRelationDO newBrowseRelation(
-            Long layoutId,
-            String entityTypeCode,
-            ColumnEndpoint from,
-            ColumnEndpoint to,
-            String relationKind) {
-        DmDataTabColumnRelationDO row = new DmDataTabColumnRelationDO();
-        row.setLayoutId(layoutId);
-        row.setEntityTypeCode(entityTypeCode);
-        row.setEdgeId("edge-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12));
-        row.setFromColumnIdentity(from.identity());
-        row.setToColumnIdentity(to.identity());
-        row.setRelationKind(relationKind);
-        row.setFromTypeCode(from.typeCode());
-        row.setToTypeCode(to.typeCode());
-        Map<String, Object> meta = new LinkedHashMap<>();
-        meta.put("enabledInteractions", List.of("browseFilter"));
-        row.setRelationMeta(meta);
-        return row;
-    }
-
-    private ColumnEndpoint toEndpoint(DmDataTabLayoutDO row, String pageCode) {
-        String kindCode = row.getColumnKind() == null ? "" : row.getColumnKind().trim().toUpperCase();
-        DmDataTabLayoutKindEnum kind = DmDataTabLayoutKindEnum.getByCode(kindCode);
-        if (kind == null) {
-            return null;
-        }
-        Map<String, Object> meta = row.getColumnMeta() != null ? row.getColumnMeta() : Map.of();
-        String tab = StringUtils.hasText(row.getTabId()) ? row.getTabId().trim() : "default";
-        return switch (kind) {
-            case CATEGORY -> {
-                String typeCode = metaString(meta, "categoryTypeCode");
-                if (!StringUtils.hasText(typeCode)) {
-                    yield null;
-                }
-                String columnKey = metaString(meta, "columnKey");
-                if (!StringUtils.hasText(columnKey)) {
-                    columnKey = "default";
-                }
-                yield new ColumnEndpoint(
-                        DmDataTabLayoutKindEnum.CATEGORY,
-                        "CATEGORY:" + columnKey + ":" + tab,
-                        typeCode.trim());
-            }
-            case MODEL -> {
-                String typeCode = metaString(meta, "modelEntityTypeCode");
-                if (!StringUtils.hasText(typeCode)) {
-                    typeCode = pageCode;
-                }
-                if (!StringUtils.hasText(typeCode)) {
-                    yield null;
-                }
-                yield new ColumnEndpoint(
-                        DmDataTabLayoutKindEnum.MODEL,
-                        "MODEL:" + tab,
-                        typeCode.trim());
-            }
-            case ENTITY -> {
-                String typeCode = metaString(meta, "entityEntityTypeCode");
-                if (!StringUtils.hasText(typeCode)) {
-                    typeCode = pageCode;
-                }
-                if (!StringUtils.hasText(typeCode)) {
-                    yield null;
-                }
-                yield new ColumnEndpoint(
-                        DmDataTabLayoutKindEnum.ENTITY,
-                        "ENTITY:" + tab,
-                        typeCode.trim());
-            }
-            default -> null;
-        };
-    }
-
-    private static String metaString(Map<String, Object> meta, String key) {
-        Object value = meta.get(key);
-        if (value == null) {
-            return null;
-        }
-        String text = String.valueOf(value).trim();
-        return text.isEmpty() || "null".equals(text) ? null : text;
-    }
-
-    private record ColumnEndpoint(DmDataTabLayoutKindEnum kind, String identity, String typeCode) {
+        return "filter";
     }
 
     @Override
@@ -270,9 +134,10 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
             if (from.equals(to)) {
                 throw new ServiceException(400, "栏间关系两端列身份不能相同");
             }
-            String pairKey = from + "=>" + to;
-            if (!pairKeys.add(pairKey)) {
-                throw new ServiceException(400, "重复的栏间关系：" + pairKey);
+            String edgeRole = resolveEdgeRole(item);
+            String dedupeKey = ColumnRelationLayoutEndpoints.pairKey(from, to, edgeRole);
+            if (!pairKeys.add(dedupeKey)) {
+                throw new ServiceException(400, "重复的栏间关系（同两端同用途）：" + dedupeKey);
             }
 
             String kind = resolveRelationKind(item);
@@ -283,8 +148,9 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
                 throw new ServiceException(400, "重复的 edgeId: " + edgeId);
             }
 
-            List<String> interactions = normalizeInteractions(item.getEnabledInteractions());
-            Map<String, Object> meta = buildMeta(interactions, item.getLinkKeys(), item.getPresentation());
+            List<String> interactions = normalizeInteractions(item.getEnabledInteractions(), edgeRole);
+            Map<String, Object> meta = buildMeta(
+                    edgeRole, interactions, item.getLinkKeys(), item.getPresentation());
 
             DmDataTabColumnRelationDO row = existingByEdge.get(edgeId);
             if (row != null) {
@@ -389,9 +255,31 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
         return text.substring(0, idx).trim().toUpperCase();
     }
 
-    private List<String> normalizeInteractions(List<String> raw) {
+    private String resolveEdgeRole(DmDataTabColumnRelationSaveItemVO item) {
+        if (StringUtils.hasText(item.getEdgeRole())) {
+            String role = item.getEdgeRole().trim();
+            if (!ALLOWED_EDGE_ROLES.contains(role)) {
+                throw new ServiceException(400, "无效的边用途: " + item.getEdgeRole());
+            }
+            return role;
+        }
+        List<String> raw = item.getEnabledInteractions();
+        if (raw != null) {
+            for (String code : raw) {
+                if (StringUtils.hasText(code) && WRITE_INTERACTIONS.contains(code.trim())) {
+                    return "write";
+                }
+            }
+        }
+        return "filter";
+    }
+
+    private List<String> normalizeInteractions(List<String> raw, String edgeRole) {
+        if ("filter".equals(edgeRole)) {
+            return List.of();
+        }
         if (raw == null || raw.isEmpty()) {
-            throw new ServiceException(400, "至少启用一种交互方式");
+            throw new ServiceException(400, "写关联至少启用一种交互方式（勾选或拖入）");
         }
         LinkedHashSet<String> out = new LinkedHashSet<>();
         for (String item : raw) {
@@ -402,17 +290,25 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
             if (!ALLOWED_INTERACTIONS.contains(code)) {
                 throw new ServiceException(400, "无效的交互方式: " + code);
             }
+            if ("browseFilter".equals(code) || "cascadeClip".equals(code)
+                    || "associationFilterTriad".equals(code)) {
+                continue;
+            }
             out.add(code);
         }
         if (out.isEmpty()) {
-            throw new ServiceException(400, "至少启用一种交互方式");
+            throw new ServiceException(400, "写关联至少启用一种交互方式（勾选或拖入）");
         }
         return new ArrayList<>(out);
     }
 
     private Map<String, Object> buildMeta(
-            List<String> interactions, List<String> linkKeys, Map<String, Object> presentation) {
+            String edgeRole,
+            List<String> interactions,
+            List<String> linkKeys,
+            Map<String, Object> presentation) {
         Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put("edgeRole", edgeRole);
         meta.put("enabledInteractions", interactions);
         if (linkKeys != null && !linkKeys.isEmpty()) {
             List<String> keys = new ArrayList<>();
@@ -444,6 +340,8 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
         vo.setFromTypeCode(row.getFromTypeCode());
         vo.setToTypeCode(row.getToTypeCode());
         Map<String, Object> meta = row.getRelationMeta();
+        String edgeRole = edgeRoleFromMeta(meta);
+        vo.setEdgeRole(edgeRole);
         if (meta != null) {
             Object interactions = meta.get("enabledInteractions");
             if (interactions instanceof List<?> list) {
@@ -481,5 +379,18 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
             throw new ServiceException(400, "entityTypeCode 不能为空");
         }
         return entityTypeCode.trim();
+    }
+
+    /** 读路径去重：同两端同用途只保留一条（历史重复写入兼容）。 */
+    private List<DmDataTabColumnRelationDO> dedupeByPairKey(List<DmDataTabColumnRelationDO> rows) {
+        Map<String, DmDataTabColumnRelationDO> byPair = new LinkedHashMap<>();
+        for (DmDataTabColumnRelationDO row : rows) {
+            String from = row.getFromColumnIdentity() == null ? "" : row.getFromColumnIdentity().trim();
+            String to = row.getToColumnIdentity() == null ? "" : row.getToColumnIdentity().trim();
+            String role = edgeRoleFromMeta(row.getRelationMeta());
+            String key = ColumnRelationLayoutEndpoints.pairKey(from, to, role);
+            byPair.putIfAbsent(key, row);
+        }
+        return new ArrayList<>(byPair.values());
     }
 }

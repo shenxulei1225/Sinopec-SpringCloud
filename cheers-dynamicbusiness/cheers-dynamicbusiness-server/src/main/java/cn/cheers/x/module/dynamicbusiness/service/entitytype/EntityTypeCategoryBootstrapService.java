@@ -63,23 +63,52 @@ public class EntityTypeCategoryBootstrapService {
             ensureAdvancedCategoryType(entityType);
             return;
         }
-        if (kind.isDomainEntry()) {
-            String baseCode = entityType.getBaseEntityTypeCode();
-            if (!StringUtils.hasText(baseCode)) {
-                log.warn("子数据类型 {} 缺少基础数据类型编码，跳过分类 bootstrap", entityType.getCode());
-                return;
-            }
-            EntityTypeDO baseType = entityTypeMapper.selectByCode(baseCode.trim());
+        // DOMAIN / SCOPE / REUSE：共用底座分类种类，不为注册项另建 categoryType
+        if (kind.reusesBaseStorage()) {
+            EntityTypeDO baseType = requireBaseEntityType(entityType, kind);
             if (baseType == null) {
-                log.warn("子数据类型 {} 的基础类型 {} 不存在，跳过分类 bootstrap",
-                        entityType.getCode(), baseCode);
                 return;
             }
             ensureNativeCategoryType(baseType);
-            ensureDomainCategoryFolder(entityType, baseType);
+            // 仅 DOMAIN 在底座分类根下建域分组；SCOPE / REUSE 直接用底座树，不新建根
+            if (kind.isDomainEntry()) {
+                ensureDomainCategoryFolder(entityType, baseType);
+            }
             return;
         }
         ensureNativeCategoryType(entityType);
+    }
+
+    /**
+     * 解析复用底座存储的入口（DOMAIN / SCOPE / REUSE）的基础数据类型；缺编码或底座不存在时打日志并返回 null。
+     */
+    private EntityTypeDO requireBaseEntityType(EntityTypeDO entityType, EntityTypeEntryKindEnum kind) {
+        String baseCode = entityType.getBaseEntityTypeCode();
+        if (!StringUtils.hasText(baseCode)) {
+            log.warn("{} {} 缺少基础数据类型编码，跳过分类 bootstrap",
+                    kindLabel(kind), entityType.getCode());
+            return null;
+        }
+        EntityTypeDO baseType = entityTypeMapper.selectByCode(baseCode.trim());
+        if (baseType == null) {
+            log.warn("{} {} 的基础类型 {} 不存在，跳过分类 bootstrap",
+                    kindLabel(kind), entityType.getCode(), baseCode);
+            return null;
+        }
+        return baseType;
+    }
+
+    private static String kindLabel(EntityTypeEntryKindEnum kind) {
+        if (kind.isDomainEntry()) {
+            return "子数据类型";
+        }
+        if (kind.isScopeEntry()) {
+            return "划分数据";
+        }
+        if (kind.isReuseEntry()) {
+            return "使用已有数据";
+        }
+        return kind.getCode();
     }
 
     private void ensureNativeCategoryType(EntityTypeDO entityType) {
@@ -160,11 +189,13 @@ public class EntityTypeCategoryBootstrapService {
         String code = entityType.getCode();
         EntityTypeEntryKindEnum kind = EntityTypeEntryKindEnum.fromCode(entityType.getEntryKind());
         boolean categoryAsEntity = kind.isCategory() || isCategoryAsEntityType(code);
+        // 默认布局分类栏：NATIVE/CATEGORY 用本注册项；DOMAIN/SCOPE/REUSE 用底座分类种类
         String categoryTypeCode = code;
-        if (kind.isDomainEntry()) {
+        if (kind.reusesBaseStorage()) {
             String baseCode = entityType.getBaseEntityTypeCode();
             if (!StringUtils.hasText(baseCode)) {
-                log.warn("子数据类型 {} 缺少基础数据类型编码，跳过布局 bootstrap", code);
+                log.warn("{} {} 缺少基础数据类型编码，跳过布局 bootstrap",
+                        kindLabel(kind), code);
                 return;
             }
             categoryTypeCode = baseCode.trim();

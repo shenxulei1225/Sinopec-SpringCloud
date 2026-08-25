@@ -1,10 +1,12 @@
 package cn.cheers.x.module.dynamicbusiness.service.datamgmt;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmDataTabLayoutDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmPageLayoutRefDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmWorkbenchLayoutDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmDataTabLayoutMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmPageLayoutRefMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmWorkbenchLayoutMapper;
@@ -23,6 +25,10 @@ import java.util.Map;
 
 /**
  * 工作台布局：模版列表、从模版生成实例、解析页面/目录上的 layoutId。
+ * <p>
+ * 权威：创建目录时从此处实例化布局行（含 columnMeta 栏身份与显示名）。
+ * 显示名用底座类型 / 分类种类的中文名，不用类型编码冒充 label。
+ * 不负责：组件配置 props（前端按栏身份同步）。
  */
 @Service
 public class DmWorkbenchLayoutService {
@@ -39,9 +45,12 @@ public class DmWorkbenchLayoutService {
     @Resource
     private EntityTypeMapper entityTypeMapper;
 
+    @Resource
+    private CategoryTypeMapper categoryTypeMapper;
+
     @Lazy
     @Resource
-    private DmDataTabColumnRelationService dmDataTabColumnRelationService;
+    private DmDataTabColumnRelationBootstrapService dmDataTabColumnRelationBootstrapService;
 
     public List<DmWorkbenchLayoutDO> listTemplates() {
         return dmWorkbenchLayoutMapper.selectTemplates();
@@ -69,8 +78,6 @@ public class DmWorkbenchLayoutService {
             List<DmDataTabLayoutDO> rows =
                     dmDataTabLayoutMapper.selectListByLayoutId(entityType.getDataLayoutId());
             if (!rows.isEmpty()) {
-                dmDataTabColumnRelationService.ensureDefaultLedgerBrowseRelations(
-                        entityType.getDataLayoutId(), entityType.getCode());
                 return entityType.getDataLayoutId();
             }
         }
@@ -114,6 +121,12 @@ public class DmWorkbenchLayoutService {
         return ref;
     }
 
+    /**
+     * 从模版复制栏行并写入本页栏身份。
+     * 模型/实体类型码与 label：底座（categoryTypeCode / 存储类型）的编码与中文名。
+     * 分类栏：种类码 + 分类种类中文名（无则退回底座中文名）。
+     * 单栏允许空 tabId。不写 propsId。
+     */
     @Transactional(rollbackFor = Exception.class)
     public Long instantiateFromTemplate(Long templateId,
                                         String instanceName,
@@ -137,7 +150,12 @@ public class DmWorkbenchLayoutService {
 
         String code = StringUtils.hasText(entityTypeCode) ? entityTypeCode.trim() : null;
         String tabId = code != null ? code + "-default" : "default";
-        String catCode = StringUtils.hasText(categoryTypeCode) ? categoryTypeCode.trim() : code;
+        String storageCode = StringUtils.hasText(categoryTypeCode) ? categoryTypeCode.trim() : code;
+        String storageDisplayName = resolveEntityTypeDisplayName(storageCode);
+        String categoryDisplayName = resolveCategoryTypeDisplayName(storageCode);
+        if (!StringUtils.hasText(categoryDisplayName)) {
+            categoryDisplayName = storageDisplayName;
+        }
 
         for (DmDataTabLayoutDO src : templateRows) {
             DmDataTabLayoutDO row = new DmDataTabLayoutDO();
@@ -157,15 +175,31 @@ public class DmWorkbenchLayoutService {
                         ? new LinkedHashMap<>(row.getColumnMeta())
                         : new LinkedHashMap<>();
                 if (code != null) {
-                    meta.put("label", StringUtils.hasText(String.valueOf(meta.get("label")))
-                            && !"null".equals(String.valueOf(meta.get("label")))
-                            ? meta.get("label")
-                            : code);
-                    if (catCode != null) {
-                        meta.put("categoryTypeCode", catCode);
+                    if (storageCode != null) {
+                        meta.put("categoryTypeCode", storageCode);
                     }
+                    // 显示名用分类种类中文名；模版里的「分类」等占位一律覆盖
+                    meta.put("label", categoryDisplayName);
                     meta.put("columnKey", row.getTabId());
                 }
+                row.setColumnMeta(meta);
+            } else if (DmDataTabLayoutKindEnum.MODEL.getCode().equals(src.getColumnKind())
+                    && code != null) {
+                Map<String, Object> meta = row.getColumnMeta() != null
+                        ? new LinkedHashMap<>(row.getColumnMeta())
+                        : new LinkedHashMap<>();
+                String typeCode = storageCode != null ? storageCode : code;
+                meta.put("modelEntityTypeCode", typeCode);
+                meta.put("label", storageDisplayName);
+                row.setColumnMeta(meta);
+            } else if (DmDataTabLayoutKindEnum.ENTITY.getCode().equals(src.getColumnKind())
+                    && code != null) {
+                Map<String, Object> meta = row.getColumnMeta() != null
+                        ? new LinkedHashMap<>(row.getColumnMeta())
+                        : new LinkedHashMap<>();
+                String typeCode = storageCode != null ? storageCode : code;
+                meta.put("entityEntityTypeCode", typeCode);
+                meta.put("label", storageDisplayName);
                 row.setColumnMeta(meta);
             }
 
@@ -174,8 +208,34 @@ public class DmWorkbenchLayoutService {
             }
             dmDataTabLayoutMapper.insert(row);
         }
-        dmDataTabColumnRelationService.ensureDefaultLedgerBrowseRelations(instance.getId(), code);
+        dmDataTabColumnRelationBootstrapService.applyInitialDefaultRelations(
+                instance.getId(), code, storageCode);
         return instance.getId();
+    }
+
+    /** 数据类型中文名；缺则退回编码（仅无名称数据时） */
+    private String resolveEntityTypeDisplayName(String typeCode) {
+        if (!StringUtils.hasText(typeCode)) {
+            return "";
+        }
+        String code = typeCode.trim();
+        EntityTypeDO type = entityTypeMapper.selectByCode(code);
+        if (type != null && StringUtils.hasText(type.getName())) {
+            return type.getName().trim();
+        }
+        return code;
+    }
+
+    /** 分类种类中文名；没有种类行则返回空，由调用方退回底座名 */
+    private String resolveCategoryTypeDisplayName(String categoryTypeCode) {
+        if (!StringUtils.hasText(categoryTypeCode)) {
+            return "";
+        }
+        CategoryTypeDO type = categoryTypeMapper.selectByCategoryTypeCode(categoryTypeCode.trim());
+        if (type != null && StringUtils.hasText(type.getName())) {
+            return type.getName().trim();
+        }
+        return "";
     }
 
     private Long requireDefaultTemplateId() {
