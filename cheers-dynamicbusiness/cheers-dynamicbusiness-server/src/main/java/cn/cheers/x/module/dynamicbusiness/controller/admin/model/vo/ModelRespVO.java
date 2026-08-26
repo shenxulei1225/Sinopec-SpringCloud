@@ -30,6 +30,15 @@ public class ModelRespVO {
     @Schema(description = "业务域（Domain）", example = "巡检")
     private String domain;
 
+    @Schema(description = "治理状态：LOCAL-站场本地型号，COMPANY-公司规格", example = "LOCAL")
+    private String governanceStatus;
+
+    @Schema(description = "本地型号发起设施 ID；公司规格为空", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
+    private Long originFacilityId;
+
+    @Schema(description = "创建用户 ID，用于本地型号删除权限判断", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
+    private Long creatorUserId;
+
     @Schema(description = "模型描述", example = "适用于消防设备的9kg泡沫灭火器A型号")
     private String description;
 

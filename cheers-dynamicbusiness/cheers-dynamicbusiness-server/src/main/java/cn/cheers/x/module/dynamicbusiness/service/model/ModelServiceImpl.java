@@ -1,6 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.model;
 
 import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
+import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
 
 import cn.hutool.core.util.IdUtil;
 import cn.cheers.x.framework.common.exception.ServiceException;
@@ -39,6 +40,9 @@ import cn.cheers.x.module.dynamicbusiness.service.category.CategoryTypeService;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.service.dynamictable.DynamicTableService;
 import cn.cheers.x.module.dynamicbusiness.service.model.core.ModelCoreService;
+import cn.cheers.x.module.dynamicbusiness.service.model.governance.MasterDataCapabilityChecker;
+import cn.cheers.x.module.dynamicbusiness.service.model.governance.ModelGovernanceCommandService;
+import cn.cheers.x.module.dynamicbusiness.service.model.governance.ModelGovernanceQueryService;
 import cn.cheers.x.module.dynamicbusiness.util.SparseSortUtils;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityCategoryRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
@@ -79,6 +83,12 @@ public class ModelServiceImpl implements ModelService {
 
     @Resource
     private ModelCoreService modelCoreService;
+    @Resource
+    private ModelGovernanceQueryService modelGovernanceQueryService;
+    @Resource
+    private ModelGovernanceCommandService modelGovernanceCommandService;
+    @Resource
+    private MasterDataCapabilityChecker masterDataCapabilityChecker;
     @Resource
     private ModelFieldAssignmentMapper modelFieldAssignmentMapper;
     @Resource
@@ -190,6 +200,12 @@ public class ModelServiceImpl implements ModelService {
         ModelDO model = ModelConvert.INSTANCE.convert(reqVO);
         model.setCode(generateCode());
         model.setDomain(modelDomain);
+        // 治理命令服务是创建身份的唯一权威；普通创建不得沿用数据库 COMPANY 默认值。
+        modelGovernanceCommandService.prepareForCreate(
+                model,
+                reqVO.getGovernanceStatus(),
+                reqVO.getEffectiveFacilityId(),
+                SecurityFrameworkUtils.getLoginUserId());
         if (model.getSort() == null) {
             Integer maxSort = modelMapper.selectMaxSortByEntityTypeCode(reqVO.getEntityTypeCode());
             model.setSort(SparseSortUtils.next(maxSort));
@@ -248,10 +264,7 @@ public class ModelServiceImpl implements ModelService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long cloneModel(ModelCloneReqVO reqVO) {
-        ModelDO source = modelCoreService.get(reqVO.getSourceModelId());
-        if (source == null) {
-            throw new ServiceException(404, "源模型不存在");
-        }
+        ModelDO source = getVisibleModel(reqVO.getSourceModelId(), reqVO.getEffectiveFacilityId(), "源模型不存在");
         String entityTypeCode = source.getEntityTypeCode();
         if (!StringUtils.hasText(entityTypeCode)) {
             throw new ServiceException(400, "源模型缺少业务类型编码");
@@ -278,6 +291,12 @@ public class ModelServiceImpl implements ModelService {
         model.setSort(SparseSortUtils.next(maxSort));
         // 分组 JSON 内 string id 不变 → 分配行 fieldGroupId（hash）无需 remap
         model.setFieldGroupsConfig(source.getFieldGroupsConfig());
+        // 复制同样属于创建：必须重新按当前调用方能力和有效站场定稿治理身份。
+        modelGovernanceCommandService.prepareForCreate(
+                model,
+                reqVO.getGovernanceStatus(),
+                reqVO.getEffectiveFacilityId(),
+                SecurityFrameworkUtils.getLoginUserId());
         modelCoreService.create(model);
 
         List<ModelFieldAssignmentDO> sourceAssignments =
@@ -360,11 +379,10 @@ public class ModelServiceImpl implements ModelService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateModel(ModelUpdateReqVO reqVO) {
-        // 校验模型存在
-        ModelDO existModel = modelCoreService.get(reqVO.getId());
-        if (existModel == null) {
-            throw new ServiceException(404, "模型不存在");
-        }
+        // 更新入口与详情、复制共用同一治理可见性门禁，禁止凭主键绕过本地型号隔离。
+        ModelDO existModel = getVisibleModel(reqVO.getId(), reqVO.getEffectiveFacilityId(), "模型不存在");
+        modelGovernanceCommandService.validateRegularUpdate(
+                existModel, reqVO.getGovernanceStatus(), reqVO.getStatus());
 
         // 校验模型名称唯一性（同一租户内唯一,排除自己）
         // 注意：selectByName 会自动添加租户条件（ModelDO 继承 TenantBaseDO,MyBatis Plus 租户插件会自动处理）
@@ -384,6 +402,8 @@ public class ModelServiceImpl implements ModelService {
 
         // 更新模型（租户插件会自动添加 WHERE tenant_id = ? 条件）
         ModelDO model = ModelConvert.INSTANCE.convert(reqVO);
+        // 普通更新只维护型号正文；治理身份只能由治理命令写入。
+        model.setGovernanceStatus(null);
         if (model.getSort() == null) {
             model.setSort(existModel.getSort());
         }
@@ -668,31 +688,20 @@ public class ModelServiceImpl implements ModelService {
     }
 
     @Override
-    public void deleteModel(Long id) {
-        ModelDO model = modelCoreService.get(id);
-        if (model == null) {
-            throw new ServiceException(404, "模型不存在");
-        }
-
-        String storageEntityTypeCode = entityTypeScopeResolver.resolveStorageEntityTypeCode(model.getEntityTypeCode());
-        if (!StringUtils.hasText(storageEntityTypeCode)) {
-            storageEntityTypeCode = model.getEntityTypeCode();
-        }
-        if (entityRepository.existsByModelId(id, storageEntityTypeCode)) {
-            throw new ServiceException(400, "模型存在关联的实体,禁止删除");
-        }
-
-        modelFieldAssignmentMapper.deleteByModelId(id);
-        modelCategoryRelationService.deleteAllByModelId(id);
-        modelCoreService.delete(id);
+    public void deleteModel(Long id, Long effectiveFacilityId) {
+        // 硬删除只允许走治理命令；公司规格在此路径始终拒绝。
+        modelGovernanceCommandService.deleteOwnLocal(
+                id, effectiveFacilityId, SecurityFrameworkUtils.getLoginUserId());
     }
 
     @Override
-    public ModelRespVO getModel(Long id) {
-        ModelDO model = modelCoreService.get(id);
-        if (model == null) {
-            throw new ServiceException(404, "模型不存在");
-        }
+    public void deactivateCompanyModel(Long id) {
+        modelGovernanceCommandService.deactivateCompany(id);
+    }
+
+    @Override
+    public ModelRespVO getModel(Long id, Long effectiveFacilityId) {
+        ModelDO model = getVisibleModel(id, effectiveFacilityId, "模型不存在");
         ModelRespVO result = ModelConvert.INSTANCE.convert(model);
         
         
@@ -706,6 +715,19 @@ public class ModelServiceImpl implements ModelService {
         }
         
         return result;
+    }
+
+    /**
+     * 用户入口读取型号的统一门禁：Core 只负责按主键取数，治理查询服务负责可见性。
+     * 禁止详情、更新或复制入口直接使用 Core 结果继续执行业务。
+     */
+    private ModelDO getVisibleModel(Long id, Long effectiveFacilityId, String notFoundMessage) {
+        ModelDO model = modelCoreService.get(id);
+        if (model == null) {
+            throw new ServiceException(404, notFoundMessage);
+        }
+        return modelGovernanceQueryService.assertVisible(
+                model, effectiveFacilityId, masterDataCapabilityChecker.canManageNetworkModelData());
     }
 
    
@@ -725,8 +747,18 @@ public class ModelServiceImpl implements ModelService {
 
     @Override
     public List<ModelRespVO> listModelsByEntityType(String entityTypeCode, String domain, String categoryTypeCode) {
-        List<ModelDO> list = filterModelDosByDomain(
-                modelCoreService.listByEntityTypeCode(entityTypeCode), domain);
+        return listModelsByEntityType(entityTypeCode, domain, categoryTypeCode, null);
+    }
+
+    @Override
+    public List<ModelRespVO> listModelsByEntityType(
+            String entityTypeCode, String domain, String categoryTypeCode, Long effectiveFacilityId) {
+        // 治理查询服务是列表可见性的唯一权威；本服务只提供候选集和有效站场。
+        List<ModelDO> visibleModels = modelGovernanceQueryService.filterVisible(
+                modelCoreService.listByEntityTypeCode(entityTypeCode),
+                effectiveFacilityId,
+                masterDataCapabilityChecker.canManageNetworkModelData());
+        List<ModelDO> list = filterModelDosByDomain(visibleModels, domain);
         if (list.isEmpty()) {
             return List.of();
         }
@@ -955,12 +987,17 @@ public class ModelServiceImpl implements ModelService {
 
     @Override
     public PageResult<ModelRespVO> pageModelByEntityTypeCode(ModelPageReqVO reqVO) {
-        PageResult<ModelDO> pageResult;
         Integer status = reqVO.getStatus() != null ? reqVO.getStatus() : 1;
+        List<ModelDO> orderedCandidates;
         if (Boolean.TRUE.equals(reqVO.getIncludeChildren()) && reqVO.getEntityTypeCode() != null && !reqVO.getEntityTypeCode().isBlank()) {
             List<String> entityTypeCodes = collectEntityTypeCodesWithChildren(reqVO.getEntityTypeCode());
             List<ModelDO> allModels = modelMapper.selectList(new LambdaQueryWrapperX<ModelDO>()
                     .in(ModelDO::getEntityTypeCode, entityTypeCodes)
+                    .eq(org.apache.commons.lang3.StringUtils.isNotBlank(reqVO.getDomain())
+                                    && !EntityTypeScopeContext.isNoneDomainFilter(reqVO.getDomain()),
+                            ModelDO::getDomain, EntityTypeScopeContext.normalizeDomain(reqVO.getDomain()))
+                    .and(EntityTypeScopeContext.isNoneDomainFilter(reqVO.getDomain()),
+                            q -> q.isNull(ModelDO::getDomain).or().eq(ModelDO::getDomain, ""))
                     .eq(ModelDO::getStatus, status)
                     .and(org.apache.commons.lang3.StringUtils.isNotBlank(reqVO.getKeyword()),
                             q -> q.like(ModelDO::getName, reqVO.getKeyword())
@@ -971,31 +1008,38 @@ public class ModelServiceImpl implements ModelService {
                 entityTypeOrder.put(entityTypeCodes.get(i), i);
             }
 
-            List<ModelDO> ordered = allModels.stream()
+            orderedCandidates = allModels.stream()
                     .sorted(Comparator
                             .comparing((ModelDO m) -> entityTypeOrder.getOrDefault(m.getEntityTypeCode(), Integer.MAX_VALUE))
                             .thenComparing((ModelDO m) -> m.getSort() == null ? Integer.MAX_VALUE : m.getSort())
                             .thenComparing(ModelDO::getCreateTime, Comparator.nullsLast(Comparator.reverseOrder()))
                             .thenComparing((ModelDO m) -> m.getId() == null ? Long.MAX_VALUE : m.getId()))
                     .toList();
-
-            int pageNo = reqVO.getPageNo() == null || reqVO.getPageNo() < 1 ? 1 : reqVO.getPageNo();
-            int pageSize = reqVO.getPageSize() == null || reqVO.getPageSize() < 1 ? 20 : reqVO.getPageSize();
-            int from = (pageNo - 1) * pageSize;
-            List<ModelDO> pageList = from >= ordered.size()
-                    ? java.util.List.of()
-                    : ordered.subList(from, Math.min(from + pageSize, ordered.size()));
-            pageResult = new PageResult<>(pageList, (long) ordered.size());
         } else {
-            pageResult = modelCoreService.pageModels(
-                    reqVO.getEntityTypeCode(),
-                    EntityTypeScopeContext.normalizeDomain(reqVO.getDomain()),
-                    reqVO.getKeyword(),
-                    status,
-                    reqVO.getPageNo(),
-                    reqVO.getPageSize());
+            String normalizedDomain = EntityTypeScopeContext.normalizeDomain(reqVO.getDomain());
+            boolean unassignedDomain = EntityTypeScopeContext.isNoneDomainFilter(reqVO.getDomain());
+            boolean namedDomain = StringUtils.hasText(normalizedDomain) && !unassignedDomain;
+            orderedCandidates = modelMapper.selectList(new LambdaQueryWrapperX<ModelDO>()
+                    .eq(StringUtils.hasText(reqVO.getEntityTypeCode()),
+                            ModelDO::getEntityTypeCode, reqVO.getEntityTypeCode())
+                    .eq(namedDomain, ModelDO::getDomain, normalizedDomain)
+                    .and(unassignedDomain,
+                            q -> q.isNull(ModelDO::getDomain).or().eq(ModelDO::getDomain, ""))
+                    .eq(ModelDO::getStatus, status)
+                    .and(org.apache.commons.lang3.StringUtils.isNotBlank(reqVO.getKeyword()),
+                            q -> q.like(ModelDO::getName, reqVO.getKeyword())
+                                    .or().like(ModelDO::getDescription, reqVO.getKeyword()))
+                    .orderByAsc(ModelDO::getSort)
+                    .orderByDesc(ModelDO::getCreateTime));
         }
 
+        // 可见性必须先于分页执行，否则会出现空页和错误总数。
+        PageResult<ModelDO> pageResult = modelGovernanceQueryService.filterVisiblePage(
+                orderedCandidates,
+                reqVO.getEffectiveFacilityId(),
+                masterDataCapabilityChecker.canManageNetworkModelData(),
+                reqVO.getPageNo(),
+                reqVO.getPageSize());
         List<ModelRespVO> result = ModelConvert.INSTANCE.convertList(pageResult.getList());
         
         // 查询每个模型关联的所有分类ID（多对多关系）

@@ -1,11 +1,11 @@
 -- 开发联调 · facility 业务实例样例
 -- 用途：数据管理 / scene-3d 工作台（?facilityId=1&facilityName=东营油库）
 -- 幂等：按 code 存在则更新 name/model_id/位置字段，不重复插入
--- 说明：REF_REGION 挂作业区层 ent_region.id（东营作业区 id=100101）
+-- 说明：REF_REGION 挂作业区层 ent_region_t1.id（东营作业区 id=100101）
 
 SET search_path TO dynamicbusiness;
 
-INSERT INTO ent_facility (
+INSERT INTO ent_facility_t1 (
     id,
     entity_type_code,
     model_id,
@@ -97,9 +97,9 @@ ON CONFLICT (id) DO UPDATE SET
     update_time = CURRENT_TIMESTAMP;
 
 SELECT setval(
-    pg_get_serial_sequence('dynamicbusiness.ent_facility', 'id'),
+    pg_get_serial_sequence('dynamicbusiness.ent_facility_t1', 'id'),
     GREATEST(
-        (SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_facility),
+        (SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_facility_t1),
         2
     )
 );

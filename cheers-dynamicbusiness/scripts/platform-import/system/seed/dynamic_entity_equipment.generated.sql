@@ -6,10 +6,10 @@
 SET search_path TO dynamicbusiness;
 
 -- 退役开发联调样例（DEV-EQ-*），避免与历史实例并存
-UPDATE ent_equipment SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
+UPDATE ent_equipment_t1 SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
 WHERE code LIKE 'DEV-EQ-%' AND deleted = false;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -147,7 +147,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -285,7 +285,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -423,7 +423,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -561,7 +561,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -699,7 +699,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -837,7 +837,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -975,7 +975,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -1113,7 +1113,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -1251,7 +1251,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -1389,7 +1389,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -1527,7 +1527,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -1665,7 +1665,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -1803,7 +1803,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -1941,7 +1941,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -2079,7 +2079,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -2217,7 +2217,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -2355,7 +2355,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -2493,7 +2493,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -2631,7 +2631,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -2769,7 +2769,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -2907,7 +2907,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -3045,7 +3045,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -3183,7 +3183,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -3321,7 +3321,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -3459,7 +3459,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -3597,7 +3597,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -3735,7 +3735,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -3873,7 +3873,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -4011,7 +4011,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -4149,7 +4149,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -4287,7 +4287,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -4425,7 +4425,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -4563,7 +4563,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -4701,7 +4701,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -4839,7 +4839,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -4977,7 +4977,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -5115,7 +5115,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -5253,7 +5253,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -5391,7 +5391,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -5529,7 +5529,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -5667,7 +5667,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -5805,7 +5805,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -5943,7 +5943,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -6081,7 +6081,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -6219,7 +6219,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -6357,7 +6357,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -6495,7 +6495,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -6633,7 +6633,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -6771,7 +6771,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -6909,7 +6909,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -7047,7 +7047,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -7185,7 +7185,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -7323,7 +7323,7 @@ INSERT INTO ent_equipment (
                 updater = 'seed',
                 update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_equipment (
+INSERT INTO ent_equipment_t1 (
                 id, entity_type_code, model_id, name, code, tenant_id, creator,
                 tree_path, sort, status, deleted, custom_fields
             )
@@ -7403,9 +7403,9 @@ INSERT INTO ent_equipment (
                 update_time = CURRENT_TIMESTAMP;
 
 SELECT setval(
-    pg_get_serial_sequence('dynamicbusiness.ent_equipment', 'id'),
+    pg_get_serial_sequence('dynamicbusiness.ent_equipment_t1', 'id'),
     GREATEST(
-        (SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_equipment),
+        (SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_equipment_t1),
         1
     )
 );

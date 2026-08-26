@@ -33,7 +33,7 @@ BEGIN
     );
 
   -- 2. 实体关联
-  DELETE FROM dynamic_entity_relation
+  DELETE FROM dynamic_entity_relation_t1
   WHERE tenant_id = 1
     AND (
       source_entity_type_code = ANY (patrol_codes)
@@ -41,11 +41,11 @@ BEGIN
     );
 
   -- 3. 实体-分类
-  DELETE FROM dynamic_entity_category_relation
+  DELETE FROM dynamic_entity_category_relation_t1
   WHERE tenant_id = 1 AND entity_type_code = ANY (patrol_codes);
 
   -- 4. 分类-实体 link（Pattern C）
-  DELETE FROM dynamic_category_entity_link
+  DELETE FROM dynamic_category_entity_link_t1
   WHERE tenant_id = 1
     AND category_id IN (
       SELECT id FROM dynamic_category
@@ -53,7 +53,7 @@ BEGIN
     );
 
   -- 5. 模型-分类
-  DELETE FROM dynamic_model_category_relation
+  DELETE FROM dynamic_model_category_relation_t1
   WHERE tenant_id = 1
     AND (
       entity_type_code = ANY (patrol_codes)

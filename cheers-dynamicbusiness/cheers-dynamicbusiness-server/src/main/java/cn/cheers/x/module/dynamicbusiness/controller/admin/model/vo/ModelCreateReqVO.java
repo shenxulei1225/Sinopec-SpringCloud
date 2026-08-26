@@ -43,6 +43,12 @@ public class ModelCreateReqVO {
     @Schema(description = "业务域（Domain）；子数据类型入口下创建型号时写入", example = "巡检")
     private String domain;
 
+    @Schema(description = "治理状态：LOCAL-站场本地型号，COMPANY-公司规格；服务端按全网治理权限定稿", example = "LOCAL")
+    private String governanceStatus;
+
+    @Schema(description = "当前有效站场 ID；创建本地型号时必填", example = "1001")
+    private Long effectiveFacilityId;
+
 }
 
 

@@ -1,6 +1,8 @@
 package cn.cheers.x.module.dynamicbusiness.service.datamgmt;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmWorkbenchLayoutSettingsRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmWorkbenchLayoutSettingsUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmDataTabLayoutDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmPageLayoutRefDO;
@@ -22,6 +24,7 @@ import org.springframework.util.StringUtils;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 工作台布局：模版列表、从模版生成实例、解析页面/目录上的 layoutId。
@@ -32,6 +35,8 @@ import java.util.Map;
  */
 @Service
 public class DmWorkbenchLayoutService {
+
+    private static final Set<String> SECTION_KEYS = Set.of("FILTER", "OBJECT", "WHAT");
 
     @Resource
     private DmWorkbenchLayoutMapper dmWorkbenchLayoutMapper;
@@ -65,6 +70,37 @@ public class DmWorkbenchLayoutService {
             throw new ServiceException(404, "布局不存在：" + layoutId);
         }
         return row;
+    }
+
+    /** 读取布局头设置；缺省 JSON 或缺键均返回未隐藏语义。 */
+    public DmWorkbenchLayoutSettingsRespVO getSettings(Long layoutId) {
+        DmWorkbenchLayoutSettingsRespVO vo = new DmWorkbenchLayoutSettingsRespVO();
+        vo.setSectionHidden(readSectionHidden(requireLayout(layoutId).getSettingsJson()));
+        return vo;
+    }
+
+    /**
+     * 只替换布局头的 sectionHidden，保留 settingsJson 中其它设置。
+     * 区段隐藏权威只在此写入；栏行 enabled 与浏览器折叠状态不得补写该字段。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public DmWorkbenchLayoutSettingsRespVO updateSettings(
+            Long layoutId,
+            DmWorkbenchLayoutSettingsUpdateReqVO reqVO) {
+        DmWorkbenchLayoutDO layout = requireLayout(layoutId);
+        Map<String, Object> settings = layout.getSettingsJson() == null
+                ? new LinkedHashMap<>()
+                : new LinkedHashMap<>(layout.getSettingsJson());
+        Map<String, Boolean> sectionHidden = normalizeSectionHidden(reqVO.getSectionHidden());
+        settings.put("sectionHidden", sectionHidden);
+        DmWorkbenchLayoutDO update = new DmWorkbenchLayoutDO();
+        update.setId(layoutId);
+        update.setSettingsJson(settings);
+        dmWorkbenchLayoutMapper.updateById(update);
+
+        DmWorkbenchLayoutSettingsRespVO vo = new DmWorkbenchLayoutSettingsRespVO();
+        vo.setSectionHidden(sectionHidden);
+        return vo;
     }
 
     /**
@@ -146,6 +182,9 @@ public class DmWorkbenchLayoutService {
         instance.setName(instanceName);
         instance.setIsTemplate(false);
         instance.setSourceTemplateId(templateId);
+        instance.setSettingsJson(template.getSettingsJson() == null
+                ? new LinkedHashMap<>()
+                : new LinkedHashMap<>(template.getSettingsJson()));
         dmWorkbenchLayoutMapper.insert(instance);
 
         String code = StringUtils.hasText(entityTypeCode) ? entityTypeCode.trim() : null;
@@ -256,6 +295,7 @@ public class DmWorkbenchLayoutService {
         header.setName(DmWorkbenchLayoutNames.DEFAULT_LEDGER_TEMPLATE);
         header.setIsTemplate(true);
         header.setSourceTemplateId(null);
+        header.setSettingsJson(new LinkedHashMap<>());
         dmWorkbenchLayoutMapper.insert(header);
         Long layoutId = header.getId();
 
@@ -304,5 +344,33 @@ public class DmWorkbenchLayoutService {
             return null;
         }
         return new LinkedHashMap<>(src);
+    }
+
+    private Map<String, Boolean> normalizeSectionHidden(Map<String, Boolean> input) {
+        if (input == null || input.isEmpty()) {
+            return new LinkedHashMap<>();
+        }
+        Map<String, Boolean> normalized = new LinkedHashMap<>();
+        for (Map.Entry<String, Boolean> entry : input.entrySet()) {
+            String key = entry.getKey() == null ? "" : entry.getKey().trim().toUpperCase();
+            if (!SECTION_KEYS.contains(key)) {
+                throw new ServiceException(400, "无效的区段隐藏键：" + entry.getKey());
+            }
+            normalized.put(key, Boolean.TRUE.equals(entry.getValue()));
+        }
+        return normalized;
+    }
+
+    private Map<String, Boolean> readSectionHidden(Map<String, Object> settings) {
+        if (settings == null || !(settings.get("sectionHidden") instanceof Map<?, ?> raw)) {
+            return new LinkedHashMap<>();
+        }
+        Map<String, Boolean> result = new LinkedHashMap<>();
+        for (String key : SECTION_KEYS) {
+            if (Boolean.TRUE.equals(raw.get(key))) {
+                result.put(key, true);
+            }
+        }
+        return result;
     }
 }

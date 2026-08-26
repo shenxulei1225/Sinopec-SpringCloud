@@ -8,7 +8,7 @@ SET search_path TO dynamicbusiness;
 
 -- 退役旧导入：多余 facility、未在本次导出 id 范围内的构筑物、facility 段分类
 
-UPDATE ent_facility
+UPDATE ent_facility_t2
 SET deleted = true, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP
 WHERE tenant_id = 2 AND deleted = false
   AND id <> 2000001;
@@ -20,12 +20,12 @@ WHERE tenant_id = 2 AND deleted = false
 DELETE FROM ent_structure
 WHERE tenant_id = 2
   AND id >= 4000000 AND id < 4500000;
-UPDATE ent_zone z
+UPDATE ent_zone_t2 z
 SET deleted = true, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP
 FROM dynamic_model dm
 WHERE z.model_id = dm.id AND z.tenant_id = 2 AND z.deleted = false
   AND dm.code NOT IN ('MODEL-ZONE-UT-CORRIDOR-ROOT', 'MODEL-ZONE-UT-TUNNEL-SEGMENT', 'MODEL-ZONE-UT-FIRE-COMPARTMENT', 'MODEL-ZONE-UT-POWER-DEDICATED-CABIN', 'MODEL-ZONE-UT-POWER-INFO-CABIN', 'MODEL-ZONE-UT-INTEGRATED-PIPE-CABIN', 'MODEL-ZONE-UT-PIPE-CABIN', 'MODEL-ZONE-UT-GAS-CABIN', 'MODEL-ZONE-UT-SEWAGE-CABIN', 'MODEL-ZONE-UT-WATER-SUPPLY-CABIN', 'MODEL-ZONE-UT-TELECOM-CABIN');
-DELETE FROM ent_zone
+DELETE FROM ent_zone_t2
 WHERE tenant_id = 2
   AND id >= 3000000 AND id < 3500000;
 UPDATE dynamic_model
@@ -40,7 +40,7 @@ WHERE tenant_id = 2 AND deleted = false
     (category_type_code = 'facility' AND (code LIKE 'FAC-CAT%' OR code = 'corridor_facility_root'))
     OR (category_type_code = 'zone' AND (code LIKE 'ZONE-CAT%' OR code IN ('corridor_zone_root', 'zone_root')))
   );
-DELETE FROM dynamic_category_entity_link
+DELETE FROM dynamic_category_entity_link_t2
 WHERE tenant_id = 2 AND category_id >= 2100001 AND category_id < 2600500;
 DELETE FROM dynamic_category
 WHERE tenant_id = 2 AND id >= 2100001 AND id < 2600500;
@@ -91,7 +91,7 @@ WHERE category_type_code = 'zone' AND tenant_id = 2 AND deleted = false;
 
 -- ---------- 唯一 facility：武汉光谷管廊 ----------
 
-INSERT INTO ent_facility (
+INSERT INTO ent_facility_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_facility_ref_region, sort, tree_path, creator
 ) VALUES (
   2000001, 2, 'facility', 1384,
@@ -105,7 +105,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_facil
 
 -- ---------- 根 zone：武汉光谷管廊 ----------
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, creator
 ) VALUES (
   2000002, 2, 'zone', 1460,
@@ -116,7 +116,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false AND code IS NOT NULL
 DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_ref_facility = EXCLUDED.fld_base_zone_ref_facility,
   parent_id = 0, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000000, 2100002, 2000002, 1460, 'zone', 2, 'corridor-seed'
@@ -137,7 +137,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003658, 2, 'zone', 1387, '光谷五路北', 'ZONE-3658', 1,
@@ -148,7 +148,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000001, 2104158, 3003658, 1387, 'zone', 2, 'corridor-seed'
@@ -167,7 +167,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003659, 2, 'zone', 1387, '光谷六路北', 'ZONE-3659', 1,
@@ -178,7 +178,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000002, 2104159, 3003659, 1387, 'zone', 2, 'corridor-seed'
@@ -197,7 +197,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003660, 2, 'zone', 1387, '神墩三路', 'ZONE-3660', 1,
@@ -208,7 +208,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000003, 2104160, 3003660, 1387, 'zone', 2, 'corridor-seed'
@@ -227,7 +227,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003661, 2, 'zone', 1387, '神墩五路', 'ZONE-3661', 1,
@@ -238,7 +238,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000004, 2104161, 3003661, 1387, 'zone', 2, 'corridor-seed'
@@ -257,7 +257,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003662, 2, 'zone', 1387, '虎山东街', 'ZONE-3662', 1,
@@ -268,7 +268,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000005, 2104162, 3003662, 1387, 'zone', 2, 'corridor-seed'
@@ -287,7 +287,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003663, 2, 'zone', 1387, '高新大道', 'ZONE-3663', 1,
@@ -298,7 +298,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000006, 2104163, 3003663, 1387, 'zone', 2, 'corridor-seed'
@@ -317,7 +317,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003664, 2, 'zone', 1387, '高科园路北', 'ZONE-3664', 1,
@@ -328,7 +328,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000007, 2104164, 3003664, 1387, 'zone', 2, 'corridor-seed'
@@ -347,7 +347,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003665, 2, 'zone', 1387, '高科园路南', 'ZONE-3665', 1,
@@ -358,7 +358,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000008, 2104165, 3003665, 1387, 'zone', 2, 'corridor-seed'
@@ -377,7 +377,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003666, 2, 'zone', 1386, '1#防火区', 'ZONE-3666', 1,
@@ -388,7 +388,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000009, 2104166, 3003666, 1386, 'zone', 2, 'corridor-seed'
@@ -407,7 +407,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003667, 2, 'zone', 1386, '2#防火区', 'ZONE-3667', 1,
@@ -418,7 +418,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000010, 2104167, 3003667, 1386, 'zone', 2, 'corridor-seed'
@@ -437,7 +437,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003668, 2, 'zone', 1386, '3#防火区', 'ZONE-3668', 1,
@@ -448,7 +448,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000011, 2104168, 3003668, 1386, 'zone', 2, 'corridor-seed'
@@ -467,7 +467,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003669, 2, 'zone', 1386, '4#防火区', 'ZONE-3669', 1,
@@ -478,7 +478,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000012, 2104169, 3003669, 1386, 'zone', 2, 'corridor-seed'
@@ -497,7 +497,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003670, 2, 'zone', 1386, '5#防火区', 'ZONE-3670', 1,
@@ -508,7 +508,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000013, 2104170, 3003670, 1386, 'zone', 2, 'corridor-seed'
@@ -527,7 +527,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003671, 2, 'zone', 1386, '6#防火区', 'ZONE-3671', 1,
@@ -538,7 +538,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000014, 2104171, 3003671, 1386, 'zone', 2, 'corridor-seed'
@@ -557,7 +557,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003672, 2, 'zone', 1386, '7#防火区', 'ZONE-3672', 1,
@@ -568,7 +568,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000015, 2104172, 3003672, 1386, 'zone', 2, 'corridor-seed'
@@ -587,7 +587,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003673, 2, 'zone', 1386, '8#防火区', 'ZONE-3673', 1,
@@ -598,7 +598,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000016, 2104173, 3003673, 1386, 'zone', 2, 'corridor-seed'
@@ -617,7 +617,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003674, 2, 'zone', 1386, '9#防火区', 'ZONE-3674', 1,
@@ -628,7 +628,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000017, 2104174, 3003674, 1386, 'zone', 2, 'corridor-seed'
@@ -647,7 +647,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003675, 2, 'zone', 1386, '10#防火区', 'ZONE-3675', 1,
@@ -658,7 +658,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000018, 2104175, 3003675, 1386, 'zone', 2, 'corridor-seed'
@@ -677,7 +677,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003676, 2, 'zone', 1386, '11#防火区', 'ZONE-3676', 1,
@@ -688,7 +688,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000019, 2104176, 3003676, 1386, 'zone', 2, 'corridor-seed'
@@ -707,7 +707,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003677, 2, 'zone', 1386, '12#防火区', 'ZONE-3677', 1,
@@ -718,7 +718,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000020, 2104177, 3003677, 1386, 'zone', 2, 'corridor-seed'
@@ -737,7 +737,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003678, 2, 'zone', 1386, '13#防火区', 'ZONE-3678', 1,
@@ -748,7 +748,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000021, 2104178, 3003678, 1386, 'zone', 2, 'corridor-seed'
@@ -767,7 +767,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003679, 2, 'zone', 1386, '14#防火区', 'ZONE-3679', 1,
@@ -778,7 +778,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000022, 2104179, 3003679, 1386, 'zone', 2, 'corridor-seed'
@@ -797,7 +797,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003680, 2, 'zone', 1386, '15#防火区', 'ZONE-3680', 1,
@@ -808,7 +808,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000023, 2104180, 3003680, 1386, 'zone', 2, 'corridor-seed'
@@ -827,7 +827,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003681, 2, 'zone', 1386, '16#防火区', 'ZONE-3681', 1,
@@ -838,7 +838,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000024, 2104181, 3003681, 1386, 'zone', 2, 'corridor-seed'
@@ -857,7 +857,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003682, 2, 'zone', 1386, '17#防火区', 'ZONE-3682', 1,
@@ -868,7 +868,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000025, 2104182, 3003682, 1386, 'zone', 2, 'corridor-seed'
@@ -887,7 +887,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003683, 2, 'zone', 1386, '18#防火区', 'ZONE-3683', 1,
@@ -898,7 +898,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000026, 2104183, 3003683, 1386, 'zone', 2, 'corridor-seed'
@@ -917,7 +917,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003684, 2, 'zone', 1386, '19#防火区', 'ZONE-3684', 1,
@@ -928,7 +928,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000027, 2104184, 3003684, 1386, 'zone', 2, 'corridor-seed'
@@ -947,7 +947,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003685, 2, 'zone', 1386, '20#防火区', 'ZONE-3685', 1,
@@ -958,7 +958,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000028, 2104185, 3003685, 1386, 'zone', 2, 'corridor-seed'
@@ -977,7 +977,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003686, 2, 'zone', 1386, '21#防火区', 'ZONE-3686', 1,
@@ -988,7 +988,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000029, 2104186, 3003686, 1386, 'zone', 2, 'corridor-seed'
@@ -1007,7 +1007,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003687, 2, 'zone', 1386, '22#防火区', 'ZONE-3687', 1,
@@ -1018,7 +1018,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000030, 2104187, 3003687, 1386, 'zone', 2, 'corridor-seed'
@@ -1037,7 +1037,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003688, 2, 'zone', 1386, '23#防火区', 'ZONE-3688', 1,
@@ -1048,7 +1048,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000031, 2104188, 3003688, 1386, 'zone', 2, 'corridor-seed'
@@ -1067,7 +1067,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003689, 2, 'zone', 1386, '1#防火区', 'ZONE-3689', 1,
@@ -1078,7 +1078,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000032, 2104189, 3003689, 1386, 'zone', 2, 'corridor-seed'
@@ -1097,7 +1097,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003690, 2, 'zone', 1386, '2#防火区', 'ZONE-3690', 1,
@@ -1108,7 +1108,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000033, 2104190, 3003690, 1386, 'zone', 2, 'corridor-seed'
@@ -1127,7 +1127,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003691, 2, 'zone', 1386, '3#防火区', 'ZONE-3691', 1,
@@ -1138,7 +1138,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000034, 2104191, 3003691, 1386, 'zone', 2, 'corridor-seed'
@@ -1157,7 +1157,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003692, 2, 'zone', 1386, '4#防火区', 'ZONE-3692', 1,
@@ -1168,7 +1168,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000035, 2104192, 3003692, 1386, 'zone', 2, 'corridor-seed'
@@ -1187,7 +1187,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003693, 2, 'zone', 1386, '5#防火区', 'ZONE-3693', 1,
@@ -1198,7 +1198,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000036, 2104193, 3003693, 1386, 'zone', 2, 'corridor-seed'
@@ -1217,7 +1217,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003694, 2, 'zone', 1386, '6#防火区', 'ZONE-3694', 1,
@@ -1228,7 +1228,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000037, 2104194, 3003694, 1386, 'zone', 2, 'corridor-seed'
@@ -1247,7 +1247,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003695, 2, 'zone', 1386, '7#防火区', 'ZONE-3695', 1,
@@ -1258,7 +1258,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000038, 2104195, 3003695, 1386, 'zone', 2, 'corridor-seed'
@@ -1277,7 +1277,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003696, 2, 'zone', 1386, '8#防火区', 'ZONE-3696', 1,
@@ -1288,7 +1288,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000039, 2104196, 3003696, 1386, 'zone', 2, 'corridor-seed'
@@ -1307,7 +1307,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003697, 2, 'zone', 1386, '9#防火区', 'ZONE-3697', 1,
@@ -1318,7 +1318,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000040, 2104197, 3003697, 1386, 'zone', 2, 'corridor-seed'
@@ -1337,7 +1337,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003698, 2, 'zone', 1386, '10#防火区', 'ZONE-3698', 1,
@@ -1348,7 +1348,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000041, 2104198, 3003698, 1386, 'zone', 2, 'corridor-seed'
@@ -1367,7 +1367,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003699, 2, 'zone', 1386, '11#防火区', 'ZONE-3699', 1,
@@ -1378,7 +1378,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000042, 2104199, 3003699, 1386, 'zone', 2, 'corridor-seed'
@@ -1397,7 +1397,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003700, 2, 'zone', 1386, '1#防火区', 'ZONE-3700', 1,
@@ -1408,7 +1408,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000043, 2104200, 3003700, 1386, 'zone', 2, 'corridor-seed'
@@ -1427,7 +1427,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003701, 2, 'zone', 1386, '2#防火区', 'ZONE-3701', 1,
@@ -1438,7 +1438,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000044, 2104201, 3003701, 1386, 'zone', 2, 'corridor-seed'
@@ -1457,7 +1457,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003702, 2, 'zone', 1386, '3#防火区', 'ZONE-3702', 1,
@@ -1468,7 +1468,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000045, 2104202, 3003702, 1386, 'zone', 2, 'corridor-seed'
@@ -1487,7 +1487,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003703, 2, 'zone', 1386, '4#防火区', 'ZONE-3703', 1,
@@ -1498,7 +1498,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000046, 2104203, 3003703, 1386, 'zone', 2, 'corridor-seed'
@@ -1517,7 +1517,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003704, 2, 'zone', 1386, '5#防火区', 'ZONE-3704', 1,
@@ -1528,7 +1528,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000047, 2104204, 3003704, 1386, 'zone', 2, 'corridor-seed'
@@ -1547,7 +1547,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003705, 2, 'zone', 1386, '6#防火区', 'ZONE-3705', 1,
@@ -1558,7 +1558,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000048, 2104205, 3003705, 1386, 'zone', 2, 'corridor-seed'
@@ -1577,7 +1577,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003706, 2, 'zone', 1386, '7#防火区', 'ZONE-3706', 1,
@@ -1588,7 +1588,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000049, 2104206, 3003706, 1386, 'zone', 2, 'corridor-seed'
@@ -1607,7 +1607,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003707, 2, 'zone', 1386, '8#防火区', 'ZONE-3707', 1,
@@ -1618,7 +1618,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000050, 2104207, 3003707, 1386, 'zone', 2, 'corridor-seed'
@@ -1637,7 +1637,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003708, 2, 'zone', 1386, '9#防火区', 'ZONE-3708', 1,
@@ -1648,7 +1648,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000051, 2104208, 3003708, 1386, 'zone', 2, 'corridor-seed'
@@ -1667,7 +1667,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003709, 2, 'zone', 1386, '10#防火区', 'ZONE-3709', 1,
@@ -1678,7 +1678,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000052, 2104209, 3003709, 1386, 'zone', 2, 'corridor-seed'
@@ -1697,7 +1697,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003710, 2, 'zone', 1386, '11#防火区', 'ZONE-3710', 1,
@@ -1708,7 +1708,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000053, 2104210, 3003710, 1386, 'zone', 2, 'corridor-seed'
@@ -1727,7 +1727,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003711, 2, 'zone', 1386, '12#防火区', 'ZONE-3711', 1,
@@ -1738,7 +1738,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000054, 2104211, 3003711, 1386, 'zone', 2, 'corridor-seed'
@@ -1757,7 +1757,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003712, 2, 'zone', 1386, '13#防火区', 'ZONE-3712', 1,
@@ -1768,7 +1768,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000055, 2104212, 3003712, 1386, 'zone', 2, 'corridor-seed'
@@ -1787,7 +1787,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003713, 2, 'zone', 1386, '14#防火区', 'ZONE-3713', 1,
@@ -1798,7 +1798,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000056, 2104213, 3003713, 1386, 'zone', 2, 'corridor-seed'
@@ -1817,7 +1817,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003714, 2, 'zone', 1386, '15#防火区', 'ZONE-3714', 1,
@@ -1828,7 +1828,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000057, 2104214, 3003714, 1386, 'zone', 2, 'corridor-seed'
@@ -1847,7 +1847,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003715, 2, 'zone', 1386, '16#防火区', 'ZONE-3715', 1,
@@ -1858,7 +1858,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000058, 2104215, 3003715, 1386, 'zone', 2, 'corridor-seed'
@@ -1877,7 +1877,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003716, 2, 'zone', 1386, '17#防火区', 'ZONE-3716', 1,
@@ -1888,7 +1888,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000059, 2104216, 3003716, 1386, 'zone', 2, 'corridor-seed'
@@ -1907,7 +1907,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003717, 2, 'zone', 1386, '18#防火区', 'ZONE-3717', 1,
@@ -1918,7 +1918,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000060, 2104217, 3003717, 1386, 'zone', 2, 'corridor-seed'
@@ -1937,7 +1937,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003718, 2, 'zone', 1386, '19#防火区', 'ZONE-3718', 1,
@@ -1948,7 +1948,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000061, 2104218, 3003718, 1386, 'zone', 2, 'corridor-seed'
@@ -1967,7 +1967,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003719, 2, 'zone', 1386, '20#防火区', 'ZONE-3719', 1,
@@ -1978,7 +1978,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000062, 2104219, 3003719, 1386, 'zone', 2, 'corridor-seed'
@@ -1997,7 +1997,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003720, 2, 'zone', 1386, '21#防火区', 'ZONE-3720', 1,
@@ -2008,7 +2008,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000063, 2104220, 3003720, 1386, 'zone', 2, 'corridor-seed'
@@ -2027,7 +2027,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003721, 2, 'zone', 1386, '22#防火区', 'ZONE-3721', 1,
@@ -2038,7 +2038,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000064, 2104221, 3003721, 1386, 'zone', 2, 'corridor-seed'
@@ -2057,7 +2057,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003722, 2, 'zone', 1386, '23#防火区', 'ZONE-3722', 1,
@@ -2068,7 +2068,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000065, 2104222, 3003722, 1386, 'zone', 2, 'corridor-seed'
@@ -2087,7 +2087,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003723, 2, 'zone', 1386, '1#防火区', 'ZONE-3723', 1,
@@ -2098,7 +2098,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000066, 2104223, 3003723, 1386, 'zone', 2, 'corridor-seed'
@@ -2117,7 +2117,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003724, 2, 'zone', 1386, '2#防火区', 'ZONE-3724', 1,
@@ -2128,7 +2128,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000067, 2104224, 3003724, 1386, 'zone', 2, 'corridor-seed'
@@ -2147,7 +2147,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003725, 2, 'zone', 1386, '3#防火区', 'ZONE-3725', 1,
@@ -2158,7 +2158,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000068, 2104225, 3003725, 1386, 'zone', 2, 'corridor-seed'
@@ -2177,7 +2177,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003726, 2, 'zone', 1386, '4#防火区', 'ZONE-3726', 1,
@@ -2188,7 +2188,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000069, 2104226, 3003726, 1386, 'zone', 2, 'corridor-seed'
@@ -2207,7 +2207,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003727, 2, 'zone', 1386, '5#防火区', 'ZONE-3727', 1,
@@ -2218,7 +2218,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000070, 2104227, 3003727, 1386, 'zone', 2, 'corridor-seed'
@@ -2237,7 +2237,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003728, 2, 'zone', 1386, '6#防火区', 'ZONE-3728', 1,
@@ -2248,7 +2248,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000071, 2104228, 3003728, 1386, 'zone', 2, 'corridor-seed'
@@ -2267,7 +2267,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003729, 2, 'zone', 1386, '7#防火区', 'ZONE-3729', 1,
@@ -2278,7 +2278,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000072, 2104229, 3003729, 1386, 'zone', 2, 'corridor-seed'
@@ -2297,7 +2297,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003730, 2, 'zone', 1386, '1#防火区', 'ZONE-3730', 1,
@@ -2308,7 +2308,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000073, 2104230, 3003730, 1386, 'zone', 2, 'corridor-seed'
@@ -2327,7 +2327,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003731, 2, 'zone', 1386, '2#防火区', 'ZONE-3731', 1,
@@ -2338,7 +2338,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000074, 2104231, 3003731, 1386, 'zone', 2, 'corridor-seed'
@@ -2357,7 +2357,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003732, 2, 'zone', 1386, '3#防火区', 'ZONE-3732', 1,
@@ -2368,7 +2368,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000075, 2104232, 3003732, 1386, 'zone', 2, 'corridor-seed'
@@ -2387,7 +2387,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003733, 2, 'zone', 1386, '4#防火区', 'ZONE-3733', 1,
@@ -2398,7 +2398,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000076, 2104233, 3003733, 1386, 'zone', 2, 'corridor-seed'
@@ -2417,7 +2417,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003734, 2, 'zone', 1386, '5#防火区', 'ZONE-3734', 1,
@@ -2428,7 +2428,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000077, 2104234, 3003734, 1386, 'zone', 2, 'corridor-seed'
@@ -2447,7 +2447,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003735, 2, 'zone', 1386, '6#防火区', 'ZONE-3735', 1,
@@ -2458,7 +2458,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000078, 2104235, 3003735, 1386, 'zone', 2, 'corridor-seed'
@@ -2477,7 +2477,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003736, 2, 'zone', 1386, '7#防火区', 'ZONE-3736', 1,
@@ -2488,7 +2488,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000079, 2104236, 3003736, 1386, 'zone', 2, 'corridor-seed'
@@ -2507,7 +2507,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003737, 2, 'zone', 1386, '8#防火区', 'ZONE-3737', 1,
@@ -2518,7 +2518,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000080, 2104237, 3003737, 1386, 'zone', 2, 'corridor-seed'
@@ -2537,7 +2537,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003738, 2, 'zone', 1386, '9#防火区', 'ZONE-3738', 1,
@@ -2548,7 +2548,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000081, 2104238, 3003738, 1386, 'zone', 2, 'corridor-seed'
@@ -2567,7 +2567,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003739, 2, 'zone', 1386, '10#防火区', 'ZONE-3739', 1,
@@ -2578,7 +2578,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000082, 2104239, 3003739, 1386, 'zone', 2, 'corridor-seed'
@@ -2597,7 +2597,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003740, 2, 'zone', 1386, '11#防火区', 'ZONE-3740', 1,
@@ -2608,7 +2608,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000083, 2104240, 3003740, 1386, 'zone', 2, 'corridor-seed'
@@ -2627,7 +2627,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003741, 2, 'zone', 1386, '12#防火区', 'ZONE-3741', 1,
@@ -2638,7 +2638,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000084, 2104241, 3003741, 1386, 'zone', 2, 'corridor-seed'
@@ -2657,7 +2657,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003742, 2, 'zone', 1386, '13#防火区', 'ZONE-3742', 1,
@@ -2668,7 +2668,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000085, 2104242, 3003742, 1386, 'zone', 2, 'corridor-seed'
@@ -2687,7 +2687,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003743, 2, 'zone', 1386, '14#防火区', 'ZONE-3743', 1,
@@ -2698,7 +2698,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000086, 2104243, 3003743, 1386, 'zone', 2, 'corridor-seed'
@@ -2717,7 +2717,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003744, 2, 'zone', 1386, '1#防火区', 'ZONE-3744', 1,
@@ -2728,7 +2728,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000087, 2104244, 3003744, 1386, 'zone', 2, 'corridor-seed'
@@ -2747,7 +2747,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003745, 2, 'zone', 1386, '2#防火区', 'ZONE-3745', 1,
@@ -2758,7 +2758,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000088, 2104245, 3003745, 1386, 'zone', 2, 'corridor-seed'
@@ -2777,7 +2777,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003746, 2, 'zone', 1386, '3#防火区', 'ZONE-3746', 1,
@@ -2788,7 +2788,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000089, 2104246, 3003746, 1386, 'zone', 2, 'corridor-seed'
@@ -2807,7 +2807,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003747, 2, 'zone', 1386, '4#防火区', 'ZONE-3747', 1,
@@ -2818,7 +2818,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000090, 2104247, 3003747, 1386, 'zone', 2, 'corridor-seed'
@@ -2837,7 +2837,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003748, 2, 'zone', 1386, '5#防火区', 'ZONE-3748', 1,
@@ -2848,7 +2848,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000091, 2104248, 3003748, 1386, 'zone', 2, 'corridor-seed'
@@ -2867,7 +2867,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003749, 2, 'zone', 1386, '6#防火区', 'ZONE-3749', 1,
@@ -2878,7 +2878,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000092, 2104249, 3003749, 1386, 'zone', 2, 'corridor-seed'
@@ -2897,7 +2897,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003750, 2, 'zone', 1386, '7#防火区', 'ZONE-3750', 1,
@@ -2908,7 +2908,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000093, 2104250, 3003750, 1386, 'zone', 2, 'corridor-seed'
@@ -2927,7 +2927,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003751, 2, 'zone', 1386, '8#防火区', 'ZONE-3751', 1,
@@ -2938,7 +2938,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000094, 2104251, 3003751, 1386, 'zone', 2, 'corridor-seed'
@@ -2957,7 +2957,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003752, 2, 'zone', 1386, '9#防火区', 'ZONE-3752', 1,
@@ -2968,7 +2968,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000095, 2104252, 3003752, 1386, 'zone', 2, 'corridor-seed'
@@ -2987,7 +2987,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003753, 2, 'zone', 1386, '10#防火区', 'ZONE-3753', 1,
@@ -2998,7 +2998,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000096, 2104253, 3003753, 1386, 'zone', 2, 'corridor-seed'
@@ -3017,7 +3017,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003754, 2, 'zone', 1386, '11#防火区', 'ZONE-3754', 1,
@@ -3028,7 +3028,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000097, 2104254, 3003754, 1386, 'zone', 2, 'corridor-seed'
@@ -3047,7 +3047,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003755, 2, 'zone', 1386, '12#防火区', 'ZONE-3755', 1,
@@ -3058,7 +3058,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000098, 2104255, 3003755, 1386, 'zone', 2, 'corridor-seed'
@@ -3077,7 +3077,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003756, 2, 'zone', 1386, '13#防火区', 'ZONE-3756', 1,
@@ -3088,7 +3088,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000099, 2104256, 3003756, 1386, 'zone', 2, 'corridor-seed'
@@ -3107,7 +3107,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003757, 2, 'zone', 1386, '14#防火区', 'ZONE-3757', 1,
@@ -3118,7 +3118,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000100, 2104257, 3003757, 1386, 'zone', 2, 'corridor-seed'
@@ -3137,7 +3137,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003758, 2, 'zone', 1386, '15#防火区', 'ZONE-3758', 1,
@@ -3148,7 +3148,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000101, 2104258, 3003758, 1386, 'zone', 2, 'corridor-seed'
@@ -3167,7 +3167,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003759, 2, 'zone', 1386, '16#防火区', 'ZONE-3759', 1,
@@ -3178,7 +3178,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000102, 2104259, 3003759, 1386, 'zone', 2, 'corridor-seed'
@@ -3197,7 +3197,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003760, 2, 'zone', 1386, '17#防火区', 'ZONE-3760', 1,
@@ -3208,7 +3208,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000103, 2104260, 3003760, 1386, 'zone', 2, 'corridor-seed'
@@ -3227,7 +3227,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003761, 2, 'zone', 1386, '18#防火区', 'ZONE-3761', 1,
@@ -3238,7 +3238,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000104, 2104261, 3003761, 1386, 'zone', 2, 'corridor-seed'
@@ -3257,7 +3257,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003762, 2, 'zone', 1386, '19#防火区', 'ZONE-3762', 1,
@@ -3268,7 +3268,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000105, 2104262, 3003762, 1386, 'zone', 2, 'corridor-seed'
@@ -3287,7 +3287,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003763, 2, 'zone', 1386, '1#防火区', 'ZONE-3763', 1,
@@ -3298,7 +3298,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000106, 2104263, 3003763, 1386, 'zone', 2, 'corridor-seed'
@@ -3317,7 +3317,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003764, 2, 'zone', 1386, '2#防火区', 'ZONE-3764', 1,
@@ -3328,7 +3328,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000107, 2104264, 3003764, 1386, 'zone', 2, 'corridor-seed'
@@ -3347,7 +3347,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003765, 2, 'zone', 1386, '3#防火区', 'ZONE-3765', 1,
@@ -3358,7 +3358,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000108, 2104265, 3003765, 1386, 'zone', 2, 'corridor-seed'
@@ -3377,7 +3377,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003766, 2, 'zone', 1386, '4#防火区', 'ZONE-3766', 1,
@@ -3388,7 +3388,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000109, 2104266, 3003766, 1386, 'zone', 2, 'corridor-seed'
@@ -3407,7 +3407,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003767, 2, 'zone', 1386, '5#防火区', 'ZONE-3767', 1,
@@ -3418,7 +3418,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000110, 2104267, 3003767, 1386, 'zone', 2, 'corridor-seed'
@@ -3437,7 +3437,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003768, 2, 'zone', 1386, '6#防火区', 'ZONE-3768', 1,
@@ -3448,7 +3448,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000111, 2104268, 3003768, 1386, 'zone', 2, 'corridor-seed'
@@ -3467,7 +3467,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003769, 2, 'zone', 1386, '7#防火区', 'ZONE-3769', 1,
@@ -3478,7 +3478,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000112, 2104269, 3003769, 1386, 'zone', 2, 'corridor-seed'
@@ -3497,7 +3497,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003770, 2, 'zone', 1386, '8#防火区', 'ZONE-3770', 1,
@@ -3508,7 +3508,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000113, 2104270, 3003770, 1386, 'zone', 2, 'corridor-seed'
@@ -3527,7 +3527,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003771, 2, 'zone', 1386, '4#防火区', 'ZONE-3771', 1,
@@ -3538,7 +3538,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000114, 2104271, 3003771, 1386, 'zone', 2, 'corridor-seed'
@@ -3557,7 +3557,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003772, 2, 'zone', 1386, '5#防火区', 'ZONE-3772', 1,
@@ -3568,7 +3568,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000115, 2104272, 3003772, 1386, 'zone', 2, 'corridor-seed'
@@ -3587,7 +3587,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003773, 2, 'zone', 1386, '6#防火区', 'ZONE-3773', 1,
@@ -3598,7 +3598,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000116, 2104273, 3003773, 1386, 'zone', 2, 'corridor-seed'
@@ -3617,7 +3617,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003774, 2, 'zone', 1386, '7#防火区', 'ZONE-3774', 1,
@@ -3628,7 +3628,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000117, 2104274, 3003774, 1386, 'zone', 2, 'corridor-seed'
@@ -3647,7 +3647,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003775, 2, 'zone', 1386, '8#防火区', 'ZONE-3775', 1,
@@ -3658,7 +3658,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000118, 2104275, 3003775, 1386, 'zone', 2, 'corridor-seed'
@@ -3677,7 +3677,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003776, 2, 'zone', 1466, '电力信息舱', 'ZONE-3776', 1,
@@ -3688,7 +3688,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000119, 2104276, 3003776, 1466, 'zone', 2, 'corridor-seed'
@@ -3707,7 +3707,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003777, 2, 'zone', 1467, '管道舱', 'ZONE-3777', 1,
@@ -3718,7 +3718,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000120, 2104277, 3003777, 1467, 'zone', 2, 'corridor-seed'
@@ -3737,7 +3737,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003778, 2, 'zone', 1465, '高压电力舱', 'ZONE-3778', 1,
@@ -3748,7 +3748,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000121, 2104278, 3003778, 1465, 'zone', 2, 'corridor-seed'
@@ -3767,7 +3767,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003779, 2, 'zone', 1466, '电力信息舱', 'ZONE-3779', 1,
@@ -3778,7 +3778,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000122, 2104279, 3003779, 1466, 'zone', 2, 'corridor-seed'
@@ -3797,7 +3797,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003780, 2, 'zone', 1467, '管道舱', 'ZONE-3780', 1,
@@ -3808,7 +3808,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000123, 2104280, 3003780, 1467, 'zone', 2, 'corridor-seed'
@@ -3827,7 +3827,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003781, 2, 'zone', 1465, '高压电力舱', 'ZONE-3781', 1,
@@ -3838,7 +3838,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000124, 2104281, 3003781, 1465, 'zone', 2, 'corridor-seed'
@@ -3857,7 +3857,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003782, 2, 'zone', 1466, '电力信息舱', 'ZONE-3782', 1,
@@ -3868,7 +3868,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000125, 2104282, 3003782, 1466, 'zone', 2, 'corridor-seed'
@@ -3887,7 +3887,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003783, 2, 'zone', 1467, '管道舱', 'ZONE-3783', 1,
@@ -3898,7 +3898,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000126, 2104283, 3003783, 1467, 'zone', 2, 'corridor-seed'
@@ -3917,7 +3917,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003784, 2, 'zone', 1465, '高压电力舱', 'ZONE-3784', 1,
@@ -3928,7 +3928,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000127, 2104284, 3003784, 1465, 'zone', 2, 'corridor-seed'
@@ -3947,7 +3947,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003785, 2, 'zone', 1466, '电力信息舱', 'ZONE-3785', 1,
@@ -3958,7 +3958,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000128, 2104285, 3003785, 1466, 'zone', 2, 'corridor-seed'
@@ -3977,7 +3977,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003786, 2, 'zone', 1467, '管道舱', 'ZONE-3786', 1,
@@ -3988,7 +3988,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000129, 2104286, 3003786, 1467, 'zone', 2, 'corridor-seed'
@@ -4007,7 +4007,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003787, 2, 'zone', 1465, '高压电力舱', 'ZONE-3787', 1,
@@ -4018,7 +4018,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000130, 2104287, 3003787, 1465, 'zone', 2, 'corridor-seed'
@@ -4037,7 +4037,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003788, 2, 'zone', 1466, '电力信息舱', 'ZONE-3788', 1,
@@ -4048,7 +4048,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000131, 2104288, 3003788, 1466, 'zone', 2, 'corridor-seed'
@@ -4067,7 +4067,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003789, 2, 'zone', 1467, '管道舱', 'ZONE-3789', 1,
@@ -4078,7 +4078,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000132, 2104289, 3003789, 1467, 'zone', 2, 'corridor-seed'
@@ -4097,7 +4097,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003790, 2, 'zone', 1465, '高压电力舱', 'ZONE-3790', 1,
@@ -4108,7 +4108,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000133, 2104290, 3003790, 1465, 'zone', 2, 'corridor-seed'
@@ -4127,7 +4127,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003791, 2, 'zone', 1466, '电力信息舱', 'ZONE-3791', 1,
@@ -4138,7 +4138,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000134, 2104291, 3003791, 1466, 'zone', 2, 'corridor-seed'
@@ -4157,7 +4157,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003792, 2, 'zone', 1467, '管道舱', 'ZONE-3792', 1,
@@ -4168,7 +4168,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000135, 2104292, 3003792, 1467, 'zone', 2, 'corridor-seed'
@@ -4187,7 +4187,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003793, 2, 'zone', 1465, '高压电力舱', 'ZONE-3793', 1,
@@ -4198,7 +4198,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000136, 2104293, 3003793, 1465, 'zone', 2, 'corridor-seed'
@@ -4217,7 +4217,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003794, 2, 'zone', 1466, '电力信息舱', 'ZONE-3794', 1,
@@ -4228,7 +4228,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000137, 2104294, 3003794, 1466, 'zone', 2, 'corridor-seed'
@@ -4247,7 +4247,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003795, 2, 'zone', 1467, '管道舱', 'ZONE-3795', 1,
@@ -4258,7 +4258,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000138, 2104295, 3003795, 1467, 'zone', 2, 'corridor-seed'
@@ -4277,7 +4277,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003796, 2, 'zone', 1465, '高压电力舱', 'ZONE-3796', 1,
@@ -4288,7 +4288,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000139, 2104296, 3003796, 1465, 'zone', 2, 'corridor-seed'
@@ -4307,7 +4307,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003797, 2, 'zone', 1466, '电力信息舱', 'ZONE-3797', 1,
@@ -4318,7 +4318,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000140, 2104297, 3003797, 1466, 'zone', 2, 'corridor-seed'
@@ -4337,7 +4337,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003798, 2, 'zone', 1467, '管道舱', 'ZONE-3798', 1,
@@ -4348,7 +4348,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000141, 2104298, 3003798, 1467, 'zone', 2, 'corridor-seed'
@@ -4367,7 +4367,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003799, 2, 'zone', 1465, '高压电力舱', 'ZONE-3799', 1,
@@ -4378,7 +4378,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000142, 2104299, 3003799, 1465, 'zone', 2, 'corridor-seed'
@@ -4397,7 +4397,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003800, 2, 'zone', 1466, '电力信息舱', 'ZONE-3800', 1,
@@ -4408,7 +4408,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000143, 2104300, 3003800, 1466, 'zone', 2, 'corridor-seed'
@@ -4427,7 +4427,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003801, 2, 'zone', 1467, '管道舱', 'ZONE-3801', 1,
@@ -4438,7 +4438,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000144, 2104301, 3003801, 1467, 'zone', 2, 'corridor-seed'
@@ -4457,7 +4457,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003802, 2, 'zone', 1465, '高压电力舱', 'ZONE-3802', 1,
@@ -4468,7 +4468,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000145, 2104302, 3003802, 1465, 'zone', 2, 'corridor-seed'
@@ -4487,7 +4487,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003803, 2, 'zone', 1466, '电力信息舱', 'ZONE-3803', 1,
@@ -4498,7 +4498,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000146, 2104303, 3003803, 1466, 'zone', 2, 'corridor-seed'
@@ -4517,7 +4517,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003804, 2, 'zone', 1467, '管道舱', 'ZONE-3804', 1,
@@ -4528,7 +4528,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000147, 2104304, 3003804, 1467, 'zone', 2, 'corridor-seed'
@@ -4547,7 +4547,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003805, 2, 'zone', 1465, '高压电力舱', 'ZONE-3805', 1,
@@ -4558,7 +4558,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000148, 2104305, 3003805, 1465, 'zone', 2, 'corridor-seed'
@@ -4577,7 +4577,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003806, 2, 'zone', 1466, '电力信息舱', 'ZONE-3806', 1,
@@ -4588,7 +4588,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000149, 2104306, 3003806, 1466, 'zone', 2, 'corridor-seed'
@@ -4607,7 +4607,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003807, 2, 'zone', 1467, '管道舱', 'ZONE-3807', 1,
@@ -4618,7 +4618,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000150, 2104307, 3003807, 1467, 'zone', 2, 'corridor-seed'
@@ -4637,7 +4637,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003808, 2, 'zone', 1465, '高压电力舱', 'ZONE-3808', 1,
@@ -4648,7 +4648,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000151, 2104308, 3003808, 1465, 'zone', 2, 'corridor-seed'
@@ -4667,7 +4667,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003809, 2, 'zone', 1466, '电力信息舱', 'ZONE-3809', 1,
@@ -4678,7 +4678,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000152, 2104309, 3003809, 1466, 'zone', 2, 'corridor-seed'
@@ -4697,7 +4697,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003810, 2, 'zone', 1467, '管道舱', 'ZONE-3810', 1,
@@ -4708,7 +4708,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000153, 2104310, 3003810, 1467, 'zone', 2, 'corridor-seed'
@@ -4727,7 +4727,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003811, 2, 'zone', 1465, '高压电力舱', 'ZONE-3811', 1,
@@ -4738,7 +4738,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000154, 2104311, 3003811, 1465, 'zone', 2, 'corridor-seed'
@@ -4757,7 +4757,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003812, 2, 'zone', 1466, '电力信息舱', 'ZONE-3812', 1,
@@ -4768,7 +4768,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000155, 2104312, 3003812, 1466, 'zone', 2, 'corridor-seed'
@@ -4787,7 +4787,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003813, 2, 'zone', 1467, '管道舱', 'ZONE-3813', 1,
@@ -4798,7 +4798,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000156, 2104313, 3003813, 1467, 'zone', 2, 'corridor-seed'
@@ -4817,7 +4817,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003814, 2, 'zone', 1465, '高压电力舱', 'ZONE-3814', 1,
@@ -4828,7 +4828,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000157, 2104314, 3003814, 1465, 'zone', 2, 'corridor-seed'
@@ -4847,7 +4847,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003815, 2, 'zone', 1466, '电力信息舱', 'ZONE-3815', 1,
@@ -4858,7 +4858,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000158, 2104315, 3003815, 1466, 'zone', 2, 'corridor-seed'
@@ -4877,7 +4877,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003816, 2, 'zone', 1467, '管道舱', 'ZONE-3816', 1,
@@ -4888,7 +4888,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000159, 2104316, 3003816, 1467, 'zone', 2, 'corridor-seed'
@@ -4907,7 +4907,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003817, 2, 'zone', 1465, '高压电力舱', 'ZONE-3817', 1,
@@ -4918,7 +4918,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000160, 2104317, 3003817, 1465, 'zone', 2, 'corridor-seed'
@@ -4937,7 +4937,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003818, 2, 'zone', 1466, '电力信息舱', 'ZONE-3818', 1,
@@ -4948,7 +4948,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000161, 2104318, 3003818, 1466, 'zone', 2, 'corridor-seed'
@@ -4967,7 +4967,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003819, 2, 'zone', 1467, '管道舱', 'ZONE-3819', 1,
@@ -4978,7 +4978,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000162, 2104319, 3003819, 1467, 'zone', 2, 'corridor-seed'
@@ -4997,7 +4997,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003820, 2, 'zone', 1465, '高压电力舱', 'ZONE-3820', 1,
@@ -5008,7 +5008,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000163, 2104320, 3003820, 1465, 'zone', 2, 'corridor-seed'
@@ -5027,7 +5027,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003821, 2, 'zone', 1466, '电力信息舱', 'ZONE-3821', 1,
@@ -5038,7 +5038,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000164, 2104321, 3003821, 1466, 'zone', 2, 'corridor-seed'
@@ -5057,7 +5057,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003822, 2, 'zone', 1467, '管道舱', 'ZONE-3822', 1,
@@ -5068,7 +5068,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000165, 2104322, 3003822, 1467, 'zone', 2, 'corridor-seed'
@@ -5087,7 +5087,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003823, 2, 'zone', 1465, '高压电力舱', 'ZONE-3823', 1,
@@ -5098,7 +5098,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000166, 2104323, 3003823, 1465, 'zone', 2, 'corridor-seed'
@@ -5117,7 +5117,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003824, 2, 'zone', 1466, '电力信息舱', 'ZONE-3824', 1,
@@ -5128,7 +5128,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000167, 2104324, 3003824, 1466, 'zone', 2, 'corridor-seed'
@@ -5147,7 +5147,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003825, 2, 'zone', 1467, '管道舱', 'ZONE-3825', 1,
@@ -5158,7 +5158,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000168, 2104325, 3003825, 1467, 'zone', 2, 'corridor-seed'
@@ -5177,7 +5177,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003826, 2, 'zone', 1465, '高压电力舱', 'ZONE-3826', 1,
@@ -5188,7 +5188,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000169, 2104326, 3003826, 1465, 'zone', 2, 'corridor-seed'
@@ -5207,7 +5207,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003827, 2, 'zone', 1466, '电力信息舱', 'ZONE-3827', 1,
@@ -5218,7 +5218,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000170, 2104327, 3003827, 1466, 'zone', 2, 'corridor-seed'
@@ -5237,7 +5237,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003828, 2, 'zone', 1467, '管道舱', 'ZONE-3828', 1,
@@ -5248,7 +5248,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000171, 2104328, 3003828, 1467, 'zone', 2, 'corridor-seed'
@@ -5267,7 +5267,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003829, 2, 'zone', 1465, '高压电力舱', 'ZONE-3829', 1,
@@ -5278,7 +5278,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000172, 2104329, 3003829, 1465, 'zone', 2, 'corridor-seed'
@@ -5297,7 +5297,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003830, 2, 'zone', 1466, '电力信息舱', 'ZONE-3830', 1,
@@ -5308,7 +5308,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000173, 2104330, 3003830, 1466, 'zone', 2, 'corridor-seed'
@@ -5327,7 +5327,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003831, 2, 'zone', 1467, '管道舱', 'ZONE-3831', 1,
@@ -5338,7 +5338,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000174, 2104331, 3003831, 1467, 'zone', 2, 'corridor-seed'
@@ -5357,7 +5357,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003832, 2, 'zone', 1465, '高压电力舱', 'ZONE-3832', 1,
@@ -5368,7 +5368,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000175, 2104332, 3003832, 1465, 'zone', 2, 'corridor-seed'
@@ -5387,7 +5387,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003833, 2, 'zone', 1466, '电力信息舱', 'ZONE-3833', 1,
@@ -5398,7 +5398,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000176, 2104333, 3003833, 1466, 'zone', 2, 'corridor-seed'
@@ -5417,7 +5417,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003834, 2, 'zone', 1467, '管道舱', 'ZONE-3834', 1,
@@ -5428,7 +5428,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000177, 2104334, 3003834, 1467, 'zone', 2, 'corridor-seed'
@@ -5447,7 +5447,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003835, 2, 'zone', 1465, '高压电力舱', 'ZONE-3835', 1,
@@ -5458,7 +5458,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000178, 2104335, 3003835, 1465, 'zone', 2, 'corridor-seed'
@@ -5477,7 +5477,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003836, 2, 'zone', 1466, '电力信息舱', 'ZONE-3836', 1,
@@ -5488,7 +5488,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000179, 2104336, 3003836, 1466, 'zone', 2, 'corridor-seed'
@@ -5507,7 +5507,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003837, 2, 'zone', 1467, '管道舱', 'ZONE-3837', 1,
@@ -5518,7 +5518,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000180, 2104337, 3003837, 1467, 'zone', 2, 'corridor-seed'
@@ -5537,7 +5537,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003838, 2, 'zone', 1465, '高压电力舱', 'ZONE-3838', 1,
@@ -5548,7 +5548,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000181, 2104338, 3003838, 1465, 'zone', 2, 'corridor-seed'
@@ -5567,7 +5567,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003839, 2, 'zone', 1466, '电力信息舱', 'ZONE-3839', 1,
@@ -5578,7 +5578,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000182, 2104339, 3003839, 1466, 'zone', 2, 'corridor-seed'
@@ -5597,7 +5597,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003840, 2, 'zone', 1467, '管道舱', 'ZONE-3840', 1,
@@ -5608,7 +5608,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000183, 2104340, 3003840, 1467, 'zone', 2, 'corridor-seed'
@@ -5627,7 +5627,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003841, 2, 'zone', 1465, '高压电力舱', 'ZONE-3841', 1,
@@ -5638,7 +5638,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000184, 2104341, 3003841, 1465, 'zone', 2, 'corridor-seed'
@@ -5657,7 +5657,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003842, 2, 'zone', 1466, '电力信息舱', 'ZONE-3842', 1,
@@ -5668,7 +5668,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000185, 2104342, 3003842, 1466, 'zone', 2, 'corridor-seed'
@@ -5687,7 +5687,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003843, 2, 'zone', 1467, '管道舱', 'ZONE-3843', 1,
@@ -5698,7 +5698,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000186, 2104343, 3003843, 1467, 'zone', 2, 'corridor-seed'
@@ -5717,7 +5717,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003844, 2, 'zone', 1465, '高压电力舱', 'ZONE-3844', 1,
@@ -5728,7 +5728,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000187, 2104344, 3003844, 1465, 'zone', 2, 'corridor-seed'
@@ -5747,7 +5747,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003845, 2, 'zone', 1466, '电力信息舱', 'ZONE-3845', 1,
@@ -5758,7 +5758,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000188, 2104345, 3003845, 1466, 'zone', 2, 'corridor-seed'
@@ -5777,7 +5777,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003846, 2, 'zone', 1467, '管道舱', 'ZONE-3846', 1,
@@ -5788,7 +5788,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000189, 2104346, 3003846, 1467, 'zone', 2, 'corridor-seed'
@@ -5807,7 +5807,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003847, 2, 'zone', 1466, '电力信息舱', 'ZONE-3847', 1,
@@ -5818,7 +5818,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000190, 2104347, 3003847, 1466, 'zone', 2, 'corridor-seed'
@@ -5837,7 +5837,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003848, 2, 'zone', 1467, '管道舱', 'ZONE-3848', 1,
@@ -5848,7 +5848,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000191, 2104348, 3003848, 1467, 'zone', 2, 'corridor-seed'
@@ -5867,7 +5867,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003849, 2, 'zone', 1466, '电力信息舱', 'ZONE-3849', 1,
@@ -5878,7 +5878,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000192, 2104349, 3003849, 1466, 'zone', 2, 'corridor-seed'
@@ -5897,7 +5897,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003850, 2, 'zone', 1467, '管道舱', 'ZONE-3850', 1,
@@ -5908,7 +5908,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000193, 2104350, 3003850, 1467, 'zone', 2, 'corridor-seed'
@@ -5927,7 +5927,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003851, 2, 'zone', 1466, '电力信息舱', 'ZONE-3851', 1,
@@ -5938,7 +5938,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000194, 2104351, 3003851, 1466, 'zone', 2, 'corridor-seed'
@@ -5957,7 +5957,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003852, 2, 'zone', 1467, '管道舱', 'ZONE-3852', 1,
@@ -5968,7 +5968,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000195, 2104352, 3003852, 1467, 'zone', 2, 'corridor-seed'
@@ -5987,7 +5987,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003853, 2, 'zone', 1466, '电力信息舱', 'ZONE-3853', 1,
@@ -5998,7 +5998,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000196, 2104353, 3003853, 1466, 'zone', 2, 'corridor-seed'
@@ -6017,7 +6017,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003854, 2, 'zone', 1467, '管道舱', 'ZONE-3854', 1,
@@ -6028,7 +6028,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000197, 2104354, 3003854, 1467, 'zone', 2, 'corridor-seed'
@@ -6047,7 +6047,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003855, 2, 'zone', 1466, '电力信息舱', 'ZONE-3855', 1,
@@ -6058,7 +6058,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000198, 2104355, 3003855, 1466, 'zone', 2, 'corridor-seed'
@@ -6077,7 +6077,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003856, 2, 'zone', 1467, '管道舱', 'ZONE-3856', 1,
@@ -6088,7 +6088,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000199, 2104356, 3003856, 1467, 'zone', 2, 'corridor-seed'
@@ -6107,7 +6107,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003857, 2, 'zone', 1466, '电力信息舱', 'ZONE-3857', 1,
@@ -6118,7 +6118,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000200, 2104357, 3003857, 1466, 'zone', 2, 'corridor-seed'
@@ -6137,7 +6137,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003858, 2, 'zone', 1467, '管道舱', 'ZONE-3858', 1,
@@ -6148,7 +6148,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000201, 2104358, 3003858, 1467, 'zone', 2, 'corridor-seed'
@@ -6167,7 +6167,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003859, 2, 'zone', 1466, '电力信息舱', 'ZONE-3859', 1,
@@ -6178,7 +6178,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000202, 2104359, 3003859, 1466, 'zone', 2, 'corridor-seed'
@@ -6197,7 +6197,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003860, 2, 'zone', 1467, '管道舱', 'ZONE-3860', 1,
@@ -6208,7 +6208,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000203, 2104360, 3003860, 1467, 'zone', 2, 'corridor-seed'
@@ -6227,7 +6227,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003861, 2, 'zone', 1466, '电力信息舱', 'ZONE-3861', 1,
@@ -6238,7 +6238,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000204, 2104361, 3003861, 1466, 'zone', 2, 'corridor-seed'
@@ -6257,7 +6257,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003862, 2, 'zone', 1467, '管道舱', 'ZONE-3862', 1,
@@ -6268,7 +6268,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000205, 2104362, 3003862, 1467, 'zone', 2, 'corridor-seed'
@@ -6287,7 +6287,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003863, 2, 'zone', 1466, '电力信息舱', 'ZONE-3863', 1,
@@ -6298,7 +6298,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000206, 2104363, 3003863, 1466, 'zone', 2, 'corridor-seed'
@@ -6317,7 +6317,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003864, 2, 'zone', 1467, '管道舱', 'ZONE-3864', 1,
@@ -6328,7 +6328,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000207, 2104364, 3003864, 1467, 'zone', 2, 'corridor-seed'
@@ -6347,7 +6347,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003865, 2, 'zone', 1466, '电力信息舱', 'ZONE-3865', 1,
@@ -6358,7 +6358,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000208, 2104365, 3003865, 1466, 'zone', 2, 'corridor-seed'
@@ -6377,7 +6377,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003866, 2, 'zone', 1467, '管道舱', 'ZONE-3866', 1,
@@ -6388,7 +6388,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000209, 2104366, 3003866, 1467, 'zone', 2, 'corridor-seed'
@@ -6407,7 +6407,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003867, 2, 'zone', 1466, '电力信息舱', 'ZONE-3867', 1,
@@ -6418,7 +6418,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000210, 2104367, 3003867, 1466, 'zone', 2, 'corridor-seed'
@@ -6437,7 +6437,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003868, 2, 'zone', 1467, '管道舱', 'ZONE-3868', 1,
@@ -6448,7 +6448,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000211, 2104368, 3003868, 1467, 'zone', 2, 'corridor-seed'
@@ -6467,7 +6467,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003869, 2, 'zone', 1465, '高压电力舱', 'ZONE-3869', 1,
@@ -6478,7 +6478,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000212, 2104369, 3003869, 1465, 'zone', 2, 'corridor-seed'
@@ -6497,7 +6497,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003870, 2, 'zone', 1466, '电力信息舱', 'ZONE-3870', 1,
@@ -6508,7 +6508,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000213, 2104370, 3003870, 1466, 'zone', 2, 'corridor-seed'
@@ -6527,7 +6527,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003871, 2, 'zone', 1467, '管道舱', 'ZONE-3871', 1,
@@ -6538,7 +6538,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000214, 2104371, 3003871, 1467, 'zone', 2, 'corridor-seed'
@@ -6557,7 +6557,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003872, 2, 'zone', 1465, '高压电力舱', 'ZONE-3872', 1,
@@ -6568,7 +6568,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000215, 2104372, 3003872, 1465, 'zone', 2, 'corridor-seed'
@@ -6587,7 +6587,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003873, 2, 'zone', 1466, '电力信息舱', 'ZONE-3873', 1,
@@ -6598,7 +6598,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000216, 2104373, 3003873, 1466, 'zone', 2, 'corridor-seed'
@@ -6617,7 +6617,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003874, 2, 'zone', 1467, '管道舱', 'ZONE-3874', 1,
@@ -6628,7 +6628,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000217, 2104374, 3003874, 1467, 'zone', 2, 'corridor-seed'
@@ -6647,7 +6647,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003875, 2, 'zone', 1465, '高压电力舱', 'ZONE-3875', 1,
@@ -6658,7 +6658,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000218, 2104375, 3003875, 1465, 'zone', 2, 'corridor-seed'
@@ -6677,7 +6677,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003876, 2, 'zone', 1466, '电力信息舱', 'ZONE-3876', 1,
@@ -6688,7 +6688,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000219, 2104376, 3003876, 1466, 'zone', 2, 'corridor-seed'
@@ -6707,7 +6707,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003877, 2, 'zone', 1467, '管道舱', 'ZONE-3877', 1,
@@ -6718,7 +6718,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000220, 2104377, 3003877, 1467, 'zone', 2, 'corridor-seed'
@@ -6737,7 +6737,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003878, 2, 'zone', 1465, '高压电力舱', 'ZONE-3878', 1,
@@ -6748,7 +6748,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000221, 2104378, 3003878, 1465, 'zone', 2, 'corridor-seed'
@@ -6767,7 +6767,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003879, 2, 'zone', 1466, '电力信息舱', 'ZONE-3879', 1,
@@ -6778,7 +6778,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000222, 2104379, 3003879, 1466, 'zone', 2, 'corridor-seed'
@@ -6797,7 +6797,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003880, 2, 'zone', 1467, '管道舱', 'ZONE-3880', 1,
@@ -6808,7 +6808,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000223, 2104380, 3003880, 1467, 'zone', 2, 'corridor-seed'
@@ -6827,7 +6827,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003881, 2, 'zone', 1465, '高压电力舱', 'ZONE-3881', 1,
@@ -6838,7 +6838,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000224, 2104381, 3003881, 1465, 'zone', 2, 'corridor-seed'
@@ -6857,7 +6857,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003882, 2, 'zone', 1466, '电力信息舱', 'ZONE-3882', 1,
@@ -6868,7 +6868,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000225, 2104382, 3003882, 1466, 'zone', 2, 'corridor-seed'
@@ -6887,7 +6887,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003883, 2, 'zone', 1467, '管道舱', 'ZONE-3883', 1,
@@ -6898,7 +6898,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000226, 2104383, 3003883, 1467, 'zone', 2, 'corridor-seed'
@@ -6917,7 +6917,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003884, 2, 'zone', 1465, '高压电力舱', 'ZONE-3884', 1,
@@ -6928,7 +6928,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000227, 2104384, 3003884, 1465, 'zone', 2, 'corridor-seed'
@@ -6947,7 +6947,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003885, 2, 'zone', 1466, '电力信息舱', 'ZONE-3885', 1,
@@ -6958,7 +6958,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000228, 2104385, 3003885, 1466, 'zone', 2, 'corridor-seed'
@@ -6977,7 +6977,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003886, 2, 'zone', 1467, '管道舱', 'ZONE-3886', 1,
@@ -6988,7 +6988,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000229, 2104386, 3003886, 1467, 'zone', 2, 'corridor-seed'
@@ -7007,7 +7007,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003887, 2, 'zone', 1465, '高压电力舱', 'ZONE-3887', 1,
@@ -7018,7 +7018,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000230, 2104387, 3003887, 1465, 'zone', 2, 'corridor-seed'
@@ -7037,7 +7037,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003888, 2, 'zone', 1466, '电力信息舱', 'ZONE-3888', 1,
@@ -7048,7 +7048,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000231, 2104388, 3003888, 1466, 'zone', 2, 'corridor-seed'
@@ -7067,7 +7067,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003889, 2, 'zone', 1467, '管道舱', 'ZONE-3889', 1,
@@ -7078,7 +7078,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000232, 2104389, 3003889, 1467, 'zone', 2, 'corridor-seed'
@@ -7097,7 +7097,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003890, 2, 'zone', 1465, '高压电力舱', 'ZONE-3890', 1,
@@ -7108,7 +7108,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000233, 2104390, 3003890, 1465, 'zone', 2, 'corridor-seed'
@@ -7127,7 +7127,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003891, 2, 'zone', 1466, '电力信息舱', 'ZONE-3891', 1,
@@ -7138,7 +7138,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000234, 2104391, 3003891, 1466, 'zone', 2, 'corridor-seed'
@@ -7157,7 +7157,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003892, 2, 'zone', 1467, '管道舱', 'ZONE-3892', 1,
@@ -7168,7 +7168,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000235, 2104392, 3003892, 1467, 'zone', 2, 'corridor-seed'
@@ -7187,7 +7187,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003893, 2, 'zone', 1465, '高压电力舱', 'ZONE-3893', 1,
@@ -7198,7 +7198,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000236, 2104393, 3003893, 1465, 'zone', 2, 'corridor-seed'
@@ -7217,7 +7217,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003894, 2, 'zone', 1466, '电力信息舱', 'ZONE-3894', 1,
@@ -7228,7 +7228,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000237, 2104394, 3003894, 1466, 'zone', 2, 'corridor-seed'
@@ -7247,7 +7247,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003895, 2, 'zone', 1467, '管道舱', 'ZONE-3895', 1,
@@ -7258,7 +7258,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000238, 2104395, 3003895, 1467, 'zone', 2, 'corridor-seed'
@@ -7277,7 +7277,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003896, 2, 'zone', 1465, '高压电力舱', 'ZONE-3896', 1,
@@ -7288,7 +7288,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000239, 2104396, 3003896, 1465, 'zone', 2, 'corridor-seed'
@@ -7307,7 +7307,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003897, 2, 'zone', 1466, '电力信息舱', 'ZONE-3897', 1,
@@ -7318,7 +7318,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000240, 2104397, 3003897, 1466, 'zone', 2, 'corridor-seed'
@@ -7337,7 +7337,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003898, 2, 'zone', 1467, '管道舱', 'ZONE-3898', 1,
@@ -7348,7 +7348,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000241, 2104398, 3003898, 1467, 'zone', 2, 'corridor-seed'
@@ -7367,7 +7367,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003899, 2, 'zone', 1465, '高压电力舱', 'ZONE-3899', 1,
@@ -7378,7 +7378,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000242, 2104399, 3003899, 1465, 'zone', 2, 'corridor-seed'
@@ -7397,7 +7397,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003900, 2, 'zone', 1466, '电力信息舱', 'ZONE-3900', 1,
@@ -7408,7 +7408,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000243, 2104400, 3003900, 1466, 'zone', 2, 'corridor-seed'
@@ -7427,7 +7427,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003901, 2, 'zone', 1467, '管道舱', 'ZONE-3901', 1,
@@ -7438,7 +7438,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000244, 2104401, 3003901, 1467, 'zone', 2, 'corridor-seed'
@@ -7457,7 +7457,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003902, 2, 'zone', 1465, '高压电力舱', 'ZONE-3902', 1,
@@ -7468,7 +7468,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000245, 2104402, 3003902, 1465, 'zone', 2, 'corridor-seed'
@@ -7487,7 +7487,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003903, 2, 'zone', 1466, '电力信息舱', 'ZONE-3903', 1,
@@ -7498,7 +7498,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000246, 2104403, 3003903, 1466, 'zone', 2, 'corridor-seed'
@@ -7517,7 +7517,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003904, 2, 'zone', 1467, '管道舱', 'ZONE-3904', 1,
@@ -7528,7 +7528,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000247, 2104404, 3003904, 1467, 'zone', 2, 'corridor-seed'
@@ -7547,7 +7547,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003905, 2, 'zone', 1465, '高压电力舱', 'ZONE-3905', 1,
@@ -7558,7 +7558,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000248, 2104405, 3003905, 1465, 'zone', 2, 'corridor-seed'
@@ -7577,7 +7577,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003906, 2, 'zone', 1466, '电力信息舱', 'ZONE-3906', 1,
@@ -7588,7 +7588,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000249, 2104406, 3003906, 1466, 'zone', 2, 'corridor-seed'
@@ -7607,7 +7607,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003907, 2, 'zone', 1467, '管道舱', 'ZONE-3907', 1,
@@ -7618,7 +7618,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000250, 2104407, 3003907, 1467, 'zone', 2, 'corridor-seed'
@@ -7637,7 +7637,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003908, 2, 'zone', 1465, '高压电力舱', 'ZONE-3908', 1,
@@ -7648,7 +7648,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000251, 2104408, 3003908, 1465, 'zone', 2, 'corridor-seed'
@@ -7667,7 +7667,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003909, 2, 'zone', 1466, '电力信息舱', 'ZONE-3909', 1,
@@ -7678,7 +7678,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000252, 2104409, 3003909, 1466, 'zone', 2, 'corridor-seed'
@@ -7697,7 +7697,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003910, 2, 'zone', 1467, '管道舱', 'ZONE-3910', 1,
@@ -7708,7 +7708,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000253, 2104410, 3003910, 1467, 'zone', 2, 'corridor-seed'
@@ -7727,7 +7727,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003911, 2, 'zone', 1465, '高压电力舱', 'ZONE-3911', 1,
@@ -7738,7 +7738,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000254, 2104411, 3003911, 1465, 'zone', 2, 'corridor-seed'
@@ -7757,7 +7757,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003912, 2, 'zone', 1466, '电力信息舱', 'ZONE-3912', 1,
@@ -7768,7 +7768,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000255, 2104412, 3003912, 1466, 'zone', 2, 'corridor-seed'
@@ -7787,7 +7787,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003913, 2, 'zone', 1467, '管道舱', 'ZONE-3913', 1,
@@ -7798,7 +7798,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000256, 2104413, 3003913, 1467, 'zone', 2, 'corridor-seed'
@@ -7817,7 +7817,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003914, 2, 'zone', 1465, '高压电力舱', 'ZONE-3914', 1,
@@ -7828,7 +7828,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000257, 2104414, 3003914, 1465, 'zone', 2, 'corridor-seed'
@@ -7847,7 +7847,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003915, 2, 'zone', 1466, '电力信息舱', 'ZONE-3915', 1,
@@ -7858,7 +7858,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000258, 2104415, 3003915, 1466, 'zone', 2, 'corridor-seed'
@@ -7877,7 +7877,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003916, 2, 'zone', 1467, '管道舱', 'ZONE-3916', 1,
@@ -7888,7 +7888,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000259, 2104416, 3003916, 1467, 'zone', 2, 'corridor-seed'
@@ -7907,7 +7907,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003917, 2, 'zone', 1465, '高压电力舱', 'ZONE-3917', 1,
@@ -7918,7 +7918,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000260, 2104417, 3003917, 1465, 'zone', 2, 'corridor-seed'
@@ -7937,7 +7937,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003918, 2, 'zone', 1466, '电力信息舱', 'ZONE-3918', 1,
@@ -7948,7 +7948,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000261, 2104418, 3003918, 1466, 'zone', 2, 'corridor-seed'
@@ -7967,7 +7967,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003919, 2, 'zone', 1467, '管道舱', 'ZONE-3919', 1,
@@ -7978,7 +7978,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000262, 2104419, 3003919, 1467, 'zone', 2, 'corridor-seed'
@@ -7997,7 +7997,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003920, 2, 'zone', 1465, '高压电力舱', 'ZONE-3920', 1,
@@ -8008,7 +8008,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000263, 2104420, 3003920, 1465, 'zone', 2, 'corridor-seed'
@@ -8027,7 +8027,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003921, 2, 'zone', 1466, '电力信息舱', 'ZONE-3921', 1,
@@ -8038,7 +8038,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000264, 2104421, 3003921, 1466, 'zone', 2, 'corridor-seed'
@@ -8057,7 +8057,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003922, 2, 'zone', 1467, '管道舱', 'ZONE-3922', 1,
@@ -8068,7 +8068,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000265, 2104422, 3003922, 1467, 'zone', 2, 'corridor-seed'
@@ -8087,7 +8087,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003923, 2, 'zone', 1465, '高压电力舱', 'ZONE-3923', 1,
@@ -8098,7 +8098,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000266, 2104423, 3003923, 1465, 'zone', 2, 'corridor-seed'
@@ -8117,7 +8117,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003924, 2, 'zone', 1466, '电力信息舱', 'ZONE-3924', 1,
@@ -8128,7 +8128,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000267, 2104424, 3003924, 1466, 'zone', 2, 'corridor-seed'
@@ -8147,7 +8147,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003925, 2, 'zone', 1467, '管道舱', 'ZONE-3925', 1,
@@ -8158,7 +8158,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000268, 2104425, 3003925, 1467, 'zone', 2, 'corridor-seed'
@@ -8177,7 +8177,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003926, 2, 'zone', 1465, '高压电力舱', 'ZONE-3926', 1,
@@ -8188,7 +8188,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000269, 2104426, 3003926, 1465, 'zone', 2, 'corridor-seed'
@@ -8207,7 +8207,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003927, 2, 'zone', 1466, '电力信息舱', 'ZONE-3927', 1,
@@ -8218,7 +8218,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000270, 2104427, 3003927, 1466, 'zone', 2, 'corridor-seed'
@@ -8237,7 +8237,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003928, 2, 'zone', 1467, '管道舱', 'ZONE-3928', 1,
@@ -8248,7 +8248,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000271, 2104428, 3003928, 1467, 'zone', 2, 'corridor-seed'
@@ -8267,7 +8267,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003929, 2, 'zone', 1465, '高压电力舱', 'ZONE-3929', 1,
@@ -8278,7 +8278,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000272, 2104429, 3003929, 1465, 'zone', 2, 'corridor-seed'
@@ -8297,7 +8297,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003930, 2, 'zone', 1466, '电力信息舱', 'ZONE-3930', 1,
@@ -8308,7 +8308,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000273, 2104430, 3003930, 1466, 'zone', 2, 'corridor-seed'
@@ -8327,7 +8327,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003931, 2, 'zone', 1467, '管道舱', 'ZONE-3931', 1,
@@ -8338,7 +8338,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000274, 2104431, 3003931, 1467, 'zone', 2, 'corridor-seed'
@@ -8357,7 +8357,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003932, 2, 'zone', 1465, '高压电力舱', 'ZONE-3932', 1,
@@ -8368,7 +8368,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000275, 2104432, 3003932, 1465, 'zone', 2, 'corridor-seed'
@@ -8387,7 +8387,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003933, 2, 'zone', 1466, '电力信息舱', 'ZONE-3933', 1,
@@ -8398,7 +8398,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000276, 2104433, 3003933, 1466, 'zone', 2, 'corridor-seed'
@@ -8417,7 +8417,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003934, 2, 'zone', 1467, '管道舱', 'ZONE-3934', 1,
@@ -8428,7 +8428,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000277, 2104434, 3003934, 1467, 'zone', 2, 'corridor-seed'
@@ -8447,7 +8447,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003935, 2, 'zone', 1465, '高压电力舱', 'ZONE-3935', 1,
@@ -8458,7 +8458,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000278, 2104435, 3003935, 1465, 'zone', 2, 'corridor-seed'
@@ -8477,7 +8477,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003936, 2, 'zone', 1467, '管道舱', 'ZONE-3936', 1,
@@ -8488,7 +8488,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000279, 2104436, 3003936, 1467, 'zone', 2, 'corridor-seed'
@@ -8507,7 +8507,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003937, 2, 'zone', 1467, '管道舱', 'ZONE-3937', 1,
@@ -8518,7 +8518,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000280, 2104437, 3003937, 1467, 'zone', 2, 'corridor-seed'
@@ -8537,7 +8537,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003938, 2, 'zone', 1467, '管道舱', 'ZONE-3938', 1,
@@ -8548,7 +8548,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000281, 2104438, 3003938, 1467, 'zone', 2, 'corridor-seed'
@@ -8567,7 +8567,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003939, 2, 'zone', 1467, '管道舱', 'ZONE-3939', 1,
@@ -8578,7 +8578,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000282, 2104439, 3003939, 1467, 'zone', 2, 'corridor-seed'
@@ -8597,7 +8597,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003940, 2, 'zone', 1467, '管道舱', 'ZONE-3940', 1,
@@ -8608,7 +8608,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000283, 2104440, 3003940, 1467, 'zone', 2, 'corridor-seed'
@@ -8627,7 +8627,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003941, 2, 'zone', 1467, '管道舱', 'ZONE-3941', 1,
@@ -8638,7 +8638,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000284, 2104441, 3003941, 1467, 'zone', 2, 'corridor-seed'
@@ -8657,7 +8657,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003942, 2, 'zone', 1467, '管道舱', 'ZONE-3942', 1,
@@ -8668,7 +8668,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000285, 2104442, 3003942, 1467, 'zone', 2, 'corridor-seed'
@@ -8687,7 +8687,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003943, 2, 'zone', 1466, '电力信息舱', 'ZONE-3943', 1,
@@ -8698,7 +8698,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000286, 2104443, 3003943, 1466, 'zone', 2, 'corridor-seed'
@@ -8717,7 +8717,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003944, 2, 'zone', 1467, '管道舱', 'ZONE-3944', 1,
@@ -8728,7 +8728,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000287, 2104444, 3003944, 1467, 'zone', 2, 'corridor-seed'
@@ -8747,7 +8747,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003945, 2, 'zone', 1466, '电力信息舱', 'ZONE-3945', 1,
@@ -8758,7 +8758,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000288, 2104445, 3003945, 1466, 'zone', 2, 'corridor-seed'
@@ -8777,7 +8777,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003946, 2, 'zone', 1467, '管道舱', 'ZONE-3946', 1,
@@ -8788,7 +8788,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000289, 2104446, 3003946, 1467, 'zone', 2, 'corridor-seed'
@@ -8807,7 +8807,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003947, 2, 'zone', 1466, '电力信息舱', 'ZONE-3947', 1,
@@ -8818,7 +8818,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000290, 2104447, 3003947, 1466, 'zone', 2, 'corridor-seed'
@@ -8837,7 +8837,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003948, 2, 'zone', 1467, '管道舱', 'ZONE-3948', 1,
@@ -8848,7 +8848,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000291, 2104448, 3003948, 1467, 'zone', 2, 'corridor-seed'
@@ -8867,7 +8867,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003949, 2, 'zone', 1466, '电力信息舱', 'ZONE-3949', 1,
@@ -8878,7 +8878,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000292, 2104449, 3003949, 1466, 'zone', 2, 'corridor-seed'
@@ -8897,7 +8897,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003950, 2, 'zone', 1467, '管道舱', 'ZONE-3950', 1,
@@ -8908,7 +8908,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000293, 2104450, 3003950, 1467, 'zone', 2, 'corridor-seed'
@@ -8927,7 +8927,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003951, 2, 'zone', 1466, '电力信息舱', 'ZONE-3951', 1,
@@ -8938,7 +8938,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000294, 2104451, 3003951, 1466, 'zone', 2, 'corridor-seed'
@@ -8957,7 +8957,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003952, 2, 'zone', 1467, '管道舱', 'ZONE-3952', 1,
@@ -8968,7 +8968,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000295, 2104452, 3003952, 1467, 'zone', 2, 'corridor-seed'
@@ -8987,7 +8987,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003953, 2, 'zone', 1466, '电力信息舱', 'ZONE-3953', 1,
@@ -8998,7 +8998,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000296, 2104453, 3003953, 1466, 'zone', 2, 'corridor-seed'
@@ -9017,7 +9017,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003954, 2, 'zone', 1467, '管道舱', 'ZONE-3954', 1,
@@ -9028,7 +9028,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000297, 2104454, 3003954, 1467, 'zone', 2, 'corridor-seed'
@@ -9047,7 +9047,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003955, 2, 'zone', 1466, '电力信息舱', 'ZONE-3955', 1,
@@ -9058,7 +9058,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000298, 2104455, 3003955, 1466, 'zone', 2, 'corridor-seed'
@@ -9077,7 +9077,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003956, 2, 'zone', 1467, '管道舱', 'ZONE-3956', 1,
@@ -9088,7 +9088,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000299, 2104456, 3003956, 1467, 'zone', 2, 'corridor-seed'
@@ -9107,7 +9107,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003957, 2, 'zone', 1466, '电力信息舱', 'ZONE-3957', 1,
@@ -9118,7 +9118,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000300, 2104457, 3003957, 1466, 'zone', 2, 'corridor-seed'
@@ -9137,7 +9137,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003958, 2, 'zone', 1467, '管道舱', 'ZONE-3958', 1,
@@ -9148,7 +9148,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000301, 2104458, 3003958, 1467, 'zone', 2, 'corridor-seed'
@@ -9167,7 +9167,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003959, 2, 'zone', 1466, '电力信息舱', 'ZONE-3959', 1,
@@ -9178,7 +9178,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000302, 2104459, 3003959, 1466, 'zone', 2, 'corridor-seed'
@@ -9197,7 +9197,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003960, 2, 'zone', 1467, '管道舱', 'ZONE-3960', 1,
@@ -9208,7 +9208,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000303, 2104460, 3003960, 1467, 'zone', 2, 'corridor-seed'
@@ -9227,7 +9227,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003961, 2, 'zone', 1466, '电力信息舱', 'ZONE-3961', 1,
@@ -9238,7 +9238,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000304, 2104461, 3003961, 1466, 'zone', 2, 'corridor-seed'
@@ -9257,7 +9257,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003962, 2, 'zone', 1467, '管道舱', 'ZONE-3962', 1,
@@ -9268,7 +9268,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000305, 2104462, 3003962, 1467, 'zone', 2, 'corridor-seed'
@@ -9287,7 +9287,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003963, 2, 'zone', 1466, '电力信息舱', 'ZONE-3963', 1,
@@ -9298,7 +9298,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000306, 2104463, 3003963, 1466, 'zone', 2, 'corridor-seed'
@@ -9317,7 +9317,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003964, 2, 'zone', 1467, '管道舱', 'ZONE-3964', 1,
@@ -9328,7 +9328,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000307, 2104464, 3003964, 1467, 'zone', 2, 'corridor-seed'
@@ -9347,7 +9347,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003965, 2, 'zone', 1466, '电力信息舱', 'ZONE-3965', 1,
@@ -9358,7 +9358,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000308, 2104465, 3003965, 1466, 'zone', 2, 'corridor-seed'
@@ -9377,7 +9377,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003966, 2, 'zone', 1467, '管道舱', 'ZONE-3966', 1,
@@ -9388,7 +9388,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000309, 2104466, 3003966, 1467, 'zone', 2, 'corridor-seed'
@@ -9407,7 +9407,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003967, 2, 'zone', 1466, '电力信息舱', 'ZONE-3967', 1,
@@ -9418,7 +9418,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000310, 2104467, 3003967, 1466, 'zone', 2, 'corridor-seed'
@@ -9437,7 +9437,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003968, 2, 'zone', 1467, '管道舱', 'ZONE-3968', 1,
@@ -9448,7 +9448,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000311, 2104468, 3003968, 1467, 'zone', 2, 'corridor-seed'
@@ -9467,7 +9467,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003969, 2, 'zone', 1466, '电力信息舱', 'ZONE-3969', 1,
@@ -9478,7 +9478,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000312, 2104469, 3003969, 1466, 'zone', 2, 'corridor-seed'
@@ -9497,7 +9497,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003970, 2, 'zone', 1467, '管道舱', 'ZONE-3970', 1,
@@ -9508,7 +9508,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000313, 2104470, 3003970, 1467, 'zone', 2, 'corridor-seed'
@@ -9527,7 +9527,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003971, 2, 'zone', 1465, '高压电力舱', 'ZONE-3971', 1,
@@ -9538,7 +9538,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000314, 2104471, 3003971, 1465, 'zone', 2, 'corridor-seed'
@@ -9557,7 +9557,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003972, 2, 'zone', 1465, '高压电力舱', 'ZONE-3972', 1,
@@ -9568,7 +9568,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000315, 2104472, 3003972, 1465, 'zone', 2, 'corridor-seed'
@@ -9587,7 +9587,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003973, 2, 'zone', 1465, '高压电力舱', 'ZONE-3973', 1,
@@ -9598,7 +9598,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000316, 2104473, 3003973, 1465, 'zone', 2, 'corridor-seed'
@@ -9617,7 +9617,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003974, 2, 'zone', 1465, '高压电力舱', 'ZONE-3974', 1,
@@ -9628,7 +9628,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000317, 2104474, 3003974, 1465, 'zone', 2, 'corridor-seed'
@@ -9647,7 +9647,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003975, 2, 'zone', 1466, '电力信息舱', 'ZONE-3975', 1,
@@ -9658,7 +9658,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000318, 2104475, 3003975, 1466, 'zone', 2, 'corridor-seed'
@@ -9677,7 +9677,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003976, 2, 'zone', 1465, '高压电力舱', 'ZONE-3976', 1,
@@ -9688,7 +9688,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000319, 2104476, 3003976, 1465, 'zone', 2, 'corridor-seed'
@@ -9707,7 +9707,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003977, 2, 'zone', 1466, '电力信息舱', 'ZONE-3977', 1,
@@ -9718,7 +9718,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000320, 2104477, 3003977, 1466, 'zone', 2, 'corridor-seed'
@@ -9737,7 +9737,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003978, 2, 'zone', 1465, '高压电力舱', 'ZONE-3978', 1,
@@ -9748,7 +9748,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000321, 2104478, 3003978, 1465, 'zone', 2, 'corridor-seed'
@@ -9767,7 +9767,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003979, 2, 'zone', 1466, '电力信息舱', 'ZONE-3979', 1,
@@ -9778,7 +9778,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000322, 2104479, 3003979, 1466, 'zone', 2, 'corridor-seed'
@@ -9797,7 +9797,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003980, 2, 'zone', 1467, '管道舱', 'ZONE-3980', 1,
@@ -9808,7 +9808,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000323, 2104480, 3003980, 1467, 'zone', 2, 'corridor-seed'
@@ -9827,7 +9827,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003981, 2, 'zone', 1465, '高压电力舱', 'ZONE-3981', 1,
@@ -9838,7 +9838,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000324, 2104481, 3003981, 1465, 'zone', 2, 'corridor-seed'
@@ -9857,7 +9857,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003982, 2, 'zone', 1466, '电力信息舱', 'ZONE-3982', 1,
@@ -9868,7 +9868,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000325, 2104482, 3003982, 1466, 'zone', 2, 'corridor-seed'
@@ -9887,7 +9887,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003983, 2, 'zone', 1467, '管道舱', 'ZONE-3983', 1,
@@ -9898,7 +9898,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000326, 2104483, 3003983, 1467, 'zone', 2, 'corridor-seed'
@@ -9917,7 +9917,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003984, 2, 'zone', 1465, '高压电力舱', 'ZONE-3984', 1,
@@ -9928,7 +9928,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000327, 2104484, 3003984, 1465, 'zone', 2, 'corridor-seed'
@@ -9947,7 +9947,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003985, 2, 'zone', 1466, '电力信息舱', 'ZONE-3985', 1,
@@ -9958,7 +9958,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000328, 2104485, 3003985, 1466, 'zone', 2, 'corridor-seed'
@@ -9977,7 +9977,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003986, 2, 'zone', 1467, '管道舱', 'ZONE-3986', 1,
@@ -9988,7 +9988,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000329, 2104486, 3003986, 1467, 'zone', 2, 'corridor-seed'
@@ -10007,7 +10007,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003987, 2, 'zone', 1465, '高压电力舱', 'ZONE-3987', 1,
@@ -10018,7 +10018,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000330, 2104487, 3003987, 1465, 'zone', 2, 'corridor-seed'
@@ -10037,7 +10037,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003988, 2, 'zone', 1466, '电力信息舱', 'ZONE-3988', 1,
@@ -10048,7 +10048,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000331, 2104488, 3003988, 1466, 'zone', 2, 'corridor-seed'
@@ -10067,7 +10067,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003989, 2, 'zone', 1467, '管道舱', 'ZONE-3989', 1,
@@ -10078,7 +10078,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000332, 2104489, 3003989, 1467, 'zone', 2, 'corridor-seed'
@@ -10097,7 +10097,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003990, 2, 'zone', 1465, '高压电力舱', 'ZONE-3990', 1,
@@ -10108,7 +10108,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000333, 2104490, 3003990, 1465, 'zone', 2, 'corridor-seed'
@@ -10127,7 +10127,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003991, 2, 'zone', 1466, '电力信息舱', 'ZONE-3991', 1,
@@ -10138,7 +10138,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000334, 2104491, 3003991, 1466, 'zone', 2, 'corridor-seed'
@@ -10157,7 +10157,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003992, 2, 'zone', 1467, '管道舱', 'ZONE-3992', 1,
@@ -10168,7 +10168,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000335, 2104492, 3003992, 1467, 'zone', 2, 'corridor-seed'
@@ -10187,7 +10187,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003993, 2, 'zone', 1465, '高压电力舱', 'ZONE-3993', 1,
@@ -10198,7 +10198,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000336, 2104493, 3003993, 1465, 'zone', 2, 'corridor-seed'
@@ -10217,7 +10217,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003994, 2, 'zone', 1466, '电力信息舱', 'ZONE-3994', 1,
@@ -10228,7 +10228,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000337, 2104494, 3003994, 1466, 'zone', 2, 'corridor-seed'
@@ -10247,7 +10247,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003995, 2, 'zone', 1467, '管道舱', 'ZONE-3995', 1,
@@ -10258,7 +10258,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000338, 2104495, 3003995, 1467, 'zone', 2, 'corridor-seed'
@@ -10277,7 +10277,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003996, 2, 'zone', 1465, '高压电力舱', 'ZONE-3996', 1,
@@ -10288,7 +10288,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000339, 2104496, 3003996, 1465, 'zone', 2, 'corridor-seed'
@@ -10307,7 +10307,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003997, 2, 'zone', 1466, '电力信息舱', 'ZONE-3997', 1,
@@ -10318,7 +10318,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000340, 2104497, 3003997, 1466, 'zone', 2, 'corridor-seed'
@@ -10337,7 +10337,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003998, 2, 'zone', 1467, '管道舱', 'ZONE-3998', 1,
@@ -10348,7 +10348,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000341, 2104498, 3003998, 1467, 'zone', 2, 'corridor-seed'
@@ -10367,7 +10367,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3003999, 2, 'zone', 1466, '电力信息舱', 'ZONE-3999', 1,
@@ -10378,7 +10378,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000342, 2104499, 3003999, 1466, 'zone', 2, 'corridor-seed'
@@ -10397,7 +10397,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004000, 2, 'zone', 1467, '管道舱', 'ZONE-4000', 1,
@@ -10408,7 +10408,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000343, 2104500, 3004000, 1467, 'zone', 2, 'corridor-seed'
@@ -10427,7 +10427,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004001, 2, 'zone', 1466, '电力信息舱', 'ZONE-4001', 1,
@@ -10438,7 +10438,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000344, 2104501, 3004001, 1466, 'zone', 2, 'corridor-seed'
@@ -10457,7 +10457,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004002, 2, 'zone', 1467, '管道舱', 'ZONE-4002', 1,
@@ -10468,7 +10468,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000345, 2104502, 3004002, 1467, 'zone', 2, 'corridor-seed'
@@ -10487,7 +10487,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004003, 2, 'zone', 1465, '高压电力舱', 'ZONE-4003', 1,
@@ -10498,7 +10498,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000346, 2104503, 3004003, 1465, 'zone', 2, 'corridor-seed'
@@ -10517,7 +10517,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004004, 2, 'zone', 1466, '电力信息舱', 'ZONE-4004', 1,
@@ -10528,7 +10528,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000347, 2104504, 3004004, 1466, 'zone', 2, 'corridor-seed'
@@ -10547,7 +10547,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004005, 2, 'zone', 1467, '管道舱', 'ZONE-4005', 1,
@@ -10558,7 +10558,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000348, 2104505, 3004005, 1467, 'zone', 2, 'corridor-seed'
@@ -10577,7 +10577,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004006, 2, 'zone', 1466, '电力信息舱', 'ZONE-4006', 1,
@@ -10588,7 +10588,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000349, 2104506, 3004006, 1466, 'zone', 2, 'corridor-seed'
@@ -10607,7 +10607,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004007, 2, 'zone', 1467, '管道舱', 'ZONE-4007', 1,
@@ -10618,7 +10618,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000350, 2104507, 3004007, 1467, 'zone', 2, 'corridor-seed'
@@ -10637,7 +10637,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004008, 2, 'zone', 1466, '电力信息舱', 'ZONE-4008', 1,
@@ -10648,7 +10648,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000351, 2104508, 3004008, 1466, 'zone', 2, 'corridor-seed'
@@ -10667,7 +10667,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004009, 2, 'zone', 1467, '管道舱', 'ZONE-4009', 1,
@@ -10678,7 +10678,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000352, 2104509, 3004009, 1467, 'zone', 2, 'corridor-seed'
@@ -10697,7 +10697,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004010, 2, 'zone', 1466, '电力信息舱', 'ZONE-4010', 1,
@@ -10708,7 +10708,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000353, 2104510, 3004010, 1466, 'zone', 2, 'corridor-seed'
@@ -10727,7 +10727,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004011, 2, 'zone', 1467, '管道舱', 'ZONE-4011', 1,
@@ -10738,7 +10738,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000354, 2104511, 3004011, 1467, 'zone', 2, 'corridor-seed'
@@ -10757,7 +10757,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004012, 2, 'zone', 1466, '电力信息舱', 'ZONE-4012', 1,
@@ -10768,7 +10768,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000355, 2104512, 3004012, 1466, 'zone', 2, 'corridor-seed'
@@ -10787,7 +10787,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004013, 2, 'zone', 1467, '管道舱', 'ZONE-4013', 1,
@@ -10798,7 +10798,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000356, 2104513, 3004013, 1467, 'zone', 2, 'corridor-seed'
@@ -10817,7 +10817,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004014, 2, 'zone', 1465, '高压电力舱', 'ZONE-4014', 1,
@@ -10828,7 +10828,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000357, 2104514, 3004014, 1465, 'zone', 2, 'corridor-seed'
@@ -10847,7 +10847,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004015, 2, 'zone', 1466, '电力信息舱', 'ZONE-4015', 1,
@@ -10858,7 +10858,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000358, 2104515, 3004015, 1466, 'zone', 2, 'corridor-seed'
@@ -10877,7 +10877,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004016, 2, 'zone', 1467, '管道舱', 'ZONE-4016', 1,
@@ -10888,7 +10888,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000359, 2104516, 3004016, 1467, 'zone', 2, 'corridor-seed'
@@ -10907,7 +10907,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004017, 2, 'zone', 1465, '高压电力舱', 'ZONE-4017', 1,
@@ -10918,7 +10918,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000360, 2104517, 3004017, 1465, 'zone', 2, 'corridor-seed'
@@ -10937,7 +10937,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004018, 2, 'zone', 1466, '电力信息舱', 'ZONE-4018', 1,
@@ -10948,7 +10948,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000361, 2104518, 3004018, 1466, 'zone', 2, 'corridor-seed'
@@ -10967,7 +10967,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004019, 2, 'zone', 1467, '管道舱', 'ZONE-4019', 1,
@@ -10978,7 +10978,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000362, 2104519, 3004019, 1467, 'zone', 2, 'corridor-seed'
@@ -10997,7 +10997,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004020, 2, 'zone', 1465, '高压电力舱', 'ZONE-4020', 1,
@@ -11008,7 +11008,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000363, 2104520, 3004020, 1465, 'zone', 2, 'corridor-seed'
@@ -11027,7 +11027,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004021, 2, 'zone', 1466, '电力信息舱', 'ZONE-4021', 1,
@@ -11038,7 +11038,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000364, 2104521, 3004021, 1466, 'zone', 2, 'corridor-seed'
@@ -11057,7 +11057,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004022, 2, 'zone', 1467, '管道舱', 'ZONE-4022', 1,
@@ -11068,7 +11068,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000365, 2104522, 3004022, 1467, 'zone', 2, 'corridor-seed'
@@ -11087,7 +11087,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004023, 2, 'zone', 1465, '高压电力舱', 'ZONE-4023', 1,
@@ -11098,7 +11098,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000366, 2104523, 3004023, 1465, 'zone', 2, 'corridor-seed'
@@ -11117,7 +11117,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004024, 2, 'zone', 1466, '电力信息舱', 'ZONE-4024', 1,
@@ -11128,7 +11128,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000367, 2104524, 3004024, 1466, 'zone', 2, 'corridor-seed'
@@ -11147,7 +11147,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004025, 2, 'zone', 1467, '管道舱', 'ZONE-4025', 1,
@@ -11158,7 +11158,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000368, 2104525, 3004025, 1467, 'zone', 2, 'corridor-seed'
@@ -11177,7 +11177,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004026, 2, 'zone', 1465, '高压电力舱', 'ZONE-4026', 1,
@@ -11188,7 +11188,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000369, 2104526, 3004026, 1465, 'zone', 2, 'corridor-seed'
@@ -11207,7 +11207,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004027, 2, 'zone', 1466, '电力信息舱', 'ZONE-4027', 1,
@@ -11218,7 +11218,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000370, 2104527, 3004027, 1466, 'zone', 2, 'corridor-seed'
@@ -11237,7 +11237,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004028, 2, 'zone', 1467, '管道舱', 'ZONE-4028', 1,
@@ -11248,7 +11248,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000371, 2104528, 3004028, 1467, 'zone', 2, 'corridor-seed'
@@ -11267,7 +11267,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004029, 2, 'zone', 1465, '高压电力舱', 'ZONE-4029', 1,
@@ -11278,7 +11278,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000372, 2104529, 3004029, 1465, 'zone', 2, 'corridor-seed'
@@ -11297,7 +11297,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004030, 2, 'zone', 1466, '电力信息舱', 'ZONE-4030', 1,
@@ -11308,7 +11308,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000373, 2104530, 3004030, 1466, 'zone', 2, 'corridor-seed'
@@ -11327,7 +11327,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004031, 2, 'zone', 1467, '管道舱', 'ZONE-4031', 1,
@@ -11338,7 +11338,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000374, 2104531, 3004031, 1467, 'zone', 2, 'corridor-seed'
@@ -11357,7 +11357,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004032, 2, 'zone', 1465, '高压电力舱', 'ZONE-4032', 1,
@@ -11368,7 +11368,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000375, 2104532, 3004032, 1465, 'zone', 2, 'corridor-seed'
@@ -11387,7 +11387,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004033, 2, 'zone', 1466, '电力信息舱', 'ZONE-4033', 1,
@@ -11398,7 +11398,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000376, 2104533, 3004033, 1466, 'zone', 2, 'corridor-seed'
@@ -11417,7 +11417,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004034, 2, 'zone', 1467, '管道舱', 'ZONE-4034', 1,
@@ -11428,7 +11428,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000377, 2104534, 3004034, 1467, 'zone', 2, 'corridor-seed'
@@ -11447,7 +11447,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004035, 2, 'zone', 1465, '高压电力舱', 'ZONE-4035', 1,
@@ -11458,7 +11458,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000378, 2104535, 3004035, 1465, 'zone', 2, 'corridor-seed'
@@ -11477,7 +11477,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004036, 2, 'zone', 1466, '电力信息舱', 'ZONE-4036', 1,
@@ -11488,7 +11488,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000379, 2104536, 3004036, 1466, 'zone', 2, 'corridor-seed'
@@ -11507,7 +11507,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004037, 2, 'zone', 1467, '管道舱', 'ZONE-4037', 1,
@@ -11518,7 +11518,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000380, 2104537, 3004037, 1467, 'zone', 2, 'corridor-seed'
@@ -11537,7 +11537,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004038, 2, 'zone', 1466, '电力信息舱', 'ZONE-4038', 1,
@@ -11548,7 +11548,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000381, 2104538, 3004038, 1466, 'zone', 2, 'corridor-seed'
@@ -11567,7 +11567,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004039, 2, 'zone', 1467, '管道舱', 'ZONE-4039', 1,
@@ -11578,7 +11578,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000382, 2104539, 3004039, 1467, 'zone', 2, 'corridor-seed'
@@ -11597,7 +11597,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004040, 2, 'zone', 1466, '电力信息舱', 'ZONE-4040', 1,
@@ -11608,7 +11608,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000383, 2104540, 3004040, 1466, 'zone', 2, 'corridor-seed'
@@ -11627,7 +11627,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004041, 2, 'zone', 1467, '管道舱', 'ZONE-4041', 1,
@@ -11638,7 +11638,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000384, 2104541, 3004041, 1467, 'zone', 2, 'corridor-seed'
@@ -11657,7 +11657,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004042, 2, 'zone', 1466, '电力信息舱', 'ZONE-4042', 1,
@@ -11668,7 +11668,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000385, 2104542, 3004042, 1466, 'zone', 2, 'corridor-seed'
@@ -11687,7 +11687,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004043, 2, 'zone', 1467, '管道舱', 'ZONE-4043', 1,
@@ -11698,7 +11698,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000386, 2104543, 3004043, 1467, 'zone', 2, 'corridor-seed'
@@ -11717,7 +11717,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004044, 2, 'zone', 1466, '电力信息舱', 'ZONE-4044', 1,
@@ -11728,7 +11728,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000387, 2104544, 3004044, 1466, 'zone', 2, 'corridor-seed'
@@ -11747,7 +11747,7 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = EXCLUDED.tree_path,
   level = EXCLUDED.level, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, fld_base_zone_ref_facility, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   3004045, 2, 'zone', 1467, '管道舱', 'ZONE-4045', 1,
@@ -11758,7 +11758,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, fld_base_zone_
   parent_id = EXCLUDED.parent_id, attrs = EXCLUDED.attrs, custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   5000388, 2104545, 3004045, 1467, 'zone', 2, 'corridor-seed'
@@ -20347,9 +20347,9 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id,
 
 
 
-SELECT setval('dynamicbusiness.ent_facility_id_seq', (SELECT COALESCE(MAX(id),1) FROM dynamicbusiness.ent_facility), true);
+SELECT setval('dynamicbusiness.ent_facility_id_seq', (SELECT COALESCE(MAX(id),1) FROM dynamicbusiness.ent_facility_t2), true);
 
-SELECT setval('dynamicbusiness.ent_zone_id_seq', (SELECT COALESCE(MAX(id),1) FROM dynamicbusiness.ent_zone), true);
+SELECT setval('dynamicbusiness.ent_zone_id_seq', (SELECT COALESCE(MAX(id),1) FROM dynamicbusiness.ent_zone_t2), true);
 
 SELECT setval('dynamicbusiness.ent_structure_id_seq', (SELECT COALESCE(MAX(id),1) FROM dynamicbusiness.ent_structure), true);
 

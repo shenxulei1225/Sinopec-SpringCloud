@@ -569,25 +569,25 @@ def main() -> None:
         "",
         "-- 退役旧导入：多余 facility、未在本次导出 id 范围内的构筑物、facility 段分类",
         f"""
-UPDATE ent_facility
+UPDATE ent_facility_t2
 SET deleted = true, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP
 WHERE tenant_id = {TENANT_ID} AND deleted = false
   AND id <> {ROOT_FACILITY_ID};
 """.strip(),
         f"""
-UPDATE ent_structure
+UPDATE ent_structure_t2
 SET deleted = true, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP
 WHERE tenant_id = {TENANT_ID} AND deleted = false
   AND (id < {STRUCTURE_BASE} OR id >= {STRUCTURE_BASE + 500_000});
-DELETE FROM ent_structure
+DELETE FROM ent_structure_t2
 WHERE tenant_id = {TENANT_ID}
   AND id >= {STRUCTURE_BASE} AND id < {STRUCTURE_BASE + 500_000};
-UPDATE ent_zone z
+UPDATE ent_zone_t2 z
 SET deleted = true, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP
 FROM dynamic_model dm
 WHERE z.model_id = dm.id AND z.tenant_id = {TENANT_ID} AND z.deleted = false
   AND dm.code NOT IN ({keep_zone_codes_sql});
-DELETE FROM ent_zone
+DELETE FROM ent_zone_t2
 WHERE tenant_id = {TENANT_ID}
   AND id >= {ZONE_BASE} AND id < {ZONE_BASE + 500_000};
 UPDATE dynamic_model
@@ -603,7 +603,7 @@ WHERE tenant_id = {TENANT_ID} AND deleted = false
     (category_type_code = 'facility' AND (code LIKE 'FAC-CAT%' OR code = 'corridor_facility_root'))
     OR (category_type_code = 'zone' AND (code LIKE 'ZONE-CAT%' OR code IN ('corridor_zone_root', 'zone_root')))
   );
-DELETE FROM dynamic_category_entity_link
+DELETE FROM dynamic_category_entity_link_t2
 WHERE tenant_id = {TENANT_ID} AND category_id >= {CAT_ROOT_ID} AND category_id < {CAT_ZONE_BASE + 500000};
 DELETE FROM dynamic_category
 WHERE tenant_id = {TENANT_ID} AND id >= {CAT_ROOT_ID} AND id < {CAT_ZONE_BASE + 500000};
@@ -654,7 +654,7 @@ WHERE category_type_code = 'zone' AND tenant_id = {TENANT_ID} AND deleted = fals
         "",
         f"-- ---------- 唯一 facility：{ROOT_NAME} ----------",
         f"""
-INSERT INTO ent_facility (
+INSERT INTO ent_facility_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, region_id, sort, tree_path, creator
 ) VALUES (
   {ROOT_FACILITY_ID}, {TENANT_ID}, 'facility', {model_ids['MODEL-FACILITY-UT-TUNNEL']},
@@ -667,7 +667,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, region_id = NU
         "",
         f"-- ---------- 根 zone：{ROOT_NAME} ----------",
         f"""
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, facility_id, parent_id, sort, tree_path, creator
 ) VALUES (
   {ROOT_ZONE_ID}, {TENANT_ID}, 'zone', {model_ids['MODEL-ZONE-UT-CORRIDOR-ROOT']},
@@ -679,7 +679,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, facility_id = 
   parent_id = 0, deleted = false, updater = 'corridor-seed', update_time = CURRENT_TIMESTAMP;
 """.strip(),
         f"""
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   {LINK_BASE}, {CAT_WHGG_ID}, {ROOT_ZONE_ID}, {model_ids['MODEL-ZONE-UT-CORRIDOR-ROOT']}, 'zone', {TENANT_ID}, 'corridor-seed'
@@ -777,7 +777,7 @@ DO UPDATE SET name = EXCLUDED.name, parent_id = EXCLUDED.parent_id, tree_path = 
             )
             lines.append(
                 f"""
-INSERT INTO ent_zone (
+INSERT INTO ent_zone_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status, facility_id, parent_id, sort, tree_path, attrs, custom_fields, creator
 ) VALUES (
   {eid}, {TENANT_ID}, 'zone', {dm_id}, {sql_str(name)}, {sql_str(code)}, 1,
@@ -791,7 +791,7 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id, facility_id = 
             )
             lines.append(
                 f"""
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t2 (
   id, category_id, entity_id, entity_model_id, entity_type_code, tenant_id, creator
 ) VALUES (
   {link_id}, {cid}, {eid}, {dm_id}, 'zone', {TENANT_ID}, 'corridor-seed'
@@ -848,7 +848,7 @@ ON CONFLICT DO NOTHING;
         )
         lines.append(
             f"""
-INSERT INTO ent_structure (
+INSERT INTO ent_structure_t2 (
   id, tenant_id, entity_type_code, model_id, name, code, status,
   facility_id, zone_id, parent_id, sort, attrs, creator
 ) VALUES (
@@ -866,9 +866,9 @@ DO UPDATE SET name = EXCLUDED.name, model_id = EXCLUDED.model_id,
     lines.extend(
         [
             "",
-            "SELECT setval('dynamicbusiness.ent_facility_id_seq', (SELECT COALESCE(MAX(id),1) FROM dynamicbusiness.ent_facility), true);",
-            "SELECT setval('dynamicbusiness.ent_zone_id_seq', (SELECT COALESCE(MAX(id),1) FROM dynamicbusiness.ent_zone), true);",
-            "SELECT setval('dynamicbusiness.ent_structure_id_seq', (SELECT COALESCE(MAX(id),1) FROM dynamicbusiness.ent_structure), true);",
+            "SELECT setval(pg_get_serial_sequence('dynamicbusiness.ent_facility_t2','id'), (SELECT COALESCE(MAX(id),1) FROM dynamicbusiness.ent_facility_t2), true);",
+            "SELECT setval(pg_get_serial_sequence('dynamicbusiness.ent_zone_t2','id'), (SELECT COALESCE(MAX(id),1) FROM dynamicbusiness.ent_zone_t2), true);",
+            "SELECT setval('dynamicbusiness.ent_structure_id_seq', (SELECT COALESCE(MAX(id),1) FROM dynamicbusiness.ent_structure_t2), true);",
             "SELECT setval('dynamicbusiness.dynamic_category_id_seq', (SELECT COALESCE(MAX(id),1) FROM dynamicbusiness.dynamic_category), true);",
             "",
             f"-- summary: facility=1, root_zone=1, zone={zone_count} (seg={seg_count}, fire={fire_count}, cabin={cabin_count}), structure={structure_count}, sump_no_cabin={sump_cabin_miss}",

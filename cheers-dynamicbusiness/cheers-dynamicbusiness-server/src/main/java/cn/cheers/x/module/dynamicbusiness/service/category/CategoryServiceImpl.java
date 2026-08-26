@@ -170,6 +170,11 @@ public class CategoryServiceImpl implements CategoryService {
 
     // ==================== 基础 CRUD 操作 ====================
 
+    /**
+     * 创建分类（高级分类 / ADVANCED = 分类即实体写路径）。
+     * 顺序：createEntityForCategory → insert dynamic_category → linkCategoryEntityWithStorage
+     * 写 link 到租户物理表 dynamic_category_entity_link_t{tenantId}，不双写无后缀基表。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createCategory(CategoryCreateReqVO reqVO) {
@@ -861,6 +866,7 @@ public class CategoryServiceImpl implements CategoryService {
         CategoryEntityLinkDO link = categoryEntityLinkService.getLinkByCategoryId(id);
         if (link != null && link.getEntityId() != null) {
             respVO.setIsEntity(true);
+            respVO.setEntityId(link.getEntityId());
             respVO.setEntityModelId(link.getEntityModelId());
             try {
                 // 模式C：通过 Model 获取真正的 entityTypeCode 进行路由
@@ -884,9 +890,12 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     /**
-     * 补齐树/列表返回中的实体关联展示字段。
-     * <p>link 只表示「该节点绑了哪条实体」，不用于推断种类是简单还是高级；
-     * 种类语义以 CategoryType.categoryMode 为准。</p>
+     * 树/搜索/子树读路径：给每个分类节点填 isEntity、entityId、entityModelId。
+     *
+     * 权威：dynamic_category_entity_link_t{tenantId}（MyBatis 从基名路由）。
+     * dynamic_category 表上**没有** entityId 列；前端 Tree 只看本方法输出。
+     *
+     * 无 link 行：isEntity=false 并清空 entityId，避免 Redis 缓存里残留旧绑定。
      */
     private void fillEntityCategoryFlags(List<CategoryTreeRespVO> flat) {
         if (flat == null || flat.isEmpty()) {
@@ -1496,6 +1505,10 @@ public class CategoryServiceImpl implements CategoryService {
         entityService.deleteEntityWithAssociationCleanup(id, entityTypeCode, clearInbound);
     }
 
+    /**
+     * 分类创建/更新后写入 Pattern C link 行。
+     * storage = 型号所属 entityTypeCode；domain 与实体行对齐，供跨表同 id 时精确定位。
+     */
     private void linkCategoryEntityWithStorage(Long categoryId, Long entityId, Long entityModelId) {
         ModelDO model = entityModelId == null ? null : modelMapper.selectById(entityModelId);
         String storage = model != null ? model.getEntityTypeCode() : null;

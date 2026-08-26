@@ -84,6 +84,22 @@ public class ModelDO extends TenantBaseDO {
     private String domain;
 
     /**
+     * 治理状态：LOCAL-站场本地型号，COMPANY-公司规格。
+     * 该字段决定型号的治理边界；不得用设施字段替代型号列表裁切权威。
+     */
+    private String governanceStatus;
+
+    /**
+     * 本地型号的发起设施 ID；公司规格为空。
+     */
+    private Long originFacilityId;
+
+    /**
+     * 创建用户 ID，用于本地型号删除权限判断。
+     */
+    private Long creatorUserId;
+
+    /**
      * 模型描述
      */
     private String description;

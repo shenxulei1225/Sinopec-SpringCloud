@@ -23,6 +23,9 @@ public class FieldPageReqVO extends PageParam {
 
     @Schema(description = "状态（0-禁用，1-启用）", example = "1")
     private Integer status;
+
+    @Schema(description = "当前有效站场编号；用于本地字段可见性判断", example = "12")
+    private Long effectiveFacilityId;
 }
 
 

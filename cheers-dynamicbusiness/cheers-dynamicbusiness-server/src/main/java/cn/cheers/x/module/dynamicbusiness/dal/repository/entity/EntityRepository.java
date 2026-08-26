@@ -285,6 +285,18 @@ public interface EntityRepository {
     boolean existsByModelId(Long modelId, String entityTypeCode);
 
     /**
+     * 统计型号实体行上非空 {@code facility_id} 的去重数量。
+     *
+     * <p>这是型号设施覆盖范围的权威读取；不得改为读取型号发起设施，也不得从其它字段补值。</p>
+     */
+    long countDistinctFacilityIdsByModelId(Long modelId, String entityTypeCode);
+
+    /**
+     * 判断实体物理表是否具备所属场站权威列，避免覆盖范围统计直接触发原生 SQL 列不存在错误。
+     */
+    boolean hasFacilityIdColumn(String entityTypeCode);
+
+    /**
      * 按状态聚合计数（须经本 Repository，禁止业务层直接打 Mapper）。
      */
     java.util.List<cn.cheers.x.module.dynamicbusiness.service.entity.dto.EntityAggregationCountDTO<Integer>>

@@ -8,11 +8,11 @@ SET search_path TO dynamicbusiness;
 BEGIN;
 
 -- 1) 样例实体分类绑定（Pattern B relation + 误写 Pattern C link；含历史软删行）
-DELETE FROM dynamic_entity_category_relation
+DELETE FROM dynamic_entity_category_relation_t1
 WHERE tenant_id = 1
   AND entity_id IN (101, 102, 201, 301, 501, 502, 910001, 910002, 910003, 910004, 910005);
 
-DELETE FROM dynamic_category_entity_link
+DELETE FROM dynamic_category_entity_link_t1
 WHERE tenant_id = 1
   AND entity_id IN (101, 102, 201, 301, 501, 502, 910001, 910002, 910003, 910004, 910005);
 

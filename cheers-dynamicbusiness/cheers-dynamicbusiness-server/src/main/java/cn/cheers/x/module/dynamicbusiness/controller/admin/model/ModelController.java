@@ -8,14 +8,18 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelAvailab
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCloneReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelDomainChangePreviewRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFacilityFootprintRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelPageReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelPromoteLocalPackageReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelSortSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFromEntityCategoryGroupsReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFromModelCategoryGroupsReqVO;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
+import cn.cheers.x.module.dynamicbusiness.service.model.ModelFacilityFootprintQueryService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelService;
+import cn.cheers.x.module.dynamicbusiness.service.model.governance.LocalPackagePromotionService;
 import cn.cheers.x.module.dynamicbusiness.service.model.relation.ModelCategoryRelationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -58,6 +62,12 @@ public class ModelController {
 
     @Resource
     private EntityService entityService;
+
+    @Resource
+    private LocalPackagePromotionService localPackagePromotionService;
+
+    @Resource
+    private ModelFacilityFootprintQueryService modelFacilityFootprintQueryService;
 
     @PostMapping("/create")
     @Operation(
@@ -173,11 +183,38 @@ public class ModelController {
     @PreAuthorize("@ss.hasPermission('system:model:delete')")
     /**
      * 用途：删除模型。
-     * Service 映射：{@link ModelService#deleteModel(Long)}。
+     * Service 映射：{@link ModelService#deleteModel(Long, Long)}。
      * 边界：是否允许删除由 Service 内部校验（如实体占用、关联清理）决定。
      */
-    public CommonResult<Boolean> deleteModel(@RequestParam("id") Long id) {
-        modelService.deleteModel(id);
+    public CommonResult<Boolean> deleteModel(
+            @RequestParam("id") Long id,
+            @RequestParam("effectiveFacilityId") Long effectiveFacilityId) {
+        modelService.deleteModel(id, effectiveFacilityId);
+        return success(true);
+    }
+
+    @PutMapping("/deactivate-company")
+    @Operation(summary = "停用公司规格", description = "具备公司规格停用能力的调用方可将公司规格状态设为停用；不执行硬删除。")
+    @Parameter(name = "id", description = "公司规格型号编号", required = true, example = "1")
+    @ApiAccessLog(operateType = UPDATE)
+    @PreAuthorize("@ss.hasPermission('system:model:update')")
+    public CommonResult<Boolean> deactivateCompanyModel(@RequestParam("id") Long id) {
+        modelService.deactivateCompanyModel(id);
+        return success(true);
+    }
+
+    @PostMapping("/promote-local-package")
+    @Operation(
+        summary = "晋升本地型号包",
+        description = "在同一事务内晋升本地型号及其本地字段。字段可直接晋升为公司字段，"
+            + "也可按 fieldMergeMap 合并到既有公司字段；任一步失败整体回滚。"
+    )
+    @ApiAccessLog(operateType = UPDATE)
+    @PreAuthorize("@ss.hasPermission('system:model:update')")
+    public CommonResult<Boolean> promoteLocalPackage(
+            @Valid @RequestBody ModelPromoteLocalPackageReqVO reqVO) {
+        localPackagePromotionService.promoteLocalPackage(
+                reqVO.getModelId(), reqVO.getFieldMergeMap());
         return success(true);
     }
 
@@ -193,10 +230,25 @@ public class ModelController {
     @PreAuthorize("@ss.hasPermission('system:model:query')")
     /**
      * 用途：查询单个模型详情。
-     * Service 映射：{@link ModelService#getModel(Long)}。
+     * Service 映射：{@link ModelService#getModel(Long, Long)}。
      */
-    public CommonResult<ModelRespVO> getModel(@RequestParam("id") Long id) {
-        return success(modelService.getModel(id));
+    public CommonResult<ModelRespVO> getModel(
+            @RequestParam("id") Long id,
+            @RequestParam(value = "effectiveFacilityId", required = false) Long effectiveFacilityId) {
+        return success(modelService.getModel(id, effectiveFacilityId));
+    }
+
+    @GetMapping("/{id}/facility-footprint")
+    @Operation(
+        summary = "查询型号设施覆盖范围",
+        description = "按该型号实体行上的 facility_id 去重统计；不使用型号发起设施字段。"
+    )
+    @Parameter(name = "id", description = "型号编号", required = true, example = "1")
+    @PreAuthorize("@ss.hasPermission('system:model:query')")
+    public CommonResult<ModelFacilityFootprintRespVO> getFacilityFootprint(
+            @PathVariable("id") Long id,
+            @RequestParam(value = "effectiveFacilityId", required = false) Long effectiveFacilityId) {
+        return success(modelFacilityFootprintQueryService.getFacilityFootprint(id, effectiveFacilityId));
     }
 
     @GetMapping("/find-by-category-in-business")
@@ -278,8 +330,10 @@ public class ModelController {
     public CommonResult<List<ModelRespVO>> listModelsByEntityType(
             @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam(value = "domain", required = false) String domain,
-            @RequestParam(value = "categoryTypeCode", required = false) String categoryTypeCode) {
-        return success(modelService.listModelsByEntityType(entityTypeCode, domain, categoryTypeCode));
+            @RequestParam(value = "categoryTypeCode", required = false) String categoryTypeCode,
+            @RequestParam(value = "effectiveFacilityId", required = false) Long effectiveFacilityId) {
+        return success(modelService.listModelsByEntityType(
+                entityTypeCode, domain, categoryTypeCode, effectiveFacilityId));
     }
 
     @GetMapping("/list-uncategorized-by-category-type")

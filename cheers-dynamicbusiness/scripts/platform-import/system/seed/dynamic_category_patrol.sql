@@ -56,7 +56,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT m.id, c.id, 'patrol_point', m.code, n.category_code, 1, 1, 'seed'
@@ -106,7 +106,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT m.id, c.id, 'patrol_schedule', m.code, c.code, 1, 1, 'seed'
@@ -159,7 +159,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT m.id, c.id, 'patrol_object', m.code, c.code, 1, 1, 'seed'

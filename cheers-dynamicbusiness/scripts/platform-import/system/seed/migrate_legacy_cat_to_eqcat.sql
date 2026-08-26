@@ -8,7 +8,7 @@ INSERT INTO legacy_cat_map (old_code, target_code) VALUES
 ;
 
 -- 1) migrate model-category relations from CAT to EQCAT
-UPDATE dynamic_model_category_relation r
+UPDATE dynamic_model_category_relation_t1 r
 SET
   category_id = nc.id,
   category_code = nc.code,
@@ -25,7 +25,7 @@ WHERE r.deleted = false AND r.tenant_id = 1
   AND r.category_code = oc.code;
 
 -- 2) legacy MODEL-* refined mapping by model name
-UPDATE dynamic_model_category_relation r
+UPDATE dynamic_model_category_relation_t1 r
 SET
   category_id = nc.id,
   category_code = nc.code,
@@ -47,7 +47,7 @@ WHERE r.deleted = false AND r.tenant_id = 1
 -- 3) remove leftover CAT relations
 -- 4) soft-delete legacy CAT categories
 -- 5) rebuild tree_path
-UPDATE dynamic_model_category_relation r
+UPDATE dynamic_model_category_relation_t1 r
 SET deleted = true, updater = 'migrate-legacy-cat', update_time = CURRENT_TIMESTAMP
 WHERE r.deleted = false AND r.tenant_id = 1
   AND r.entity_type_code = 'equipment'

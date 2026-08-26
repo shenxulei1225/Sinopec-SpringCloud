@@ -61,8 +61,14 @@ public interface ModelService {
      * 删除业务模型
      *
      * @param id 模型ID
+     * @param effectiveFacilityId 当前有效站场
      */
-    void deleteModel(Long id);
+    void deleteModel(Long id, Long effectiveFacilityId);
+
+    /**
+     * 停用公司规格；普通型号更新不能代替此治理命令。
+     */
+    void deactivateCompanyModel(Long id);
 
     // ==================== 业务域迁移 ====================
 
@@ -95,7 +101,7 @@ public interface ModelService {
      * @param id 模型ID
      * @return 模型详情
      */
-    ModelRespVO getModel(Long id);
+    ModelRespVO getModel(Long id, Long effectiveFacilityId);
 
     /**
      * 根据业务类型编码获取模型列表
@@ -117,6 +123,14 @@ public interface ModelService {
      * 未挂任何该体系节点的型号排在末尾。
      */
     List<ModelRespVO> listModelsByEntityType(String entityTypeCode, String domain, String categoryTypeCode);
+
+    /**
+     * 按业务类型列出当前调用方可见的型号。
+     *
+     * @param effectiveFacilityId 当前有效站场；普通调用方仅可见该站发起的本地型号
+     */
+    List<ModelRespVO> listModelsByEntityType(String entityTypeCode, String domain, String categoryTypeCode,
+                                             Long effectiveFacilityId);
 
     /**
      * 按分类体系查询未挂接任何分类节点的模型（Pattern B 数据管理「未分类」）。

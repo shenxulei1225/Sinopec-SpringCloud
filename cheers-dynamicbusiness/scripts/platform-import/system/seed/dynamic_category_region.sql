@@ -2,7 +2,11 @@
 -- 系统 · region Pattern C（分类即实体）
 -- 国家管网运维组织：集团 → 省公司/区域公司 →（可选）分公司/地区 → 作业区
 -- 北方管道京津冀豫片区：招标文件点名的分公司/地区 + 作业区（与北京管道/东部储运同名作业区分码）
--- 每个分类节点（除 region_root）同步创建 ent_region + dynamic_category_entity_link
+--
+-- 租户物理隔离（定稿）：实体 / 型号–分类 / 分类即实体 link **只写** `*_t1`（租户 1）。
+-- 禁止再写无后缀基表 `ent_region` / `dynamic_category_entity_link` / `dynamic_model_category_relation`
+--（基表仅作 DDL 模板，运行时由 EntityTableNameHandler 路由到 `*_t{tenantId}`）。
+-- 分类树节点仍写共享表 `dynamic_category`（配置行级 tenant_id）。
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;
@@ -155,8 +159,8 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
--- 2) 模型 ↔ 分类
-INSERT INTO dynamic_model_category_relation (
+-- 2) 模型 ↔ 分类（租户物理表）
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT m.id, c.id, 'region', m.code, c.code, 1, 1, 'seed'
@@ -172,8 +176,8 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
--- 3) ent_region 实体（与分类 1:1）
-INSERT INTO ent_region (
+-- 3) 区域实体（租户物理表；与分类 1:1）
+INSERT INTO ent_region_t1 (
   id, entity_type_code, model_id, name, code, region_code, region_name, region_type,
   tenant_id, creator, tree_path, sort, status, deleted, custom_fields
 )
@@ -197,8 +201,8 @@ ON CONFLICT (id) DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
--- 4) Pattern C 绑定
-UPDATE dynamic_category_entity_link l
+-- 4) Pattern C 绑定（只写租户 link 表）
+UPDATE dynamic_category_entity_link_t1 l
 SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
 FROM dynamic_category c
 WHERE l.category_id = c.id
@@ -206,12 +210,14 @@ WHERE l.category_id = c.id
   AND c.category_type_code = 'region'
   AND l.deleted = false AND l.tenant_id = 1;
 
-INSERT INTO dynamic_category_entity_link (category_id, entity_id, entity_model_id, tenant_id, creator)
-SELECT c.id, n.entity_id, e.model_id, 1, 'seed'
+INSERT INTO dynamic_category_entity_link_t1 (
+  category_id, entity_id, entity_model_id, tenant_id, creator, entity_type_code
+)
+SELECT c.id, n.entity_id, e.model_id, 1, 'seed', 'region'
 FROM tmp_region_pattern_c n
 JOIN dynamic_category c
   ON c.deleted = false AND c.tenant_id = 1 AND c.code = n.category_code
-JOIN ent_region e
+JOIN ent_region_t1 e
   ON e.id = n.entity_id AND e.deleted = false;
 
 -- 清理废弃数据
@@ -221,18 +227,18 @@ WHERE deleted = false AND tenant_id = 1
   AND code IN ('REG-CAT-BR-DY', 'REG-CAT-OP-DY', 'REG-CAT-PROV-SD-LEGACY');
 
 -- 仅清理改革前样例分类码；MODEL-REGION-BRANCH 已重新启用为「分公司」型号
-UPDATE dynamic_model_category_relation r
+UPDATE dynamic_model_category_relation_t1 r
 SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
 WHERE r.deleted = false AND r.tenant_id = 1
   AND r.category_code IN ('REG-CAT-BR-DY', 'REG-CAT-OP-DY');
 
-UPDATE ent_region
+UPDATE ent_region_t1
 SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
 WHERE tenant_id = 1 AND id IN (100002, 100003) AND deleted = false;
 
 SELECT setval(
-  pg_get_serial_sequence('dynamicbusiness.ent_region', 'id'),
-  GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_region), 100138)
+  pg_get_serial_sequence('dynamicbusiness.ent_region_t1', 'id'),
+  GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_region_t1), 100206)
 );
 
 -- 清理历史误挂的 region 管道节点（现由 facility Pattern C 承担）
@@ -240,11 +246,11 @@ UPDATE dynamic_category
 SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
 WHERE deleted = false AND tenant_id = 1 AND code LIKE 'REG-CAT-PIPE-%';
 
-UPDATE ent_region
+UPDATE ent_region_t1
 SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
 WHERE deleted = false AND tenant_id = 1 AND region_type = 'pipeline';
 
--- Pattern C 自检：除 region_root 外每个分类必须有实体绑定
+-- Pattern C 自检：除 region_root 外每个分类必须有租户实体绑定
 DO $$
 DECLARE missing_count integer;
 BEGIN
@@ -257,11 +263,11 @@ BEGIN
     AND c.code LIKE 'REG-CAT-%'
     AND NOT EXISTS (
       SELECT 1
-      FROM dynamic_category_entity_link l
-      JOIN ent_region e ON e.id = l.entity_id AND e.deleted = false
-      WHERE l.category_id = c.id AND l.deleted = false
+      FROM dynamic_category_entity_link_t1 l
+      JOIN ent_region_t1 e ON e.id = l.entity_id AND e.deleted = false
+      WHERE l.category_id = c.id AND l.deleted = false AND l.entity_type_code = 'region'
     );
   IF missing_count > 0 THEN
-    RAISE EXCEPTION 'region Pattern C 未完成：% 个分类节点缺少 ent_region 绑定', missing_count;
+    RAISE EXCEPTION 'region Pattern C 未完成：% 个分类节点缺少 ent_region_t1 绑定', missing_count;
   END IF;
 END $$;

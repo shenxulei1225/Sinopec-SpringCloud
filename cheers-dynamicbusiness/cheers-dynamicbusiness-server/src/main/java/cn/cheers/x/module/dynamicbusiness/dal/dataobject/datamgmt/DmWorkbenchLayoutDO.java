@@ -1,15 +1,20 @@
 package cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt;
 
+import cn.cheers.x.framework.mybatis.core.type.JsonbMapTypeHandler;
 import cn.cheers.x.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
 
+import java.util.Map;
+
 /**
- * 工作台布局头：模版（isTemplate=true）或从模版生成的实例。
+ * 工作台布局头：持有模版/实例身份与整段工作台设置。
+ * settingsJson 是区段显隐等布局头设置的权威；栏行服务不得反向推导或补写。
  */
-@TableName("dm_workbench_layout")
+@TableName(value = "dm_workbench_layout", autoResultMap = true)
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
@@ -28,4 +33,8 @@ public class DmWorkbenchLayoutDO extends TenantBaseDO {
 
     /** 实例来源模版 id；模版行为空 */
     private Long sourceTemplateId;
+
+    /** 布局头设置 jsonb；当前使用 sectionHidden.FILTER|OBJECT|WHAT */
+    @TableField(typeHandler = JsonbMapTypeHandler.class)
+    private Map<String, Object> settingsJson;
 }

@@ -245,7 +245,7 @@ def build_relation_sql(models: list[ModelRecord], md_path: pathlib.Path) -> str:
         blocks.append(
             textwrap.dedent(
                 f"""
-                INSERT INTO dynamic_model_category_relation (
+                INSERT INTO dynamic_model_category_relation_t1 (
                   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
                 )
                 SELECT

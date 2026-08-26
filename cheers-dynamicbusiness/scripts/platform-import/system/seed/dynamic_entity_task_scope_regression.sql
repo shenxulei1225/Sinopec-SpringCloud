@@ -192,7 +192,7 @@ WHERE src.deleted = false AND src.tenant_id = 1
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET updater = 'oil-depot-scope', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator)
+INSERT INTO dynamic_model_category_relation_t1 (model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator)
 SELECT m.id, c.id, 'task', m.code, c.code, v.sort, 1, 'oil-depot-scope'
 FROM (VALUES
   ('patrol_task', 'task_cat_daily', 1),
@@ -221,7 +221,7 @@ DO UPDATE SET name = EXCLUDED.name, entity_type_code = EXCLUDED.entity_type_code
   domain = EXCLUDED.domain, description = EXCLUDED.description, deleted = false,
   updater = 'oil-depot-scope', update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator)
+INSERT INTO dynamic_model_category_relation_t1 (model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator)
 SELECT m.id, c.id, 'task_excution_record', m.code, c.code, 1, 1, 'oil-depot-scope'
 FROM (VALUES
   ('exec_patrol_round', 'record_cat_patrol'),
@@ -314,13 +314,13 @@ WHERE tenant_id = 1 AND deleted = false AND id NOT BETWEEN 920001 AND 920105;
 -- ---------------------------------------------------------------------------
 -- 8. 实体 ↔ 分类
 -- ---------------------------------------------------------------------------
-UPDATE dynamic_entity_category_relation
+UPDATE dynamic_entity_category_relation_t1
 SET deleted = true, updater = 'oil-depot-scope', update_time = CURRENT_TIMESTAMP
 WHERE deleted = false AND tenant_id = 1
   AND entity_type_code IN ('task', 'task_excution_record')
   AND entity_id BETWEEN 910001 AND 920105;
 
-INSERT INTO dynamic_entity_category_relation (entity_id, category_id, entity_type_code, sort, tenant_id, creator)
+INSERT INTO dynamic_entity_category_relation_t1 (entity_id, category_id, entity_type_code, sort, tenant_id, creator)
 SELECT v.entity_id, c.id, v.etc, v.sort, 1, 'oil-depot-scope'
 FROM (VALUES
   (910001, 'task', 'task_cat_daily', 1), (910002, 'task', 'task_cat_daily', 2),

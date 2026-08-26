@@ -69,6 +69,8 @@ public interface CategoryEntityLinkMapper extends BaseMapperX<CategoryEntityLink
 
     /**
      * 当前分类种类下已通过「分类即实体」链接挂接的实体 id（排除保留「未分类」桶节点）。
+     * <p>表名经 DynamicTableName 路由到 {@code dynamic_category_entity_link_t{tenantId}}，
+     * 不得改回无后缀基表。</p>
      */
     @Select("""
             SELECT DISTINCT cel.entity_id

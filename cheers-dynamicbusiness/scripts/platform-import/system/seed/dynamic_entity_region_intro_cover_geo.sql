@@ -10,7 +10,7 @@
 SET search_path TO dynamicbusiness;
 
 -- 1) 按层级写入头图
-UPDATE ent_region e
+UPDATE ent_region_t1 e
 SET
   custom_fields = COALESCE(e.custom_fields, '{}'::jsonb) || jsonb_build_object(
     'FLD-BASE-region-cover_url',
@@ -33,7 +33,7 @@ WHERE e.deleted = false
   );
 
 -- 2) 由质心生成驻地 Point Feature，并标记已发布
-UPDATE ent_region e
+UPDATE ent_region_t1 e
 SET
   custom_fields = COALESCE(e.custom_fields, '{}'::jsonb) || jsonb_build_object(
     'FLD-BASE-region-boundary_status', 'published',
@@ -67,7 +67,7 @@ WHERE e.deleted = false
   AND NULLIF(trim(e.custom_fields->>'FLD-BASE-region-centroid_lat'), '') IS NOT NULL;
 
 -- 备注里原先写「未编造边界」的，补一句驻地 GeoJSON 说明（避免与上条重复时仍可读）
-UPDATE ent_region e
+UPDATE ent_region_t1 e
 SET
   custom_fields = e.custom_fields || jsonb_build_object(
     'FLD-BASE-region-remark',
@@ -90,12 +90,12 @@ DO $$
 DECLARE geo_cnt integer; cover_cnt integer;
 BEGIN
   SELECT COUNT(*) INTO geo_cnt
-  FROM ent_region
+  FROM ent_region_t1
   WHERE deleted = false AND tenant_id = 1
     AND custom_fields ? 'FLD-BASE-region-boundary_geojson'
     AND custom_fields->>'FLD-BASE-region-boundary_status' = 'published';
   SELECT COUNT(*) INTO cover_cnt
-  FROM ent_region
+  FROM ent_region_t1
   WHERE deleted = false AND tenant_id = 1
     AND NULLIF(trim(custom_fields->>'FLD-BASE-region-cover_url'), '') IS NOT NULL
     AND id BETWEEN 100001 AND 100112;

@@ -20,7 +20,7 @@ WITH legacy_map(model_code, category_code) AS (
   ('MODEL-3130eba3747e4a5aa0862c94807822ba', 'EQCAT-DEV-RADIO-SPLITTER'),
   ('MODEL-a62c727c0a024e19a8221c68fcf0c09a', 'EQCAT-DEV-ALARM-HOST')
 )
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -45,7 +45,7 @@ JOIN dynamic_category c
  AND c.code = lm.category_code
 WHERE NOT EXISTS (
   SELECT 1
-  FROM dynamic_model_category_relation r
+  FROM dynamic_model_category_relation_t1 r
   WHERE r.deleted = false
     AND r.tenant_id = 1
     AND r.entity_type_code = 'equipment'
@@ -66,13 +66,13 @@ WITH model_primary_category AS (
     mcr.model_id,
     mcr.category_id,
     mcr.sort AS mcr_sort
-  FROM dynamic_model_category_relation mcr
+  FROM dynamic_model_category_relation_t1 mcr
   WHERE mcr.deleted = false
     AND mcr.tenant_id = 1
     AND mcr.entity_type_code = 'equipment'
   ORDER BY mcr.model_id, mcr.sort ASC NULLS LAST, mcr.id ASC
 )
-INSERT INTO dynamic_entity_category_relation (
+INSERT INTO dynamic_entity_category_relation_t1 (
   entity_id, category_id, entity_type_code, sort, tenant_id, creator
 )
 SELECT
@@ -82,13 +82,13 @@ SELECT
   COALESCE(e.sort, 0),
   1,
   'seed'
-FROM ent_equipment e
+FROM ent_equipment_t1 e
 JOIN model_primary_category mpc ON mpc.model_id = e.model_id
 WHERE e.deleted = false
   AND e.tenant_id = 1
   AND NOT EXISTS (
     SELECT 1
-    FROM dynamic_entity_category_relation ecr
+    FROM dynamic_entity_category_relation_t1 ecr
     WHERE ecr.deleted = false
       AND ecr.tenant_id = 1
       AND ecr.entity_type_code = 'equipment'

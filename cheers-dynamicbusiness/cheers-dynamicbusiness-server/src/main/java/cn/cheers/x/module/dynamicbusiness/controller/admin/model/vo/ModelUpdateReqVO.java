@@ -50,5 +50,11 @@ public class ModelUpdateReqVO {
     @Schema(description = "业务域（Domain）；须为该存储类型下已建 DOMAIN 子数据类型的域标识", example = "巡检")
     private String domain;
 
+    @Schema(description = "治理状态：LOCAL-站场本地型号，COMPANY-公司规格；服务端按全网治理权限校验", example = "LOCAL")
+    private String governanceStatus;
+
+    @Schema(description = "当前有效站场 ID；用于校验本地型号可见性", example = "1001")
+    private Long effectiveFacilityId;
+
 }
 

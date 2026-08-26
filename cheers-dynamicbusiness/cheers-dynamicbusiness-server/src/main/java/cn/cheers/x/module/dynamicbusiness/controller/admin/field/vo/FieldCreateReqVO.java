@@ -8,5 +8,8 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class FieldCreateReqVO extends FieldBaseVO {
+
+    @Schema(description = "新字段要挂载的型号 ID；传入本地型号时，字段随本地包写为 LOCAL", example = "1024")
+    private Long modelId;
 }
 

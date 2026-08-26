@@ -4,7 +4,7 @@
 
 SET search_path TO dynamicbusiness;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -21,7 +21,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -38,7 +38,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -55,7 +55,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -72,7 +72,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -89,7 +89,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -106,7 +106,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -123,7 +123,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -140,7 +140,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -157,7 +157,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -174,7 +174,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -191,7 +191,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -208,7 +208,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -225,7 +225,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -242,7 +242,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -259,7 +259,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -276,7 +276,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -293,7 +293,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -310,7 +310,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -327,7 +327,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -344,7 +344,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -361,7 +361,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -378,7 +378,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -395,7 +395,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -412,7 +412,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -429,7 +429,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -446,7 +446,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -463,7 +463,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -480,7 +480,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -497,7 +497,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -514,7 +514,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -531,7 +531,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -548,7 +548,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -565,7 +565,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -582,7 +582,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -599,7 +599,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -616,7 +616,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -633,7 +633,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -650,7 +650,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -667,7 +667,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -684,7 +684,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -701,7 +701,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -718,7 +718,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -735,7 +735,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -752,7 +752,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -769,7 +769,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -786,7 +786,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -803,7 +803,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -820,7 +820,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -837,7 +837,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -854,7 +854,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -871,7 +871,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -888,7 +888,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -905,7 +905,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -922,7 +922,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -939,7 +939,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -956,7 +956,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -973,7 +973,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -990,7 +990,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1007,7 +1007,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1024,7 +1024,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1041,7 +1041,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1058,7 +1058,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1075,7 +1075,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1092,7 +1092,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1109,7 +1109,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1126,7 +1126,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1143,7 +1143,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1160,7 +1160,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1177,7 +1177,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1194,7 +1194,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1211,7 +1211,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1228,7 +1228,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1245,7 +1245,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1262,7 +1262,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1279,7 +1279,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1296,7 +1296,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1313,7 +1313,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1330,7 +1330,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1347,7 +1347,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1364,7 +1364,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1381,7 +1381,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1398,7 +1398,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1415,7 +1415,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1432,7 +1432,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1449,7 +1449,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1466,7 +1466,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1483,7 +1483,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1500,7 +1500,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1517,7 +1517,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1534,7 +1534,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1551,7 +1551,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1568,7 +1568,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1585,7 +1585,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1602,7 +1602,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1619,7 +1619,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT
@@ -1636,7 +1636,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT

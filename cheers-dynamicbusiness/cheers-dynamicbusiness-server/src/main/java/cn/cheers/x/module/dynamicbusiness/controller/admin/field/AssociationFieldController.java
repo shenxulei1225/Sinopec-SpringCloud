@@ -78,8 +78,10 @@ public class AssociationFieldController {
     public CommonResult<List<FieldRespVO>> list(
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "source", required = false) String source,
-            @RequestParam(value = "status", required = false) Integer status) {
-        return success(fieldService.search(keyword, FIELD_TYPE_REF_MULTI, source, status));
+            @RequestParam(value = "status", required = false) Integer status,
+            @RequestParam(value = "effectiveFacilityId", required = false) Long effectiveFacilityId) {
+        return success(fieldService.search(
+                keyword, FIELD_TYPE_REF_MULTI, source, status, effectiveFacilityId));
     }
 
     @GetMapping("/available-targets")

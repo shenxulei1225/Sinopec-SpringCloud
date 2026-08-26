@@ -31,5 +31,8 @@ public class ModelPageReqVO extends PageParam {
 
     @Schema(description = "业务域（Domain），可选", example = "巡检")
     private String domain;
+
+    @Schema(description = "当前有效站场编号；用于本地型号可见性判断", example = "12")
+    private Long effectiveFacilityId;
 }
 

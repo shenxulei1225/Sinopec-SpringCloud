@@ -19,7 +19,8 @@ RETURNS void
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  UPDATE ent_region e
+  -- 权威：租户物理表 ent_region_t1（禁止再写无后缀基表）
+  UPDATE ent_region_t1 e
   SET
     custom_fields = COALESCE(e.custom_fields, '{}'::jsonb) || p_fields,
     updater = 'seed-intro',
@@ -671,7 +672,7 @@ DO $$
 DECLARE filled integer;
 BEGIN
   SELECT COUNT(*) INTO filled
-  FROM ent_region
+  FROM ent_region_t1
   WHERE deleted = false
     AND tenant_id = 1
     AND id BETWEEN 100001 AND 100138

@@ -13,11 +13,22 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 /**
- * 分类与实体链接 DO
- * <p>
- * 用于管理"分类即实体"的特殊关联关系。
- * 当分类节点需要作为实体使用时，通过此表建立分类与实体的对应关系。
- * 通过 CategoryEntityLinkService.isEntityCategory(categoryId) 判断分类是否为实体分类。
+ * 分类即实体（Pattern C）1:1 关联行。
+ *
+ * <p>一行表示：某个分类树节点（categoryId）对应台账里的一条实体（entityId）。
+ * 例如运营区域「新疆煤制」分类 id=1729 ↔ ent_region_t1 里 id=100027。</p>
+ *
+ * <p><b>不是</b>「拖入归类」用的 dynamic_entity_category_relation（一对多挂实体）。</p>
+ *
+ * <p><b>存哪张表</b>：代码里写基名 {@code dynamic_category_entity_link}，运行时由
+ * EntityTableNameHandler 落到 {@code dynamic_category_entity_link_t{tenantId}}。
+ * 手工 seed / SQL 须直接写物理表名，见 scripts/platform-import/SEED-TENANT-PHYSICAL.md。</p>
+ *
+ * <p><b>谁读</b>：CategoryServiceImpl.fillEntityCategoryFlags 批量查 link → 树 API 填 entityId；
+ * EntityServiceImpl.getCategoryLinkedEntity 按 categoryId 查实体详情。</p>
+ *
+ * <p><b>谁写</b>：CategoryServiceImpl.createCategory（高级分类）→ linkCategoryEntityWithStorage；
+ * 禁止读路径补 link。</p>
  */
 @TableName("dynamic_category_entity_link")
 @KeySequence("dynamic_category_entity_link_seq")
@@ -32,31 +43,23 @@ public class CategoryEntityLinkDO extends TenantBaseDO {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /**
-     * 分类ID
-     */
+    /** 分类树节点 id（dynamic_category.id） */
     private Long categoryId;
 
-    /**
-     * 关联的实体ID
-     */
+    /** 绑定实体 id（ent_*_t{tenant} 主键） */
     private Long entityId;
 
     /**
-     * 关联的实体模型ID
-     * <p>
-     * 用于定义该分类实体的字段结构。
+     * 绑定实体使用的型号 id（决定实体有哪些字段）
      */
     private Long entityModelId;
 
     /**
-     * 绑定实体的类型编码（如 facility / equipment），与 {@code dynamic_entity_category_relation.entity_type_code} 命名一致；
-     * 用于跨专用表同 id 时精确定位实体行。
+     * 实体类型码（如 region、facility），与专用表类型一致；
+     * 多类型表可能出现相同 entityId 数字时靠此字段区分。
      */
     private String entityTypeCode;
 
-    /**
-     * 绑定实体当时的业务域（可空）；与实体行 domain 对齐，便于索引过滤。
-     */
+    /** 业务域（可空），与实体行 domain 对齐 */
     private String domain;
 }

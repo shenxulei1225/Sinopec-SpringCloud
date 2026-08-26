@@ -5,7 +5,7 @@
 SET search_path TO dynamicbusiness;
 
 -- patrol_task 模型挂到任务分类（左侧分类树筛选模型用）
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT m.id, c.id, 'task', m.code, c.code, 1, 1, 'seed'
@@ -21,7 +21,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT m.id, c.id, 'task', m.code, c.code, 2, 1, 'seed'

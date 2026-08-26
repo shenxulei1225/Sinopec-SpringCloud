@@ -313,7 +313,7 @@ def write_facility_sql(rows: list[str], max_id: int) -> None:
 
 SET search_path TO dynamicbusiness;
 
-INSERT INTO ent_facility (
+INSERT INTO ent_facility_t1 (
     id, entity_type_code, model_id, name, code, tenant_id, creator,
     tree_path, sort, status, deleted, region_id, address, longitude, latitude,
     facility_type, custom_fields
@@ -343,8 +343,8 @@ ON CONFLICT (id) DO UPDATE SET
     update_time = CURRENT_TIMESTAMP;
 
 SELECT setval(
-    pg_get_serial_sequence('dynamicbusiness.ent_facility', 'id'),
-    GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_facility), {max_id})
+    pg_get_serial_sequence('dynamicbusiness.ent_facility_t1', 'id'),
+    GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_facility_t1), {max_id})
 );
 """
     FACILITY_OUT.write_text(sql, encoding="utf-8")
@@ -391,7 +391,7 @@ FROM (VALUES
 );
 
 -- 1) 管道线路实体（facility · 管道模型）
-INSERT INTO ent_facility (
+INSERT INTO ent_facility_t1 (
   id, entity_type_code, model_id, name, code, tenant_id, creator,
   tree_path, sort, status, deleted, region_id, facility_type, custom_fields
 )
@@ -462,7 +462,7 @@ DO UPDATE SET
   update_time = CURRENT_TIMESTAMP;
 
 -- 3) 模型 ↔ 分类
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT m.id, c.id, 'facility', m.code, c.code, 1, 1, 'seed'
@@ -477,7 +477,7 @@ DO UPDATE SET
   update_time = CURRENT_TIMESTAMP;
 
 -- 4) Pattern C 绑定（清理旧 facility 绑定后重建福建节点）
-UPDATE dynamic_category_entity_link l
+UPDATE dynamic_category_entity_link_t1 l
 SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
 FROM dynamic_category c
 WHERE l.category_id = c.id
@@ -486,18 +486,18 @@ WHERE l.category_id = c.id
   AND c.code LIKE 'FAC-CAT-%'
   AND l.deleted = false;
 
-INSERT INTO dynamic_category_entity_link (category_id, entity_id, entity_model_id, tenant_id, creator)
+INSERT INTO dynamic_category_entity_link_t1 (category_id, entity_id, entity_model_id, tenant_id, creator)
 SELECT c.id, n.entity_id, e.model_id, 1, 'seed'
 FROM tmp_facility_pattern_c n
 JOIN dynamic_category c ON c.deleted = false AND c.tenant_id = 1 AND c.code = n.category_code
-JOIN ent_facility e ON e.id = n.entity_id AND e.deleted = false;
+JOIN ent_facility_t1 e ON e.id = n.entity_id AND e.deleted = false;
 
--- 5) 废弃 region 下误挂的管道节点与 ent_region pipeline 行
+-- 5) 废弃 region 下误挂的管道节点与 ent_region_t1 pipeline 行
 UPDATE dynamic_category
 SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
 WHERE deleted = false AND tenant_id = 1 AND code LIKE 'REG-CAT-PIPE-%';
 
-UPDATE ent_region
+UPDATE ent_region_t1
 SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
 WHERE deleted = false AND tenant_id = 1 AND region_type = 'pipeline';
 
@@ -553,8 +553,8 @@ SET enabled = false, updater = 'seed', update_time = CURRENT_TIMESTAMP
 WHERE entity_type_code = 'facility' AND dimension_kind = 'MODEL' AND deleted = false;
 
 SELECT setval(
-  pg_get_serial_sequence('dynamicbusiness.ent_facility', 'id'),
-  GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_facility), {max_id})
+  pg_get_serial_sequence('dynamicbusiness.ent_facility_t1', 'id'),
+  GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_facility_t1), {max_id})
 );
 """
     CATEGORY_OUT.write_text(sql, encoding="utf-8")

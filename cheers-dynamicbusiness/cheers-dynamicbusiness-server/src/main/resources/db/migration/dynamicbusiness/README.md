@@ -81,8 +81,12 @@
 | V65 | `V65__dm_data_tab_column_relation.sql` | **栏间关系声明**表：列身份对、关联种类、启用交互等；按数据类型与布局场景分页配置 |
 | V66 | `V66__workbench_layout_template_instance.sql` | 工作台布局头（模版/实例）、页面布局引用、栏行改挂 layout_id、类型挂 data_layout_id；废止 layout_scene |
 | V67 | `V67__retire_embed_pick_page_key.sql` | 废止过渡 page_key `catalog:*:embed-pick` 与「嵌入勾选·」实例；嵌入改复用目录 dataLayoutId |
+| V68 | `V68__seed_inspection_network_work_scope.sql` | 检查项定义及方法目录统一为 `NETWORK`；保留设备、管线检查内容 DOMAIN 入口为 `FACILITY` |
+| V69 | `V69__model_governance_columns.sql` | 型号治理状态、本地发起设施、创建用户字段；存量型号定稿为公司规格 |
+| V70 | `V70__field_governance_columns.sql` | 字段治理状态、本地发起设施、创建用户字段；存量字段定稿为公司字段 |
+| V71 | `V71__workbench_layout_settings_json.sql` | 工作台布局头增加设置 JSON；保存区段配置隐藏状态 |
 
-> **版本号说明**：本仓库已登记至 **V67**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。  
+> **版本号说明**：本仓库已登记至 **V71**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。
 
 
 > **跨机合并说明**：本机布局迁移已占用 V26–V28 且已执行；对方原 `V26__category_*` / `V27__ent_structure` 在合并后改为 V29/V30。若对方库已按旧文件名执行过 V26/V27，需对齐历史表 `version`/`script` 后 `flyway:repair`，再拉本分支。
@@ -124,6 +128,10 @@ PGPASSWORD=Coolhomer psql -h 127.0.0.1 -U postgres -d sinopec -c \
 
 | 日期 | 说明 |
 |------|------|
+| 2026-08-26 | V71：工作台布局头增加 `settings_json`，持久化 FILTER、OBJECT、WHAT 区段配置隐藏状态 |
+| 2026-08-26 | V70：字段增加治理状态、本地发起设施、创建用户字段；存量字段定稿为 `COMPANY` |
+| 2026-08-26 | V69：型号增加治理状态、本地发起设施、创建用户字段；存量型号定稿为 `COMPANY` |
+| 2026-08-26 | V68：检查项定义及方法相关目录统一为 `NETWORK`；不修改设备、管线检查内容 DOMAIN 入口 |
 | 2026-08-15 | V60：删除 `dm_five_w_orchestration.selection_level`；开列认布局，What 绑层认 `bindLayer` |
 | 2026-08-14 | V58：运营区域介绍页基础字段补 `ent_region` / `ent_region_t*` 物理列，并从 `custom_fields` 回填 |
 | 2026-08-02 | V46：数据类型 `work_scope`（NETWORK/FACILITY）；API 字段 `workScope`，空默认 FACILITY，非法值 400 |

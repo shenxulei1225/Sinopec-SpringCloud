@@ -9,10 +9,10 @@ SET search_path TO dynamicbusiness;
 
 SELECT setval(
   'dynamicbusiness.ent_facility_id_seq',
-  GREATEST(COALESCE((SELECT MAX(id) FROM dynamicbusiness.ent_facility), 1), 1)
+  GREATEST(COALESCE((SELECT MAX(id) FROM dynamicbusiness.ent_facility_t1), 1), 1)
 );
 
-INSERT INTO ent_facility (
+INSERT INTO ent_facility_t1 (
     entity_type_code,
     model_id,
     name,
@@ -72,11 +72,11 @@ FROM (
 JOIN dynamic_model m
   ON m.deleted = false AND m.tenant_id = 1 AND m.code = 'MODEL-FACILITY-STATION'
 WHERE NOT EXISTS (
-    SELECT 1 FROM ent_facility e
+    SELECT 1 FROM ent_facility_t1 e
     WHERE e.deleted = false AND e.tenant_id = 1 AND e.code = v.code
 );
 
-UPDATE ent_facility e
+UPDATE ent_facility_t1 e
 SET
     name = v.name,
     address = v.address,

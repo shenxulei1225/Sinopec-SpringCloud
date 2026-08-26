@@ -143,7 +143,7 @@ DO UPDATE SET
   update_time = CURRENT_TIMESTAMP;
 
 -- 场景实体（对账 SCENE-LUOYANG-SHENGRUI / facility 45）
-INSERT INTO ent_scene (
+INSERT INTO ent_scene_t1 (
   tenant_id, entity_type_code, model_id, name, code, status,
   fld_base_scene_ref_facility, scene_code,
   origin_lng, origin_lat, origin_height, origin_height_source, publish_status,
@@ -157,11 +157,11 @@ SELECT
 FROM dynamic_model m
 WHERE m.deleted = false AND m.tenant_id = 1 AND m.code = 'MODEL-SCENE-WORLD'
   AND NOT EXISTS (
-    SELECT 1 FROM ent_scene e
+    SELECT 1 FROM ent_scene_t1 e
     WHERE e.deleted = false AND e.tenant_id = 1 AND e.code = 'SCENE-LUOYANG-SHENGRUI'
   );
 
-UPDATE ent_scene e
+UPDATE ent_scene_t1 e
 SET
   name = '洛阳圣瑞场景',
   model_id = m.id,
@@ -177,7 +177,7 @@ FROM dynamic_model m
 WHERE e.deleted = false AND e.tenant_id = 1 AND e.code = 'SCENE-LUOYANG-SHENGRUI'
   AND m.deleted = false AND m.tenant_id = 1 AND m.code = 'MODEL-SCENE-WORLD';
 
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT m.id, c.id, 'scene', m.code, c.code, 1, 1, 'seed'
@@ -192,16 +192,16 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_category_entity_link (
+INSERT INTO dynamic_category_entity_link_t1 (
   category_id, entity_id, entity_model_id, tenant_id, creator
 )
 SELECT c.id, e.id, e.model_id, 1, 'seed'
 FROM dynamic_category c
-JOIN ent_scene e
+JOIN ent_scene_t1 e
   ON e.deleted = false AND e.tenant_id = 1 AND e.code = 'SCENE-LUOYANG-SHENGRUI'
 WHERE c.deleted = false AND c.tenant_id = 1 AND c.code = 'SCENE-CAT-LUOYANG-SHENGRUI'
   AND NOT EXISTS (
-    SELECT 1 FROM dynamic_category_entity_link l
+    SELECT 1 FROM dynamic_category_entity_link_t1 l
     WHERE l.deleted = false AND l.tenant_id = 1
       AND l.category_id = c.id AND l.entity_id = e.id
   );
@@ -212,7 +212,7 @@ DECLARE
   scene_cnt int;
   cat_cnt int;
 BEGIN
-  SELECT COUNT(*) INTO scene_cnt FROM ent_scene
+  SELECT COUNT(*) INTO scene_cnt FROM ent_scene_t1
   WHERE deleted = false AND code = 'SCENE-LUOYANG-SHENGRUI';
   SELECT COUNT(*) INTO cat_cnt FROM dynamic_category
   WHERE deleted = false AND code = 'SCENE-CAT-LUOYANG-SHENGRUI';

@@ -1,6 +1,6 @@
 -- 开发联调 · 巡检管理主数据样例（排期 / 对象 / 巡检点模板）
 
--- Pattern B：实体↔分类写入 dynamic_entity_category_relation（与运营区域 Pattern C 的 link 表区分）
+-- Pattern B：实体↔分类写入 dynamic_entity_category_relation_t1（与运营区域 Pattern C 的 link 表区分）
 
 -- 定稿示例 id：schedule=201, object=301, point=501/502
 
@@ -12,7 +12,7 @@ SET search_path TO dynamicbusiness;
 
 -- 幂等：清理本批样例实体的分类绑定（含误写入 Pattern C link 的历史行）
 
-UPDATE dynamic_entity_category_relation r
+UPDATE dynamic_entity_category_relation_t1 r
 
 SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
 
@@ -22,7 +22,7 @@ WHERE r.deleted = false AND r.tenant_id = 1
 
 
 
-UPDATE dynamic_category_entity_link l
+UPDATE dynamic_category_entity_link_t1 l
 
 SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
 
@@ -86,7 +86,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 
 
-INSERT INTO dynamic_entity_category_relation (entity_id, category_id, entity_type_code, sort, tenant_id, creator)
+INSERT INTO dynamic_entity_category_relation_t1 (entity_id, category_id, entity_type_code, sort, tenant_id, creator)
 
 SELECT 201, c.id, 'patrol_schedule', 1, 1, 'seed'
 
@@ -148,7 +148,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 
 
-INSERT INTO dynamic_entity_category_relation (entity_id, category_id, entity_type_code, sort, tenant_id, creator)
+INSERT INTO dynamic_entity_category_relation_t1 (entity_id, category_id, entity_type_code, sort, tenant_id, creator)
 
 SELECT 301, c.id, 'patrol_object', 1, 1, 'seed'
 
@@ -214,7 +214,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 
 
-INSERT INTO dynamic_entity_category_relation (entity_id, category_id, entity_type_code, sort, tenant_id, creator)
+INSERT INTO dynamic_entity_category_relation_t1 (entity_id, category_id, entity_type_code, sort, tenant_id, creator)
 
 SELECT 501, c.id, 'patrol_point', 1, 1, 'seed'
 
@@ -280,7 +280,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 
 
-INSERT INTO dynamic_entity_category_relation (entity_id, category_id, entity_type_code, sort, tenant_id, creator)
+INSERT INTO dynamic_entity_category_relation_t1 (entity_id, category_id, entity_type_code, sort, tenant_id, creator)
 
 SELECT 502, c.id, 'patrol_point', 2, 1, 'seed'
 

@@ -6,7 +6,7 @@
 
 SET search_path TO dynamicbusiness;
 
-INSERT INTO ent_facility (
+INSERT INTO ent_facility_t1 (
     id, entity_type_code, model_id, name, code, tenant_id, creator,
     tree_path, sort, status, deleted, region_id, address, longitude, latitude,
     facility_type, custom_fields
@@ -568,6 +568,6 @@ ON CONFLICT (id) DO UPDATE SET
     update_time = CURRENT_TIMESTAMP;
 
 SELECT setval(
-    pg_get_serial_sequence('dynamicbusiness.ent_facility', 'id'),
-    GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_facility), 49)
+    pg_get_serial_sequence('dynamicbusiness.ent_facility_t1', 'id'),
+    GREATEST((SELECT COALESCE(MAX(id), 1) FROM dynamicbusiness.ent_facility_t1), 49)
 );

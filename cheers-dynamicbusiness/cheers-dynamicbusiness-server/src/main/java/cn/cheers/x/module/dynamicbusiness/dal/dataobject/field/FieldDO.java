@@ -55,6 +55,22 @@ public class FieldDO extends TenantBaseDO {
     private String source;
 
     /**
+     * 治理状态：LOCAL-站场本地字段，COMPANY-公司字段。
+     * 字段治理身份由创建时所挂型号决定，禁止在读取时按分配关系反推。
+     */
+    private String governanceStatus;
+
+    /**
+     * 本地字段的发起设施 ID；公司字段为空。
+     */
+    private Long originFacilityId;
+
+    /**
+     * 创建用户 ID；用于后续本地字段治理权限判断。
+     */
+    private Long creatorUserId;
+
+    /**
         * 状态（1启用，0禁用）
         */
     private Integer status;

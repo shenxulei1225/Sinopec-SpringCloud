@@ -30,4 +30,10 @@ public class ModelCloneReqVO {
 
     @Schema(description = "额外挂接的分类 ID 列表（与源模型分类合并去重）；不传则只拷源模型已有分类")
     private List<Long> categoryIds;
+
+    @Schema(description = "新型号治理状态；无公司规格创建能力时服务端强制按 LOCAL 创建", example = "LOCAL")
+    private String governanceStatus;
+
+    @Schema(description = "当前有效站场 ID；复制为本地型号时必填", example = "1001")
+    private Long effectiveFacilityId;
 }

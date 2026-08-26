@@ -119,8 +119,10 @@ public class FieldController {
     )
     @Parameter(name = "keyword", description = "关键词(必填，模糊匹配字段名称)", required = true, example = "设备名称")
     @PreAuthorize("@ss.hasPermission('system:field:query')")
-    public CommonResult<List<FieldRespVO>> searchFields(@RequestParam("keyword") String keyword) {
-        return success(fieldService.search(keyword, null, null, null));
+    public CommonResult<List<FieldRespVO>> searchFields(
+            @RequestParam("keyword") String keyword,
+            @RequestParam(value = "effectiveFacilityId", required = false) Long effectiveFacilityId) {
+        return success(fieldService.search(keyword, null, null, null, effectiveFacilityId));
     }
 
     @GetMapping("/list")
@@ -134,8 +136,9 @@ public class FieldController {
     public CommonResult<List<FieldRespVO>> listFields(
             @RequestParam(value = "type", required = false) String type,
             @RequestParam(value = "source", required = false) String source,
-            @RequestParam(value = "status", required = false) Integer status) {
-        return success(fieldService.listAll(type, source, status));
+            @RequestParam(value = "status", required = false) Integer status,
+            @RequestParam(value = "effectiveFacilityId", required = false) Long effectiveFacilityId) {
+        return success(fieldService.listAll(type, source, status, effectiveFacilityId));
     }
 
     @GetMapping("/page")

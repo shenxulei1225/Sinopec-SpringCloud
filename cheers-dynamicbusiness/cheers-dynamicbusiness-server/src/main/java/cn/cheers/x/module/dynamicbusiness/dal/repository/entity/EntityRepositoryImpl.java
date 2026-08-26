@@ -601,6 +601,34 @@ public class EntityRepositoryImpl implements EntityRepository {
         );
     }
 
+    /**
+     * 在实体所属的专用表内聚合设施覆盖范围。
+     *
+     * <p>{@code facility_id} 是实体归属设施的权威列；这里直接做库内去重计数，
+     * 不装载实体，也不读取型号表上的发起设施。</p>
+     */
+    @Override
+    public long countDistinctFacilityIdsByModelId(Long modelId, String entityTypeCode) {
+        if (modelId == null || !org.springframework.util.StringUtils.hasText(entityTypeCode)) {
+            throw new IllegalArgumentException("modelId 与 entityTypeCode 不能为空");
+        }
+        String entityTable = resolvePhysicalTableName(entityTypeCode);
+        String sql = "SELECT COUNT(DISTINCT facility_id) FROM " + entityTable
+                + " WHERE deleted = false AND model_id = ? AND facility_id IS NOT NULL";
+        Long count = jdbcTemplate.queryForObject(sql, Long.class, modelId);
+        return count == null ? 0L : count;
+    }
+
+    @Override
+    public boolean hasFacilityIdColumn(String entityTypeCode) {
+        String entityTable = resolvePhysicalTableName(entityTypeCode);
+        Boolean present = jdbcTemplate.queryForObject(
+                "SELECT EXISTS (SELECT 1 FROM information_schema.columns "
+                        + "WHERE table_schema = current_schema() AND table_name = ? AND column_name = 'facility_id')",
+                Boolean.class, entityTable);
+        return Boolean.TRUE.equals(present);
+    }
+
     @Override
     public List<cn.cheers.x.module.dynamicbusiness.service.entity.dto.EntityAggregationCountDTO<Integer>>
             countGroupByStatus(String entityTypeCode, Long modelId, Integer status, String keyword,

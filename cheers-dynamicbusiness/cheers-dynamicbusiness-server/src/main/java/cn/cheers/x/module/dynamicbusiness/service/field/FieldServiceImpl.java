@@ -1,6 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.field;
 
 import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
+import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
 
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.json.JSONArray;
@@ -14,9 +15,12 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.convert.field.FieldConvert;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.event.FieldDefinitionChangedEvent;
+import cn.cheers.x.module.dynamicbusiness.service.model.governance.MasterDataCapabilityChecker;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
@@ -37,9 +41,17 @@ public class FieldServiceImpl implements FieldService {
 
     /** ENTITY_REF 关联目标 entityTypeCode 持久化在 provider_code */
     private static final String DYNAMIC_ENTITY_PROVIDER_PREFIX = "dynamic-entity:";
+    private static final String GOVERNANCE_LOCAL = "LOCAL";
+    private static final String GOVERNANCE_COMPANY = "COMPANY";
 
     @Resource
     private FieldMapper fieldMapper;
+
+    @Resource
+    private ModelMapper modelMapper;
+
+    @Resource
+    private MasterDataCapabilityChecker masterDataCapabilityChecker;
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
@@ -55,9 +67,10 @@ public class FieldServiceImpl implements FieldService {
     public Long createField(FieldCreateReqVO reqVO) {
         validateUnit(reqVO.getType(), reqVO.getUnit());
         validateEnumOptions(reqVO.getType(), reqVO.getOptions());
-        Long tenantId = getTenantId();
         FieldDO field = FieldConvert.INSTANCE.convert(reqVO);
         applyEntityRefProvider(field, reqVO.getTargetEntityType());
+        applyGovernanceForCreate(field, reqVO.getModelId());
+        Long tenantId = getTenantId();
         // 自动生成 code（code 由系统生成，不通过前端传入）
         String code = generateCode();
         // 确保生成的 code 唯一（虽然概率极低，但为了安全起见）
@@ -117,6 +130,9 @@ public class FieldServiceImpl implements FieldService {
         if (isSystemField(db)) {
             throw new ServiceException(400, "系统字段不允许删除");
         }
+        if (GOVERNANCE_COMPANY.equals(db.getGovernanceStatus())) {
+            throw new ServiceException(403, "公司字段不允许硬删除，请使用停用流程");
+        }
         fieldMapper.deleteById(id);
         // 清除缓存
         evictFieldCache(id);
@@ -147,21 +163,33 @@ public class FieldServiceImpl implements FieldService {
     }
 
     @Override
-    public List<FieldRespVO> search(String keyword, String type, String source, Integer status) {
-        List<FieldDO> list = fieldMapper.search(keyword, type, source, status);
+    public List<FieldRespVO> search(String keyword, String type, String source, Integer status,
+                                    Long effectiveFacilityId) {
+        List<FieldDO> list = filterVisibleFields(
+                fieldMapper.search(keyword, type, source, status), effectiveFacilityId);
         return enrichEntityRefTargetList(FieldConvert.INSTANCE.convertList(list), list);
     }
 
     @Override
-    public List<FieldRespVO> listAll(String type, String source, Integer status) {
-        return search(null, type, source, status);
+    public List<FieldRespVO> listAll(String type, String source, Integer status, Long effectiveFacilityId) {
+        return search(null, type, source, status, effectiveFacilityId);
     }
 
     @Override
     public PageResult<FieldRespVO> page(FieldPageReqVO reqVO) {
-        PageResult<FieldDO> page = fieldMapper.selectPage(reqVO, reqVO.getKeyword(), reqVO.getType(), reqVO.getSource(), reqVO.getStatus());
-        List<FieldRespVO> list = enrichEntityRefTargetList(FieldConvert.INSTANCE.convertList(page.getList()), page.getList());
-        return new PageResult<>(list, page.getTotal());
+        // 先按治理身份过滤再分页，避免数据库先切页后出现空洞页和错误总数。
+        List<FieldDO> visible = filterVisibleFields(
+                fieldMapper.search(reqVO.getKeyword(), reqVO.getType(), reqVO.getSource(), reqVO.getStatus()),
+                reqVO.getEffectiveFacilityId());
+        int pageNo = reqVO.getPageNo() == null || reqVO.getPageNo() < 1 ? 1 : reqVO.getPageNo();
+        int pageSize = reqVO.getPageSize() == null || reqVO.getPageSize() < 1 ? 10 : reqVO.getPageSize();
+        int from = (pageNo - 1) * pageSize;
+        List<FieldDO> pageFields = from >= visible.size()
+                ? List.of()
+                : visible.subList(from, Math.min(from + pageSize, visible.size()));
+        List<FieldRespVO> list = enrichEntityRefTargetList(
+                FieldConvert.INSTANCE.convertList(pageFields), pageFields);
+        return new PageResult<>(list, (long) visible.size());
     }
 
     @Override
@@ -175,6 +203,65 @@ public class FieldServiceImpl implements FieldService {
     }
 
     // ================= helper =================
+
+    /**
+     * 创建时一次写定字段治理身份。
+     *
+     * <p>传入本地型号时，字段与型号共用发起站，形成同一个本地包；未传型号或传入公司型号时
+     * 创建公司字段。这里不创建审批记录，也不允许读路径根据字段分配反推治理身份。</p>
+     */
+    private void applyGovernanceForCreate(FieldDO field, Long modelId) {
+        Long currentUserId = SecurityFrameworkUtils.getLoginUserId();
+        if (currentUserId == null) {
+            throw new ServiceException(401, "未获取到当前登录用户");
+        }
+        field.setCreatorUserId(currentUserId);
+        field.setGovernanceStatus(GOVERNANCE_COMPANY);
+        field.setOriginFacilityId(null);
+        if (modelId == null) {
+            assertCanCreateCompanyField();
+            return;
+        }
+
+        ModelDO model = modelMapper.selectById(modelId);
+        if (model == null) {
+            throw new ServiceException(404, "模型不存在");
+        }
+        if (!GOVERNANCE_LOCAL.equals(model.getGovernanceStatus())) {
+            assertCanCreateCompanyField();
+            return;
+        }
+        if (model.getOriginFacilityId() == null) {
+            throw new ServiceException(400, "本地型号缺少发起站场");
+        }
+        field.setGovernanceStatus(GOVERNANCE_LOCAL);
+        field.setOriginFacilityId(model.getOriginFacilityId());
+    }
+
+    private void assertCanCreateCompanyField() {
+        if (!masterDataCapabilityChecker.canCreateCompanyStandard()) {
+            throw new ServiceException(403, "无权创建公司字段");
+        }
+    }
+
+    /**
+     * 字段列表只认创建时写定的治理身份：公司字段全网可见，本地字段仅发起站或全网管理员可见。
+     * 禁止按型号分配关系在读取时补写或推断字段身份。
+     */
+    private List<FieldDO> filterVisibleFields(List<FieldDO> candidates, Long effectiveFacilityId) {
+        if (candidates == null || candidates.isEmpty()) {
+            return List.of();
+        }
+        boolean networkDataAdmin = masterDataCapabilityChecker.canManageNetworkModelData();
+        return candidates.stream()
+                .filter(Objects::nonNull)
+                .filter(field -> GOVERNANCE_COMPANY.equals(field.getGovernanceStatus())
+                        || GOVERNANCE_LOCAL.equals(field.getGovernanceStatus())
+                        && (networkDataAdmin
+                        || effectiveFacilityId != null
+                        && Objects.equals(effectiveFacilityId, field.getOriginFacilityId())))
+                .toList();
+    }
 
     private String generateCode() {
         return "F-" + IdUtil.fastSimpleUUID();

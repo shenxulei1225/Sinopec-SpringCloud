@@ -24,7 +24,7 @@ UPDATE dynamic_category
 SET name = '天宝清管站', updater = 'seed', update_time = CURRENT_TIMESTAMP
 WHERE deleted = false AND tenant_id = 1 AND code = 'FAC-CAT-ST-FJ-HX2-004';
 
-UPDATE dynamic_model_category_relation r
+UPDATE dynamic_model_category_relation_t1 r
 SET model_id = m.id, updater = 'seed', update_time = CURRENT_TIMESTAMP
 FROM dynamic_model m
 WHERE r.deleted = false AND r.tenant_id = 1
@@ -90,7 +90,7 @@ DO UPDATE SET
   update_time = CURRENT_TIMESTAMP;
 
 -- ── 5. 模型 ↔ 分类 ───────────────────────────────────────────────────
-INSERT INTO dynamic_model_category_relation (
+INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator
 )
 SELECT m.id, c.id, 'facility', m.code, c.code, 1, 1, 'seed'
