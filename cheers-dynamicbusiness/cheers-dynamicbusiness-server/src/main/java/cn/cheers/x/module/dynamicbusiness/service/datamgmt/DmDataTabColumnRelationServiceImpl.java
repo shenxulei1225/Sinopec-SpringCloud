@@ -5,7 +5,9 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmDataTab
 import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmDataTabColumnRelationSaveItemVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmDataTabColumnRelationSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmDataTabColumnRelationDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmDataTabLayoutDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmDataTabColumnRelationMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmDataTabLayoutMapper;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeCategoryBootstrapService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -14,7 +16,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -23,6 +25,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * 栏间关系声明实现。
+ * <p>
+ * ## 权威与边界
+ * 本类负责关系表的读，以及<strong>仅两种</strong>删/写边路径：
+ * <ul>
+ *   <li>{@link #saveRelations}：用户保存关系全集（全量替换）</li>
+ *   <li>{@link #removeRelationsTouchingIdentities}：删栏时按作废列身份清边</li>
+ * </ul>
+ * 禁止：按 enabled / 缺类型码 /「当前看起来不像有效端点」反扫全表删边。
+ * 默认补 filter 边在 {@link DmDataTabColumnRelationBootstrapService}，只 insert 不删。
+ */
 @Service
 @Validated
 public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelationService {
@@ -47,18 +61,33 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
             "ownershipWrite"
     );
 
-    private static final Set<String> WRITE_INTERACTIONS = Set.of(
-            "dragAssociate",
-            "unbindChecked",
-            "checkboxSet",
-            "refFieldPick",
-            "ownershipWrite"
-    );
-
     private static final Set<String> ALLOWED_EDGE_ROLES = Set.of("filter", "write");
+
+    /**
+     * 读路径只认 meta.edgeRole；禁止从 enabledInteractions 推断。
+     * 缺则抛错暴露缺口（须由 saveRelations / bootstrap / 迁移写出）。
+     */
+    private static String requireEdgeRoleFromMeta(Map<String, Object> meta, String edgeId) {
+        if (meta == null) {
+            throw new ServiceException(400,
+                    "栏间关系缺少 edgeRole（edgeId=" + edgeId + "）。须为 filter 或 write，禁止推断");
+        }
+        Object role = meta.get("edgeRole");
+        if (role != null) {
+            String text = String.valueOf(role).trim();
+            if (ALLOWED_EDGE_ROLES.contains(text)) {
+                return text;
+            }
+        }
+        throw new ServiceException(400,
+                "栏间关系缺少或无效 edgeRole（edgeId=" + edgeId + "）。须为 filter 或 write，禁止推断");
+    }
 
     @Resource
     private DmDataTabColumnRelationMapper dmDataTabColumnRelationMapper;
+
+    @Resource
+    private DmDataTabLayoutMapper dmDataTabLayoutMapper;
 
     @Resource
     private DmWorkbenchLayoutService dmWorkbenchLayoutService;
@@ -76,45 +105,26 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
 
     @Override
     public List<DmDataTabColumnRelationRespVO> listByEntityTypeCode(String entityTypeCode) {
+        // 读路径禁止 bootstrap 写库；缺布局由创建类型时写出，此处只解析已挂载 layoutId。
         String code = normalizeEntityTypeCode(entityTypeCode);
-        entityTypeCategoryBootstrapService.ensureForEntityTypeCode(code);
         Long layoutId = dmWorkbenchLayoutService.resolveLayoutIdForEntityType(code);
         return listByLayoutId(layoutId);
     }
 
-    private static String edgeRoleFromMeta(Map<String, Object> meta) {
-        if (meta == null) {
-            return "filter";
-        }
-        Object role = meta.get("edgeRole");
-        if (role != null) {
-            String text = String.valueOf(role).trim();
-            if ("write".equals(text) || "filter".equals(text)) {
-                return text;
-            }
-        }
-        Object interactions = meta.get("enabledInteractions");
-        if (interactions instanceof List<?> list) {
-            for (Object item : list) {
-                if (item == null) {
-                    continue;
-                }
-                String code = String.valueOf(item).trim();
-                if (WRITE_INTERACTIONS.contains(code)) {
-                    return "write";
-                }
-            }
-        }
-        return "filter";
-    }
-
+    /**
+     * 触发 1：全量替换。
+     * <p>
+     * 请求体 relations = 本页最终边集合；库里有、请求里没有的 edgeId → 删除。
+     * 这是用户在数据关系图点「保存关系」时的权威路径；与布局保存无关。
+     * <p>
+     * 输入假设：调用方提交的是意图中的完整集合（可为空，空即清空本页全部边）。
+     * 禁止在布局改名/隐藏/调序等路径调用本方法「顺便清边」。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveRelations(DmDataTabColumnRelationSaveReqVO reqVO) {
         Long layoutId = resolveSaveLayoutId(reqVO);
-        String code = StringUtils.hasText(reqVO.getEntityTypeCode())
-                ? reqVO.getEntityTypeCode().trim()
-                : null;
+        String code = resolveEntityTypeCodeForSave(layoutId, reqVO.getEntityTypeCode());
         List<DmDataTabColumnRelationSaveItemVO> items =
                 reqVO.getRelations() == null ? List.of() : reqVO.getRelations();
 
@@ -188,6 +198,45 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
         dmDataTabColumnRelationMapper.deletePhysicalSoftDeletedByLayoutId(layoutId);
     }
 
+    /**
+     * 触发 2：删栏连带清边。
+     * <p>
+     * 权威入参：本次<strong>已经从布局删掉</strong>（或即将作废）的列身份集合。
+     * 只删 from / to 碰到该集合的边；集合为空则不动关系表。
+     * <p>
+     * 谁调用：仅 {@link DmDataTabLayoutServiceImpl#saveLayouts} 在确有布局行被删时。
+     * 配置隐藏、改名、调序、加栏 → 不得调用。
+     * <p>
+     * 删光后物理清除软删行，避免与全量替换路径残留混淆。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void removeRelationsTouchingIdentities(
+            Long layoutId, Collection<String> removedIdentities) {
+        if (layoutId == null || removedIdentities == null || removedIdentities.isEmpty()) {
+            return;
+        }
+        Set<String> removed = new HashSet<>();
+        for (String raw : removedIdentities) {
+            if (StringUtils.hasText(raw)) {
+                removed.add(raw.trim());
+            }
+        }
+        if (removed.isEmpty()) {
+            return;
+        }
+        dmWorkbenchLayoutService.requireLayout(layoutId);
+        for (DmDataTabColumnRelationDO row :
+                dmDataTabColumnRelationMapper.selectListByLayoutId(layoutId)) {
+            String from = row.getFromColumnIdentity() == null ? "" : row.getFromColumnIdentity().trim();
+            String to = row.getToColumnIdentity() == null ? "" : row.getToColumnIdentity().trim();
+            if (removed.contains(from) || removed.contains(to)) {
+                dmDataTabColumnRelationMapper.deleteById(row.getId());
+            }
+        }
+        dmDataTabColumnRelationMapper.deletePhysicalSoftDeletedByLayoutId(layoutId);
+    }
+
     private Long resolveSaveLayoutId(DmDataTabColumnRelationSaveReqVO reqVO) {
         if (reqVO.getLayoutId() != null) {
             return reqVO.getLayoutId();
@@ -198,6 +247,25 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
         String code = reqVO.getEntityTypeCode().trim();
         entityTypeCategoryBootstrapService.ensureForEntityTypeCode(code);
         return dmWorkbenchLayoutService.resolveLayoutIdForEntityType(code);
+    }
+
+    /**
+     * 关系行 entity_type_code 非空：请求优先，否则从本页布局行取目录注册编码。
+     * 仍缺则报错，禁止插入 null（会整笔事务失败或落成脏数据）。
+     */
+    private String resolveEntityTypeCodeForSave(Long layoutId, String requestEntityTypeCode) {
+        if (StringUtils.hasText(requestEntityTypeCode)) {
+            return requestEntityTypeCode.trim();
+        }
+        List<DmDataTabLayoutDO> rows = dmDataTabLayoutMapper.selectListByLayoutId(layoutId);
+        for (DmDataTabLayoutDO row : rows) {
+            if (StringUtils.hasText(row.getEntityTypeCode())) {
+                return row.getEntityTypeCode().trim();
+            }
+        }
+        throw new ServiceException(400,
+                "保存栏间关系缺少 entityTypeCode，且布局行上也没有目录注册编码（layoutId="
+                        + layoutId + "）");
     }
 
     private void validateItem(DmDataTabColumnRelationSaveItemVO item) {
@@ -255,23 +323,18 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
         return text.substring(0, idx).trim().toUpperCase();
     }
 
+    /**
+     * 写路径：edgeRole 必须显式传入；禁止从交互列表猜 filter/write。
+     */
     private String resolveEdgeRole(DmDataTabColumnRelationSaveItemVO item) {
-        if (StringUtils.hasText(item.getEdgeRole())) {
-            String role = item.getEdgeRole().trim();
-            if (!ALLOWED_EDGE_ROLES.contains(role)) {
-                throw new ServiceException(400, "无效的边用途: " + item.getEdgeRole());
-            }
-            return role;
+        if (!StringUtils.hasText(item.getEdgeRole())) {
+            throw new ServiceException(400, "栏间关系必须指定 edgeRole（filter 或 write）");
         }
-        List<String> raw = item.getEnabledInteractions();
-        if (raw != null) {
-            for (String code : raw) {
-                if (StringUtils.hasText(code) && WRITE_INTERACTIONS.contains(code.trim())) {
-                    return "write";
-                }
-            }
+        String role = item.getEdgeRole().trim();
+        if (!ALLOWED_EDGE_ROLES.contains(role)) {
+            throw new ServiceException(400, "无效的边用途: " + item.getEdgeRole());
         }
-        return "filter";
+        return role;
     }
 
     private List<String> normalizeInteractions(List<String> raw, String edgeRole) {
@@ -340,7 +403,7 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
         vo.setFromTypeCode(row.getFromTypeCode());
         vo.setToTypeCode(row.getToTypeCode());
         Map<String, Object> meta = row.getRelationMeta();
-        String edgeRole = edgeRoleFromMeta(meta);
+        String edgeRole = requireEdgeRoleFromMeta(meta, row.getEdgeId());
         vo.setEdgeRole(edgeRole);
         if (meta != null) {
             Object interactions = meta.get("enabledInteractions");
@@ -387,7 +450,7 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
         for (DmDataTabColumnRelationDO row : rows) {
             String from = row.getFromColumnIdentity() == null ? "" : row.getFromColumnIdentity().trim();
             String to = row.getToColumnIdentity() == null ? "" : row.getToColumnIdentity().trim();
-            String role = edgeRoleFromMeta(row.getRelationMeta());
+            String role = requireEdgeRoleFromMeta(row.getRelationMeta(), row.getEdgeId());
             String key = ColumnRelationLayoutEndpoints.pairKey(from, to, role);
             byPair.putIfAbsent(key, row);
         }

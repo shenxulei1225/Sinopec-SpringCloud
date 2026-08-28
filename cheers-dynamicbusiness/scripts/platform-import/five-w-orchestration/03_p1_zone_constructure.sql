@@ -1,6 +1,6 @@
 -- ============================================================================
 -- five-w-orchestration · 03 P1 zone + Constructure（§5/§6）
--- 编排头只写当前对象从哪来。开分类/型号/实体栏认布局。
+-- zone：分类即对象。Constructure：点列表行。开栏认布局。
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;
@@ -18,7 +18,7 @@ BEGIN
     PERFORM _seed_five_w_semantic(
       v_tenant, 'zone',
       'VIEW_DETAIL', '{"bindLayer":"ENTITY"}'::jsonb,
-      'NONE', '{}'::jsonb, 'LIST_ROW');
+      'NONE', '{}'::jsonb, 'CATEGORY_NODE');
   END IF;
 
   IF NOT EXISTS (

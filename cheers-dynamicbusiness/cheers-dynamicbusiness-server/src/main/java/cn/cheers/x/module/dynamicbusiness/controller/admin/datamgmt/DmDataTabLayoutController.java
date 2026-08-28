@@ -1,5 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt;
 
+import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmDataTabLayoutBundleRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmDataTabLayoutRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmDataTabLayoutSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.service.datamgmt.DmDataTabLayoutService;
@@ -34,10 +35,22 @@ public class DmDataTabLayoutController {
     @Operation(summary = "按布局 id 或目录编码查询工作台栏布局")
     @Parameter(name = "layoutId", description = "工作台布局实例/模版 id（优先）")
     @Parameter(name = "entityTypeCode", description = "目录编码；无 layoutId 时解析其 dataLayoutId")
+    @Parameter(name = "includeColumnRelations", description = "true 时返回 layouts + columnRelations 合并包，少一次栏间关系 GET")
     @PreAuthorize("@ss.hasPermission('system:entity-type:query')")
-    public CommonResult<List<DmDataTabLayoutRespVO>> list(
+    public CommonResult<?> list(
             @RequestParam(value = "layoutId", required = false) Long layoutId,
-            @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode) {
+            @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode,
+            @RequestParam(value = "includeColumnRelations", required = false, defaultValue = "false")
+            boolean includeColumnRelations) {
+        if (includeColumnRelations) {
+            if (layoutId != null) {
+                return success(dmDataTabLayoutService.listBundleByLayoutId(layoutId));
+            }
+            if (StringUtils.hasText(entityTypeCode)) {
+                return success(dmDataTabLayoutService.listBundleByEntityTypeCode(entityTypeCode));
+            }
+            throw new ServiceException(400, "layoutId 与 entityTypeCode 不能同时为空");
+        }
         if (layoutId != null) {
             return success(dmDataTabLayoutService.listByLayoutId(layoutId));
         }

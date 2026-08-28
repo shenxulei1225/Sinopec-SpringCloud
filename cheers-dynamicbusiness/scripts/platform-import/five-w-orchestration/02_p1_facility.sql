@@ -1,6 +1,6 @@
 -- ============================================================================
 -- five-w-orchestration · 02 P1 facility（§38/§42）
--- 编排头：点列表这一行是当前对象。开区域筛选栏 / 站场实体栏认布局。
+-- 编排头：分类即对象（点树节点即当前对象）。开区域筛选栏 / 站场分类栏认布局。
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;
@@ -20,5 +20,5 @@ BEGIN
   PERFORM _seed_five_w_semantic(
     v_tenant, 'facility',
     'VIEW_DETAIL', '{"bindLayer":"ENTITY"}'::jsonb,
-    'NONE', '{}'::jsonb, 'LIST_ROW');
+    'NONE', '{}'::jsonb, 'CATEGORY_NODE');
 END $$;

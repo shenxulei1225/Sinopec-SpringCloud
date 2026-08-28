@@ -42,6 +42,10 @@ public class EntitySceneQueryReqVO extends PageParam {
     @Schema(description = "分类 ID 列表", example = "[1, 2]")
     private List<Long> categoryIds;
 
+    @Schema(description = "分类筛选模式（NODE/CATEGORIZED/UNCATEGORIZED）。ENTITIES_BY_MODEL 且未传 modelIds 时，服务端按分类—型号关联展开 modelIds，禁止前端先打型号列表。",
+            example = "NODE")
+    private String categoryFilterMode;
+
     @Schema(description = "多独立栏分类求交组。有非空 groups 时优先于 categoryIds；组与组 AND，组内 OR（含子树展开）。")
     private List<CategoryIdGroupReqVO> categoryIdGroups;
 

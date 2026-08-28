@@ -1,6 +1,7 @@
 package cn.cheers.x.module.platformresource.controller.admin.component.vo;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -8,6 +9,7 @@ import lombok.Data;
  * 组件数据来源：配置器与持久化 data_source JSON 的统一结构。
  */
 @Schema(description = "组件数据来源")
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 public class ComponentDataSourceVO {
 

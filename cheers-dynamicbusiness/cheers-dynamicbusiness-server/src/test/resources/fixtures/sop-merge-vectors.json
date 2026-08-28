@@ -1,0 +1,79 @@
+{
+  "description": "SOP merge 契约向量；前后端共用。对应 ecs-react features/sop/mergeSopEffectiveConfig.test.ts",
+  "vectors": [
+    {
+      "id": "template-defaults-empty-overrides",
+      "template": {
+        "defaultSteps": [
+          { "stepTemplateId": "st-arrive", "order": 1, "paramSlots": ["location_ref"] },
+          { "stepTemplateId": "st-aim", "order": 2, "paramSlots": ["yaw", "pitch"] }
+        ],
+        "defaultParams": { "yaw": 0, "pitch": 0, "location_ref": "point-default" }
+      },
+      "stepOverride": null,
+      "paramOverride": null,
+      "expect": {
+        "ok": true,
+        "stepsLength": 2,
+        "params": { "yaw": 0, "pitch": 0, "location_ref": "point-default" }
+      }
+    },
+    {
+      "id": "param-override-instance-owned",
+      "template": {
+        "defaultSteps": [
+          { "stepTemplateId": "st-arrive", "order": 1, "paramSlots": ["location_ref"] },
+          { "stepTemplateId": "st-aim", "order": 2, "paramSlots": ["yaw", "pitch"] }
+        ],
+        "defaultParams": { "yaw": 0, "pitch": 0, "location_ref": "point-default" }
+      },
+      "stepOverride": null,
+      "paramOverride": { "yaw": 45, "pitch": -30, "location_ref": "point-pg001" },
+      "expect": {
+        "ok": true,
+        "stepsLength": 2,
+        "params": { "yaw": 45, "pitch": -30, "location_ref": "point-pg001" }
+      }
+    },
+    {
+      "id": "replace-steps-with-hover",
+      "template": {
+        "defaultSteps": [
+          { "stepTemplateId": "st-arrive", "order": 1, "paramSlots": ["location_ref"] },
+          { "stepTemplateId": "st-aim", "order": 2, "paramSlots": ["yaw", "pitch"] }
+        ],
+        "defaultParams": { "yaw": 0, "pitch": 0, "location_ref": "point-default" }
+      },
+      "stepOverride": {
+        "replaceSteps": [
+          { "stepTemplateId": "st-arrive", "order": 1, "paramSlots": ["location_ref"] },
+          { "stepTemplateId": "st-hover", "order": 2, "paramSlots": [] },
+          { "stepTemplateId": "st-aim", "order": 3, "paramSlots": ["yaw", "pitch"] }
+        ]
+      },
+      "paramOverride": { "yaw": 10, "pitch": 20, "location_ref": "point-pg002" },
+      "expect": {
+        "ok": true,
+        "stepsLength": 3,
+        "secondStepTemplateId": "st-hover",
+        "params": { "yaw": 10, "pitch": 20, "location_ref": "point-pg002" }
+      }
+    },
+    {
+      "id": "gap-missing-location-ref",
+      "template": {
+        "defaultSteps": [
+          { "stepTemplateId": "st-arrive", "order": 1, "paramSlots": ["location_ref"] },
+          { "stepTemplateId": "st-aim", "order": 2, "paramSlots": ["yaw", "pitch"] }
+        ],
+        "defaultParams": { "yaw": 0, "pitch": 0 }
+      },
+      "stepOverride": null,
+      "paramOverride": {},
+      "expect": {
+        "ok": false,
+        "gapCodes": ["MISSING_PARAM:location_ref"]
+      }
+    }
+  ]
+}

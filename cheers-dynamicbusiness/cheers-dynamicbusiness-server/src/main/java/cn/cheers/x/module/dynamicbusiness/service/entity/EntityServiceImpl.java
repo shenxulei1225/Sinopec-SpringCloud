@@ -608,6 +608,7 @@ public class EntityServiceImpl implements EntityService {
     @Override
     public EntitySceneQueryRespVO queryEntities(EntityQueryScene scene, String resultShape, String resultDetail, String categoryTypeCode, String entityTypeCode,
             List<Long> modelIds, String modelEntityTypeCode, List<Long> categoryIds, List<CategoryIdGroupReqVO> categoryIdGroups, String categoryViaRefPathCode,
+            String categoryFilterMode,
             Long entityId, Long rootEntityId, String entitySourceEntityType,
             Integer pageNo, Integer pageSize, String keyword, String domain,
             List<FieldFilterReqVO> filters, String orderByColumn, Boolean isAsc,
@@ -684,6 +685,21 @@ public class EntityServiceImpl implements EntityService {
                     validateOrderByColumn(storageEntityTypeCode, normalizedOrderByColumn);
                 }
                 List<Long> normalizedModelIds = normalizeModelIds(modelIds);
+                if (normalizedModelIds.isEmpty() && shouldResolveModelIdsFromCategoryScope(categoryIds, categoryFilterMode)) {
+                    normalizedModelIds = resolveModelIdsFromCategoryScope(
+                            categoryIds, categoryTypeCode, categoryFilterMode,
+                            modelEntityTypeCode, storageEntityTypeCode, normalizedDomain);
+                    if (normalizedModelIds.isEmpty()) {
+                        PageResult<EntityRespVO> empty = new PageResult<>(new ArrayList<>(), 0L);
+                        if (shape == EntityQueryResultShape.PAGE) {
+                            return EntitySceneQueryRespVO.page(applyResultDetail(empty, detail), detail.getCode());
+                        }
+                        if (shape == EntityQueryResultShape.TREE) {
+                            return EntitySceneQueryRespVO.tree(applyResultDetail(List.of(), detail), detail.getCode());
+                        }
+                        return EntitySceneQueryRespVO.list(applyResultDetail(List.of(), detail), detail.getCode());
+                    }
+                }
                 if (!normalizedModelIds.isEmpty()) {
                     // 场景 8 跨类型：modelIds 为外类型型号；本类实体经挂钩表取 id，再装本类实体（含 name）。
                     // 禁止用外类型 modelId 筛本类实体表 model_id（本类 model_id 只表示本类型号归属）。
@@ -944,6 +960,73 @@ public class EntityServiceImpl implements EntityService {
     }
 
     /**
+     * CM→ME：前端传 categoryIds + categoryFilterMode，服务端展开型号 id（一次 query-by-scene）。
+     * 禁止读路径再单独打型号列表接口。
+     */
+    private boolean shouldResolveModelIdsFromCategoryScope(List<Long> categoryIds, String categoryFilterMode) {
+        if (!normalizeModelIds(categoryIds).isEmpty()) {
+            return true;
+        }
+        String mode = trimToNull(categoryFilterMode);
+        return "CATEGORIZED".equalsIgnoreCase(mode) || "UNCATEGORIZED".equalsIgnoreCase(mode);
+    }
+
+    private List<Long> resolveModelIdsFromCategoryScope(List<Long> categoryIds,
+                                                        String categoryTypeCode,
+                                                        String categoryFilterMode,
+                                                        String modelEntityTypeCode,
+                                                        String storageEntityTypeCode,
+                                                        String domain) {
+        String expandTypeCode = StringUtils.hasText(modelEntityTypeCode)
+                ? modelEntityTypeCode.trim()
+                : storageEntityTypeCode;
+        if (!StringUtils.hasText(expandTypeCode)) {
+            return List.of();
+        }
+        String mode = trimToNull(categoryFilterMode);
+        if ("CATEGORIZED".equalsIgnoreCase(mode)) {
+            if (!StringUtils.hasText(categoryTypeCode)) {
+                return List.of();
+            }
+            List<ModelRespVO> models = modelService.listCategorizedModelsByCategoryType(
+                    categoryTypeCode.trim(), expandTypeCode, domain);
+            return extractModelIds(models);
+        }
+        if ("UNCATEGORIZED".equalsIgnoreCase(mode)) {
+            if (!StringUtils.hasText(categoryTypeCode)) {
+                return List.of();
+            }
+            List<ModelRespVO> models = modelService.listUncategorizedModelsByCategoryType(
+                    categoryTypeCode.trim(), expandTypeCode, domain);
+            return extractModelIds(models);
+        }
+        List<Long> normalizedCategoryIds = normalizePositiveCategoryIds(categoryIds);
+        if (normalizedCategoryIds.isEmpty()) {
+            return List.of();
+        }
+        PageResult<Long> ordered = modelService.queryOrderedModelIdsByCategoriesInBusiness(
+                normalizedCategoryIds,
+                StringUtils.hasText(categoryTypeCode) ? categoryTypeCode.trim() : null,
+                expandTypeCode,
+                null,
+                null);
+        return ordered.getList() != null ? ordered.getList() : List.of();
+    }
+
+    private List<Long> extractModelIds(List<ModelRespVO> models) {
+        if (models == null || models.isEmpty()) {
+            return List.of();
+        }
+        LinkedHashSet<Long> out = new LinkedHashSet<>();
+        for (ModelRespVO model : models) {
+            if (model != null && model.getId() != null && model.getId() > 0) {
+                out.add(model.getId());
+            }
+        }
+        return new ArrayList<>(out);
+    }
+
+    /**
      * ENTITIES_BY_MODEL 候选实体 ID：未限定 modelIds 时整业务类型；限定后仅取这些模型下的实体。
      * 可叠加业务域 / 划分成员收窄。
      */
@@ -1052,7 +1135,14 @@ public class EntityServiceImpl implements EntityService {
             return new PageResult<>(new ArrayList<>(), 0L);
         }
         String dbOrder = resolveDbOrderColumn(entityTypeCode, orderByColumn);
-        if (allowDirectPaging && canPageDirectly(keyword, filters)
+        boolean hasKeyword = StringUtils.hasText(keyword);
+        boolean hasFilters = filters != null && !filters.isEmpty();
+        List<PhysicalColumnFilter> pushFilters = resolvePushablePhysicalFilters(entityTypeCode, filters);
+        boolean allFiltersPushable = !hasFilters || pushFilters != null;
+        List<PhysicalColumnFilter> sqlPhysicalFilters =
+                pushFilters != null ? pushFilters : List.of();
+
+        if (allowDirectPaging && !hasKeyword && allFiltersPushable
                 && StringUtils.hasText(dbOrder)
                 && uncategorizedEntityQueryRepository.supportsSqlOrder(dbOrder)) {
             Integer pn = normalizePageNo(pageNo);
@@ -1060,33 +1150,37 @@ public class EntityServiceImpl implements EntityService {
             long t0 = System.nanoTime();
             PageResult<Long> pageIds = uncategorizedEntityQueryRepository.pageUncategorizedEntityIds(
                     categoryTypeCode, entityTypeCode, modelIds, domain, scopeRegistryCode,
+                    sqlPhysicalFilters,
                     dbOrder, orderAsc, pn, ps);
             List<Long> orderedIds = pageIds.getList() != null ? pageIds.getList() : List.of();
             List<EntityRespVO> list = convertOrderedEntityIdsToRespList(orderedIds, entityTypeCode);
             if (log.isInfoEnabled()) {
                 log.info("[query-by-scene timing] path=UNCATEGORIZED_DB_PAGE type={} order={} "
-                                + "page={}/{} rows={} total={} elapsed={}ms",
+                                + "page={}/{} rows={} total={} elapsed={}ms pushFilters={}",
                         entityTypeCode, dbOrder, pn, ps, list.size(), pageIds.getTotal(),
-                        (System.nanoTime() - t0) / 1_000_000L);
+                        (System.nanoTime() - t0) / 1_000_000L,
+                        sqlPhysicalFilters.size());
             }
             return new PageResult<>(list, pageIds.getTotal());
         }
 
-        // 慢路径：先取未分类 id（不装行），再内存排序 / 过滤 / 切页
+        // 慢路径：先取未分类 id（可下推 fieldFilters 已进 SQL），再 keyword / 不可下推筛选
         List<Long> uncategorizedIds = uncategorizedEntityQueryRepository.listUncategorizedEntityIds(
-                categoryTypeCode, entityTypeCode, modelIds, domain, scopeRegistryCode);
+                categoryTypeCode, entityTypeCode, modelIds, domain, scopeRegistryCode,
+                sqlPhysicalFilters);
         if (uncategorizedIds.isEmpty()) {
             return new PageResult<>(new ArrayList<>(), 0L);
         }
         uncategorizedIds = applyFieldOrderToCandidateIds(
                 uncategorizedIds, entityTypeCode, orderByColumn, orderAsc);
-        if (allowDirectPaging && canPageDirectly(keyword, filters)) {
+        List<FieldFilterReqVO> evaFilters = allFiltersPushable ? null : filters;
+        if (allowDirectPaging && canPageDirectly(keyword, evaFilters)) {
             Integer pn = normalizePageNo(pageNo);
             Integer ps = normalizePageSize(pageSize);
             return pageByOrderedIds(uncategorizedIds, entityTypeCode, pn, ps);
         }
         return queryEntitiesByOrderedCandidateIds(
-                uncategorizedIds, entityTypeCode, keyword, filters, pageNo, pageSize);
+                uncategorizedIds, entityTypeCode, keyword, evaFilters, pageNo, pageSize);
     }
 
     /**

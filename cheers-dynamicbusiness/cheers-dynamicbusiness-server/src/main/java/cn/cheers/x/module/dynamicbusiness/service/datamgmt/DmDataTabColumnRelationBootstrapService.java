@@ -24,20 +24,22 @@ import static cn.cheers.x.module.dynamicbusiness.service.datamgmt.ColumnRelation
 import static cn.cheers.x.module.dynamicbusiness.service.datamgmt.ColumnRelationLayoutEndpoints.sameTypeCode;
 
 /**
- * 栏间关系写出（仅写路径）：实例化页面布局时补默认「条件筛选」边；布局保存后清理孤儿边。
+ * 栏间关系<strong>默认写出</strong>（仅写路径 · 只 insert）。
  * <p>
- * ## 职责边界
+ * ## 本类负责什么
+ * 在下列写时机补缺的同类型「条件筛选」边（分类→型号、型号→实体）：
  * <ul>
- *   <li>本类只写 <b>filter（条件筛选）</b>：点上游收窄下游，供查数消费。</li>
- *   <li><b>write（修改关联）</b>（勾选/拖入）一律不自动写，由数据关系图「修改关联」按钮手配。</li>
+ *   <li>实例化该数据目录的页面布局后</li>
+ *   <li>保存布局（加栏等）后，由 {@link DmDataTabLayoutServiceImpl#saveLayouts} 调用</li>
  * </ul>
- * 连接策略（与《关联实现》一致）：
+ * <p>
+ * ## 本类明确不负责什么（禁止再加回来）
  * <ul>
- *   <li>仅自动写同类型 filter：分类→型号、型号→实体</li>
- *   <li>不自动写：任何 write；任何异类型边；同类型分类→实体；分类→分类</li>
+ *   <li><b>不删边</b>：删边只有两种标准触发，见 {@link DmDataTabColumnRelationService}</li>
+ *   <li>不写 write（修改关联）边：一律由数据关系图手配</li>
+ *   <li>不在读列表接口里猜边、补边</li>
  * </ul>
- * 禁止在读列表接口调用；不删用户已在数据关系图保存的边。
- * 关系图加栏后若需补齐同类型 filter，应再次调用 {@link #applyInitialDefaultRelations}（或等价写路径），勿在读路径猜边。
+ * 连接策略（与《关联实现》一致）：仅自动写同类型 filter；异类型与全部 write 不自动写。
  */
 @Service
 public class DmDataTabColumnRelationBootstrapService {
@@ -52,10 +54,10 @@ public class DmDataTabColumnRelationBootstrapService {
     private DmWorkbenchLayoutService dmWorkbenchLayoutService;
 
     /**
-     * 实例化该数据目录的页面布局后调用：只 insert 缺的默认 filter 边，不覆盖、不删已有行。
+     * 实例化页面布局后调用：只 insert 缺的默认 filter 边，不覆盖、不删已有行。
      *
      * @param registryEntityTypeCode 目录注册编码（写入 relation.entity_type_code）
-     * @param storageBaseTypeCode    底座类型编码（保留入参供调用方；本方法不再用其自动写异类型边）
+     * @param storageBaseTypeCode    底座类型编码（保留入参；本方法不用其自动写异类型边）
      */
     @Transactional(rollbackFor = Exception.class)
     @SuppressWarnings("unused")
@@ -93,7 +95,7 @@ public class DmDataTabColumnRelationBootstrapService {
             }
         }
 
-        // 同类型 型号→实体（台账链）；异类型适用只走用户配置的 write
+        // 同类型 型号→实体（台账链）
         for (ColumnEndpoint model : parsed.models()) {
             for (ColumnEndpoint entity : parsed.entities()) {
                 if (!sameTypeCode(model.typeCode(), entity.typeCode())) {
@@ -110,26 +112,6 @@ public class DmDataTabColumnRelationBootstrapService {
 
         for (DmDataTabColumnRelationDO row : toInsert) {
             dmDataTabColumnRelationMapper.insert(row);
-        }
-    }
-
-    /**
-     * 布局行删除后：去掉两端列身份已不存在的栏间关系。仅在保存布局时调用。
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public void pruneOrphanColumnRelations(Long layoutId) {
-        if (layoutId == null) {
-            return;
-        }
-        List<DmDataTabLayoutDO> layouts = dmDataTabLayoutMapper.selectListByLayoutId(layoutId);
-        LayoutEndpoints parsed = fromLayoutRows(layouts);
-        for (DmDataTabColumnRelationDO row :
-                dmDataTabColumnRelationMapper.selectListByLayoutId(layoutId)) {
-            String from = row.getFromColumnIdentity() == null ? "" : row.getFromColumnIdentity().trim();
-            String to = row.getToColumnIdentity() == null ? "" : row.getToColumnIdentity().trim();
-            if (!parsed.validIdentities().contains(from) || !parsed.validIdentities().contains(to)) {
-                dmDataTabColumnRelationMapper.deleteById(row.getId());
-            }
         }
     }
 

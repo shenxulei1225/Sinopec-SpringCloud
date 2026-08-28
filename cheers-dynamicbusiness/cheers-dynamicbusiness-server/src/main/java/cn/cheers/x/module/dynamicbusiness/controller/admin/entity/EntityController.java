@@ -358,7 +358,7 @@ public class EntityController {
             - modelIds / categoryIds 支持重复 query 参数（modelIds=1&modelIds=2）或逗号分隔单参数（modelIds=1,2,3）
             - 多选 ID 较多时建议使用 POST /query-by-scene + JSON body
             - ENTITIES_BY_CATEGORY：按分类查实体（含子树；未选≡整树）；可叠 modelIds；categoryTypeCode 必填（禁止默认成 entityTypeCode）；传 categoryViaRefPathCode 时走经 REF 反查
-            - ENTITIES_BY_MODEL：按型号或类型查实体；传 modelEntityTypeCode 且与 entityTypeCode 不同时走型号—实体关联表（跨类型挂靠）
+            - ENTITIES_BY_MODEL：按型号或类型查实体；传 modelEntityTypeCode 且与 entityTypeCode 不同时走型号—实体关联表（跨类型挂靠）；未传 modelIds 时可传 categoryIds + categoryFilterMode（NODE/CATEGORIZED/UNCATEGORIZED），由服务端按分类—型号关联展开型号后再查实体
             - ENTITIES_UNCATEGORIZED：当前分类种类下未挂任何节点的实体（差集）；categoryTypeCode 必填；可叠 modelIds
             - ENTITIES_BY_CATEGORY_LINK：分类节点绑定实体
             - ENTITIES_DETAIL：实体详情
@@ -375,6 +375,7 @@ public class EntityController {
             @RequestParam(value = "modelEntityTypeCode", required = false) String modelEntityTypeCode,
             @RequestParam(value = "categoryIds", required = false) List<String> categoryIds,
             @RequestParam(value = "categoryViaRefPathCode", required = false) String categoryViaRefPathCode,
+            @RequestParam(value = "categoryFilterMode", required = false) String categoryFilterMode,
             @RequestParam(value = "entityId", required = false) Long entityId,
             @RequestParam(value = "rootEntityId", required = false) Long rootEntityId,
             @RequestParam(value = "entitySourceEntityType", required = false) String entitySourceEntityType,
@@ -389,7 +390,7 @@ public class EntityController {
         return queryEntitiesInternal(scene, resultShape, resultDetail, categoryTypeCode, entityTypeCode,
                 parseFlexibleIdList(modelIds), modelEntityTypeCode, parseFlexibleIdList(categoryIds),
                 null,
-                categoryViaRefPathCode,
+                categoryViaRefPathCode, categoryFilterMode,
                 entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword, domain,
                 filters, orderByColumn, isAsc, searchFieldCodes);
     }
@@ -405,6 +406,7 @@ public class EntityController {
             List<Long> categoryIds,
             List<CategoryIdGroupReqVO> categoryIdGroups,
             String categoryViaRefPathCode,
+            String categoryFilterMode,
             Long entityId,
             Long rootEntityId,
             String entitySourceEntityType,
@@ -420,6 +422,7 @@ public class EntityController {
                 EntityQueryResultDetail.ofNullable(resultDetail).getCode(),
                 categoryTypeCode, entityTypeCode,
                 modelIds, modelEntityTypeCode, categoryIds, categoryIdGroups, categoryViaRefPathCode,
+                categoryFilterMode,
                 entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword,
                 domain, filters, orderByColumn, isAsc, searchFieldCodes));
     }
@@ -440,7 +443,7 @@ public class EntityController {
         return queryEntitiesInternal(reqVO.getScene(), reqVO.getResultShape(), reqVO.getResultDetail(),
                 reqVO.getCategoryTypeCode(), reqVO.getEntityTypeCode(),
                 reqVO.getModelIds(), reqVO.getModelEntityTypeCode(), reqVO.getCategoryIds(), reqVO.getCategoryIdGroups(),
-                reqVO.getCategoryViaRefPathCode(),
+                reqVO.getCategoryViaRefPathCode(), reqVO.getCategoryFilterMode(),
                 reqVO.getEntityId(), reqVO.getRootEntityId(), reqVO.getEntitySourceEntityType(),
                 reqVO.getPageNo(), reqVO.getPageSize(), reqVO.getKeyword(), reqVO.getDomain(),
                 reqVO.getFieldFilters(), reqVO.getOrderByColumn(), reqVO.getIsAsc(),

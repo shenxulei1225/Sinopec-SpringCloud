@@ -107,7 +107,7 @@ BEGIN
 END;
 $$;
 
--- 分类树节点即实体（region / department）
+-- 分类树节点即实体（region / department / facility / zone）
 CREATE OR REPLACE FUNCTION dynamicbusiness._seed_five_w_recipe_category_as_object(
   p_tenant_id bigint,
   p_registry_code text,

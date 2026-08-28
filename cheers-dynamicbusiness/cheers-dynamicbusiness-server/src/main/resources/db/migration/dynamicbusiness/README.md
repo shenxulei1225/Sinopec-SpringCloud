@@ -85,8 +85,12 @@
 | V69 | `V69__model_governance_columns.sql` | 型号治理状态、本地发起设施、创建用户字段；存量型号定稿为公司规格 |
 | V70 | `V70__field_governance_columns.sql` | 字段治理状态、本地发起设施、创建用户字段；存量字段定稿为公司字段 |
 | V71 | `V71__workbench_layout_settings_json.sql` | 工作台布局头增加设置 JSON；保存区段配置隐藏状态 |
+| V72 | `V72__migrate_layout_cascade_to_column_relations.sql` | layout 旧 `relationMode:cascade`+host/member → 栏间 **CATEGORY_CATEGORY** filter/write；清 `relationRole`、统一 `intersection` |
+| V73 | `V73__sop_step_template_entity.sql` | 步骤模板（step template）专用表 `ent_sop_step_template` + 租户分表 |
+| V74 | `V74__sop_template_instance_columns.sql` | `ent_sop*` 增 `is_template` / `sop_template_id` / override / `default_*` / `execution_means` |
+| V75 | `V75__equipment_inspection_sop_binding.sql` | 设备检查绑定 `dynamic_equipment_inspection_sop_binding`（租户物理表） |
 
-> **版本号说明**：本仓库已登记至 **V71**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。
+> **版本号说明**：本仓库已登记至 **V75**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。
 
 
 > **跨机合并说明**：本机布局迁移已占用 V26–V28 且已执行；对方原 `V26__category_*` / `V27__ent_structure` 在合并后改为 V29/V30。若对方库已按旧文件名执行过 V26/V27，需对齐历史表 `version`/`script` 后 `flyway:repair`，再拉本分支。
@@ -104,8 +108,32 @@
 **已有库**（改过迁移文件名/SQL、或跑过 `regenerate-v1-from-db.py`）
 
 1. 按通用规范对齐历史表 `version` / `script`
-2. `./scripts/flyway-repair-local.sh`
+2. `./scripts/flyway-repair-local.sh`（若仓库未提供该脚本，对本模块执行 `mvn flyway:repair` 并指定与 `application-local.yaml` 一致的 locations / 历史表）
 3. 重启服务验证
+
+### V72（layout cascade → 栏间关系）发布检查
+
+**顺序**：先让 Flyway 在本环境执行 **V72**，再部署已移除 seed legacy 的前端。
+
+1. 启动 `dynamicbusiness-server`（或对本 schema 跑 migrate），确认历史表出现 version **72**、script `V72__migrate_layout_cascade_to_column_relations.sql`、success = true。
+2. 验收（期望查询 1～3 均为 **0 行**）：
+
+```bash
+# 推荐：含 Flyway 72 检查 + 数据验收
+./Sinopec-SpringCloud/scripts/verify-v72-cascade-to-column-relations.sh
+
+# 其它库/环境（测试、预发）：
+PGHOST=… PGPORT=5432 PGUSER=… PGPASSWORD=… PGDATABASE=… \
+  ./Sinopec-SpringCloud/scripts/verify-v72-cascade-to-column-relations.sh
+
+# 仅 SQL（不含 Flyway 检查）：
+PGPASSWORD=… psql -h … -U postgres -d sinopec \
+  -f Sinopec-SpringCloud/scripts/verify-v72-cascade-to-column-relations.sql
+```
+
+3. 本机 dev（2026-08-27）：V72 已登记；验收 1～3 均为 0 行；layout 14/15/16 已写入 filter/write 边（layout 16 的 filter 边为迁移前已有，V72 补 write）。
+
+若跳过 V72 就发前端：仍带 `relationMode:cascade` 的旧布局会在选用分类里回显成「两栏独立交集」，filter from/to 丢失——须先跑迁移再发版。
 
 ## 查看历史
 
@@ -128,6 +156,8 @@ PGPASSWORD=Coolhomer psql -h 127.0.0.1 -U postgres -d sinopec -c \
 
 | 日期 | 说明 |
 |------|------|
+| 2026-08-27 | V73–V75：步骤模板表、SOP 模板/实例列、设备检查绑定表；seed 见 `scripts/platform-import/sop/10–13` |
+| 2026-08-27 | V72：layout `relationMode:cascade`+host/member → 栏间 **CATEGORY_CATEGORY** filter/write；验收 `scripts/verify-v72-cascade-to-column-relations.sql`；本机 dev 已 migrate + 验收通过 |
 | 2026-08-26 | V71：工作台布局头增加 `settings_json`，持久化 FILTER、OBJECT、WHAT 区段配置隐藏状态 |
 | 2026-08-26 | V70：字段增加治理状态、本地发起设施、创建用户字段；存量字段定稿为 `COMPANY` |
 | 2026-08-26 | V69：型号增加治理状态、本地发起设施、创建用户字段；存量型号定稿为 `COMPANY` |

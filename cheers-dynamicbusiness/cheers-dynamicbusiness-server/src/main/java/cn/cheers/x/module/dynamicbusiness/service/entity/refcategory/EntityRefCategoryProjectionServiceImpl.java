@@ -37,7 +37,8 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * 通用 REF → 分类即实体投影：扫描主体上全部 REF 字段，目标有 link 则写分类–实体。
+ * 通用 REF → 分类即实体投影：扫描主体上全部 REF 字段，目标有 link 则写分类–实体；
+ * 组合 3 时再委托 {@link EntityRefCategoryCategoryProjectionService} 写分类–分类。
  */
 @Service
 @Slf4j
@@ -48,6 +49,7 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
 
     private final CategoryEntityLinkService categoryEntityLinkService;
     private final EntityCategoryRelationService entityCategoryRelationService;
+    private final EntityRefCategoryCategoryProjectionService refCategoryCategoryProjectionService;
     private final JdbcTemplate jdbcTemplate;
     private final ModelMapper modelMapper;
     private final ModelFieldAssignmentMapper modelFieldAssignmentMapper;
@@ -59,6 +61,7 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
     public EntityRefCategoryProjectionServiceImpl(
             CategoryEntityLinkService categoryEntityLinkService,
             @Lazy EntityCategoryRelationService entityCategoryRelationService,
+            EntityRefCategoryCategoryProjectionService refCategoryCategoryProjectionService,
             JdbcTemplate jdbcTemplate,
             ModelMapper modelMapper,
             ModelFieldAssignmentMapper modelFieldAssignmentMapper,
@@ -68,6 +71,7 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
             ModelRelationMapper modelRelationMapper) {
         this.categoryEntityLinkService = categoryEntityLinkService;
         this.entityCategoryRelationService = entityCategoryRelationService;
+        this.refCategoryCategoryProjectionService = refCategoryCategoryProjectionService;
         this.jdbcTemplate = jdbcTemplate;
         this.modelMapper = modelMapper;
         this.modelFieldAssignmentMapper = modelFieldAssignmentMapper;
@@ -90,7 +94,7 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
             }
             Set<TargetRef> targets = extractTargets(fieldValues.get(field.fieldCode()), field.defaultTargetType());
             for (TargetRef target : targets) {
-                associateIfLinked(entity.getId(), subjectType, target);
+                associateIfLinked(entity, subjectType, target);
             }
         }
     }
@@ -114,7 +118,7 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
                     disassociateIfLinked(entity.getId(), subjectType, removed);
                 }
                 for (TargetRef added : difference(newTargets, oldTargets)) {
-                    associateIfLinked(entity.getId(), subjectType, added);
+                    associateIfLinked(entity, subjectType, added);
                 }
             } else {
                 TargetRef oldOne = oldTargets.isEmpty() ? null : oldTargets.iterator().next();
@@ -126,7 +130,7 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
                     disassociateIfLinked(entity.getId(), subjectType, oldOne);
                 }
                 if (newOne != null) {
-                    associateIfLinked(entity.getId(), subjectType, newOne);
+                    associateIfLinked(entity, subjectType, newOne);
                 }
             }
         }
@@ -167,14 +171,20 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
         return ok;
     }
 
-    private void associateIfLinked(Long subjectId, String subjectType, TargetRef target) {
+    private void associateIfLinked(EntityDO entity, String subjectType, TargetRef target) {
         Long categoryId = resolveCategoryId(target);
         if (categoryId == null) {
             return;
         }
-        entityCategoryRelationService.associate(subjectId, categoryId, subjectType);
+        entityCategoryRelationService.associate(entity.getId(), categoryId, subjectType);
         log.info("[ref→category] 关联: subjectId={}, subjectType={}, categoryId={}, targetType={}, targetId={}",
-                subjectId, subjectType, categoryId, target.entityTypeCode(), target.id());
+                entity.getId(), subjectType, categoryId, target.entityTypeCode(), target.id());
+
+        String hostCategoryTypeCode = StringUtils.hasText(target.entityTypeCode())
+                ? target.entityTypeCode().trim()
+                : null;
+        refCategoryCategoryProjectionService.syncCategoryCategoryOnRefAssociate(
+                entity.getModelId(), subjectType, categoryId, hostCategoryTypeCode);
     }
 
     private void disassociateIfLinked(Long subjectId, String subjectType, TargetRef target) {

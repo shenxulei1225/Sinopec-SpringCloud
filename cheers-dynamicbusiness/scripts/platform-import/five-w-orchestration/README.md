@@ -10,8 +10,8 @@
 |------|------|
 | `00_helpers.sql` | 幂等 `_seed_five_w_semantic` / 配方函数（只写编排头） |
 | `01_p0_orchestration.sql` | P0：`equipment`、`region`、`inspection_item`、`inspection_content` |
-| `02_p1_facility.sql` | P1：`facility`（点列表这一行；区域筛选栏认布局） |
-| `03_p1_zone_constructure.sql` | P1：`zone` + `Constructure` |
+| `02_p1_facility.sql` | P1：`facility`（分类即对象；区域筛选栏认布局） |
+| `03_p1_zone_constructure.sql` | P1：`zone`（分类即对象）+ `Constructure`（点列表行） |
 | `04_p1_inspection_patrol.sql` | P1：`inspection_method`、`patrol_equipment`、`task_patrol`、`task_maintenance` |
 | `05_p2_ledger_backfill.sql` | P2：**批量回填**其余无编排头的 `dynamic_entity_type`（不覆盖已有行） |
 | `06_inspection_item_who_entity_layout.sql` | 标准检查库：Who 实体列对齐（关误配 MODEL、开 ENTITY + columnSection=OBJECT） |
@@ -25,8 +25,9 @@
 | `region` | recipe-category-as-entity | CATEGORY_NODE | VIEW_DETAIL（绑实体） |
 | `inspection_item` | recipe-foreign-model | LIST_ROW | VIEW_DETAIL（绑实体） |
 | `inspection_content` | recipe-config-object-3col | LIST_ROW | SITE_PREP（05 回填时） |
-| `facility` | 定制（非 ledger） | LIST_ROW | VIEW_DETAIL |
-| `zone` / `Constructure` | 2col / 3col | LIST_ROW | VIEW_DETAIL |
+| `facility` | 分类即对象 | CATEGORY_NODE | VIEW_DETAIL |
+| `zone` | 分类即对象 | CATEGORY_NODE | VIEW_DETAIL |
+| `Constructure` | 定制 | LIST_ROW | VIEW_DETAIL |
 | `inspection_method` 等 P1 | 见 `04_*.sql` | LIST_ROW | — |
 | **其余目录** | `05` 按 `entry_kind` 自动：NATIVE 默认台账；CATEGORY 树节点即实体 | LIST_ROW 或 CATEGORY_NODE | VIEW_DETAIL（默认） |
 
@@ -48,12 +49,12 @@ SET search_path TO dynamicbusiness;
 
 SELECT entity_type_code, what_mode, object_pick_from, what_config->>'bindLayer' AS bind_layer
 FROM dm_five_w_orchestration
-WHERE entity_type_code IN ('equipment','region','inspection_item','inspection_content','facility')
+WHERE entity_type_code IN ('equipment','region','inspection_item','inspection_content','facility','zone')
   AND tenant_id = 1 AND deleted = false
 ORDER BY entity_type_code;
 ```
 
-`region` 应为 `CATEGORY_NODE`；其余上表应为 `LIST_ROW`。
+`region` / `facility` / `zone` 应为 `CATEGORY_NODE`；`equipment` / `inspection_item` 等台账为 `LIST_ROW`。
 
 ```http
 GET /admin-api/dynamicbusiness/data-mgmt/five-w-orchestration/facility

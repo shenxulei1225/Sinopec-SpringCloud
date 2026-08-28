@@ -23,8 +23,24 @@ cd scripts/platform-import/task-execution
 
 ```text
 task（巡检任务定义）
+  → 选巡检方式 → resolve 绑定 SOP 实例 → merge
   → 开跑 → task_excution_record（domain=巡检，型号 exec_patrol_round）
+              · custom_fields.standard_snapshot / parameter_snapshot / gap_codes
               → task_execution_step（REF execution_record_id）
 ```
 
-下一步（未在本脚本）：执行记录过程字段、开跑服务、SOP 快照装填。
+开跑 API：`POST /dynamicbusiness/task-execution/bootstrap-steps`（有 gapCodes 拒绝）。  
+路径点位由前端 `collectPatrolPointRefsFromEffectiveConfigs` 收集后交给既有算路；**不**在本 bootstrap 内算路。
+
+## 前置
+
+- Flyway **V54**（`ent_task_execution_step`）
+- `task_excution_record` / `ent_task_excution_record_t*` 已存在
+- 型号 `task_execution_step` 已 seed（本目录 `04_models.sql`）
+
+## 执行
+
+```bash
+cd scripts/platform-import/task-execution
+./import.sh
+```

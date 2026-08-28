@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -40,6 +41,7 @@ public class UncategorizedEntityQueryRepository {
             List<Long> modelIds,
             String domain,
             String scopeRegistryCode,
+            List<PhysicalColumnFilter> physicalFilters,
             String orderByColumn,
             boolean orderAsc,
             int pageNo,
@@ -53,7 +55,8 @@ public class UncategorizedEntityQueryRepository {
         }
 
         QueryParts parts = buildQueryParts(
-                categoryTypeCode.trim(), entityTypeCode.trim(), modelIds, domain, scopeRegistryCode);
+                categoryTypeCode.trim(), entityTypeCode.trim(), modelIds, domain, scopeRegistryCode,
+                physicalFilters);
 
         Long total = jdbcTemplate.queryForObject(parts.countSql, Long.class, parts.args.toArray());
         long totalCount = total == null ? 0L : total;
@@ -87,12 +90,14 @@ public class UncategorizedEntityQueryRepository {
             String entityTypeCode,
             List<Long> modelIds,
             String domain,
-            String scopeRegistryCode) {
+            String scopeRegistryCode,
+            List<PhysicalColumnFilter> physicalFilters) {
         if (!StringUtils.hasText(categoryTypeCode) || !StringUtils.hasText(entityTypeCode)) {
             return List.of();
         }
         QueryParts parts = buildQueryParts(
-                categoryTypeCode.trim(), entityTypeCode.trim(), modelIds, domain, scopeRegistryCode);
+                categoryTypeCode.trim(), entityTypeCode.trim(), modelIds, domain, scopeRegistryCode,
+                physicalFilters);
         String sql = parts.selectSql + " ORDER BY e.id ASC";
         List<Long> ids = jdbcTemplate.query(sql, (rs, rowNum) -> rs.getLong(1), parts.args.toArray());
         return ids != null ? ids : List.of();
@@ -127,7 +132,8 @@ public class UncategorizedEntityQueryRepository {
             String entityTypeCode,
             List<Long> modelIds,
             String domain,
-            String scopeRegistryCode) {
+            String scopeRegistryCode,
+            List<PhysicalColumnFilter> physicalFilters) {
         String entityTable = entityTableNameHandler.resolvePhysicalTableName(entityTypeCode);
         String relationTable = TenantPhysicalTableNames.requirePhysical("dynamic_entity_category_relation");
         String linkTable = TenantPhysicalTableNames.requirePhysical("dynamic_category_entity_link");
@@ -199,11 +205,59 @@ public class UncategorizedEntityQueryRepository {
         args.add(entityTypeCode);
         args.add(categoryTypeCode);
 
+        appendPhysicalFilters(where, args, physicalFilters);
+
         String fromWhere = " FROM " + entityTable + " e" + where;
         return new QueryParts(
                 "SELECT e.id" + fromWhere,
                 "SELECT COUNT(*)" + fromWhere,
                 args);
+    }
+
+    /**
+     * 实体表物理列筛选（列名须为已校验安全标识符；与 {@link EntityRepositoryImpl} 语义一致）。
+     */
+    private static void appendPhysicalFilters(
+            StringBuilder where, List<Object> args, List<PhysicalColumnFilter> physicalFilters) {
+        if (physicalFilters == null || physicalFilters.isEmpty()) {
+            return;
+        }
+        for (PhysicalColumnFilter filter : physicalFilters) {
+            if (filter == null || !StringUtils.hasText(filter.column())
+                    || !SAFE_PHYSICAL_COLUMN.matcher(filter.column()).matches()) {
+                continue;
+            }
+            String col = filter.column();
+            String op = filter.op() == null ? "" : filter.op().trim().toUpperCase(Locale.ROOT);
+            if ("EQ".equals(op)) {
+                where.append(" AND e.").append(col).append(" = ?");
+                args.add(filter.value());
+            } else if (("IN".equals(op) || "NOT_IN".equals(op))
+                    && filter.value() instanceof Collection<?> collection) {
+                List<Object> values = new ArrayList<>();
+                for (Object v : collection) {
+                    if (v != null) {
+                        values.add(v);
+                    }
+                }
+                if (values.isEmpty()) {
+                    if ("IN".equals(op)) {
+                        where.append(" AND 1 = 0");
+                    }
+                    continue;
+                }
+                where.append(" AND e.").append(col)
+                        .append("NOT_IN".equals(op) ? " NOT IN (" : " IN (");
+                for (int i = 0; i < values.size(); i++) {
+                    if (i > 0) {
+                        where.append(", ");
+                    }
+                    where.append("?");
+                    args.add(values.get(i));
+                }
+                where.append(")");
+            }
+        }
     }
 
     private static List<Long> normalizeModelIds(List<Long> modelIds) {

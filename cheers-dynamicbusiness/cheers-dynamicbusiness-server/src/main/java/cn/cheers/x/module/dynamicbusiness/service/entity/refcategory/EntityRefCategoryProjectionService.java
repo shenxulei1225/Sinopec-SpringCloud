@@ -5,10 +5,13 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import java.util.Map;
 
 /**
- * REF 变更后，把「分类即实体」目标投影为分类–实体关联（场景 2 浏览用）。
+ * REF 变更后，把「分类即实体」目标投影为分类–实体关联（场景 2 浏览用），并在组合 3 下同步分类–分类。
  *
  * <p>标准能力：凡单选 / 多选 REF，只要目标实体存在分类即实体 link，即挂/解对应分类；
  * 不按主体类型或字段白名单限制。</p>
+ *
+ * <p>分工：②③ {@link cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategoryRelationService}；
+ * ④ {@link EntityRefCategoryCategoryProjectionService}（只 upsert，REF 解绑不删 CC）。</p>
  *
  * <p>与 {@code EntityRelationSyncService} 分离：后者只维护实体–实体关系表。</p>
  */

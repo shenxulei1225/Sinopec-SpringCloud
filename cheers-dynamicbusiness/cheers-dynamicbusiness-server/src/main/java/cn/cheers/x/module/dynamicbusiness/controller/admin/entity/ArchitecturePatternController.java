@@ -313,6 +313,7 @@ public class ArchitecturePatternController {
                 null,
                 null,
                 null,
+                null,
                 contentEntityTypeCode,
                 pageNo,
                 pageSize,
