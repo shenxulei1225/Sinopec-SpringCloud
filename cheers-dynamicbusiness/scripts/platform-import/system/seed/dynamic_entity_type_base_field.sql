@@ -676,10 +676,10 @@ INSERT INTO dynamic_entity_type_base_field (
   entity_type_code, library_field_id, field_code, field_name, data_type, required, default_value,
   description, type_config, sort_order, status, tenant_id, creator
 ) VALUES (
-  'equipment', NULL, 'FLD-BASE-equipment-REF_HEALTH_SCORE',
-  '健康度', 'REF',
+  'equipment', NULL, 'health_score',
+  '健康度', 'ENUM',
   FALSE, NULL,
-  '健康评估服务', NULL,
+  '设备健康度（字段管理选项：优/良/中/差）', NULL,
   902, 1,
   1, 'seed'
 )
@@ -698,8 +698,8 @@ INSERT INTO dynamic_entity_type_base_field (
   entity_type_code, library_field_id, field_code, field_name, data_type, required, default_value,
   description, type_config, sort_order, status, tenant_id, creator
 ) VALUES (
-  'equipment', NULL, 'FLD-BASE-equipment-REF_LAST_INSPECTION',
-  '上次检验时间', 'REF',
+  'equipment', NULL, 'last_inspection',
+  '上次检验时间', 'DATE',
   FALSE, NULL,
   NULL, NULL,
   905, 1,
@@ -720,10 +720,10 @@ INSERT INTO dynamic_entity_type_base_field (
   entity_type_code, library_field_id, field_code, field_name, data_type, required, default_value,
   description, type_config, sort_order, status, tenant_id, creator
 ) VALUES (
-  'equipment', NULL, 'FLD-BASE-equipment-REF_LAST_MAINTENANCE',
-  '上次维保时间', 'REF',
+  'equipment', NULL, 'last_maintenance',
+  '上次维保时间', 'DATE',
   FALSE, NULL,
-  '事实来源 maintenance 模块', NULL,
+  '上次维保时间（主数据日期；后续可接 maintenance 汇总）', NULL,
   903, 1,
   1, 'seed'
 )
@@ -742,8 +742,8 @@ INSERT INTO dynamic_entity_type_base_field (
   entity_type_code, library_field_id, field_code, field_name, data_type, required, default_value,
   description, type_config, sort_order, status, tenant_id, creator
 ) VALUES (
-  'equipment', NULL, 'FLD-BASE-equipment-REF_NEXT_INSPECTION',
-  '下次检验时间', 'REF',
+  'equipment', NULL, 'next_inspection',
+  '下次检验时间', 'DATE',
   FALSE, NULL,
   NULL, NULL,
   906, 1,
@@ -764,10 +764,10 @@ INSERT INTO dynamic_entity_type_base_field (
   entity_type_code, library_field_id, field_code, field_name, data_type, required, default_value,
   description, type_config, sort_order, status, tenant_id, creator
 ) VALUES (
-  'equipment', NULL, 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE',
-  '下次维保时间', 'REF',
+  'equipment', NULL, 'next_maintenance',
+  '下次维保时间', 'DATE',
   FALSE, NULL,
-  '事实来源 maintenance 模块；按此筛选由 maintenance API 驱动', NULL,
+  '下次维保时间（主数据日期；后续可接 maintenance 汇总）', NULL,
   904, 1,
   1, 'seed'
 )
@@ -786,10 +786,10 @@ INSERT INTO dynamic_entity_type_base_field (
   entity_type_code, library_field_id, field_code, field_name, data_type, required, default_value,
   description, type_config, sort_order, status, tenant_id, creator
 ) VALUES (
-  'equipment', NULL, 'FLD-BASE-equipment-REF_OPERATION_STATUS',
-  '运行状态', 'REF',
+  'equipment', NULL, 'operation_status',
+  '运行状态', 'ENUM',
   FALSE, NULL,
-  '运行态/SCADA；全设备列表展示', NULL,
+  '设备业务运行态（字段管理选项；非实体启用/禁用 status）', NULL,
   901, 1,
   1, 'seed'
 )

@@ -423,7 +423,7 @@ public final class ModelCrudFormFieldAssembler {
         }
         return switch (normalizeFieldType(fieldType)) {
             case "BOOLEAN" -> "boolean";
-            case "ENUM" -> "select";
+            case "ENUM", "MULTI_SELECT" -> "select";
             case "DATE", "DATETIME", "TIMESTAMP" -> "date";
             case "ENTITY_REF", "REFERENCE" -> "ref-picker";
             case "ENTITY_REF_MULTI" -> "ref-picker-multi";
@@ -487,6 +487,10 @@ public final class ModelCrudFormFieldAssembler {
 
         if ("ENUM".equals(normalizedType) && field.getOptions() != null) {
             putStaticOptions(item, field.getOptions());
+        }
+        if ("MULTI_SELECT".equals(normalizedType) && field.getOptions() != null) {
+            putStaticOptions(item, field.getOptions());
+            item.put("valueShape", "array");
         }
     }
 
@@ -604,6 +608,14 @@ public final class ModelCrudFormFieldAssembler {
         }
         item.put("optionsSource", Map.of("kind", "static", "options", options));
         item.put("renderAs", "select");
+    }
+
+    /**
+     * 解析字段库 options JSON（筛选项 / 表单共用）。
+     * 非法或空 → 空列表，不编造选项。
+     */
+    public static List<Map<String, Object>> parseOptionsListForFilter(Object optionsRaw) {
+        return parseOptionsList(optionsRaw);
     }
 
     private static List<Map<String, Object>> parseOptionsList(Object optionsRaw) {

@@ -43,7 +43,7 @@ public class SopController {
     }
 
     @PostMapping("/instances/{id}/promote-to-template")
-    @Operation(summary = "将 SOP 实例升格为新模板；不改原实例、不改设备检查绑定")
+    @Operation(summary = "将 SOP 实例升格为新模板；不改原实例、不改实例绑定")
     @Parameter(name = "id", description = "SOP 实例 id", required = true)
     @PreAuthorize("@ss.hasPermission('system:entity:create')")
     public CommonResult<SopPromoteRespVO> promoteToTemplate(

@@ -180,6 +180,19 @@ public interface EntityRepository {
                                            KeywordSearchSpec keywordSearch);
 
     /**
+     * 同上一重载，可叠加划分成员 EXISTS（与分类直查同一套成员表收窄）。
+     *
+     * @param scopeRegistryCode 划分注册编码；空则不限成员
+     */
+    PageResult<Long> findPageIdsByModelIds(List<Long> modelIds, String entityTypeCode,
+                                           Integer status, String keyword, String domain,
+                                           Integer pageNo, Integer pageSize,
+                                           String orderByColumn, Boolean orderAsc,
+                                           java.util.List<PhysicalColumnFilter> physicalFilters,
+                                           KeywordSearchSpec keywordSearch,
+                                           String scopeRegistryCode);
+
+    /**
      * 根据树路径查询所有子孙实体
      *
      * @param treePath 树路径
@@ -280,6 +293,13 @@ public interface EntityRepository {
     boolean existsByExactCode(String entityTypeCode, String code, Long excludeId);
 
     /**
+     * 按业务编码精确取一条未删除实体（同表；用于系统同步 upsert，避免误 create 撞唯一索引）。
+     *
+     * @return 命中行；不存在返回 null
+     */
+    EntityDO findByExactCode(String entityTypeCode, String code);
+
+    /**
      * 型号下是否仍存在未删除实体（删型号前护栏）。
      */
     boolean existsByModelId(Long modelId, String entityTypeCode);
@@ -350,6 +370,11 @@ public interface EntityRepository {
         private KeywordSearchSpec keywordSearch;
         /** 业务域（Domain），可选 */
         private String domain;
+        /**
+         * 划分注册编码（SCOPE）：有值时只保留成员表中的实体。
+         * SQL 用 EXISTS dynamic_entity_type_scope，与分类直查路径同一套标准收窄。
+         */
+        private String scopeRegistryCode;
         /** 页码（从1开始） */
         private Integer pageNo;
         /** 每页条数 */

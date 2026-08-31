@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.postgresql.util.PGobject;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.LinkedHashMap;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -128,6 +130,35 @@ class EntityDedicatedColumnServicePhysicalFieldsTest {
         // 不得推断成 method_template；须用字段库 provider → inspection_method
         assertEquals("inspection_method", ref.get("entityTypeCode"));
         assertEquals(1L, ref.get("id"));
+        verifyNoInteractions(jdbcTemplate);
+    }
+
+    @Test
+    void extractPhysicalValuesAndStrip_wrapsJsonStringAsPgObjectForJsonbColumn() {
+        EntityTypeDO type = new EntityTypeDO();
+        type.setCode("sop");
+        type.setStorageType(StorageTypeEnum.DEDICATED.getCode());
+        type.setDedicatedTableName("ent_sop_t1");
+        when(entityTypeMapper.selectByCode("sop")).thenReturn(type);
+
+        EntityTypeBaseFieldDO tree = new EntityTypeBaseFieldDO();
+        tree.setFieldCode("action_tree_json");
+        tree.setDataType("TEXT");
+        tree.setStatus(1);
+        when(baseFieldMapper.selectByEntityTypeCode("sop")).thenReturn(List.of(tree));
+
+        Map<String, Object> custom = new LinkedHashMap<>();
+        custom.put(
+                "action_tree_json",
+                "[{\"nodeKey\":\"n1\",\"actionId\":\"act-arrive\",\"order\":1}]");
+
+        Map<String, Object> physical = service.extractPhysicalValuesAndStrip("sop", custom);
+
+        assertEquals(1, physical.size());
+        Object val = physical.get("action_tree_json");
+        assertInstanceOf(PGobject.class, val);
+        assertEquals("jsonb", ((PGobject) val).getType());
+        assertEquals(true, custom.isEmpty());
         verifyNoInteractions(jdbcTemplate);
     }
 }

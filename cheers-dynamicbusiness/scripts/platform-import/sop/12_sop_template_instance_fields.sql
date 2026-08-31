@@ -1,6 +1,6 @@
 -- ============================================================================
--- sop · 12 SOP 模板/实例字段（is_template、override、default_*）
--- 前置：Flyway V74
+-- sop · 12 SOP 模板/实例字段（含动作树；废弃 default_steps_json 元数据挂载）
+-- 前置：Flyway V74 + V78
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;
@@ -16,12 +16,16 @@ FROM (
   VALUES
     ('is_template', '是否模板', 'BOOLEAN', 'SOP 模板行=true；实例=false'),
     ('sop_template_id', 'SOP模板', 'REF', '实例引用的 SOP 模板 id（REF → sop）'),
-    ('step_override_json', '步骤差量', 'TEXT', '实例步骤差量 JSON'),
-    ('param_override_json', '参数差量', 'TEXT', '实例参数差量 JSON'),
-    ('default_steps_json', '默认步骤', 'TEXT', '模板默认步骤列表 JSON'),
-    ('default_params_json', '默认参数', 'TEXT', '模板默认参数 JSON'),
+    ('action_tree_json', '动作树', 'TEXT', '模板默认动作树 JSON（nodeKey/actionId/order）'),
+    ('action_tree_override_json', '动作树差量', 'TEXT', '实例整树替换差量 JSON'),
+    ('default_params_by_node_json', '节点默认参数', 'TEXT', '模板默认参数（nodeKey → params）'),
+    ('param_override_json', '参数差量', 'TEXT', '实例参数差量 JSON（nodeKey → params）'),
     ('execution_means', '执行手段', 'TEXT', 'MANUAL/UAV/ROBOT/FIXED_CAMERA 等'),
-    ('procedure_kind', '流程种类', 'TEXT', 'leak/corrosion 等（可选）')
+    ('procedure_kind', '流程种类', 'TEXT', 'leak/corrosion 等（可选）'),
+    -- 历史字段保留在字段库，不再挂到 SOP 基础字段（见下方软删）
+    ('step_override_json', '步骤差量（废弃）', 'TEXT', '【废弃】原实例步骤差量；改用 action_tree_override_json'),
+    ('default_steps_json', '默认步骤（废弃）', 'TEXT', '【废弃】原模板默认步骤列表；改用 action_tree_json'),
+    ('default_params_json', '默认参数（废弃）', 'TEXT', '【废弃】原扁平默认参数；改用 default_params_by_node_json')
 ) AS v(code, name, type, description)
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
@@ -36,10 +40,10 @@ SET physical_column_mapping = COALESCE(physical_column_mapping, '{}'::jsonb)
   || '{
     "is_template":{"type":"BOOLEAN","column":"is_template"},
     "sop_template_id":{"type":"BIGINT","column":"sop_template_id"},
-    "step_override_json":{"type":"JSONB","column":"step_override_json"},
+    "action_tree_json":{"type":"JSONB","column":"action_tree_json"},
+    "action_tree_override_json":{"type":"JSONB","column":"action_tree_override_json"},
+    "default_params_by_node_json":{"type":"JSONB","column":"default_params_by_node_json"},
     "param_override_json":{"type":"JSONB","column":"param_override_json"},
-    "default_steps_json":{"type":"JSONB","column":"default_steps_json"},
-    "default_params_json":{"type":"JSONB","column":"default_params_json"},
     "execution_means":{"type":"VARCHAR","column":"execution_means"},
     "procedure_kind":{"type":"VARCHAR","column":"procedure_kind"}
   }'::jsonb,
@@ -52,10 +56,10 @@ SET physical_column_mapping = COALESCE(physical_column_mapping, '{}'::jsonb)
   || '{
     "is_template":{"type":"BOOLEAN","column":"is_template"},
     "sop_template_id":{"type":"BIGINT","column":"sop_template_id"},
-    "step_override_json":{"type":"JSONB","column":"step_override_json"},
+    "action_tree_json":{"type":"JSONB","column":"action_tree_json"},
+    "action_tree_override_json":{"type":"JSONB","column":"action_tree_override_json"},
+    "default_params_by_node_json":{"type":"JSONB","column":"default_params_by_node_json"},
     "param_override_json":{"type":"JSONB","column":"param_override_json"},
-    "default_steps_json":{"type":"JSONB","column":"default_steps_json"},
-    "default_params_json":{"type":"JSONB","column":"default_params_json"},
     "execution_means":{"type":"VARCHAR","column":"execution_means"},
     "procedure_kind":{"type":"VARCHAR","column":"procedure_kind"}
   }'::jsonb,
@@ -89,10 +93,10 @@ JOIN (
   VALUES
     ('is_template', '是否模板', 'BOOLEAN', true, 'false', 'SOP 模板行=true；实例=false', 40),
     ('sop_template_id', 'SOP模板', 'REF', false, NULL, '实例引用的 SOP 模板 id', 41),
-    ('step_override_json', '步骤差量', 'TEXT', false, NULL, '实例步骤差量 JSON', 42),
-    ('param_override_json', '参数差量', 'TEXT', false, NULL, '实例参数差量 JSON', 43),
-    ('default_steps_json', '默认步骤', 'TEXT', false, '[]', '模板默认步骤列表 JSON', 44),
-    ('default_params_json', '默认参数', 'TEXT', false, '{}', '模板默认参数 JSON', 45),
+    ('action_tree_json', '动作树', 'TEXT', false, '[]', '模板默认动作树 JSON', 42),
+    ('action_tree_override_json', '动作树差量', 'TEXT', false, NULL, '实例整树替换差量 JSON', 43),
+    ('default_params_by_node_json', '节点默认参数', 'TEXT', false, '{}', '模板默认参数（按 nodeKey）', 44),
+    ('param_override_json', '参数差量', 'TEXT', false, NULL, '实例参数差量 JSON（按 nodeKey）', 45),
     ('execution_means', '执行手段', 'TEXT', false, NULL, 'MANUAL/UAV/ROBOT/FIXED_CAMERA', 46),
     ('procedure_kind', '流程种类', 'TEXT', false, NULL, 'leak/corrosion 等', 47)
 ) AS v(field_code, field_name, data_type, required, default_value, description, sort_order)
@@ -110,6 +114,25 @@ DO UPDATE SET
   status = EXCLUDED.status,
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
+
+-- 停止挂载废弃列（不删物理列；仅软删基础字段与型号分配）
+UPDATE dynamic_entity_type_base_field
+SET deleted = true,
+    updater = 'seed',
+    update_time = CURRENT_TIMESTAMP
+WHERE entity_type_code = 'sop'
+  AND tenant_id = 1
+  AND deleted = false
+  AND field_code IN ('default_steps_json', 'default_params_json', 'step_override_json');
+
+UPDATE dynamic_model_field_assignment
+SET deleted = true,
+    updater = 'seed',
+    update_time = CURRENT_TIMESTAMP
+WHERE model_code = 'sop'
+  AND tenant_id = 1
+  AND deleted = false
+  AND field_code IN ('default_steps_json', 'default_params_json', 'step_override_json');
 
 INSERT INTO dynamic_model_field_assignment (
   model_id, field_id, model_code, field_code,
@@ -129,8 +152,9 @@ JOIN dynamic_field f
   ON f.deleted = false AND f.tenant_id = 1 AND f.code = bf.field_code
 WHERE m.deleted = false AND m.tenant_id = 1 AND m.code = 'sop'
   AND bf.field_code IN (
-    'is_template', 'sop_template_id', 'step_override_json', 'param_override_json',
-    'default_steps_json', 'default_params_json', 'execution_means', 'procedure_kind'
+    'is_template', 'sop_template_id',
+    'action_tree_json', 'action_tree_override_json', 'default_params_by_node_json',
+    'param_override_json', 'execution_means', 'procedure_kind'
   )
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET

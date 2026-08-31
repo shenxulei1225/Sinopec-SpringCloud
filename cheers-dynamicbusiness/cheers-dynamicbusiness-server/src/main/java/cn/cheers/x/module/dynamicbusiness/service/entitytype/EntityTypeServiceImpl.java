@@ -79,6 +79,9 @@ public class EntityTypeServiceImpl implements EntityTypeService {
     private EntityTypeOrchestrationBootstrapService entityTypeOrchestrationBootstrapService;
 
     @Resource
+    private DomainEntityTypeRetireService domainEntityTypeRetireService;
+
+    @Resource
     private FacilityOwningFieldEnsureService facilityOwningFieldEnsureService;
 
     @Resource
@@ -459,9 +462,9 @@ public class EntityTypeServiceImpl implements EntityTypeService {
     /**
      * 删除业务类型。
      *
-     * 适用场景：
-     * - 清理用户自定义业务类型；
-     * - 删除前校验：非系统级、无子业务。
+     * <p>子数据类型（DOMAIN）：走 {@link DomainEntityTypeRetireService}——型号归回底座未划域，
+     * 实例保留；只拆注册门/门户/布局/域分组。禁止在此路径删型号或实例。
+     * 其它入口种类：仍按原逻辑对注册项逻辑删（不级联清底座台账）。</p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -473,6 +476,12 @@ public class EntityTypeServiceImpl implements EntityTypeService {
 
         if (EntityTypeDO.TYPE_LEVEL_SYSTEM.equals(entityType.getTypeLevel())) {
             throw new ServiceException(403, "系统级业务类型不可删除");
+        }
+
+        EntityTypeEntryKindEnum kind = EntityTypeEntryKindEnum.fromCode(entityType.getEntryKind());
+        if (kind.isDomainEntry()) {
+            domainEntityTypeRetireService.retire(entityType);
+            return;
         }
 
         entityTypeMapper.deleteById(id);

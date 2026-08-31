@@ -2471,6 +2471,127 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
+-- 设备基础字段权威编码（与 ent_equipment 列名一致；替代历史假 REF *_id）
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'operation_status', '运行状态', 'ENUM',
+  NULL, '设备业务运行态（非实体启用/禁用 status）',
+  'SYSTEM', 1,
+  NULL, 'NONE',
+  '[{"label": "运行", "value": "运行"}, {"label": "备用", "value": "备用"}, {"label": "检修", "value": "检修"}, {"label": "停用", "value": "停用"}, {"label": "报废", "value": "报废"}]', NULL,
+  NULL, 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  name = EXCLUDED.name,
+  type = EXCLUDED.type,
+  description = EXCLUDED.description,
+  options = EXCLUDED.options,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'health_score', '健康度', 'ENUM',
+  NULL, '设备健康度（字段管理选项）',
+  'SYSTEM', 1,
+  NULL, 'NONE',
+  '[{"label": "优", "value": "优"}, {"label": "良", "value": "良"}, {"label": "中", "value": "中"}, {"label": "差", "value": "差"}]', NULL,
+  NULL, 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  name = EXCLUDED.name,
+  type = EXCLUDED.type,
+  description = EXCLUDED.description,
+  options = EXCLUDED.options,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'last_maintenance', '上次维保时间', 'DATE',
+  NULL, '上次维保时间',
+  'SYSTEM', 1,
+  NULL, 'NONE',
+  NULL, NULL,
+  NULL, 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  name = EXCLUDED.name,
+  type = EXCLUDED.type,
+  description = EXCLUDED.description,
+  options = EXCLUDED.options,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'next_maintenance', '下次维保时间', 'DATE',
+  NULL, '下次维保时间',
+  'SYSTEM', 1,
+  NULL, 'NONE',
+  NULL, NULL,
+  NULL, 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  name = EXCLUDED.name,
+  type = EXCLUDED.type,
+  description = EXCLUDED.description,
+  options = EXCLUDED.options,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'last_inspection', '上次检验时间', 'DATE',
+  NULL, '上次检验时间',
+  'SYSTEM', 1,
+  NULL, 'NONE',
+  NULL, NULL,
+  NULL, 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  name = EXCLUDED.name,
+  type = EXCLUDED.type,
+  description = EXCLUDED.description,
+  options = EXCLUDED.options,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'next_inspection', '下次检验时间', 'DATE',
+  NULL, '下次检验时间',
+  'SYSTEM', 1,
+  NULL, 'NONE',
+  NULL, NULL,
+  NULL, 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  name = EXCLUDED.name,
+  type = EXCLUDED.type,
+  description = EXCLUDED.description,
+  options = EXCLUDED.options,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
 INSERT INTO dynamic_field (
   code, name, type, unit, description, source, status, max_relations,
   index_strategy, options, provider_code, semantic_type, tenant_id, creator

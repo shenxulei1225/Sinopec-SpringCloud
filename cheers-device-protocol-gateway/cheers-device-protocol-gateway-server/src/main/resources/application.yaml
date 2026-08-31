@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: cheers-device-protocol-gateway-server
+  profiles:
+    active: local
+  main:
+    allow-circular-references: true
+    allow-bean-definition-overriding: true
+  config:
+    import:
+      - optional:classpath:application-${spring.profiles.active}.yaml
+      - optional:nacos:${spring.application.name}-${spring.profiles.active}.yaml
+  jackson:
+    serialization:
+      write-dates-as-timestamps: true
+      fail-on-empty-beans: false
+
+server:
+  # HTTP（Feign RPC）与 WebSocket 同端口；可用 DEVICE_PROTOCOL_GATEWAY_PORT 覆盖
+  port: ${DEVICE_PROTOCOL_GATEWAY_PORT:8095}
+
+logging:
+  file:
+    name: ${user.home}/logs/${spring.application.name}.log
+
+cheers:
+  device-protocol-gateway:
+    path-pattern: /{deviceId}
+    allowed-origins:
+      - "*"
+    # 上行回写巡检任务；本地直连 inspection-task 端口（Nacos 可用后可改为服务发现 URL）
+    uplink-notify-url: ${DEVICE_PROTOCOL_UPLINK_NOTIFY_URL:http://127.0.0.1:15095/rpc-api/inspection-task/device-uplink/notify}
+  info:
+    version: 1.0.0
+    base-package: cn.cheers.x.device.protocolgateway
+  security:
+    mock-enable: true
+  tenant:
+    enable: false
+
+--- #################### 注册中心 ####################
+
+spring:
+  cloud:
+    nacos:
+      server-addr: 127.0.0.1:8848
+      username: nacos
+      password: nacos
+      discovery:
+        namespace: dev
+        group: DEFAULT_GROUP
+        metadata:
+          version: 1.0.0
+      config:
+        namespace: dev
+        group: DEFAULT_GROUP

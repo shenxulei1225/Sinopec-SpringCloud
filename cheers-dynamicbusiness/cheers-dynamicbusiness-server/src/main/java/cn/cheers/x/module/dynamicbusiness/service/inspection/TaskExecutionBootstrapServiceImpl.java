@@ -23,9 +23,12 @@ import java.util.Map;
 /**
  * 开跑 bootstrap 实现。
  *
+ * <p><b>负责</b>：一次执行记录锁定快照 + 批量创建步骤树（含 parent_id）。</p>
  * <p><b>权威</b>：步骤行写入 {@code task_execution_step}；快照写入执行记录 custom_fields
- * （{@code standard_snapshot}/{@code parameter_snapshot}/{@code gap_codes}）。</p>
- * <p><b>禁止</b>：在此调用路径/算路服务；有 gapCodes 时拒绝开跑。</p>
+ * （{@code standard_snapshot}/{@code parameter_snapshot}/{@code gap_codes}）；
+ * 父子关系以 draft.parentStepCode → 已创建步骤 id 写入实体 {@code parentId}。</p>
+ * <p><b>不负责</b>：复合动作展开、SOP merge（调用方先展开再传 steps）。</p>
+ * <p><b>禁止</b>：在此调用路径/算路服务；有 gapCodes 时拒绝开跑；父 stepCode 缺失时静默当根。</p>
  */
 @Service
 public class TaskExecutionBootstrapServiceImpl implements TaskExecutionBootstrapService {
@@ -81,11 +84,27 @@ public class TaskExecutionBootstrapServiceImpl implements TaskExecutionBootstrap
         updateReq.setCustomFields(custom);
         entityService.update(updateReq);
 
+        // 按列表顺序创建：父须出现在子之前；stepCode → id 映射后写 parentId
         List<Long> stepIds = new ArrayList<>();
+        Map<String, Long> stepCodeToId = new LinkedHashMap<>();
         for (TaskExecutionBootstrapReqVO.TaskExecutionStepDraftVO draft : req.getSteps()) {
             if (draft == null || !StringUtils.hasText(draft.getStepCode())) {
                 throw new ServiceException(400, "步骤 draft 缺少 stepCode");
             }
+            if (stepCodeToId.containsKey(draft.getStepCode())) {
+                throw new ServiceException(400, "步骤 stepCode 重复：" + draft.getStepCode());
+            }
+
+            Long parentId = null;
+            if (StringUtils.hasText(draft.getParentStepCode())) {
+                parentId = stepCodeToId.get(draft.getParentStepCode());
+                if (parentId == null) {
+                    throw new ServiceException(400,
+                            "步骤 parentStepCode 未找到或顺序错误（父须在子之前）："
+                                    + draft.getParentStepCode());
+                }
+            }
+
             EntityCreateReqVO createReq = new EntityCreateReqVO();
             Map<String, Object> stepBase = new LinkedHashMap<>();
             stepBase.put("entityTypeCode", STEP_ENTITY_TYPE);
@@ -99,11 +118,16 @@ public class TaskExecutionBootstrapServiceImpl implements TaskExecutionBootstrap
             stepBase.put("step_type", draft.getStepType() != null ? draft.getStepType() : "sop_step");
             stepBase.put("step_required", draft.getStepRequired() == null || draft.getStepRequired());
             stepBase.put("step_status", "pending");
+            if (parentId != null) {
+                stepBase.put("parentId", parentId);
+            }
             if (draft.getSource() != null) {
                 stepBase.put("result_payload", JSON.toJSONString(Map.of("source", draft.getSource())));
             }
             createReq.setBaseFields(stepBase);
-            stepIds.add(entityService.create(createReq));
+            Long stepId = entityService.create(createReq);
+            stepCodeToId.put(draft.getStepCode(), stepId);
+            stepIds.add(stepId);
         }
 
         TaskExecutionBootstrapRespVO resp = new TaskExecutionBootstrapRespVO();

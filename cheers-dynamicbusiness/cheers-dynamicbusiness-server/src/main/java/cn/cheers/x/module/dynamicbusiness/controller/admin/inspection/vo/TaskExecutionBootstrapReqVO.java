@@ -42,6 +42,11 @@ public class TaskExecutionBootstrapReqVO {
         private String stepTitle;
         private String stepType;
         private Boolean stepRequired;
+        /**
+         * 父步骤的 stepCode（可选）。列表须父在前、子在后；
+         * bootstrap 按此映射写入实体 parent_id。
+         */
+        private String parentStepCode;
         private Map<String, Object> source;
     }
 }

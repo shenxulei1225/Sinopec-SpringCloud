@@ -10,7 +10,7 @@ class DefaultMasterDataCapabilityCheckerTest {
     @Test
     void defaultsCanDenyEveryNetworkGovernanceCapability() {
         DefaultMasterDataCapabilityChecker checker =
-                new DefaultMasterDataCapabilityChecker(false, false, false);
+                new DefaultMasterDataCapabilityChecker(false, false, false, false);
 
         assertFalse(checker.canCreateCompanyStandard());
         assertFalse(checker.canPromotePackage());
@@ -20,7 +20,17 @@ class DefaultMasterDataCapabilityCheckerTest {
     @Test
     void explicitConfigurationCanEnableAcceptanceCapabilities() {
         DefaultMasterDataCapabilityChecker checker =
-                new DefaultMasterDataCapabilityChecker(true, true, true);
+                new DefaultMasterDataCapabilityChecker(false, true, true, true);
+
+        assertTrue(checker.canCreateCompanyStandard());
+        assertTrue(checker.canPromotePackage());
+        assertTrue(checker.canDeactivateCompanyStandard());
+    }
+
+    @Test
+    void mockSecurityEnabledGrantsCapabilitiesBeforeRbac() {
+        DefaultMasterDataCapabilityChecker checker =
+                new DefaultMasterDataCapabilityChecker(true, false, false, false);
 
         assertTrue(checker.canCreateCompanyStandard());
         assertTrue(checker.canPromotePackage());

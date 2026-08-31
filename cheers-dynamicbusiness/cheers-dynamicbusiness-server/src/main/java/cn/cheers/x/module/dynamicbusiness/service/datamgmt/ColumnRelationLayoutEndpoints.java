@@ -94,17 +94,32 @@ final class ColumnRelationLayoutEndpoints {
             return null;
         }
         Map<String, Object> meta = row.getColumnMeta() != null ? row.getColumnMeta() : Map.of();
-        String tab = StringUtils.hasText(row.getTabId()) ? row.getTabId().trim() : "default";
+        String tab = row.getTabId() == null ? "" : row.getTabId().trim();
         return switch (kind) {
             case CATEGORY -> {
                 String columnKey = metaString(meta, "columnKey");
-                if (!StringUtils.hasText(columnKey)) {
-                    columnKey = "default";
+                if (!StringUtils.hasText(columnKey) || "default".equalsIgnoreCase(columnKey.trim())
+                        || columnKey.trim().toLowerCase().endsWith("-default")) {
+                    yield null;
                 }
-                yield "CATEGORY:" + columnKey + ":" + tab;
+                if (!StringUtils.hasText(tab) || "default".equalsIgnoreCase(tab)
+                        || tab.toLowerCase().endsWith("-default")) {
+                    yield null;
+                }
+                yield "CATEGORY:" + columnKey.trim() + ":" + tab;
             }
-            case MODEL -> "MODEL:" + tab;
-            case ENTITY -> "ENTITY:" + tab;
+            case MODEL -> {
+                if (!StringUtils.hasText(tab) || "default".equalsIgnoreCase(tab)) {
+                    yield null;
+                }
+                yield "MODEL:" + tab;
+            }
+            case ENTITY -> {
+                if (!StringUtils.hasText(tab) || "default".equalsIgnoreCase(tab)) {
+                    yield null;
+                }
+                yield "ENTITY:" + tab;
+            }
             default -> null;
         };
     }

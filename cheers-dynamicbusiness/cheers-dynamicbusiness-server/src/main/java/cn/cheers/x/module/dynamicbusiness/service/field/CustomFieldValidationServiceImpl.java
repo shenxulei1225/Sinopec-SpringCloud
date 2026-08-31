@@ -59,6 +59,13 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
 
     @Override
     public void validateCustomFields(Long modelId, Map<String, Object> customFields) {
+        validateCustomFields(modelId, null, customFields);
+    }
+
+    @Override
+    public void validateCustomFields(Long modelId,
+                                     Map<String, Object> baseFields,
+                                     Map<String, Object> customFields) {
         List<FieldValidationConfig> configs = getFieldConfigs(modelId);
         if (configs.isEmpty()) {
             return;
@@ -71,17 +78,26 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
             assignmentMap.put(config.getField().getId(), config.getAssignment());
         }
 
-        validateCustomFields(fieldMap, assignmentMap, customFields);
+        validateCustomFields(fieldMap, assignmentMap, baseFields, customFields);
     }
 
     @Override
     public void validateCustomFields(Map<Long, FieldDO> fieldMap,
                                      Map<Long, ModelFieldAssignmentDO> assignmentMap,
                                      Map<String, Object> customFields) {
+        validateCustomFields(fieldMap, assignmentMap, null, customFields);
+    }
+
+    @Override
+    public void validateCustomFields(Map<Long, FieldDO> fieldMap,
+                                     Map<Long, ModelFieldAssignmentDO> assignmentMap,
+                                     Map<String, Object> baseFields,
+                                     Map<String, Object> customFields) {
         if (fieldMap == null || fieldMap.isEmpty()) {
             return;
         }
-        Map<String, Object> values = customFields == null ? Collections.emptyMap() : customFields;
+        Map<String, Object> base = baseFields == null ? Collections.emptyMap() : baseFields;
+        Map<String, Object> custom = customFields == null ? Collections.emptyMap() : customFields;
 
         List<String> missingRequired = new ArrayList<>();
         for (Map.Entry<Long, FieldDO> entry : fieldMap.entrySet()) {
@@ -91,7 +107,7 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
             if (assignment == null || !Boolean.TRUE.equals(assignment.getRequired())) {
                 continue;
             }
-            Object value = resolveCustomFieldValue(values, fieldId, field);
+            Object value = resolveAssignedFieldValue(base, custom, fieldId, field, assignment);
             if (isRequiredValueMissing(field, value)) {
                 String label = field.getName() != null && !field.getName().isBlank()
                         ? field.getName().trim()
@@ -107,7 +123,7 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
             Long fieldId = entry.getKey();
             FieldDO field = entry.getValue();
             ModelFieldAssignmentDO assignment = assignmentMap.get(fieldId);
-            Object value = resolveCustomFieldValue(values, fieldId, field);
+            Object value = resolveAssignedFieldValue(base, custom, fieldId, field, assignment);
             // 必填已在上方汇总；此处只做有值时的类型/规则校验
             if (value != null && !(value instanceof String && ((String) value).isEmpty())) {
                 validateValueType(field, value);
@@ -121,11 +137,38 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
         }
     }
 
-    private static Object resolveCustomFieldValue(Map<String, Object> customFields, Long fieldId, FieldDO field) {
+    /**
+     * 型号分配字段取值：BASE 来源（如 facility_id 物理列）在写前分桶后只存在于 baseFields。
+     */
+    private static Object resolveAssignedFieldValue(Map<String, Object> baseFields,
+                                                    Map<String, Object> customFields,
+                                                    Long fieldId,
+                                                    FieldDO field,
+                                                    ModelFieldAssignmentDO assignment) {
+        if (isBaseSourcedAssignment(assignment)) {
+            Object fromBase = resolveFieldValueFromMap(baseFields, fieldId, field);
+            if (fromBase != null) {
+                return fromBase;
+            }
+        }
+        return resolveFieldValueFromMap(customFields, fieldId, field);
+    }
+
+    private static boolean isBaseSourcedAssignment(ModelFieldAssignmentDO assignment) {
+        if (assignment == null || assignment.getFieldSource() == null) {
+            return false;
+        }
+        return "BASE".equalsIgnoreCase(assignment.getFieldSource().trim());
+    }
+
+    private static Object resolveFieldValueFromMap(Map<String, Object> fields, Long fieldId, FieldDO field) {
+        if (fields == null || fields.isEmpty()) {
+            return null;
+        }
         String idKey = String.valueOf(fieldId);
-        Object value = customFields.get(idKey);
+        Object value = fields.get(idKey);
         if (value == null && field != null && field.getCode() != null) {
-            value = customFields.get(field.getCode());
+            value = fields.get(field.getCode());
         }
         return value;
     }

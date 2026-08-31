@@ -29,9 +29,10 @@ import java.util.Set;
 /**
  * 工作台布局：模版列表、从模版生成实例、解析页面/目录上的 layoutId。
  * <p>
- * 权威：创建目录时从此处实例化布局行（含 columnMeta 栏身份与显示名）。
- * 显示名用底座类型 / 分类种类的中文名，不用类型编码冒充 label。
- * 不负责：组件配置 props（前端按栏身份同步）。
+ * 权威：创建 NATIVE / SCOPE / DOMAIN / REUSE 目录时从此处实例化布局行——
+ * 一次写好同类分类/型号/实体栏及类型码与区段，禁止半截空壳。
+ * 显示名用底座类型 / 分类种类 / 本目录中文名，不用类型编码冒充 label。
+ * 创建时同步写好分类/型号/实体栏默认展示配置 propsId（经资源服务）；不负责打开页现造 props。
  */
 @Service
 public class DmWorkbenchLayoutService {
@@ -46,6 +47,9 @@ public class DmWorkbenchLayoutService {
 
     @Resource
     private DmPageLayoutRefMapper dmPageLayoutRefMapper;
+
+    @Resource
+    private DmCatalogLayoutDisplayPropsBootstrapService dmCatalogLayoutDisplayPropsBootstrapService;
 
     @Resource
     private EntityTypeMapper entityTypeMapper;
@@ -158,10 +162,14 @@ public class DmWorkbenchLayoutService {
     }
 
     /**
-     * 从模版复制栏行并写入本页栏身份。
-     * 模型/实体类型码与 label：底座（categoryTypeCode / 存储类型）的编码与中文名。
-     * 分类栏：种类码 + 分类种类中文名（无则退回底座中文名）。
-     * 单栏允许空 tabId。不写 propsId。
+     * 从模版复制栏行并一次写全本页栏身份（禁止留下缺类型码的空壳）。
+     * <p>
+     * NATIVE：分类/型号/实体类型码 = 本目录编码。<br>
+     * SCOPE / DOMAIN / REUSE：分类/型号/实体类型码 = 底座（同类台账），由调用方传入
+     * {@code categoryTypeCode}（底座编码）。实体栏显示名可用本目录中文名，类型码仍是底座。
+     * <p>
+     * 区段：分类、型号 → 筛选；实体 → Who/对象。即使模版旧数据区段不对，实例化时也会盖章。
+     * 分类 Tab 编号必须非空。启用中的分类/型号/实体一次写好 propsId（禁止半截交给前端补）。
      */
     @Transactional(rollbackFor = Exception.class)
     public Long instantiateFromTemplate(Long templateId,
@@ -177,6 +185,9 @@ public class DmWorkbenchLayoutService {
         if (templateRows.isEmpty()) {
             throw new ServiceException(500, "模版无栏行：" + templateId);
         }
+        if (!StringUtils.hasText(entityTypeCode)) {
+            throw new ServiceException(400, "实例化布局必须提供目录注册编码");
+        }
 
         DmWorkbenchLayoutDO instance = new DmWorkbenchLayoutDO();
         instance.setName(instanceName);
@@ -187,14 +198,20 @@ public class DmWorkbenchLayoutService {
                 : new LinkedHashMap<>(template.getSettingsJson()));
         dmWorkbenchLayoutMapper.insert(instance);
 
-        String code = StringUtils.hasText(entityTypeCode) ? entityTypeCode.trim() : null;
-        String tabId = code != null ? code + "-default" : "default";
+        String code = entityTypeCode.trim();
+        // 同类台账类型码：调用方已解析底座；缺省与注册码相同（NATIVE）
         String storageCode = StringUtils.hasText(categoryTypeCode) ? categoryTypeCode.trim() : code;
+        if (!StringUtils.hasText(storageCode)) {
+            throw new ServiceException(400, "实例化布局缺少同类类型编码（底座/本类型）");
+        }
         String storageDisplayName = resolveEntityTypeDisplayName(storageCode);
+        String registryDisplayName = resolveEntityTypeDisplayName(code);
         String categoryDisplayName = resolveCategoryTypeDisplayName(storageCode);
         if (!StringUtils.hasText(categoryDisplayName)) {
             categoryDisplayName = storageDisplayName;
         }
+        // 分类 Tab 编号：按同类种类生成稳定非空编号；栏分组键（columnKey）与编号分开
+        String categoryTabId = storageCode + "-1";
 
         for (DmDataTabLayoutDO src : templateRows) {
             DmDataTabLayoutDO row = new DmDataTabLayoutDO();
@@ -207,38 +224,68 @@ public class DmWorkbenchLayoutService {
             row.setColumnMeta(copyMeta(src.getColumnMeta()));
 
             if (DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(src.getColumnKind())) {
-                if (!StringUtils.hasText(row.getTabId())) {
-                    row.setTabId(tabId);
+                // 模版若仍是旧字面 default / 空，换成真实编号；已有合法编号则保留
+                String srcTab = row.getTabId() == null ? "" : row.getTabId().trim();
+                if (!StringUtils.hasText(srcTab) || "default".equalsIgnoreCase(srcTab)) {
+                    row.setTabId(categoryTabId);
                 }
                 Map<String, Object> meta = row.getColumnMeta() != null
                         ? new LinkedHashMap<>(row.getColumnMeta())
                         : new LinkedHashMap<>();
-                if (code != null) {
-                    if (storageCode != null) {
-                        meta.put("categoryTypeCode", storageCode);
-                    }
-                    // 显示名用分类种类中文名；模版里的「分类」等占位一律覆盖
-                    meta.put("label", categoryDisplayName);
-                    meta.put("columnKey", row.getTabId());
+                meta.put("categoryTypeCode", storageCode);
+                meta.put("label", categoryDisplayName);
+                meta.put("columnSection", DmDataTabLayoutBootstrapMeta.SECTION_FILTER);
+                Object existingKey = meta.get("columnKey");
+                String keyStr = existingKey == null ? "" : String.valueOf(existingKey).trim();
+                // 分组键用种类码，禁止 default；看身份能知道是哪类分类
+                if (!StringUtils.hasText(keyStr) || "default".equalsIgnoreCase(keyStr)) {
+                    meta.put("columnKey", storageCode);
+                }
+                if (!(meta.get("widthPx") instanceof Number)) {
+                    meta.put("widthPx", DmDataTabLayoutBootstrapMeta.CATEGORY_COLUMN_WIDTH_PX);
+                }
+                if (!(meta.get("sectionWidthPx") instanceof Number)) {
+                    meta.put("sectionWidthPx", DmDataTabLayoutBootstrapMeta.FILTER_SECTION_WIDTH_PX);
                 }
                 row.setColumnMeta(meta);
-            } else if (DmDataTabLayoutKindEnum.MODEL.getCode().equals(src.getColumnKind())
-                    && code != null) {
+            } else if (DmDataTabLayoutKindEnum.MODEL.getCode().equals(src.getColumnKind())) {
+                // 型号栏 tabId = 底座类型编码；身份 MODEL:{tabId}；禁止空与 default
+                String modelTab = row.getTabId() == null ? "" : row.getTabId().trim();
+                if (!StringUtils.hasText(modelTab) || "default".equalsIgnoreCase(modelTab)) {
+                    row.setTabId(storageCode);
+                }
                 Map<String, Object> meta = row.getColumnMeta() != null
                         ? new LinkedHashMap<>(row.getColumnMeta())
                         : new LinkedHashMap<>();
-                String typeCode = storageCode != null ? storageCode : code;
-                meta.put("modelEntityTypeCode", typeCode);
+                meta.put("modelEntityTypeCode", storageCode);
                 meta.put("label", storageDisplayName);
+                meta.put("columnSection", DmDataTabLayoutBootstrapMeta.SECTION_FILTER);
+                if (!(meta.get("widthPx") instanceof Number)) {
+                    meta.put("widthPx", DmDataTabLayoutBootstrapMeta.MODEL_COLUMN_WIDTH_PX);
+                }
+                // 筛选区宽已由分类领头栏写出；型号不抢 sectionWidthPx
+                meta.remove("sectionWidthPx");
                 row.setColumnMeta(meta);
-            } else if (DmDataTabLayoutKindEnum.ENTITY.getCode().equals(src.getColumnKind())
-                    && code != null) {
+            } else if (DmDataTabLayoutKindEnum.ENTITY.getCode().equals(src.getColumnKind())) {
+                // 实体栏 tabId = 底座类型编码；身份 ENTITY:{tabId}；禁止空与 default
+                String entityTab = row.getTabId() == null ? "" : row.getTabId().trim();
+                if (!StringUtils.hasText(entityTab) || "default".equalsIgnoreCase(entityTab)) {
+                    row.setTabId(storageCode);
+                }
                 Map<String, Object> meta = row.getColumnMeta() != null
                         ? new LinkedHashMap<>(row.getColumnMeta())
                         : new LinkedHashMap<>();
-                String typeCode = storageCode != null ? storageCode : code;
-                meta.put("entityEntityTypeCode", typeCode);
-                meta.put("label", storageDisplayName);
+                // 类型码 = 同类底座；显示名优先本目录名（划分页仍认设备账）
+                meta.put("entityEntityTypeCode", storageCode);
+                meta.put("label", StringUtils.hasText(registryDisplayName)
+                        ? registryDisplayName : storageDisplayName);
+                meta.put("columnSection", DmDataTabLayoutBootstrapMeta.SECTION_OBJECT);
+                if (!(meta.get("widthPx") instanceof Number)) {
+                    meta.put("widthPx", DmDataTabLayoutBootstrapMeta.ENTITY_COLUMN_WIDTH_PX);
+                }
+                if (!(meta.get("sectionWidthPx") instanceof Number)) {
+                    meta.put("sectionWidthPx", DmDataTabLayoutBootstrapMeta.OBJECT_SECTION_WIDTH_PX);
+                }
                 row.setColumnMeta(meta);
             }
 
@@ -247,9 +294,67 @@ public class DmWorkbenchLayoutService {
             }
             dmDataTabLayoutMapper.insert(row);
         }
+        assertInstantiatedColumnIdentities(instance.getId());
+        dmCatalogLayoutDisplayPropsBootstrapService.bindDefaultDisplayProps(
+                instance.getId(), code, storageCode);
         dmDataTabColumnRelationBootstrapService.applyInitialDefaultRelations(
                 instance.getId(), code, storageCode);
         return instance.getId();
+    }
+
+    /**
+     * 实例化后兜底核对：启用中的分类/型号/实体必须已有类型码，否则回滚创建。
+     * 禁止「栏有了、类型码没有」半截布局交给用户补。
+     */
+    private void assertInstantiatedColumnIdentities(Long layoutId) {
+        List<DmDataTabLayoutDO> rows = dmDataTabLayoutMapper.selectListByLayoutId(layoutId);
+        for (DmDataTabLayoutDO row : rows) {
+            if (Boolean.FALSE.equals(row.getEnabled())) {
+                continue;
+            }
+            String kind = row.getColumnKind() == null ? "" : row.getColumnKind().trim().toUpperCase();
+            Map<String, Object> meta = row.getColumnMeta();
+            if (DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(kind)) {
+                if (!metaHasText(meta, "categoryTypeCode")) {
+                    throw new ServiceException(500, "自动创建布局失败：分类栏缺少 categoryTypeCode");
+                }
+                String tab = row.getTabId() == null ? "" : row.getTabId().trim();
+                if (!StringUtils.hasText(tab) || "default".equalsIgnoreCase(tab)
+                        || tab.toLowerCase().endsWith("-default")) {
+                    throw new ServiceException(500, "自动创建布局失败：分类栏 tabId 须为种类码编号，禁止 default/-default");
+                }
+                Object keyObj = meta == null ? null : meta.get("columnKey");
+                String key = keyObj == null ? "" : String.valueOf(keyObj).trim();
+                if (!StringUtils.hasText(key) || "default".equalsIgnoreCase(key)
+                        || key.toLowerCase().endsWith("-default")) {
+                    throw new ServiceException(500, "自动创建布局失败：分类栏 columnKey 须为种类码，禁止 default/-default");
+                }
+            } else if (DmDataTabLayoutKindEnum.MODEL.getCode().equals(kind)) {
+                if (!metaHasText(meta, "modelEntityTypeCode")) {
+                    throw new ServiceException(500, "自动创建布局失败：型号栏缺少 modelEntityTypeCode");
+                }
+                String tab = row.getTabId() == null ? "" : row.getTabId().trim();
+                if (!StringUtils.hasText(tab) || "default".equalsIgnoreCase(tab)) {
+                    throw new ServiceException(500, "自动创建布局失败：型号栏 tabId 须为底座类型编码");
+                }
+            } else if (DmDataTabLayoutKindEnum.ENTITY.getCode().equals(kind)) {
+                if (!metaHasText(meta, "entityEntityTypeCode")) {
+                    throw new ServiceException(500, "自动创建布局失败：实体栏缺少 entityEntityTypeCode");
+                }
+                String tab = row.getTabId() == null ? "" : row.getTabId().trim();
+                if (!StringUtils.hasText(tab) || "default".equalsIgnoreCase(tab)) {
+                    throw new ServiceException(500, "自动创建布局失败：实体栏 tabId 须为底座类型编码");
+                }
+            }
+        }
+    }
+
+    private static boolean metaHasText(Map<String, Object> meta, String key) {
+        if (meta == null || !StringUtils.hasText(key)) {
+            return false;
+        }
+        Object value = meta.get(key);
+        return value != null && StringUtils.hasText(String.valueOf(value).trim());
     }
 
     /** 数据类型中文名；缺则退回编码（仅无名称数据时） */
@@ -299,18 +404,19 @@ public class DmWorkbenchLayoutService {
         dmWorkbenchLayoutMapper.insert(header);
         Long layoutId = header.getId();
 
-        insertTemplateRow(layoutId, DmDataTabLayoutKindEnum.CATEGORY.getCode(), "default", true,
+        insertTemplateRow(layoutId, DmDataTabLayoutKindEnum.CATEGORY.getCode(), "category-1", true,
                 Map.of(
                         "label", "分类",
-                        "columnKey", "default",
+                        "columnKey", "category",
                         "columnSection", DmDataTabLayoutBootstrapMeta.SECTION_FILTER,
                         "widthPx", DmDataTabLayoutBootstrapMeta.CATEGORY_COLUMN_WIDTH_PX,
                         "sectionWidthPx", DmDataTabLayoutBootstrapMeta.FILTER_SECTION_WIDTH_PX
                 ));
+        // 型号进筛选（不领头）；实体进 Who 并领头写区段宽
         insertTemplateRow(layoutId, DmDataTabLayoutKindEnum.MODEL.getCode(), null, true,
-                DmDataTabLayoutBootstrapMeta.modelMeta(true));
+                DmDataTabLayoutBootstrapMeta.modelMeta(false));
         insertTemplateRow(layoutId, DmDataTabLayoutKindEnum.ENTITY.getCode(), null, true,
-                DmDataTabLayoutBootstrapMeta.entityMeta(false));
+                DmDataTabLayoutBootstrapMeta.entityMeta(true));
         insertTemplateRow(layoutId, DmDataTabLayoutKindEnum.DETAIL.getCode(), null, false, null);
         return layoutId;
     }

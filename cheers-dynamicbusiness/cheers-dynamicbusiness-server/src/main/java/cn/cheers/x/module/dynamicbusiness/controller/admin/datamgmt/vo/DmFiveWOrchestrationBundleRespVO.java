@@ -50,5 +50,17 @@ public class DmFiveWOrchestrationBundleRespVO {
     @Data
     public static class HowSlot {
         private String mode;
+        /**
+         * How 能力码。sopHow → 前端渲染通用 SOP How 工作台；
+         * 存于 how_config.capability（配方/配置写入，代码不写死业务类型码）。
+         */
+        private String capability;
+        /**
+         * capability=sopHow 时的键映射（subjectType/hostType/dimensionKey/dimensionOptions）。
+         * 原样透传 how_config.sopHow，不在此校验业务类型码。
+         */
+        private Map<String, Object> sopHow;
+        private String candidateEntityTypeCode;
+        private Long panelPropsId;
     }
 }

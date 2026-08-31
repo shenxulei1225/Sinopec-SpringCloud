@@ -1,0 +1,8 @@
+# 本地覆盖：无 Nacos 时可只靠直连 URL；有 Nacos 时 Feign 按服务名发现本网关。
+spring:
+  cloud:
+    nacos:
+      discovery:
+        enabled: true
+      config:
+        enabled: false

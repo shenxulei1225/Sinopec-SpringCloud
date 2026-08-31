@@ -94,10 +94,11 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
      * <p>
      * ## 与栏间关系的关系（死规矩）
      * <ul>
+     *   <li>优先按布局行 <strong>id</strong> 更新（含改 tabId）；列身份变了只
+     *       {@link DmDataTabColumnRelationService#renameColumnIdentities}，不删边。</li>
      *   <li>仅当本次<strong>确实删掉布局行</strong>时：算出这些行的列身份，调用
      *       {@link DmDataTabColumnRelationService#removeRelationsTouchingIdentities} 清挂在上面的边。</li>
-     *   <li>加栏之后：只 <strong>insert</strong> 缺的同类型默认 filter（分类→型号、型号→实体），不覆盖、不删用户边。</li>
-     *   <li>改名 / 调序 / 配置隐藏（只改 enabled）→ <b>不删</b>关系表行。</li>
+     *   <li>加栏之后：只 <strong>insert</strong> 缺的同类型默认 filter，不覆盖、不删用户边。</li>
      *   <li>禁止再调用「按当前状态猜孤儿边」的全表扫描删除。</li>
      * </ul>
      */
@@ -118,20 +119,40 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
                 : null;
 
         List<DmDataTabLayoutDO> existing = dmDataTabLayoutMapper.selectListByLayoutId(layoutId);
+        Map<Long, DmDataTabLayoutDO> existingById = new LinkedHashMap<>();
         Map<String, DmDataTabLayoutDO> existingByScope = new LinkedHashMap<>();
         for (DmDataTabLayoutDO row : existing) {
+            if (row.getId() != null) {
+                existingById.put(row.getId(), row);
+            }
             existingByScope.put(scopeKey(row.getColumnKind(), row.getTabId()), row);
         }
 
         Set<String> savedScopes = new HashSet<>();
+        Set<Long> keptIds = new HashSet<>();
+        Map<String, String> identityRenames = new LinkedHashMap<>();
+
         for (DmDataTabLayoutSaveItemVO item : items) {
             String kind = item.getColumnKind().trim().toUpperCase();
-            String tabId = normalizeTabId(item.getTabId());
+            String tabId = normalizeTabId(kind, item.getTabId());
             String scope = scopeKey(kind, tabId);
             savedScopes.add(scope);
 
-            DmDataTabLayoutDO row = existingByScope.get(scope);
+            DmDataTabLayoutDO row = null;
+            if (item.getId() != null) {
+                row = existingById.get(item.getId());
+                if (row != null && row.getLayoutId() != null && !row.getLayoutId().equals(layoutId)) {
+                    throw new ServiceException(400, "布局行 id 不属于本页：" + item.getId());
+                }
+            }
+            if (row == null) {
+                row = existingByScope.get(scope);
+            }
+
             if (row != null) {
+                String oldIdentity = ColumnRelationLayoutEndpoints.columnIdentityOf(row);
+                row.setColumnKind(kind);
+                row.setTabId(tabId);
                 row.setPropsId(item.getPropsId());
                 row.setEnabled(item.getEnabled() == null || item.getEnabled());
                 row.setColumnMeta(toMetaMap(item.getColumnMeta()));
@@ -139,6 +160,13 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
                     row.setEntityTypeCode(entityTypeCode);
                 }
                 dmDataTabLayoutMapper.updateById(row);
+                keptIds.add(row.getId());
+                String newIdentity = ColumnRelationLayoutEndpoints.columnIdentityOf(row);
+                if (StringUtils.hasText(oldIdentity)
+                        && StringUtils.hasText(newIdentity)
+                        && !oldIdentity.equals(newIdentity)) {
+                    identityRenames.put(oldIdentity.trim(), newIdentity.trim());
+                }
                 continue;
             }
 
@@ -151,12 +179,16 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
             insert.setEnabled(item.getEnabled() == null || item.getEnabled());
             insert.setColumnMeta(toMetaMap(item.getColumnMeta()));
             dmDataTabLayoutMapper.insert(insert);
+            if (insert.getId() != null) {
+                keptIds.add(insert.getId());
+            }
         }
 
-        // 触发 2 的入参：仅收集「本次要从布局删掉的行」的列身份，再删行。
-        // 空集合 → removeRelationsTouchingIdentities no-op → 改名/隐藏等不伤边。
         Set<String> removedIdentities = new HashSet<>();
         for (DmDataTabLayoutDO row : existing) {
+            if (row.getId() != null && keptIds.contains(row.getId())) {
+                continue;
+            }
             String scope = scopeKey(row.getColumnKind(), row.getTabId());
             if (!savedScopes.contains(scope)) {
                 String identity = ColumnRelationLayoutEndpoints.columnIdentityOf(row);
@@ -168,9 +200,10 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
         }
 
         dmDataTabLayoutMapper.deletePhysicalSoftDeletedByLayoutId(layoutId);
+        // 先改名边端点，再按「真删栏」清边，避免改 tabId 被误当成删栏
+        dmDataTabColumnRelationService.renameColumnIdentities(layoutId, identityRenames);
         dmDataTabColumnRelationService.removeRelationsTouchingIdentities(layoutId, removedIdentities);
 
-        // 加栏后补缺的同类型默认 filter；只 insert，不删、不改用户手配边。
         String registryCode = resolveRegistryCodeAfterSave(layoutId, entityTypeCode);
         String storageCode = resolveStorageBaseCode(registryCode);
         dmDataTabColumnRelationBootstrapService.applyInitialDefaultRelations(
@@ -222,7 +255,7 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
         Map<String, DmDataTabLayoutSaveItemVO> deduped = new LinkedHashMap<>();
         for (DmDataTabLayoutSaveItemVO item : layouts) {
             String kind = item.getColumnKind() == null ? "" : item.getColumnKind().trim().toUpperCase();
-            String tabId = normalizeTabId(item.getTabId());
+            String tabId = normalizeTabId(kind, item.getTabId());
             deduped.put(scopeKey(kind, tabId), item);
         }
         return new ArrayList<>(deduped.values());
@@ -231,23 +264,30 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
     private String scopeKey(String columnKind, String tabId) {
         String kind = columnKind == null ? "" : columnKind.trim().toUpperCase();
         String tab = tabId == null ? "" : tabId.trim();
-        // 与列身份对齐：空 tab / 字面 "default" 对 MODEL·ENTITY 视为同一栏（身份 MODEL:default / ENTITY:default）
-        // 禁止一次存 null、一次存 "default" 被当成删旧加新，误清栏间关系。
-        if (("MODEL".equals(kind) || "ENTITY".equals(kind))
-                && (tab.isEmpty() || "default".equalsIgnoreCase(tab))) {
-            tab = "";
-        }
         return kind + "|" + tab;
     }
 
-    private String normalizeTabId(String tabId) {
+    /**
+     * 落库前归一 Tab 编号。
+     * 分类 / 型号 / 实体：必须非空；禁止字面 default。
+     */
+    private String normalizeTabId(String columnKind, String tabId) {
+        String kind = columnKind == null ? "" : columnKind.trim().toUpperCase();
+        boolean needsTab = DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(kind)
+                || DmDataTabLayoutKindEnum.MODEL.getCode().equals(kind)
+                || DmDataTabLayoutKindEnum.ENTITY.getCode().equals(kind);
         if (!StringUtils.hasText(tabId)) {
+            if (needsTab) {
+                throw new ServiceException(400, kind + " 栏必须提供 tabId，禁止为空");
+            }
             return null;
         }
         String trimmed = tabId.trim();
-        // 持久化不写字面 "default"：与 null 同一 scope，避免身份尺子分叉
-        if ("default".equalsIgnoreCase(trimmed)) {
-            return null;
+        if (needsTab && "default".equalsIgnoreCase(trimmed)) {
+            throw new ServiceException(400, kind + " 栏 tabId 禁止字面 default");
+        }
+        if (needsTab && trimmed.toLowerCase().endsWith("-default")) {
+            throw new ServiceException(400, kind + " 栏 tabId 禁止 -default 后缀");
         }
         return trimmed;
     }
@@ -260,8 +300,18 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
             }
             String kind = item.getColumnKind().trim().toUpperCase();
             if (DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(kind)
-                    && !StringUtils.hasText(item.getTabId())) {
-                throw new ServiceException(400, "分类列必须提供标签页编号");
+                    || DmDataTabLayoutKindEnum.MODEL.getCode().equals(kind)
+                    || DmDataTabLayoutKindEnum.ENTITY.getCode().equals(kind)) {
+                if (!StringUtils.hasText(item.getTabId())) {
+                    throw new ServiceException(400, kind + " 栏必须提供 tabId");
+                }
+                String tab = item.getTabId().trim();
+                if ("default".equalsIgnoreCase(tab)) {
+                    throw new ServiceException(400, kind + " 栏 tabId 禁止字面 default");
+                }
+                if (tab.toLowerCase().endsWith("-default")) {
+                    throw new ServiceException(400, kind + " 栏 tabId 禁止 -default 后缀");
+                }
             }
             boolean allowsTabId = DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(kind)
                     || DmDataTabLayoutKindEnum.MODEL.getCode().equals(kind)
@@ -269,12 +319,79 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
             if (!allowsTabId && StringUtils.hasText(item.getTabId())) {
                 throw new ServiceException(400, kind + " 列不应设置标签页编号");
             }
-            String scope = scopeKey(kind, normalizeTabId(item.getTabId()));
+            // 启用中的分类/型号/实体必须带类型码，禁止空壳落库再让用户学怎么补
+            if (item.getEnabled() == null || Boolean.TRUE.equals(item.getEnabled())) {
+                requireColumnTypeCodeOnSave(kind, item.getColumnMeta());
+                if (DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(kind)) {
+                    requireCategoryColumnKeyOnSave(item.getColumnMeta());
+                }
+            }
+            String scope = scopeKey(kind, normalizeTabId(kind, item.getTabId()));
             if (!scopes.add(scope)) {
                 throw new ServiceException(400, "数据 Tab 布局重复：" + kind
                         + (StringUtils.hasText(item.getTabId()) ? " / " + item.getTabId() : ""));
             }
         }
+    }
+
+    /**
+     * 分类栏分组键 columnKey：启用栏必须非空，禁止字面 default 与 *-default 后缀。
+     */
+    private void requireCategoryColumnKeyOnSave(Object columnMeta) {
+        Map<String, Object> meta = toMetaMapOrEmpty(columnMeta);
+        if (!metaHasText(meta, "columnKey")) {
+            throw new ServiceException(400, "分类栏缺少分组键 columnKey");
+        }
+        rejectInvalidCategoryScopePart("columnKey", String.valueOf(meta.get("columnKey")).trim());
+    }
+
+    private static void rejectInvalidCategoryScopePart(String field, String value) {
+        if (!StringUtils.hasText(value)) {
+            throw new ServiceException(400, "分类栏 " + field + " 禁止为空");
+        }
+        if ("default".equalsIgnoreCase(value)) {
+            throw new ServiceException(400, "分类栏 " + field + " 禁止字面 default");
+        }
+        if (value.toLowerCase().endsWith("-default")) {
+            throw new ServiceException(400, "分类栏 " + field + " 禁止 -default 后缀，须用种类码或稳定编号");
+        }
+    }
+
+    /**
+     * 保存闸门：启用栏的 columnMeta 必须含对应类型码。
+     * 配置隐藏（enabled=false）允许暂无类型码；重新启用时须先配好。
+     */
+    private void requireColumnTypeCodeOnSave(String kind, Object columnMeta) {
+        Map<String, Object> meta = toMetaMapOrEmpty(columnMeta);
+        if (DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(kind)) {
+            if (!metaHasText(meta, "categoryTypeCode")) {
+                throw new ServiceException(400, "分类栏缺少种类码 categoryTypeCode，请先选择分类种类");
+            }
+        } else if (DmDataTabLayoutKindEnum.MODEL.getCode().equals(kind)) {
+            if (!metaHasText(meta, "modelEntityTypeCode")) {
+                throw new ServiceException(400, "型号栏缺少类型码 modelEntityTypeCode，请先选择型号所属类型");
+            }
+        } else if (DmDataTabLayoutKindEnum.ENTITY.getCode().equals(kind)) {
+            if (!metaHasText(meta, "entityEntityTypeCode")) {
+                throw new ServiceException(400, "实体栏缺少类型码 entityEntityTypeCode，请先选择实体所属类型");
+            }
+        }
+    }
+
+    private Map<String, Object> toMetaMapOrEmpty(Object meta) {
+        if (meta == null) {
+            return Map.of();
+        }
+        Map<String, Object> mapped = toMetaMap(meta);
+        return mapped != null ? mapped : Map.of();
+    }
+
+    private static boolean metaHasText(Map<String, Object> meta, String key) {
+        if (meta == null || !StringUtils.hasText(key)) {
+            return false;
+        }
+        Object value = meta.get(key);
+        return value != null && StringUtils.hasText(String.valueOf(value).trim());
     }
 
     private DmDataTabLayoutRespVO toRespVO(DmDataTabLayoutDO row) {

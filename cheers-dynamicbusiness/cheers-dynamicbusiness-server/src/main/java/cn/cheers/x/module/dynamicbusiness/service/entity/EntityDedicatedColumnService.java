@@ -1,6 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.util.json.JsonUtils;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
@@ -10,13 +11,16 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityBaseFieldColumnNames;
+import cn.cheers.x.module.dynamicbusiness.framework.tenant.TenantPhysicalTableNames;
 import cn.hutool.core.util.StrUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.postgresql.util.PGobject;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,8 +36,11 @@ import java.util.Set;
 /**
  * 专用表基础字段固定列读写：列名跟字段编码对齐；REF 列存目标实体 id。
  *
- * <p>列集合仅由类型已挂基础字段配置解析；读/写路径均假定专用表已有对应列，
- * 禁止 {@code information_schema} / 探列跳过。缺列视为加删基础字段时建列同步故障。</p>
+ * <p><b>管什么</b>：固定列读写；读出时把 JDBC jsonb 驱动值收成业务可用的 JSON（数组/对象），
+ * 再进入 {@code dedicatedBaseFieldValues} / {@code baseFields}。</p>
+ * <p><b>不管什么</b>：SOP/动作等业务如何解析树与参数——它们只消费已收干净的内容。</p>
+ * <p><b>禁止</b>：{@code information_schema} / 探列跳过；读路径编造业务字段；把驱动包装对象泄漏给业务层；
+ * JDBC 写基表名（无 {@code _t{tenantId}}）——必须与 MyBatis 动态表名同一租户物理表，否则读不到、创建撞唯一。</p>
  */
 @Service
 @RequiredArgsConstructor
@@ -475,7 +482,11 @@ public class EntityDedicatedColumnService {
         return storage != null && storage.isDedicated();
     }
 
-    /** BASE 行为：dedicatedTableName 或 ent_{code}，保证 ent_ 前缀；不引入租户表名助手。 */
+    /**
+     * 解析当前租户下的专用表物理名（与 {@link cn.cheers.x.module.dynamicbusiness.framework.entity.EntityTableNameHandler} 一致）。
+     * 权威：{@code dedicated_table_name} 或 {@code ent_{code}}，再加 {@code _t{tenantId}}。
+     * 禁止返回无租户后缀的基表名——否则 JDBC 写入与 MyBatis 查询不在同一张表。
+     */
     private static String resolveTableName(EntityTypeDO entityType) {
         if (entityType == null) {
             throw new ServiceException(400, "业务类型不存在");
@@ -487,9 +498,12 @@ public class EntityDedicatedColumnService {
         if (!table.startsWith("ent_")) {
             table = "ent_" + table;
         }
-        return table;
+        return TenantPhysicalTableNames.ensureTenantSuffix(table);
     }
 
+    /**
+     * 业务值 → JDBC 参数。jsonb 固定列须 {@link PGobject}，禁止裸 String 导致 500。
+     */
     private static Object toDbValue(EntityTypeBaseFieldDO field, Object raw) {
         if (raw == null) {
             return null;
@@ -497,7 +511,42 @@ public class EntityDedicatedColumnService {
         if (field != null && isRefType(field.getDataType())) {
             return extractRefId(raw);
         }
+        if (isJsonbStorageField(field, raw)) {
+            return toJsonbPgObject(raw);
+        }
         return raw;
+    }
+
+    /** 字段元数据或命名约定表明值应落 jsonb 列（含 metadata 标 TEXT 但列实为 jsonb 的 *_json 字段）。 */
+    private static boolean isJsonbStorageField(EntityTypeBaseFieldDO field, Object raw) {
+        if (field != null && StrUtil.isNotBlank(field.getDataType())) {
+            String type = field.getDataType().trim().toUpperCase(Locale.ROOT).replace('-', '_');
+            if ("JSON".equals(type) || "JSONB".equals(type)) {
+                return true;
+            }
+        }
+        if (field != null && StrUtil.isNotBlank(field.getFieldCode())) {
+            String code = field.getFieldCode().trim().toLowerCase(Locale.ROOT);
+            if (code.endsWith("_json") || code.endsWith("_jsonb")) {
+                return true;
+            }
+        }
+        return raw instanceof Map || raw instanceof Collection;
+    }
+
+    private static PGobject toJsonbPgObject(Object raw) {
+        try {
+            PGobject pg = new PGobject();
+            pg.setType("jsonb");
+            if (raw instanceof String text) {
+                pg.setValue(text);
+            } else {
+                pg.setValue(JsonUtils.toJsonString(raw));
+            }
+            return pg;
+        } catch (SQLException ex) {
+            throw new ServiceException(400, "JSON 字段格式无效");
+        }
     }
 
     /**
@@ -543,16 +592,49 @@ public class EntityDedicatedColumnService {
         return StrUtil.isNotBlank(code) ? code : null;
     }
 
+    /**
+     * 专用列 JDBC 读出值 → 写入字段袋前的业务值。
+     *
+     * <p>json/jsonb 列经驱动常为 {@link PGobject}；此处收成 JSON 数组或对象（与 {@code custom_fields} 一样），
+     * 避免业务层再碰驱动类型。非 jsonb 原样返回。禁止编造业务内容。</p>
+     *
+     * @param dbVal {@link #readColumn} 或 ResultSet 取出的原值
+     * @return 业务可用值；jsonb 空/null 文本 → null
+     */
+    public static Object normalizePhysicalDbValue(Object dbVal) {
+        if (dbVal == null) {
+            return null;
+        }
+        if (!(dbVal instanceof PGobject pg)) {
+            return dbVal;
+        }
+        String pgType = pg.getType() == null ? "" : pg.getType().trim();
+        if (!"jsonb".equalsIgnoreCase(pgType) && !"json".equalsIgnoreCase(pgType)) {
+            return pg.getValue();
+        }
+        String text = pg.getValue();
+        if (StrUtil.isBlank(text) || "null".equalsIgnoreCase(text.trim())) {
+            return null;
+        }
+        try {
+            return JsonUtils.parseObject(text, Object.class);
+        } catch (Exception ex) {
+            // 非法 JSON：暴露缺口，仍交业务层看到原文，禁止静默换成空结构
+            return text;
+        }
+    }
+
     private static Object toApiValue(EntityTypeBaseFieldDO field,
                                     Object dbVal,
                                     Map<Long, String> targetByLibraryFieldId) {
         if (dbVal == null) {
             return null;
         }
+        Object value = normalizePhysicalDbValue(dbVal);
         if (field == null || !isRefType(field.getDataType())) {
-            return dbVal;
+            return value;
         }
-        Long id = toLong(dbVal);
+        Long id = toLong(value);
         if (id == null) {
             return null;
         }

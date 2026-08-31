@@ -62,7 +62,8 @@ public class EntityTypeController {
     }
 
     @DeleteMapping("/delete")
-    @Operation(summary = "删除业务类型")
+    @Operation(summary = "删除业务类型",
+            description = "子数据类型（DOMAIN）：型号归回底座未划域，实例保留；只拆注册门/门户/布局/域分组。其它种类：逻辑删注册项。")
     @Parameter(name = "id", description = "业务类型编号", required = true, example = "1024")
     @ApiAccessLog(operateType = DELETE)
     @PreAuthorize("@ss.hasPermission('system:entity-type:delete')")

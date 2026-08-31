@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # 标准作业流程SOP（entityTypeCode=sop）seed
-# 前置：Flyway 已执行至 V75（ent_sop_step_template*、SOP 模板/实例列、设备检查绑定表）
+# 前置：Flyway 已执行至 V79（动作库 + SOP 动作树列 + 步骤模板废弃）
+# 建议先跑 ../action/import.sh，使样例模板中的 act-* 有对应动作实体
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -24,13 +25,10 @@ echo "== sop: base fields =="
 run "${SCRIPT_DIR}/03_base_fields.sql"
 echo "== sop: model =="
 run "${SCRIPT_DIR}/04_model.sql"
-echo "== sop: step template fields =="
-run "${SCRIPT_DIR}/10_step_template_fields.sql"
-echo "== sop: step template entity type =="
-run "${SCRIPT_DIR}/11_step_template_entity_type.sql"
-echo "== sop: template/instance fields =="
+# 10/11 步骤模板 seed 已废弃（V79）；勿再执行
+echo "== sop: template/instance fields (action tree) =="
 run "${SCRIPT_DIR}/12_sop_template_instance_fields.sql"
-echo "== sop: categories + step templates + sample templates =="
+echo "== sop: categories + sample templates (action_tree_json) =="
 run "${SCRIPT_DIR}/13_sop_categories_and_sample_templates.sql"
 echo "== sop: library layout =="
 run "${SCRIPT_DIR}/14_sop_library_layout.sql"

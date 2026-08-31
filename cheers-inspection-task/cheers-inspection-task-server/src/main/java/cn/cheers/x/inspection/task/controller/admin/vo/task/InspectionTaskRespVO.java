@@ -1,6 +1,7 @@
 package cn.cheers.x.inspection.task.controller.admin.vo.task;
 
 import cn.cheers.x.inspection.task.model.task.InspectionContent;
+import cn.cheers.x.inspection.task.model.task.ExecutionDeviceBinding;
 import cn.cheers.x.inspection.task.model.task.ResourcePolicy;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -63,6 +64,18 @@ public class InspectionTaskRespVO {
 
     @Schema(description = "资源策略")
     private ResourcePolicy resourcePolicy;
+
+    @Schema(description = "执行设备绑定（打开任务可见具体执行设备与对接参数）")
+    private ExecutionDeviceBinding executionDeviceBinding;
+
+    @Schema(description = "设备侧运行态：IDLE/DISPATCHED/RUNNING/COMPLETED/FAULT")
+    private String deviceRunStatus;
+
+    @Schema(description = "最近设备上行时间（epoch millis）")
+    private Long deviceLastUplinkAt;
+
+    @Schema(description = "最近设备上行外层 opcode（过渡）")
+    private Integer deviceLastUplinkOpcode;
 
     @Schema(description = "当前激活的编排批次ID")
     private Long activePlanId;

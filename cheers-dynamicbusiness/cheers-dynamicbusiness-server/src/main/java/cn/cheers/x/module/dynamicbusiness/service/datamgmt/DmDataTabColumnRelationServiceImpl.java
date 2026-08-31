@@ -137,12 +137,21 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
 
         Set<String> savedEdgeIds = new HashSet<>();
         Set<String> pairKeys = new HashSet<>();
+        Set<String> validIdentities = currentLayoutIdentities(layoutId);
         for (DmDataTabColumnRelationSaveItemVO item : items) {
             validateItem(item);
             String from = item.getFromColumnIdentity().trim();
             String to = item.getToColumnIdentity().trim();
             if (from.equals(to)) {
                 throw new ServiceException(400, "栏间关系两端列身份不能相同");
+            }
+            if (!validIdentities.contains(from)) {
+                throw new ServiceException(400,
+                        "栏间关系 from 端点不在当前布局栏身份中：" + from);
+            }
+            if (!validIdentities.contains(to)) {
+                throw new ServiceException(400,
+                        "栏间关系 to 端点不在当前布局栏身份中：" + to);
             }
             String edgeRole = resolveEdgeRole(item);
             String dedupeKey = ColumnRelationLayoutEndpoints.pairKey(from, to, edgeRole);
@@ -237,6 +246,49 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
         dmDataTabColumnRelationMapper.deletePhysicalSoftDeletedByLayoutId(layoutId);
     }
 
+    /**
+     * 布局 tabId 变更：只改名边端点，不删边。
+     * <p>
+     * 谁调用：仅 {@link DmDataTabLayoutServiceImpl#saveLayouts} 在按行 id 更新且列身份变化时。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void renameColumnIdentities(Long layoutId, Map<String, String> fromTo) {
+        if (layoutId == null || fromTo == null || fromTo.isEmpty()) {
+            return;
+        }
+        Map<String, String> renames = new LinkedHashMap<>();
+        for (Map.Entry<String, String> e : fromTo.entrySet()) {
+            String from = e.getKey() == null ? "" : e.getKey().trim();
+            String to = e.getValue() == null ? "" : e.getValue().trim();
+            if (!StringUtils.hasText(from) || !StringUtils.hasText(to) || from.equals(to)) {
+                continue;
+            }
+            renames.put(from, to);
+        }
+        if (renames.isEmpty()) {
+            return;
+        }
+        dmWorkbenchLayoutService.requireLayout(layoutId);
+        for (DmDataTabColumnRelationDO row :
+                dmDataTabColumnRelationMapper.selectListByLayoutId(layoutId)) {
+            boolean changed = false;
+            String from = row.getFromColumnIdentity() == null ? "" : row.getFromColumnIdentity().trim();
+            String to = row.getToColumnIdentity() == null ? "" : row.getToColumnIdentity().trim();
+            if (renames.containsKey(from)) {
+                row.setFromColumnIdentity(renames.get(from));
+                changed = true;
+            }
+            if (renames.containsKey(to)) {
+                row.setToColumnIdentity(renames.get(to));
+                changed = true;
+            }
+            if (changed) {
+                dmDataTabColumnRelationMapper.updateById(row);
+            }
+        }
+    }
+
     private Long resolveSaveLayoutId(DmDataTabColumnRelationSaveReqVO reqVO) {
         if (reqVO.getLayoutId() != null) {
             return reqVO.getLayoutId();
@@ -266,6 +318,17 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
         throw new ServiceException(400,
                 "保存栏间关系缺少 entityTypeCode，且布局行上也没有目录注册编码（layoutId="
                         + layoutId + "）");
+    }
+
+    private Set<String> currentLayoutIdentities(Long layoutId) {
+        Set<String> out = new HashSet<>();
+        for (DmDataTabLayoutDO row : dmDataTabLayoutMapper.selectListByLayoutId(layoutId)) {
+            String identity = ColumnRelationLayoutEndpoints.columnIdentityOf(row);
+            if (StringUtils.hasText(identity)) {
+                out.add(identity.trim());
+            }
+        }
+        return out;
     }
 
     private void validateItem(DmDataTabColumnRelationSaveItemVO item) {

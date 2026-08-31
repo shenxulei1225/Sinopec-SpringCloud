@@ -20,7 +20,12 @@ import cn.cheers.x.module.platform.topology.enums.GraphStatus;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import cn.cheers.x.module.dynamicbusiness.api.point.PathStationPointSyncApi;
+import cn.cheers.x.module.dynamicbusiness.api.point.dto.PathStationPointSyncReqDTO;
+import cn.cheers.x.framework.common.pojo.CommonResult;
 import jakarta.annotation.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -39,6 +44,8 @@ import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.e
 @Service
 public class PathNetworkServiceImpl implements PathNetworkService {
 
+    private static final Logger log = LoggerFactory.getLogger(PathNetworkServiceImpl.class);
+
     // DEFERRED: /platform/topology/** delegation to PathNetworkService — TopologyGraphController unchanged.
 
     @Resource
@@ -46,6 +53,9 @@ public class PathNetworkServiceImpl implements PathNetworkService {
 
     @Resource
     private PathPortalMapper pathPortalMapper;
+
+    @Resource
+    private PathStationPointSyncApi pathStationPointSyncApi;
 
     @Override
     public PathNetworkDTO getNetwork(String networkRef) {
@@ -107,7 +117,9 @@ public class PathNetworkServiceImpl implements PathNetworkService {
         } else {
             pathNetworkMapper.updateById(network);
         }
-        return toDto(pathNetworkMapper.selectById(networkId));
+        PathNetworkDTO saved = toDto(pathNetworkMapper.selectById(networkId));
+        syncStationPointsBestEffort(saved);
+        return saved;
     }
 
     @Override
@@ -140,7 +152,9 @@ public class PathNetworkServiceImpl implements PathNetworkService {
                 .edges(toJson(request.getEdges() != null ? request.getEdges() : List.of()))
                 .build();
         pathNetworkMapper.insert(network);
-        return toDto(pathNetworkMapper.selectById(id));
+        PathNetworkDTO saved = toDto(pathNetworkMapper.selectById(id));
+        syncStationPointsBestEffort(saved);
+        return saved;
     }
 
     @Override
@@ -299,7 +313,55 @@ public class PathNetworkServiceImpl implements PathNetworkService {
         } else {
             pathNetworkMapper.updateById(published);
         }
-        return toDto(pathNetworkMapper.selectById(publishedId));
+        PathNetworkDTO saved = toDto(pathNetworkMapper.selectById(publishedId));
+        syncStationPointsBestEffort(saved);
+        return saved;
+    }
+
+    /**
+     * 路网保存后：停靠站 / 途径点 / 门点同步到数据管理点位台账（含点位类型）。
+     * 失败只记日志，不回滚路网几何（几何权威在路网）。
+     */
+    private void syncStationPointsBestEffort(PathNetworkDTO network) {
+        if (network == null || network.getFacilityId() == null) {
+            return;
+        }
+        List<PathStationPointSyncReqDTO.StationNodeItem> stations = new ArrayList<>();
+        List<PathNodeDTO> nodes = network.getNodes() != null ? network.getNodes() : List.of();
+        for (PathNodeDTO node : nodes) {
+            if (node == null || node.getNodeType() == null) {
+                continue;
+            }
+            // 一期只落账算法认的三种节点；其它类型不进点位台账
+            if (node.getNodeType() != NodeType.STATION
+                    && node.getNodeType() != NodeType.TRAVERSAL
+                    && node.getNodeType() != NodeType.DOOR) {
+                continue;
+            }
+            if (!StringUtils.hasText(node.getNodeId())) {
+                continue;
+            }
+            stations.add(PathStationPointSyncReqDTO.StationNodeItem.builder()
+                    .nodeId(node.getNodeId().trim())
+                    .displayName(node.getDisplayName())
+                    .nodeType(node.getNodeType().name())
+                    .memberships(node.getMemberships())
+                    .build());
+        }
+        PathStationPointSyncReqDTO req = PathStationPointSyncReqDTO.builder()
+                .facilityId(network.getFacilityId())
+                .stations(stations)
+                .build();
+        try {
+            CommonResult<?> result = pathStationPointSyncApi.syncFromPathNetwork(req);
+            if (result == null || result.isError()) {
+                log.error("[syncStationPoints] 点位同步失败 facilityId={} msg={}",
+                        network.getFacilityId(),
+                        result != null ? result.getMsg() : "null result");
+            }
+        } catch (Exception ex) {
+            log.error("[syncStationPoints] 点位同步异常 facilityId={}", network.getFacilityId(), ex);
+        }
     }
 
     /** 草稿 net_xxx_draft → 已发布 net_xxx_published（固定一对一） */

@@ -76,6 +76,11 @@
             <artifactId>cheers-runtime-api</artifactId>
             <version>${revision}</version>
         </dependency>
+        <dependency>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-device-protocol-gateway-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
 
         <dependency>
             <groupId>cn.cheers.x</groupId>

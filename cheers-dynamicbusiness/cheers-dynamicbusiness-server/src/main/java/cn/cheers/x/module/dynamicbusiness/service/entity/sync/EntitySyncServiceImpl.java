@@ -428,8 +428,11 @@ public class EntitySyncServiceImpl implements EntitySyncService {
 
         for (FieldDO field : searchableFields) {
             String fieldCode = field.getCode();
-            // customFields 现在使用字段 code 作为 key
+            // customFields 现在使用字段 code 作为 key；同步写入也可能带 semantic_type
             Object value = customFieldsMap.get(fieldCode);
+            if (value == null && field.getSemanticType() != null && !field.getSemanticType().isBlank()) {
+                value = customFieldsMap.get(field.getSemanticType().trim());
+            }
 
             // 跳过空值
             if (value == null) {
@@ -463,9 +466,22 @@ public class EntitySyncServiceImpl implements EntitySyncService {
             return;
         }
 
+        String upperType = fieldType == null ? "" : fieldType.trim().toUpperCase();
+        // MULTI_SELECT：索引存标准 JSON 数组字符串，供 IN/CONTAINS 精确拆 token
+        if ("MULTI_SELECT".equals(upperType)) {
+            String jsonArray = toMultiSelectIndexString(value);
+            if (jsonArray != null) {
+                if (jsonArray.length() > 500) {
+                    jsonArray = jsonArray.substring(0, 500);
+                }
+                record.setValueString(jsonArray);
+            }
+            return;
+        }
+
         String valueStr = value.toString();
 
-        switch (fieldType.toUpperCase()) {
+        switch (upperType) {
             case "NUMBER":
             case "INTEGER":
             case "DECIMAL":
@@ -522,6 +538,30 @@ public class EntitySyncServiceImpl implements EntitySyncService {
                 record.setValueString(valueStr);
                 break;
         }
+    }
+
+    /**
+     * MULTI_SELECT 索引值：规范成 JSON 数组字符串（如 ["HUMAN","UAV"]）。
+     * List/数组直接序列化；已是 JSON 数组串则原样；其它标量包成单元素数组。
+     */
+    private static String toMultiSelectIndexString(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof List<?> || value.getClass().isArray()) {
+            return JSON.toJSONString(value);
+        }
+        if (value instanceof String s) {
+            String trimmed = s.trim();
+            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+                return trimmed;
+            }
+            if (trimmed.isEmpty()) {
+                return null;
+            }
+            return JSON.toJSONString(List.of(trimmed));
+        }
+        return JSON.toJSONString(List.of(String.valueOf(value)));
     }
 
     /**

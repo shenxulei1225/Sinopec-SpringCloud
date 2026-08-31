@@ -475,6 +475,12 @@ public final class CapabilityBlockProjectionBuilder {
             item.put("searchable", source.getOrDefault("searchable", false));
             item.put("sortable", source.getOrDefault("sortable", false));
             item.put("defaultVisible", source.getOrDefault("defaultVisible", false));
+            if (source.get("optionsSource") != null) {
+                item.put("optionsSource", source.get("optionsSource"));
+            }
+            if (source.get("valueShape") != null) {
+                item.put("valueShape", source.get("valueShape"));
+            }
             copyFieldSemantics(source, item);
             fields.add(item);
         }

@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * merge 后的生效配置。
+ * merge 后的生效配置：动作树节点 + 按节点参数。
  */
 @Data
 public class SopEffectiveConfig {
 
-    private List<SopStepTemplateRef> steps;
-    private Map<String, Object> params = new LinkedHashMap<>();
+    private List<SopActionTreeNode> nodes;
+    private Map<String, Map<String, Object>> paramsByNode = new LinkedHashMap<>();
 }

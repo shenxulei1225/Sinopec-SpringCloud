@@ -90,6 +90,11 @@
             <artifactId>cheers-spring-boot-starter-rpc</artifactId>
         </dependency>
         <dependency>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-dynamicbusiness-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
         </dependency>

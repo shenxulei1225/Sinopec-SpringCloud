@@ -61,6 +61,15 @@ public abstract class AbstractCategoryService<
         evictCache(updateObj.getCategoryTypeCode());
     }
 
+    /**
+     * 删除分类（逻辑删）。
+     * <p>
+     * 权威语义：节点从树上消失。MyBatis {@code @TableLogic} 会把 {@code deleted} 置为 true；
+     * 同时必须把 {@code status} 置为 0（停用）。禁止留下「已删但仍启用」的半状态——
+     * 否则种子脚本/原生 SQL 绕过逻辑删、或缓存未失效时，按 status=1 仍可能把幽灵节点带回界面。
+     * </p>
+     * <p>不负责：清理分类-实体/型号关联（由外层 CategoryServiceImpl 在调用本方法前完成）。</p>
+     */
     @Transactional(rollbackFor = Exception.class)
     public void deleteCategory(Long id, boolean cascade) {
         DO db = findCategory(id, null);
@@ -76,6 +85,15 @@ public abstract class AbstractCategoryService<
             toDelete.addAll(listDescendantIds(db.getId(), all));
         }
         toDelete.add(db.getId());
+        // 先停用再逻辑删：与「树上可见 = deleted=false 且（若过滤）status=1」对齐
+        for (Long deleteId : toDelete) {
+            DO row = getMapper().selectById(deleteId);
+            if (row == null) {
+                continue;
+            }
+            row.setStatus(0);
+            getMapper().updateById(row);
+        }
         getMapper().delete(new QueryWrapper<DO>().in("id", toDelete));
         evictCache(db.getCategoryTypeCode());
     }

@@ -2,6 +2,7 @@ package cn.cheers.x.inspection.task.service.task.impl;
 
 import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import cn.cheers.x.framework.common.util.object.BeanUtils;
+import cn.cheers.x.inspection.task.model.task.ExecutionDeviceBinding;
 import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskCreateReqVO;
 import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskUpdateReqVO;
 import cn.cheers.x.inspection.task.dal.dataobject.task.InspectionTaskDO;
@@ -10,6 +11,7 @@ import cn.cheers.x.inspection.task.service.task.InspectionTaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Objects;
@@ -44,6 +46,7 @@ public class InspectionTaskServiceImpl implements InspectionTaskService {
                 reqVO.getScheduleRequirementId(), reqVO.getSchedulePolicyId());
         validateResourceInheritance(reqVO.getInheritParentResourcePolicy(), reqVO.getParentId(),
                 reqVO.getResourcePolicy());
+        validateExecutionDeviceBinding(reqVO.getExecutionDeviceBinding());
 
         InspectionTaskDO taskDO = BeanUtils.toBean(reqVO, InspectionTaskDO.class);
         // 草稿创建：允许分步保存后再启用（status=0 草稿，enabled 默认关闭）
@@ -81,6 +84,7 @@ public class InspectionTaskServiceImpl implements InspectionTaskService {
                 reqVO.getScheduleRequirementId(), reqVO.getSchedulePolicyId());
         validateResourceInheritance(reqVO.getInheritParentResourcePolicy(), reqVO.getParentId(),
                 reqVO.getResourcePolicy());
+        validateExecutionDeviceBinding(reqVO.getExecutionDeviceBinding());
 
         InspectionTaskDO updateDO = BeanUtils.toBean(reqVO, InspectionTaskDO.class);
         inspectionTaskMapper.updateById(updateDO);
@@ -253,6 +257,25 @@ public class InspectionTaskServiceImpl implements InspectionTaskService {
                                              Object resourcePolicy) {
         if (Boolean.TRUE.equals(inheritParentResourcePolicy) && parentId == null) {
             throw ServiceExceptionUtil.exception(BAD_REQUEST, "未设置父任务时不能继承父任务资源策略");
+        }
+    }
+
+    /**
+     * 执行设备绑定：允许整段为空（草稿）；一旦出现任一字段则三者必须齐全。
+     */
+    private void validateExecutionDeviceBinding(ExecutionDeviceBinding binding) {
+        if (binding == null) {
+            return;
+        }
+        boolean hasEquipment = binding.getEquipmentId() != null;
+        boolean hasProtocol = StringUtils.hasText(binding.getProtocolCode());
+        boolean hasLogical = StringUtils.hasText(binding.getLogicalDeviceId());
+        if (!hasEquipment && !hasProtocol && !hasLogical) {
+            return;
+        }
+        if (!hasEquipment || !hasProtocol || !hasLogical) {
+            throw ServiceExceptionUtil.exception(BAD_REQUEST,
+                    "执行设备绑定须同时提供 equipmentId、protocolCode、logicalDeviceId");
         }
     }
 }

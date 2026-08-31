@@ -1,6 +1,6 @@
 -- ============================================================================
--- sop · 13 SOP 分类子树 + 步骤模板实体 + 新模型示例模板
--- 前置：V73–V74、10–12 seed
+-- sop · 13 SOP 分类子树 + 动作树示例模板（不再插入步骤模板）
+-- 前置：V76–V78、action seed（act-*）、12 seed（含 action_tree_* 字段）
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;
@@ -24,41 +24,12 @@ WHERE NOT EXISTS (
   WHERE c.deleted = false AND c.tenant_id = 1 AND c.code = v.code
 );
 
--- 步骤模板实体（code 与 merge 契约一致）
-INSERT INTO ent_sop_step_template_t1 (
-  tenant_id, entity_type_code, model_id, name, code, status,
-  param_slots_json, creator, deleted
-)
-SELECT
-  1,
-  'sop_step_template',
-  m.id,
-  v.name,
-  v.code,
-  1,
-  v.param_slots_json::jsonb,
-  'seed',
-  false
-FROM dynamic_model m
-CROSS JOIN (
-  VALUES
-    ('st-arrive', '到达作业位置', '["location_ref"]'),
-    ('st-hover', '悬停观察', '[]'),
-    ('st-aim', '对准拍摄', '["yaw", "pitch"]'),
-    ('st-shoot', '拍摄取证', '[]'),
-    ('st-camera-view', '固定机位查看', '["camera_preset_id"]')
-) AS v(code, name, param_slots_json)
-WHERE m.deleted = false AND m.tenant_id = 1 AND m.code = 'sop_step_template'
-  AND NOT EXISTS (
-    SELECT 1 FROM ent_sop_step_template_t1 s
-    WHERE s.deleted = false AND s.tenant_id = 1 AND s.code = v.code
-  );
-
--- 新模型示例 SOP 模板（default_steps_json；挂「检查」分类）
+-- 新模型示例 SOP 模板（action_tree_json + default_params_by_node_json；挂「检查」分类）
 INSERT INTO ent_sop_t1 (
   tenant_id, entity_type_code, model_id, name, code, status, domain,
   version_no, publish_status,
   is_template, execution_means, procedure_kind,
+  action_tree_json, default_params_by_node_json,
   default_steps_json, default_params_json,
   steps_json,
   creator, deleted
@@ -76,8 +47,10 @@ SELECT
   true,
   v.execution_means,
   v.procedure_kind,
-  v.default_steps_json::jsonb,
-  v.default_params_json::jsonb,
+  v.action_tree_json::jsonb,
+  v.default_params_by_node_json::jsonb,
+  '[]'::jsonb,
+  '{}'::jsonb,
   '[]'::jsonb,
   'seed',
   false
@@ -90,12 +63,16 @@ CROSS JOIN (
       'UAV',
       'leak',
       '[
-        {"stepTemplateId":"st-arrive","order":1,"paramSlots":["location_ref"]},
-        {"stepTemplateId":"st-hover","order":2,"paramSlots":[]},
-        {"stepTemplateId":"st-aim","order":3,"paramSlots":["yaw","pitch"]},
-        {"stepTemplateId":"st-shoot","order":4,"paramSlots":[]}
+        {"nodeKey":"n-1","actionId":"act-arrive","order":1,"paramSlots":["location_ref"]},
+        {"nodeKey":"n-2","actionId":"act-hover","order":2,"paramSlots":[]},
+        {"nodeKey":"n-3","actionId":"act-aim","order":3,"paramSlots":["yaw","pitch","roll","focal_length"]},
+        {"nodeKey":"n-4","actionId":"act-shoot","order":4,"paramSlots":["shot_count"]}
       ]',
-      '{"yaw":0,"pitch":0}'
+      '{
+        "n-1":{"location_ref":"point-default"},
+        "n-3":{"yaw":0,"pitch":0},
+        "n-4":{"shot_count":3}
+      }'
     ),
     (
       'SOP-TPL-MANUAL-LEAK',
@@ -103,16 +80,60 @@ CROSS JOIN (
       'MANUAL',
       'leak',
       '[
-        {"stepTemplateId":"st-arrive","order":1,"paramSlots":["location_ref"]},
-        {"stepTemplateId":"st-aim","order":2,"paramSlots":["yaw","pitch"]}
+        {"nodeKey":"n-1","actionId":"act-arrive","order":1,"paramSlots":["location_ref"]},
+        {"nodeKey":"n-2","actionId":"act-aim","order":2,"paramSlots":["yaw","pitch","roll","focal_length"]}
       ]',
-      '{"yaw":0,"pitch":0}'
+      '{
+        "n-1":{"location_ref":"point-default"},
+        "n-2":{"yaw":0,"pitch":0}
+      }'
     )
-) AS v(code, name, execution_means, procedure_kind, default_steps_json, default_params_json)
+) AS v(code, name, execution_means, procedure_kind, action_tree_json, default_params_by_node_json)
 WHERE m.deleted = false AND m.tenant_id = 1 AND m.code = 'sop'
   AND NOT EXISTS (
     SELECT 1 FROM ent_sop_t1 s
     WHERE s.deleted = false AND s.tenant_id = 1 AND s.code = v.code
+  );
+
+-- 已有旧行：若仍只有 default_steps_json、动作树为空，补写动作树（幂等；与 V78 迁移同语义）
+UPDATE ent_sop_t1 s
+SET action_tree_json = v.action_tree_json::jsonb,
+    default_params_by_node_json = v.default_params_by_node_json::jsonb,
+    updater = 'seed',
+    update_time = CURRENT_TIMESTAMP
+FROM (
+  VALUES
+    (
+      'SOP-TPL-UAV-LEAK',
+      '[
+        {"nodeKey":"n-1","actionId":"act-arrive","order":1,"paramSlots":["location_ref"]},
+        {"nodeKey":"n-2","actionId":"act-hover","order":2,"paramSlots":[]},
+        {"nodeKey":"n-3","actionId":"act-aim","order":3,"paramSlots":["yaw","pitch","roll","focal_length"]},
+        {"nodeKey":"n-4","actionId":"act-shoot","order":4,"paramSlots":["shot_count"]}
+      ]',
+      '{
+        "n-1":{"location_ref":"point-default"},
+        "n-3":{"yaw":0,"pitch":0},
+        "n-4":{"shot_count":3}
+      }'
+    ),
+    (
+      'SOP-TPL-MANUAL-LEAK',
+      '[
+        {"nodeKey":"n-1","actionId":"act-arrive","order":1,"paramSlots":["location_ref"]},
+        {"nodeKey":"n-2","actionId":"act-aim","order":2,"paramSlots":["yaw","pitch","roll","focal_length"]}
+      ]',
+      '{
+        "n-1":{"location_ref":"point-default"},
+        "n-2":{"yaw":0,"pitch":0}
+      }'
+    )
+) AS v(code, action_tree_json, default_params_by_node_json)
+WHERE s.deleted = false AND s.tenant_id = 1 AND s.code = v.code
+  AND (
+    s.action_tree_json IS NULL
+    OR s.action_tree_json = '[]'::jsonb
+    OR jsonb_array_length(s.action_tree_json) = 0
   );
 
 -- 挂「检查」分类

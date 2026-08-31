@@ -184,6 +184,8 @@ public class EntityTypeCategoryBootstrapService {
     /**
      * 从通用台账模版生成「数据」页签布局实例，写回 {@code data_layout_id}。
      * 已有实例则不覆盖。
+     * <p>
+     * NATIVE 用本注册码作同类类型；DOMAIN / SCOPE / REUSE 用底座编码，保证分类/型号/实体一次写全类型码。
      */
     private void ensureCatalogDataLayout(EntityTypeDO entityType) {
         String code = entityType.getCode();
@@ -228,7 +230,10 @@ public class EntityTypeCategoryBootstrapService {
         return "ADVANCED".equals(mode) || "ORG_RECORD".equals(mode) || "PATTERN_C".equals(mode);
     }
 
+    /**
+     * 新建分类栏默认 tabId：与实例化布局一致，{种类码}-1；禁止 {种类码}-default。
+     */
     public static String defaultTabId(String entityTypeCode) {
-        return entityTypeCode.trim() + "-default";
+        return entityTypeCode.trim() + "-1";
     }
 }

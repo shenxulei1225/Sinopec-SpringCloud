@@ -1,8 +1,10 @@
 package cn.cheers.x.inspection.task.controller.admin.task;
 
+import cn.cheers.x.device.protocolgateway.api.dto.MissionStartRespDTO;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.inspection.task.controller.admin.vo.task.*;
+import cn.cheers.x.inspection.task.service.execution.InspectionTaskStartExecutionService;
 import cn.cheers.x.inspection.task.service.query.InspectionTaskQueryService;
 import cn.cheers.x.inspection.task.service.task.InspectionTaskService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,6 +26,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
  *   <li>详情查询 - /get-detail（包含子任务列表）</li>
  *   <li>创建/更新/删除 - /create, /update, /delete</li>
  *   <li>启用/禁用 - /enable, /disable</li>
+ *   <li>开始执行 - /{id}/start-execution（下发地面站；与排程 enable 无关）</li>
  * </ul>
  *
  * <p>排期管理在独立的 ScheduleController 中。</p>
@@ -40,6 +43,9 @@ public class InspectionTaskController {
 
     @Resource
     private InspectionTaskQueryService inspectionTaskQueryService;
+
+    @Resource
+    private InspectionTaskStartExecutionService inspectionTaskStartExecutionService;
 
     // ==================== 查询 ====================
 
@@ -94,5 +100,15 @@ public class InspectionTaskController {
     public CommonResult<Boolean> disableTask(@PathVariable("id") Long id) {
         inspectionTaskService.disableTask(id);
         return success(true);
+    }
+
+    /**
+     * 开始执行：向地面站下发指令包并启动。与排程「启用」无关。
+     */
+    @PostMapping("/{id}/start-execution")
+    @Operation(summary = "开始执行", description = "读任务执行设备绑定与已确认路线，调协议网关下发；不是排程 enable")
+    @Parameter(name = "id", required = true, description = "任务ID")
+    public CommonResult<MissionStartRespDTO> startExecution(@PathVariable("id") Long id) {
+        return success(inspectionTaskStartExecutionService.startExecution(id));
     }
 }

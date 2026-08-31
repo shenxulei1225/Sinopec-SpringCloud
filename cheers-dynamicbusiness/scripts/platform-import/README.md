@@ -13,6 +13,9 @@ platform-import/
   smart-station/         站场产品包（04–07，由 generate-smart-station-import.py 维护）
   inspection-method/     检查方法类型与字段（01–04；前置 Flyway V43）
   five-w-orchestration/  五维编排 bundle seed（前置 Flyway V51）
+  action/                动作库平台 seed（V76+）
+  sop/                   SOP 库平台 seed（动作树；V78+）
+  recipes/inspection/    可选检查演示配方（How 挂 sopHow；非平台内核）
   import-dev-all.sh      system + corridor + station + inspection-method + five-w-orchestration
 ```
 

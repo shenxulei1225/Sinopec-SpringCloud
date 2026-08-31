@@ -154,8 +154,13 @@ public class EntityRepositoryImpl implements EntityRepository {
             Map<String, Object> baseValues = new LinkedHashMap<>();
             for (PhysicalFieldSpec spec : specs) {
                 Object dbVal = readColumn(row, spec.columnName());
-                if (dbVal != null) {
-                    baseValues.put(spec.fieldCode(), dbVal);
+                if (dbVal == null) {
+                    continue;
+                }
+                // 与 VO 组装同一收口：jsonb 驱动值先收成业务 JSON，再进字段袋
+                Object normalized = EntityDedicatedColumnService.normalizePhysicalDbValue(dbVal);
+                if (normalized != null) {
+                    baseValues.put(spec.fieldCode(), normalized);
                 }
             }
             entity.setDedicatedBaseFieldValues(baseValues);
@@ -343,7 +348,7 @@ public class EntityRepositoryImpl implements EntityRepository {
         }
         return withTableName(entityTypeCode, () -> {
             LambdaQueryWrapperX<EntityDO> wrapper = buildModelIdsPageWrapper(
-                    modelIds, status, keyword, domain, orderByColumn, orderAsc, null, null);
+                    modelIds, status, keyword, domain, orderByColumn, orderAsc, null, null, null);
             PageParam pageParam = new PageParam();
             pageParam.setPageNo(pageNo != null && pageNo > 0 ? pageNo : 1);
             pageParam.setPageSize(pageSize != null && pageSize > 0 ? pageSize : 20);
@@ -377,13 +382,25 @@ public class EntityRepositoryImpl implements EntityRepository {
                                                    String orderByColumn, Boolean orderAsc,
                                                    List<PhysicalColumnFilter> physicalFilters,
                                                    KeywordSearchSpec keywordSearch) {
+        return findPageIdsByModelIds(modelIds, entityTypeCode, status, keyword, domain,
+                pageNo, pageSize, orderByColumn, orderAsc, physicalFilters, keywordSearch, null);
+    }
+
+    @Override
+    public PageResult<Long> findPageIdsByModelIds(List<Long> modelIds, String entityTypeCode,
+                                                   Integer status, String keyword, String domain,
+                                                   Integer pageNo, Integer pageSize,
+                                                   String orderByColumn, Boolean orderAsc,
+                                                   List<PhysicalColumnFilter> physicalFilters,
+                                                   KeywordSearchSpec keywordSearch,
+                                                   String scopeRegistryCode) {
         if (CollUtil.isEmpty(modelIds)) {
             return new PageResult<>(Collections.emptyList(), 0L);
         }
         return withTableName(entityTypeCode, () -> {
             LambdaQueryWrapperX<EntityDO> wrapper = buildModelIdsPageWrapper(
                     modelIds, status, keyword, domain, orderByColumn, orderAsc,
-                    physicalFilters, keywordSearch);
+                    physicalFilters, keywordSearch, scopeRegistryCode);
             wrapper.select(EntityDO::getId);
             PageParam pageParam = new PageParam();
             pageParam.setPageNo(pageNo != null && pageNo > 0 ? pageNo : 1);
@@ -406,7 +423,8 @@ public class EntityRepositoryImpl implements EntityRepository {
                                                                    String orderByColumn,
                                                                    Boolean orderAsc,
                                                                    List<PhysicalColumnFilter> physicalFilters,
-                                                                   KeywordSearchSpec keywordSearch) {
+                                                                   KeywordSearchSpec keywordSearch,
+                                                                   String scopeRegistryCode) {
         LambdaQueryWrapperX<EntityDO> wrapper = new LambdaQueryWrapperX<>();
         wrapper.in(EntityDO::getModelId, modelIds)
                 .eqIfPresent(EntityDO::getStatus, status)
@@ -414,6 +432,7 @@ public class EntityRepositoryImpl implements EntityRepository {
                 .eq(EntityDO::getDeleted, false);
         KeywordSearchSql.applyToWrapper(wrapper, keyword, keywordSearch);
         applyPhysicalFilters(wrapper, physicalFilters);
+        applyScopeMembershipExists(wrapper, scopeRegistryCode);
         applyCoreOrSortOrder(wrapper, orderByColumn, orderAsc);
         return wrapper;
     }
@@ -585,6 +604,20 @@ public class EntityRepositoryImpl implements EntityRepository {
                         .neIfPresent(EntityDO::getId, excludeId)
                         .eq(EntityDO::getDeleted, false)
                         .last("LIMIT 1")) != null
+        );
+    }
+
+    @Override
+    public EntityDO findByExactCode(String entityTypeCode, String code) {
+        if (!org.springframework.util.StringUtils.hasText(entityTypeCode)
+                || !org.springframework.util.StringUtils.hasText(code)) {
+            return null;
+        }
+        return withTableName(entityTypeCode, () ->
+                entityMapper.selectOne(new LambdaQueryWrapperX<EntityDO>()
+                        .eq(EntityDO::getCode, code.trim())
+                        .eq(EntityDO::getDeleted, false)
+                        .last("LIMIT 1"))
         );
     }
 
@@ -784,6 +817,7 @@ public class EntityRepositoryImpl implements EntityRepository {
         KeywordSearchSql.applyToWrapper(wrapper, query.getKeyword(), query.getKeywordSearch());
         wrapper.eq(EntityDO::getDeleted, false);
         applyPhysicalFilters(wrapper, query.getPhysicalFilters());
+        applyScopeMembershipExists(wrapper, query.getScopeRegistryCode());
         applyCoreOrSortOrder(wrapper, query.getOrderByColumn(), query.getOrderAsc());
         if (Boolean.TRUE.equals(query.getRootOnly())) {
             wrapper.isNull(EntityDO::getParentId);
@@ -791,6 +825,38 @@ public class EntityRepositoryImpl implements EntityRepository {
             wrapper.eqIfPresent(EntityDO::getParentId, query.getParentId());
         }
         return wrapper;
+    }
+
+    /**
+     * 划分成员标准收窄：EXISTS dynamic_entity_type_scope。
+     * 与分类直查同一套成员表收窄；库内过滤，禁止先拉候选再走字段索引慢路径。
+     * <p>禁止写裸 {@code id}：子查询里会解析成成员表自己的 {@code s.id}
+     *（成员表也有 id 列），变成 {@code s.entity_id = s.id}，结果恒空。</p>
+     * 必须用当前实体物理表限定外层主键（与 CategoryScoped 路径的 {@code e.id} 同义）。
+     */
+    private void applyScopeMembershipExists(LambdaQueryWrapperX<EntityDO> wrapper,
+                                            String scopeRegistryCode) {
+        if (scopeRegistryCode == null || scopeRegistryCode.isBlank()) {
+            return;
+        }
+        String entityTypeCode = EntityTableNameContext.get();
+        if (entityTypeCode == null || entityTypeCode.isBlank()) {
+            throw new IllegalStateException(
+                    "划分 EXISTS 需要 EntityTableNameContext（须经 EntityRepository.withTableName）");
+        }
+        String physicalTable = entityTableNameHandler.resolvePhysicalTableName(entityTypeCode.trim());
+        if (!SAFE_PHYSICAL_COLUMN.matcher(physicalTable).matches()) {
+            throw new IllegalStateException("非法实体物理表名: " + physicalTable);
+        }
+        wrapper.apply("""
+                EXISTS (
+                    SELECT 1
+                    FROM dynamic_entity_type_scope s
+                    WHERE s.deleted = false
+                      AND s.entity_type_code = {0}
+                      AND s.entity_id = %s.id
+                )
+                """.formatted(physicalTable), scopeRegistryCode.trim());
     }
 
     private void applyPhysicalFilters(LambdaQueryWrapperX<EntityDO> wrapper,

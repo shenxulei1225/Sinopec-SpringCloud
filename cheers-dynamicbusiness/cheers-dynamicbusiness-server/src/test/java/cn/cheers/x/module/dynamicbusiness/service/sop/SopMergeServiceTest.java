@@ -1,11 +1,12 @@
 package cn.cheers.x.module.dynamicbusiness.service.sop;
 
 import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopMergeResult;
-import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopStepOverride;
 import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopTemplateSnapshot;
+import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopTreeOverride;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.TypeReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -47,40 +48,50 @@ class SopMergeServiceTest {
             JSONObject v = vectors.getJSONObject(i);
             String id = v.getString("id");
             SopTemplateSnapshot template = v.getObject("template", SopTemplateSnapshot.class);
-            SopStepOverride stepOverride = v.getObject("stepOverride", SopStepOverride.class);
-            @SuppressWarnings("unchecked")
-            Map<String, Object> paramOverride = v.getObject("paramOverride", Map.class);
+            SopTreeOverride treeOverride = v.getObject("treeOverride", SopTreeOverride.class);
+            Map<String, Map<String, Object>> paramOverride = null;
+            if (v.get("paramOverride") != null && !(v.get("paramOverride") instanceof String)) {
+                paramOverride = v.getObject("paramOverride",
+                        new TypeReference<Map<String, Map<String, Object>>>() {
+                        });
+            }
 
-            SopMergeResult result = mergeService.merge(template, stepOverride, paramOverride);
+            SopMergeResult result = mergeService.merge(template, treeOverride, paramOverride);
             JSONObject expect = v.getJSONObject("expect");
             boolean expectOk = expect.getBooleanValue("ok");
             assertEquals(expectOk, result.isOk(), "vector " + id + " ok");
 
             if (expectOk) {
                 assertNotNull(result.getEffective(), "vector " + id);
-                if (expect.containsKey("stepsLength")) {
-                    assertEquals(expect.getIntValue("stepsLength"),
-                            result.getEffective().getSteps().size(),
-                            "vector " + id + " stepsLength");
+                if (expect.containsKey("nodesLength")) {
+                    assertEquals(expect.getIntValue("nodesLength"),
+                            result.getEffective().getNodes().size(),
+                            "vector " + id + " nodesLength");
                 }
-                if (expect.containsKey("secondStepTemplateId")) {
-                    assertEquals(expect.getString("secondStepTemplateId"),
-                            result.getEffective().getSteps().get(1).getStepTemplateId(),
-                            "vector " + id + " secondStep");
+                if (expect.containsKey("secondActionId")) {
+                    assertEquals(expect.getString("secondActionId"),
+                            result.getEffective().getNodes().get(1).getActionId(),
+                            "vector " + id + " secondAction");
                 }
-                if (expect.containsKey("params")) {
-                    JSONObject expectedParams = expect.getJSONObject("params");
-                    for (String key : expectedParams.keySet()) {
-                        Object actual = result.getEffective().getParams().get(key);
-                        Object expected = expectedParams.get(key);
-                        if (expected instanceof Number && actual instanceof Number) {
-                            assertEquals(((Number) expected).doubleValue(),
-                                    ((Number) actual).doubleValue(),
-                                    0.0001,
-                                    "vector " + id + " param " + key);
-                        } else {
-                            assertEquals(String.valueOf(expected), String.valueOf(actual),
-                                    "vector " + id + " param " + key);
+                if (expect.containsKey("paramsByNode")) {
+                    JSONObject expectedByNode = expect.getJSONObject("paramsByNode");
+                    for (String nodeKey : expectedByNode.keySet()) {
+                        JSONObject expectedParams = expectedByNode.getJSONObject(nodeKey);
+                        Map<String, Object> actualParams =
+                                result.getEffective().getParamsByNode().get(nodeKey);
+                        assertNotNull(actualParams, "vector " + id + " node " + nodeKey);
+                        for (String key : expectedParams.keySet()) {
+                            Object actual = actualParams.get(key);
+                            Object expected = expectedParams.get(key);
+                            if (expected instanceof Number && actual instanceof Number) {
+                                assertEquals(((Number) expected).doubleValue(),
+                                        ((Number) actual).doubleValue(),
+                                        0.0001,
+                                        "vector " + id + " " + nodeKey + "." + key);
+                            } else {
+                                assertEquals(String.valueOf(expected), String.valueOf(actual),
+                                        "vector " + id + " " + nodeKey + "." + key);
+                            }
                         }
                     }
                 }

@@ -754,7 +754,7 @@ public class EntityServiceImpl implements EntityService {
                             effectivePageNo, resolveTreeRootPageSize(pageSize));
                     return EntitySceneQueryRespVO.tree(applyResultDetail(treeRoots, detail), detail.getCode());
                 }
-                // 类型全量 + 可下推排序 + 筛可下推/无筛 + 无划分：库内 ORDER BY + LIMIT（keyword 用 name LIKE）
+                // 类型全量 + 可下推排序 + 筛可下推/无筛：库内 ORDER BY + LIMIT；划分用成员 EXISTS（标准 scope）
                 List<PhysicalColumnFilter> typePushFilters =
                         resolvePushablePhysicalFilters(storageEntityTypeCode, filters);
                 boolean typeFiltersOk = typePushFilters != null;
@@ -767,27 +767,32 @@ public class EntityServiceImpl implements EntityService {
                         : null;
                 boolean typeKeywordPushOk = !StringUtils.hasText(keyword) || keywordSearch.canPushFullyToEntityTable();
                 boolean typeKeywordEvaOk = !StringUtils.hasText(keyword) || keywordSearch.isNameOnlyLike();
-                if (shape == EntityQueryResultShape.PAGE
+                boolean typeHasScope = StringUtils.hasText(normalizedScopeCode);
+                boolean typeCanDbPage = shape == EntityQueryResultShape.PAGE
                         && typeFiltersOk
                         && typeKeywordPushOk
-                        && !StringUtils.hasText(normalizedScopeCode)
                         && (StringUtils.hasText(typeDbOrder)
-                            || (StringUtils.hasText(typeEvaValueCol) && typeKeywordEvaOk))) {
+                            || (StringUtils.hasText(typeEvaValueCol) && typeKeywordEvaOk && !typeHasScope)
+                            || typeHasScope);
+                if (typeCanDbPage) {
                     long t0 = System.nanoTime();
                     PageResult<EntityRespVO> typedPage;
                     String pathTag;
-                    if (StringUtils.hasText(typeDbOrder)) {
-                        typedPage = pageEntitiesByEntityTypeDbOrder(
-                                storageEntityTypeCode, keyword, normalizedDomain,
-                                effectivePageNo, effectivePageSize,
-                                typeDbOrder, orderAsc, typePushFilters, keywordSearch, detail);
-                        pathTag = "TYPE_DB_ORDER_PAGE";
-                    } else {
+                    if (!typeHasScope && StringUtils.hasText(typeEvaValueCol) && !StringUtils.hasText(typeDbOrder)
+                            && typeKeywordEvaOk) {
                         typedPage = pageEntitiesByEvaOrder(
                                 storageEntityTypeCode, null, keyword, normalizedDomain,
                                 normalizedOrderByColumn.trim(), typeEvaValueCol,
                                 effectivePageNo, effectivePageSize, orderAsc, detail);
                         pathTag = "TYPE_EVA_ORDER_PAGE";
+                    } else {
+                        String effectiveTypeOrder = StringUtils.hasText(typeDbOrder) ? typeDbOrder : "id";
+                        typedPage = pageEntitiesByEntityTypeDbOrder(
+                                storageEntityTypeCode, keyword, normalizedDomain,
+                                effectivePageNo, effectivePageSize,
+                                effectiveTypeOrder, orderAsc, typePushFilters, keywordSearch, detail,
+                                normalizedScopeCode);
+                        pathTag = typeHasScope ? "TYPE_DB_ORDER_PAGE_SCOPE" : "TYPE_DB_ORDER_PAGE";
                     }
                     long t1 = System.nanoTime();
                     PageResult<EntityRespVO> shaped = applyResultDetail(typedPage, detail);
@@ -1563,6 +1568,11 @@ public class EntityServiceImpl implements EntityService {
                 orderByColumn, orderAsc, keywordSearch, EntityQueryResultDetail.FULL);
     }
 
+    /**
+     * 场景三：按型号查实体分页。
+     * <p>筛可下推时走实体表直分页；有划分时在同一次 SQL 用成员 EXISTS（标准 scope），
+     * 禁止因有划分改走字段索引慢路径（会把 facility_id 等物理列筛成空）。</p>
+     */
     private PageResult<EntityRespVO> handlePatternBModelEntities(List<Long> modelIds, String entityTypeCode,
                                                                     String keyword, List<FieldFilterReqVO> filters,
                                                                     Integer pageNo, Integer pageSize,
@@ -1583,30 +1593,35 @@ public class EntityServiceImpl implements EntityService {
         boolean keywordEvaOk = !StringUtils.hasText(keyword) || effectiveKeywordSearch.isNameOnlyLike();
         EntityQueryResultDetail effectiveDetail =
                 detail != null ? detail : EntityQueryResultDetail.FULL;
-        // 筛可下推（或无筛）、无划分：实体表 / EVA 直分页（keyword 多列 OR，默认可 name）。
-        if (pushFilters != null && !hasScope && keywordPushOk
+        // 筛可下推（或无筛）：实体表直分页 + 划分 EXISTS；EVA 排序路径尚不带成员表，有划分时改走 sort 列直查。
+        boolean canDbPage = pushFilters != null && keywordPushOk
                 && (!hasFieldOrder || StringUtils.hasText(dbOrder)
-                    || (StringUtils.hasText(evaValueCol) && keywordEvaOk))) {
+                    || (StringUtils.hasText(evaValueCol) && keywordEvaOk && !hasScope)
+                    || (hasScope && hasFieldOrder && !StringUtils.hasText(dbOrder)));
+        if (canDbPage) {
             long t0 = System.nanoTime();
             PageResult<EntityRespVO> page;
             String path;
-            if (StringUtils.hasText(evaValueCol) && !StringUtils.hasText(dbOrder) && keywordEvaOk) {
+            if (!hasScope && StringUtils.hasText(evaValueCol) && !StringUtils.hasText(dbOrder) && keywordEvaOk) {
                 page = pageEntitiesByEvaOrder(
                         entityTypeCode, modelIds, keyword, domain,
                         orderByColumn.trim(), evaValueCol, pageNo, pageSize, orderAsc, effectiveDetail);
                 path = "MODEL_EVA_ORDER_PAGE";
             } else {
+                String effectiveDbOrder = StringUtils.hasText(dbOrder) ? dbOrder : "id";
                 page = pageEntitiesByModelIds(
                         modelIds, keyword, pageNo, pageSize, domain,
-                        dbOrder, orderAsc, pushFilters, effectiveKeywordSearch, effectiveDetail);
-                path = "MODEL_IDS_DB_PAGE";
+                        effectiveDbOrder, orderAsc, pushFilters, effectiveKeywordSearch, effectiveDetail,
+                        scopeRegistryCode);
+                path = hasScope ? "MODEL_IDS_DB_PAGE_SCOPE" : "MODEL_IDS_DB_PAGE";
             }
             if (log.isInfoEnabled()) {
                 int n = page.getList() != null ? page.getList().size() : 0;
-                log.info("[query-by-scene timing] path={} models={} keyword={} "
+                log.info("[query-by-scene timing] path={} models={} keyword={} scope={} "
                                 + "order={} rows={} total={} elapsed={}ms",
                         path, modelIds != null ? modelIds.size() : 0,
                         keyword != null && !keyword.isBlank(),
+                        hasScope,
                         dbOrder != null ? dbOrder : (evaValueCol != null ? orderByColumn : "sort"),
                         n, page.getTotal(), (System.nanoTime() - t0) / 1_000_000L);
             }
@@ -1900,7 +1915,7 @@ public class EntityServiceImpl implements EntityService {
                                                                 List<PhysicalColumnFilter> physicalFilters,
                                                                 KeywordSearchSpec keywordSearch) {
         return pageEntitiesByModelIds(modelIds, keyword, pageNo, pageSize, domain,
-                orderByColumn, orderAsc, physicalFilters, keywordSearch, EntityQueryResultDetail.FULL);
+                orderByColumn, orderAsc, physicalFilters, keywordSearch, EntityQueryResultDetail.FULL, null);
     }
 
     private PageResult<EntityRespVO> pageEntitiesByModelIds(List<Long> modelIds,
@@ -1909,6 +1924,20 @@ public class EntityServiceImpl implements EntityService {
                                                                 List<PhysicalColumnFilter> physicalFilters,
                                                                 KeywordSearchSpec keywordSearch,
                                                                 EntityQueryResultDetail detail) {
+        return pageEntitiesByModelIds(modelIds, keyword, pageNo, pageSize, domain,
+                orderByColumn, orderAsc, physicalFilters, keywordSearch, detail, null);
+    }
+
+    /**
+     * 按型号库内分页；可叠加物理列筛选与划分成员 EXISTS（标准 scope，禁止事后慢路径滤场站）。
+     */
+    private PageResult<EntityRespVO> pageEntitiesByModelIds(List<Long> modelIds,
+                                                                String keyword, Integer pageNo, Integer pageSize,
+                                                                String domain, String orderByColumn, boolean orderAsc,
+                                                                List<PhysicalColumnFilter> physicalFilters,
+                                                                KeywordSearchSpec keywordSearch,
+                                                                EntityQueryResultDetail detail,
+                                                                String scopeRegistryCode) {
         List<Long> normalizedModelIds = requireModelIds(modelIds, "modelIds 不能为空");
         String normalizedDomain = EntityTypeScopeContext.normalizeDomain(domain);
         String coreOrder = StringUtils.hasText(orderByColumn) ? orderByColumn.trim() : null;
@@ -1916,6 +1945,8 @@ public class EntityServiceImpl implements EntityService {
                 keywordSearch != null ? keywordSearch : KeywordSearchSpec.nameOnly();
         EntityQueryResultDetail effectiveDetail =
                 detail != null ? detail : EntityQueryResultDetail.FULL;
+        String normalizedScope =
+                StringUtils.hasText(scopeRegistryCode) ? scopeRegistryCode.trim() : null;
 
         if (normalizedModelIds.size() == 1) {
             Long singleModelId = normalizedModelIds.get(0);
@@ -1929,6 +1960,7 @@ public class EntityServiceImpl implements EntityService {
                     .keyword(keyword)
                     .keywordSearch(effectiveKeywordSearch)
                     .domain(normalizedDomain)
+                    .scopeRegistryCode(normalizedScope)
                     .pageNo(pageNo)
                     .pageSize(pageSize)
                     .orderByColumn(coreOrder)
@@ -1962,7 +1994,8 @@ public class EntityServiceImpl implements EntityService {
                 coreOrder,
                 orderAsc,
                 physicalFilters,
-                effectiveKeywordSearch
+                effectiveKeywordSearch,
+                normalizedScope
         );
         List<Long> orderedIds = pageIds.getList() != null ? pageIds.getList() : List.of();
         List<EntityRespVO> list = convertOrderedEntityIdsToRespList(orderedIds, entityTypeCode, effectiveDetail);
@@ -1984,7 +2017,7 @@ public class EntityServiceImpl implements EntityService {
                                                                      KeywordSearchSpec keywordSearch) {
         return pageEntitiesByEntityTypeDbOrder(
                 entityTypeCode, keyword, domain, pageNo, pageSize, orderByColumn, orderAsc,
-                physicalFilters, keywordSearch, EntityQueryResultDetail.FULL);
+                physicalFilters, keywordSearch, EntityQueryResultDetail.FULL, null);
     }
 
     private PageResult<EntityRespVO> pageEntitiesByEntityTypeDbOrder(String entityTypeCode,
@@ -1997,6 +2030,22 @@ public class EntityServiceImpl implements EntityService {
                                                                      List<PhysicalColumnFilter> physicalFilters,
                                                                      KeywordSearchSpec keywordSearch,
                                                                      EntityQueryResultDetail detail) {
+        return pageEntitiesByEntityTypeDbOrder(
+                entityTypeCode, keyword, domain, pageNo, pageSize, orderByColumn, orderAsc,
+                physicalFilters, keywordSearch, detail, null);
+    }
+
+    private PageResult<EntityRespVO> pageEntitiesByEntityTypeDbOrder(String entityTypeCode,
+                                                                     String keyword,
+                                                                     String domain,
+                                                                     Integer pageNo,
+                                                                     Integer pageSize,
+                                                                     String orderByColumn,
+                                                                     boolean orderAsc,
+                                                                     List<PhysicalColumnFilter> physicalFilters,
+                                                                     KeywordSearchSpec keywordSearch,
+                                                                     EntityQueryResultDetail detail,
+                                                                     String scopeRegistryCode) {
         if (!StringUtils.hasText(entityTypeCode) || !StringUtils.hasText(orderByColumn)) {
             return new PageResult<>(new ArrayList<>(), 0L);
         }
@@ -2005,6 +2054,7 @@ public class EntityServiceImpl implements EntityService {
                 .keyword(keyword)
                 .keywordSearch(keywordSearch != null ? keywordSearch : KeywordSearchSpec.nameOnly())
                 .domain(EntityTypeScopeContext.normalizeDomain(domain))
+                .scopeRegistryCode(StringUtils.hasText(scopeRegistryCode) ? scopeRegistryCode.trim() : null)
                 .pageNo(pageNo)
                 .pageSize(pageSize)
                 .orderByColumn(orderByColumn.trim())
@@ -2019,8 +2069,9 @@ public class EntityServiceImpl implements EntityService {
                 orderedIds, entityTypeCode.trim(), detail != null ? detail : EntityQueryResultDetail.FULL);
         long t2 = System.nanoTime();
         log.info("[query-by-scene timing] stage=pageEntitiesByEntityTypeDbOrder findPageIds={}ms "
-                        + "convert={}ms order={} ids={} totalRows={}",
+                        + "convert={}ms order={} scope={} ids={} totalRows={}",
                 (t1 - t0) / 1_000_000L, (t2 - t1) / 1_000_000L, orderByColumn,
+                StringUtils.hasText(scopeRegistryCode),
                 orderedIds.size(), pageIds.getTotal());
         return new PageResult<>(list, pageIds.getTotal());
     }

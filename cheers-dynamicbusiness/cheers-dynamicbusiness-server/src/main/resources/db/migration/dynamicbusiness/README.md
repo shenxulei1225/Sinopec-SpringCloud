@@ -89,8 +89,13 @@
 | V73 | `V73__sop_step_template_entity.sql` | 步骤模板（step template）专用表 `ent_sop_step_template` + 租户分表 |
 | V74 | `V74__sop_template_instance_columns.sql` | `ent_sop*` 增 `is_template` / `sop_template_id` / override / `default_*` / `execution_means` |
 | V75 | `V75__equipment_inspection_sop_binding.sql` | 设备检查绑定 `dynamic_equipment_inspection_sop_binding`（租户物理表） |
+| V76 | `V76__action_entity.sql` | 动作库专用表 `ent_action` + 租户分表 |
+| V77 | `V77__action_enablement.sql` | 动作启用表 |
+| V78 | `V78__sop_action_tree_columns.sql` | SOP `action_tree_json` 等动作树列 |
+| V79 | `V79__drop_sop_step_template.sql` | 删除步骤模板实体 |
+| V80 | `V80__sop_method_and_instance_binding.sql` | 通用方法选用/实例绑定表；迁出并 DROP V44/V75 检查专用绑定表 |
 
-> **版本号说明**：本仓库已登记至 **V75**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。
+> **版本号说明**：本仓库已登记至 **V80**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。
 
 
 > **跨机合并说明**：本机布局迁移已占用 V26–V28 且已执行；对方原 `V26__category_*` / `V27__ent_structure` 在合并后改为 V29/V30。若对方库已按旧文件名执行过 V26/V27，需对齐历史表 `version`/`script` 后 `flyway:repair`，再拉本分支。
@@ -156,6 +161,7 @@ PGPASSWORD=Coolhomer psql -h 127.0.0.1 -U postgres -d sinopec -c \
 
 | 日期 | 说明 |
 |------|------|
+| 2026-08-29 | V76–V80：动作库、动作启用、SOP 动作树列、删步骤模板、通用 SOP 方法/实例绑定（迁出检查专用表） |
 | 2026-08-27 | V73–V75：步骤模板表、SOP 模板/实例列、设备检查绑定表；seed 见 `scripts/platform-import/sop/10–13` |
 | 2026-08-27 | V72：layout `relationMode:cascade`+host/member → 栏间 **CATEGORY_CATEGORY** filter/write；验收 `scripts/verify-v72-cascade-to-column-relations.sql`；本机 dev 已 migrate + 验收通过 |
 | 2026-08-26 | V71：工作台布局头增加 `settings_json`，持久化 FILTER、OBJECT、WHAT 区段配置隐藏状态 |

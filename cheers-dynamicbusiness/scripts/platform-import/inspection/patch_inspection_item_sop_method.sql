@@ -1,8 +1,11 @@
--- 检查项方法权威说明 + 样例挂接（幂等）
+-- 【废弃·勿在新库执行】旧表 dynamic_inspection_item_sop 已由 Flyway V80 DROP。
+-- 请改用：scripts/platform-import/recipes/inspection/03_sample_method_bindings.sql
+-- ============================================================================
+-- 检查项方法权威说明 + 样例挂接（幂等）——历史脚本，保留仅供对照
 --
--- 权威表：dynamic_inspection_item_sop（Flyway V44）
+-- 权威表（历史）：dynamic_inspection_item_sop（Flyway V44）
 --   inspection_item_id × execution_means → sop_id（SOP 模板实体 id，须 is_template=true）
--- 设备侧实例绑定：dynamic_equipment_inspection_sop_binding（Flyway V75）
+-- 设备侧实例绑定（历史）：dynamic_equipment_inspection_sop_binding（Flyway V75）
 --
 -- 租户物理表：检查项 / SOP 读 ent_*_t1（tenant_id=1）
 

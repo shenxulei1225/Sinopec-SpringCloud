@@ -35,18 +35,21 @@ public final class DmDataTabLayoutBootstrapMeta {
         return meta;
     }
 
-    /** 对象区段领头栏（通常是型号）同时记下区段宽 */
-    public static Map<String, Object> modelMeta(boolean objectSectionLead) {
+    /**
+     * 型号栏默认落在筛选区段（与分类同区，降低上手成本）。
+     * {@code sectionLead} 为 true 时写区段宽（仅当本区没有分类领头栏时用）。
+     */
+    public static Map<String, Object> modelMeta(boolean sectionLead) {
         Map<String, Object> meta = new LinkedHashMap<>();
-        meta.put("columnSection", SECTION_OBJECT);
+        meta.put("columnSection", SECTION_FILTER);
         meta.put("widthPx", MODEL_COLUMN_WIDTH_PX);
-        if (objectSectionLead) {
-            meta.put("sectionWidthPx", OBJECT_SECTION_WIDTH_PX);
+        if (sectionLead) {
+            meta.put("sectionWidthPx", FILTER_SECTION_WIDTH_PX);
         }
         return meta;
     }
 
-    /** 型号关掉、实体开着时，实体是对象区段领头栏 */
+    /** 实体栏默认在 Who/对象区段；通常作为该区段领头栏写下区段宽 */
     public static Map<String, Object> entityMeta(boolean objectSectionLead) {
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("columnSection", SECTION_OBJECT);

@@ -60,9 +60,20 @@ public class EntityBusinessHelper {
     }
 
     public void validateCustomFields(Long modelId, Map<String, Object> customFields) {
-        if (customFields != null && !customFields.isEmpty()) {
-            customFieldValidationService.validateCustomFields(modelId, customFields);
+        validateCustomFields(modelId, null, customFields);
+    }
+
+    /**
+     * 校验型号分配字段；写前分桶后 BASE 来源（如所属场站 facility_id）在 baseFields，须一并传入。
+     */
+    public void validateCustomFields(Long modelId,
+                                     Map<String, Object> baseFields,
+                                     Map<String, Object> customFields) {
+        if ((customFields == null || customFields.isEmpty())
+                && (baseFields == null || baseFields.isEmpty())) {
+            return;
         }
+        customFieldValidationService.validateCustomFields(modelId, baseFields, customFields);
     }
 
     public void validateBaseFields(String entityTypeCode, Map<String, Object> baseFields) {
@@ -168,7 +179,7 @@ public class EntityBusinessHelper {
         validateModelEntityType(modelId, entityTypeCode);
         validateRequestedDomainMatchesModel(baseFields, model);
         validateBaseFields(entityTypeCode, baseFields, reqVO.getCustomFields());
-        validateCustomFields(modelId, reqVO.getCustomFields());
+        validateCustomFields(modelId, baseFields, reqVO.getCustomFields());
 
         EntityDO data = EntityConvert.INSTANCE.convert(reqVO);
         data.setTenantId(getTenantId());
@@ -207,7 +218,7 @@ public class EntityBusinessHelper {
         validateModelEntityType(modelId, entityTypeCode);
         validateRequestedDomainMatchesModel(baseFields, model);
         validateBaseFields(entityTypeCode, baseFields, reqVO.getCustomFields());
-        validateCustomFields(modelId, reqVO.getCustomFields());
+        validateCustomFields(modelId, baseFields, reqVO.getCustomFields());
 
         reqVO.setBaseFields(baseFields);
         EntityDO update = EntityConvert.INSTANCE.convert(reqVO);

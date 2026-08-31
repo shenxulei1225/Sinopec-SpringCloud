@@ -8,11 +8,14 @@ import lombok.Data;
 @Data
 public class DmDataTabLayoutSaveItemVO {
 
+    @Schema(description = "已有布局行主键；改 tabId 时必传，否则会当成删旧插新并误删边")
+    private Long id;
+
     @Schema(description = "列种类 CATEGORY|MODEL|ENTITY|DETAIL", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "columnKind 不能为空")
     private String columnKind;
 
-    @Schema(description = "列顶标签页（Tab）编号：CATEGORY 必填；MODEL/ENTITY 多列时填写；DETAIL 勿填")
+    @Schema(description = "列顶标签页编号：CATEGORY 必填；MODEL/ENTITY 必填且为底座类型编码（禁止空与字面 default）；DETAIL 勿填")
     private String tabId;
 
     @Schema(description = "组件配置 propsId")

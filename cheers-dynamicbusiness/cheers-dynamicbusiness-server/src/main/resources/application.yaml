@@ -165,11 +165,11 @@ cheers:
     version: 1.0.0
     base-package: cn.cheers.x.module.dynamicbusiness
   dynamicbusiness:
-    # Wave E 临时验收开关：默认不授予全网主数据治理能力；正式角色映射另案接入能力端口。
+    # Wave E 临时验收开关：权限体系未接入前，开发环境允许 admin 直接建公司规格；正式角色映射另案接入能力端口。
     master-data-capability:
-      can-create-company-standard: false
-      can-promote-package: false
-      can-deactivate-company-standard: false
+      can-create-company-standard: true
+      can-promote-package: true
+      can-deactivate-company-standard: true
   web:
     admin-ui:
       url: http://dashboard.local # Admin 管理后台 UI 的地址

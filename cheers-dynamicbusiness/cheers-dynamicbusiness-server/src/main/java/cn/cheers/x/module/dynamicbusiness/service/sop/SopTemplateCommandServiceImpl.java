@@ -5,11 +5,11 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCreat
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryEntityLinkService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
+import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopActionTreeNode;
 import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopEffectiveConfig;
 import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopMergeResult;
-import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopStepOverride;
-import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopStepTemplateRef;
 import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopTemplateSnapshot;
+import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopTreeOverride;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import jakarta.annotation.Resource;
@@ -25,8 +25,9 @@ import java.util.Map;
 /**
  * SOP 模板命令实现。
  *
- * <p><b>权威</b>：模板 default_* / 实例 override 在实体 baseFields；merge 走 {@link SopMergeService}。</p>
- * <p><b>禁止</b>：升格改原实例、自动改设备检查绑定、读路径静默补参。</p>
+ * <p><b>权威</b>：模板动作树 / 按节点参数、实例 override 在实体 baseFields（实体读出已收成业务 JSON）；
+ * merge 走 {@link SopMergeService}。</p>
+ * <p><b>禁止</b>：升格改原实例、自动改绑定、读路径静默补参；在本类再解 JDBC/jsonb 驱动包装。</p>
  */
 @Service
 public class SopTemplateCommandServiceImpl implements SopTemplateCommandService {
@@ -45,7 +46,8 @@ public class SopTemplateCommandServiceImpl implements SopTemplateCommandService 
         EntityRespVO row = requireSop(sopId);
         Map<String, Object> base = emptyIfNull(row.getBaseFields());
         if (isTemplateRow(base)) {
-            return sopMergeService.merge(toTemplateSnapshot(base), null, null);
+            // 模板只编排步骤与参数槽；具体参数值在设备 How 填，此处不因空值报 MISSING_PARAM
+            return sopMergeService.merge(toTemplateSnapshot(base), null, null, false);
         }
         Long templateId = readLong(base.get(SopFieldCodes.SOP_TEMPLATE_ID));
         if (templateId == null) {
@@ -56,9 +58,10 @@ public class SopTemplateCommandServiceImpl implements SopTemplateCommandService 
             throw new ServiceException(400, "sop_template_id 必须指向 SOP 模板行");
         }
         SopTemplateSnapshot snapshot = toTemplateSnapshot(emptyIfNull(templateRow.getBaseFields()));
-        SopStepOverride stepOverride = parseStepOverride(base.get(SopFieldCodes.STEP_OVERRIDE_JSON));
-        Map<String, Object> paramOverride = parseParamMap(base.get(SopFieldCodes.PARAM_OVERRIDE_JSON));
-        return sopMergeService.merge(snapshot, stepOverride, paramOverride);
+        SopTreeOverride treeOverride = parseTreeOverride(base.get(SopFieldCodes.ACTION_TREE_OVERRIDE_JSON));
+        Map<String, Map<String, Object>> paramOverride =
+                parseParamsByNode(base.get(SopFieldCodes.PARAM_OVERRIDE_JSON));
+        return sopMergeService.merge(snapshot, treeOverride, paramOverride);
     }
 
     @Override
@@ -92,13 +95,13 @@ public class SopTemplateCommandServiceImpl implements SopTemplateCommandService 
         baseFields.put("status", 1);
         baseFields.put(SopFieldCodes.IS_TEMPLATE, true);
         baseFields.put(SopFieldCodes.SOP_TEMPLATE_ID, null);
-        baseFields.put(SopFieldCodes.STEP_OVERRIDE_JSON, null);
+        baseFields.put(SopFieldCodes.ACTION_TREE_OVERRIDE_JSON, null);
         baseFields.put(SopFieldCodes.PARAM_OVERRIDE_JSON, null);
-        baseFields.put(SopFieldCodes.DEFAULT_STEPS_JSON, JSON.toJSONString(effective.getSteps()));
-        baseFields.put(SopFieldCodes.DEFAULT_PARAMS_JSON, JSON.toJSONString(effective.getParams()));
+        baseFields.put(SopFieldCodes.ACTION_TREE_JSON, JSON.toJSONString(effective.getNodes()));
+        baseFields.put(SopFieldCodes.DEFAULT_PARAMS_BY_NODE_JSON,
+                JSON.toJSONString(effective.getParamsByNode()));
         baseFields.put(SopFieldCodes.VERSION_NO, 1);
         baseFields.put(SopFieldCodes.PUBLISH_STATUS, "DRAFT");
-        baseFields.put(SopFieldCodes.STEPS_JSON, "[]");
         Object means = instanceBase.get(SopFieldCodes.EXECUTION_MEANS);
         if (means != null) {
             baseFields.put(SopFieldCodes.EXECUTION_MEANS, means);
@@ -149,58 +152,68 @@ public class SopTemplateCommandServiceImpl implements SopTemplateCommandService 
 
     private SopTemplateSnapshot toTemplateSnapshot(Map<String, Object> base) {
         SopTemplateSnapshot snapshot = new SopTemplateSnapshot();
-        snapshot.setDefaultSteps(parseStepList(base.get(SopFieldCodes.DEFAULT_STEPS_JSON)));
-        snapshot.setDefaultParams(parseParamMap(base.get(SopFieldCodes.DEFAULT_PARAMS_JSON)));
+        snapshot.setActionTree(parseActionTree(base.get(SopFieldCodes.ACTION_TREE_JSON)));
+        snapshot.setParamsByNode(parseParamsByNode(base.get(SopFieldCodes.DEFAULT_PARAMS_BY_NODE_JSON)));
         return snapshot;
     }
 
-    private SopStepOverride parseStepOverride(Object raw) {
+    private SopTreeOverride parseTreeOverride(Object raw) {
         if (raw == null) {
             return null;
         }
-        if (raw instanceof SopStepOverride override) {
+        if (raw instanceof SopTreeOverride override) {
             return override;
         }
         if (raw instanceof Map<?, ?> map) {
-            Object replace = map.get("replaceSteps");
-            SopStepOverride override = new SopStepOverride();
-            override.setReplaceSteps(parseStepList(replace));
+            Object replace = map.get("replaceTree");
+            SopTreeOverride override = new SopTreeOverride();
+            override.setReplaceTree(parseActionTree(replace));
             return override;
         }
         if (raw instanceof String s && StringUtils.hasText(s)) {
-            return JSON.parseObject(s, SopStepOverride.class);
+            return JSON.parseObject(s, SopTreeOverride.class);
         }
-        return JSON.parseObject(JSON.toJSONString(raw), SopStepOverride.class);
+        return JSON.parseObject(JSON.toJSONString(raw), SopTreeOverride.class);
     }
 
-    private List<SopStepTemplateRef> parseStepList(Object raw) {
+    private List<SopActionTreeNode> parseActionTree(Object raw) {
         if (raw == null) {
             return new ArrayList<>();
         }
         if (raw instanceof List<?> list) {
-            return JSON.parseObject(JSON.toJSONString(list), new TypeReference<List<SopStepTemplateRef>>() {
+            return JSON.parseObject(JSON.toJSONString(list), new TypeReference<List<SopActionTreeNode>>() {
             });
         }
         if (raw instanceof String s) {
             if (!StringUtils.hasText(s) || "null".equalsIgnoreCase(s.trim())) {
                 return new ArrayList<>();
             }
-            return JSON.parseObject(s, new TypeReference<List<SopStepTemplateRef>>() {
+            return JSON.parseObject(s, new TypeReference<List<SopActionTreeNode>>() {
             });
         }
-        return JSON.parseObject(JSON.toJSONString(raw), new TypeReference<List<SopStepTemplateRef>>() {
+        return JSON.parseObject(JSON.toJSONString(raw), new TypeReference<List<SopActionTreeNode>>() {
         });
     }
 
-    private Map<String, Object> parseParamMap(Object raw) {
+    private Map<String, Map<String, Object>> parseParamsByNode(Object raw) {
         if (raw == null) {
             return new LinkedHashMap<>();
         }
         if (raw instanceof Map<?, ?> map) {
-            Map<String, Object> out = new LinkedHashMap<>();
+            Map<String, Map<String, Object>> out = new LinkedHashMap<>();
             for (Map.Entry<?, ?> e : map.entrySet()) {
-                if (e.getKey() != null) {
-                    out.put(String.valueOf(e.getKey()), e.getValue());
+                if (e.getKey() == null) {
+                    continue;
+                }
+                Object val = e.getValue();
+                if (val instanceof Map<?, ?> nested) {
+                    Map<String, Object> nodeParams = new LinkedHashMap<>();
+                    for (Map.Entry<?, ?> ne : nested.entrySet()) {
+                        if (ne.getKey() != null) {
+                            nodeParams.put(String.valueOf(ne.getKey()), ne.getValue());
+                        }
+                    }
+                    out.put(String.valueOf(e.getKey()), nodeParams);
                 }
             }
             return out;
@@ -209,12 +222,14 @@ public class SopTemplateCommandServiceImpl implements SopTemplateCommandService 
             if (!StringUtils.hasText(s) || "null".equalsIgnoreCase(s.trim())) {
                 return new LinkedHashMap<>();
             }
-            Map<String, Object> parsed = JSON.parseObject(s, new TypeReference<Map<String, Object>>() {
-            });
+            Map<String, Map<String, Object>> parsed = JSON.parseObject(s,
+                    new TypeReference<Map<String, Map<String, Object>>>() {
+                    });
             return parsed != null ? parsed : new LinkedHashMap<>();
         }
-        Map<String, Object> parsed = JSON.parseObject(JSON.toJSONString(raw), new TypeReference<Map<String, Object>>() {
-        });
+        Map<String, Map<String, Object>> parsed = JSON.parseObject(JSON.toJSONString(raw),
+                new TypeReference<Map<String, Map<String, Object>>>() {
+                });
         return parsed != null ? parsed : new LinkedHashMap<>();
     }
 

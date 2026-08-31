@@ -7,7 +7,8 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @SpringBootApplication(scanBasePackages = {"cn.cheers.x.module.platform.topology"})
 @EnableFeignClients(basePackages = {
         "cn.cheers.x.system.api",
-        "cn.cheers.x.infra.api"
+        "cn.cheers.x.infra.api",
+        "cn.cheers.x.module.dynamicbusiness.api"
 })
 public class PlatformTopologyServerApplication {
 

@@ -27,19 +27,22 @@ import static cn.cheers.x.module.dynamicbusiness.service.datamgmt.ColumnRelation
  * 栏间关系<strong>默认写出</strong>（仅写路径 · 只 insert）。
  * <p>
  * ## 本类负责什么
- * 在下列写时机补缺的同类型「条件筛选」边（分类→型号、型号→实体）：
+ * 在下列写时机补缺的同类型台账链边：
  * <ul>
- *   <li>实例化该数据目录的页面布局后</li>
- *   <li>保存布局（加栏等）后，由 {@link DmDataTabLayoutServiceImpl#saveLayouts} 调用</li>
+ *   <li>条件筛选 filter：分类→型号、型号→实体（查数上游→下游）</li>
+ *   <li>修改关联 write：型号→分类、实体→分类（列表挂到分类树；默认仅拖入）</li>
  * </ul>
+ * filter 与 write <b>方向不同</b>：筛选跟台账链；挂接从型号/实例指回分类。
+ * 触发：实例化该数据目录的页面布局后；保存布局（加栏等）后由
+ * {@link DmDataTabLayoutServiceImpl#saveLayouts} 调用。
  * <p>
- * ## 本类明确不负责什么（禁止再加回来）
+ * ## 本类明确不负责什么
  * <ul>
  *   <li><b>不删边</b>：删边只有两种标准触发，见 {@link DmDataTabColumnRelationService}</li>
- *   <li>不写 write（修改关联）边：一律由数据关系图手配</li>
+ *   <li>不写异类型边：外类型 / 跨类型一律关系图手配</li>
+ *   <li>不自动写型号↔实体的 write（挂接分类靠「型号/实体→分类」）</li>
  *   <li>不在读列表接口里猜边、补边</li>
  * </ul>
- * 连接策略（与《关联实现》一致）：仅自动写同类型 filter；异类型与全部 write 不自动写。
  */
 @Service
 public class DmDataTabColumnRelationBootstrapService {
@@ -54,7 +57,7 @@ public class DmDataTabColumnRelationBootstrapService {
     private DmWorkbenchLayoutService dmWorkbenchLayoutService;
 
     /**
-     * 实例化页面布局后调用：只 insert 缺的默认 filter 边，不覆盖、不删已有行。
+     * 实例化 / 保存布局后：只 insert 缺的默认 filter + write 边，不覆盖、不删已有行。
      *
      * @param registryEntityTypeCode 目录注册编码（写入 relation.entity_type_code）
      * @param storageBaseTypeCode    底座类型编码（保留入参；本方法不用其自动写异类型边）
@@ -76,37 +79,74 @@ public class DmDataTabColumnRelationBootstrapService {
                 StringUtils.hasText(registryEntityTypeCode) ? registryEntityTypeCode.trim() : null;
 
         LayoutEndpoints parsed = fromLayoutRows(layouts);
-        Set<String> existingPairs = loadExistingFilterPairKeys(layoutId);
+        Set<String> existingPairs = loadExistingPairKeys(layoutId);
 
         List<DmDataTabColumnRelationDO> toInsert = new ArrayList<>();
 
-        // 同类型 分类→型号
+        // filter：分类→型号；write：型号→分类
         for (ColumnEndpoint category : parsed.categories()) {
             for (ColumnEndpoint model : parsed.models()) {
                 if (!sameTypeCode(category.typeCode(), model.typeCode())) {
                     continue;
                 }
-                if (existingPairs.contains(pairKey(category.identity(), model.identity(), "filter"))) {
-                    continue;
-                }
-                toInsert.add(newFilterRelation(
-                        layoutId, registryCode, category, model, "CATEGORY_MODEL"));
-                existingPairs.add(pairKey(category.identity(), model.identity(), "filter"));
+                appendIfAbsent(
+                        toInsert,
+                        existingPairs,
+                        layoutId,
+                        registryCode,
+                        category,
+                        model,
+                        "CATEGORY_MODEL",
+                        "filter",
+                        List.of());
+                appendIfAbsent(
+                        toInsert,
+                        existingPairs,
+                        layoutId,
+                        registryCode,
+                        model,
+                        category,
+                        "CATEGORY_MODEL",
+                        "write",
+                        List.of("dragAssociate"));
             }
         }
 
-        // 同类型 型号→实体（台账链）
+        // filter：型号→实体（无对应默认 write）
         for (ColumnEndpoint model : parsed.models()) {
             for (ColumnEndpoint entity : parsed.entities()) {
                 if (!sameTypeCode(model.typeCode(), entity.typeCode())) {
                     continue;
                 }
-                if (existingPairs.contains(pairKey(model.identity(), entity.identity(), "filter"))) {
+                appendIfAbsent(
+                        toInsert,
+                        existingPairs,
+                        layoutId,
+                        registryCode,
+                        model,
+                        entity,
+                        "MODEL_ENTITY",
+                        "filter",
+                        List.of());
+            }
+        }
+
+        // write：实体→分类
+        for (ColumnEndpoint category : parsed.categories()) {
+            for (ColumnEndpoint entity : parsed.entities()) {
+                if (!sameTypeCode(category.typeCode(), entity.typeCode())) {
                     continue;
                 }
-                toInsert.add(newFilterRelation(
-                        layoutId, registryCode, model, entity, "MODEL_ENTITY"));
-                existingPairs.add(pairKey(model.identity(), entity.identity(), "filter"));
+                appendIfAbsent(
+                        toInsert,
+                        existingPairs,
+                        layoutId,
+                        registryCode,
+                        entity,
+                        category,
+                        "CATEGORY_ENTITY",
+                        "write",
+                        List.of("dragAssociate"));
             }
         }
 
@@ -115,7 +155,30 @@ public class DmDataTabColumnRelationBootstrapService {
         }
     }
 
-    private Set<String> loadExistingFilterPairKeys(Long layoutId) {
+    /**
+     * 缺则 insert 一条边（已存在同 from/to/用途则跳过）。
+     * write 默认仅拖入，与关系图新建修改关联边一致。
+     */
+    private static void appendIfAbsent(
+            List<DmDataTabColumnRelationDO> toInsert,
+            Set<String> existingPairs,
+            Long layoutId,
+            String registryCode,
+            ColumnEndpoint from,
+            ColumnEndpoint to,
+            String relationKind,
+            String edgeRole,
+            List<String> enabledInteractions) {
+        String key = pairKey(from.identity(), to.identity(), edgeRole);
+        if (existingPairs.contains(key)) {
+            return;
+        }
+        toInsert.add(newRelation(
+                layoutId, registryCode, from, to, relationKind, edgeRole, enabledInteractions));
+        existingPairs.add(key);
+    }
+
+    private Set<String> loadExistingPairKeys(Long layoutId) {
         Set<String> existingPairs = new HashSet<>();
         for (DmDataTabColumnRelationDO row :
                 dmDataTabColumnRelationMapper.selectListByLayoutId(layoutId)) {
@@ -140,12 +203,14 @@ public class DmDataTabColumnRelationBootstrapService {
         return "filter";
     }
 
-    private static DmDataTabColumnRelationDO newFilterRelation(
+    private static DmDataTabColumnRelationDO newRelation(
             Long layoutId,
             String registryEntityTypeCode,
             ColumnEndpoint from,
             ColumnEndpoint to,
-            String relationKind) {
+            String relationKind,
+            String edgeRole,
+            List<String> enabledInteractions) {
         DmDataTabColumnRelationDO row = new DmDataTabColumnRelationDO();
         row.setLayoutId(layoutId);
         row.setEntityTypeCode(registryEntityTypeCode);
@@ -156,8 +221,8 @@ public class DmDataTabColumnRelationBootstrapService {
         row.setFromTypeCode(from.typeCode());
         row.setToTypeCode(to.typeCode());
         Map<String, Object> meta = new LinkedHashMap<>();
-        meta.put("edgeRole", "filter");
-        meta.put("enabledInteractions", List.of());
+        meta.put("edgeRole", edgeRole);
+        meta.put("enabledInteractions", enabledInteractions);
         row.setRelationMeta(meta);
         return row;
     }

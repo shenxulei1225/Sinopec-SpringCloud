@@ -46,12 +46,12 @@ BEGIN
 
   -- 3) 分类栏：标签与类型码对齐（强制 tab_id，避免残留 field_work_standard-default）
   UPDATE dm_data_tab_layout
-  SET tab_id = 'sop-default',
+  SET tab_id = 'sop-1',
       column_meta = COALESCE(column_meta, '{}'::jsonb)
         || jsonb_build_object(
           'label', 'SOP分类',
           'categoryTypeCode', 'sop',
-          'columnKey', 'sop-default',
+          'columnKey', 'sop',
           'columnSection', 'OBJECT'
         ),
       enabled = true,
@@ -85,7 +85,7 @@ BEGIN
     AND column_kind = 'DETAIL'
     AND deleted = false;
 
-  -- 6) 实体列表 props：只保留 data_source 三字段契约；is_template 过滤由前端 sopLibraryEntityFieldFilters 注入
+  -- 6) 实体列表 props：只保留 data_source 三字段契约；is_template 过滤走 GET /dynamicbusiness/sop/templates
   SELECT props_id INTO v_entity_props_id
   FROM dm_data_tab_layout
   WHERE layout_id = v_layout_id

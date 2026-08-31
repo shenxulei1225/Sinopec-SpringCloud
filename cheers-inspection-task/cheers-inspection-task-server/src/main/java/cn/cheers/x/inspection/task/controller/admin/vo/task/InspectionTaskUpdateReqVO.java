@@ -1,6 +1,7 @@
 package cn.cheers.x.inspection.task.controller.admin.vo.task;
 
 import cn.cheers.x.inspection.task.model.task.InspectionContent;
+import cn.cheers.x.inspection.task.model.task.ExecutionDeviceBinding;
 import cn.cheers.x.inspection.task.model.task.ResourcePolicy;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -62,4 +63,7 @@ public class InspectionTaskUpdateReqVO {
 
     @Schema(description = "资源策略")
     private ResourcePolicy resourcePolicy;
+
+    @Schema(description = "执行设备绑定（绑设备时写入；开跑只读）")
+    private ExecutionDeviceBinding executionDeviceBinding;
 }

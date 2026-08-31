@@ -1,78 +1,105 @@
 {
-  "description": "SOP merge 契约向量；前后端共用。对应 ecs-react features/sop/mergeSopEffectiveConfig.test.ts",
+  "description": "SOP merge 契约向量（动作树 + 按节点参数）；前后端共用。对应 ecs-react features/sop/mergeSopEffectiveConfig.test.ts",
   "vectors": [
     {
       "id": "template-defaults-empty-overrides",
       "template": {
-        "defaultSteps": [
-          { "stepTemplateId": "st-arrive", "order": 1, "paramSlots": ["location_ref"] },
-          { "stepTemplateId": "st-aim", "order": 2, "paramSlots": ["yaw", "pitch"] }
+        "actionTree": [
+          { "nodeKey": "n1", "actionId": "act-arrive", "order": 1, "paramSlots": ["location_ref"] },
+          { "nodeKey": "n2", "actionId": "act-aim", "order": 2, "paramSlots": ["yaw", "pitch"] }
         ],
-        "defaultParams": { "yaw": 0, "pitch": 0, "location_ref": "point-default" }
+        "paramsByNode": {
+          "n1": { "location_ref": "point-default" },
+          "n2": { "yaw": 0, "pitch": 0 }
+        }
       },
-      "stepOverride": null,
+      "treeOverride": null,
       "paramOverride": null,
       "expect": {
         "ok": true,
-        "stepsLength": 2,
-        "params": { "yaw": 0, "pitch": 0, "location_ref": "point-default" }
+        "nodesLength": 2,
+        "paramsByNode": {
+          "n1": { "location_ref": "point-default" },
+          "n2": { "yaw": 0, "pitch": 0 }
+        }
       }
     },
     {
-      "id": "param-override-instance-owned",
+      "id": "param-override-per-node",
       "template": {
-        "defaultSteps": [
-          { "stepTemplateId": "st-arrive", "order": 1, "paramSlots": ["location_ref"] },
-          { "stepTemplateId": "st-aim", "order": 2, "paramSlots": ["yaw", "pitch"] }
+        "actionTree": [
+          { "nodeKey": "n1", "actionId": "act-arrive", "order": 1, "paramSlots": ["location_ref"] },
+          { "nodeKey": "n2", "actionId": "act-aim", "order": 2, "paramSlots": ["yaw", "pitch"] }
         ],
-        "defaultParams": { "yaw": 0, "pitch": 0, "location_ref": "point-default" }
+        "paramsByNode": {
+          "n1": { "location_ref": "point-default" },
+          "n2": { "yaw": 0, "pitch": 0 }
+        }
       },
-      "stepOverride": null,
-      "paramOverride": { "yaw": 45, "pitch": -30, "location_ref": "point-pg001" },
+      "treeOverride": null,
+      "paramOverride": {
+        "n1": { "location_ref": "point-pg001" },
+        "n2": { "yaw": 45, "pitch": -30 }
+      },
       "expect": {
         "ok": true,
-        "stepsLength": 2,
-        "params": { "yaw": 45, "pitch": -30, "location_ref": "point-pg001" }
+        "nodesLength": 2,
+        "paramsByNode": {
+          "n1": { "location_ref": "point-pg001" },
+          "n2": { "yaw": 45, "pitch": -30 }
+        }
       }
     },
     {
-      "id": "replace-steps-with-hover",
+      "id": "replace-tree-with-hover",
       "template": {
-        "defaultSteps": [
-          { "stepTemplateId": "st-arrive", "order": 1, "paramSlots": ["location_ref"] },
-          { "stepTemplateId": "st-aim", "order": 2, "paramSlots": ["yaw", "pitch"] }
+        "actionTree": [
+          { "nodeKey": "n1", "actionId": "act-arrive", "order": 1, "paramSlots": ["location_ref"] },
+          { "nodeKey": "n2", "actionId": "act-aim", "order": 2, "paramSlots": ["yaw", "pitch"] }
         ],
-        "defaultParams": { "yaw": 0, "pitch": 0, "location_ref": "point-default" }
+        "paramsByNode": {
+          "n1": { "location_ref": "point-default" },
+          "n2": { "yaw": 0, "pitch": 0 }
+        }
       },
-      "stepOverride": {
-        "replaceSteps": [
-          { "stepTemplateId": "st-arrive", "order": 1, "paramSlots": ["location_ref"] },
-          { "stepTemplateId": "st-hover", "order": 2, "paramSlots": [] },
-          { "stepTemplateId": "st-aim", "order": 3, "paramSlots": ["yaw", "pitch"] }
+      "treeOverride": {
+        "replaceTree": [
+          { "nodeKey": "n1", "actionId": "act-arrive", "order": 1, "paramSlots": ["location_ref"] },
+          { "nodeKey": "n3", "actionId": "act-hover", "order": 2, "paramSlots": [] },
+          { "nodeKey": "n2", "actionId": "act-aim", "order": 3, "paramSlots": ["yaw", "pitch"] }
         ]
       },
-      "paramOverride": { "yaw": 10, "pitch": 20, "location_ref": "point-pg002" },
+      "paramOverride": {
+        "n1": { "location_ref": "point-pg002" },
+        "n2": { "yaw": 10, "pitch": 20 }
+      },
       "expect": {
         "ok": true,
-        "stepsLength": 3,
-        "secondStepTemplateId": "st-hover",
-        "params": { "yaw": 10, "pitch": 20, "location_ref": "point-pg002" }
+        "nodesLength": 3,
+        "secondActionId": "act-hover",
+        "paramsByNode": {
+          "n1": { "location_ref": "point-pg002" },
+          "n2": { "yaw": 10, "pitch": 20 },
+          "n3": {}
+        }
       }
     },
     {
-      "id": "gap-missing-location-ref",
+      "id": "gap-missing-location-ref-on-node",
       "template": {
-        "defaultSteps": [
-          { "stepTemplateId": "st-arrive", "order": 1, "paramSlots": ["location_ref"] },
-          { "stepTemplateId": "st-aim", "order": 2, "paramSlots": ["yaw", "pitch"] }
+        "actionTree": [
+          { "nodeKey": "n1", "actionId": "act-arrive", "order": 1, "paramSlots": ["location_ref"] },
+          { "nodeKey": "n2", "actionId": "act-aim", "order": 2, "paramSlots": ["yaw", "pitch"] }
         ],
-        "defaultParams": { "yaw": 0, "pitch": 0 }
+        "paramsByNode": {
+          "n2": { "yaw": 0, "pitch": 0 }
+        }
       },
-      "stepOverride": null,
+      "treeOverride": null,
       "paramOverride": {},
       "expect": {
         "ok": false,
-        "gapCodes": ["MISSING_PARAM:location_ref"]
+        "gapCodes": ["MISSING_PARAM:n1:location_ref"]
       }
     }
   ]

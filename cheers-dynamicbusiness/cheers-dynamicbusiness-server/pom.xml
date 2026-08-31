@@ -41,6 +41,11 @@
             <artifactId>cheers-system-api</artifactId>
             <version>${revision}</version>
         </dependency>
+        <dependency>
+            <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-resource-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
         <!-- System SaveReqVO 反射扫描（rebuild/system 写表单 schema） -->
         <dependency>
             <groupId>cn.cheers.x</groupId>

@@ -1,6 +1,7 @@
 -- ============================================================================
--- sop · 10 步骤模板字段库：param_slots_json
--- 前置：Flyway V73（ent_sop_step_template.param_slots_json 列）
+-- 【废弃·V79】sop · 10 步骤模板字段库：param_slots_json
+-- import.sh 不再执行；请改用 ../action/01_fields.sql
+-- 前置（历史）：Flyway V73（ent_sop_step_template.param_slots_json 列）
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;

@@ -1200,7 +1200,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-05e5c6a6c8fe4f3c9bd1dd86dd24a659', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-05e5c6a6c8fe4f3c9bd1dd86dd24a659', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -1211,7 +1211,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-05e5c6a6c8fe4f3c9bd1dd86dd24a659'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -1237,7 +1237,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-05e5c6a6c8fe4f3c9bd1dd86dd24a659', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-05e5c6a6c8fe4f3c9bd1dd86dd24a659', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -1248,7 +1248,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-05e5c6a6c8fe4f3c9bd1dd86dd24a659'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -1274,7 +1274,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-05e5c6a6c8fe4f3c9bd1dd86dd24a659', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-05e5c6a6c8fe4f3c9bd1dd86dd24a659', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -1285,7 +1285,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-05e5c6a6c8fe4f3c9bd1dd86dd24a659'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -1311,7 +1311,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-05e5c6a6c8fe4f3c9bd1dd86dd24a659', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-05e5c6a6c8fe4f3c9bd1dd86dd24a659', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -1322,7 +1322,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-05e5c6a6c8fe4f3c9bd1dd86dd24a659'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -1348,7 +1348,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-05e5c6a6c8fe4f3c9bd1dd86dd24a659', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-05e5c6a6c8fe4f3c9bd1dd86dd24a659', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -1359,7 +1359,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-05e5c6a6c8fe4f3c9bd1dd86dd24a659'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -1385,7 +1385,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-05e5c6a6c8fe4f3c9bd1dd86dd24a659', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-05e5c6a6c8fe4f3c9bd1dd86dd24a659', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -1396,7 +1396,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-05e5c6a6c8fe4f3c9bd1dd86dd24a659'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -2606,7 +2606,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-0e171b9d21024fd183a1cb355e1b8c08', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-0e171b9d21024fd183a1cb355e1b8c08', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -2617,7 +2617,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-0e171b9d21024fd183a1cb355e1b8c08'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -2643,7 +2643,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-0e171b9d21024fd183a1cb355e1b8c08', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-0e171b9d21024fd183a1cb355e1b8c08', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -2654,7 +2654,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-0e171b9d21024fd183a1cb355e1b8c08'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -2680,7 +2680,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-0e171b9d21024fd183a1cb355e1b8c08', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-0e171b9d21024fd183a1cb355e1b8c08', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -2691,7 +2691,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-0e171b9d21024fd183a1cb355e1b8c08'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -2717,7 +2717,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-0e171b9d21024fd183a1cb355e1b8c08', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-0e171b9d21024fd183a1cb355e1b8c08', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -2728,7 +2728,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-0e171b9d21024fd183a1cb355e1b8c08'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -2754,7 +2754,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-0e171b9d21024fd183a1cb355e1b8c08', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-0e171b9d21024fd183a1cb355e1b8c08', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -2765,7 +2765,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-0e171b9d21024fd183a1cb355e1b8c08'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -2791,7 +2791,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-0e171b9d21024fd183a1cb355e1b8c08', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-0e171b9d21024fd183a1cb355e1b8c08', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -2802,7 +2802,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-0e171b9d21024fd183a1cb355e1b8c08'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -4012,7 +4012,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-123328b7bfe745ceb337d286ac64aa17', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-123328b7bfe745ceb337d286ac64aa17', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -4023,7 +4023,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-123328b7bfe745ceb337d286ac64aa17'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -4049,7 +4049,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-123328b7bfe745ceb337d286ac64aa17', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-123328b7bfe745ceb337d286ac64aa17', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -4060,7 +4060,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-123328b7bfe745ceb337d286ac64aa17'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -4086,7 +4086,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-123328b7bfe745ceb337d286ac64aa17', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-123328b7bfe745ceb337d286ac64aa17', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -4097,7 +4097,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-123328b7bfe745ceb337d286ac64aa17'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -4123,7 +4123,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-123328b7bfe745ceb337d286ac64aa17', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-123328b7bfe745ceb337d286ac64aa17', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -4134,7 +4134,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-123328b7bfe745ceb337d286ac64aa17'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -4160,7 +4160,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-123328b7bfe745ceb337d286ac64aa17', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-123328b7bfe745ceb337d286ac64aa17', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -4171,7 +4171,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-123328b7bfe745ceb337d286ac64aa17'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -4197,7 +4197,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-123328b7bfe745ceb337d286ac64aa17', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-123328b7bfe745ceb337d286ac64aa17', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -4208,7 +4208,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-123328b7bfe745ceb337d286ac64aa17'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -5418,7 +5418,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-1966e63fec48402f9b60280e66faea0f', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-1966e63fec48402f9b60280e66faea0f', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -5429,7 +5429,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-1966e63fec48402f9b60280e66faea0f'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -5455,7 +5455,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-1966e63fec48402f9b60280e66faea0f', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-1966e63fec48402f9b60280e66faea0f', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -5466,7 +5466,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-1966e63fec48402f9b60280e66faea0f'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -5492,7 +5492,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-1966e63fec48402f9b60280e66faea0f', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-1966e63fec48402f9b60280e66faea0f', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -5503,7 +5503,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-1966e63fec48402f9b60280e66faea0f'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -5529,7 +5529,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-1966e63fec48402f9b60280e66faea0f', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-1966e63fec48402f9b60280e66faea0f', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -5540,7 +5540,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-1966e63fec48402f9b60280e66faea0f'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -5566,7 +5566,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-1966e63fec48402f9b60280e66faea0f', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-1966e63fec48402f9b60280e66faea0f', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -5577,7 +5577,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-1966e63fec48402f9b60280e66faea0f'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -5603,7 +5603,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-1966e63fec48402f9b60280e66faea0f', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-1966e63fec48402f9b60280e66faea0f', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -5614,7 +5614,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-1966e63fec48402f9b60280e66faea0f'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -6824,7 +6824,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-2af0515a5a36420086980b2322037edb', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-2af0515a5a36420086980b2322037edb', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -6835,7 +6835,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-2af0515a5a36420086980b2322037edb'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -6861,7 +6861,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-2af0515a5a36420086980b2322037edb', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-2af0515a5a36420086980b2322037edb', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -6872,7 +6872,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-2af0515a5a36420086980b2322037edb'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -6898,7 +6898,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-2af0515a5a36420086980b2322037edb', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-2af0515a5a36420086980b2322037edb', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -6909,7 +6909,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-2af0515a5a36420086980b2322037edb'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -6935,7 +6935,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-2af0515a5a36420086980b2322037edb', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-2af0515a5a36420086980b2322037edb', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -6946,7 +6946,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-2af0515a5a36420086980b2322037edb'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -6972,7 +6972,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-2af0515a5a36420086980b2322037edb', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-2af0515a5a36420086980b2322037edb', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -6983,7 +6983,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-2af0515a5a36420086980b2322037edb'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -7009,7 +7009,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-2af0515a5a36420086980b2322037edb', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-2af0515a5a36420086980b2322037edb', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -7020,7 +7020,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-2af0515a5a36420086980b2322037edb'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -8230,7 +8230,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-3130eba3747e4a5aa0862c94807822ba', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-3130eba3747e4a5aa0862c94807822ba', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -8241,7 +8241,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-3130eba3747e4a5aa0862c94807822ba'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -8267,7 +8267,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-3130eba3747e4a5aa0862c94807822ba', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-3130eba3747e4a5aa0862c94807822ba', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -8278,7 +8278,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-3130eba3747e4a5aa0862c94807822ba'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -8304,7 +8304,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-3130eba3747e4a5aa0862c94807822ba', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-3130eba3747e4a5aa0862c94807822ba', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -8315,7 +8315,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-3130eba3747e4a5aa0862c94807822ba'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -8341,7 +8341,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-3130eba3747e4a5aa0862c94807822ba', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-3130eba3747e4a5aa0862c94807822ba', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -8352,7 +8352,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-3130eba3747e4a5aa0862c94807822ba'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -8378,7 +8378,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-3130eba3747e4a5aa0862c94807822ba', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-3130eba3747e4a5aa0862c94807822ba', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -8389,7 +8389,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-3130eba3747e4a5aa0862c94807822ba'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -8415,7 +8415,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-3130eba3747e4a5aa0862c94807822ba', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-3130eba3747e4a5aa0862c94807822ba', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -8426,7 +8426,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-3130eba3747e4a5aa0862c94807822ba'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -9636,7 +9636,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-3335affd4a814e4dba54d613d07bb0fa', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-3335affd4a814e4dba54d613d07bb0fa', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -9647,7 +9647,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-3335affd4a814e4dba54d613d07bb0fa'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -9673,7 +9673,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-3335affd4a814e4dba54d613d07bb0fa', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-3335affd4a814e4dba54d613d07bb0fa', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -9684,7 +9684,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-3335affd4a814e4dba54d613d07bb0fa'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -9710,7 +9710,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-3335affd4a814e4dba54d613d07bb0fa', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-3335affd4a814e4dba54d613d07bb0fa', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -9721,7 +9721,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-3335affd4a814e4dba54d613d07bb0fa'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -9747,7 +9747,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-3335affd4a814e4dba54d613d07bb0fa', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-3335affd4a814e4dba54d613d07bb0fa', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -9758,7 +9758,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-3335affd4a814e4dba54d613d07bb0fa'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -9784,7 +9784,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-3335affd4a814e4dba54d613d07bb0fa', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-3335affd4a814e4dba54d613d07bb0fa', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -9795,7 +9795,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-3335affd4a814e4dba54d613d07bb0fa'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -9821,7 +9821,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-3335affd4a814e4dba54d613d07bb0fa', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-3335affd4a814e4dba54d613d07bb0fa', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -9832,7 +9832,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-3335affd4a814e4dba54d613d07bb0fa'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -11042,7 +11042,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-3ae58694e5ab4dc4a078c6e4b548f617', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-3ae58694e5ab4dc4a078c6e4b548f617', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -11053,7 +11053,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-3ae58694e5ab4dc4a078c6e4b548f617'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -11079,7 +11079,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-3ae58694e5ab4dc4a078c6e4b548f617', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-3ae58694e5ab4dc4a078c6e4b548f617', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -11090,7 +11090,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-3ae58694e5ab4dc4a078c6e4b548f617'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -11116,7 +11116,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-3ae58694e5ab4dc4a078c6e4b548f617', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-3ae58694e5ab4dc4a078c6e4b548f617', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -11127,7 +11127,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-3ae58694e5ab4dc4a078c6e4b548f617'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -11153,7 +11153,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-3ae58694e5ab4dc4a078c6e4b548f617', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-3ae58694e5ab4dc4a078c6e4b548f617', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -11164,7 +11164,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-3ae58694e5ab4dc4a078c6e4b548f617'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -11190,7 +11190,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-3ae58694e5ab4dc4a078c6e4b548f617', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-3ae58694e5ab4dc4a078c6e4b548f617', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -11201,7 +11201,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-3ae58694e5ab4dc4a078c6e4b548f617'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -11227,7 +11227,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-3ae58694e5ab4dc4a078c6e4b548f617', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-3ae58694e5ab4dc4a078c6e4b548f617', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -11238,7 +11238,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-3ae58694e5ab4dc4a078c6e4b548f617'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -12448,7 +12448,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-44cc7511fc224085a51e2887569c933a', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-44cc7511fc224085a51e2887569c933a', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -12459,7 +12459,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-44cc7511fc224085a51e2887569c933a'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -12485,7 +12485,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-44cc7511fc224085a51e2887569c933a', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-44cc7511fc224085a51e2887569c933a', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -12496,7 +12496,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-44cc7511fc224085a51e2887569c933a'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -12522,7 +12522,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-44cc7511fc224085a51e2887569c933a', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-44cc7511fc224085a51e2887569c933a', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -12533,7 +12533,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-44cc7511fc224085a51e2887569c933a'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -12559,7 +12559,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-44cc7511fc224085a51e2887569c933a', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-44cc7511fc224085a51e2887569c933a', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -12570,7 +12570,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-44cc7511fc224085a51e2887569c933a'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -12596,7 +12596,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-44cc7511fc224085a51e2887569c933a', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-44cc7511fc224085a51e2887569c933a', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -12607,7 +12607,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-44cc7511fc224085a51e2887569c933a'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -12633,7 +12633,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-44cc7511fc224085a51e2887569c933a', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-44cc7511fc224085a51e2887569c933a', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -12644,7 +12644,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-44cc7511fc224085a51e2887569c933a'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -13854,7 +13854,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-50991eab2a714ed288d00c58ff01c810', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-50991eab2a714ed288d00c58ff01c810', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -13865,7 +13865,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-50991eab2a714ed288d00c58ff01c810'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -13891,7 +13891,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-50991eab2a714ed288d00c58ff01c810', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-50991eab2a714ed288d00c58ff01c810', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -13902,7 +13902,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-50991eab2a714ed288d00c58ff01c810'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -13928,7 +13928,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-50991eab2a714ed288d00c58ff01c810', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-50991eab2a714ed288d00c58ff01c810', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -13939,7 +13939,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-50991eab2a714ed288d00c58ff01c810'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -13965,7 +13965,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-50991eab2a714ed288d00c58ff01c810', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-50991eab2a714ed288d00c58ff01c810', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -13976,7 +13976,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-50991eab2a714ed288d00c58ff01c810'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -14002,7 +14002,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-50991eab2a714ed288d00c58ff01c810', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-50991eab2a714ed288d00c58ff01c810', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -14013,7 +14013,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-50991eab2a714ed288d00c58ff01c810'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -14039,7 +14039,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-50991eab2a714ed288d00c58ff01c810', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-50991eab2a714ed288d00c58ff01c810', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -14050,7 +14050,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-50991eab2a714ed288d00c58ff01c810'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -15260,7 +15260,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-5284b71c69d946ae88c0848bfbbb0d7c', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-5284b71c69d946ae88c0848bfbbb0d7c', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -15271,7 +15271,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-5284b71c69d946ae88c0848bfbbb0d7c'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -15297,7 +15297,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-5284b71c69d946ae88c0848bfbbb0d7c', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-5284b71c69d946ae88c0848bfbbb0d7c', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -15308,7 +15308,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-5284b71c69d946ae88c0848bfbbb0d7c'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -15334,7 +15334,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-5284b71c69d946ae88c0848bfbbb0d7c', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-5284b71c69d946ae88c0848bfbbb0d7c', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -15345,7 +15345,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-5284b71c69d946ae88c0848bfbbb0d7c'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -15371,7 +15371,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-5284b71c69d946ae88c0848bfbbb0d7c', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-5284b71c69d946ae88c0848bfbbb0d7c', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -15382,7 +15382,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-5284b71c69d946ae88c0848bfbbb0d7c'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -15408,7 +15408,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-5284b71c69d946ae88c0848bfbbb0d7c', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-5284b71c69d946ae88c0848bfbbb0d7c', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -15419,7 +15419,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-5284b71c69d946ae88c0848bfbbb0d7c'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -15445,7 +15445,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-5284b71c69d946ae88c0848bfbbb0d7c', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-5284b71c69d946ae88c0848bfbbb0d7c', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -15456,7 +15456,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-5284b71c69d946ae88c0848bfbbb0d7c'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -16666,7 +16666,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-56b09ad2ef96439c87bda429e2bb9404', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-56b09ad2ef96439c87bda429e2bb9404', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -16677,7 +16677,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-56b09ad2ef96439c87bda429e2bb9404'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -16703,7 +16703,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-56b09ad2ef96439c87bda429e2bb9404', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-56b09ad2ef96439c87bda429e2bb9404', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -16714,7 +16714,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-56b09ad2ef96439c87bda429e2bb9404'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -16740,7 +16740,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-56b09ad2ef96439c87bda429e2bb9404', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-56b09ad2ef96439c87bda429e2bb9404', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -16751,7 +16751,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-56b09ad2ef96439c87bda429e2bb9404'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -16777,7 +16777,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-56b09ad2ef96439c87bda429e2bb9404', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-56b09ad2ef96439c87bda429e2bb9404', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -16788,7 +16788,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-56b09ad2ef96439c87bda429e2bb9404'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -16814,7 +16814,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-56b09ad2ef96439c87bda429e2bb9404', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-56b09ad2ef96439c87bda429e2bb9404', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -16825,7 +16825,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-56b09ad2ef96439c87bda429e2bb9404'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -16851,7 +16851,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-56b09ad2ef96439c87bda429e2bb9404', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-56b09ad2ef96439c87bda429e2bb9404', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -16862,7 +16862,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-56b09ad2ef96439c87bda429e2bb9404'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -18072,7 +18072,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-5a9b87c42571486998d363101c54ec8c', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-5a9b87c42571486998d363101c54ec8c', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -18083,7 +18083,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-5a9b87c42571486998d363101c54ec8c'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -18109,7 +18109,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-5a9b87c42571486998d363101c54ec8c', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-5a9b87c42571486998d363101c54ec8c', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -18120,7 +18120,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-5a9b87c42571486998d363101c54ec8c'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -18146,7 +18146,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-5a9b87c42571486998d363101c54ec8c', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-5a9b87c42571486998d363101c54ec8c', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -18157,7 +18157,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-5a9b87c42571486998d363101c54ec8c'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -18183,7 +18183,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-5a9b87c42571486998d363101c54ec8c', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-5a9b87c42571486998d363101c54ec8c', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -18194,7 +18194,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-5a9b87c42571486998d363101c54ec8c'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -18220,7 +18220,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-5a9b87c42571486998d363101c54ec8c', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-5a9b87c42571486998d363101c54ec8c', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -18231,7 +18231,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-5a9b87c42571486998d363101c54ec8c'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -18257,7 +18257,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-5a9b87c42571486998d363101c54ec8c', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-5a9b87c42571486998d363101c54ec8c', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -18268,7 +18268,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-5a9b87c42571486998d363101c54ec8c'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -19478,7 +19478,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-6671ca830f4742229c0a00ff531f974c', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-6671ca830f4742229c0a00ff531f974c', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -19489,7 +19489,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-6671ca830f4742229c0a00ff531f974c'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -19515,7 +19515,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-6671ca830f4742229c0a00ff531f974c', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-6671ca830f4742229c0a00ff531f974c', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -19526,7 +19526,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-6671ca830f4742229c0a00ff531f974c'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -19552,7 +19552,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-6671ca830f4742229c0a00ff531f974c', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-6671ca830f4742229c0a00ff531f974c', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -19563,7 +19563,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-6671ca830f4742229c0a00ff531f974c'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -19589,7 +19589,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-6671ca830f4742229c0a00ff531f974c', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-6671ca830f4742229c0a00ff531f974c', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -19600,7 +19600,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-6671ca830f4742229c0a00ff531f974c'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -19626,7 +19626,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-6671ca830f4742229c0a00ff531f974c', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-6671ca830f4742229c0a00ff531f974c', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -19637,7 +19637,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-6671ca830f4742229c0a00ff531f974c'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -19663,7 +19663,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-6671ca830f4742229c0a00ff531f974c', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-6671ca830f4742229c0a00ff531f974c', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -19674,7 +19674,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-6671ca830f4742229c0a00ff531f974c'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -20884,7 +20884,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-68554821800248cfacacbac1a53cdf37', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-68554821800248cfacacbac1a53cdf37', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -20895,7 +20895,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-68554821800248cfacacbac1a53cdf37'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -20921,7 +20921,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-68554821800248cfacacbac1a53cdf37', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-68554821800248cfacacbac1a53cdf37', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -20932,7 +20932,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-68554821800248cfacacbac1a53cdf37'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -20958,7 +20958,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-68554821800248cfacacbac1a53cdf37', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-68554821800248cfacacbac1a53cdf37', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -20969,7 +20969,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-68554821800248cfacacbac1a53cdf37'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -20995,7 +20995,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-68554821800248cfacacbac1a53cdf37', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-68554821800248cfacacbac1a53cdf37', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -21006,7 +21006,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-68554821800248cfacacbac1a53cdf37'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -21032,7 +21032,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-68554821800248cfacacbac1a53cdf37', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-68554821800248cfacacbac1a53cdf37', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -21043,7 +21043,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-68554821800248cfacacbac1a53cdf37'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -21069,7 +21069,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-68554821800248cfacacbac1a53cdf37', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-68554821800248cfacacbac1a53cdf37', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -21080,7 +21080,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-68554821800248cfacacbac1a53cdf37'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -22290,7 +22290,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-6bf0e75bec6a496ba7200b99293c1417', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-6bf0e75bec6a496ba7200b99293c1417', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -22301,7 +22301,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-6bf0e75bec6a496ba7200b99293c1417'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -22327,7 +22327,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-6bf0e75bec6a496ba7200b99293c1417', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-6bf0e75bec6a496ba7200b99293c1417', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -22338,7 +22338,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-6bf0e75bec6a496ba7200b99293c1417'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -22364,7 +22364,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-6bf0e75bec6a496ba7200b99293c1417', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-6bf0e75bec6a496ba7200b99293c1417', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -22375,7 +22375,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-6bf0e75bec6a496ba7200b99293c1417'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -22401,7 +22401,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-6bf0e75bec6a496ba7200b99293c1417', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-6bf0e75bec6a496ba7200b99293c1417', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -22412,7 +22412,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-6bf0e75bec6a496ba7200b99293c1417'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -22438,7 +22438,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-6bf0e75bec6a496ba7200b99293c1417', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-6bf0e75bec6a496ba7200b99293c1417', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -22449,7 +22449,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-6bf0e75bec6a496ba7200b99293c1417'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -22475,7 +22475,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-6bf0e75bec6a496ba7200b99293c1417', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-6bf0e75bec6a496ba7200b99293c1417', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -22486,7 +22486,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-6bf0e75bec6a496ba7200b99293c1417'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -23696,7 +23696,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-6fd43ab74f6f425f81f0ad547603a849', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-6fd43ab74f6f425f81f0ad547603a849', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -23707,7 +23707,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-6fd43ab74f6f425f81f0ad547603a849'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -23733,7 +23733,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-6fd43ab74f6f425f81f0ad547603a849', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-6fd43ab74f6f425f81f0ad547603a849', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -23744,7 +23744,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-6fd43ab74f6f425f81f0ad547603a849'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -23770,7 +23770,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-6fd43ab74f6f425f81f0ad547603a849', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-6fd43ab74f6f425f81f0ad547603a849', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -23781,7 +23781,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-6fd43ab74f6f425f81f0ad547603a849'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -23807,7 +23807,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-6fd43ab74f6f425f81f0ad547603a849', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-6fd43ab74f6f425f81f0ad547603a849', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -23818,7 +23818,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-6fd43ab74f6f425f81f0ad547603a849'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -23844,7 +23844,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-6fd43ab74f6f425f81f0ad547603a849', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-6fd43ab74f6f425f81f0ad547603a849', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -23855,7 +23855,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-6fd43ab74f6f425f81f0ad547603a849'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -23881,7 +23881,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-6fd43ab74f6f425f81f0ad547603a849', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-6fd43ab74f6f425f81f0ad547603a849', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -23892,7 +23892,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-6fd43ab74f6f425f81f0ad547603a849'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -25102,7 +25102,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-70d2b066120c4b969f0b661d1d2fb664', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-70d2b066120c4b969f0b661d1d2fb664', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -25113,7 +25113,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-70d2b066120c4b969f0b661d1d2fb664'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -25139,7 +25139,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-70d2b066120c4b969f0b661d1d2fb664', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-70d2b066120c4b969f0b661d1d2fb664', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -25150,7 +25150,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-70d2b066120c4b969f0b661d1d2fb664'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -25176,7 +25176,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-70d2b066120c4b969f0b661d1d2fb664', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-70d2b066120c4b969f0b661d1d2fb664', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -25187,7 +25187,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-70d2b066120c4b969f0b661d1d2fb664'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -25213,7 +25213,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-70d2b066120c4b969f0b661d1d2fb664', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-70d2b066120c4b969f0b661d1d2fb664', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -25224,7 +25224,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-70d2b066120c4b969f0b661d1d2fb664'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -25250,7 +25250,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-70d2b066120c4b969f0b661d1d2fb664', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-70d2b066120c4b969f0b661d1d2fb664', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -25261,7 +25261,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-70d2b066120c4b969f0b661d1d2fb664'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -25287,7 +25287,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-70d2b066120c4b969f0b661d1d2fb664', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-70d2b066120c4b969f0b661d1d2fb664', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -25298,7 +25298,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-70d2b066120c4b969f0b661d1d2fb664'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -26508,7 +26508,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-7c4fe9b2d52d41cca5383488a4a400a5', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-7c4fe9b2d52d41cca5383488a4a400a5', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -26519,7 +26519,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-7c4fe9b2d52d41cca5383488a4a400a5'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -26545,7 +26545,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-7c4fe9b2d52d41cca5383488a4a400a5', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-7c4fe9b2d52d41cca5383488a4a400a5', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -26556,7 +26556,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-7c4fe9b2d52d41cca5383488a4a400a5'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -26582,7 +26582,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-7c4fe9b2d52d41cca5383488a4a400a5', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-7c4fe9b2d52d41cca5383488a4a400a5', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -26593,7 +26593,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-7c4fe9b2d52d41cca5383488a4a400a5'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -26619,7 +26619,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-7c4fe9b2d52d41cca5383488a4a400a5', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-7c4fe9b2d52d41cca5383488a4a400a5', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -26630,7 +26630,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-7c4fe9b2d52d41cca5383488a4a400a5'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -26656,7 +26656,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-7c4fe9b2d52d41cca5383488a4a400a5', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-7c4fe9b2d52d41cca5383488a4a400a5', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -26667,7 +26667,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-7c4fe9b2d52d41cca5383488a4a400a5'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -26693,7 +26693,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-7c4fe9b2d52d41cca5383488a4a400a5', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-7c4fe9b2d52d41cca5383488a4a400a5', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -26704,7 +26704,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-7c4fe9b2d52d41cca5383488a4a400a5'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -27914,7 +27914,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-7c746a60520347baaf64334625f07f31', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-7c746a60520347baaf64334625f07f31', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -27925,7 +27925,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-7c746a60520347baaf64334625f07f31'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -27951,7 +27951,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-7c746a60520347baaf64334625f07f31', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-7c746a60520347baaf64334625f07f31', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -27962,7 +27962,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-7c746a60520347baaf64334625f07f31'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -27988,7 +27988,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-7c746a60520347baaf64334625f07f31', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-7c746a60520347baaf64334625f07f31', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -27999,7 +27999,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-7c746a60520347baaf64334625f07f31'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -28025,7 +28025,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-7c746a60520347baaf64334625f07f31', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-7c746a60520347baaf64334625f07f31', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -28036,7 +28036,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-7c746a60520347baaf64334625f07f31'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -28062,7 +28062,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-7c746a60520347baaf64334625f07f31', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-7c746a60520347baaf64334625f07f31', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -28073,7 +28073,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-7c746a60520347baaf64334625f07f31'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -28099,7 +28099,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-7c746a60520347baaf64334625f07f31', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-7c746a60520347baaf64334625f07f31', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -28110,7 +28110,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-7c746a60520347baaf64334625f07f31'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -29320,7 +29320,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-7fc9012b394749a3b30e1788e4057324', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-7fc9012b394749a3b30e1788e4057324', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -29331,7 +29331,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-7fc9012b394749a3b30e1788e4057324'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -29357,7 +29357,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-7fc9012b394749a3b30e1788e4057324', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-7fc9012b394749a3b30e1788e4057324', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -29368,7 +29368,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-7fc9012b394749a3b30e1788e4057324'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -29394,7 +29394,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-7fc9012b394749a3b30e1788e4057324', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-7fc9012b394749a3b30e1788e4057324', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -29405,7 +29405,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-7fc9012b394749a3b30e1788e4057324'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -29431,7 +29431,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-7fc9012b394749a3b30e1788e4057324', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-7fc9012b394749a3b30e1788e4057324', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -29442,7 +29442,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-7fc9012b394749a3b30e1788e4057324'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -29468,7 +29468,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-7fc9012b394749a3b30e1788e4057324', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-7fc9012b394749a3b30e1788e4057324', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -29479,7 +29479,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-7fc9012b394749a3b30e1788e4057324'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -29505,7 +29505,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-7fc9012b394749a3b30e1788e4057324', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-7fc9012b394749a3b30e1788e4057324', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -29516,7 +29516,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-7fc9012b394749a3b30e1788e4057324'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -30726,7 +30726,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-81132ce00d2041c6a4ee06ec1c01dac8', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-81132ce00d2041c6a4ee06ec1c01dac8', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -30737,7 +30737,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-81132ce00d2041c6a4ee06ec1c01dac8'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -30763,7 +30763,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-81132ce00d2041c6a4ee06ec1c01dac8', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-81132ce00d2041c6a4ee06ec1c01dac8', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -30774,7 +30774,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-81132ce00d2041c6a4ee06ec1c01dac8'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -30800,7 +30800,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-81132ce00d2041c6a4ee06ec1c01dac8', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-81132ce00d2041c6a4ee06ec1c01dac8', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -30811,7 +30811,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-81132ce00d2041c6a4ee06ec1c01dac8'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -30837,7 +30837,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-81132ce00d2041c6a4ee06ec1c01dac8', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-81132ce00d2041c6a4ee06ec1c01dac8', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -30848,7 +30848,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-81132ce00d2041c6a4ee06ec1c01dac8'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -30874,7 +30874,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-81132ce00d2041c6a4ee06ec1c01dac8', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-81132ce00d2041c6a4ee06ec1c01dac8', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -30885,7 +30885,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-81132ce00d2041c6a4ee06ec1c01dac8'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -30911,7 +30911,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-81132ce00d2041c6a4ee06ec1c01dac8', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-81132ce00d2041c6a4ee06ec1c01dac8', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -30922,7 +30922,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-81132ce00d2041c6a4ee06ec1c01dac8'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -32132,7 +32132,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-831d0957ceb748bab257d13e3b9859ce', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-831d0957ceb748bab257d13e3b9859ce', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -32143,7 +32143,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-831d0957ceb748bab257d13e3b9859ce'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -32169,7 +32169,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-831d0957ceb748bab257d13e3b9859ce', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-831d0957ceb748bab257d13e3b9859ce', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -32180,7 +32180,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-831d0957ceb748bab257d13e3b9859ce'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -32206,7 +32206,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-831d0957ceb748bab257d13e3b9859ce', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-831d0957ceb748bab257d13e3b9859ce', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -32217,7 +32217,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-831d0957ceb748bab257d13e3b9859ce'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -32243,7 +32243,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-831d0957ceb748bab257d13e3b9859ce', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-831d0957ceb748bab257d13e3b9859ce', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -32254,7 +32254,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-831d0957ceb748bab257d13e3b9859ce'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -32280,7 +32280,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-831d0957ceb748bab257d13e3b9859ce', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-831d0957ceb748bab257d13e3b9859ce', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -32291,7 +32291,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-831d0957ceb748bab257d13e3b9859ce'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -32317,7 +32317,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-831d0957ceb748bab257d13e3b9859ce', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-831d0957ceb748bab257d13e3b9859ce', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -32328,7 +32328,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-831d0957ceb748bab257d13e3b9859ce'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -33538,7 +33538,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-9421d45e38434b73af04a09287c8f0b6', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-9421d45e38434b73af04a09287c8f0b6', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -33549,7 +33549,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-9421d45e38434b73af04a09287c8f0b6'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -33575,7 +33575,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-9421d45e38434b73af04a09287c8f0b6', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-9421d45e38434b73af04a09287c8f0b6', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -33586,7 +33586,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-9421d45e38434b73af04a09287c8f0b6'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -33612,7 +33612,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-9421d45e38434b73af04a09287c8f0b6', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-9421d45e38434b73af04a09287c8f0b6', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -33623,7 +33623,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-9421d45e38434b73af04a09287c8f0b6'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -33649,7 +33649,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-9421d45e38434b73af04a09287c8f0b6', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-9421d45e38434b73af04a09287c8f0b6', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -33660,7 +33660,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-9421d45e38434b73af04a09287c8f0b6'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -33686,7 +33686,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-9421d45e38434b73af04a09287c8f0b6', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-9421d45e38434b73af04a09287c8f0b6', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -33697,7 +33697,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-9421d45e38434b73af04a09287c8f0b6'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -33723,7 +33723,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-9421d45e38434b73af04a09287c8f0b6', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-9421d45e38434b73af04a09287c8f0b6', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -33734,7 +33734,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-9421d45e38434b73af04a09287c8f0b6'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -34944,7 +34944,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-990370e140aa481a82158bc96dc0b006', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-990370e140aa481a82158bc96dc0b006', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -34955,7 +34955,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-990370e140aa481a82158bc96dc0b006'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -34981,7 +34981,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-990370e140aa481a82158bc96dc0b006', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-990370e140aa481a82158bc96dc0b006', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -34992,7 +34992,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-990370e140aa481a82158bc96dc0b006'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -35018,7 +35018,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-990370e140aa481a82158bc96dc0b006', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-990370e140aa481a82158bc96dc0b006', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -35029,7 +35029,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-990370e140aa481a82158bc96dc0b006'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -35055,7 +35055,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-990370e140aa481a82158bc96dc0b006', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-990370e140aa481a82158bc96dc0b006', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -35066,7 +35066,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-990370e140aa481a82158bc96dc0b006'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -35092,7 +35092,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-990370e140aa481a82158bc96dc0b006', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-990370e140aa481a82158bc96dc0b006', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -35103,7 +35103,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-990370e140aa481a82158bc96dc0b006'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -35129,7 +35129,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-990370e140aa481a82158bc96dc0b006', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-990370e140aa481a82158bc96dc0b006', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -35140,7 +35140,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-990370e140aa481a82158bc96dc0b006'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -36350,7 +36350,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-9b557c9404684caab2820eb0aec2cf15', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-9b557c9404684caab2820eb0aec2cf15', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -36361,7 +36361,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-9b557c9404684caab2820eb0aec2cf15'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -36387,7 +36387,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-9b557c9404684caab2820eb0aec2cf15', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-9b557c9404684caab2820eb0aec2cf15', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -36398,7 +36398,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-9b557c9404684caab2820eb0aec2cf15'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -36424,7 +36424,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-9b557c9404684caab2820eb0aec2cf15', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-9b557c9404684caab2820eb0aec2cf15', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -36435,7 +36435,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-9b557c9404684caab2820eb0aec2cf15'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -36461,7 +36461,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-9b557c9404684caab2820eb0aec2cf15', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-9b557c9404684caab2820eb0aec2cf15', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -36472,7 +36472,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-9b557c9404684caab2820eb0aec2cf15'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -36498,7 +36498,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-9b557c9404684caab2820eb0aec2cf15', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-9b557c9404684caab2820eb0aec2cf15', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -36509,7 +36509,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-9b557c9404684caab2820eb0aec2cf15'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -36535,7 +36535,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-9b557c9404684caab2820eb0aec2cf15', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-9b557c9404684caab2820eb0aec2cf15', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -36546,7 +36546,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-9b557c9404684caab2820eb0aec2cf15'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -37756,7 +37756,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-a547e7b120434da0bc8d94f11447f75a', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-a547e7b120434da0bc8d94f11447f75a', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -37767,7 +37767,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-a547e7b120434da0bc8d94f11447f75a'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -37793,7 +37793,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-a547e7b120434da0bc8d94f11447f75a', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-a547e7b120434da0bc8d94f11447f75a', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -37804,7 +37804,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-a547e7b120434da0bc8d94f11447f75a'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -37830,7 +37830,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-a547e7b120434da0bc8d94f11447f75a', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-a547e7b120434da0bc8d94f11447f75a', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -37841,7 +37841,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-a547e7b120434da0bc8d94f11447f75a'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -37867,7 +37867,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-a547e7b120434da0bc8d94f11447f75a', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-a547e7b120434da0bc8d94f11447f75a', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -37878,7 +37878,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-a547e7b120434da0bc8d94f11447f75a'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -37904,7 +37904,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-a547e7b120434da0bc8d94f11447f75a', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-a547e7b120434da0bc8d94f11447f75a', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -37915,7 +37915,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-a547e7b120434da0bc8d94f11447f75a'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -37941,7 +37941,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-a547e7b120434da0bc8d94f11447f75a', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-a547e7b120434da0bc8d94f11447f75a', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -37952,7 +37952,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-a547e7b120434da0bc8d94f11447f75a'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -39162,7 +39162,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-ab375d26cb6e45eba5a4acfe789a9933', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-ab375d26cb6e45eba5a4acfe789a9933', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -39173,7 +39173,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-ab375d26cb6e45eba5a4acfe789a9933'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -39199,7 +39199,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-ab375d26cb6e45eba5a4acfe789a9933', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-ab375d26cb6e45eba5a4acfe789a9933', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -39210,7 +39210,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-ab375d26cb6e45eba5a4acfe789a9933'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -39236,7 +39236,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-ab375d26cb6e45eba5a4acfe789a9933', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-ab375d26cb6e45eba5a4acfe789a9933', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -39247,7 +39247,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-ab375d26cb6e45eba5a4acfe789a9933'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -39273,7 +39273,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-ab375d26cb6e45eba5a4acfe789a9933', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-ab375d26cb6e45eba5a4acfe789a9933', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -39284,7 +39284,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-ab375d26cb6e45eba5a4acfe789a9933'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -39310,7 +39310,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-ab375d26cb6e45eba5a4acfe789a9933', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-ab375d26cb6e45eba5a4acfe789a9933', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -39321,7 +39321,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-ab375d26cb6e45eba5a4acfe789a9933'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -39347,7 +39347,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-ab375d26cb6e45eba5a4acfe789a9933', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-ab375d26cb6e45eba5a4acfe789a9933', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -39358,7 +39358,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-ab375d26cb6e45eba5a4acfe789a9933'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -40568,7 +40568,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-b75b3fcac0f54eae9226c1cf99e24595', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-b75b3fcac0f54eae9226c1cf99e24595', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -40579,7 +40579,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-b75b3fcac0f54eae9226c1cf99e24595'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -40605,7 +40605,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-b75b3fcac0f54eae9226c1cf99e24595', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-b75b3fcac0f54eae9226c1cf99e24595', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -40616,7 +40616,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-b75b3fcac0f54eae9226c1cf99e24595'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -40642,7 +40642,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-b75b3fcac0f54eae9226c1cf99e24595', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-b75b3fcac0f54eae9226c1cf99e24595', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -40653,7 +40653,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-b75b3fcac0f54eae9226c1cf99e24595'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -40679,7 +40679,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-b75b3fcac0f54eae9226c1cf99e24595', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-b75b3fcac0f54eae9226c1cf99e24595', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -40690,7 +40690,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-b75b3fcac0f54eae9226c1cf99e24595'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -40716,7 +40716,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-b75b3fcac0f54eae9226c1cf99e24595', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-b75b3fcac0f54eae9226c1cf99e24595', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -40727,7 +40727,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-b75b3fcac0f54eae9226c1cf99e24595'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -40753,7 +40753,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-b75b3fcac0f54eae9226c1cf99e24595', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-b75b3fcac0f54eae9226c1cf99e24595', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -40764,7 +40764,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-b75b3fcac0f54eae9226c1cf99e24595'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -41974,7 +41974,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-b8251da851514341adef7f6f72995cf3', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-b8251da851514341adef7f6f72995cf3', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -41985,7 +41985,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-b8251da851514341adef7f6f72995cf3'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -42011,7 +42011,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-b8251da851514341adef7f6f72995cf3', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-b8251da851514341adef7f6f72995cf3', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -42022,7 +42022,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-b8251da851514341adef7f6f72995cf3'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -42048,7 +42048,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-b8251da851514341adef7f6f72995cf3', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-b8251da851514341adef7f6f72995cf3', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -42059,7 +42059,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-b8251da851514341adef7f6f72995cf3'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -42085,7 +42085,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-b8251da851514341adef7f6f72995cf3', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-b8251da851514341adef7f6f72995cf3', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -42096,7 +42096,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-b8251da851514341adef7f6f72995cf3'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -42122,7 +42122,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-b8251da851514341adef7f6f72995cf3', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-b8251da851514341adef7f6f72995cf3', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -42133,7 +42133,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-b8251da851514341adef7f6f72995cf3'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -42159,7 +42159,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-b8251da851514341adef7f6f72995cf3', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-b8251da851514341adef7f6f72995cf3', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -42170,7 +42170,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-b8251da851514341adef7f6f72995cf3'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -43380,7 +43380,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-b8ed7911c3664dafaf4073223792b5a4', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-b8ed7911c3664dafaf4073223792b5a4', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -43391,7 +43391,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-b8ed7911c3664dafaf4073223792b5a4'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -43417,7 +43417,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-b8ed7911c3664dafaf4073223792b5a4', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-b8ed7911c3664dafaf4073223792b5a4', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -43428,7 +43428,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-b8ed7911c3664dafaf4073223792b5a4'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -43454,7 +43454,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-b8ed7911c3664dafaf4073223792b5a4', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-b8ed7911c3664dafaf4073223792b5a4', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -43465,7 +43465,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-b8ed7911c3664dafaf4073223792b5a4'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -43491,7 +43491,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-b8ed7911c3664dafaf4073223792b5a4', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-b8ed7911c3664dafaf4073223792b5a4', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -43502,7 +43502,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-b8ed7911c3664dafaf4073223792b5a4'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -43528,7 +43528,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-b8ed7911c3664dafaf4073223792b5a4', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-b8ed7911c3664dafaf4073223792b5a4', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -43539,7 +43539,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-b8ed7911c3664dafaf4073223792b5a4'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -43565,7 +43565,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-b8ed7911c3664dafaf4073223792b5a4', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-b8ed7911c3664dafaf4073223792b5a4', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -43576,7 +43576,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-b8ed7911c3664dafaf4073223792b5a4'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -44786,7 +44786,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-bc2cdffeab434f4d862c847fa99938ba', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-bc2cdffeab434f4d862c847fa99938ba', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -44797,7 +44797,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-bc2cdffeab434f4d862c847fa99938ba'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -44823,7 +44823,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-bc2cdffeab434f4d862c847fa99938ba', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-bc2cdffeab434f4d862c847fa99938ba', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -44834,7 +44834,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-bc2cdffeab434f4d862c847fa99938ba'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -44860,7 +44860,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-bc2cdffeab434f4d862c847fa99938ba', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-bc2cdffeab434f4d862c847fa99938ba', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -44871,7 +44871,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-bc2cdffeab434f4d862c847fa99938ba'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -44897,7 +44897,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-bc2cdffeab434f4d862c847fa99938ba', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-bc2cdffeab434f4d862c847fa99938ba', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -44908,7 +44908,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-bc2cdffeab434f4d862c847fa99938ba'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -44934,7 +44934,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-bc2cdffeab434f4d862c847fa99938ba', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-bc2cdffeab434f4d862c847fa99938ba', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -44945,7 +44945,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-bc2cdffeab434f4d862c847fa99938ba'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -44971,7 +44971,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-bc2cdffeab434f4d862c847fa99938ba', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-bc2cdffeab434f4d862c847fa99938ba', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -44982,7 +44982,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-bc2cdffeab434f4d862c847fa99938ba'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -46192,7 +46192,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-bd13c167e66b46bca791fae607c72ad7', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-bd13c167e66b46bca791fae607c72ad7', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -46203,7 +46203,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-bd13c167e66b46bca791fae607c72ad7'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -46229,7 +46229,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-bd13c167e66b46bca791fae607c72ad7', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-bd13c167e66b46bca791fae607c72ad7', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -46240,7 +46240,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-bd13c167e66b46bca791fae607c72ad7'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -46266,7 +46266,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-bd13c167e66b46bca791fae607c72ad7', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-bd13c167e66b46bca791fae607c72ad7', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -46277,7 +46277,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-bd13c167e66b46bca791fae607c72ad7'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -46303,7 +46303,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-bd13c167e66b46bca791fae607c72ad7', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-bd13c167e66b46bca791fae607c72ad7', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -46314,7 +46314,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-bd13c167e66b46bca791fae607c72ad7'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -46340,7 +46340,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-bd13c167e66b46bca791fae607c72ad7', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-bd13c167e66b46bca791fae607c72ad7', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -46351,7 +46351,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-bd13c167e66b46bca791fae607c72ad7'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -46377,7 +46377,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-bd13c167e66b46bca791fae607c72ad7', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-bd13c167e66b46bca791fae607c72ad7', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -46388,7 +46388,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-bd13c167e66b46bca791fae607c72ad7'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -47598,7 +47598,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-bf41bd50df044f5faf43c4759353ccd1', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-bf41bd50df044f5faf43c4759353ccd1', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -47609,7 +47609,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-bf41bd50df044f5faf43c4759353ccd1'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -47635,7 +47635,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-bf41bd50df044f5faf43c4759353ccd1', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-bf41bd50df044f5faf43c4759353ccd1', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -47646,7 +47646,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-bf41bd50df044f5faf43c4759353ccd1'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -47672,7 +47672,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-bf41bd50df044f5faf43c4759353ccd1', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-bf41bd50df044f5faf43c4759353ccd1', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -47683,7 +47683,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-bf41bd50df044f5faf43c4759353ccd1'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -47709,7 +47709,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-bf41bd50df044f5faf43c4759353ccd1', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-bf41bd50df044f5faf43c4759353ccd1', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -47720,7 +47720,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-bf41bd50df044f5faf43c4759353ccd1'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -47746,7 +47746,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-bf41bd50df044f5faf43c4759353ccd1', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-bf41bd50df044f5faf43c4759353ccd1', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -47757,7 +47757,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-bf41bd50df044f5faf43c4759353ccd1'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -47783,7 +47783,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-bf41bd50df044f5faf43c4759353ccd1', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-bf41bd50df044f5faf43c4759353ccd1', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -47794,7 +47794,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-bf41bd50df044f5faf43c4759353ccd1'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -49004,7 +49004,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-c55e44e65d5840c6ad73f0a0eb7e94d9', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-c55e44e65d5840c6ad73f0a0eb7e94d9', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -49015,7 +49015,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-c55e44e65d5840c6ad73f0a0eb7e94d9'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -49041,7 +49041,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-c55e44e65d5840c6ad73f0a0eb7e94d9', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-c55e44e65d5840c6ad73f0a0eb7e94d9', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -49052,7 +49052,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-c55e44e65d5840c6ad73f0a0eb7e94d9'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -49078,7 +49078,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-c55e44e65d5840c6ad73f0a0eb7e94d9', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-c55e44e65d5840c6ad73f0a0eb7e94d9', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -49089,7 +49089,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-c55e44e65d5840c6ad73f0a0eb7e94d9'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -49115,7 +49115,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-c55e44e65d5840c6ad73f0a0eb7e94d9', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-c55e44e65d5840c6ad73f0a0eb7e94d9', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -49126,7 +49126,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-c55e44e65d5840c6ad73f0a0eb7e94d9'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -49152,7 +49152,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-c55e44e65d5840c6ad73f0a0eb7e94d9', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-c55e44e65d5840c6ad73f0a0eb7e94d9', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -49163,7 +49163,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-c55e44e65d5840c6ad73f0a0eb7e94d9'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -49189,7 +49189,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-c55e44e65d5840c6ad73f0a0eb7e94d9', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-c55e44e65d5840c6ad73f0a0eb7e94d9', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -49200,7 +49200,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-c55e44e65d5840c6ad73f0a0eb7e94d9'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -50410,7 +50410,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-c6bc32646f3e4bde8409120c5c290eee', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-c6bc32646f3e4bde8409120c5c290eee', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -50421,7 +50421,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-c6bc32646f3e4bde8409120c5c290eee'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -50447,7 +50447,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-c6bc32646f3e4bde8409120c5c290eee', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-c6bc32646f3e4bde8409120c5c290eee', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -50458,7 +50458,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-c6bc32646f3e4bde8409120c5c290eee'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -50484,7 +50484,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-c6bc32646f3e4bde8409120c5c290eee', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-c6bc32646f3e4bde8409120c5c290eee', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -50495,7 +50495,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-c6bc32646f3e4bde8409120c5c290eee'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -50521,7 +50521,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-c6bc32646f3e4bde8409120c5c290eee', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-c6bc32646f3e4bde8409120c5c290eee', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -50532,7 +50532,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-c6bc32646f3e4bde8409120c5c290eee'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -50558,7 +50558,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-c6bc32646f3e4bde8409120c5c290eee', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-c6bc32646f3e4bde8409120c5c290eee', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -50569,7 +50569,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-c6bc32646f3e4bde8409120c5c290eee'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -50595,7 +50595,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-c6bc32646f3e4bde8409120c5c290eee', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-c6bc32646f3e4bde8409120c5c290eee', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -50606,7 +50606,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-c6bc32646f3e4bde8409120c5c290eee'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -51816,7 +51816,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-cac64b3a48254912bf410d8d2ceb748d', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-cac64b3a48254912bf410d8d2ceb748d', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -51827,7 +51827,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-cac64b3a48254912bf410d8d2ceb748d'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -51853,7 +51853,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-cac64b3a48254912bf410d8d2ceb748d', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-cac64b3a48254912bf410d8d2ceb748d', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -51864,7 +51864,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-cac64b3a48254912bf410d8d2ceb748d'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -51890,7 +51890,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-cac64b3a48254912bf410d8d2ceb748d', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-cac64b3a48254912bf410d8d2ceb748d', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -51901,7 +51901,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-cac64b3a48254912bf410d8d2ceb748d'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -51927,7 +51927,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-cac64b3a48254912bf410d8d2ceb748d', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-cac64b3a48254912bf410d8d2ceb748d', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -51938,7 +51938,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-cac64b3a48254912bf410d8d2ceb748d'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -51964,7 +51964,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-cac64b3a48254912bf410d8d2ceb748d', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-cac64b3a48254912bf410d8d2ceb748d', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -51975,7 +51975,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-cac64b3a48254912bf410d8d2ceb748d'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -52001,7 +52001,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-cac64b3a48254912bf410d8d2ceb748d', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-cac64b3a48254912bf410d8d2ceb748d', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -52012,7 +52012,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-cac64b3a48254912bf410d8d2ceb748d'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -53222,7 +53222,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-cd14851e79e649d797cdcc4a6e6f7fe5', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-cd14851e79e649d797cdcc4a6e6f7fe5', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -53233,7 +53233,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-cd14851e79e649d797cdcc4a6e6f7fe5'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -53259,7 +53259,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-cd14851e79e649d797cdcc4a6e6f7fe5', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-cd14851e79e649d797cdcc4a6e6f7fe5', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -53270,7 +53270,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-cd14851e79e649d797cdcc4a6e6f7fe5'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -53296,7 +53296,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-cd14851e79e649d797cdcc4a6e6f7fe5', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-cd14851e79e649d797cdcc4a6e6f7fe5', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -53307,7 +53307,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-cd14851e79e649d797cdcc4a6e6f7fe5'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -53333,7 +53333,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-cd14851e79e649d797cdcc4a6e6f7fe5', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-cd14851e79e649d797cdcc4a6e6f7fe5', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -53344,7 +53344,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-cd14851e79e649d797cdcc4a6e6f7fe5'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -53370,7 +53370,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-cd14851e79e649d797cdcc4a6e6f7fe5', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-cd14851e79e649d797cdcc4a6e6f7fe5', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -53381,7 +53381,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-cd14851e79e649d797cdcc4a6e6f7fe5'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -53407,7 +53407,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-cd14851e79e649d797cdcc4a6e6f7fe5', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-cd14851e79e649d797cdcc4a6e6f7fe5', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -53418,7 +53418,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-cd14851e79e649d797cdcc4a6e6f7fe5'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -54628,7 +54628,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-d11cb8bb47e74d73b5d4233814de2a39', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-d11cb8bb47e74d73b5d4233814de2a39', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -54639,7 +54639,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-d11cb8bb47e74d73b5d4233814de2a39'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -54665,7 +54665,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-d11cb8bb47e74d73b5d4233814de2a39', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-d11cb8bb47e74d73b5d4233814de2a39', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -54676,7 +54676,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-d11cb8bb47e74d73b5d4233814de2a39'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -54702,7 +54702,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-d11cb8bb47e74d73b5d4233814de2a39', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-d11cb8bb47e74d73b5d4233814de2a39', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -54713,7 +54713,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-d11cb8bb47e74d73b5d4233814de2a39'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -54739,7 +54739,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-d11cb8bb47e74d73b5d4233814de2a39', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-d11cb8bb47e74d73b5d4233814de2a39', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -54750,7 +54750,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-d11cb8bb47e74d73b5d4233814de2a39'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -54776,7 +54776,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-d11cb8bb47e74d73b5d4233814de2a39', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-d11cb8bb47e74d73b5d4233814de2a39', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -54787,7 +54787,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-d11cb8bb47e74d73b5d4233814de2a39'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -54813,7 +54813,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-d11cb8bb47e74d73b5d4233814de2a39', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-d11cb8bb47e74d73b5d4233814de2a39', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -54824,7 +54824,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-d11cb8bb47e74d73b5d4233814de2a39'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -56034,7 +56034,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-d446eef7329f45b4a374347e215fec5d', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-d446eef7329f45b4a374347e215fec5d', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -56045,7 +56045,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-d446eef7329f45b4a374347e215fec5d'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -56071,7 +56071,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-d446eef7329f45b4a374347e215fec5d', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-d446eef7329f45b4a374347e215fec5d', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -56082,7 +56082,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-d446eef7329f45b4a374347e215fec5d'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -56108,7 +56108,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-d446eef7329f45b4a374347e215fec5d', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-d446eef7329f45b4a374347e215fec5d', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -56119,7 +56119,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-d446eef7329f45b4a374347e215fec5d'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -56145,7 +56145,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-d446eef7329f45b4a374347e215fec5d', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-d446eef7329f45b4a374347e215fec5d', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -56156,7 +56156,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-d446eef7329f45b4a374347e215fec5d'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -56182,7 +56182,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-d446eef7329f45b4a374347e215fec5d', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-d446eef7329f45b4a374347e215fec5d', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -56193,7 +56193,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-d446eef7329f45b4a374347e215fec5d'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -56219,7 +56219,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-d446eef7329f45b4a374347e215fec5d', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-d446eef7329f45b4a374347e215fec5d', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -56230,7 +56230,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-d446eef7329f45b4a374347e215fec5d'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -57440,7 +57440,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-d57178112ab5465eb43f926bb18fd98c', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-d57178112ab5465eb43f926bb18fd98c', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -57451,7 +57451,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-d57178112ab5465eb43f926bb18fd98c'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -57477,7 +57477,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-d57178112ab5465eb43f926bb18fd98c', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-d57178112ab5465eb43f926bb18fd98c', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -57488,7 +57488,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-d57178112ab5465eb43f926bb18fd98c'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -57514,7 +57514,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-d57178112ab5465eb43f926bb18fd98c', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-d57178112ab5465eb43f926bb18fd98c', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -57525,7 +57525,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-d57178112ab5465eb43f926bb18fd98c'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -57551,7 +57551,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-d57178112ab5465eb43f926bb18fd98c', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-d57178112ab5465eb43f926bb18fd98c', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -57562,7 +57562,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-d57178112ab5465eb43f926bb18fd98c'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -57588,7 +57588,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-d57178112ab5465eb43f926bb18fd98c', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-d57178112ab5465eb43f926bb18fd98c', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -57599,7 +57599,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-d57178112ab5465eb43f926bb18fd98c'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -57625,7 +57625,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-d57178112ab5465eb43f926bb18fd98c', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-d57178112ab5465eb43f926bb18fd98c', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -57636,7 +57636,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-d57178112ab5465eb43f926bb18fd98c'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -58846,7 +58846,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-e1e2ab00b9cb41dab46f48856374ebd4', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-e1e2ab00b9cb41dab46f48856374ebd4', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -58857,7 +58857,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-e1e2ab00b9cb41dab46f48856374ebd4'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -58883,7 +58883,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-e1e2ab00b9cb41dab46f48856374ebd4', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-e1e2ab00b9cb41dab46f48856374ebd4', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -58894,7 +58894,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-e1e2ab00b9cb41dab46f48856374ebd4'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -58920,7 +58920,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-e1e2ab00b9cb41dab46f48856374ebd4', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-e1e2ab00b9cb41dab46f48856374ebd4', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -58931,7 +58931,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-e1e2ab00b9cb41dab46f48856374ebd4'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -58957,7 +58957,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-e1e2ab00b9cb41dab46f48856374ebd4', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-e1e2ab00b9cb41dab46f48856374ebd4', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -58968,7 +58968,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-e1e2ab00b9cb41dab46f48856374ebd4'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -58994,7 +58994,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-e1e2ab00b9cb41dab46f48856374ebd4', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-e1e2ab00b9cb41dab46f48856374ebd4', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -59005,7 +59005,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-e1e2ab00b9cb41dab46f48856374ebd4'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -59031,7 +59031,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-e1e2ab00b9cb41dab46f48856374ebd4', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-e1e2ab00b9cb41dab46f48856374ebd4', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -59042,7 +59042,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-e1e2ab00b9cb41dab46f48856374ebd4'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -60252,7 +60252,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-e25f3089a99d4878a1ddd326ba0910bf', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-e25f3089a99d4878a1ddd326ba0910bf', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -60263,7 +60263,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-e25f3089a99d4878a1ddd326ba0910bf'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -60289,7 +60289,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-e25f3089a99d4878a1ddd326ba0910bf', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-e25f3089a99d4878a1ddd326ba0910bf', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -60300,7 +60300,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-e25f3089a99d4878a1ddd326ba0910bf'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -60326,7 +60326,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-e25f3089a99d4878a1ddd326ba0910bf', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-e25f3089a99d4878a1ddd326ba0910bf', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -60337,7 +60337,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-e25f3089a99d4878a1ddd326ba0910bf'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -60363,7 +60363,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-e25f3089a99d4878a1ddd326ba0910bf', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-e25f3089a99d4878a1ddd326ba0910bf', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -60374,7 +60374,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-e25f3089a99d4878a1ddd326ba0910bf'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -60400,7 +60400,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-e25f3089a99d4878a1ddd326ba0910bf', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-e25f3089a99d4878a1ddd326ba0910bf', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -60411,7 +60411,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-e25f3089a99d4878a1ddd326ba0910bf'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -60437,7 +60437,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-e25f3089a99d4878a1ddd326ba0910bf', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-e25f3089a99d4878a1ddd326ba0910bf', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -60448,7 +60448,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-e25f3089a99d4878a1ddd326ba0910bf'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -61658,7 +61658,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-e5c45ff8ca074102829bba872e091bd1', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-e5c45ff8ca074102829bba872e091bd1', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -61669,7 +61669,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-e5c45ff8ca074102829bba872e091bd1'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -61695,7 +61695,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-e5c45ff8ca074102829bba872e091bd1', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-e5c45ff8ca074102829bba872e091bd1', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -61706,7 +61706,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-e5c45ff8ca074102829bba872e091bd1'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -61732,7 +61732,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-e5c45ff8ca074102829bba872e091bd1', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-e5c45ff8ca074102829bba872e091bd1', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -61743,7 +61743,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-e5c45ff8ca074102829bba872e091bd1'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -61769,7 +61769,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-e5c45ff8ca074102829bba872e091bd1', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-e5c45ff8ca074102829bba872e091bd1', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -61780,7 +61780,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-e5c45ff8ca074102829bba872e091bd1'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -61806,7 +61806,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-e5c45ff8ca074102829bba872e091bd1', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-e5c45ff8ca074102829bba872e091bd1', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -61817,7 +61817,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-e5c45ff8ca074102829bba872e091bd1'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -61843,7 +61843,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-e5c45ff8ca074102829bba872e091bd1', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-e5c45ff8ca074102829bba872e091bd1', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -61854,7 +61854,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-e5c45ff8ca074102829bba872e091bd1'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -63064,7 +63064,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-f5270d478dd849389e59a178cd512629', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-f5270d478dd849389e59a178cd512629', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -63075,7 +63075,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-f5270d478dd849389e59a178cd512629'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -63101,7 +63101,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-f5270d478dd849389e59a178cd512629', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-f5270d478dd849389e59a178cd512629', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -63112,7 +63112,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-f5270d478dd849389e59a178cd512629'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -63138,7 +63138,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-f5270d478dd849389e59a178cd512629', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-f5270d478dd849389e59a178cd512629', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -63149,7 +63149,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-f5270d478dd849389e59a178cd512629'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -63175,7 +63175,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-f5270d478dd849389e59a178cd512629', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-f5270d478dd849389e59a178cd512629', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -63186,7 +63186,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-f5270d478dd849389e59a178cd512629'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -63212,7 +63212,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-f5270d478dd849389e59a178cd512629', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-f5270d478dd849389e59a178cd512629', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -63223,7 +63223,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-f5270d478dd849389e59a178cd512629'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -63249,7 +63249,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-f5270d478dd849389e59a178cd512629', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-f5270d478dd849389e59a178cd512629', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -63260,7 +63260,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-f5270d478dd849389e59a178cd512629'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -64618,7 +64618,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-fd9456206abe46ae972a0dc15df082ec', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-fd9456206abe46ae972a0dc15df082ec', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -64629,7 +64629,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-fd9456206abe46ae972a0dc15df082ec'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -64655,7 +64655,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-fd9456206abe46ae972a0dc15df082ec', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-fd9456206abe46ae972a0dc15df082ec', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -64666,7 +64666,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-fd9456206abe46ae972a0dc15df082ec'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -64692,7 +64692,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-fd9456206abe46ae972a0dc15df082ec', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-fd9456206abe46ae972a0dc15df082ec', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -64703,7 +64703,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-fd9456206abe46ae972a0dc15df082ec'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -64729,7 +64729,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-fd9456206abe46ae972a0dc15df082ec', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-fd9456206abe46ae972a0dc15df082ec', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -64740,7 +64740,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-fd9456206abe46ae972a0dc15df082ec'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -64766,7 +64766,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-fd9456206abe46ae972a0dc15df082ec', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-fd9456206abe46ae972a0dc15df082ec', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -64777,7 +64777,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-fd9456206abe46ae972a0dc15df082ec'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -64803,7 +64803,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-fd9456206abe46ae972a0dc15df082ec', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-fd9456206abe46ae972a0dc15df082ec', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -64814,7 +64814,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-fd9456206abe46ae972a0dc15df082ec'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -66024,7 +66024,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b1442741c47f926f', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-b1442741c47f926f', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -66035,7 +66035,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b1442741c47f926f'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -66061,7 +66061,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b1442741c47f926f', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-b1442741c47f926f', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -66072,7 +66072,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b1442741c47f926f'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -66098,7 +66098,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b1442741c47f926f', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-b1442741c47f926f', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -66109,7 +66109,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b1442741c47f926f'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -66135,7 +66135,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b1442741c47f926f', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-b1442741c47f926f', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -66146,7 +66146,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b1442741c47f926f'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -66172,7 +66172,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b1442741c47f926f', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-b1442741c47f926f', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -66183,7 +66183,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b1442741c47f926f'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -66209,7 +66209,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b1442741c47f926f', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-b1442741c47f926f', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -66220,7 +66220,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b1442741c47f926f'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -67430,7 +67430,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6c57190b28a46057', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-6c57190b28a46057', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -67441,7 +67441,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6c57190b28a46057'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -67467,7 +67467,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6c57190b28a46057', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-6c57190b28a46057', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -67478,7 +67478,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6c57190b28a46057'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -67504,7 +67504,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6c57190b28a46057', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-6c57190b28a46057', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -67515,7 +67515,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6c57190b28a46057'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -67541,7 +67541,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6c57190b28a46057', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-6c57190b28a46057', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -67552,7 +67552,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6c57190b28a46057'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -67578,7 +67578,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6c57190b28a46057', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-6c57190b28a46057', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -67589,7 +67589,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6c57190b28a46057'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -67615,7 +67615,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6c57190b28a46057', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-6c57190b28a46057', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -67626,7 +67626,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6c57190b28a46057'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -68836,7 +68836,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d264f01e700c7d20', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-d264f01e700c7d20', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -68847,7 +68847,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d264f01e700c7d20'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -68873,7 +68873,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d264f01e700c7d20', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-d264f01e700c7d20', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -68884,7 +68884,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d264f01e700c7d20'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -68910,7 +68910,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d264f01e700c7d20', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-d264f01e700c7d20', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -68921,7 +68921,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d264f01e700c7d20'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -68947,7 +68947,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d264f01e700c7d20', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-d264f01e700c7d20', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -68958,7 +68958,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d264f01e700c7d20'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -68984,7 +68984,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d264f01e700c7d20', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-d264f01e700c7d20', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -68995,7 +68995,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d264f01e700c7d20'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -69021,7 +69021,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d264f01e700c7d20', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-d264f01e700c7d20', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -69032,7 +69032,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d264f01e700c7d20'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -70242,7 +70242,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b070a5657ad133ab', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-b070a5657ad133ab', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -70253,7 +70253,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b070a5657ad133ab'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -70279,7 +70279,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b070a5657ad133ab', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-b070a5657ad133ab', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -70290,7 +70290,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b070a5657ad133ab'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -70316,7 +70316,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b070a5657ad133ab', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-b070a5657ad133ab', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -70327,7 +70327,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b070a5657ad133ab'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -70353,7 +70353,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b070a5657ad133ab', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-b070a5657ad133ab', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -70364,7 +70364,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b070a5657ad133ab'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -70390,7 +70390,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b070a5657ad133ab', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-b070a5657ad133ab', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -70401,7 +70401,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b070a5657ad133ab'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -70427,7 +70427,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b070a5657ad133ab', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-b070a5657ad133ab', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -70438,7 +70438,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b070a5657ad133ab'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -71648,7 +71648,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-16de91ca89897431', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-16de91ca89897431', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -71659,7 +71659,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-16de91ca89897431'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -71685,7 +71685,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-16de91ca89897431', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-16de91ca89897431', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -71696,7 +71696,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-16de91ca89897431'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -71722,7 +71722,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-16de91ca89897431', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-16de91ca89897431', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -71733,7 +71733,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-16de91ca89897431'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -71759,7 +71759,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-16de91ca89897431', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-16de91ca89897431', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -71770,7 +71770,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-16de91ca89897431'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -71796,7 +71796,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-16de91ca89897431', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-16de91ca89897431', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -71807,7 +71807,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-16de91ca89897431'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -71833,7 +71833,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-16de91ca89897431', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-16de91ca89897431', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -71844,7 +71844,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-16de91ca89897431'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -73054,7 +73054,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1fa3e2fd0c5fb3dd', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-1fa3e2fd0c5fb3dd', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -73065,7 +73065,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1fa3e2fd0c5fb3dd'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -73091,7 +73091,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1fa3e2fd0c5fb3dd', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-1fa3e2fd0c5fb3dd', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -73102,7 +73102,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1fa3e2fd0c5fb3dd'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -73128,7 +73128,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1fa3e2fd0c5fb3dd', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-1fa3e2fd0c5fb3dd', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -73139,7 +73139,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1fa3e2fd0c5fb3dd'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -73165,7 +73165,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1fa3e2fd0c5fb3dd', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-1fa3e2fd0c5fb3dd', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -73176,7 +73176,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1fa3e2fd0c5fb3dd'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -73202,7 +73202,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1fa3e2fd0c5fb3dd', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-1fa3e2fd0c5fb3dd', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -73213,7 +73213,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1fa3e2fd0c5fb3dd'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -73239,7 +73239,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1fa3e2fd0c5fb3dd', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-1fa3e2fd0c5fb3dd', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -73250,7 +73250,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1fa3e2fd0c5fb3dd'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -74460,7 +74460,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-80350db0b05b9a4d', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-80350db0b05b9a4d', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -74471,7 +74471,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-80350db0b05b9a4d'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -74497,7 +74497,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-80350db0b05b9a4d', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-80350db0b05b9a4d', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -74508,7 +74508,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-80350db0b05b9a4d'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -74534,7 +74534,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-80350db0b05b9a4d', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-80350db0b05b9a4d', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -74545,7 +74545,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-80350db0b05b9a4d'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -74571,7 +74571,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-80350db0b05b9a4d', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-80350db0b05b9a4d', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -74582,7 +74582,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-80350db0b05b9a4d'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -74608,7 +74608,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-80350db0b05b9a4d', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-80350db0b05b9a4d', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -74619,7 +74619,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-80350db0b05b9a4d'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -74645,7 +74645,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-80350db0b05b9a4d', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-80350db0b05b9a4d', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -74656,7 +74656,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-80350db0b05b9a4d'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -75866,7 +75866,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bbdd7bd0d7cfbc3a', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-bbdd7bd0d7cfbc3a', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -75877,7 +75877,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bbdd7bd0d7cfbc3a'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -75903,7 +75903,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bbdd7bd0d7cfbc3a', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-bbdd7bd0d7cfbc3a', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -75914,7 +75914,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bbdd7bd0d7cfbc3a'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -75940,7 +75940,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bbdd7bd0d7cfbc3a', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-bbdd7bd0d7cfbc3a', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -75951,7 +75951,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bbdd7bd0d7cfbc3a'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -75977,7 +75977,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bbdd7bd0d7cfbc3a', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-bbdd7bd0d7cfbc3a', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -75988,7 +75988,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bbdd7bd0d7cfbc3a'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -76014,7 +76014,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bbdd7bd0d7cfbc3a', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-bbdd7bd0d7cfbc3a', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -76025,7 +76025,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bbdd7bd0d7cfbc3a'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -76051,7 +76051,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bbdd7bd0d7cfbc3a', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-bbdd7bd0d7cfbc3a', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -76062,7 +76062,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bbdd7bd0d7cfbc3a'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -77272,7 +77272,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-cb1269157176295b', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-cb1269157176295b', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -77283,7 +77283,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-cb1269157176295b'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -77309,7 +77309,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-cb1269157176295b', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-cb1269157176295b', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -77320,7 +77320,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-cb1269157176295b'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -77346,7 +77346,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-cb1269157176295b', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-cb1269157176295b', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -77357,7 +77357,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-cb1269157176295b'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -77383,7 +77383,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-cb1269157176295b', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-cb1269157176295b', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -77394,7 +77394,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-cb1269157176295b'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -77420,7 +77420,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-cb1269157176295b', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-cb1269157176295b', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -77431,7 +77431,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-cb1269157176295b'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -77457,7 +77457,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-cb1269157176295b', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-cb1269157176295b', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -77468,7 +77468,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-cb1269157176295b'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -78678,7 +78678,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9597b8ece068f6d9', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-9597b8ece068f6d9', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -78689,7 +78689,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9597b8ece068f6d9'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -78715,7 +78715,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9597b8ece068f6d9', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-9597b8ece068f6d9', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -78726,7 +78726,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9597b8ece068f6d9'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -78752,7 +78752,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9597b8ece068f6d9', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-9597b8ece068f6d9', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -78763,7 +78763,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9597b8ece068f6d9'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -78789,7 +78789,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9597b8ece068f6d9', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-9597b8ece068f6d9', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -78800,7 +78800,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9597b8ece068f6d9'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -78826,7 +78826,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9597b8ece068f6d9', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-9597b8ece068f6d9', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -78837,7 +78837,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9597b8ece068f6d9'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -78863,7 +78863,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9597b8ece068f6d9', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-9597b8ece068f6d9', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -78874,7 +78874,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9597b8ece068f6d9'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -80084,7 +80084,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-195cbd1d1d421043', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-195cbd1d1d421043', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -80095,7 +80095,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-195cbd1d1d421043'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -80121,7 +80121,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-195cbd1d1d421043', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-195cbd1d1d421043', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -80132,7 +80132,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-195cbd1d1d421043'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -80158,7 +80158,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-195cbd1d1d421043', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-195cbd1d1d421043', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -80169,7 +80169,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-195cbd1d1d421043'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -80195,7 +80195,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-195cbd1d1d421043', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-195cbd1d1d421043', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -80206,7 +80206,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-195cbd1d1d421043'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -80232,7 +80232,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-195cbd1d1d421043', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-195cbd1d1d421043', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -80243,7 +80243,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-195cbd1d1d421043'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -80269,7 +80269,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-195cbd1d1d421043', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-195cbd1d1d421043', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -80280,7 +80280,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-195cbd1d1d421043'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -81490,7 +81490,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-804736552fb88c8d', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-804736552fb88c8d', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -81501,7 +81501,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-804736552fb88c8d'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -81527,7 +81527,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-804736552fb88c8d', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-804736552fb88c8d', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -81538,7 +81538,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-804736552fb88c8d'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -81564,7 +81564,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-804736552fb88c8d', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-804736552fb88c8d', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -81575,7 +81575,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-804736552fb88c8d'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -81601,7 +81601,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-804736552fb88c8d', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-804736552fb88c8d', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -81612,7 +81612,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-804736552fb88c8d'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -81638,7 +81638,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-804736552fb88c8d', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-804736552fb88c8d', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -81649,7 +81649,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-804736552fb88c8d'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -81675,7 +81675,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-804736552fb88c8d', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-804736552fb88c8d', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -81686,7 +81686,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-804736552fb88c8d'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -82896,7 +82896,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6ccef78e4f0c5091', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-6ccef78e4f0c5091', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -82907,7 +82907,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6ccef78e4f0c5091'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -82933,7 +82933,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6ccef78e4f0c5091', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-6ccef78e4f0c5091', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -82944,7 +82944,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6ccef78e4f0c5091'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -82970,7 +82970,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6ccef78e4f0c5091', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-6ccef78e4f0c5091', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -82981,7 +82981,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6ccef78e4f0c5091'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -83007,7 +83007,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6ccef78e4f0c5091', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-6ccef78e4f0c5091', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -83018,7 +83018,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6ccef78e4f0c5091'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -83044,7 +83044,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6ccef78e4f0c5091', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-6ccef78e4f0c5091', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -83055,7 +83055,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6ccef78e4f0c5091'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -83081,7 +83081,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6ccef78e4f0c5091', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-6ccef78e4f0c5091', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -83092,7 +83092,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6ccef78e4f0c5091'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -84302,7 +84302,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e550ca3e1829c5fa', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-e550ca3e1829c5fa', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -84313,7 +84313,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e550ca3e1829c5fa'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -84339,7 +84339,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e550ca3e1829c5fa', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-e550ca3e1829c5fa', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -84350,7 +84350,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e550ca3e1829c5fa'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -84376,7 +84376,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e550ca3e1829c5fa', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-e550ca3e1829c5fa', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -84387,7 +84387,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e550ca3e1829c5fa'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -84413,7 +84413,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e550ca3e1829c5fa', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-e550ca3e1829c5fa', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -84424,7 +84424,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e550ca3e1829c5fa'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -84450,7 +84450,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e550ca3e1829c5fa', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-e550ca3e1829c5fa', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -84461,7 +84461,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e550ca3e1829c5fa'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -84487,7 +84487,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e550ca3e1829c5fa', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-e550ca3e1829c5fa', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -84498,7 +84498,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e550ca3e1829c5fa'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -85708,7 +85708,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-32bb4b9b4d571db1', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-32bb4b9b4d571db1', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -85719,7 +85719,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-32bb4b9b4d571db1'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -85745,7 +85745,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-32bb4b9b4d571db1', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-32bb4b9b4d571db1', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -85756,7 +85756,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-32bb4b9b4d571db1'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -85782,7 +85782,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-32bb4b9b4d571db1', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-32bb4b9b4d571db1', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -85793,7 +85793,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-32bb4b9b4d571db1'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -85819,7 +85819,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-32bb4b9b4d571db1', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-32bb4b9b4d571db1', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -85830,7 +85830,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-32bb4b9b4d571db1'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -85856,7 +85856,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-32bb4b9b4d571db1', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-32bb4b9b4d571db1', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -85867,7 +85867,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-32bb4b9b4d571db1'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -85893,7 +85893,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-32bb4b9b4d571db1', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-32bb4b9b4d571db1', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -85904,7 +85904,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-32bb4b9b4d571db1'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -87114,7 +87114,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-70c02f4b3027abe3', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-70c02f4b3027abe3', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -87125,7 +87125,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-70c02f4b3027abe3'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -87151,7 +87151,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-70c02f4b3027abe3', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-70c02f4b3027abe3', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -87162,7 +87162,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-70c02f4b3027abe3'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -87188,7 +87188,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-70c02f4b3027abe3', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-70c02f4b3027abe3', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -87199,7 +87199,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-70c02f4b3027abe3'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -87225,7 +87225,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-70c02f4b3027abe3', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-70c02f4b3027abe3', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -87236,7 +87236,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-70c02f4b3027abe3'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -87262,7 +87262,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-70c02f4b3027abe3', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-70c02f4b3027abe3', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -87273,7 +87273,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-70c02f4b3027abe3'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -87299,7 +87299,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-70c02f4b3027abe3', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-70c02f4b3027abe3', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -87310,7 +87310,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-70c02f4b3027abe3'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -88520,7 +88520,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-35bc92a7327667f0', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-35bc92a7327667f0', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -88531,7 +88531,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-35bc92a7327667f0'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -88557,7 +88557,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-35bc92a7327667f0', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-35bc92a7327667f0', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -88568,7 +88568,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-35bc92a7327667f0'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -88594,7 +88594,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-35bc92a7327667f0', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-35bc92a7327667f0', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -88605,7 +88605,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-35bc92a7327667f0'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -88631,7 +88631,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-35bc92a7327667f0', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-35bc92a7327667f0', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -88642,7 +88642,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-35bc92a7327667f0'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -88668,7 +88668,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-35bc92a7327667f0', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-35bc92a7327667f0', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -88679,7 +88679,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-35bc92a7327667f0'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -88705,7 +88705,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-35bc92a7327667f0', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-35bc92a7327667f0', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -88716,7 +88716,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-35bc92a7327667f0'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -89926,7 +89926,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d0e9abcf3626c59f', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-d0e9abcf3626c59f', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -89937,7 +89937,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d0e9abcf3626c59f'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -89963,7 +89963,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d0e9abcf3626c59f', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-d0e9abcf3626c59f', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -89974,7 +89974,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d0e9abcf3626c59f'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -90000,7 +90000,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d0e9abcf3626c59f', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-d0e9abcf3626c59f', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -90011,7 +90011,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d0e9abcf3626c59f'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -90037,7 +90037,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d0e9abcf3626c59f', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-d0e9abcf3626c59f', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -90048,7 +90048,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d0e9abcf3626c59f'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -90074,7 +90074,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d0e9abcf3626c59f', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-d0e9abcf3626c59f', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -90085,7 +90085,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d0e9abcf3626c59f'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -90111,7 +90111,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d0e9abcf3626c59f', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-d0e9abcf3626c59f', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -90122,7 +90122,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d0e9abcf3626c59f'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -91332,7 +91332,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-aa98fa746b322feb', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-aa98fa746b322feb', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -91343,7 +91343,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-aa98fa746b322feb'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -91369,7 +91369,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-aa98fa746b322feb', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-aa98fa746b322feb', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -91380,7 +91380,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-aa98fa746b322feb'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -91406,7 +91406,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-aa98fa746b322feb', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-aa98fa746b322feb', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -91417,7 +91417,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-aa98fa746b322feb'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -91443,7 +91443,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-aa98fa746b322feb', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-aa98fa746b322feb', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -91454,7 +91454,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-aa98fa746b322feb'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -91480,7 +91480,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-aa98fa746b322feb', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-aa98fa746b322feb', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -91491,7 +91491,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-aa98fa746b322feb'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -91517,7 +91517,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-aa98fa746b322feb', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-aa98fa746b322feb', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -91528,7 +91528,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-aa98fa746b322feb'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -92738,7 +92738,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d918458c7a03f584', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-d918458c7a03f584', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -92749,7 +92749,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d918458c7a03f584'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -92775,7 +92775,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d918458c7a03f584', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-d918458c7a03f584', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -92786,7 +92786,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d918458c7a03f584'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -92812,7 +92812,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d918458c7a03f584', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-d918458c7a03f584', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -92823,7 +92823,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d918458c7a03f584'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -92849,7 +92849,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d918458c7a03f584', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-d918458c7a03f584', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -92860,7 +92860,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d918458c7a03f584'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -92886,7 +92886,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d918458c7a03f584', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-d918458c7a03f584', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -92897,7 +92897,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d918458c7a03f584'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -92923,7 +92923,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d918458c7a03f584', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-d918458c7a03f584', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -92934,7 +92934,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d918458c7a03f584'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -94144,7 +94144,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-93a4f69c7cc31077', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-93a4f69c7cc31077', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -94155,7 +94155,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-93a4f69c7cc31077'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -94181,7 +94181,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-93a4f69c7cc31077', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-93a4f69c7cc31077', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -94192,7 +94192,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-93a4f69c7cc31077'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -94218,7 +94218,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-93a4f69c7cc31077', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-93a4f69c7cc31077', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -94229,7 +94229,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-93a4f69c7cc31077'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -94255,7 +94255,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-93a4f69c7cc31077', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-93a4f69c7cc31077', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -94266,7 +94266,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-93a4f69c7cc31077'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -94292,7 +94292,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-93a4f69c7cc31077', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-93a4f69c7cc31077', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -94303,7 +94303,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-93a4f69c7cc31077'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -94329,7 +94329,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-93a4f69c7cc31077', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-93a4f69c7cc31077', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -94340,7 +94340,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-93a4f69c7cc31077'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -95550,7 +95550,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-53cdf81bf0f216c6', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-53cdf81bf0f216c6', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -95561,7 +95561,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-53cdf81bf0f216c6'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -95587,7 +95587,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-53cdf81bf0f216c6', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-53cdf81bf0f216c6', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -95598,7 +95598,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-53cdf81bf0f216c6'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -95624,7 +95624,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-53cdf81bf0f216c6', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-53cdf81bf0f216c6', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -95635,7 +95635,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-53cdf81bf0f216c6'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -95661,7 +95661,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-53cdf81bf0f216c6', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-53cdf81bf0f216c6', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -95672,7 +95672,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-53cdf81bf0f216c6'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -95698,7 +95698,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-53cdf81bf0f216c6', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-53cdf81bf0f216c6', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -95709,7 +95709,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-53cdf81bf0f216c6'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -95735,7 +95735,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-53cdf81bf0f216c6', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-53cdf81bf0f216c6', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -95746,7 +95746,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-53cdf81bf0f216c6'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -96956,7 +96956,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-aefd22c278a2fba0', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-aefd22c278a2fba0', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -96967,7 +96967,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-aefd22c278a2fba0'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -96993,7 +96993,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-aefd22c278a2fba0', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-aefd22c278a2fba0', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -97004,7 +97004,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-aefd22c278a2fba0'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -97030,7 +97030,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-aefd22c278a2fba0', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-aefd22c278a2fba0', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -97041,7 +97041,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-aefd22c278a2fba0'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -97067,7 +97067,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-aefd22c278a2fba0', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-aefd22c278a2fba0', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -97078,7 +97078,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-aefd22c278a2fba0'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -97104,7 +97104,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-aefd22c278a2fba0', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-aefd22c278a2fba0', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -97115,7 +97115,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-aefd22c278a2fba0'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -97141,7 +97141,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-aefd22c278a2fba0', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-aefd22c278a2fba0', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -97152,7 +97152,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-aefd22c278a2fba0'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -98362,7 +98362,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-017cdd4b1ecacfb3', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-017cdd4b1ecacfb3', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -98373,7 +98373,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-017cdd4b1ecacfb3'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -98399,7 +98399,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-017cdd4b1ecacfb3', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-017cdd4b1ecacfb3', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -98410,7 +98410,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-017cdd4b1ecacfb3'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -98436,7 +98436,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-017cdd4b1ecacfb3', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-017cdd4b1ecacfb3', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -98447,7 +98447,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-017cdd4b1ecacfb3'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -98473,7 +98473,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-017cdd4b1ecacfb3', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-017cdd4b1ecacfb3', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -98484,7 +98484,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-017cdd4b1ecacfb3'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -98510,7 +98510,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-017cdd4b1ecacfb3', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-017cdd4b1ecacfb3', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -98521,7 +98521,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-017cdd4b1ecacfb3'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -98547,7 +98547,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-017cdd4b1ecacfb3', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-017cdd4b1ecacfb3', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -98558,7 +98558,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-017cdd4b1ecacfb3'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -99768,7 +99768,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-871afc1fefcafea9', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-871afc1fefcafea9', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -99779,7 +99779,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-871afc1fefcafea9'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -99805,7 +99805,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-871afc1fefcafea9', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-871afc1fefcafea9', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -99816,7 +99816,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-871afc1fefcafea9'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -99842,7 +99842,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-871afc1fefcafea9', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-871afc1fefcafea9', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -99853,7 +99853,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-871afc1fefcafea9'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -99879,7 +99879,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-871afc1fefcafea9', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-871afc1fefcafea9', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -99890,7 +99890,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-871afc1fefcafea9'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -99916,7 +99916,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-871afc1fefcafea9', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-871afc1fefcafea9', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -99927,7 +99927,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-871afc1fefcafea9'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -99953,7 +99953,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-871afc1fefcafea9', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-871afc1fefcafea9', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -99964,7 +99964,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-871afc1fefcafea9'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -101174,7 +101174,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b40633b2751387be', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-b40633b2751387be', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -101185,7 +101185,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b40633b2751387be'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -101211,7 +101211,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b40633b2751387be', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-b40633b2751387be', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -101222,7 +101222,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b40633b2751387be'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -101248,7 +101248,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b40633b2751387be', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-b40633b2751387be', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -101259,7 +101259,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b40633b2751387be'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -101285,7 +101285,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b40633b2751387be', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-b40633b2751387be', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -101296,7 +101296,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b40633b2751387be'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -101322,7 +101322,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b40633b2751387be', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-b40633b2751387be', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -101333,7 +101333,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b40633b2751387be'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -101359,7 +101359,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b40633b2751387be', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-b40633b2751387be', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -101370,7 +101370,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b40633b2751387be'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -102580,7 +102580,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9f09370988167c1e', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-9f09370988167c1e', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -102591,7 +102591,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9f09370988167c1e'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -102617,7 +102617,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9f09370988167c1e', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-9f09370988167c1e', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -102628,7 +102628,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9f09370988167c1e'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -102654,7 +102654,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9f09370988167c1e', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-9f09370988167c1e', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -102665,7 +102665,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9f09370988167c1e'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -102691,7 +102691,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9f09370988167c1e', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-9f09370988167c1e', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -102702,7 +102702,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9f09370988167c1e'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -102728,7 +102728,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9f09370988167c1e', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-9f09370988167c1e', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -102739,7 +102739,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9f09370988167c1e'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -102765,7 +102765,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9f09370988167c1e', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-9f09370988167c1e', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -102776,7 +102776,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9f09370988167c1e'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -103986,7 +103986,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-dba95e5328a788f2', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-dba95e5328a788f2', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -103997,7 +103997,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-dba95e5328a788f2'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -104023,7 +104023,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-dba95e5328a788f2', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-dba95e5328a788f2', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -104034,7 +104034,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-dba95e5328a788f2'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -104060,7 +104060,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-dba95e5328a788f2', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-dba95e5328a788f2', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -104071,7 +104071,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-dba95e5328a788f2'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -104097,7 +104097,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-dba95e5328a788f2', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-dba95e5328a788f2', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -104108,7 +104108,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-dba95e5328a788f2'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -104134,7 +104134,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-dba95e5328a788f2', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-dba95e5328a788f2', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -104145,7 +104145,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-dba95e5328a788f2'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -104171,7 +104171,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-dba95e5328a788f2', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-dba95e5328a788f2', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -104182,7 +104182,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-dba95e5328a788f2'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -105392,7 +105392,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bc68232ca7da9c99', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-bc68232ca7da9c99', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -105403,7 +105403,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bc68232ca7da9c99'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -105429,7 +105429,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bc68232ca7da9c99', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-bc68232ca7da9c99', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -105440,7 +105440,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bc68232ca7da9c99'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -105466,7 +105466,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bc68232ca7da9c99', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-bc68232ca7da9c99', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -105477,7 +105477,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bc68232ca7da9c99'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -105503,7 +105503,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bc68232ca7da9c99', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-bc68232ca7da9c99', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -105514,7 +105514,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bc68232ca7da9c99'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -105540,7 +105540,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bc68232ca7da9c99', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-bc68232ca7da9c99', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -105551,7 +105551,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bc68232ca7da9c99'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -105577,7 +105577,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bc68232ca7da9c99', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-bc68232ca7da9c99', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -105588,7 +105588,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bc68232ca7da9c99'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -106798,7 +106798,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-45866bf269164142', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-45866bf269164142', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -106809,7 +106809,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-45866bf269164142'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -106835,7 +106835,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-45866bf269164142', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-45866bf269164142', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -106846,7 +106846,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-45866bf269164142'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -106872,7 +106872,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-45866bf269164142', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-45866bf269164142', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -106883,7 +106883,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-45866bf269164142'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -106909,7 +106909,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-45866bf269164142', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-45866bf269164142', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -106920,7 +106920,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-45866bf269164142'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -106946,7 +106946,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-45866bf269164142', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-45866bf269164142', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -106957,7 +106957,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-45866bf269164142'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -106983,7 +106983,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-45866bf269164142', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-45866bf269164142', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -106994,7 +106994,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-45866bf269164142'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -108204,7 +108204,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2896d6f3e19d0d25', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-2896d6f3e19d0d25', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -108215,7 +108215,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2896d6f3e19d0d25'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -108241,7 +108241,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2896d6f3e19d0d25', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-2896d6f3e19d0d25', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -108252,7 +108252,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2896d6f3e19d0d25'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -108278,7 +108278,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2896d6f3e19d0d25', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-2896d6f3e19d0d25', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -108289,7 +108289,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2896d6f3e19d0d25'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -108315,7 +108315,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2896d6f3e19d0d25', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-2896d6f3e19d0d25', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -108326,7 +108326,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2896d6f3e19d0d25'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -108352,7 +108352,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2896d6f3e19d0d25', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-2896d6f3e19d0d25', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -108363,7 +108363,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2896d6f3e19d0d25'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -108389,7 +108389,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2896d6f3e19d0d25', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-2896d6f3e19d0d25', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -108400,7 +108400,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2896d6f3e19d0d25'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -109610,7 +109610,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9393cff74f6ec775', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-9393cff74f6ec775', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -109621,7 +109621,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9393cff74f6ec775'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -109647,7 +109647,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9393cff74f6ec775', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-9393cff74f6ec775', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -109658,7 +109658,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9393cff74f6ec775'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -109684,7 +109684,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9393cff74f6ec775', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-9393cff74f6ec775', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -109695,7 +109695,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9393cff74f6ec775'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -109721,7 +109721,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9393cff74f6ec775', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-9393cff74f6ec775', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -109732,7 +109732,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9393cff74f6ec775'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -109758,7 +109758,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9393cff74f6ec775', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-9393cff74f6ec775', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -109769,7 +109769,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9393cff74f6ec775'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -109795,7 +109795,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9393cff74f6ec775', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-9393cff74f6ec775', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -109806,7 +109806,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9393cff74f6ec775'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -111016,7 +111016,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-65a25f8ecf1df71f', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-65a25f8ecf1df71f', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -111027,7 +111027,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-65a25f8ecf1df71f'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -111053,7 +111053,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-65a25f8ecf1df71f', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-65a25f8ecf1df71f', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -111064,7 +111064,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-65a25f8ecf1df71f'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -111090,7 +111090,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-65a25f8ecf1df71f', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-65a25f8ecf1df71f', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -111101,7 +111101,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-65a25f8ecf1df71f'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -111127,7 +111127,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-65a25f8ecf1df71f', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-65a25f8ecf1df71f', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -111138,7 +111138,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-65a25f8ecf1df71f'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -111164,7 +111164,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-65a25f8ecf1df71f', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-65a25f8ecf1df71f', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -111175,7 +111175,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-65a25f8ecf1df71f'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -111201,7 +111201,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-65a25f8ecf1df71f', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-65a25f8ecf1df71f', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -111212,7 +111212,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-65a25f8ecf1df71f'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -112422,7 +112422,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6b0399b9bd9513cf', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-6b0399b9bd9513cf', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -112433,7 +112433,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6b0399b9bd9513cf'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -112459,7 +112459,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6b0399b9bd9513cf', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-6b0399b9bd9513cf', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -112470,7 +112470,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6b0399b9bd9513cf'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -112496,7 +112496,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6b0399b9bd9513cf', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-6b0399b9bd9513cf', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -112507,7 +112507,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6b0399b9bd9513cf'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -112533,7 +112533,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6b0399b9bd9513cf', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-6b0399b9bd9513cf', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -112544,7 +112544,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6b0399b9bd9513cf'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -112570,7 +112570,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6b0399b9bd9513cf', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-6b0399b9bd9513cf', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -112581,7 +112581,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6b0399b9bd9513cf'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -112607,7 +112607,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6b0399b9bd9513cf', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-6b0399b9bd9513cf', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -112618,7 +112618,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6b0399b9bd9513cf'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -113828,7 +113828,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-ce93046f5041439c', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-ce93046f5041439c', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -113839,7 +113839,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-ce93046f5041439c'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -113865,7 +113865,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-ce93046f5041439c', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-ce93046f5041439c', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -113876,7 +113876,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-ce93046f5041439c'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -113902,7 +113902,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-ce93046f5041439c', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-ce93046f5041439c', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -113913,7 +113913,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-ce93046f5041439c'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -113939,7 +113939,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-ce93046f5041439c', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-ce93046f5041439c', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -113950,7 +113950,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-ce93046f5041439c'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -113976,7 +113976,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-ce93046f5041439c', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-ce93046f5041439c', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -113987,7 +113987,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-ce93046f5041439c'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -114013,7 +114013,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-ce93046f5041439c', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-ce93046f5041439c', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -114024,7 +114024,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-ce93046f5041439c'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -115234,7 +115234,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-7ea0c802548b19d4', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-7ea0c802548b19d4', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -115245,7 +115245,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-7ea0c802548b19d4'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -115271,7 +115271,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-7ea0c802548b19d4', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-7ea0c802548b19d4', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -115282,7 +115282,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-7ea0c802548b19d4'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -115308,7 +115308,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-7ea0c802548b19d4', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-7ea0c802548b19d4', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -115319,7 +115319,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-7ea0c802548b19d4'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -115345,7 +115345,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-7ea0c802548b19d4', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-7ea0c802548b19d4', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -115356,7 +115356,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-7ea0c802548b19d4'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -115382,7 +115382,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-7ea0c802548b19d4', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-7ea0c802548b19d4', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -115393,7 +115393,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-7ea0c802548b19d4'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -115419,7 +115419,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-7ea0c802548b19d4', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-7ea0c802548b19d4', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -115430,7 +115430,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-7ea0c802548b19d4'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -116640,7 +116640,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-755078aa7dfb541b', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-755078aa7dfb541b', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -116651,7 +116651,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-755078aa7dfb541b'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -116677,7 +116677,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-755078aa7dfb541b', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-755078aa7dfb541b', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -116688,7 +116688,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-755078aa7dfb541b'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -116714,7 +116714,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-755078aa7dfb541b', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-755078aa7dfb541b', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -116725,7 +116725,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-755078aa7dfb541b'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -116751,7 +116751,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-755078aa7dfb541b', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-755078aa7dfb541b', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -116762,7 +116762,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-755078aa7dfb541b'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -116788,7 +116788,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-755078aa7dfb541b', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-755078aa7dfb541b', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -116799,7 +116799,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-755078aa7dfb541b'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -116825,7 +116825,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-755078aa7dfb541b', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-755078aa7dfb541b', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -116836,7 +116836,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-755078aa7dfb541b'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -118046,7 +118046,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-94b81b84ca2b7b9b', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-94b81b84ca2b7b9b', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -118057,7 +118057,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-94b81b84ca2b7b9b'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -118083,7 +118083,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-94b81b84ca2b7b9b', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-94b81b84ca2b7b9b', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -118094,7 +118094,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-94b81b84ca2b7b9b'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -118120,7 +118120,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-94b81b84ca2b7b9b', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-94b81b84ca2b7b9b', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -118131,7 +118131,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-94b81b84ca2b7b9b'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -118157,7 +118157,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-94b81b84ca2b7b9b', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-94b81b84ca2b7b9b', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -118168,7 +118168,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-94b81b84ca2b7b9b'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -118194,7 +118194,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-94b81b84ca2b7b9b', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-94b81b84ca2b7b9b', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -118205,7 +118205,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-94b81b84ca2b7b9b'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -118231,7 +118231,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-94b81b84ca2b7b9b', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-94b81b84ca2b7b9b', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -118242,7 +118242,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-94b81b84ca2b7b9b'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -119452,7 +119452,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-637a9cfb3b25c85c', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-637a9cfb3b25c85c', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -119463,7 +119463,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-637a9cfb3b25c85c'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -119489,7 +119489,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-637a9cfb3b25c85c', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-637a9cfb3b25c85c', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -119500,7 +119500,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-637a9cfb3b25c85c'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -119526,7 +119526,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-637a9cfb3b25c85c', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-637a9cfb3b25c85c', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -119537,7 +119537,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-637a9cfb3b25c85c'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -119563,7 +119563,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-637a9cfb3b25c85c', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-637a9cfb3b25c85c', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -119574,7 +119574,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-637a9cfb3b25c85c'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -119600,7 +119600,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-637a9cfb3b25c85c', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-637a9cfb3b25c85c', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -119611,7 +119611,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-637a9cfb3b25c85c'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -119637,7 +119637,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-637a9cfb3b25c85c', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-637a9cfb3b25c85c', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -119648,7 +119648,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-637a9cfb3b25c85c'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -120858,7 +120858,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1afd687e6bc21755', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-1afd687e6bc21755', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -120869,7 +120869,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1afd687e6bc21755'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -120895,7 +120895,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1afd687e6bc21755', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-1afd687e6bc21755', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -120906,7 +120906,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1afd687e6bc21755'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -120932,7 +120932,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1afd687e6bc21755', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-1afd687e6bc21755', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -120943,7 +120943,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1afd687e6bc21755'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -120969,7 +120969,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1afd687e6bc21755', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-1afd687e6bc21755', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -120980,7 +120980,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1afd687e6bc21755'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -121006,7 +121006,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1afd687e6bc21755', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-1afd687e6bc21755', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -121017,7 +121017,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1afd687e6bc21755'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -121043,7 +121043,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1afd687e6bc21755', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-1afd687e6bc21755', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -121054,7 +121054,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1afd687e6bc21755'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -122264,7 +122264,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-41c311cc67bed2ba', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-41c311cc67bed2ba', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -122275,7 +122275,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-41c311cc67bed2ba'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -122301,7 +122301,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-41c311cc67bed2ba', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-41c311cc67bed2ba', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -122312,7 +122312,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-41c311cc67bed2ba'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -122338,7 +122338,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-41c311cc67bed2ba', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-41c311cc67bed2ba', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -122349,7 +122349,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-41c311cc67bed2ba'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -122375,7 +122375,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-41c311cc67bed2ba', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-41c311cc67bed2ba', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -122386,7 +122386,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-41c311cc67bed2ba'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -122412,7 +122412,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-41c311cc67bed2ba', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-41c311cc67bed2ba', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -122423,7 +122423,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-41c311cc67bed2ba'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -122449,7 +122449,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-41c311cc67bed2ba', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-41c311cc67bed2ba', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -122460,7 +122460,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-41c311cc67bed2ba'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -123670,7 +123670,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6959c7a26d9608fb', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-6959c7a26d9608fb', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -123681,7 +123681,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6959c7a26d9608fb'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -123707,7 +123707,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6959c7a26d9608fb', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-6959c7a26d9608fb', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -123718,7 +123718,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6959c7a26d9608fb'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -123744,7 +123744,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6959c7a26d9608fb', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-6959c7a26d9608fb', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -123755,7 +123755,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6959c7a26d9608fb'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -123781,7 +123781,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6959c7a26d9608fb', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-6959c7a26d9608fb', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -123792,7 +123792,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6959c7a26d9608fb'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -123818,7 +123818,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6959c7a26d9608fb', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-6959c7a26d9608fb', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -123829,7 +123829,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6959c7a26d9608fb'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -123855,7 +123855,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6959c7a26d9608fb', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-6959c7a26d9608fb', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -123866,7 +123866,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6959c7a26d9608fb'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -125076,7 +125076,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-a290cbb76ad097b6', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-a290cbb76ad097b6', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -125087,7 +125087,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-a290cbb76ad097b6'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -125113,7 +125113,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-a290cbb76ad097b6', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-a290cbb76ad097b6', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -125124,7 +125124,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-a290cbb76ad097b6'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -125150,7 +125150,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-a290cbb76ad097b6', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-a290cbb76ad097b6', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -125161,7 +125161,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-a290cbb76ad097b6'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -125187,7 +125187,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-a290cbb76ad097b6', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-a290cbb76ad097b6', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -125198,7 +125198,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-a290cbb76ad097b6'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -125224,7 +125224,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-a290cbb76ad097b6', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-a290cbb76ad097b6', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -125235,7 +125235,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-a290cbb76ad097b6'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -125261,7 +125261,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-a290cbb76ad097b6', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-a290cbb76ad097b6', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -125272,7 +125272,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-a290cbb76ad097b6'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -126482,7 +126482,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-dabc2c853e32865f', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-dabc2c853e32865f', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -126493,7 +126493,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-dabc2c853e32865f'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -126519,7 +126519,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-dabc2c853e32865f', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-dabc2c853e32865f', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -126530,7 +126530,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-dabc2c853e32865f'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -126556,7 +126556,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-dabc2c853e32865f', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-dabc2c853e32865f', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -126567,7 +126567,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-dabc2c853e32865f'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -126593,7 +126593,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-dabc2c853e32865f', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-dabc2c853e32865f', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -126604,7 +126604,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-dabc2c853e32865f'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -126630,7 +126630,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-dabc2c853e32865f', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-dabc2c853e32865f', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -126641,7 +126641,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-dabc2c853e32865f'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -126667,7 +126667,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-dabc2c853e32865f', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-dabc2c853e32865f', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -126678,7 +126678,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-dabc2c853e32865f'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -127888,7 +127888,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-04fca772459212a2', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-04fca772459212a2', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -127899,7 +127899,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-04fca772459212a2'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -127925,7 +127925,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-04fca772459212a2', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-04fca772459212a2', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -127936,7 +127936,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-04fca772459212a2'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -127962,7 +127962,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-04fca772459212a2', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-04fca772459212a2', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -127973,7 +127973,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-04fca772459212a2'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -127999,7 +127999,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-04fca772459212a2', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-04fca772459212a2', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -128010,7 +128010,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-04fca772459212a2'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -128036,7 +128036,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-04fca772459212a2', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-04fca772459212a2', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -128047,7 +128047,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-04fca772459212a2'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -128073,7 +128073,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-04fca772459212a2', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-04fca772459212a2', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -128084,7 +128084,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-04fca772459212a2'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -129294,7 +129294,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1530b29ad576c094', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-1530b29ad576c094', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -129305,7 +129305,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1530b29ad576c094'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -129331,7 +129331,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1530b29ad576c094', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-1530b29ad576c094', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -129342,7 +129342,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1530b29ad576c094'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -129368,7 +129368,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1530b29ad576c094', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-1530b29ad576c094', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -129379,7 +129379,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1530b29ad576c094'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -129405,7 +129405,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1530b29ad576c094', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-1530b29ad576c094', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -129416,7 +129416,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1530b29ad576c094'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -129442,7 +129442,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1530b29ad576c094', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-1530b29ad576c094', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -129453,7 +129453,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1530b29ad576c094'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -129479,7 +129479,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1530b29ad576c094', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-1530b29ad576c094', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -129490,7 +129490,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1530b29ad576c094'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -130700,7 +130700,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-100542002dec8b72', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-100542002dec8b72', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -130711,7 +130711,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-100542002dec8b72'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -130737,7 +130737,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-100542002dec8b72', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-100542002dec8b72', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -130748,7 +130748,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-100542002dec8b72'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -130774,7 +130774,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-100542002dec8b72', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-100542002dec8b72', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -130785,7 +130785,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-100542002dec8b72'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -130811,7 +130811,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-100542002dec8b72', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-100542002dec8b72', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -130822,7 +130822,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-100542002dec8b72'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -130848,7 +130848,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-100542002dec8b72', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-100542002dec8b72', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -130859,7 +130859,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-100542002dec8b72'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -130885,7 +130885,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-100542002dec8b72', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-100542002dec8b72', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -130896,7 +130896,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-100542002dec8b72'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -132106,7 +132106,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-377d7ee3350e9b66', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-377d7ee3350e9b66', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -132117,7 +132117,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-377d7ee3350e9b66'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -132143,7 +132143,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-377d7ee3350e9b66', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-377d7ee3350e9b66', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -132154,7 +132154,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-377d7ee3350e9b66'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -132180,7 +132180,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-377d7ee3350e9b66', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-377d7ee3350e9b66', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -132191,7 +132191,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-377d7ee3350e9b66'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -132217,7 +132217,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-377d7ee3350e9b66', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-377d7ee3350e9b66', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -132228,7 +132228,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-377d7ee3350e9b66'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -132254,7 +132254,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-377d7ee3350e9b66', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-377d7ee3350e9b66', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -132265,7 +132265,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-377d7ee3350e9b66'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -132291,7 +132291,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-377d7ee3350e9b66', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-377d7ee3350e9b66', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -132302,7 +132302,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-377d7ee3350e9b66'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -133512,7 +133512,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-58eec4087a92e5eb', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-58eec4087a92e5eb', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -133523,7 +133523,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-58eec4087a92e5eb'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -133549,7 +133549,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-58eec4087a92e5eb', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-58eec4087a92e5eb', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -133560,7 +133560,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-58eec4087a92e5eb'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -133586,7 +133586,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-58eec4087a92e5eb', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-58eec4087a92e5eb', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -133597,7 +133597,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-58eec4087a92e5eb'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -133623,7 +133623,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-58eec4087a92e5eb', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-58eec4087a92e5eb', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -133634,7 +133634,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-58eec4087a92e5eb'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -133660,7 +133660,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-58eec4087a92e5eb', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-58eec4087a92e5eb', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -133671,7 +133671,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-58eec4087a92e5eb'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -133697,7 +133697,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-58eec4087a92e5eb', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-58eec4087a92e5eb', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -133708,7 +133708,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-58eec4087a92e5eb'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -134918,7 +134918,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9b56903df958dfdc', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-9b56903df958dfdc', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -134929,7 +134929,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9b56903df958dfdc'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -134955,7 +134955,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9b56903df958dfdc', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-9b56903df958dfdc', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -134966,7 +134966,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9b56903df958dfdc'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -134992,7 +134992,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9b56903df958dfdc', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-9b56903df958dfdc', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -135003,7 +135003,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9b56903df958dfdc'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -135029,7 +135029,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9b56903df958dfdc', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-9b56903df958dfdc', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -135040,7 +135040,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9b56903df958dfdc'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -135066,7 +135066,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9b56903df958dfdc', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-9b56903df958dfdc', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -135077,7 +135077,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9b56903df958dfdc'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -135103,7 +135103,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-9b56903df958dfdc', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-9b56903df958dfdc', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -135114,7 +135114,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-9b56903df958dfdc'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -136324,7 +136324,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6dc4abc3b89d2bac', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-6dc4abc3b89d2bac', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -136335,7 +136335,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6dc4abc3b89d2bac'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -136361,7 +136361,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6dc4abc3b89d2bac', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-6dc4abc3b89d2bac', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -136372,7 +136372,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6dc4abc3b89d2bac'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -136398,7 +136398,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6dc4abc3b89d2bac', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-6dc4abc3b89d2bac', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -136409,7 +136409,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6dc4abc3b89d2bac'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -136435,7 +136435,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6dc4abc3b89d2bac', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-6dc4abc3b89d2bac', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -136446,7 +136446,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6dc4abc3b89d2bac'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -136472,7 +136472,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6dc4abc3b89d2bac', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-6dc4abc3b89d2bac', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -136483,7 +136483,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6dc4abc3b89d2bac'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -136509,7 +136509,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6dc4abc3b89d2bac', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-6dc4abc3b89d2bac', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -136520,7 +136520,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6dc4abc3b89d2bac'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -137730,7 +137730,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b80d7b8c5adc4eaa', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-b80d7b8c5adc4eaa', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -137741,7 +137741,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b80d7b8c5adc4eaa'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -137767,7 +137767,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b80d7b8c5adc4eaa', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-b80d7b8c5adc4eaa', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -137778,7 +137778,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b80d7b8c5adc4eaa'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -137804,7 +137804,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b80d7b8c5adc4eaa', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-b80d7b8c5adc4eaa', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -137815,7 +137815,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b80d7b8c5adc4eaa'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -137841,7 +137841,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b80d7b8c5adc4eaa', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-b80d7b8c5adc4eaa', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -137852,7 +137852,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b80d7b8c5adc4eaa'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -137878,7 +137878,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b80d7b8c5adc4eaa', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-b80d7b8c5adc4eaa', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -137889,7 +137889,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b80d7b8c5adc4eaa'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -137915,7 +137915,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-b80d7b8c5adc4eaa', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-b80d7b8c5adc4eaa', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -137926,7 +137926,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-b80d7b8c5adc4eaa'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -139136,7 +139136,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-87ff40a56ac3f461', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-87ff40a56ac3f461', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -139147,7 +139147,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-87ff40a56ac3f461'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -139173,7 +139173,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-87ff40a56ac3f461', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-87ff40a56ac3f461', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -139184,7 +139184,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-87ff40a56ac3f461'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -139210,7 +139210,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-87ff40a56ac3f461', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-87ff40a56ac3f461', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -139221,7 +139221,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-87ff40a56ac3f461'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -139247,7 +139247,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-87ff40a56ac3f461', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-87ff40a56ac3f461', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -139258,7 +139258,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-87ff40a56ac3f461'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -139284,7 +139284,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-87ff40a56ac3f461', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-87ff40a56ac3f461', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -139295,7 +139295,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-87ff40a56ac3f461'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -139321,7 +139321,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-87ff40a56ac3f461', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-87ff40a56ac3f461', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -139332,7 +139332,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-87ff40a56ac3f461'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -140542,7 +140542,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-0445b371f7401e3b', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-0445b371f7401e3b', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -140553,7 +140553,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-0445b371f7401e3b'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -140579,7 +140579,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-0445b371f7401e3b', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-0445b371f7401e3b', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -140590,7 +140590,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-0445b371f7401e3b'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -140616,7 +140616,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-0445b371f7401e3b', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-0445b371f7401e3b', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -140627,7 +140627,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-0445b371f7401e3b'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -140653,7 +140653,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-0445b371f7401e3b', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-0445b371f7401e3b', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -140664,7 +140664,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-0445b371f7401e3b'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -140690,7 +140690,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-0445b371f7401e3b', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-0445b371f7401e3b', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -140701,7 +140701,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-0445b371f7401e3b'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -140727,7 +140727,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-0445b371f7401e3b', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-0445b371f7401e3b', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -140738,7 +140738,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-0445b371f7401e3b'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -141948,7 +141948,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d7bf0fd8e0801a9d', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-d7bf0fd8e0801a9d', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -141959,7 +141959,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d7bf0fd8e0801a9d'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -141985,7 +141985,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d7bf0fd8e0801a9d', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-d7bf0fd8e0801a9d', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -141996,7 +141996,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d7bf0fd8e0801a9d'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -142022,7 +142022,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d7bf0fd8e0801a9d', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-d7bf0fd8e0801a9d', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -142033,7 +142033,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d7bf0fd8e0801a9d'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -142059,7 +142059,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d7bf0fd8e0801a9d', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-d7bf0fd8e0801a9d', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -142070,7 +142070,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d7bf0fd8e0801a9d'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -142096,7 +142096,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d7bf0fd8e0801a9d', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-d7bf0fd8e0801a9d', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -142107,7 +142107,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d7bf0fd8e0801a9d'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -142133,7 +142133,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d7bf0fd8e0801a9d', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-d7bf0fd8e0801a9d', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -142144,7 +142144,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d7bf0fd8e0801a9d'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -143354,7 +143354,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-fc1a506efbe6b9de', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-fc1a506efbe6b9de', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -143365,7 +143365,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-fc1a506efbe6b9de'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -143391,7 +143391,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-fc1a506efbe6b9de', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-fc1a506efbe6b9de', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -143402,7 +143402,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-fc1a506efbe6b9de'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -143428,7 +143428,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-fc1a506efbe6b9de', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-fc1a506efbe6b9de', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -143439,7 +143439,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-fc1a506efbe6b9de'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -143465,7 +143465,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-fc1a506efbe6b9de', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-fc1a506efbe6b9de', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -143476,7 +143476,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-fc1a506efbe6b9de'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -143502,7 +143502,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-fc1a506efbe6b9de', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-fc1a506efbe6b9de', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -143513,7 +143513,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-fc1a506efbe6b9de'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -143539,7 +143539,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-fc1a506efbe6b9de', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-fc1a506efbe6b9de', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -143550,7 +143550,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-fc1a506efbe6b9de'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -144760,7 +144760,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-518bc7240d12e8ae', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-518bc7240d12e8ae', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -144771,7 +144771,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-518bc7240d12e8ae'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -144797,7 +144797,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-518bc7240d12e8ae', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-518bc7240d12e8ae', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -144808,7 +144808,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-518bc7240d12e8ae'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -144834,7 +144834,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-518bc7240d12e8ae', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-518bc7240d12e8ae', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -144845,7 +144845,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-518bc7240d12e8ae'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -144871,7 +144871,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-518bc7240d12e8ae', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-518bc7240d12e8ae', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -144882,7 +144882,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-518bc7240d12e8ae'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -144908,7 +144908,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-518bc7240d12e8ae', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-518bc7240d12e8ae', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -144919,7 +144919,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-518bc7240d12e8ae'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -144945,7 +144945,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-518bc7240d12e8ae', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-518bc7240d12e8ae', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -144956,7 +144956,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-518bc7240d12e8ae'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -146166,7 +146166,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-f2dda8570a79ce1a', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-f2dda8570a79ce1a', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -146177,7 +146177,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-f2dda8570a79ce1a'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -146203,7 +146203,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-f2dda8570a79ce1a', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-f2dda8570a79ce1a', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -146214,7 +146214,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-f2dda8570a79ce1a'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -146240,7 +146240,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-f2dda8570a79ce1a', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-f2dda8570a79ce1a', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -146251,7 +146251,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-f2dda8570a79ce1a'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -146277,7 +146277,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-f2dda8570a79ce1a', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-f2dda8570a79ce1a', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -146288,7 +146288,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-f2dda8570a79ce1a'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -146314,7 +146314,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-f2dda8570a79ce1a', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-f2dda8570a79ce1a', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -146325,7 +146325,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-f2dda8570a79ce1a'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -146351,7 +146351,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-f2dda8570a79ce1a', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-f2dda8570a79ce1a', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -146362,7 +146362,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-f2dda8570a79ce1a'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -147572,7 +147572,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-acf9ca5f8079e490', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-acf9ca5f8079e490', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -147583,7 +147583,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-acf9ca5f8079e490'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -147609,7 +147609,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-acf9ca5f8079e490', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-acf9ca5f8079e490', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -147620,7 +147620,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-acf9ca5f8079e490'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -147646,7 +147646,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-acf9ca5f8079e490', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-acf9ca5f8079e490', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -147657,7 +147657,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-acf9ca5f8079e490'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -147683,7 +147683,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-acf9ca5f8079e490', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-acf9ca5f8079e490', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -147694,7 +147694,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-acf9ca5f8079e490'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -147720,7 +147720,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-acf9ca5f8079e490', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-acf9ca5f8079e490', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -147731,7 +147731,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-acf9ca5f8079e490'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -147757,7 +147757,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-acf9ca5f8079e490', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-acf9ca5f8079e490', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -147768,7 +147768,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-acf9ca5f8079e490'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -148978,7 +148978,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2f7f90648ff9a2ee', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-2f7f90648ff9a2ee', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -148989,7 +148989,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2f7f90648ff9a2ee'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -149015,7 +149015,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2f7f90648ff9a2ee', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-2f7f90648ff9a2ee', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -149026,7 +149026,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2f7f90648ff9a2ee'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -149052,7 +149052,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2f7f90648ff9a2ee', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-2f7f90648ff9a2ee', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -149063,7 +149063,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2f7f90648ff9a2ee'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -149089,7 +149089,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2f7f90648ff9a2ee', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-2f7f90648ff9a2ee', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -149100,7 +149100,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2f7f90648ff9a2ee'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -149126,7 +149126,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2f7f90648ff9a2ee', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-2f7f90648ff9a2ee', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -149137,7 +149137,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2f7f90648ff9a2ee'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -149163,7 +149163,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2f7f90648ff9a2ee', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-2f7f90648ff9a2ee', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -149174,7 +149174,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2f7f90648ff9a2ee'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -150384,7 +150384,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e8c7a010de171113', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-e8c7a010de171113', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -150395,7 +150395,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e8c7a010de171113'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -150421,7 +150421,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e8c7a010de171113', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-e8c7a010de171113', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -150432,7 +150432,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e8c7a010de171113'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -150458,7 +150458,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e8c7a010de171113', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-e8c7a010de171113', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -150469,7 +150469,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e8c7a010de171113'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -150495,7 +150495,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e8c7a010de171113', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-e8c7a010de171113', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -150506,7 +150506,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e8c7a010de171113'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -150532,7 +150532,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e8c7a010de171113', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-e8c7a010de171113', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -150543,7 +150543,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e8c7a010de171113'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -150569,7 +150569,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e8c7a010de171113', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-e8c7a010de171113', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -150580,7 +150580,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e8c7a010de171113'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -151790,7 +151790,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d1349f3314122c0b', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-d1349f3314122c0b', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -151801,7 +151801,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d1349f3314122c0b'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -151827,7 +151827,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d1349f3314122c0b', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-d1349f3314122c0b', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -151838,7 +151838,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d1349f3314122c0b'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -151864,7 +151864,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d1349f3314122c0b', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-d1349f3314122c0b', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -151875,7 +151875,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d1349f3314122c0b'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -151901,7 +151901,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d1349f3314122c0b', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-d1349f3314122c0b', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -151912,7 +151912,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d1349f3314122c0b'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -151938,7 +151938,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d1349f3314122c0b', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-d1349f3314122c0b', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -151949,7 +151949,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d1349f3314122c0b'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -151975,7 +151975,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-d1349f3314122c0b', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-d1349f3314122c0b', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -151986,7 +151986,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-d1349f3314122c0b'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -153196,7 +153196,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-97c5d88b468cdb63', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-97c5d88b468cdb63', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -153207,7 +153207,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-97c5d88b468cdb63'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -153233,7 +153233,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-97c5d88b468cdb63', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-97c5d88b468cdb63', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -153244,7 +153244,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-97c5d88b468cdb63'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -153270,7 +153270,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-97c5d88b468cdb63', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-97c5d88b468cdb63', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -153281,7 +153281,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-97c5d88b468cdb63'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -153307,7 +153307,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-97c5d88b468cdb63', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-97c5d88b468cdb63', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -153318,7 +153318,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-97c5d88b468cdb63'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -153344,7 +153344,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-97c5d88b468cdb63', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-97c5d88b468cdb63', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -153355,7 +153355,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-97c5d88b468cdb63'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -153381,7 +153381,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-97c5d88b468cdb63', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-97c5d88b468cdb63', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -153392,7 +153392,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-97c5d88b468cdb63'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -154602,7 +154602,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-844a4dcc1c3de7c9', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-844a4dcc1c3de7c9', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -154613,7 +154613,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-844a4dcc1c3de7c9'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -154639,7 +154639,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-844a4dcc1c3de7c9', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-844a4dcc1c3de7c9', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -154650,7 +154650,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-844a4dcc1c3de7c9'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -154676,7 +154676,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-844a4dcc1c3de7c9', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-844a4dcc1c3de7c9', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -154687,7 +154687,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-844a4dcc1c3de7c9'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -154713,7 +154713,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-844a4dcc1c3de7c9', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-844a4dcc1c3de7c9', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -154724,7 +154724,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-844a4dcc1c3de7c9'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -154750,7 +154750,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-844a4dcc1c3de7c9', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-844a4dcc1c3de7c9', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -154761,7 +154761,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-844a4dcc1c3de7c9'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -154787,7 +154787,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-844a4dcc1c3de7c9', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-844a4dcc1c3de7c9', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -154798,7 +154798,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-844a4dcc1c3de7c9'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -156008,7 +156008,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-91013dd60872d3fc', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-91013dd60872d3fc', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -156019,7 +156019,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-91013dd60872d3fc'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -156045,7 +156045,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-91013dd60872d3fc', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-91013dd60872d3fc', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -156056,7 +156056,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-91013dd60872d3fc'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -156082,7 +156082,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-91013dd60872d3fc', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-91013dd60872d3fc', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -156093,7 +156093,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-91013dd60872d3fc'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -156119,7 +156119,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-91013dd60872d3fc', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-91013dd60872d3fc', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -156130,7 +156130,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-91013dd60872d3fc'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -156156,7 +156156,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-91013dd60872d3fc', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-91013dd60872d3fc', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -156167,7 +156167,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-91013dd60872d3fc'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -156193,7 +156193,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-91013dd60872d3fc', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-91013dd60872d3fc', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -156204,7 +156204,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-91013dd60872d3fc'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -157414,7 +157414,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bad6ce090800b5fe', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-bad6ce090800b5fe', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -157425,7 +157425,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bad6ce090800b5fe'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -157451,7 +157451,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bad6ce090800b5fe', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-bad6ce090800b5fe', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -157462,7 +157462,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bad6ce090800b5fe'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -157488,7 +157488,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bad6ce090800b5fe', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-bad6ce090800b5fe', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -157499,7 +157499,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bad6ce090800b5fe'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -157525,7 +157525,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bad6ce090800b5fe', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-bad6ce090800b5fe', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -157536,7 +157536,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bad6ce090800b5fe'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -157562,7 +157562,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bad6ce090800b5fe', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-bad6ce090800b5fe', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -157573,7 +157573,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bad6ce090800b5fe'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -157599,7 +157599,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bad6ce090800b5fe', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-bad6ce090800b5fe', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -157610,7 +157610,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bad6ce090800b5fe'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -158820,7 +158820,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2ee0687b44b35798', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-2ee0687b44b35798', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -158831,7 +158831,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2ee0687b44b35798'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -158857,7 +158857,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2ee0687b44b35798', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-2ee0687b44b35798', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -158868,7 +158868,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2ee0687b44b35798'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -158894,7 +158894,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2ee0687b44b35798', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-2ee0687b44b35798', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -158905,7 +158905,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2ee0687b44b35798'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -158931,7 +158931,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2ee0687b44b35798', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-2ee0687b44b35798', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -158942,7 +158942,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2ee0687b44b35798'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -158968,7 +158968,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2ee0687b44b35798', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-2ee0687b44b35798', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -158979,7 +158979,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2ee0687b44b35798'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -159005,7 +159005,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2ee0687b44b35798', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-2ee0687b44b35798', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -159016,7 +159016,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2ee0687b44b35798'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -160226,7 +160226,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e6900cea94d17e7c', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-e6900cea94d17e7c', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -160237,7 +160237,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e6900cea94d17e7c'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -160263,7 +160263,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e6900cea94d17e7c', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-e6900cea94d17e7c', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -160274,7 +160274,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e6900cea94d17e7c'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -160300,7 +160300,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e6900cea94d17e7c', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-e6900cea94d17e7c', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -160311,7 +160311,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e6900cea94d17e7c'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -160337,7 +160337,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e6900cea94d17e7c', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-e6900cea94d17e7c', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -160348,7 +160348,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e6900cea94d17e7c'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -160374,7 +160374,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e6900cea94d17e7c', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-e6900cea94d17e7c', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -160385,7 +160385,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e6900cea94d17e7c'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -160411,7 +160411,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e6900cea94d17e7c', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-e6900cea94d17e7c', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -160422,7 +160422,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e6900cea94d17e7c'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -161632,7 +161632,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6f06efcfd1cd2635', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-6f06efcfd1cd2635', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -161643,7 +161643,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6f06efcfd1cd2635'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -161669,7 +161669,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6f06efcfd1cd2635', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-6f06efcfd1cd2635', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -161680,7 +161680,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6f06efcfd1cd2635'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -161706,7 +161706,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6f06efcfd1cd2635', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-6f06efcfd1cd2635', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -161717,7 +161717,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6f06efcfd1cd2635'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -161743,7 +161743,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6f06efcfd1cd2635', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-6f06efcfd1cd2635', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -161754,7 +161754,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6f06efcfd1cd2635'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -161780,7 +161780,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6f06efcfd1cd2635', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-6f06efcfd1cd2635', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -161791,7 +161791,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6f06efcfd1cd2635'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -161817,7 +161817,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6f06efcfd1cd2635', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-6f06efcfd1cd2635', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -161828,7 +161828,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6f06efcfd1cd2635'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -163038,7 +163038,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1f2c95093caf10e9', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-1f2c95093caf10e9', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -163049,7 +163049,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1f2c95093caf10e9'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -163075,7 +163075,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1f2c95093caf10e9', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-1f2c95093caf10e9', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -163086,7 +163086,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1f2c95093caf10e9'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -163112,7 +163112,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1f2c95093caf10e9', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-1f2c95093caf10e9', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -163123,7 +163123,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1f2c95093caf10e9'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -163149,7 +163149,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1f2c95093caf10e9', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-1f2c95093caf10e9', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -163160,7 +163160,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1f2c95093caf10e9'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -163186,7 +163186,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1f2c95093caf10e9', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-1f2c95093caf10e9', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -163197,7 +163197,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1f2c95093caf10e9'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -163223,7 +163223,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1f2c95093caf10e9', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-1f2c95093caf10e9', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -163234,7 +163234,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1f2c95093caf10e9'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -164444,7 +164444,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-850626138d6f6e1f', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-850626138d6f6e1f', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -164455,7 +164455,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-850626138d6f6e1f'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -164481,7 +164481,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-850626138d6f6e1f', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-850626138d6f6e1f', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -164492,7 +164492,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-850626138d6f6e1f'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -164518,7 +164518,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-850626138d6f6e1f', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-850626138d6f6e1f', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -164529,7 +164529,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-850626138d6f6e1f'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -164555,7 +164555,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-850626138d6f6e1f', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-850626138d6f6e1f', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -164566,7 +164566,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-850626138d6f6e1f'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -164592,7 +164592,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-850626138d6f6e1f', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-850626138d6f6e1f', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -164603,7 +164603,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-850626138d6f6e1f'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -164629,7 +164629,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-850626138d6f6e1f', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-850626138d6f6e1f', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -164640,7 +164640,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-850626138d6f6e1f'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -165850,7 +165850,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-75aef1bb4f2200b6', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-75aef1bb4f2200b6', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -165861,7 +165861,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-75aef1bb4f2200b6'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -165887,7 +165887,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-75aef1bb4f2200b6', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-75aef1bb4f2200b6', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -165898,7 +165898,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-75aef1bb4f2200b6'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -165924,7 +165924,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-75aef1bb4f2200b6', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-75aef1bb4f2200b6', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -165935,7 +165935,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-75aef1bb4f2200b6'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -165961,7 +165961,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-75aef1bb4f2200b6', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-75aef1bb4f2200b6', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -165972,7 +165972,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-75aef1bb4f2200b6'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -165998,7 +165998,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-75aef1bb4f2200b6', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-75aef1bb4f2200b6', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -166009,7 +166009,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-75aef1bb4f2200b6'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -166035,7 +166035,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-75aef1bb4f2200b6', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-75aef1bb4f2200b6', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -166046,7 +166046,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-75aef1bb4f2200b6'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -167256,7 +167256,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-10c9c5766f9b9dba', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-10c9c5766f9b9dba', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -167267,7 +167267,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-10c9c5766f9b9dba'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -167293,7 +167293,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-10c9c5766f9b9dba', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-10c9c5766f9b9dba', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -167304,7 +167304,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-10c9c5766f9b9dba'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -167330,7 +167330,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-10c9c5766f9b9dba', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-10c9c5766f9b9dba', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -167341,7 +167341,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-10c9c5766f9b9dba'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -167367,7 +167367,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-10c9c5766f9b9dba', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-10c9c5766f9b9dba', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -167378,7 +167378,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-10c9c5766f9b9dba'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -167404,7 +167404,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-10c9c5766f9b9dba', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-10c9c5766f9b9dba', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -167415,7 +167415,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-10c9c5766f9b9dba'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -167441,7 +167441,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-10c9c5766f9b9dba', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-10c9c5766f9b9dba', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -167452,7 +167452,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-10c9c5766f9b9dba'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -168662,7 +168662,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-99202b60c398d30e', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-99202b60c398d30e', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -168673,7 +168673,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-99202b60c398d30e'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -168699,7 +168699,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-99202b60c398d30e', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-99202b60c398d30e', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -168710,7 +168710,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-99202b60c398d30e'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -168736,7 +168736,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-99202b60c398d30e', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-99202b60c398d30e', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -168747,7 +168747,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-99202b60c398d30e'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -168773,7 +168773,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-99202b60c398d30e', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-99202b60c398d30e', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -168784,7 +168784,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-99202b60c398d30e'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -168810,7 +168810,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-99202b60c398d30e', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-99202b60c398d30e', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -168821,7 +168821,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-99202b60c398d30e'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -168847,7 +168847,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-99202b60c398d30e', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-99202b60c398d30e', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -168858,7 +168858,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-99202b60c398d30e'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -170068,7 +170068,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-c2108b63b671fd8e', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-c2108b63b671fd8e', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -170079,7 +170079,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-c2108b63b671fd8e'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -170105,7 +170105,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-c2108b63b671fd8e', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-c2108b63b671fd8e', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -170116,7 +170116,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-c2108b63b671fd8e'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -170142,7 +170142,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-c2108b63b671fd8e', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-c2108b63b671fd8e', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -170153,7 +170153,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-c2108b63b671fd8e'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -170179,7 +170179,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-c2108b63b671fd8e', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-c2108b63b671fd8e', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -170190,7 +170190,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-c2108b63b671fd8e'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -170216,7 +170216,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-c2108b63b671fd8e', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-c2108b63b671fd8e', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -170227,7 +170227,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-c2108b63b671fd8e'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -170253,7 +170253,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-c2108b63b671fd8e', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-c2108b63b671fd8e', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -170264,7 +170264,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-c2108b63b671fd8e'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -171474,7 +171474,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-3afd58393cf95b5d', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-3afd58393cf95b5d', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -171485,7 +171485,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-3afd58393cf95b5d'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -171511,7 +171511,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-3afd58393cf95b5d', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-3afd58393cf95b5d', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -171522,7 +171522,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-3afd58393cf95b5d'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -171548,7 +171548,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-3afd58393cf95b5d', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-3afd58393cf95b5d', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -171559,7 +171559,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-3afd58393cf95b5d'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -171585,7 +171585,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-3afd58393cf95b5d', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-3afd58393cf95b5d', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -171596,7 +171596,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-3afd58393cf95b5d'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -171622,7 +171622,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-3afd58393cf95b5d', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-3afd58393cf95b5d', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -171633,7 +171633,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-3afd58393cf95b5d'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -171659,7 +171659,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-3afd58393cf95b5d', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-3afd58393cf95b5d', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -171670,7 +171670,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-3afd58393cf95b5d'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -172880,7 +172880,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-28e52efbecda00f1', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-28e52efbecda00f1', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -172891,7 +172891,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-28e52efbecda00f1'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -172917,7 +172917,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-28e52efbecda00f1', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-28e52efbecda00f1', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -172928,7 +172928,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-28e52efbecda00f1'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -172954,7 +172954,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-28e52efbecda00f1', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-28e52efbecda00f1', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -172965,7 +172965,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-28e52efbecda00f1'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -172991,7 +172991,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-28e52efbecda00f1', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-28e52efbecda00f1', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -173002,7 +173002,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-28e52efbecda00f1'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -173028,7 +173028,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-28e52efbecda00f1', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-28e52efbecda00f1', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -173039,7 +173039,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-28e52efbecda00f1'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -173065,7 +173065,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-28e52efbecda00f1', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-28e52efbecda00f1', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -173076,7 +173076,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-28e52efbecda00f1'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -174286,7 +174286,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-4ae41b3638a16f5d', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-4ae41b3638a16f5d', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -174297,7 +174297,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-4ae41b3638a16f5d'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -174323,7 +174323,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-4ae41b3638a16f5d', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-4ae41b3638a16f5d', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -174334,7 +174334,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-4ae41b3638a16f5d'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -174360,7 +174360,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-4ae41b3638a16f5d', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-4ae41b3638a16f5d', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -174371,7 +174371,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-4ae41b3638a16f5d'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -174397,7 +174397,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-4ae41b3638a16f5d', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-4ae41b3638a16f5d', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -174408,7 +174408,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-4ae41b3638a16f5d'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -174434,7 +174434,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-4ae41b3638a16f5d', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-4ae41b3638a16f5d', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -174445,7 +174445,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-4ae41b3638a16f5d'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -174471,7 +174471,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-4ae41b3638a16f5d', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-4ae41b3638a16f5d', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -174482,7 +174482,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-4ae41b3638a16f5d'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -175692,7 +175692,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6f9364efaed005fa', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-6f9364efaed005fa', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -175703,7 +175703,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6f9364efaed005fa'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -175729,7 +175729,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6f9364efaed005fa', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-6f9364efaed005fa', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -175740,7 +175740,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6f9364efaed005fa'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -175766,7 +175766,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6f9364efaed005fa', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-6f9364efaed005fa', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -175777,7 +175777,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6f9364efaed005fa'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -175803,7 +175803,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6f9364efaed005fa', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-6f9364efaed005fa', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -175814,7 +175814,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6f9364efaed005fa'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -175840,7 +175840,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6f9364efaed005fa', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-6f9364efaed005fa', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -175851,7 +175851,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6f9364efaed005fa'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -175877,7 +175877,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6f9364efaed005fa', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-6f9364efaed005fa', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -175888,7 +175888,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6f9364efaed005fa'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -177098,7 +177098,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e19263288192561d', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-e19263288192561d', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -177109,7 +177109,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e19263288192561d'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -177135,7 +177135,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e19263288192561d', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-e19263288192561d', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -177146,7 +177146,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e19263288192561d'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -177172,7 +177172,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e19263288192561d', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-e19263288192561d', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -177183,7 +177183,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e19263288192561d'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -177209,7 +177209,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e19263288192561d', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-e19263288192561d', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -177220,7 +177220,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e19263288192561d'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -177246,7 +177246,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e19263288192561d', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-e19263288192561d', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -177257,7 +177257,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e19263288192561d'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -177283,7 +177283,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e19263288192561d', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-e19263288192561d', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -177294,7 +177294,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e19263288192561d'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -178504,7 +178504,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-75d60b77b50eb489', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-75d60b77b50eb489', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -178515,7 +178515,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-75d60b77b50eb489'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -178541,7 +178541,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-75d60b77b50eb489', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-75d60b77b50eb489', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -178552,7 +178552,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-75d60b77b50eb489'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -178578,7 +178578,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-75d60b77b50eb489', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-75d60b77b50eb489', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -178589,7 +178589,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-75d60b77b50eb489'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -178615,7 +178615,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-75d60b77b50eb489', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-75d60b77b50eb489', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -178626,7 +178626,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-75d60b77b50eb489'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -178652,7 +178652,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-75d60b77b50eb489', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-75d60b77b50eb489', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -178663,7 +178663,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-75d60b77b50eb489'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -178689,7 +178689,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-75d60b77b50eb489', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-75d60b77b50eb489', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -178700,7 +178700,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-75d60b77b50eb489'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -179910,7 +179910,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-829d372b286ad175', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-829d372b286ad175', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -179921,7 +179921,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-829d372b286ad175'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -179947,7 +179947,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-829d372b286ad175', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-829d372b286ad175', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -179958,7 +179958,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-829d372b286ad175'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -179984,7 +179984,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-829d372b286ad175', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-829d372b286ad175', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -179995,7 +179995,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-829d372b286ad175'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -180021,7 +180021,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-829d372b286ad175', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-829d372b286ad175', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -180032,7 +180032,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-829d372b286ad175'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -180058,7 +180058,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-829d372b286ad175', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-829d372b286ad175', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -180069,7 +180069,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-829d372b286ad175'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -180095,7 +180095,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-829d372b286ad175', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-829d372b286ad175', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -180106,7 +180106,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-829d372b286ad175'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -181316,7 +181316,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6b2c34aedd0144d7', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-6b2c34aedd0144d7', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -181327,7 +181327,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6b2c34aedd0144d7'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -181353,7 +181353,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6b2c34aedd0144d7', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-6b2c34aedd0144d7', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -181364,7 +181364,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6b2c34aedd0144d7'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -181390,7 +181390,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6b2c34aedd0144d7', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-6b2c34aedd0144d7', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -181401,7 +181401,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6b2c34aedd0144d7'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -181427,7 +181427,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6b2c34aedd0144d7', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-6b2c34aedd0144d7', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -181438,7 +181438,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6b2c34aedd0144d7'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -181464,7 +181464,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6b2c34aedd0144d7', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-6b2c34aedd0144d7', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -181475,7 +181475,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6b2c34aedd0144d7'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -181501,7 +181501,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-6b2c34aedd0144d7', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-6b2c34aedd0144d7', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -181512,7 +181512,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-6b2c34aedd0144d7'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -182722,7 +182722,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1d60b35024bbdcec', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-1d60b35024bbdcec', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -182733,7 +182733,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1d60b35024bbdcec'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -182759,7 +182759,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1d60b35024bbdcec', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-1d60b35024bbdcec', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -182770,7 +182770,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1d60b35024bbdcec'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -182796,7 +182796,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1d60b35024bbdcec', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-1d60b35024bbdcec', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -182807,7 +182807,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1d60b35024bbdcec'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -182833,7 +182833,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1d60b35024bbdcec', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-1d60b35024bbdcec', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -182844,7 +182844,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1d60b35024bbdcec'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -182870,7 +182870,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1d60b35024bbdcec', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-1d60b35024bbdcec', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -182881,7 +182881,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1d60b35024bbdcec'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -182907,7 +182907,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1d60b35024bbdcec', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-1d60b35024bbdcec', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -182918,7 +182918,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1d60b35024bbdcec'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -184128,7 +184128,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-a5bf96067dbed1ba', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-a5bf96067dbed1ba', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -184139,7 +184139,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-a5bf96067dbed1ba'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -184165,7 +184165,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-a5bf96067dbed1ba', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-a5bf96067dbed1ba', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -184176,7 +184176,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-a5bf96067dbed1ba'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -184202,7 +184202,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-a5bf96067dbed1ba', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-a5bf96067dbed1ba', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -184213,7 +184213,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-a5bf96067dbed1ba'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -184239,7 +184239,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-a5bf96067dbed1ba', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-a5bf96067dbed1ba', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -184250,7 +184250,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-a5bf96067dbed1ba'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -184276,7 +184276,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-a5bf96067dbed1ba', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-a5bf96067dbed1ba', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -184287,7 +184287,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-a5bf96067dbed1ba'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -184313,7 +184313,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-a5bf96067dbed1ba', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-a5bf96067dbed1ba', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -184324,7 +184324,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-a5bf96067dbed1ba'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -185534,7 +185534,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-797f0230493e2614', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-797f0230493e2614', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -185545,7 +185545,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-797f0230493e2614'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -185571,7 +185571,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-797f0230493e2614', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-797f0230493e2614', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -185582,7 +185582,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-797f0230493e2614'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -185608,7 +185608,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-797f0230493e2614', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-797f0230493e2614', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -185619,7 +185619,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-797f0230493e2614'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -185645,7 +185645,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-797f0230493e2614', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-797f0230493e2614', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -185656,7 +185656,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-797f0230493e2614'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -185682,7 +185682,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-797f0230493e2614', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-797f0230493e2614', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -185693,7 +185693,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-797f0230493e2614'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -185719,7 +185719,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-797f0230493e2614', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-797f0230493e2614', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -185730,7 +185730,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-797f0230493e2614'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -186940,7 +186940,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-dcbe6b4940b488f3', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-dcbe6b4940b488f3', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -186951,7 +186951,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-dcbe6b4940b488f3'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -186977,7 +186977,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-dcbe6b4940b488f3', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-dcbe6b4940b488f3', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -186988,7 +186988,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-dcbe6b4940b488f3'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -187014,7 +187014,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-dcbe6b4940b488f3', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-dcbe6b4940b488f3', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -187025,7 +187025,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-dcbe6b4940b488f3'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -187051,7 +187051,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-dcbe6b4940b488f3', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-dcbe6b4940b488f3', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -187062,7 +187062,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-dcbe6b4940b488f3'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -187088,7 +187088,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-dcbe6b4940b488f3', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-dcbe6b4940b488f3', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -187099,7 +187099,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-dcbe6b4940b488f3'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -187125,7 +187125,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-dcbe6b4940b488f3', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-dcbe6b4940b488f3', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -187136,7 +187136,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-dcbe6b4940b488f3'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -188346,7 +188346,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-7acb830b705688c6', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-7acb830b705688c6', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -188357,7 +188357,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-7acb830b705688c6'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -188383,7 +188383,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-7acb830b705688c6', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-7acb830b705688c6', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -188394,7 +188394,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-7acb830b705688c6'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -188420,7 +188420,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-7acb830b705688c6', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-7acb830b705688c6', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -188431,7 +188431,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-7acb830b705688c6'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -188457,7 +188457,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-7acb830b705688c6', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-7acb830b705688c6', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -188468,7 +188468,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-7acb830b705688c6'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -188494,7 +188494,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-7acb830b705688c6', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-7acb830b705688c6', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -188505,7 +188505,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-7acb830b705688c6'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -188531,7 +188531,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-7acb830b705688c6', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-7acb830b705688c6', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -188542,7 +188542,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-7acb830b705688c6'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -189752,7 +189752,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e72bf355dd09e036', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-e72bf355dd09e036', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -189763,7 +189763,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e72bf355dd09e036'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -189789,7 +189789,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e72bf355dd09e036', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-e72bf355dd09e036', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -189800,7 +189800,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e72bf355dd09e036'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -189826,7 +189826,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e72bf355dd09e036', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-e72bf355dd09e036', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -189837,7 +189837,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e72bf355dd09e036'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -189863,7 +189863,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e72bf355dd09e036', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-e72bf355dd09e036', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -189874,7 +189874,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e72bf355dd09e036'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -189900,7 +189900,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e72bf355dd09e036', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-e72bf355dd09e036', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -189911,7 +189911,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e72bf355dd09e036'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -189937,7 +189937,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-e72bf355dd09e036', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-e72bf355dd09e036', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -189948,7 +189948,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-e72bf355dd09e036'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -191158,7 +191158,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-93cd38235ea76a82', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-93cd38235ea76a82', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -191169,7 +191169,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-93cd38235ea76a82'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -191195,7 +191195,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-93cd38235ea76a82', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-93cd38235ea76a82', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -191206,7 +191206,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-93cd38235ea76a82'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -191232,7 +191232,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-93cd38235ea76a82', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-93cd38235ea76a82', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -191243,7 +191243,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-93cd38235ea76a82'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -191269,7 +191269,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-93cd38235ea76a82', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-93cd38235ea76a82', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -191280,7 +191280,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-93cd38235ea76a82'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -191306,7 +191306,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-93cd38235ea76a82', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-93cd38235ea76a82', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -191317,7 +191317,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-93cd38235ea76a82'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -191343,7 +191343,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-93cd38235ea76a82', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-93cd38235ea76a82', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -191354,7 +191354,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-93cd38235ea76a82'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -192564,7 +192564,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1c4ccb99d132c84b', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-1c4ccb99d132c84b', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -192575,7 +192575,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1c4ccb99d132c84b'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -192601,7 +192601,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1c4ccb99d132c84b', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-1c4ccb99d132c84b', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -192612,7 +192612,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1c4ccb99d132c84b'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -192638,7 +192638,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1c4ccb99d132c84b', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-1c4ccb99d132c84b', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -192649,7 +192649,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1c4ccb99d132c84b'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -192675,7 +192675,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1c4ccb99d132c84b', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-1c4ccb99d132c84b', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -192686,7 +192686,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1c4ccb99d132c84b'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -192712,7 +192712,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1c4ccb99d132c84b', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-1c4ccb99d132c84b', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -192723,7 +192723,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1c4ccb99d132c84b'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -192749,7 +192749,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-1c4ccb99d132c84b', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-1c4ccb99d132c84b', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -192760,7 +192760,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-1c4ccb99d132c84b'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -193970,7 +193970,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-7e617f072030935b', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-7e617f072030935b', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -193981,7 +193981,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-7e617f072030935b'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -194007,7 +194007,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-7e617f072030935b', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-7e617f072030935b', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -194018,7 +194018,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-7e617f072030935b'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -194044,7 +194044,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-7e617f072030935b', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-7e617f072030935b', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -194055,7 +194055,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-7e617f072030935b'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -194081,7 +194081,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-7e617f072030935b', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-7e617f072030935b', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -194092,7 +194092,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-7e617f072030935b'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -194118,7 +194118,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-7e617f072030935b', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-7e617f072030935b', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -194129,7 +194129,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-7e617f072030935b'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -194155,7 +194155,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-7e617f072030935b', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-7e617f072030935b', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -194166,7 +194166,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-7e617f072030935b'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -195376,7 +195376,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-cb364c23bb0d58e9', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-cb364c23bb0d58e9', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -195387,7 +195387,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-cb364c23bb0d58e9'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -195413,7 +195413,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-cb364c23bb0d58e9', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-cb364c23bb0d58e9', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -195424,7 +195424,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-cb364c23bb0d58e9'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -195450,7 +195450,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-cb364c23bb0d58e9', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-cb364c23bb0d58e9', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -195461,7 +195461,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-cb364c23bb0d58e9'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -195487,7 +195487,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-cb364c23bb0d58e9', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-cb364c23bb0d58e9', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -195498,7 +195498,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-cb364c23bb0d58e9'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -195524,7 +195524,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-cb364c23bb0d58e9', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-cb364c23bb0d58e9', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -195535,7 +195535,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-cb364c23bb0d58e9'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -195561,7 +195561,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-cb364c23bb0d58e9', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-cb364c23bb0d58e9', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -195572,7 +195572,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-cb364c23bb0d58e9'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -196782,7 +196782,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-0d535dee7940828b', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-0d535dee7940828b', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -196793,7 +196793,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-0d535dee7940828b'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -196819,7 +196819,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-0d535dee7940828b', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-0d535dee7940828b', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -196830,7 +196830,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-0d535dee7940828b'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -196856,7 +196856,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-0d535dee7940828b', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-0d535dee7940828b', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -196867,7 +196867,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-0d535dee7940828b'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -196893,7 +196893,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-0d535dee7940828b', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-0d535dee7940828b', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -196904,7 +196904,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-0d535dee7940828b'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -196930,7 +196930,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-0d535dee7940828b', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-0d535dee7940828b', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -196941,7 +196941,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-0d535dee7940828b'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -196967,7 +196967,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-0d535dee7940828b', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-0d535dee7940828b', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -196978,7 +196978,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-0d535dee7940828b'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -198188,7 +198188,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-c7e516234b0ecc91', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-c7e516234b0ecc91', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -198199,7 +198199,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-c7e516234b0ecc91'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -198225,7 +198225,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-c7e516234b0ecc91', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-c7e516234b0ecc91', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -198236,7 +198236,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-c7e516234b0ecc91'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -198262,7 +198262,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-c7e516234b0ecc91', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-c7e516234b0ecc91', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -198273,7 +198273,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-c7e516234b0ecc91'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -198299,7 +198299,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-c7e516234b0ecc91', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-c7e516234b0ecc91', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -198310,7 +198310,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-c7e516234b0ecc91'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -198336,7 +198336,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-c7e516234b0ecc91', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-c7e516234b0ecc91', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -198347,7 +198347,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-c7e516234b0ecc91'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -198373,7 +198373,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-c7e516234b0ecc91', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-c7e516234b0ecc91', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -198384,7 +198384,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-c7e516234b0ecc91'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -199594,7 +199594,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2dbf59aaf008127a', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-2dbf59aaf008127a', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -199605,7 +199605,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2dbf59aaf008127a'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -199631,7 +199631,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2dbf59aaf008127a', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-2dbf59aaf008127a', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -199642,7 +199642,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2dbf59aaf008127a'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -199668,7 +199668,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2dbf59aaf008127a', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-2dbf59aaf008127a', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -199679,7 +199679,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2dbf59aaf008127a'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -199705,7 +199705,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2dbf59aaf008127a', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-2dbf59aaf008127a', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -199716,7 +199716,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2dbf59aaf008127a'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -199742,7 +199742,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2dbf59aaf008127a', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-2dbf59aaf008127a', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -199753,7 +199753,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2dbf59aaf008127a'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -199779,7 +199779,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-2dbf59aaf008127a', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-2dbf59aaf008127a', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -199790,7 +199790,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-2dbf59aaf008127a'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -201000,7 +201000,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bdc506ede65534ff', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'eqm-inv-bdc506ede65534ff', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -201011,7 +201011,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bdc506ede65534ff'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -201037,7 +201037,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bdc506ede65534ff', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'eqm-inv-bdc506ede65534ff', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -201048,7 +201048,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bdc506ede65534ff'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -201074,7 +201074,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bdc506ede65534ff', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'eqm-inv-bdc506ede65534ff', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -201085,7 +201085,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bdc506ede65534ff'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -201111,7 +201111,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bdc506ede65534ff', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'eqm-inv-bdc506ede65534ff', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -201122,7 +201122,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bdc506ede65534ff'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -201148,7 +201148,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bdc506ede65534ff', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'eqm-inv-bdc506ede65534ff', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -201159,7 +201159,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bdc506ede65534ff'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -201185,7 +201185,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'eqm-inv-bdc506ede65534ff', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'eqm-inv-bdc506ede65534ff', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -201196,7 +201196,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'eqm-inv-bdc506ede65534ff'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -202406,7 +202406,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-0acae20c9bf14705b5e94aa0c11b72a4', 'FLD-BASE-equipment-REF_OPERATION_STATUS', m.id, f.id,
+  'MODEL-0acae20c9bf14705b5e94aa0c11b72a4', 'operation_status', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -202417,7 +202417,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-0acae20c9bf14705b5e94aa0c11b72a4'
-  AND f.code = 'FLD-BASE-equipment-REF_OPERATION_STATUS'
+  AND f.code = 'operation_status'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -202443,7 +202443,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-0acae20c9bf14705b5e94aa0c11b72a4', 'FLD-BASE-equipment-REF_HEALTH_SCORE', m.id, f.id,
+  'MODEL-0acae20c9bf14705b5e94aa0c11b72a4', 'health_score', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -202454,7 +202454,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-0acae20c9bf14705b5e94aa0c11b72a4'
-  AND f.code = 'FLD-BASE-equipment-REF_HEALTH_SCORE'
+  AND f.code = 'health_score'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -202480,7 +202480,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-0acae20c9bf14705b5e94aa0c11b72a4', 'FLD-BASE-equipment-REF_LAST_MAINTENANCE', m.id, f.id,
+  'MODEL-0acae20c9bf14705b5e94aa0c11b72a4', 'last_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -202491,7 +202491,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-0acae20c9bf14705b5e94aa0c11b72a4'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_MAINTENANCE'
+  AND f.code = 'last_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -202517,7 +202517,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-0acae20c9bf14705b5e94aa0c11b72a4', 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE', m.id, f.id,
+  'MODEL-0acae20c9bf14705b5e94aa0c11b72a4', 'next_maintenance', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -202528,7 +202528,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-0acae20c9bf14705b5e94aa0c11b72a4'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_MAINTENANCE'
+  AND f.code = 'next_maintenance'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -202554,7 +202554,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-0acae20c9bf14705b5e94aa0c11b72a4', 'FLD-BASE-equipment-REF_LAST_INSPECTION', m.id, f.id,
+  'MODEL-0acae20c9bf14705b5e94aa0c11b72a4', 'last_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -202565,7 +202565,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-0acae20c9bf14705b5e94aa0c11b72a4'
-  AND f.code = 'FLD-BASE-equipment-REF_LAST_INSPECTION'
+  AND f.code = 'last_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,
@@ -202591,7 +202591,7 @@ INSERT INTO dynamic_model_field_assignment (
   ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
 )
 SELECT
-  'MODEL-0acae20c9bf14705b5e94aa0c11b72a4', 'FLD-BASE-equipment-REF_NEXT_INSPECTION', m.id, f.id,
+  'MODEL-0acae20c9bf14705b5e94aa0c11b72a4', 'next_inspection', m.id, f.id,
   FALSE, TRUE,
   TRUE, TRUE,
   NULL, NULL,
@@ -202602,7 +202602,7 @@ FROM dynamic_model m
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE m.deleted = false AND m.tenant_id = 1
   AND m.code = 'MODEL-0acae20c9bf14705b5e94aa0c11b72a4'
-  AND f.code = 'FLD-BASE-equipment-REF_NEXT_INSPECTION'
+  AND f.code = 'next_inspection'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   model_id = EXCLUDED.model_id,

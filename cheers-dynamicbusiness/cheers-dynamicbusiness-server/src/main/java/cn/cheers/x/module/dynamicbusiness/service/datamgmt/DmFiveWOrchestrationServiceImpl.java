@@ -55,7 +55,8 @@ public class DmFiveWOrchestrationServiceImpl implements DmFiveWOrchestrationServ
         head.setWhatConfig(toWhatConfigMap(reqVO.getWhatSlot()));
         head.setHowMode(reqVO.getHowSlot().getMode() == null
                 ? "NONE" : reqVO.getHowSlot().getMode().trim().toUpperCase());
-        head.setHowConfig(Collections.emptyMap());
+        // how_config 权威承载 capability / sopHow 等；禁止再写空 Map 冲掉配方
+        head.setHowConfig(toHowConfigMap(reqVO.getHowSlot()));
 
         if (head.getId() == null) {
             orchestrationMapper.insert(head);
@@ -117,7 +118,40 @@ public class DmFiveWOrchestrationServiceImpl implements DmFiveWOrchestrationServ
     private DmFiveWOrchestrationBundleRespVO.HowSlot toHowSlotVO(DmFiveWOrchestrationDO head) {
         DmFiveWOrchestrationBundleRespVO.HowSlot vo = new DmFiveWOrchestrationBundleRespVO.HowSlot();
         vo.setMode(head.getHowMode() == null ? "NONE" : head.getHowMode());
+        Map<String, Object> cfg = head.getHowConfig() == null ? Map.of() : head.getHowConfig();
+        vo.setCapability(stringVal(cfg.get("capability")));
+        Object sopHow = cfg.get("sopHow");
+        if (sopHow instanceof Map<?, ?> map) {
+            Map<String, Object> copied = new LinkedHashMap<>();
+            for (Map.Entry<?, ?> e : map.entrySet()) {
+                if (e.getKey() != null) {
+                    copied.put(String.valueOf(e.getKey()), e.getValue());
+                }
+            }
+            vo.setSopHow(copied.isEmpty() ? null : copied);
+        }
+        vo.setCandidateEntityTypeCode(stringVal(cfg.get("candidateEntityTypeCode")));
+        vo.setPanelPropsId(longVal(cfg.get("panelPropsId")));
         return vo;
+    }
+
+    /**
+     * How 槽 → how_config JSONB。
+     * 负责：capability、sopHow 键映射、候选类型/面板 props。
+     * 禁止：在此写入业务类型码默认值或静默补全 sopHow。
+     */
+    private Map<String, Object> toHowConfigMap(DmFiveWOrchestrationBundleRespVO.HowSlot slot) {
+        if (slot == null) {
+            return Collections.emptyMap();
+        }
+        Map<String, Object> map = new LinkedHashMap<>();
+        putIfText(map, "capability", slot.getCapability());
+        if (slot.getSopHow() != null && !slot.getSopHow().isEmpty()) {
+            map.put("sopHow", slot.getSopHow());
+        }
+        putIfText(map, "candidateEntityTypeCode", slot.getCandidateEntityTypeCode());
+        putIfNonNull(map, "panelPropsId", slot.getPanelPropsId());
+        return map;
     }
 
     private Map<String, Object> toWhatConfigMap(DmFiveWOrchestrationBundleRespVO.WhatSlot slot) {

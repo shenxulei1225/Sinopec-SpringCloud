@@ -600,15 +600,21 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             }
             Map<String, Object> filter = new LinkedHashMap<>();
             String fieldKey = String.valueOf(meta.get("fieldKey"));
+            String fieldType = String.valueOf(meta.get("fieldType"));
             filter.put("id", fieldKey);
             filter.put("fieldKey", fieldKey);
             filter.put("label", meta.get("label"));
-            filter.put("renderAs", mapFilterControl(String.valueOf(meta.get("fieldType"))));
+            filter.put("renderAs", mapFilterControl(fieldType));
             filter.put("sortOrder", meta.get("sortOrder") != null ? meta.get("sortOrder") : order++);
             filter.put("bindTo", "field-filter");
             filter.put("searchable", Boolean.TRUE.equals(meta.get("searchable")));
             filter.put("sortable", Boolean.TRUE.equals(meta.get("sortable")));
             filter.put("defaultVisible", true);
+            // 多选枚举：筛选项值为数组，查数用 IN（命中含任一所选归属）
+            if ("MULTI_SELECT".equalsIgnoreCase(fieldType)) {
+                filter.put("valueShape", "array");
+            }
+            putFilterStaticOptions(filter, meta.get("options"));
             copyFieldSemanticsToProjectionItem(meta, filter);
             filters.add(filter);
         }
@@ -616,6 +622,21 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                 ? sort
                 : Integer.MAX_VALUE));
         return filters;
+    }
+
+    /**
+     * 筛选项带上字段库静态选项（ENUM / MULTI_SELECT），供筛选条下拉/多选画选项。
+     * 无 options 则不写，禁止编造占位选项。
+     */
+    private static void putFilterStaticOptions(Map<String, Object> filter, Object optionsRaw) {
+        if (filter == null || optionsRaw == null) {
+            return;
+        }
+        List<Map<String, Object>> options = ModelCrudFormFieldAssembler.parseOptionsListForFilter(optionsRaw);
+        if (options.isEmpty()) {
+            return;
+        }
+        filter.put("optionsSource", Map.of("kind", "static", "options", options));
     }
 
     private LinkedHashMap<String, Map<String, Object>> collectFieldMeta(String entityTypeCode) {
@@ -656,6 +677,9 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                     meta.put("sortable", Boolean.TRUE.equals(assign.getIsSortable()));
                     meta.put("sortOrder", assign.getSort() != null ? assign.getSort() : 0);
                     meta.put("baseField", false);
+                    if (field.getOptions() != null) {
+                        meta.put("options", field.getOptions());
+                    }
                     applyFieldSemanticsAndRefTarget(meta, field);
                     byFieldKey.put(fieldKey, meta);
                     continue;
@@ -666,6 +690,9 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                         || Boolean.TRUE.equals(assign.getIsSearchable()));
                 existing.put("sortable", Boolean.TRUE.equals(existing.get("sortable"))
                         || Boolean.TRUE.equals(assign.getIsSortable()));
+                if (!existing.containsKey("options") && field.getOptions() != null) {
+                    existing.put("options", field.getOptions());
+                }
                 if (!existing.containsKey("semanticType") && !existing.containsKey("targetEntityTypeCode")) {
                     applyFieldSemanticsAndRefTarget(existing, field);
                 }
@@ -877,7 +904,8 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         }
         return switch (fieldType.trim().toUpperCase()) {
             case "BOOLEAN" -> "boolean";
-            case "ENUM" -> "select";
+            case "ENUM", "SELECT", "OPTION" -> "select";
+            case "MULTI_SELECT" -> "select";
             case "DATE", "DATETIME", "TIMESTAMP" -> "date";
             case "NUMBER", "INTEGER", "DECIMAL" -> "input";
             case "ENTITY_REF", "REFERENCE", "REF" -> "ref-picker";

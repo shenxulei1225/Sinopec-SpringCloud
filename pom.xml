@@ -30,6 +30,8 @@
         <!-- <module>cheers-ai</module> -->
         <!-- inspection-task 依赖 device-api，需保留在 reactor -->
         <module>cheers-sinopec-device</module>
+        <!-- 机器人/无人机对接：通讯层 + 协议对接层（不接任务编排） -->
+        <module>cheers-device-protocol-gateway</module>
         <module>cheers-inspection-task</module>
         <!-- 本地日常启动不需要：NATS 独立模块（当前无服务依赖其 reactor 构建） -->
         <!-- <module>cheers-nats</module> -->

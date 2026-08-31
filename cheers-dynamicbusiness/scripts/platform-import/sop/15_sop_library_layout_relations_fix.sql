@@ -51,12 +51,12 @@ BEGIN
 
   -- 2) 分类栏：筛选区；稳定 tab / columnKey
   UPDATE dm_data_tab_layout
-  SET tab_id = COALESCE(NULLIF(trim(tab_id), ''), 'sop-default'),
+  SET tab_id = COALESCE(NULLIF(trim(tab_id), ''), 'sop-1'),
       column_meta = COALESCE(column_meta, '{}'::jsonb)
         || jsonb_build_object(
           'label', 'SOP分类',
           'categoryTypeCode', 'sop',
-          'columnKey', COALESCE(NULLIF(column_meta->>'columnKey', ''), 'sop-default'),
+          'columnKey', COALESCE(NULLIF(column_meta->>'columnKey', ''), 'sop'),
           'columnSection', 'FILTER'
         ),
       enabled = true,
@@ -66,9 +66,9 @@ BEGIN
     AND column_kind = 'CATEGORY'
     AND deleted = false;
 
-  -- 3) 实体栏：Who · SOP模板；空 tabId 保持 null（身份 = ENTITY:default）
+  -- 3) 实体栏：Who · SOP模板；tabId = 底座类型编码 sop
   UPDATE dm_data_tab_layout
-  SET tab_id = NULL,
+  SET tab_id = 'sop',
       column_meta = COALESCE(column_meta, '{}'::jsonb)
         || jsonb_build_object(
           'label', 'SOP模板',
@@ -104,7 +104,7 @@ BEGIN
       AND deleted = false;
   END IF;
 
-  -- 5) 实体列表 props：契约三字段；is_template 过滤走前端 sopLibraryEntityFieldFilters
+  -- 5) 实体列表 props：契约三字段；is_template 过滤走 GET /dynamicbusiness/sop/templates
   SELECT props_id INTO v_entity_props_id
   FROM dm_data_tab_layout
   WHERE layout_id = v_layout_id
@@ -137,8 +137,8 @@ BEGIN
 
   -- 6) 算当前分类 / 实体列身份
   SELECT
-    COALESCE(NULLIF(trim(tab_id), ''), 'sop-default'),
-    COALESCE(NULLIF(column_meta->>'columnKey', ''), 'sop-default')
+    COALESCE(NULLIF(trim(tab_id), ''), 'sop-1'),
+    COALESCE(NULLIF(column_meta->>'columnKey', ''), 'sop')
   INTO v_cat_tab, v_cat_key
   FROM dm_data_tab_layout
   WHERE layout_id = v_layout_id
@@ -147,7 +147,7 @@ BEGIN
   LIMIT 1;
 
   v_cat_identity := 'CATEGORY:' || v_cat_key || ':' || v_cat_tab;
-  v_entity_identity := 'ENTITY:default';
+  v_entity_identity := 'ENTITY:sop';
 
   -- 7) 清掉本布局全部旧边（含型号端点），再写标准 CE filter + write
   UPDATE dm_data_tab_column_relation
