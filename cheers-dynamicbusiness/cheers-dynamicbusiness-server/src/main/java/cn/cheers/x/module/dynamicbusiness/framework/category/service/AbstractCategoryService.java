@@ -3,6 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.framework.category.service;
 import cn.cheers.x.module.dynamicbusiness.framework.category.core.CategoryContract;
 import cn.cheers.x.module.dynamicbusiness.framework.category.mapper.FrameworkCategoryMapper;
 import cn.cheers.x.module.dynamicbusiness.framework.category.utils.CategoryUtils;
+import cn.cheers.x.module.dynamicbusiness.framework.hierarchy.IdTreeHierarchy;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -137,6 +138,10 @@ public abstract class AbstractCategoryService<
         DO parent = parentId == null ? null : getMapper().selectById(parentId);
         if (parentId != null && parent == null) {
             throw new ServiceException(404, "目标父分类(id=" + parentId + ")不存在，无法移动分类");
+        }
+        // 与实体树同一套路径环检测（父 tree_path 已含本节点则成环）
+        if (parent != null && IdTreeHierarchy.wouldCreateCycle(category.getId(), parent.getTreePath())) {
+            throw new ServiceException(400, "无法将分类移动到自己的子节点下");
         }
         int newLevel = parent == null ? 1 : Objects.requireNonNullElse(parent.getLevel(), 0) + 1;
         checkLevelLimit(newLevel);

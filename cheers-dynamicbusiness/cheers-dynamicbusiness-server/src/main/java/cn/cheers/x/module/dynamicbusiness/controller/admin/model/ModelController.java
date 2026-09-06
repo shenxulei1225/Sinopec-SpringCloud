@@ -188,7 +188,7 @@ public class ModelController {
      */
     public CommonResult<Boolean> deleteModel(
             @RequestParam("id") Long id,
-            @RequestParam("effectiveFacilityId") Long effectiveFacilityId) {
+            @RequestParam(value = "effectiveFacilityId", required = false) Long effectiveFacilityId) {
         modelService.deleteModel(id, effectiveFacilityId);
         return success(true);
     }

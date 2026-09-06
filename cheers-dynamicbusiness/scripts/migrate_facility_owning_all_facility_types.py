@@ -139,7 +139,7 @@ def main() -> None:
             SELECT
               m.id, f.id, m.code, f.code,
               true, false, true, true, 5,
-              NULL, 'facility', 'BASE', %s, 'migrate-facility-owning-all'
+              NULL, 'facility', 'SYSTEM', %s, 'migrate-facility-owning-all'
             FROM dynamic_model m
             JOIN dynamic_field f
               ON f.deleted=false AND f.tenant_id=%s AND f.code='facility_id'
@@ -156,8 +156,16 @@ def main() -> None:
             added_asg += cur.rowcount
             print(f"model asg {code} tenant={tenant_id} rows={cur.rowcount}")
 
+    cur.execute(
+        """
+        UPDATE dynamic_model_field_assignment
+        SET field_source = 'SYSTEM', updater = 'migrate-facility-owning-all'
+        WHERE deleted = false AND field_code = 'facility_id' AND field_source = 'BASE'
+        """
+    )
+    fixed_asg = cur.rowcount
     c.commit()
-    print(f"COMMIT OK cols={added_cols} base_fields={added_bf} assignments={added_asg}")
+    print(f"COMMIT OK cols={added_cols} base_fields={added_bf} assignments={added_asg} fixed_field_source={fixed_asg}")
     c.close()
 
 

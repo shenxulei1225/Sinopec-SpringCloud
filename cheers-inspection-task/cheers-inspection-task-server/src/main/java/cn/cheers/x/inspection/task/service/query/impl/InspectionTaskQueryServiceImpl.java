@@ -69,6 +69,8 @@ public class InspectionTaskQueryServiceImpl implements InspectionTaskQueryServic
         List<InspectionTaskSimpleRespVO> voList = pageResult.getList().stream()
                 .map(task -> {
                     InspectionTaskSimpleRespVO vo = BeanUtils.toBean(task, InspectionTaskSimpleRespVO.class);
+                    // 展示状态由 enabled + runtimeJobId 派生（库里 status 列只在创建时写 0，已废弃不读）
+                    vo.setStatus(deriveDisplayStatus(task));
                     // 填充子任务数量
                     Long subTaskCount = subTaskCountMap.get(task.getId());
                     vo.setSubTaskCount(subTaskCount != null ? subTaskCount.intValue() : 0);
@@ -99,8 +101,9 @@ public class InspectionTaskQueryServiceImpl implements InspectionTaskQueryServic
             throw ServiceExceptionUtil.exception(NOT_FOUND, "任务不存在");
         }
 
-        // 2. 转换为 RespVO
+        // 2. 转换为 RespVO（展示状态与列表同一派生口径）
         InspectionTaskRespVO respVO = BeanUtils.toBean(taskDO, InspectionTaskRespVO.class);
+        respVO.setStatus(deriveDisplayStatus(taskDO));
 
         // 3. 处理 inspectionContent
         InspectionContent content = taskDO.getInspectionContent();
@@ -122,6 +125,46 @@ public class InspectionTaskQueryServiceImpl implements InspectionTaskQueryServic
         }
 
         return respVO;
+    }
+
+    // ==================== 统计 ====================
+
+    @Override
+    public InspectionTaskStatisticsRespVO getTaskStatistics() {
+        InspectionTaskStatisticsRespVO vo = new InspectionTaskStatisticsRespVO();
+        long total = inspectionTaskMapper.selectCount();
+        long enabled = inspectionTaskMapper.countEnabled();
+        long disabled = inspectionTaskMapper.countDisabledScheduled();
+        vo.setTaskTotal(total);
+        vo.setEnabledCount(enabled);
+        vo.setDisabledCount(disabled);
+        // 草稿 = 总数 - 已启用 - 已停用（三态互斥，口径同 deriveDisplayStatus）
+        vo.setDraftCount(Math.max(0, total - enabled - disabled));
+        return vo;
+    }
+
+    /**
+     * 派生任务的展示状态（列表状态列 / 详情状态）。
+     *
+     * <p>启停唯一权威是 enabled 布尔（编排 reserve/enable/abort 写入）；库里 status 列只在创建时写 0，
+     * 之后无人维护，属历史废弃列，读路径一律不信它。</p>
+     *
+     * <ul>
+     *   <li>enabled = true → 1 已启用（占窗验窗通过，排程在跑）</li>
+     *   <li>enabled ≠ true 且 runtimeJobId 有值 → 2 已停用（排过期后被停用/中止，或已预占未启用）</li>
+     *   <li>其余 → 0 草稿（从未进入排程）</li>
+     * </ul>
+     *
+     * <p>筛选侧同一口径见 {@code InspectionTaskMapper#selectPage} 的 status 翻译，两处必须一起改。</p>
+     */
+    public static Integer deriveDisplayStatus(InspectionTaskDO task) {
+        if (Boolean.TRUE.equals(task.getEnabled())) {
+            return 1;
+        }
+        if (StringUtils.hasText(task.getRuntimeJobId())) {
+            return 2;
+        }
+        return 0;
     }
 
     /**

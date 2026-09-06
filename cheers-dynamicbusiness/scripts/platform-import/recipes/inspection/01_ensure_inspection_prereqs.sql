@@ -1,6 +1,6 @@
 -- ============================================================================
 -- recipes/inspection · 01 前置自检（不建整套检查平台）
--- 类型 / 目录 / 样例实体：请先跑 inspection-method + system seed + five-w-orchestration
+-- 类型 / 目录 / 样例实体：请先跑 inspection-method + system seed + catalog-orchestration
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;
@@ -26,13 +26,13 @@ BEGIN
   END IF;
 
   IF NOT EXISTS (
-    SELECT 1 FROM dm_five_w_orchestration
+    SELECT 1 FROM dm_catalog_orchestration
     WHERE entity_type_code = 'inspection_item'
       AND tenant_id = v_tenant
       AND deleted = false
   ) THEN
     RAISE NOTICE
-      'recipes/inspection: 缺少 inspection_item 编排头 — 请先跑 ../five-w-orchestration/import.sh，再跑 02 补丁';
+      'recipes/inspection: 缺少 inspection_item 编排头 — 请先跑 ../catalog-orchestration/import.sh，再跑 02 补丁';
   END IF;
 
   IF to_regclass('dynamicbusiness.dynamic_sop_method_binding') IS NULL THEN

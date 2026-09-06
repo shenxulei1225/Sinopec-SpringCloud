@@ -168,15 +168,46 @@ public interface InspectionTaskMapper extends BaseMapperX<InspectionTaskDO> {
 
     /**
      * 分页查询任务列表。
+     *
+     * <p>status 筛选按「派生展示状态」翻译成 enabled + runtime_job_id 条件
+     * （库里 status 列只在创建时写 0，已废弃不查）。派生规则见
+     * {@code InspectionTaskQueryServiceImpl#deriveDisplayStatus}，两处必须一起改。</p>
      */
     default PageResult<InspectionTaskDO> selectPage(InspectionTaskPageReqVO pageReqVO) {
-        return selectPage(pageReqVO, new LambdaQueryWrapperX<InspectionTaskDO>()
+        LambdaQueryWrapperX<InspectionTaskDO> wrapper = new LambdaQueryWrapperX<InspectionTaskDO>()
                 .likeIfPresent(InspectionTaskDO::getTaskName, pageReqVO.getTaskName())
                 .likeIfPresent(InspectionTaskDO::getTaskCode, pageReqVO.getTaskCode())
                 .eqIfPresent(InspectionTaskDO::getCategoryId, pageReqVO.getCategoryId())
-                .eqIfPresent(InspectionTaskDO::getStatus, pageReqVO.getStatus())
                 .eqIfPresent(InspectionTaskDO::getEnabled, pageReqVO.getEnabled())
-                .orderByDesc(InspectionTaskDO::getCreateTime));
+                .orderByDesc(InspectionTaskDO::getCreateTime);
+        Integer status = pageReqVO.getStatus();
+        if (status != null) {
+            if (status == 1) {
+                // 已启用
+                wrapper.eq(InspectionTaskDO::getEnabled, Boolean.TRUE);
+            } else if (status == 2) {
+                // 已停用：排过期（有作业 ID）但当前未启用
+                wrapper.isNotNull(InspectionTaskDO::getRuntimeJobId)
+                        .and(w -> w.isNull(InspectionTaskDO::getEnabled)
+                                .or().eq(InspectionTaskDO::getEnabled, Boolean.FALSE));
+            } else {
+                // 草稿：从未进入排程
+                wrapper.isNull(InspectionTaskDO::getRuntimeJobId)
+                        .and(w -> w.isNull(InspectionTaskDO::getEnabled)
+                                .or().eq(InspectionTaskDO::getEnabled, Boolean.FALSE));
+            }
+        }
+        return selectPage(pageReqVO, wrapper);
+    }
+
+    /**
+     * 统计「已停用」任务数：排过期（有作业 ID）但当前未启用。口径同 selectPage 的 status=2。
+     */
+    default long countDisabledScheduled() {
+        return selectCount(new LambdaQueryWrapperX<InspectionTaskDO>()
+                .isNotNull(InspectionTaskDO::getRuntimeJobId)
+                .and(w -> w.isNull(InspectionTaskDO::getEnabled)
+                        .or().eq(InspectionTaskDO::getEnabled, Boolean.FALSE)));
     }
 
     // ==================== 批量统计 ====================

@@ -1992,27 +1992,6 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_entity_type_base_field (
-  entity_type_code, library_field_id, field_code, field_name, data_type, required, default_value,
-  description, type_config, sort_order, status, tenant_id, creator
-) VALUES (
-  'region', NULL, 'FLD-BASE-region-region_level',
-  '区划级别', 'ENUM',
-  TRUE, NULL,
-  'country/province/city/district；与 model 对齐 [已废弃：改用 category 树层级] [已废弃：改用 category 树层级]', NULL,
-  15, 0,
-  1, 'seed'
-)
-ON CONFLICT (entity_type_code, field_code, tenant_id) WHERE deleted = false
-DO UPDATE SET
-  library_field_id = EXCLUDED.library_field_id,
-  field_name = EXCLUDED.field_name,
-  data_type = EXCLUDED.data_type,
-  required = EXCLUDED.required,
-  type_config = EXCLUDED.type_config,
-  sort_order = EXCLUDED.sort_order,
-  updater = 'seed',
-  update_time = CURRENT_TIMESTAMP;
 
 INSERT INTO dynamic_entity_type_base_field (
   entity_type_code, library_field_id, field_code, field_name, data_type, required, default_value,
@@ -2493,4 +2472,19 @@ DO UPDATE SET
   sort_order = EXCLUDED.sort_order,
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
+
+-- 已废弃：区划级别（层级改走分类树）。清存量，避免再挂到型号。
+-- 历史库可能是短码 region_level，seed 曾用 FLD-BASE-region-region_level，两种都清。
+UPDATE dynamic_entity_type_base_field
+SET deleted = true, status = 0, updater = 'seed', update_time = CURRENT_TIMESTAMP
+WHERE deleted = false
+  AND entity_type_code = 'region'
+  AND field_code IN ('FLD-BASE-region-region_level', 'region_level')
+  AND tenant_id = 1;
+
+UPDATE dynamic_model_field_assignment
+SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
+WHERE deleted = false
+  AND field_code IN ('FLD-BASE-region-region_level', 'region_level')
+  AND tenant_id = 1;
 

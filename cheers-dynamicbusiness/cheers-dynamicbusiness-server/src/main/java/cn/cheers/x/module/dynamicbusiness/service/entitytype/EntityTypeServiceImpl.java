@@ -85,6 +85,9 @@ public class EntityTypeServiceImpl implements EntityTypeService {
     private FacilityOwningFieldEnsureService facilityOwningFieldEnsureService;
 
     @Resource
+    private cn.cheers.x.module.dynamicbusiness.service.hierarchy.OrgTreeParentFieldEnsureService orgTreeParentFieldEnsureService;
+
+    @Resource
     private GroupService groupService;
 
     @Resource
@@ -122,9 +125,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
 
     private Long createNativeEntityType(EntityTypeCreateReqVO reqVO) {
         // 1. 验证业务是否已经存在
-        if (entityTypeMapper.existsByCode(reqVO.getCode())) {
-            throw new ServiceException(400, "业务类型编码已存在");
-        }
+        assertEntityTypeCodeAvailable(reqVO.getCode());
         EntityTypeDO entityType = new EntityTypeDO();
         copyBaseFields(entityType, reqVO);
         entityType.setTypeLevel(EntityTypeDO.TYPE_LEVEL_USER);
@@ -158,6 +159,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         entityTypeCategoryBootstrapService.ensureForEntityTypeCode(entityType.getCode());
         entityTypeOrchestrationBootstrapService.ensureForEntityTypeCode(entityType.getCode());
         facilityOwningFieldEnsureService.ensureForEntityTypeCode(entityType.getCode());
+        orgTreeParentFieldEnsureService.ensureForEntityTypeCode(entityType.getCode());
 
         return entityType.getId();
     }
@@ -170,7 +172,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
             throw new ServiceException(400, "子数据类型必须指定业务域标识");
         }
         if (entityTypeMapper.existsByCode(reqVO.getCode())) {
-            throw new ServiceException(400, "业务类型编码已存在");
+            throwOccupiedEntityTypeCode(reqVO.getCode());
         }
 
         String baseCode = reqVO.getBaseEntityTypeCode().trim();
@@ -206,7 +208,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
             throw new ServiceException(400, "使用已有数据必须指定基础数据类型编码");
         }
         if (entityTypeMapper.existsByCode(reqVO.getCode())) {
-            throw new ServiceException(400, "业务类型编码已存在");
+            throwOccupiedEntityTypeCode(reqVO.getCode());
         }
 
         String baseCode = reqVO.getBaseEntityTypeCode().trim();
@@ -238,7 +240,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
             throw new ServiceException(400, "划分数据必须指定基础数据类型编码");
         }
         if (entityTypeMapper.existsByCode(reqVO.getCode())) {
-            throw new ServiceException(400, "业务类型编码已存在");
+            throwOccupiedEntityTypeCode(reqVO.getCode());
         }
 
         String baseCode = reqVO.getBaseEntityTypeCode().trim();
@@ -262,13 +264,12 @@ public class EntityTypeServiceImpl implements EntityTypeService {
     }
 
     /**
-     * 分类绑定实体（CATEGORY）：自有存储；自动同名高级分类 + 默认「分类|详情」布局。
+     * 分类绑定实体（CATEGORY）：自有存储；自动同名高级分类。
+     * 布局仍从通用台账模版克隆四栏，再关掉型号/实体栏（树即对象）。
      * 不要求基础类型（与 SCOPE 划分成员入口不同）。
      */
     private Long createCategoryEntityType(EntityTypeCreateReqVO reqVO) {
-        if (entityTypeMapper.existsByCode(reqVO.getCode())) {
-            throw new ServiceException(400, "业务类型编码已存在");
-        }
+        assertEntityTypeCodeAvailable(reqVO.getCode());
         EntityTypeDO entityType = new EntityTypeDO();
         copyBaseFields(entityType, reqVO);
         entityType.setTypeLevel(EntityTypeDO.TYPE_LEVEL_USER);
@@ -299,6 +300,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         entityTypeCategoryBootstrapService.ensureForEntityTypeCode(entityType.getCode());
         entityTypeOrchestrationBootstrapService.ensureForEntityTypeCode(entityType.getCode());
         facilityOwningFieldEnsureService.ensureForEntityTypeCode(entityType.getCode());
+        orgTreeParentFieldEnsureService.ensureForEntityTypeCode(entityType.getCode());
 
         return entityType.getId();
     }
@@ -395,14 +397,16 @@ public class EntityTypeServiceImpl implements EntityTypeService {
             ensureEntityTypeGroupRegistered(newEntityType.getGroupName());
         }
 
-        // 验证
-        if (!Objects.equals(oldCode, newEntityType.getCode()) && entityTypeMapper.existsByCodeExcludeId(newEntityType.getCode(), newEntityType.getId())) {
-            throw new ServiceException(400, "业务类型编码已存在");
+        // 验证：改编码时写清占用方，避免同名不同码时误以为软删没放开
+        if (!Objects.equals(oldCode, newEntityType.getCode())
+                && entityTypeMapper.existsByCodeExcludeId(newEntityType.getCode(), newEntityType.getId())) {
+            throwOccupiedEntityTypeCode(newEntityType.getCode());
         }
 
         // 持久化保存
         entityTypeMapper.updateById(newEntityType);
         facilityOwningFieldEnsureService.ensureForEntityTypeCode(newEntityType.getCode());
+        orgTreeParentFieldEnsureService.ensureForEntityTypeCode(newEntityType.getCode());
     }
 
     private void updateBTFromVO(EntityTypeDO entityType, EntityTypeUpdateReqVO reqVO) {
@@ -676,6 +680,31 @@ public class EntityTypeServiceImpl implements EntityTypeService {
             out.add(node);
             flattenDfs(node.getChildren(), out);
         }
+    }
+
+    /**
+     * 创建前：编码不得被未删除的目录占用（软删记录不挡重建）。
+     */
+    private void assertEntityTypeCodeAvailable(String code) {
+        if (entityTypeMapper.existsByCode(code)) {
+            throwOccupiedEntityTypeCode(code);
+        }
+    }
+
+    /**
+     * 编码冲突时报清占用方名称与 id，避免同名不同码时误以为软删没放开。
+     */
+    private void throwOccupiedEntityTypeCode(String code) {
+        String trimmed = code == null ? "" : code.trim();
+        EntityTypeDO occupant = StringUtils.hasText(trimmed)
+                ? entityTypeMapper.selectByCode(trimmed)
+                : null;
+        if (occupant != null) {
+            String name = StringUtils.hasText(occupant.getName()) ? occupant.getName().trim() : trimmed;
+            throw new ServiceException(400,
+                    "编码「" + trimmed + "」已被目录「" + name + "」(id=" + occupant.getId() + ") 占用");
+        }
+        throw new ServiceException(400, "业务类型编码已存在：" + trimmed);
     }
 
     /**

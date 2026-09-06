@@ -7,6 +7,8 @@
 --   · 死边：from/to 仍是 MODEL:default 或 ENTITY:default（新协议下不存在该身份）
 --     → 若本页恰好一栏合法型号/实体，则改名对齐；否则软删该边。
 --   · 不动 CATEGORY:…:default（分类允许字面 default 作 tabId）。
+--   · 禁止动 is_template=true 的模版栏：通用台账模版的型号/实体故意无类型码，
+--     实例化时才写入；误删后新建目录会缺型号/实体栏。
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;
@@ -23,7 +25,7 @@ DECLARE
   v_entity_n int;
   v_n int;
 BEGIN
-  -- 1) 软删无类型码空壳
+  -- 1) 软删无类型码空壳（跳过布局模版行）
   UPDATE dm_data_tab_layout l
   SET deleted = true,
       updater = 'cleanup-empty-me-shells',
@@ -40,6 +42,13 @@ BEGIN
         AND NULLIF(trim(COALESCE(l.column_meta->>'modelEntityTypeCode', '')), '') IS NULL)
       OR (l.column_kind = 'ENTITY'
         AND NULLIF(trim(COALESCE(l.column_meta->>'entityEntityTypeCode', '')), '') IS NULL)
+    )
+    AND NOT EXISTS (
+      SELECT 1
+      FROM dm_workbench_layout w
+      WHERE w.id = l.layout_id
+        AND w.deleted = false
+        AND w.is_template = true
     );
   GET DIAGNOSTICS v_shells = ROW_COUNT;
 

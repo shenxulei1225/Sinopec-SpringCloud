@@ -8,13 +8,14 @@ INSERT INTO dynamic_model (
   code, name, entity_type_code, description, status, sort, tenant_id, creator
 ) VALUES (
   'action', '动作库', 'action',
-  '动作规范型号（SINGLE）；具体动作建为实体实例，勿再建第二型号', 1, 0, 1, 'seed'
+  '动作规范型号（SINGLE）；具体动作建为实体实例，勿再建第二型号；参数写 param_slots_json', 1, 0, 1, 'seed'
 )
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   name = EXCLUDED.name,
   entity_type_code = EXCLUDED.entity_type_code,
   description = EXCLUDED.description,
+  status = 1,
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 

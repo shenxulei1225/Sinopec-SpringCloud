@@ -34,14 +34,14 @@ public class DmDataTabLayoutDO extends TenantBaseDO {
     /** CATEGORY | MODEL | ENTITY | DETAIL */
     private String columnKind;
 
-    /** 列顶标签页（就是 Tab）的编号：分类/型号/实体列上每一个 Tab；DETAIL 为空 */
+    /** 列顶标签页（就是 Tab）的编号：分类/型号/实体/详情列上每一个 Tab */
     private String tabId;
 
     private Long propsId;
 
     private Boolean enabled;
 
-    /** 列扩展 jsonb：按 columnKind 为分类 / 型号 / 实体各自扩展 */
+    /** 列扩展 jsonb：按 columnKind 为分类 / 型号 / 实体 / 详情扩展 */
     @TableField(typeHandler = JsonbMapTypeHandler.class)
     private Map<String, Object> columnMeta;
 }

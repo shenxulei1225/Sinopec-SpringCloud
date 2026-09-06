@@ -43,6 +43,8 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.relation.RelationFieldLibraryMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypePlatformFieldSupport;
+import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.entity.index.FieldIndexService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeBaseFieldService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeRelationService;
@@ -59,12 +61,16 @@ import org.springframework.util.StringUtils;
 
 /**
  * 模型字段分配 Service 实现类
- * 
+ *
+ * <p>负责：把字段库字段挂到型号、改分配规则、卸分配；关联字段写入目标类型等。</p>
+ * <p>不负责：实体层级（parentId）写入、分类树同步；组织上级由系统 ensure，不靠本服务发明。</p>
+ * <p>引用数据：用户只选目标数据类型；同类型 / 跨类型在表单组装时按目标与型号是否一致判定。</p>
+ *
  * 支持三种字段类型：
  * - 固定列字段（BASE）：来自业务类型配置,自动继承
  * - 扩展字段（CUSTOM）：用户通过 ModelFieldAssignment 添加
  * - 关联字段（RELATION）：引用其他业务实体（FR-BDA-030~034）
- * 
+ *
  * @author yudao
  */
 @Service
@@ -394,6 +400,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         // 删除字段分配（不因型号下已有实体而拒绝；界面不再使用该字段即可）
         ModelFieldAssignmentDO assignment = modelFieldAssignmentMapper.selectByModelIdAndFieldId(modelId, fieldId);
         if (assignment != null) {
+            assertSystemFieldNotUnassignable(assignment, field);
             boolean wasSearchable = resolveSearchable(assignment.getIsSearchable(), field.getType());
             modelFieldAssignmentMapper.deleteById(assignment.getId());
             notifyModelFieldDefinitionChanged(modelId);
@@ -443,6 +450,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         List<String> searchableFieldCodes = new ArrayList<>();
         for (ModelFieldAssignmentDO assignment : toRemove) {
             FieldDO field = fieldById.get(assignment.getFieldId());
+            assertSystemFieldNotUnassignable(assignment, field);
             if (field != null && resolveSearchable(assignment.getIsSearchable(), field.getType())) {
                 searchableFieldCodes.add(field.getCode());
             }
@@ -516,11 +524,27 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 respVO.setSort(assignment.getSort());
                 // LIBRARY / 已登记为基础字段的分配，均按 BASE 展示（不另读固定列表补行）
                 String registeredFieldCode = findRegisteredBaseFieldCode(model.getEntityTypeCode(), field);
+                boolean isSystemAssignment =
+                        ModelFieldAssignmentRespVO.FIELD_SOURCE_SYSTEM.equalsIgnoreCase(assignment.getFieldSource())
+                                || EntityTypePlatformFieldSupport.isPlatformOwnedPersistedFieldCode(
+                                        StringUtils.hasText(registeredFieldCode) ? registeredFieldCode : field.getCode());
                 boolean isBaseAssignment =
-                        ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE.equals(assignment.getFieldSource())
-                                || "LIBRARY".equalsIgnoreCase(assignment.getFieldSource())
-                                || registeredFieldCode != null;
-                if (isBaseAssignment) {
+                        !isSystemAssignment
+                                && (ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE.equals(assignment.getFieldSource())
+                                        || "LIBRARY".equalsIgnoreCase(assignment.getFieldSource())
+                                        || (registeredFieldCode != null
+                                                && !EntityTypePlatformFieldSupport.isPlatformOwnedPersistedFieldCode(
+                                                        registeredFieldCode)));
+                if (isSystemAssignment) {
+                    respVO.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_SYSTEM);
+                    respVO.setEditable(false);
+                    respVO.setDeletable(false);
+                    String fieldCode = StringUtils.hasText(registeredFieldCode)
+                            ? registeredFieldCode
+                            : field.getCode();
+                    respVO.setFieldCode(fieldCode);
+                    applyBaseFieldDisplayAlias(respVO, model.getEntityTypeCode(), fieldCode);
+                } else if (isBaseAssignment) {
                     respVO.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE);
                     // 固定列不可从模型移除，但模型级规则（必填/搜索/排序/筛选）可在此配置
                     respVO.setEditable(true);
@@ -537,7 +561,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 }
 
                 // 如果是关联字段（ENTITY_REF 或 ENTITY_REF_MULTI 类型）,填充关联信息
-                if (!isBaseAssignment && FieldTypeEnum.isEntityRef(field.getType())) {
+                if (!isSystemAssignment && !isBaseAssignment && FieldTypeEnum.isEntityRef(field.getType())) {
                     // 关联字段信息从权威来源获取：RelationFieldLibrary / ModelRelation
                     if (assignment.getRefLibraryId() != null) {
                         // 1. 从 RelationFieldLibrary 查询
@@ -580,9 +604,9 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
             Integer sortA = a.getSort();
             Integer sortB = b.getSort();
             if (sortA == null && sortB == null) {
-                // 如果都为 null,按字段来源排序（BASE 在前,CUSTOM 在后）
+                // 如果都为 null,按字段来源排序（SYSTEM/BASE 在前,CUSTOM 在后）
                 if (!Objects.equals(a.getFieldSource(), b.getFieldSource())) {
-                    return ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE.equals(a.getFieldSource()) ? -1 : 1;
+                    return isInheritedFieldSource(a.getFieldSource()) ? -1 : 1;
                 }
                 // 同来源按字段 ID 或 fieldCode 排序
                 if (a.getField() != null && b.getField() != null) {
@@ -597,9 +621,9 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
             if (sortA == null) return 1; // sort 为 null 的排在后面
             if (sortB == null) return -1;
             int sortCompare = sortA.compareTo(sortB);
-            // 如果 sort 相同,按字段来源排序（BASE 在前）
+            // 如果 sort 相同,按字段来源排序（SYSTEM/BASE 在前）
             if (sortCompare == 0 && !Objects.equals(a.getFieldSource(), b.getFieldSource())) {
-                return ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE.equals(a.getFieldSource()) ? -1 : 1;
+                return isInheritedFieldSource(a.getFieldSource()) ? -1 : 1;
             }
             return sortCompare;
         });
@@ -633,6 +657,28 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
             return registered;
         }
         return libraryField != null ? libraryField.getCode() : null;
+    }
+
+    private static boolean isInheritedFieldSource(String fieldSource) {
+        if (!StringUtils.hasText(fieldSource)) {
+            return false;
+        }
+        String normalized = fieldSource.trim();
+        return ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE.equals(normalized)
+                || ModelFieldAssignmentRespVO.FIELD_SOURCE_SYSTEM.equals(normalized);
+    }
+
+    private static void assertSystemFieldNotUnassignable(ModelFieldAssignmentDO assignment, FieldDO field) {
+        String source = assignment.getFieldSource() == null ? "" : assignment.getFieldSource().trim();
+        if (ModelFieldAssignmentRespVO.FIELD_SOURCE_SYSTEM.equalsIgnoreCase(source)) {
+            throw new ServiceException(400, "系统字段不可从型号移除");
+        }
+        String fieldCode = StringUtils.hasText(assignment.getFieldCode())
+                ? assignment.getFieldCode()
+                : (field != null ? field.getCode() : null);
+        if (EntityTypePlatformFieldSupport.isPlatformOwnedPersistedFieldCode(fieldCode)) {
+            throw new ServiceException(400, "所属场站为系统字段，不可从型号移除");
+        }
     }
 
     /**

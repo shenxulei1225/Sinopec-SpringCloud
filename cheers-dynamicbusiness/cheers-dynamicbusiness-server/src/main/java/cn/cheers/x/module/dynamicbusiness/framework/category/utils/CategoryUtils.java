@@ -100,16 +100,10 @@ public final class CategoryUtils {
 
     /**
      * 按分类 id 生成 tree_path（格式 {@code /1/677/282/}），与改名无关。
+     * 与实体树共用 {@link cn.cheers.x.module.dynamicbusiness.framework.hierarchy.IdTreeHierarchy}。
      */
     public static String buildIdTreePath(String parentPath, Long categoryId) {
-        if (categoryId == null) {
-            throw new IllegalArgumentException("categoryId is required");
-        }
-        String segment = categoryId + "/";
-        if (parentPath == null || parentPath.isEmpty()) {
-            return "/" + segment;
-        }
-        return parentPath.endsWith("/") ? parentPath + segment : parentPath + "/" + segment;
+        return cn.cheers.x.module.dynamicbusiness.framework.hierarchy.IdTreeHierarchy.buildPath(parentPath, categoryId);
     }
 
     /**

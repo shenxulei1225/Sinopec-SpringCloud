@@ -1,11 +1,14 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity.refcategory;
 
 /**
- * 分类–实体关联变更后的 REF 回写（分类即实体 + 唯一匹配 REF）。
- * <p>
- * 挂上：单选写成该目标；MultiRef 加入该目标（单归属时 MultiRef 只留这一个）。
- * 解绑：单选若仍指向该目标则清空；MultiRef 只删对应那一条。
- * 与 {@link EntityRefCategoryProjectionService} 方向相反（投影是 REF→分类）。
+ * 分类–实体关联变更后，反方向回写主体上的引用，使「挂在哪个分类」与引用字段一致。
+ *
+ * <p>与 {@link EntityRefCategoryProjectionService} 对向：那边是改引用 → 投影分类–实体；
+ * 这边是树上挂/卸分类 → 回写引用。</p>
+ *
+ * <p>现网已实现：分类节点绑了台账（高级分类）且主体有唯一匹配该台账类型的引用时，写成 / 清成该绑定实体。
+ * 扩展预留：主体若有「引用普通分类」字段（目标即 categoryId），挂/卸时同样应对齐该字段——
+ * 不得用「简单分类一律不回写」堵死这条产品路径；无任何可对齐引用时才跳过。</p>
  */
 public interface EntityCategoryRefWritebackService {
 

@@ -11,8 +11,7 @@ import java.util.Map;
  * 实体统一查询场景（query-by-scene）。
  *
  * <p>正式场景：{@link #ENTITIES_BY_CATEGORY}、{@link #ENTITIES_BY_MODEL}、
- * {@link #ENTITIES_UNCATEGORIZED}、{@link #ENTITIES_BY_CATEGORY_LINK}、{@link #ENTITIES_DETAIL}。
- * {@link #ROOT_ENTITY_SUBTREE} 仅兼容保留，本期数据管理不对对接。</p>
+ * {@link #ENTITIES_UNCATEGORIZED}、{@link #ENTITIES_BY_CATEGORY_LINK}、{@link #ENTITIES_DETAIL}。</p>
  */
 @AllArgsConstructor
 public enum EntityQueryScene {
@@ -34,9 +33,6 @@ public enum EntityQueryScene {
 
     /** 按实体编号取详情 */
     ENTITIES_DETAIL("ENTITIES_DETAIL", "实体详情"),
-
-    /** 实体 parent_id 子树；本期数据管理不对对接，仅兼容保留 */
-    ROOT_ENTITY_SUBTREE("ROOT_ENTITY_SUBTREE", "实体子树（兼容）"),
     ;
 
     private final String code;

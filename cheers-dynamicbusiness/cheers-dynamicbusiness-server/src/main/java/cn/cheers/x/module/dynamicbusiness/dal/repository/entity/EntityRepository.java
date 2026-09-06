@@ -69,6 +69,22 @@ public interface EntityRepository {
     List<EntityDO> findByIds(List<Long> ids, String entityTypeCode);
 
     /**
+     * 慢路径站场/物理前提：在有序候选 id 上按专用表物理列筛，保留仍命中的 id（保序）。
+     *
+     * <p>{@code physicalFilters} 为空时原样返回候选；列名须已校验。用于 {@code facility_id} 等
+     * 禁止走字段索引的条件。</p>
+     *
+     * @param orderedIds 候选实体 id（保序）
+     * @param entityTypeCode 业务类型编码
+     * @param physicalFilters 已解析的物理列 EQ/IN/NOT_IN；可空
+     * @return 仍命中的 id（相对 {@code orderedIds} 保序）
+     */
+    List<Long> retainOrderedIdsByPhysicalFilters(
+            List<Long> orderedIds,
+            String entityTypeCode,
+            List<PhysicalColumnFilter> physicalFilters);
+
+    /**
      * 按有序 id 一次 SELECT 核心列 + 专用表基础字段列（含 custom_fields）。
      *
      * <p>空 {@code orderedIds} 返回空列表；结果按 {@code orderedIds} 保序；

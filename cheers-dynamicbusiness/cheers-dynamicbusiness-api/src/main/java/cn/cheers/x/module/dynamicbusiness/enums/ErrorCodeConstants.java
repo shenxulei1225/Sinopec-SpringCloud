@@ -187,6 +187,9 @@ public interface ErrorCodeConstants {
     ErrorCode MODEL_FIELD_ASSIGNMENT_NOT_EXISTS = new ErrorCode(1_002_030_000, "字段分配不存在");
     ErrorCode MODEL_FIELD_BASE_FIELD_CANNOT_UNASSIGN = new ErrorCode(1_002_030_001, "固定列字段不允许修改");
     ErrorCode MODEL_FIELD_BASE_FIELD_CANNOT_UPDATE = new ErrorCode(1_002_030_002, "固定列字段不允许修改业务规则");
+    /** @deprecated 已改为统一「引用数据」：同类型允许分配，表单按目标与型号是否一致分流。保留错误码以免历史客户端引用断裂。 */
+    ErrorCode MODEL_FIELD_SAME_TYPE_REF_FORBIDDEN = new ErrorCode(1_002_030_003,
+            "（已废弃）同类型引用请使用字段库「引用数据」并选择目标数据类型");
 
     // ========== 固定列字段验证 1-002-031-000 ==========
     ErrorCode BASE_FIELD_VALIDATION_FAILED = new ErrorCode(1_002_031_000, "固定列字段验证失败：{}");

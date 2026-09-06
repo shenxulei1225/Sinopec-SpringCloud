@@ -4,6 +4,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmDataTabColum
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmDataTabLayoutDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmDataTabColumnRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmDataTabLayoutMapper;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -150,6 +151,8 @@ public class DmDataTabColumnRelationBootstrapService {
             }
         }
 
+        // 详情跟随关系由关系图显式配置；这里不做默认猜测连线。
+
         for (DmDataTabColumnRelationDO row : toInsert) {
             dmDataTabColumnRelationMapper.insert(row);
         }
@@ -167,14 +170,14 @@ public class DmDataTabColumnRelationBootstrapService {
             ColumnEndpoint from,
             ColumnEndpoint to,
             String relationKind,
-            String edgeRole,
+            String edgeAction,
             List<String> enabledInteractions) {
-        String key = pairKey(from.identity(), to.identity(), edgeRole);
+        String key = pairKey(from.identity(), to.identity(), edgeAction);
         if (existingPairs.contains(key)) {
             return;
         }
         toInsert.add(newRelation(
-                layoutId, registryCode, from, to, relationKind, edgeRole, enabledInteractions));
+                layoutId, registryCode, from, to, relationKind, edgeAction, enabledInteractions));
         existingPairs.add(key);
     }
 
@@ -184,23 +187,24 @@ public class DmDataTabColumnRelationBootstrapService {
                 dmDataTabColumnRelationMapper.selectListByLayoutId(layoutId)) {
             String from = row.getFromColumnIdentity() == null ? "" : row.getFromColumnIdentity().trim();
             String to = row.getToColumnIdentity() == null ? "" : row.getToColumnIdentity().trim();
-            existingPairs.add(pairKey(from, to, edgeRoleFromMeta(row.getRelationMeta())));
+            existingPairs.add(pairKey(from, to, edgeActionFromMeta(row.getRelationMeta())));
         }
         return existingPairs;
     }
 
-    private static String edgeRoleFromMeta(Map<String, Object> meta) {
+    private static String edgeActionFromMeta(Map<String, Object> meta) {
         if (meta == null) {
-            return "filter";
+            throw new ServiceException(500, "栏间关系缺少 relationMeta，无法识别 edgeAction");
         }
-        Object role = meta.get("edgeRole");
-        if (role != null) {
-            String text = String.valueOf(role).trim();
-            if ("write".equals(text) || "filter".equals(text)) {
-                return text;
-            }
+        Object role = meta.get("edgeAction");
+        if (role == null) {
+            throw new ServiceException(500, "栏间关系缺少 edgeAction，无法识别用途");
         }
-        return "filter";
+        String text = String.valueOf(role).trim();
+        if ("write".equals(text) || "filter".equals(text)) {
+            return text;
+        }
+        throw new ServiceException(500, "栏间关系 edgeAction 非法：" + text);
     }
 
     private static DmDataTabColumnRelationDO newRelation(
@@ -209,7 +213,7 @@ public class DmDataTabColumnRelationBootstrapService {
             ColumnEndpoint from,
             ColumnEndpoint to,
             String relationKind,
-            String edgeRole,
+            String edgeAction,
             List<String> enabledInteractions) {
         DmDataTabColumnRelationDO row = new DmDataTabColumnRelationDO();
         row.setLayoutId(layoutId);
@@ -221,7 +225,7 @@ public class DmDataTabColumnRelationBootstrapService {
         row.setFromTypeCode(from.typeCode());
         row.setToTypeCode(to.typeCode());
         Map<String, Object> meta = new LinkedHashMap<>();
-        meta.put("edgeRole", edgeRole);
+        meta.put("edgeAction", edgeAction);
         meta.put("enabledInteractions", enabledInteractions);
         row.setRelationMeta(meta);
         return row;

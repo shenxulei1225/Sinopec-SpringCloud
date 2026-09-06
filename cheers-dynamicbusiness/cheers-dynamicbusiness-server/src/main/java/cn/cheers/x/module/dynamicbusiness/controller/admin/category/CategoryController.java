@@ -259,7 +259,8 @@ public class CategoryController {
             支持 BEFORE/AFTER/INNER 三种拖拽落点：
             - BEFORE/AFTER：与目标节点同父级内重排
             - INNER：拖入目标节点内部，成为其子节点
-            仅影响分类的 parentId/sort/treePath，不影响模型/实体关联关系。
+            高级分类且节点已绑定实体时：先改实体层级（权威），再对齐分类树投影。
+            简单分类：仅改分类 parentId/sort/treePath。
             """
     )
     @ApiAccessLog(operateType = UPDATE)
@@ -267,6 +268,22 @@ public class CategoryController {
     public CommonResult<Boolean> dragCategory(@Valid @RequestBody CategoryDragReqVO body) {
         categoryService.dragCategory(body);
         return success(true);
+    }
+
+    @PostMapping("/backfill-entity-hierarchy")
+    @Operation(
+        summary = "按分类树回填实体层级",
+        description = """
+            高级分类存量修复：把分类 parent 经 1:1 绑定写到实体 parentId，并自上而下重算 treePath。
+            缺绑定或缺父实体时显式失败，不静默跳过。
+            """
+    )
+    @Parameter(name = "categoryTypeCode", required = true, example = "region")
+    @ApiAccessLog(operateType = UPDATE)
+    @PreAuthorize("@ss.hasPermission('system:category:update')")
+    public CommonResult<Integer> backfillEntityHierarchy(
+            @RequestParam("categoryTypeCode") String categoryTypeCode) {
+        return success(categoryService.backfillEntityHierarchyFromCategoryTree(categoryTypeCode));
     }
 
     @GetMapping("/search")

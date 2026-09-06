@@ -26,8 +26,6 @@ import java.util.Map;
  */
 final class ColumnRelationLayoutEndpoints {
 
-    static final String SECTION_OBJECT = "OBJECT";
-
     private ColumnRelationLayoutEndpoints() {
     }
 
@@ -42,7 +40,8 @@ final class ColumnRelationLayoutEndpoints {
     record LayoutEndpoints(
             List<ColumnEndpoint> categories,
             List<ColumnEndpoint> models,
-            List<ColumnEndpoint> entities) {
+            List<ColumnEndpoint> entities,
+            List<ColumnEndpoint> details) {
     }
 
     /**
@@ -55,6 +54,7 @@ final class ColumnRelationLayoutEndpoints {
         List<ColumnEndpoint> categories = new ArrayList<>();
         List<ColumnEndpoint> models = new ArrayList<>();
         List<ColumnEndpoint> entities = new ArrayList<>();
+        List<ColumnEndpoint> details = new ArrayList<>();
 
         for (DmDataTabLayoutDO row : layouts) {
             if (Boolean.FALSE.equals(row.getEnabled())) {
@@ -68,11 +68,12 @@ final class ColumnRelationLayoutEndpoints {
                 case CATEGORY -> categories.add(endpoint);
                 case MODEL -> models.add(endpoint);
                 case ENTITY -> entities.add(endpoint);
+                case DETAIL -> details.add(endpoint);
                 default -> {
                 }
             }
         }
-        return new LayoutEndpoints(categories, models, entities);
+        return new LayoutEndpoints(categories, models, entities, details);
     }
 
     /**
@@ -82,7 +83,7 @@ final class ColumnRelationLayoutEndpoints {
      * {@link DmDataTabColumnRelationService#removeRelationsTouchingIdentities}。
      * <p>
      * 不看 enabled、不要求类型码：配置隐藏的栏仍有身份；身份只随 tabId / columnKey 变。
-     * DETAIL 无查数边身份，返回 null。
+     * 详情栏身份是 DETAIL:{tabId}。
      */
     static String columnIdentityOf(DmDataTabLayoutDO row) {
         if (row == null) {
@@ -120,14 +121,14 @@ final class ColumnRelationLayoutEndpoints {
                 }
                 yield "ENTITY:" + tab;
             }
+            case DETAIL -> {
+                if (!StringUtils.hasText(tab) || "default".equalsIgnoreCase(tab)) {
+                    yield null;
+                }
+                yield "DETAIL:" + tab;
+            }
             default -> null;
         };
-    }
-
-    static boolean isWhoEntity(ColumnEndpoint entity) {
-        return entity.kind() == DmDataTabLayoutKindEnum.ENTITY
-                && SECTION_OBJECT.equalsIgnoreCase(
-                        entity.columnSection() == null ? "" : entity.columnSection().trim());
     }
 
     static boolean sameTypeCode(String a, String b) {
@@ -141,12 +142,15 @@ final class ColumnRelationLayoutEndpoints {
         return typeCode == null ? "" : typeCode.trim().toLowerCase();
     }
 
-    static String pairKey(String from, String to, String edgeRole) {
+    static String pairKey(String from, String to, String edgeAction) {
+        if (!StringUtils.hasText(edgeAction)) {
+            throw new IllegalArgumentException("缺少 edgeAction，无法生成关系去重键");
+        }
         return (from == null ? "" : from.trim())
                 + "=>"
                 + (to == null ? "" : to.trim())
                 + "=>"
-                + (edgeRole == null ? "filter" : edgeRole.trim());
+                + edgeAction.trim();
     }
 
     /** 自动连线端点：必须有类型码，否则无法写 from/toTypeCode。 */
@@ -186,6 +190,17 @@ final class ColumnRelationLayoutEndpoints {
                 }
                 yield new ColumnEndpoint(
                         DmDataTabLayoutKindEnum.ENTITY, identity, typeCode.trim(), section);
+            }
+            case DETAIL -> {
+                String typeCode = metaString(meta, "entityEntityTypeCode");
+                if (!StringUtils.hasText(typeCode)) {
+                    yield null;
+                }
+                yield new ColumnEndpoint(
+                        DmDataTabLayoutKindEnum.DETAIL,
+                        identity,
+                        typeCode.trim(),
+                        section);
             }
             default -> null;
         };

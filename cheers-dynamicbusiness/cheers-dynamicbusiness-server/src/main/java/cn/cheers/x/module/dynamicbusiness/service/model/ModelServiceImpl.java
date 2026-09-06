@@ -106,6 +106,9 @@ public class ModelServiceImpl implements ModelService {
     @Resource
     private BaseFieldLibrarySyncService baseFieldLibrarySyncService;
     @Resource
+    @Lazy
+    private cn.cheers.x.module.dynamicbusiness.service.hierarchy.OrgTreeParentFieldEnsureService orgTreeParentFieldEnsureService;
+    @Resource
     private EntityTypeMapper entityTypeMapper;
     @Resource
     @Lazy // 避免与 EntityTypeServiceImpl 循环依赖
@@ -247,6 +250,10 @@ public class ModelServiceImpl implements ModelService {
         defaultGroupReq.setColor("#409eff");
         modelFieldGroupService.createModelFieldGroup(defaultGroupReq);
 
+        // 高级分类：先确保系统组织上级已挂到类型，再物化进本型号分配
+        if (reqVO.getEntityTypeCode() != null) {
+            orgTreeParentFieldEnsureService.ensureForEntityTypeCode(reqVO.getEntityTypeCode());
+        }
         // 物化该业务类型已有固定列到本型号分配表（读路径不再虚合并 BASE）
         baseFieldLibrarySyncService.assignAllBaseFieldsToModel(model.getId());
 
@@ -689,7 +696,24 @@ public class ModelServiceImpl implements ModelService {
 
     @Override
     public void deleteModel(Long id, Long effectiveFacilityId) {
-        // 硬删除只允许走治理命令；公司规格在此路径始终拒绝。
+        // 删除入口按治理身份分流，不发明第二套治理：
+        // - 公司规格 / 无发起站场 → 禁止硬删，提示走停用
+        // - 本地型号缺站场 → 明确要求站场
+        // - 本地型号有站场 → 仅走 ModelGovernanceCommandService.deleteOwnLocal
+        ModelDO model = modelCoreService.get(id);
+        if (model == null) {
+            throw new ServiceException(404, "模型不存在");
+        }
+        String governance = model.getGovernanceStatus() == null
+                ? ""
+                : model.getGovernanceStatus().trim().toUpperCase();
+        boolean companyOrNoOrigin = "COMPANY".equals(governance) || model.getOriginFacilityId() == null;
+        if (companyOrNoOrigin) {
+            throw new ServiceException(400, "公司规格请用停用");
+        }
+        if (effectiveFacilityId == null) {
+            throw new ServiceException(400, "删除本地型号必须指定当前有效站场");
+        }
         modelGovernanceCommandService.deleteOwnLocal(
                 id, effectiveFacilityId, SecurityFrameworkUtils.getLoginUserId());
     }
@@ -1212,8 +1236,9 @@ public class ModelServiceImpl implements ModelService {
         // 3. 获取扩展字段（用户添加的字段）
         List<ModelFieldAssignmentRespVO> customFields = modelFieldAssignmentService.getModelFields(modelId);
         for (ModelFieldAssignmentRespVO assignment : customFields) {
-            // 跳过固定列字段（已在上面处理）
-            if (ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE.equals(assignment.getFieldSource())) {
+            // 跳过固定列 / 系统字段（已在上面处理或不应重复出现在候选）
+            if (ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE.equals(assignment.getFieldSource())
+                    || ModelFieldAssignmentRespVO.FIELD_SOURCE_SYSTEM.equals(assignment.getFieldSource())) {
                 continue;
             }
 

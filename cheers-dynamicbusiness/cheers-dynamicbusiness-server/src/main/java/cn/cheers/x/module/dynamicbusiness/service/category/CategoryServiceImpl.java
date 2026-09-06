@@ -41,6 +41,7 @@ import cn.cheers.x.module.dynamicbusiness.service.entity.EntityRelationSyncServi
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
+import cn.cheers.x.module.dynamicbusiness.service.category.hierarchy.AdvancedCategoryEntityHierarchyService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategoryRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.model.relation.ModelCategoryRelationService;
 import cn.cheers.x.module.dynamicbusiness.util.SensitiveDataEncryptor;
@@ -123,6 +124,9 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Resource
     private CategoryEntityLinkService categoryEntityLinkService;
+
+    @Resource
+    private AdvancedCategoryEntityHierarchyService advancedCategoryEntityHierarchyService;
 
     @Resource
     private EntityTypeScopeMapper entityTypeScopeMapper;
@@ -508,6 +512,14 @@ public class CategoryServiceImpl implements CategoryService {
         }
         if (StrUtil.isNotBlank(reqVO.getCode())) {
             baseOverlay.put("code", reqVO.getCode().trim());
+        }
+        // 权威：同类型上级写实体 parentId（由父分类 link 翻译）；禁止靠 ENTITY_REF 冒充
+        if (!baseOverlay.containsKey("parentId") && reqVO.getParentId() != null) {
+            Long parentEntityId = advancedCategoryEntityHierarchyService
+                    .resolveParentEntityIdFromCategory(reqVO.getParentId(), reqVO.getCategoryTypeCode());
+            if (parentEntityId != null) {
+                baseOverlay.put("parentId", parentEntityId);
+            }
         }
         // 与台账新建共用 EntityService.create：必填校验、固定列同 INSERT、关联同步
         EntityCreateReqVO entityReqVO = EntityWriteReqMaps.createReq(
@@ -1165,7 +1177,27 @@ public class CategoryServiceImpl implements CategoryService {
         if (doObj == null) {
             throw new ServiceException(404, "分类不存在");
         }
+        String typeCode = categoryTypeCode != null ? categoryTypeCode : doObj.getCategoryTypeCode();
+        CategoryTypeDO type = requireCategoryType(typeCode);
+        String mode = CategoryModeSupport.resolveFromType(type);
+        CategoryEntityLinkDO link = categoryEntityLinkService.getLinkByCategoryId(id);
+        // 高级分类且已绑定实体：实体层级权威，再写分类投影
+        if (CategoryModeSupport.isAdvanced(mode) && link != null && link.getEntityId() != null
+                && !isStructuralRoot(doObj, type)) {
+            advancedCategoryEntityHierarchyService.moveCategoryKeepingEntityAuthority(id, targetParentId, typeCode);
+            return;
+        }
         core.moveCategory(id, targetParentId);
+    }
+
+    @Override
+    public void moveCategoryStructureOnly(Long id, Long targetParentId) {
+        core.moveCategory(id, targetParentId);
+    }
+
+    @Override
+    public int backfillEntityHierarchyFromCategoryTree(String categoryTypeCode) {
+        return advancedCategoryEntityHierarchyService.backfillEntityHierarchyFromCategoryTree(categoryTypeCode);
     }
 
     @Override
@@ -1278,7 +1310,8 @@ public class CategoryServiceImpl implements CategoryService {
 
         boolean parentChanged = !Objects.equals(drag.getParentId(), resolvedParentId);
         if (parentChanged) {
-            core.moveCategory(drag.getId(), resolvedParentId);
+            // 走门面：高级分类绑定实体时先移实体再对齐分类
+            moveCategory(drag.getId(), resolvedParentId, categoryTypeCode);
             drag = categoryMapper.selectByIdAndCategoryTypeCode(drag.getId(), categoryTypeCode);
         }
 

@@ -38,11 +38,13 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * 分类–实体变更后回写 REF：
- * <ul>
- *   <li>挂上：单选写成该目标；MultiRef 加入（单归属时 MultiRef 只留这一个）</li>
- *   <li>解绑：单选若仍指向该目标则清空；MultiRef 只删对应那一条</li>
- * </ul>
+ * 分类–实体变更后回写引用，与引用字段保持一致。
+ *
+ * <p>管什么：挂/卸分类后，若主体上存在应对齐本次分类的引用，则写成或清掉。
+ * 现网路径：节点有分类–台账绑定，且有唯一匹配该台账类型的引用 → 写绑定实体 id。
+ * 扩展预留：将来「引用普通分类」字段应对齐 categoryId；届时在本服务增分支，禁止用简单/高级一刀切跳过。
+ * 不管什么：引用保存后的分类投影（见 {@link EntityRefCategoryProjectionService}）。
+ * 禁止：无匹配引用时编造回写；把简单分类归类误写成分类–台账绑定。</p>
  */
 @Service
 @RequiredArgsConstructor
@@ -137,6 +139,9 @@ public class EntityCategoryRefWritebackServiceImpl implements EntityCategoryRefW
         boolean single = StringUtils.hasText(associationModeOverride)
                 ? EntityAssociationModeSupport.isSingle(associationModeOverride)
                 : EntityAssociationModeSupport.isSingle(categoryType);
+        // 现网：仅当节点有分类–台账绑定时，才能把引用写成绑定实体。
+        // 无绑定 → 跳过（普通分类归类、或尚未配置「引用普通分类」字段时的正确空态）。
+        // 将来若主体有引用普通分类字段，在此之后增「按 categoryId 对齐」分支，不要改成按 categoryMode 直接 return。
         CategoryEntityLinkDO link = categoryEntityLinkService.getLinkByCategoryId(categoryId);
         String targetType = link != null && StringUtils.hasText(link.getEntityTypeCode())
                 ? link.getEntityTypeCode().trim()

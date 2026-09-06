@@ -9,6 +9,6 @@ import java.util.Map;
 @Data
 public class DmWorkbenchLayoutSettingsUpdateReqVO {
 
-    @Schema(description = "区段配置隐藏；仅 FILTER、OBJECT、WHAT，显式 true 才隐藏")
+    @Schema(description = "区域隐藏；键必须是本布局已有区域编号，显式 true 才隐藏。不经此接口改区域清单。")
     private Map<String, Boolean> sectionHidden;
 }

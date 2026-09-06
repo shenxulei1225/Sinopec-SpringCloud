@@ -4,6 +4,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldGr
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityBaseFieldColumnNames;
+import cn.cheers.x.module.dynamicbusiness.framework.hierarchy.OrgTreeParentFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.relation.RelationFieldLibraryDO;
@@ -44,7 +45,7 @@ public final class ModelCrudFormFieldAssembler {
             "businesstypecode", "business_type_code",
             "modelid", "model_id",
             "customfields", "custom_fields",
-            "parentid", "parent_id",
+            // parentId 由系统组织上级字段挂到型号后展示，不在此屏蔽
             "treepath", "tree_path",
             "sort",
             "guid",
@@ -83,6 +84,7 @@ public final class ModelCrudFormFieldAssembler {
                 resolvePlatformLabel(platformFieldLabels, "name", "名称")));
         putIfAbsent(fieldItems, addedCodes, buildBuiltinStatusField(
                 resolvePlatformLabel(platformFieldLabels, "status", "状态")));
+        // 组织上级：仅当高级分类系统已挂接 parentId / TREE_PARENT 字段时，由下方基础字段/分配行进入表单
 
         if (includeBaseFields && baseFieldByCode != null && !baseFieldByCode.isEmpty()) {
             List<EntityTypeBaseFieldDO> sortedBaseFields = new ArrayList<>(baseFieldByCode.values());
@@ -295,7 +297,50 @@ public final class ModelCrudFormFieldAssembler {
         applyBaseFieldTypeConfig(item, baseField);
         applyBaseFieldTypeExtensions(item, entityTypeCode, baseField, fieldType, libraryField, refResolveContext);
         applyDefaultValue(item, baseField.getDefaultValue());
+        applySameTypeTreeRender(item, code, fieldType, libraryField != null ? libraryField.getSemanticType() : null,
+                entityTypeCode);
         return item;
+    }
+
+    /**
+     * 同类型引用用树选（含系统组织上级与用户「引用数据」目标=本类型）：
+     * <ul>
+     *   <li>系统组织上级（parentId / TREE_PARENT）→ 写入实体 parentId，改后同步分类树</li>
+     *   <li>用户引用数据且目标=当前类型 → 只存本字段值，不走组织层级</li>
+     * </ul>
+     */
+    private static void applySameTypeTreeRender(
+            Map<String, Object> item,
+            String fieldCode,
+            String fieldType,
+            String semanticType,
+            String entityTypeCode) {
+        boolean orgParent = OrgTreeParentFieldCodes.isOrgTreeParentField(fieldCode, semanticType);
+        boolean selfRefInternal = FieldTypeEnum.isEntitySelfRef(normalizeFieldType(fieldType));
+        Object targetObj = item.get("targetEntityTypeCode");
+        String targetCode = targetObj == null ? null : String.valueOf(targetObj).trim();
+        boolean sameTypeUserRef = FieldTypeEnum.isSingleEntityRef(normalizeFieldType(fieldType))
+                && FieldTypeEnum.isSameTypeRefTarget(entityTypeCode, targetCode);
+        if (!orgParent && !selfRefInternal && !sameTypeUserRef) {
+            return;
+        }
+        item.put("renderAs", "entity-parent-tree");
+        if (orgParent) {
+            item.put("fieldType", FieldTypeEnum.ENTITY_SELF_REF.getCode());
+            item.put("semanticType", OrgTreeParentFieldCodes.SEMANTIC_TREE_PARENT);
+            item.put("label", item.get("label") != null && StringUtils.hasText(String.valueOf(item.get("label")))
+                    ? item.get("label")
+                    : "上级");
+        }
+        Map<String, Object> binding = new LinkedHashMap<>();
+        binding.put("businessCategory", BusinessCategoryConstants.DYNAMIC);
+        binding.put("dataKind", BusinessCategoryConstants.KIND_ENTITY);
+        binding.put("entityTypeCode", entityTypeCode);
+        item.put("targetEntityTypeCode", entityTypeCode);
+        item.put("refTarget", Map.of(
+                "capabilityBinding", binding,
+                "valueField", "id",
+                "labelField", "name"));
     }
 
     private static void applyBaseFieldTypeExtensions(
@@ -310,6 +355,7 @@ public final class ModelCrudFormFieldAssembler {
                 || "BATCH_ENTITY_REF".equalsIgnoreCase(normalizedType)
                 || codeStartsWithRel(baseField.getFieldCode());
         boolean singleRef = FieldTypeEnum.isSingleEntityRef(normalizedType) || "REFERENCE".equals(normalizedType);
+        boolean selfRef = FieldTypeEnum.isEntitySelfRef(normalizedType);
         if (multiRef) {
             item.put("renderAs", "ref-picker-multi");
             item.put("valueShape", "array");
@@ -317,8 +363,11 @@ public final class ModelCrudFormFieldAssembler {
         } else if (singleRef) {
             item.put("renderAs", "ref-picker");
             item.put("fieldType", normalizedType);
+        } else if (selfRef) {
+            item.put("renderAs", "entity-parent-tree");
+            item.put("fieldType", normalizedType);
         }
-        if (multiRef || singleRef || FieldTypeEnum.isEntityRef(normalizedType)) {
+        if (multiRef || singleRef || selfRef || FieldTypeEnum.isEntityRef(normalizedType)) {
             putEntityRefTarget(item, entityTypeCode, libraryField, null, refResolveContext,
                     baseField != null ? baseField.getFieldCode() : null);
         }
@@ -378,6 +427,7 @@ public final class ModelCrudFormFieldAssembler {
             defaultValue = baseField.getDefaultValue();
         }
         applyDefaultValue(item, defaultValue);
+        applySameTypeTreeRender(item, code, fieldType, field.getSemanticType(), entityTypeCode);
         return item;
     }
 
@@ -427,6 +477,7 @@ public final class ModelCrudFormFieldAssembler {
             case "DATE", "DATETIME", "TIMESTAMP" -> "date";
             case "ENTITY_REF", "REFERENCE" -> "ref-picker";
             case "ENTITY_REF_MULTI" -> "ref-picker-multi";
+            case "ENTITY_SELF_REF" -> "entity-parent-tree";
             default -> "input";
         };
     }
@@ -481,6 +532,10 @@ public final class ModelCrudFormFieldAssembler {
                     field != null ? field.getCode() : null);
         } else if (FieldTypeEnum.isSingleEntityRef(normalizedType) || "REFERENCE".equals(normalizedType)) {
             item.put("renderAs", "ref-picker");
+            putEntityRefTarget(item, entityTypeCode, field, assign, refResolveContext,
+                    field != null ? field.getCode() : null);
+        } else if (FieldTypeEnum.isEntitySelfRef(normalizedType)) {
+            item.put("renderAs", "entity-parent-tree");
             putEntityRefTarget(item, entityTypeCode, field, assign, refResolveContext,
                     field != null ? field.getCode() : null);
         }
@@ -546,6 +601,11 @@ public final class ModelCrudFormFieldAssembler {
             ModelFieldAssignmentDO assign,
             RefResolveContext refResolveContext,
             String fieldCodeForInfer) {
+        if (field != null
+                && OrgTreeParentFieldCodes.isOrgTreeParentField(field.getCode(), field.getSemanticType())
+                && StringUtils.hasText(sourceEntityTypeCode)) {
+            return sourceEntityTypeCode.trim();
+        }
         RefResolveContext ctx = refResolveContext != null ? refResolveContext : RefResolveContext.empty();
         if (assign != null && assign.getRefLibraryId() != null) {
             RelationFieldLibraryDO lib = ctx.refLibraryById().get(assign.getRefLibraryId());

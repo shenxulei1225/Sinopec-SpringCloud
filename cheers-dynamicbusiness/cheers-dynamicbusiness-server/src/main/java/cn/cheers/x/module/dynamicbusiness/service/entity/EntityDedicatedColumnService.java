@@ -11,6 +11,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityBaseFieldColumnNames;
+import cn.cheers.x.module.dynamicbusiness.framework.hierarchy.OrgTreeParentFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.framework.tenant.TenantPhysicalTableNames;
 import cn.hutool.core.util.StrUtil;
 import lombok.RequiredArgsConstructor;
@@ -145,6 +146,10 @@ public class EntityDedicatedColumnService {
                 continue;
             }
             String fieldCode = field.getFieldCode().trim();
+            // 组织上级走实体核心列 parent_id / moveEntity，不作为「业务固定列」二次抽取
+            if (OrgTreeParentFieldCodes.FIELD_CODE.equalsIgnoreCase(fieldCode)) {
+                continue;
+            }
             String column = EntityBaseFieldColumnNames.toColumnName(fieldCode);
             if (column == null) {
                 continue;

@@ -20,7 +20,6 @@ DECLARE
   v_entity_identity text;
   v_ds jsonb;
   v_inspection_cat_id bigint;
-  v_model_id bigint;
 BEGIN
   SELECT data_layout_id INTO v_layout_id
   FROM dynamic_entity_type
@@ -57,7 +56,7 @@ BEGIN
           'label', 'SOP分类',
           'categoryTypeCode', 'sop',
           'columnKey', COALESCE(NULLIF(column_meta->>'columnKey', ''), 'sop'),
-          'columnSection', 'FILTER'
+          'columnSection', 'filter'
         ),
       enabled = true,
       updater = 'seed-15',
@@ -72,7 +71,7 @@ BEGIN
       column_meta = COALESCE(column_meta, '{}'::jsonb)
         || jsonb_build_object(
           'label', 'SOP模板',
-          'columnSection', 'OBJECT',
+          'columnSection', 'who',
           'entityEntityTypeCode', 'sop'
         ),
       enabled = true,
@@ -185,27 +184,23 @@ BEGIN
       );
   END IF;
 
-  -- 8) 未挂任何 SOP 分类的模板 → 挂「检查」（已挂接跳过）
+  -- 8) 未挂任何 SOP 分类的模板 → 分类–实体挂「检查」（简单分类；禁止写 link）
   SELECT id INTO v_inspection_cat_id
   FROM dynamic_category
   WHERE deleted = false AND tenant_id = v_tenant AND code = 'cat-sop-inspection'
   LIMIT 1;
 
-  SELECT id INTO v_model_id
-  FROM dynamic_model
-  WHERE deleted = false AND tenant_id = v_tenant AND code = 'sop'
-  LIMIT 1;
-
-  IF v_inspection_cat_id IS NOT NULL AND v_model_id IS NOT NULL THEN
-    INSERT INTO dynamic_category_entity_link_t1 (
-      tenant_id, category_id, entity_type_code, entity_id, entity_model_id, creator, deleted
+  IF v_inspection_cat_id IS NOT NULL THEN
+    INSERT INTO dynamic_entity_category_relation_t1 (
+      tenant_id, category_id, entity_type_code, entity_id, domain, sort, creator, deleted
     )
     SELECT
       v_tenant,
       v_inspection_cat_id,
       'sop',
       s.id,
-      v_model_id,
+      NULL,
+      0,
       'seed-15',
       false
     FROM ent_sop_t1 s
@@ -214,13 +209,18 @@ BEGIN
       AND s.is_template = true
       AND NOT EXISTS (
         SELECT 1
-        FROM dynamic_category_entity_link_t1 l
-        JOIN dynamic_category c ON c.id = l.category_id AND c.deleted = false
-        WHERE l.deleted = false
-          AND l.tenant_id = v_tenant
-          AND l.entity_type_code = 'sop'
-          AND l.entity_id = s.id
-          AND c.category_type_code = 'sop'
+        FROM dynamic_entity_category_relation_t1 r
+        WHERE r.tenant_id = v_tenant
+          AND r.entity_type_code = 'sop'
+          AND r.entity_id = s.id
+          AND r.category_id = v_inspection_cat_id
       );
+
+    UPDATE dynamic_category_entity_link_t1 l
+    SET deleted = true, updater = 'seed-15', update_time = CURRENT_TIMESTAMP
+    WHERE l.deleted = false
+      AND l.tenant_id = v_tenant
+      AND l.entity_type_code = 'sop'
+      AND l.category_id = v_inspection_cat_id;
   END IF;
 END $$;

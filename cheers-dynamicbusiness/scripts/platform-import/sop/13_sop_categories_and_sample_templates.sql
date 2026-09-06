@@ -136,30 +136,39 @@ WHERE s.deleted = false AND s.tenant_id = 1 AND s.code = v.code
     OR jsonb_array_length(s.action_tree_json) = 0
   );
 
--- 挂「检查」分类
-INSERT INTO dynamic_category_entity_link_t1 (
-  tenant_id, category_id, entity_type_code, entity_id, entity_model_id, creator, deleted
+-- 挂「检查」分类：SOP 种类是简单分类，写分类–实体，禁止写分类–台账绑定
+INSERT INTO dynamic_entity_category_relation_t1 (
+  tenant_id, category_id, entity_type_code, entity_id, domain, sort, creator, deleted
 )
 SELECT
   1,
   cat.id,
   'sop',
   s.id,
-  m.id,
+  NULL,
+  0,
   'seed',
   false
 FROM dynamic_category cat
 JOIN ent_sop_t1 s
   ON s.deleted = false AND s.tenant_id = 1
   AND s.code IN ('SOP-TPL-UAV-LEAK', 'SOP-TPL-MANUAL-LEAK')
-JOIN dynamic_model m
-  ON m.deleted = false AND m.tenant_id = 1 AND m.code = 'sop'
 WHERE cat.deleted = false AND cat.tenant_id = 1 AND cat.code = 'cat-sop-inspection'
   AND NOT EXISTS (
-    SELECT 1 FROM dynamic_category_entity_link_t1 l
-    WHERE l.deleted = false
-      AND l.tenant_id = 1
-      AND l.category_id = cat.id
-      AND l.entity_type_code = 'sop'
-      AND l.entity_id = s.id
+    SELECT 1 FROM dynamic_entity_category_relation_t1 r
+    WHERE r.tenant_id = 1
+      AND r.category_id = cat.id
+      AND r.entity_type_code = 'sop'
+      AND r.entity_id = s.id
   );
+
+UPDATE dynamic_category_entity_link_t1 l
+SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
+FROM dynamic_category cat
+WHERE l.deleted = false
+  AND l.tenant_id = 1
+  AND l.entity_type_code = 'sop'
+  AND l.category_id = cat.id
+  AND cat.deleted = false
+  AND cat.tenant_id = 1
+  AND cat.code = 'cat-sop-inspection';

@@ -9,6 +9,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeBaseFie
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
+import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypePlatformFieldSupport;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelFieldGroupService;
 import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
 import jakarta.annotation.Resource;
@@ -21,6 +22,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * 类型基础字段 ↔ 型号字段分配 的写路径同步。
+ *
+ * <p>管什么：把「当前启用中的类型基础字段」物化到各型号分配表；停用/删除后从型号卸下。
+ * <p>不负责：字段库 CRUD、基础信息面板 UI、读路径再补 BASE 行。
+ * <p>禁止：把 status≠1（停用）的基础字段继续挂到型号上——否则会出现「基础信息看不见、型号删不掉」的幽灵字段。
+ */
 @Service
 @Slf4j
 public class BaseFieldLibrarySyncServiceImpl implements BaseFieldLibrarySyncService {
@@ -43,6 +51,11 @@ public class BaseFieldLibrarySyncServiceImpl implements BaseFieldLibrarySyncServ
             FieldDO libraryField,
             EntityTypeBaseFieldDO baseField) {
         if (entityTypeCode == null || libraryField == null || baseField == null) {
+            return;
+        }
+        // 停用字段不得再挂型号；调用方若误传 status=0，直接卸下而非写入
+        if (baseField.getStatus() != null && baseField.getStatus() != 1) {
+            removeLibraryFieldFromAllModels(entityTypeCode, libraryField.getId());
             return;
         }
         List<ModelDO> models = modelMapper.selectByEntityTypeCode(entityTypeCode);
@@ -69,6 +82,7 @@ public class BaseFieldLibrarySyncServiceImpl implements BaseFieldLibrarySyncServ
             log.warn("[assignAllBaseFieldsToModel] model missing or no entityTypeCode, modelId={}", modelId);
             return 0;
         }
+        // 权威：仅启用中的类型基础字段；停用行不进 live 集合，由孤儿清理从型号卸下
         List<EntityTypeBaseFieldDO> baseFields =
                 entityTypeBaseFieldMapper.selectByEntityTypeCode(model.getEntityTypeCode());
         Set<Long> liveLibraryIds = new HashSet<>();
@@ -90,7 +104,7 @@ public class BaseFieldLibrarySyncServiceImpl implements BaseFieldLibrarySyncServ
             }
         }
         int removedOrphans = removeOrphanBaseAssignments(model, liveLibraryIds);
-        log.info("[assignAllBaseFieldsToModel] modelId={}, entityType={}, baseFields={}, inserted={}, removedOrphans={}",
+        log.info("[assignAllBaseFieldsToModel] modelId={}, entityType={}, enabledBaseFields={}, inserted={}, removedOrphans={}",
                 modelId, model.getEntityTypeCode(), baseFields.size(), inserted, removedOrphans);
         return inserted;
     }
@@ -115,7 +129,9 @@ public class BaseFieldLibrarySyncServiceImpl implements BaseFieldLibrarySyncServ
     }
 
     /**
-     * 清理型号上已失效的 BASE 分配：字段库已删，或不在当前类型启用基础字段集合中。
+     * 清理型号上已失效的 BASE 分配：字段库已删，或不在「当前启用基础字段」集合中（含已停用）。
+     *
+     * @param liveLibraryIds 当前启用基础字段对应的字段库 id；可为空（表示启用集为空，所有 BASE 分配均应卸下）
      */
     private int removeOrphanBaseAssignments(ModelDO model, Set<Long> liveLibraryIds) {
         if (model == null || model.getId() == null) {
@@ -125,6 +141,7 @@ public class BaseFieldLibrarySyncServiceImpl implements BaseFieldLibrarySyncServ
         if (assignments == null || assignments.isEmpty()) {
             return 0;
         }
+        Set<Long> enabledIds = liveLibraryIds != null ? liveLibraryIds : Set.of();
         int removed = 0;
         for (ModelFieldAssignmentDO assignment : assignments) {
             if (assignment == null || assignment.getId() == null) {
@@ -138,8 +155,7 @@ public class BaseFieldLibrarySyncServiceImpl implements BaseFieldLibrarySyncServ
             }
             Long fieldId = assignment.getFieldId();
             FieldDO libraryField = fieldId != null ? fieldMapper.selectById(fieldId) : null;
-            boolean orphan = libraryField == null
-                    || (liveLibraryIds != null && !liveLibraryIds.isEmpty() && !liveLibraryIds.contains(fieldId));
+            boolean orphan = libraryField == null || fieldId == null || !enabledIds.contains(fieldId);
             if (!orphan) {
                 continue;
             }
@@ -185,7 +201,7 @@ public class BaseFieldLibrarySyncServiceImpl implements BaseFieldLibrarySyncServ
             exist.setIsFilterable(filterable);
             exist.setIsSortable(sortable);
             exist.setSort(baseField.getSortOrder());
-            exist.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE);
+            exist.setFieldSource(resolveAssignmentFieldSource(baseField, libraryField));
             modelFieldAssignmentMapper.updateById(exist);
             return false;
         }
@@ -200,7 +216,7 @@ public class BaseFieldLibrarySyncServiceImpl implements BaseFieldLibrarySyncServ
         assignment.setIsFilterable(filterable);
         assignment.setIsSortable(sortable);
         assignment.setSort(baseField.getSortOrder());
-        assignment.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE);
+        assignment.setFieldSource(resolveAssignmentFieldSource(baseField, libraryField));
         assignment.setTenantId(tenantId != null ? tenantId : model.getTenantId());
         modelFieldAssignmentMapper.insert(assignment);
         return true;
@@ -217,6 +233,13 @@ public class BaseFieldLibrarySyncServiceImpl implements BaseFieldLibrarySyncServ
             return fieldMapper.selectByCode(baseField.getFieldCode());
         }
         return null;
+    }
+
+    private static String resolveAssignmentFieldSource(EntityTypeBaseFieldDO baseField, FieldDO libraryField) {
+        String fieldCode = baseField != null && StringUtils.hasText(baseField.getFieldCode())
+                ? baseField.getFieldCode()
+                : (libraryField != null ? libraryField.getCode() : null);
+        return EntityTypePlatformFieldSupport.resolveModelAssignmentFieldSource(fieldCode);
     }
 
     @Override

@@ -112,7 +112,7 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
         }
 
         List<DmDataTabLayoutSaveItemVO> items = dedupeSaveItems(reqVO.getLayouts());
-        validateSaveItems(items);
+        validateSaveItems(items, layoutId);
 
         String entityTypeCode = StringUtils.hasText(reqVO.getEntityTypeCode())
                 ? reqVO.getEntityTypeCode().trim()
@@ -269,13 +269,14 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
 
     /**
      * 落库前归一 Tab 编号。
-     * 分类 / 型号 / 实体：必须非空；禁止字面 default。
+     * 分类 / 型号 / 实体 / 详情：必须非空；禁止字面 default。
      */
     private String normalizeTabId(String columnKind, String tabId) {
         String kind = columnKind == null ? "" : columnKind.trim().toUpperCase();
         boolean needsTab = DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(kind)
                 || DmDataTabLayoutKindEnum.MODEL.getCode().equals(kind)
-                || DmDataTabLayoutKindEnum.ENTITY.getCode().equals(kind);
+                || DmDataTabLayoutKindEnum.ENTITY.getCode().equals(kind)
+                || DmDataTabLayoutKindEnum.DETAIL.getCode().equals(kind);
         if (!StringUtils.hasText(tabId)) {
             if (needsTab) {
                 throw new ServiceException(400, kind + " 栏必须提供 tabId，禁止为空");
@@ -292,7 +293,8 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
         return trimmed;
     }
 
-    private void validateSaveItems(List<DmDataTabLayoutSaveItemVO> layouts) {
+    private void validateSaveItems(List<DmDataTabLayoutSaveItemVO> layouts, Long layoutId) {
+        Set<String> sectionIds = dmWorkbenchLayoutService.sectionIdsOf(layoutId);
         Set<String> scopes = new HashSet<>();
         for (DmDataTabLayoutSaveItemVO item : layouts) {
             if (!DmDataTabLayoutKindEnum.isValid(item.getColumnKind())) {
@@ -301,7 +303,8 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
             String kind = item.getColumnKind().trim().toUpperCase();
             if (DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(kind)
                     || DmDataTabLayoutKindEnum.MODEL.getCode().equals(kind)
-                    || DmDataTabLayoutKindEnum.ENTITY.getCode().equals(kind)) {
+                    || DmDataTabLayoutKindEnum.ENTITY.getCode().equals(kind)
+                    || DmDataTabLayoutKindEnum.DETAIL.getCode().equals(kind)) {
                 if (!StringUtils.hasText(item.getTabId())) {
                     throw new ServiceException(400, kind + " 栏必须提供 tabId");
                 }
@@ -315,11 +318,17 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
             }
             boolean allowsTabId = DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(kind)
                     || DmDataTabLayoutKindEnum.MODEL.getCode().equals(kind)
-                    || DmDataTabLayoutKindEnum.ENTITY.getCode().equals(kind);
+                    || DmDataTabLayoutKindEnum.ENTITY.getCode().equals(kind)
+                    || DmDataTabLayoutKindEnum.DETAIL.getCode().equals(kind);
             if (!allowsTabId && StringUtils.hasText(item.getTabId())) {
                 throw new ServiceException(400, kind + " 列不应设置标签页编号");
             }
-            // 启用中的分类/型号/实体必须带类型码，禁止空壳落库再让用户学怎么补
+            // 分类/型号/实体/详情无论开或关都必须盖本布局已有区域编号，与创建目录时一次写全相同。
+            // 缺编号直接拒绝，禁止保存后再靠读路径补。
+            if (allowsTabId) {
+                requireColumnSectionOnSave(kind, item.getColumnMeta(), sectionIds);
+            }
+            // 启用中的分类/型号/实体/详情必须带类型码，禁止空壳落库再让用户学怎么补
             if (item.getEnabled() == null || Boolean.TRUE.equals(item.getEnabled())) {
                 requireColumnTypeCodeOnSave(kind, item.getColumnMeta());
                 if (DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(kind)) {
@@ -331,6 +340,23 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
                 throw new ServiceException(400, "数据 Tab 布局重复：" + kind
                         + (StringUtils.hasText(item.getTabId()) ? " / " + item.getTabId() : ""));
             }
+        }
+    }
+
+    /**
+     * 分类/型号/实体/详情必须盖本布局已有区域编号（开或关都要写）。缺编号拒绝保存，读路径不补。
+     */
+    private void requireColumnSectionOnSave(String kind, Object columnMeta, Set<String> sectionIds) {
+        Map<String, Object> meta = toMetaMapOrEmpty(columnMeta);
+        if (!metaHasText(meta, "columnSection")) {
+            throw new ServiceException(400, kind + " 栏缺少区域编号 columnSection");
+        }
+        String sectionId = String.valueOf(meta.get("columnSection")).trim();
+        if (sectionIds.isEmpty()) {
+            throw new ServiceException(400, "本页布局尚未写入区域清单，无法保存栏所在区域");
+        }
+        if (!sectionIds.contains(sectionId)) {
+            throw new ServiceException(400, kind + " 栏区域编号不在本页布局区域清单中：" + sectionId);
         }
     }
 
@@ -374,6 +400,10 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
         } else if (DmDataTabLayoutKindEnum.ENTITY.getCode().equals(kind)) {
             if (!metaHasText(meta, "entityEntityTypeCode")) {
                 throw new ServiceException(400, "实体栏缺少类型码 entityEntityTypeCode，请先选择实体所属类型");
+            }
+        } else if (DmDataTabLayoutKindEnum.DETAIL.getCode().equals(kind)) {
+            if (!metaHasText(meta, "entityEntityTypeCode")) {
+                throw new ServiceException(400, "详情栏缺少类型码 entityEntityTypeCode，请先选择详情所属类型");
             }
         }
     }

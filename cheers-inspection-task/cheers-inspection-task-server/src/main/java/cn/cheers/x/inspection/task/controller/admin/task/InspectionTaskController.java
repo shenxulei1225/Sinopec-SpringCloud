@@ -61,6 +61,12 @@ public class InspectionTaskController {
         return success(inspectionTaskQueryService.getTaskDetail(id));
     }
 
+    @GetMapping("/statistics")
+    @Operation(summary = "任务统计", description = "总数/已启用/已停用/草稿计数，供首页任务信息卡片")
+    public CommonResult<InspectionTaskStatisticsRespVO> getTaskStatistics() {
+        return success(inspectionTaskQueryService.getTaskStatistics());
+    }
+
     // ==================== 基础CRUD ====================
 
     @PostMapping("/create")
@@ -86,16 +92,26 @@ public class InspectionTaskController {
 
     // ==================== 状态变更 ====================
 
+    /**
+     * 历史接口，待删除：只翻 enabled 标志、不占/不放排程窗，属绕过编排权威的旁路。
+     * 启停请走 /inspection/orchestration/schedule/reserve+enable 与 /inspection/orchestration/task/abort。
+     * 前端已不再调用；确认无外部调用方后删除。
+     */
+    @Deprecated
     @PutMapping("/enable/{id}")
-    @Operation(summary = "启用任务")
+    @Operation(summary = "启用任务（已废弃：请走编排 reserve+enable）")
     @Parameter(name = "id", required = true, description = "任务ID")
     public CommonResult<Boolean> enableTask(@PathVariable("id") Long id) {
         inspectionTaskService.enableTask(id);
         return success(true);
     }
 
+    /**
+     * 历史接口，待删除：不释放排程占窗。停用请走 /inspection/orchestration/task/abort。
+     */
+    @Deprecated
     @PutMapping("/disable/{id}")
-    @Operation(summary = "禁用任务")
+    @Operation(summary = "禁用任务（已废弃：请走编排 abort）")
     @Parameter(name = "id", required = true, description = "任务ID")
     public CommonResult<Boolean> disableTask(@PathVariable("id") Long id) {
         inspectionTaskService.disableTask(id);

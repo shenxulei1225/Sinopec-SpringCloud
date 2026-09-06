@@ -4,6 +4,7 @@ import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
+import cn.cheers.x.module.dynamicbusiness.framework.hierarchy.IdTreeHierarchy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +14,9 @@ import java.util.stream.Collectors;
 
 /**
  * Entity Core Service 实现
+ *
+ * <p>管什么：实体 CRUD 与实体树 parentId/treePath 移动（算法见 {@link IdTreeHierarchy}）。</p>
+ * <p>不负责：分类树投影对齐（由高级分类层级服务在门面层调用）。</p>
  */
 @Service
 @Slf4j
@@ -69,8 +73,8 @@ public class EntityCoreServiceImpl implements EntityCoreService {
         entityRepository.save(entity, physicalColumns);
         Long entityId = entity.getId();
 
-        // 2. 默认生成自身 treePath（/id/）
-        String treePath = "/" + entityId + "/";
+        // 2. 按统一树核心生成 treePath
+        String treePath = IdTreeHierarchy.buildPath(null, entityId);
 
         // 若有父节点，则拼接父节点 treePath
         if (entity.getParentId() != null && entity.getParentId() != 0) {
@@ -79,11 +83,13 @@ public class EntityCoreServiceImpl implements EntityCoreService {
                 throw new ServiceException(404, "父实体不存在");
             }
             String parentTreePath = parent.getTreePath();
-            // 兼容：父节点 treePath 为空时，先把父节点当根
             if (parentTreePath == null || parentTreePath.isBlank()) {
-                parentTreePath = "/" + parent.getId() + "/";
+                parentTreePath = IdTreeHierarchy.buildPath(null, parent.getId());
             }
-            treePath = parentTreePath + entityId + "/";
+            if (IdTreeHierarchy.wouldCreateCycle(entityId, parentTreePath)) {
+                throw new ServiceException(400, "不能将实体挂到自己的子孙节点下");
+            }
+            treePath = IdTreeHierarchy.buildPath(parentTreePath, entityId);
         }
 
         entity.setTreePath(treePath);
@@ -160,7 +166,8 @@ public class EntityCoreServiceImpl implements EntityCoreService {
         if (entityTypeCode == null || entityTypeCode.isEmpty()) {
             throw new ServiceException(400, "entityTypeCode 不能为空");
         }
-        if (Objects.equals(entityId, newParentId)) {
+        Long normalizedParent = IdTreeHierarchy.normalizeParentId(newParentId);
+        if (Objects.equals(entityId, normalizedParent)) {
             throw new ServiceException(400, "不能将实体移动到自身下方");
         }
 
@@ -170,30 +177,27 @@ public class EntityCoreServiceImpl implements EntityCoreService {
         }
 
         String oldTreePath = entity.getTreePath();
-        String newTreePath;
-
-        if (newParentId == null || newParentId == 0) {
-            newTreePath = "/" + entity.getId() + "/";
-        } else {
-            EntityDO newParent = entityRepository.findById(newParentId, entityTypeCode);
+        String parentTreePath = null;
+        if (normalizedParent != null) {
+            EntityDO newParent = entityRepository.findById(normalizedParent, entityTypeCode);
             if (newParent == null) {
                 throw new ServiceException(404, "新的父实体不存在");
             }
-            String parentTreePath = newParent.getTreePath();
+            parentTreePath = newParent.getTreePath();
             if (parentTreePath == null || parentTreePath.isBlank()) {
-                parentTreePath = "/" + newParent.getId() + "/";
+                parentTreePath = IdTreeHierarchy.buildPath(null, newParent.getId());
             }
-            if (parentTreePath.contains("/" + entityId + "/")) {
+            if (IdTreeHierarchy.wouldCreateCycle(entityId, parentTreePath)) {
                 throw new ServiceException(400, "不能将实体移动到自己的子孙节点下");
             }
-            newTreePath = parentTreePath + entity.getId() + "/";
         }
 
-        entity.setParentId(newParentId);
-        entity.setTreePath(newTreePath);
+        IdTreeHierarchy.MovePlan plan = IdTreeHierarchy.planMove(entity.getId(), normalizedParent, parentTreePath);
+        entity.setParentId(plan.newParentId());
+        entity.setTreePath(plan.newTreePath());
         entityRepository.update(entity);
 
-        updateChildrenTreePaths(entity.getId(), newTreePath, oldTreePath, entityTypeCode);
+        updateChildrenTreePaths(entity.getId(), plan.newTreePath(), oldTreePath, entityTypeCode);
     }
 
     private void updateChildrenTreePaths(Long parentId, String newTreePath, String oldTreePath, String entityTypeCode) {
@@ -214,8 +218,7 @@ public class EntityCoreServiceImpl implements EntityCoreService {
             if (childTreePath == null || !childTreePath.startsWith(oldTreePath)) {
                 continue;
             }
-            String newChildTreePath = newTreePath + childTreePath.substring(oldTreePath.length());
-            child.setTreePath(newChildTreePath);
+            child.setTreePath(IdTreeHierarchy.replaceSubtreePrefix(childTreePath, oldTreePath, newTreePath));
             updates.add(child);
         }
 

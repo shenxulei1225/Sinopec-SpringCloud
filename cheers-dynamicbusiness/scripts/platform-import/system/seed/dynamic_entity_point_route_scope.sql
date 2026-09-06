@@ -528,14 +528,14 @@ WHERE ct.deleted = false AND ct.category_type_code = 'point'
     WHERE c.deleted = false AND c.tenant_id = 1 AND c.code = 'route_network_point_dir'
   );
 
-INSERT INTO dm_five_w_orchestration (
+INSERT INTO dm_catalog_orchestration (
   entity_type_code, enabled, what_mode, what_config, how_mode, how_config,
   object_pick_from, tenant_id, creator
 )
 SELECT 'route_network_point', true, 'VIEW_DETAIL', '{"bindLayer":"ENTITY"}'::jsonb,
        'NONE', '{}'::jsonb, 'LIST_ROW', 1, 'seed'
 WHERE NOT EXISTS (
-  SELECT 1 FROM dm_five_w_orchestration
+  SELECT 1 FROM dm_catalog_orchestration
   WHERE deleted = false AND entity_type_code = 'route_network_point'
 );
 

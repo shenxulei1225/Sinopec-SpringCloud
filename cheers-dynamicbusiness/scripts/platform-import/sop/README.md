@@ -29,8 +29,8 @@ Flyway V43 建旧表名 → V56 改名为 `ent_sop*` → Flyway **V76–V80** �
 | `05_retire_inspection_method_metadata.sql` | 软删 inspection_method 元数据 |
 | `06_sample_sops.sql` | 样例 SOP 实例 |
 | `07_seed_leak_and_ppe_sops.sql` | 实例：跑冒滴漏检查、工服穿戴检测 |
-| `08_five_w_orchestration.sql` | 数据 Tab 五维编排（语义块 + Who 三栏；可恢复被软删的头）；并把布局里分类编码从旧的 `field_work_standard` 改成 `sop` |
-| （前置）`../five-w-orchestration/00_helpers.sql` | `import.sh` 在跑 08 前会刷新 `_seed_five_w_*` 函数签名 |
+| `08_catalog_orchestration.sql` | 写 sop 目录编排头（可恢复被软删的头）；并把布局里分类编码从旧的 `field_work_standard` 改成 `sop` |
+| （前置）`../catalog-orchestration/00_helpers.sql` | `import.sh` 在跑 08 前会刷新 `_seed_catalog_orchestration` |
 | `09_retire_field_work_standard_artifacts.sql` | 改组件 props / 软删旧码能力投影，避免列表仍查 `field_work_standard` |
 | `10_step_template_fields.sql` | **已废弃**（V79）；`import.sh` 不再执行 |
 | `11_step_template_entity_type.sql` | **已废弃**（V79）；`import.sh` 不再执行 |

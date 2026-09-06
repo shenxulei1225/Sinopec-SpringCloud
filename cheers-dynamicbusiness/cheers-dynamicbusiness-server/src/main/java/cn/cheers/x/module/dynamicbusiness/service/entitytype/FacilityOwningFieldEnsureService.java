@@ -38,6 +38,10 @@ public class FacilityOwningFieldEnsureService {
     @Lazy
     private EntityTypeBaseFieldService entityTypeBaseFieldService;
 
+    @Resource
+    @Lazy
+    private BaseFieldLibrarySyncService baseFieldLibrarySyncService;
+
     /**
      * 当前租户下，为所有应挂接的站场级类型补「所属场站」（幂等）。
      * 用于存量类型在创建链路之外补齐；新建/更新仍走 {@link #ensureForEntityTypeCode}。
@@ -52,11 +56,10 @@ public class FacilityOwningFieldEnsureService {
             String code = entityType.getCode().trim();
             EntityTypeBaseFieldDO existing =
                     baseFieldMapper.selectByEntityTypeCodeAndFieldCode(code, FacilityOwningFieldCodes.FIELD_CODE);
-            if (existing != null) {
-                continue;
-            }
             ensureForEntityTypeCode(code);
-            attached++;
+            if (existing == null) {
+                attached++;
+            }
         }
         if (attached > 0) {
             log.info("[FacilityOwningFieldEnsure] ensureAllEligible attached={}", attached);
@@ -76,11 +79,14 @@ public class FacilityOwningFieldEnsureService {
         String code = entityType.getCode().trim();
         EntityTypeBaseFieldDO existing =
                 baseFieldMapper.selectByEntityTypeCodeAndFieldCode(code, FacilityOwningFieldCodes.FIELD_CODE);
+        FieldDO libraryField = fieldMapper.selectByCode(FacilityOwningFieldCodes.FIELD_CODE);
         if (existing != null) {
+            if (libraryField != null) {
+                baseFieldLibrarySyncService.assignLibraryFieldToAllModels(code, libraryField, existing);
+            }
             return;
         }
 
-        FieldDO libraryField = fieldMapper.selectByCode(FacilityOwningFieldCodes.FIELD_CODE);
         if (libraryField == null || libraryField.getId() == null) {
             throw new ServiceException(400,
                     "字段库缺少 " + FacilityOwningFieldCodes.FIELD_CODE

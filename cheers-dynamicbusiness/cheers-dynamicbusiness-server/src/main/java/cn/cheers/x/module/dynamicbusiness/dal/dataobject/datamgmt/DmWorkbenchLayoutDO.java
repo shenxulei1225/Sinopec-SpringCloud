@@ -34,7 +34,7 @@ public class DmWorkbenchLayoutDO extends TenantBaseDO {
     /** 实例来源模版 id；模版行为空 */
     private Long sourceTemplateId;
 
-    /** 布局头设置 jsonb；当前使用 sectionHidden.FILTER|OBJECT|WHAT */
+    /** 布局头设置 jsonb：sections（区域清单，含名字与摆法）与 sectionHidden（按区域编号隐藏） */
     @TableField(typeHandler = JsonbMapTypeHandler.class)
     private Map<String, Object> settingsJson;
 }

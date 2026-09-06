@@ -94,8 +94,19 @@
 | V78 | `V78__sop_action_tree_columns.sql` | SOP `action_tree_json` 等动作树列 |
 | V79 | `V79__drop_sop_step_template.sql` | 删除步骤模板实体 |
 | V80 | `V80__sop_method_and_instance_binding.sql` | 通用方法选用/实例绑定表；迁出并 DROP V44/V75 检查专用绑定表 |
+| V81 | `V81__layout_sections_instance_data.sql` | 布局头写入区域清单 `filter/who/what`；栏上 `columnSection` 从 FILTER/OBJECT/WHAT 改为区域编号 |
+| V82 | `V82__stamp_missing_column_section.sql` | 缺区域编号的栏按创建目录同一规则补写（第 1 块=分类/型号，第 2 块=实体/详情） |
+| V83 | `V83__default_what_workface_detail_props.sql` | 「看详情」缺工作面指针时写入默认一块实体详情（已有指针不改） |
+| V84 | `V84__entity_type_clear_group_parent.sql` | 清掉误指 `dynamic_group` 的 `parent_id`，补写 `group_name`（应急资源/应急队伍） |
+| V85 | `V85__layout_section_arrange.sql` | 区域清单补写摆法 arrange；种子名字等于编号时改为筛选/对象/详情 |
+| V86 | `V86__detail_column_follow_edges.sql` | 详情栏补 tabId、迁到第三块并启用；缺则补实体→详情（或分类→详情）筛选线 |
+| V87 | `V87__drop_orchestration_what_how_slots.sql` | 编排头删除 what_mode / what_config / how_mode / how_config；只留启用与 object_pick_from |
+| V88 | `V88__rename_catalog_orchestration.sql` | `dm_five_w_orchestration` 改名为 `dm_catalog_orchestration` |
+| V89 | `V89__selection_source_and_edge_action_only.sql` | 编排头列改为 `selection_source`；关系 `relation_meta` 仅保留 `edgeAction` |
+| V90 | `V90__standard_entity_columns.sql` | 规范标准 `ent_standard*` 补业务固定列（编号/级别/发布单位/年份/摘要/出处）；元数据见 `platform-import/standard/` |
+| V91 | `V91__host_sop_param_pack.sql` | 设备 `ent_equipment*` 增 `host_sop_param_pack`（宿主 SOP 参数包）；动作 `param_slots_json` 注释改为动作参数定义 |
 
-> **版本号说明**：本仓库已登记至 **V80**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。
+> **版本号说明**：本仓库已登记至 **V91**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。
 
 
 > **跨机合并说明**：本机布局迁移已占用 V26–V28 且已执行；对方原 `V26__category_*` / `V27__ent_structure` 在合并后改为 V29/V30。若对方库已按旧文件名执行过 V26/V27，需对齐历史表 `version`/`script` 后 `flyway:repair`，再拉本分支。
@@ -161,11 +172,13 @@ PGPASSWORD=Coolhomer psql -h 127.0.0.1 -U postgres -d sinopec -c \
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-05 | V84：清掉数据类型 `parent_id` 误指 `dynamic_group` 的行，补写 `group_name`（应急资源/应急队伍） |
 | 2026-08-29 | V76–V80：动作库、动作启用、SOP 动作树列、删步骤模板、通用 SOP 方法/实例绑定（迁出检查专用表） |
 | 2026-08-27 | V73–V75：步骤模板表、SOP 模板/实例列、设备检查绑定表；seed 见 `scripts/platform-import/sop/10–13` |
 | 2026-08-27 | V72：layout `relationMode:cascade`+host/member → 栏间 **CATEGORY_CATEGORY** filter/write；验收 `scripts/verify-v72-cascade-to-column-relations.sql`；本机 dev 已 migrate + 验收通过 |
 | 2026-08-26 | V71：工作台布局头增加 `settings_json`，持久化 FILTER、OBJECT、WHAT 区段配置隐藏状态 |
 | 2026-08-26 | V70：字段增加治理状态、本地发起设施、创建用户字段；存量字段定稿为 `COMPANY` |
+| 2026-09-06 | V91：设备表增宿主 SOP 参数包列 `host_sop_param_pack`；动作 `param_slots_json` 语义改为动作参数定义 |
 | 2026-08-26 | V69：型号增加治理状态、本地发起设施、创建用户字段；存量型号定稿为 `COMPANY` |
 | 2026-08-26 | V68：检查项定义及方法相关目录统一为 `NETWORK`；不修改设备、管线检查内容 DOMAIN 入口 |
 | 2026-08-15 | V60：删除 `dm_five_w_orchestration.selection_level`；开列认布局，What 绑层认 `bindLayer` |

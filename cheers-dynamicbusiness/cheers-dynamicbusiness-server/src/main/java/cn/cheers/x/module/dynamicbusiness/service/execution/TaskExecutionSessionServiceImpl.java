@@ -1,19 +1,19 @@
 package cn.cheers.x.module.dynamicbusiness.service.execution;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
-import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionWritebackReqDTO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCreateReqVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityPageReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntitySceneQueryRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.FieldFilterReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.inspection.vo.TaskExecutionBootstrapReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.inspection.vo.TaskExecutionBootstrapRespVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
+import cn.cheers.x.module.dynamicbusiness.enums.entity.EntityQueryScene;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import cn.cheers.x.module.dynamicbusiness.service.inspection.TaskExecutionBootstrapService;
 import com.alibaba.fastjson2.JSON;
@@ -171,10 +171,6 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
     }
 
     private Long findStepIdByCode(Long executionRecordId, String stepCode) {
-        EntityPageReqVO pageReq = new EntityPageReqVO();
-        pageReq.setEntityTypeCode(STEP_ENTITY_TYPE);
-        pageReq.setPageNo(1);
-        pageReq.setPageSize(5);
         List<FieldFilterReqVO> filters = new ArrayList<>();
         FieldFilterReqVO byRecord = new FieldFilterReqVO();
         byRecord.setFieldCode("execution_record_id");
@@ -186,12 +182,33 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
         byCode.setOp("EQ");
         byCode.setValue(stepCode);
         filters.add(byCode);
-        pageReq.setFilters(filters);
-        PageResult<EntityRespVO> page = entityService.pageSearchEntities(pageReq);
-        if (page == null || CollectionUtils.isEmpty(page.getList())) {
+        EntitySceneQueryRespVO resp = entityService.queryEntities(
+                EntityQueryScene.ENTITIES_BY_MODEL,
+                "PAGE",
+                "LIGHT",
+                null,
+                STEP_ENTITY_TYPE,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                1,
+                5,
+                null,
+                null,
+                filters,
+                null,
+                null,
+                null);
+        if (resp == null || resp.getPage() == null || CollectionUtils.isEmpty(resp.getPage().getList())) {
             throw new ServiceException(404, "执行步骤不存在 stepCode=" + stepCode);
         }
-        return page.getList().get(0).getId();
+        return resp.getPage().getList().get(0).getId();
     }
 
     private Long resolveModelId(TaskExecutionStartReqDTO req) {

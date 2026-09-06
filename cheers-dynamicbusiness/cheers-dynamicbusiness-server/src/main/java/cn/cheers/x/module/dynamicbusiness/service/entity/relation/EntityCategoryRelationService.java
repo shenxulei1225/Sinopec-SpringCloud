@@ -19,18 +19,11 @@ import java.util.List;
  *   <li>按分类上下文生成有序 entityId 列表（排序语义来自 relation.sort）</li>
  * </ul>
  *
- * <h3>查询链路约定（权威）</h3>
+ * <h3>查询链路约定（当前）</h3>
  * <ol>
- *   <li><b>搜索分类（命中多个分类）</b>：
- *       <br/>CategoryService 先返回命中的 {@code categoryIds}；
- *       <br/>本服务必须调用 {@code listEntityIdsByCategoryIdsAndEntityType(categoryIds, entityTypeCode)}；
- *       <br/>再由 EntityService 按返回 IDs 查询实体并更新右侧列表。</li>
- *   <li><b>搜索实体（左树不变）</b>：
- *       <br/>基于当前选中分类范围获取候选 IDs：
- *       <br/>- 仅当前分类（不包含子分类）：调用 {@code listEntityIdsByCategoryId(categoryId)}；
- *       <br/>- 含子分类范围：先由 CategoryService 展开 {@code categoryIds}，再调用
- *       {@code listEntityIdsByCategoryIdsAndEntityType(categoryIds, entityTypeCode)}；
- *       <br/>最后由 EntityService 按实体字段（name/customFields）搜索并更新右侧列表。</li>
+ *   <li><b>统一列表查询</b>：优先走 {@code EntityService.queryEntities(..., ENTITIES_BY_CATEGORY, ...)}；
+ *       本接口中的分页查询族仅保留历史兼容。</li>
+ *   <li><b>本服务定位</b>：保留关系写入与关系级 ID 查询能力，不负责实体详情组装。</li>
  * </ol>
  *
  * <p><b>范围判定规则（必须遵守）</b>：
@@ -267,25 +260,41 @@ public interface EntityCategoryRelationService {
 
         /**
          * 单分类（仅当前分类，不含子树）查询实体ID分页。
+         *
+         * @deprecated 统一列表查询请走 {@code EntityService.queryEntities(..., ENTITIES_BY_CATEGORY, ...)}，
+         *             本方法保留仅为历史调用兼容。
          */
+        @Deprecated
         PageResult<Long> pageEntityIdsByCategoryIdOnly(Long categoryId, String entityTypeCode,
                                                         Integer pageNo, Integer pageSize);
 
         /**
          * 单分类（含子树）查询实体ID分页。
+         *
+         * @deprecated 统一列表查询请走 {@code EntityService.queryEntities(..., ENTITIES_BY_CATEGORY, ...)}，
+         *             本方法保留仅为历史调用兼容。
          */
+        @Deprecated
         PageResult<Long> pageEntityIdsByCategoryIdWithDescendants(Long categoryId, String categoryTypeCode, String entityTypeCode,
                                                                         Integer pageNo, Integer pageSize);
 
         /**
          * 多分类（仅输入分类本身，不含子树）查询实体ID分页。
+         *
+         * @deprecated 统一列表查询请走 {@code EntityService.queryEntities(..., ENTITIES_BY_CATEGORY, ...)}，
+         *             本方法保留仅为历史调用兼容。
          */
+        @Deprecated
         PageResult<Long> pageEntityIdsByCategoryIdsOnly(List<Long> categoryIds, String entityTypeCode,
                                                                 Integer pageNo, Integer pageSize);
 
         /**
          * 多分类（每个分类都含子树）查询实体ID分页。
+         *
+         * @deprecated 统一列表查询请走 {@code EntityService.queryEntities(..., ENTITIES_BY_CATEGORY, ...)}，
+         *             本方法保留仅为历史调用兼容。
          */
+        @Deprecated
         PageResult<Long> pageEntityIdsByCategoryIdsWithDescendants(List<Long> categoryIds, String entityTypeCode,
                                                                         Integer pageNo, Integer pageSize);
 
@@ -295,7 +304,11 @@ public interface EntityCategoryRelationService {
          * 多分类（仅输入分类本身，不含子树）DB 前置分页查询实体ID。
          *
          * <p>排序规则：categoryIds 输入顺序(rank) -> 分类内 sort -> relation.id，去重后分页。</p>
+         *
+         * @deprecated 统一列表查询请走 {@code EntityService.queryEntities(..., ENTITIES_BY_CATEGORY, ...)}，
+         *             本方法保留仅为历史调用兼容。
          */
+        @Deprecated
         PageResult<Long> pageEntityIdsByCategoryIdsOnlyDb(List<Long> categoryIds, String entityTypeCode,
                                                                 Integer pageNo, Integer pageSize);
 
@@ -303,7 +316,11 @@ public interface EntityCategoryRelationService {
          * 多分类（每个分类都含子树）DB 前置分页查询实体ID。
          *
          * <p>先展开子树，再按 rank 排序与去重后分页。</p>
+         *
+         * @deprecated 统一列表查询请走 {@code EntityService.queryEntities(..., ENTITIES_BY_CATEGORY, ...)}，
+         *             本方法保留仅为历史调用兼容。
          */
+        @Deprecated
         PageResult<Long> pageEntityIdsByCategoryIdsWithDescendantsDb(List<Long> categoryIds, String entityTypeCode,
                                                                         Integer pageNo, Integer pageSize);
 

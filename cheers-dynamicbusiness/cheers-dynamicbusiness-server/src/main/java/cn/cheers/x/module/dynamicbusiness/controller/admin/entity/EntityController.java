@@ -260,34 +260,13 @@ public class EntityController {
         return success(entityService.checkFieldUnique(entityTypeCode, modelId, fieldKey, value, excludeId));
     }
 
-    @GetMapping("/page-by-filters")
-    @Operation(
-        summary = "分页查询实体列表",
-        description = """
-            支持按业务类型编码、模型ID、状态、关键词进行分页查询。
-            - entityTypeCode 是必填参数，用于路由到正确的存储策略
-            - 如需按分类筛选，请先通过 ModelController 查询该分类下的模型，再使用 modelId 参数查询实体
-            - 关键词会匹配实体名称（模糊查询）
-            - 返回结果中的自定义字段数据已自动解密
-            """
-    )
-    @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
-    @Parameter(name = "modelId", description = "模型ID（可选，用于查询特定模型下的实体）", example = "1")
-    @Parameter(name = "status", description = "状态（可选，0-禁用，1-启用）", example = "1")
-    @Parameter(name = "keyword", description = "关键词（可选；配合 searchFieldCodes 多列 OR，默认仅 name）", example = "设备")
-    @Parameter(name = "pageNo", description = "页码（默认1）", example = "1")
-    @Parameter(name = "pageSize", description = "每页条数（默认10）", example = "10")
-    @PreAuthorize("@ss.hasPermission('system:entity:query')")
-    public CommonResult<PageResult<EntityRespVO>> page(@Valid EntityPageReqVO reqVO) {
-        return success(entityService.pageSearchEntities(reqVO));
-    }
 
     @PutMapping("/move-by-id")
     @Operation(
         summary = "移动实体到新的父实体",
         description = """
-            调整实体树层级关系（仅修改 parentId/treePath 相关语义）。
-            - 适用场景：树结构拖拽调整
+            调整实体树层级关系（parentId/treePath；若高级分类 1:1 绑定则同步分类投影）。
+            - 适用场景：树结构拖拽调整、表单选上级
             - 业务范围：指定业务（必须传 entityTypeCode）
             """
     )
@@ -297,6 +276,23 @@ public class EntityController {
                                             @RequestParam(value = "newParentId", required = false) Long newParentId) {
         entityService.moveEntity(entityId, entityTypeCode, newParentId);
         return success(true);
+    }
+
+    @GetMapping("/hierarchy-tree")
+    @Operation(
+        summary = "同类型实体层级树（上级选择）",
+        description = """
+            按实体类型返回 parentId 组装的树，供「上级」树状选择。
+            可选 modelId：有则限定该型号；无则该类型下全部实体。
+            """
+    )
+    @Parameter(name = "entityTypeCode", required = true)
+    @Parameter(name = "modelId", description = "可选，限定型号")
+    @PreAuthorize("@ss.hasPermission('system:entity:query')")
+    public CommonResult<List<EntityRespVO>> getHierarchyTree(
+            @RequestParam("entityTypeCode") String entityTypeCode,
+            @RequestParam(value = "modelId", required = false) Long modelId) {
+        return success(entityService.getEntityTreeByModelId(entityTypeCode, modelId));
     }
 
     @GetMapping("/path-by-entity-id")
@@ -332,21 +328,6 @@ public class EntityController {
         return success(entityService.getCategoryLinkedEntity(categoryId, entityTypeCode));
     }
 
-    // ==================== 搜索和过滤相关 API ====================
-
-    @PostMapping("/search")
-    @Operation(
-        summary = "高级搜索实体",
-        description = """
-            支持全文搜索、高级过滤、多字段排序的综合搜索功能。
-            - 适用场景：复杂条件检索页
-            - 业务范围：由请求参数中的业务条件决定（建议明确传业务维度）
-            """
-    )
-    @PreAuthorize("@ss.hasPermission('system:entity:query')")
-    public CommonResult<EntitySearchRespVO> search(@Valid @RequestBody EntitySearchReqVO reqVO) {
-        return success(entityService.searchAdvanced(reqVO));
-    }
 
     @GetMapping("/query-by-scene")
     @Operation(

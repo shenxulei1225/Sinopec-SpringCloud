@@ -136,14 +136,12 @@ CANONICAL_BASE_FIELDS: dict[str, list[dict[str, Any]]] = {
         _f("REF_LAST_INSPECTION", "上次检验时间", "REF", sort_order=905),
         _f("REF_NEXT_INSPECTION", "下次检验时间", "REF", sort_order=906),
     ],
-    # region — 定稿（2026-07-07）：行政区划
+    # region — 定稿：层级由分类树表达，不再使用 region_level / admin_code 省市区语义
     "region": [
-        _f("region_level", "区划级别", "ENUM", required=True, sort_order=15,
-           description="country/province/city/district；与 model 对齐"),
         _f("admin_code", "区划代码", "TEXT", sort_order=16,
-           description="国标行政区划码"),
+           description="历史字段；定稿已废弃省市区语义"),
         _f("region_type", "区域类型", "NUMBER", required=False, sort_order=20,
-           description="历史字段；迁移后由 region_level 取代"),
+           description="历史字段"),
         _f("description", "区域说明", "TEXT", sort_order=21),
         _f("boundary_geojson", "边界几何", "JSON", sort_order=40,
            description="地图多边形顶点集合（GeoJSON）"),

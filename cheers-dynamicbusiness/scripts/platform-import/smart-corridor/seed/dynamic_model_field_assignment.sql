@@ -3007,42 +3007,6 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_field_assignment (
-  model_code, field_code, model_id, field_id, required, is_searchable, is_filterable, is_sortable,
-  default_value, validation_rules, sort, field_group_id, field_source,
-  ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
-)
-SELECT
-  'MODEL-REGION-GROUP', 'FLD-BASE-region-region_level', m.id, f.id,
-  TRUE, TRUE,
-  TRUE, TRUE,
-  NULL, NULL,
-  15, NULL,
-  'BASE', NULL,
-  NULL, NULL, 1, 'seed'
-FROM dynamic_model m
-JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
-WHERE m.deleted = false AND m.tenant_id = 1
-  AND m.code = 'MODEL-REGION-GROUP'
-  AND f.code = 'FLD-BASE-region-region_level'
-ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
-DO UPDATE SET
-  model_id = EXCLUDED.model_id,
-  field_id = EXCLUDED.field_id,
-  required = EXCLUDED.required,
-  is_searchable = EXCLUDED.is_searchable,
-  is_filterable = EXCLUDED.is_filterable,
-  is_sortable = EXCLUDED.is_sortable,
-  default_value = EXCLUDED.default_value,
-  validation_rules = EXCLUDED.validation_rules,
-  sort = EXCLUDED.sort,
-  field_group_id = EXCLUDED.field_group_id,
-  field_source = EXCLUDED.field_source,
-  ref_library_id = EXCLUDED.ref_library_id,
-  model_relation_id = EXCLUDED.model_relation_id,
-  target_entity_type = EXCLUDED.target_entity_type,
-  updater = 'seed',
-  update_time = CURRENT_TIMESTAMP;
 
 INSERT INTO dynamic_model_field_assignment (
   model_code, field_code, model_id, field_id, required, is_searchable, is_filterable, is_sortable,
@@ -3599,42 +3563,6 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_field_assignment (
-  model_code, field_code, model_id, field_id, required, is_searchable, is_filterable, is_sortable,
-  default_value, validation_rules, sort, field_group_id, field_source,
-  ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
-)
-SELECT
-  'MODEL-REGION-PROVINCIAL', 'FLD-BASE-region-region_level', m.id, f.id,
-  TRUE, TRUE,
-  TRUE, TRUE,
-  NULL, NULL,
-  15, NULL,
-  'BASE', NULL,
-  NULL, NULL, 1, 'seed'
-FROM dynamic_model m
-JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
-WHERE m.deleted = false AND m.tenant_id = 1
-  AND m.code = 'MODEL-REGION-PROVINCIAL'
-  AND f.code = 'FLD-BASE-region-region_level'
-ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
-DO UPDATE SET
-  model_id = EXCLUDED.model_id,
-  field_id = EXCLUDED.field_id,
-  required = EXCLUDED.required,
-  is_searchable = EXCLUDED.is_searchable,
-  is_filterable = EXCLUDED.is_filterable,
-  is_sortable = EXCLUDED.is_sortable,
-  default_value = EXCLUDED.default_value,
-  validation_rules = EXCLUDED.validation_rules,
-  sort = EXCLUDED.sort,
-  field_group_id = EXCLUDED.field_group_id,
-  field_source = EXCLUDED.field_source,
-  ref_library_id = EXCLUDED.ref_library_id,
-  model_relation_id = EXCLUDED.model_relation_id,
-  target_entity_type = EXCLUDED.target_entity_type,
-  updater = 'seed',
-  update_time = CURRENT_TIMESTAMP;
 
 INSERT INTO dynamic_model_field_assignment (
   model_code, field_code, model_id, field_id, required, is_searchable, is_filterable, is_sortable,
@@ -4191,42 +4119,6 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_field_assignment (
-  model_code, field_code, model_id, field_id, required, is_searchable, is_filterable, is_sortable,
-  default_value, validation_rules, sort, field_group_id, field_source,
-  ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
-)
-SELECT
-  'MODEL-REGION-OPERATION', 'FLD-BASE-region-region_level', m.id, f.id,
-  TRUE, TRUE,
-  TRUE, TRUE,
-  NULL, NULL,
-  15, NULL,
-  'BASE', NULL,
-  NULL, NULL, 1, 'seed'
-FROM dynamic_model m
-JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
-WHERE m.deleted = false AND m.tenant_id = 1
-  AND m.code = 'MODEL-REGION-OPERATION'
-  AND f.code = 'FLD-BASE-region-region_level'
-ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
-DO UPDATE SET
-  model_id = EXCLUDED.model_id,
-  field_id = EXCLUDED.field_id,
-  required = EXCLUDED.required,
-  is_searchable = EXCLUDED.is_searchable,
-  is_filterable = EXCLUDED.is_filterable,
-  is_sortable = EXCLUDED.is_sortable,
-  default_value = EXCLUDED.default_value,
-  validation_rules = EXCLUDED.validation_rules,
-  sort = EXCLUDED.sort,
-  field_group_id = EXCLUDED.field_group_id,
-  field_source = EXCLUDED.field_source,
-  ref_library_id = EXCLUDED.ref_library_id,
-  model_relation_id = EXCLUDED.model_relation_id,
-  target_entity_type = EXCLUDED.target_entity_type,
-  updater = 'seed',
-  update_time = CURRENT_TIMESTAMP;
 
 INSERT INTO dynamic_model_field_assignment (
   model_code, field_code, model_id, field_id, required, is_searchable, is_filterable, is_sortable,
@@ -9556,42 +9448,6 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_field_assignment (
-  model_code, field_code, model_id, field_id, required, is_searchable, is_filterable, is_sortable,
-  default_value, validation_rules, sort, field_group_id, field_source,
-  ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
-)
-SELECT
-  'MODEL-REGION-PIPELINE', 'FLD-BASE-region-region_level', m.id, f.id,
-  TRUE, TRUE,
-  TRUE, TRUE,
-  NULL, NULL,
-  15, NULL,
-  'BASE', NULL,
-  NULL, NULL, 1, 'seed'
-FROM dynamic_model m
-JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
-WHERE m.deleted = false AND m.tenant_id = 1
-  AND m.code = 'MODEL-REGION-PIPELINE'
-  AND f.code = 'FLD-BASE-region-region_level'
-ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
-DO UPDATE SET
-  model_id = EXCLUDED.model_id,
-  field_id = EXCLUDED.field_id,
-  required = EXCLUDED.required,
-  is_searchable = EXCLUDED.is_searchable,
-  is_filterable = EXCLUDED.is_filterable,
-  is_sortable = EXCLUDED.is_sortable,
-  default_value = EXCLUDED.default_value,
-  validation_rules = EXCLUDED.validation_rules,
-  sort = EXCLUDED.sort,
-  field_group_id = EXCLUDED.field_group_id,
-  field_source = EXCLUDED.field_source,
-  ref_library_id = EXCLUDED.ref_library_id,
-  model_relation_id = EXCLUDED.model_relation_id,
-  target_entity_type = EXCLUDED.target_entity_type,
-  updater = 'seed',
-  update_time = CURRENT_TIMESTAMP;
 
 INSERT INTO dynamic_model_field_assignment (
   model_code, field_code, model_id, field_id, required, is_searchable, is_filterable, is_sortable,

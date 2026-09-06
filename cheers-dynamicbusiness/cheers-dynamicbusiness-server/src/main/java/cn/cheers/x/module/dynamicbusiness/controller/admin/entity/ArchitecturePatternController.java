@@ -6,11 +6,11 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryT
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCategoryAssociationRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCategoryDisassociationReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCategoryQueryReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.CategoryIdGroupReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntitySceneQueryRespVO;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
-import cn.cheers.x.module.dynamicbusiness.service.entity.query.CategoryModelEntityQueryService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategoryRelationService;
 import cn.cheers.x.module.dynamicbusiness.enums.entity.EntityQueryScene;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryMapper;
@@ -25,34 +25,19 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
- * 管理后台 - 4 种架构模式通用 API Controller
- * 
- * <p>提供 4 种架构模式的通用查询 API,实现零代码查询能力。</p>
- * 
- * <h3>4 种架构模式</h3>
- * <ul>
- *   <li>模式A:灵活分类视图 - 分类和实体之间的关联是灵活的、可配置的,不依赖模型</li>
- *   <li>模式B:模型分类视图 - 通过模型自动分类,实体通过model_id关联到模型,模型通过ModelCategoryRelation关联到分类</li>
- *   <li>模式C:分类实体视图 - 分类本身也是实体(isEntity=true),可以展示分类详情和关联实体</li>
- *   <li>模式D:实体关联视图 - 实体之间的直接关联关系,支持跨业务类型关联</li>
- * </ul>
- * 
- * <h3>需求引用</h3>
- * <ul>
- *   <li>FR-056: 模式A - 系统必须提供按分类编码获取分类树的 API</li>
- *   <li>FR-057: 模式B - 系统必须提供按分类获取 Model 列表的 API</li>
- *   <li>FR-059: 模式C - 系统必须提供获取 Entity 树结构的 API</li>
- *   <li>FR-060: 模式D - 系统必须提供获取 Entity 关联关系的 API</li>
- * </ul>
- * 
- * @author 扩展字段查询服务
+ * 管理后台 - 实体与分类关联通用 API。
+ *
+ * <p>提供分类树、实体-分类挂接、按分类查实体等入口；复杂列表/详情统一走 {@link EntityService#queryEntities}。</p>
+ * <p><b>不负责</b>：字段索引通用查询（已移除）、型号/实体列表编排（见 EntityController）。</p>
  */
-@Tag(name = "管理后台 - 架构模式通用 API", description = "提供 4 种架构模式的通用查询 API,实现零代码查询能力")
+@Tag(name = "管理后台 - 实体分类关联 API", description = "分类树、实体-分类挂接、按分类查实体")
 @RestController
 @RequestMapping("/dynamicbusiness/architecture")
 @Validated
@@ -70,9 +55,6 @@ public class ArchitecturePatternController {
     @Resource
     private CategoryMapper categoryMapper;
 
-    @Resource
-    private CategoryModelEntityQueryService categoryModelEntityQueryService;
-
     // ==================== Category 分类树(通用) ====================
 
     @GetMapping("/category/tree")
@@ -82,10 +64,8 @@ public class ArchitecturePatternController {
             获取指定分类维度下的分类树结构。
 
             **使用场景**:
-            - 模式A(灵活分类视图):左侧分类树
-            - 模式B(模型分类视图):左侧分类树
-            - 模式C(分类实体视图):左侧分类树(分类本身也是实体)
-            - 通用场景:设备类型分类树、区域分类树等
+            - 数据页左侧分类树（含分类即实体视图）
+            - 设备类型、区域等分类维度树
 
             **返回结构**:
             - 树形结构,包含所有层级的分类
@@ -101,27 +81,17 @@ public class ArchitecturePatternController {
         return success(categoryService.getCategoryTreeByType(categoryTypeCode, status));
     }
 
-    // ==================== 模式B:Category-Model-Entity ====================
-
-    // ==================== 实体查询接口已迁移至 EntityController ====================
-
-    // ==================== 模式D:Entity-Entity 关联 ====================
-
-    // 注意:模式D 的关联查询功能需要 EntityRelationService,
-    // 该服务在业务关联管理模块(任务 15)中实现。
-    // 这里先提供基于 customFields 中 ENTITY_REF 字段的简单关联查询。
-
-    // ==================== Entity-Category 关联(支持模式A/C) ====================
+    // ==================== 实体-分类关联 ====================
 
     @PostMapping("/entity/categories/query")
     @Operation(
-        summary = "【模式A/C】获取 Entity 关联的分类",
+        summary = "获取 Entity 关联的分类",
         description = """
             获取指定 Entity 关联的所有分类。
 
             **使用场景**:
-            - 模式A:分类-实体模式,查看实体属于哪些分类
-            - 模式C:分类实体视图,查看实体关联的分类
+            - 实体详情/表单回显：查看实体挂在哪些分类下
+            - 分类即实体视图：查看实体关联的分类
             - 一个 Entity 可以关联多个 Category
 
             **返回信息**:
@@ -158,7 +128,7 @@ public class ArchitecturePatternController {
 
     @PostMapping("/entity/category-ids/query")
     @Operation(
-        summary = "【模式A/C】获取 Entity 关联的分类ID列表",
+        summary = "获取 Entity 关联的分类ID列表",
         description = """
             获取指定 Entity 关联的所有分类ID。
 
@@ -175,17 +145,17 @@ public class ArchitecturePatternController {
 
     @PostMapping("/entity/categories/associate")
     @Operation(
-        summary = "【模式A】批量关联 Entity 到多个分类(追加模式)",
+        summary = "批量关联 Entity 到多个分类(追加模式)",
         description = """
             将指定 Entity 关联到多个分类。
 
             **使用场景**:
-            - 模式A:为实体添加多个分类标签
+            - 为实体追加多个分类标签
             - 已存在的关联会被跳过,不会重复创建
 
             **说明**:
             - 追加模式:保留实体原有的分类关联,新增分类关联
-            - 适用于模式A:实体可以同时属于多个分类
+            - 实体可以同时属于多个分类
 
             **返回值**:返回详细的操作结果,包括成功/失败数量和失败原因
             """
@@ -205,7 +175,7 @@ public class ArchitecturePatternController {
 
     @PostMapping("/entity/categories/disassociate")
     @Operation(
-        summary = "【模式A/C】批量取消 Entity 与多个分类的关联",
+        summary = "批量取消 Entity 与多个分类的关联",
         description = """
             取消指定 Entity 与多个分类的关联。
 
@@ -226,18 +196,18 @@ public class ArchitecturePatternController {
 
     @PutMapping("/entity/categories/replace")
     @Operation(
-        summary = "【模式C】替换 Entity 的所有分类关联",
+        summary = "替换 Entity 的所有分类关联",
         description = """
             替换指定 Entity 的所有分类关联(先删除旧关联,再添加新关联)。
 
             **使用场景**:
-            - 模式C:分类实体视图的关联操作
-            - 编辑实体时重新设置所有分类
+            - 分类即实体视图：编辑实体时重新设置所有分类
+            - 编辑实体时一次性覆盖分类挂接
             - 传入空列表会清除所有分类关联
 
             **说明**:
             - 替换模式:先删除实体原有的所有分类关联,再添加新的分类关联
-            - 适用于模式C:实体只属于一个分类的场景
+            - 适用于实体只属于一组分类、需整组替换的场景
 
             **返回值**:返回详细的操作结果,包括成功/失败数量和失败原因
             """
@@ -257,7 +227,7 @@ public class ArchitecturePatternController {
 
     @GetMapping("/entity/by-category")
     @Operation(
-        summary = "【模式A/C】按单个分类查询 Entity(支持分页)",
+        summary = "按单个分类查询 Entity(支持分页)",
         description = """
             查询指定分类及其所有子分类下的所有 Entity,支持按 Model 过滤和分页。
 
@@ -269,8 +239,8 @@ public class ArchitecturePatternController {
             - ✅ 支持跨业务类型查询(contentEntityTypeCode)
 
             **使用场景**:
-            - 模式A(灵活分类视图):点击左侧分类树节点,右侧显示该分类下的实体列表(分页)
-            - 模式C(分类实体视图):点击分类节点,显示关联的实体列表(分页)
+            - 点击左侧分类树节点,右侧显示该分类下的实体列表(分页)
+            - 分类即实体视图：点击分类节点,显示关联的实体列表(分页)
             - 需要分页展示大量实体数据的场景
             - 需要按 Model 进一步过滤实体的场景
 
@@ -329,7 +299,7 @@ public class ArchitecturePatternController {
 
     @GetMapping("/entity/by-categories")
     @Operation(
-        summary = "【模式A/C】按多个分类查询 Entity(多维度筛选,AND/OR 逻辑)",
+        summary = "按多个分类查询 Entity(多维度筛选,AND/OR 逻辑)",
         description = """
             按多个分类ID查询 Entity,支持 AND/OR 逻辑组合,每个分类会自动包含其所有子分类。
 
@@ -375,48 +345,103 @@ public class ArchitecturePatternController {
             @RequestParam("categoryIds") List<Long> categoryIds,
             @RequestParam(value = "matchAll", defaultValue = "false") Boolean matchAll,
             @RequestParam("contentEntityTypeCode") String contentEntityTypeCode) {
-        java.util.Set<Long> allCategoryIds = expandCategoryIdsIncludingChildren(categoryIds);
-        java.util.List<java.util.List<Long>> entityIdsPerCategory = allCategoryIds.stream()
-                .map(id -> entityCategoryRelationService.listEntityIdsByCategoryIdOnly(id, contentEntityTypeCode))
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return success(List.of());
+        }
+        List<Long> normalizedCategoryIds = categoryIds.stream()
+                .filter(id -> id != null && id > 0)
+                .distinct()
                 .toList();
-        java.util.Set<Long> entityIds = aggregateEntityIds(entityIdsPerCategory, Boolean.TRUE.equals(matchAll));
-        java.util.List<EntityRespVO> entities = entityIds.stream()
-                .map(id -> entityService.get(id, contentEntityTypeCode))
-                .filter(java.util.Objects::nonNull)
-                .toList();
-        return success(entities);
-    }
+        if (normalizedCategoryIds.isEmpty()) {
+            return success(List.of());
+        }
 
-    private java.util.Set<Long> expandCategoryIdsIncludingChildren(java.util.List<Long> categoryIds) {
-        java.util.Set<Long> allCategoryIds = new java.util.HashSet<>();
-        for (Long categoryId : categoryIds) {
+        Map<String, List<Long>> categoryIdsByType = new LinkedHashMap<>();
+        for (Long categoryId : normalizedCategoryIds) {
             CategoryDO categoryDO = categoryMapper.selectById(categoryId);
-            if (categoryDO != null && categoryDO.getCategoryTypeCode() != null) {
-                java.util.List<Long> categoryIdsWithChildren = categoryService.getAllCategoryIdsIncludingChildren(
-                        categoryId, categoryDO.getCategoryTypeCode());
-                allCategoryIds.addAll(categoryIdsWithChildren);
-            } else {
-                allCategoryIds.add(categoryId);
+            if (categoryDO == null || categoryDO.getCategoryTypeCode() == null || categoryDO.getCategoryTypeCode().isBlank()) {
+                continue;
             }
+            String categoryTypeCode = categoryDO.getCategoryTypeCode().trim();
+            categoryIdsByType.computeIfAbsent(categoryTypeCode, key -> new ArrayList<>()).add(categoryId);
         }
-        return allCategoryIds;
-    }
+        if (categoryIdsByType.isEmpty()) {
+            return success(List.of());
+        }
 
-    private java.util.Set<Long> aggregateEntityIds(java.util.List<java.util.List<Long>> entityIdsPerCategory, boolean matchAll) {
-        if (entityIdsPerCategory.isEmpty()) {
-            return java.util.Set.of();
-        }
-        java.util.Set<Long> entityIds = new java.util.HashSet<>();
-        if (matchAll) {
-            entityIds.addAll(entityIdsPerCategory.get(0));
-            for (int i = 1; i < entityIdsPerCategory.size(); i++) {
-                entityIds.retainAll(entityIdsPerCategory.get(i));
+        if (Boolean.TRUE.equals(matchAll)) {
+            List<CategoryIdGroupReqVO> groups = new ArrayList<>();
+            for (Map.Entry<String, List<Long>> entry : categoryIdsByType.entrySet()) {
+                for (Long categoryId : entry.getValue()) {
+                    CategoryIdGroupReqVO group = new CategoryIdGroupReqVO();
+                    group.setCategoryTypeCode(entry.getKey());
+                    group.setCategoryIds(List.of(categoryId));
+                    groups.add(group);
+                }
             }
-            return entityIds;
+            EntitySceneQueryRespVO resp = entityService.queryEntities(
+                    EntityQueryScene.ENTITIES_BY_CATEGORY,
+                    "LIST",
+                    "FULL",
+                    null,
+                    contentEntityTypeCode,
+                    null,
+                    null,
+                    null,
+                    groups,
+                    null,
+                    null,
+                    null,
+                    null,
+                    contentEntityTypeCode,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+            );
+            return success(resp.getList() == null ? List.of() : resp.getList());
         }
-        for (java.util.List<Long> ids : entityIdsPerCategory) {
-            entityIds.addAll(ids);
+
+        LinkedHashMap<Long, EntityRespVO> mergedById = new LinkedHashMap<>();
+        for (Map.Entry<String, List<Long>> entry : categoryIdsByType.entrySet()) {
+            EntitySceneQueryRespVO resp = entityService.queryEntities(
+                    EntityQueryScene.ENTITIES_BY_CATEGORY,
+                    "LIST",
+                    "FULL",
+                    entry.getKey(),
+                    contentEntityTypeCode,
+                    null,
+                    null,
+                    entry.getValue(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    contentEntityTypeCode,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+            );
+            List<EntityRespVO> list = resp.getList();
+            if (list == null || list.isEmpty()) {
+                continue;
+            }
+            for (EntityRespVO entity : list) {
+                if (entity != null && entity.getId() != null) {
+                    mergedById.putIfAbsent(entity.getId(), entity);
+                }
+            }
         }
-        return entityIds;
+        return success(new ArrayList<>(mergedById.values()));
     }
 }

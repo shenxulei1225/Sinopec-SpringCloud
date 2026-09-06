@@ -1,17 +1,17 @@
 package cn.cheers.x.module.dynamicbusiness.service.entitytype;
 
-import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmFiveWOrchestrationBundleSaveReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmCatalogOrchestrationBundleSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryTypeMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmFiveWOrchestrationMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmCatalogOrchestrationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
-import cn.cheers.x.module.dynamicbusiness.enums.datamgmt.FiveWRecipeIdEnum;
+import cn.cheers.x.module.dynamicbusiness.enums.datamgmt.OrchestrationRecipeIdEnum;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.EntityTypeEntryKindEnum;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryModeSupport;
-import cn.cheers.x.module.dynamicbusiness.service.datamgmt.DmFiveWOrchestrationService;
-import cn.cheers.x.module.dynamicbusiness.service.datamgmt.FiveWRecipeParams;
-import cn.cheers.x.module.dynamicbusiness.service.datamgmt.FiveWRecipeTemplate;
+import cn.cheers.x.module.dynamicbusiness.service.datamgmt.DmCatalogOrchestrationService;
+import cn.cheers.x.module.dynamicbusiness.service.datamgmt.OrchestrationRecipeParams;
+import cn.cheers.x.module.dynamicbusiness.service.datamgmt.OrchestrationRecipeTemplate;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,7 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
- * 建类型时自动写入默认五维编排 bundle（幂等：已有行不覆盖）。
+ * 建类型时自动写入编排头（幂等：已有行不覆盖）。
+ * <p>
+ * 只写点树还是点列表行。详情跟谁认布局栏 + 关系图连线，不写 What/How 槽。
  */
 @Service
 @Slf4j
@@ -32,10 +34,10 @@ public class EntityTypeOrchestrationBootstrapService {
     private CategoryTypeMapper categoryTypeMapper;
 
     @Resource
-    private DmFiveWOrchestrationMapper orchestrationMapper;
+    private DmCatalogOrchestrationMapper orchestrationMapper;
 
     @Resource
-    private DmFiveWOrchestrationService dmFiveWOrchestrationService;
+    private DmCatalogOrchestrationService catalogOrchestrationService;
 
     @Transactional(rollbackFor = Exception.class)
     public void ensureForEntityTypeCode(String entityTypeCode) {
@@ -52,29 +54,29 @@ public class EntityTypeOrchestrationBootstrapService {
             return;
         }
 
-        FiveWRecipeIdEnum recipeId = resolveRecipe(entityType);
-        FiveWRecipeParams params = buildParams(entityType, recipeId);
-        DmFiveWOrchestrationBundleSaveReqVO saveReq = FiveWRecipeTemplate.toSaveReq(recipeId, params);
-        dmFiveWOrchestrationService.saveBundle(saveReq);
+        OrchestrationRecipeIdEnum recipeId = resolveRecipe(entityType);
+        OrchestrationRecipeParams params = buildParams(entityType, recipeId);
+        DmCatalogOrchestrationBundleSaveReqVO saveReq = OrchestrationRecipeTemplate.toSaveReq(recipeId, params);
+        catalogOrchestrationService.saveBundle(saveReq);
         log.info("[orchestration-bootstrap] entityTypeCode={}, recipe={}", code, recipeId.getRecipeId());
     }
 
-    FiveWRecipeIdEnum resolveRecipe(EntityTypeDO entityType) {
+    OrchestrationRecipeIdEnum resolveRecipe(EntityTypeDO entityType) {
         EntityTypeEntryKindEnum kind = EntityTypeEntryKindEnum.fromCode(entityType.getEntryKind());
         if (kind.isCategory()) {
-            return FiveWRecipeIdEnum.CATEGORY_AS_ENTITY;
+            return OrchestrationRecipeIdEnum.CATEGORY_AS_ENTITY;
         }
         if (kind.isDomainEntry() || kind.isReuseEntry() || kind.isScopeEntry()) {
-            return FiveWRecipeIdEnum.LEDGER_3COL;
+            return OrchestrationRecipeIdEnum.LEDGER_3COL;
         }
         CategoryTypeDO categoryType = categoryTypeMapper.selectByCategoryTypeCode(entityType.getCode());
         if (categoryType != null && CategoryModeSupport.isAdvanced(categoryType)) {
-            return FiveWRecipeIdEnum.CATEGORY_AS_ENTITY;
+            return OrchestrationRecipeIdEnum.CATEGORY_AS_ENTITY;
         }
-        return FiveWRecipeIdEnum.LEDGER_3COL;
+        return OrchestrationRecipeIdEnum.LEDGER_3COL;
     }
 
-    FiveWRecipeParams buildParams(EntityTypeDO entityType, FiveWRecipeIdEnum recipeId) {
+    OrchestrationRecipeParams buildParams(EntityTypeDO entityType, OrchestrationRecipeIdEnum recipeId) {
         String code = entityType.getCode().trim();
         String name = StringUtils.hasText(entityType.getName()) ? entityType.getName().trim() : code;
 
@@ -84,20 +86,20 @@ public class EntityTypeOrchestrationBootstrapService {
         if (kind.reusesBaseStorage()) {
             String baseCode = entityType.getBaseEntityTypeCode();
             if (!StringUtils.hasText(baseCode)) {
-                log.warn("数据类型 {} 缺少 baseEntityTypeCode，五维 bootstrap 存储/分类回退为自身编码", code);
+                log.warn("数据类型 {} 缺少 baseEntityTypeCode，编排 bootstrap 存储/分类回退为自身编码", code);
             } else {
                 storageCode = baseCode.trim();
                 categoryTypeCode = storageCode;
             }
         }
 
-        FiveWRecipeParams.FiveWRecipeParamsBuilder builder = FiveWRecipeParams.builder()
+        OrchestrationRecipeParams.OrchestrationRecipeParamsBuilder builder = OrchestrationRecipeParams.builder()
                 .registryCode(code)
                 .storageEntityTypeCode(storageCode)
                 .categoryTypeCode(categoryTypeCode)
                 .typeName(name);
 
-        if (recipeId == FiveWRecipeIdEnum.CATEGORY_AS_ENTITY) {
+        if (recipeId == OrchestrationRecipeIdEnum.CATEGORY_AS_ENTITY) {
             builder.categorySlotRef(code + "-tree");
         }
         return builder.build();

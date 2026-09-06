@@ -18,4 +18,4 @@
 
 ## 前置仍有效
 
-检查实体类型与检查项样例仍由 `../inspection-method/` 与 system seed 提供；五维默认头由 `../five-w-orchestration/` 提供。配方只做 How 补丁与可选绑定样例。
+检查实体类型与检查项样例仍由 `../inspection-method/` 与 system seed 提供；目录编排头由 `../catalog-orchestration/` 提供。

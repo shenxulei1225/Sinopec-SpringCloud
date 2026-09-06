@@ -279,7 +279,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
     }
 
     /**
-     * 单归属：摘掉本种类树上其它节点；再按规则回写 REF（分类即实体 + 唯一匹配）。
+     * 单归属：摘掉本种类树上其它节点；再回写主体上应对齐本次分类的引用（有则写，无则跳过）。
      *
      * @param associationModeOverride 请求侧挂靠模式（分类列配置器）；null 时回退分类种类配置
      */
@@ -958,24 +958,12 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             for (EntityCategoryRelationDO relation : relationsToInsert) {
                 relation.setSort(calculateSortWithBase(baseSortMap, sortOffsetMap, relation.getCategoryId()));
             }
-            try {
-                relationMapper.insertBatchRelations(relationsToInsert);
-                for (EntityCategoryRelationDO relation : relationsToInsert) {
-                    syncEntityModelToCategory(relation.getEntityId(), relation.getCategoryId(), storageEntityTypeCode);
-                    applyAssociationModeAndRefWriteback(
-                            relation.getEntityId(), relation.getCategoryId(), storageEntityTypeCode,
-                            entityAssociationMode);
-                }
-            } catch (Exception e) {
-                log.error("批量插入关联失败: {}", e.getMessage(), e);
-                for (Map.Entry<Long, Integer> entry : insertCountByEntity.entrySet()) {
-                    EntityResultData data = entityResultDataMap.get(entry.getKey());
-                    if (data != null && data.entityExists) {
-                        entityResultDataMap.put(entry.getKey(), new EntityResultData(
-                                entry.getKey(), true, data.successCount - entry.getValue(),
-                                data.failCount + entry.getValue(), null));
-                    }
-                }
+            relationMapper.insertBatchRelations(relationsToInsert);
+            for (EntityCategoryRelationDO relation : relationsToInsert) {
+                syncEntityModelToCategory(relation.getEntityId(), relation.getCategoryId(), storageEntityTypeCode);
+                applyAssociationModeAndRefWriteback(
+                        relation.getEntityId(), relation.getCategoryId(), storageEntityTypeCode,
+                        entityAssociationMode);
             }
         }
 
@@ -1547,13 +1535,9 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                 successCount += relationsToInsert.size();
                 successCategoryIds.addAll(toInsert);
             } catch (Exception e) {
-                for (Long categoryId : toInsert) {
-                    failItems.add(EntityCategoryAssociationRespVO.FailItem.builder()
-                            .categoryId(categoryId)
-                            .reason("关联失败: " + e.getMessage())
-                            .errorCode(ASSOCIATION_OPERATION_FAILED.getCode())
-                            .build());
-                }
+                // 本方法处于 @Transactional：失败后不得吞异常假装部分成功（会变成 rollback-only / 系统异常）
+                throw new ServiceException(ASSOCIATION_OPERATION_FAILED.getCode(),
+                        "关联失败: " + e.getMessage());
             }
         }
 
@@ -1639,6 +1623,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
     }
 
     @Override
+    @Deprecated
     public PageResult<Long> pageEntityIdsByCategoryIdOnly(Long categoryId, String entityTypeCode,
                                                             Integer pageNo, Integer pageSize) {
         List<Long> ordered = listEntityIdsByCategoryIdOnly(categoryId, entityTypeCode);
@@ -1646,6 +1631,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
     }
 
     @Override
+    @Deprecated
     public PageResult<Long> pageEntityIdsByCategoryIdWithDescendants(Long categoryId, String categoryTypeCode, String entityTypeCode,
                                                                         Integer pageNo, Integer pageSize) {
         List<Long> ordered = listEntityIdsByCategoryIdWithDescendants(categoryId, categoryTypeCode, entityTypeCode);
@@ -1653,6 +1639,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
     }
 
     @Override
+    @Deprecated
     public PageResult<Long> pageEntityIdsByCategoryIdsOnly(List<Long> categoryIds, String entityTypeCode,
                                                             Integer pageNo, Integer pageSize) {
         List<Long> ordered = listEntityIdsByCategoryIdsOnly(categoryIds, entityTypeCode);
@@ -1660,6 +1647,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
     }
 
     @Override
+    @Deprecated
     public PageResult<Long> pageEntityIdsByCategoryIdsWithDescendants(List<Long> categoryIds, String entityTypeCode,
                                                                         Integer pageNo, Integer pageSize) {
         List<Long> ordered = listEntityIdsByCategoryIdsWithDescendants(categoryIds, entityTypeCode);
@@ -1667,6 +1655,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
     }
 
     @Override
+    @Deprecated
     public PageResult<Long> pageEntityIdsByCategoryIdsOnlyDb(List<Long> categoryIds, String entityTypeCode,
                                                                 Integer pageNo, Integer pageSize) {
         // 与 pageEntityIdsByCategoryIdsOnly 共用 Lambda 查询 + Service 层稳定排序分页，避免 Mapper 写原生 SQL。
@@ -1674,6 +1663,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
     }
 
     @Override
+    @Deprecated
     public PageResult<Long> pageEntityIdsByCategoryIdsWithDescendantsDb(List<Long> categoryIds, String entityTypeCode,
                                                                             Integer pageNo, Integer pageSize) {
         if (categoryIds == null || categoryIds.isEmpty() || entityTypeCode == null || entityTypeCode.isBlank()) {

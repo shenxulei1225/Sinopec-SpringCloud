@@ -158,7 +158,8 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
         if (assignment == null || assignment.getFieldSource() == null) {
             return false;
         }
-        return "BASE".equalsIgnoreCase(assignment.getFieldSource().trim());
+        String source = assignment.getFieldSource().trim();
+        return "BASE".equalsIgnoreCase(source) || "SYSTEM".equalsIgnoreCase(source);
     }
 
     private static Object resolveFieldValueFromMap(Map<String, Object> fields, Long fieldId, FieldDO field) {

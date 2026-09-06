@@ -202,6 +202,13 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                     code, comp, kind);
             rebuildCapabilityAndProjections(code);
             data = capabilityComponentProjectionMapper.selectByEntityTypeComponentAndDataKind(code, comp, kind);
+        } else if (isEntityListProjectionMissingTypeBaseFields(data.getComponentInterface(), comp, kind, code)) {
+            // 类型已挂基础字段，但 list 投影里还没有对应列（常见：先建能力、后补基础字段）
+            // 配置器展示列/搜索范围只读投影，缺列时用户勾不到「标准编号」等业务基础字段
+            log.info("[getProjection][类型基础字段未进投影，触发投影重建][entityTypeCode={}][componentCode={}][dataKind={}]",
+                    code, comp, kind);
+            rebuildCapabilityAndProjections(code);
+            data = capabilityComponentProjectionMapper.selectByEntityTypeComponentAndDataKind(code, comp, kind);
         } else if (isEntityListProjectionFragmentedTypeBaseGroup(data.getComponentInterface(), comp, kind)) {
             // 基础列同名「基础信息」却带多个型号 groupId：类型级分组被污染，须重建
             log.info("[getProjection][基础信息分组被型号 groupId 拆散，触发投影重建][entityTypeCode={}][componentCode={}][dataKind={}]",
@@ -1439,6 +1446,71 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         } catch (Exception ex) {
             log.warn("[isEntityListProjectionMissingBaseFieldFlag][解析失败，跳过过期判定][componentCode={}][dataKind={}]",
                     componentCode, dataKind, ex);
+            return false;
+        }
+    }
+
+    /**
+     * entity + list/table/card：类型已启用的基础字段未出现在 getList.fields。
+     * <p>
+     * 投影应含基础+扩展全量；配置器展示列/搜索只筛 baseField=true。
+     * 若投影仍只有 id/name/code，配置器就勾不到「标准编号」等业务基础字段。
+     * </p>
+     */
+    private boolean isEntityListProjectionMissingTypeBaseFields(
+            String componentInterface, String componentCode, String dataKind, String entityTypeCode) {
+        if (!BusinessCategoryConstants.KIND_ENTITY.equals(dataKind)) {
+            return false;
+        }
+        if (!"list".equals(componentCode) && !"table".equals(componentCode) && !"card".equals(componentCode)) {
+            return false;
+        }
+        if (!StringUtils.hasText(componentInterface) || !StringUtils.hasText(entityTypeCode)) {
+            return false;
+        }
+        List<EntityTypeBaseFieldDO> typeBaseFields =
+                entityTypeBaseFieldMapper.selectByEntityTypeCode(entityTypeCode.trim());
+        if (typeBaseFields == null || typeBaseFields.isEmpty()) {
+            return false;
+        }
+        Set<String> expectedKeys = new LinkedHashSet<>();
+        for (EntityTypeBaseFieldDO baseField : typeBaseFields) {
+            if (baseField == null || !StringUtils.hasText(baseField.getFieldCode())) {
+                continue;
+            }
+            expectedKeys.add(baseField.getFieldCode().trim());
+        }
+        if (expectedKeys.isEmpty()) {
+            return false;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(componentInterface.trim());
+            JsonNode fields = root.path("getList").path("fields");
+            if (!fields.isArray()) {
+                return true;
+            }
+            Set<String> projectedKeys = new HashSet<>();
+            for (JsonNode field : fields) {
+                if (field == null || !field.isObject()) {
+                    continue;
+                }
+                String fieldKey = field.path("fieldKey").asText("").trim();
+                if (!StringUtils.hasText(fieldKey)) {
+                    fieldKey = field.path("fieldCode").asText("").trim();
+                }
+                if (StringUtils.hasText(fieldKey)) {
+                    projectedKeys.add(fieldKey);
+                }
+            }
+            for (String expected : expectedKeys) {
+                if (!projectedKeys.contains(expected)) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception ex) {
+            log.warn("[isEntityListProjectionMissingTypeBaseFields][解析失败，跳过过期判定][entityTypeCode={}][componentCode={}]",
+                    entityTypeCode, componentCode, ex);
             return false;
         }
     }

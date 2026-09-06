@@ -99,8 +99,9 @@ public class FieldServiceImpl implements FieldService {
     @Override
     public void updateField(FieldUpdateReqVO reqVO) {
         FieldDO db = getFieldDO(reqVO.getId());
+        // 系统自带字段（含组织上级、种子目录字段）：创建时配好，字段库不允许改
         if (isSystemField(db)) {
-            throw new ServiceException(400, "系统字段不允许修改");
+            throw new ServiceException(400, "系统字段不允许修改；引用目标仅自定义「引用数据」字段可配置");
         }
         validateUnit(reqVO.getType(), reqVO.getUnit());
         validateEnumOptions(reqVO.getType(), reqVO.getOptions());
@@ -110,18 +111,11 @@ public class FieldServiceImpl implements FieldService {
         applyEntityRefProvider(update, reqVO.getTargetEntityType());
         update.setTenantId(tenantId);
         fieldMapper.updateById(update);
-        // 清除缓存
         evictFieldCache(reqVO.getId());
         evictFieldListCache(oldType);
         if (!Objects.equals(oldType, reqVO.getType())) {
             evictFieldListCache(reqVO.getType());
         }
-        
-        // 发布字段更新事件
-        // 需求：缓存一致性、FR-BDA-090~093
-        // TODO: 事件驱动机制（任务 30-32）- 暂时注释
-        // FieldDO updatedField = getFieldDO(reqVO.getId());
-        // publishFieldChangedEvent(FieldDefinitionChangedEvent.ChangeType.UPDATED, updatedField);
     }
 
     @Override
@@ -350,7 +344,7 @@ public class FieldServiceImpl implements FieldService {
     }
 
     private boolean isSystemField(FieldDO db) {
-        return "SYSTEM".equalsIgnoreCase(db.getSource());
+        return db != null && "SYSTEM".equalsIgnoreCase(db.getSource());
     }
 
     private void toggleStatus(Long id, Integer status) {
@@ -461,7 +455,19 @@ public class FieldServiceImpl implements FieldService {
     // ================= ENTITY_REF 关联目标 =================
 
     private void applyEntityRefProvider(FieldDO field, String targetEntityType) {
-        if (field == null || !FieldTypeEnum.isEntityRef(field.getType())) {
+        if (field == null) {
+            return;
+        }
+        applyEntityRefProvider(field, field.getType(), targetEntityType);
+    }
+
+    private void applyEntityRefProvider(FieldDO field, String fieldType, String targetEntityType) {
+        if (field == null) {
+            return;
+        }
+        boolean relation = FieldTypeEnum.isEntityRef(fieldType)
+                || FieldTypeEnum.isEntitySelfRef(fieldType);
+        if (!relation) {
             return;
         }
         if (StringUtils.isNotBlank(targetEntityType)) {
@@ -471,6 +477,9 @@ public class FieldServiceImpl implements FieldService {
 
     private void enrichEntityRefTarget(FieldRespVO vo, FieldDO field) {
         if (vo == null || field == null || StringUtils.isNotBlank(vo.getTargetEntityType())) {
+            return;
+        }
+        if (!FieldTypeEnum.isEntityRef(field.getType()) && !FieldTypeEnum.isEntitySelfRef(field.getType())) {
             return;
         }
         String providerCode = field.getProviderCode();

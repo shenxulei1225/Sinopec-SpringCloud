@@ -101,6 +101,19 @@ public interface CategoryService {
     void moveCategory(Long id, Long targetParentId, String categoryTypeCode);
 
     /**
+     * 仅调整分类树 parentId/treePath（投影），不触发实体层级。
+     * 供高级分类「实体权威移动后再对齐分类」调用，避免与 {@link #moveCategory} 互相递归。
+     */
+    void moveCategoryStructureOnly(Long id, Long targetParentId);
+
+    /**
+     * 按分类树回填已绑定实体的 parentId / treePath（仅高级分类）。
+     *
+     * @return 更新的实体条数
+     */
+    int backfillEntityHierarchyFromCategoryTree(String categoryTypeCode);
+
+    /**
      * 对分类进行排序
      * 
      * <p>对指定父分类下的子分类进行排序，根据 orderedIds 的顺序更新 sort 字段。</p>

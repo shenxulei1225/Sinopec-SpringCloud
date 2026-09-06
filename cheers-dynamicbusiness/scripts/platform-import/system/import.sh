@@ -23,6 +23,8 @@ run "${SCRIPT_DIR}/seed/dynamic_seed_base_field_schema.sql"
 run "${SCRIPT_DIR}/seed/dynamic_entity_type_base_field.sql"
 run "${SCRIPT_DIR}/seed/dynamic_base_field_library_fields.sql"
 run "${SCRIPT_DIR}/seed/dynamic_field.sql"
+# 设备宿主 SOP 参数包（字段库 + equipment 基础字段；前置 Flyway V91）
+run "${SCRIPT_DIR}/seed/dynamic_equipment_host_sop_param_pack.sql"
 run "${SCRIPT_DIR}/seed/dynamic_group.sql"
 run "${SCRIPT_DIR}/seed/dynamic_group_relation.sql"
 run "${SCRIPT_DIR}/seed/dynamic_model.sql"

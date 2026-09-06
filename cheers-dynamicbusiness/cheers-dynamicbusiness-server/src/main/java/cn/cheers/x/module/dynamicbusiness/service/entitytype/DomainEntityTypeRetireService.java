@@ -8,7 +8,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.business.BusinessEntryD
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmDataTabColumnRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmDataTabLayoutDO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmFiveWOrchestrationDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmCatalogOrchestrationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.business.BusinessEntryMapper;
@@ -16,7 +16,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.business.BusinessMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmDataTabColumnRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmDataTabLayoutMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmFiveWOrchestrationMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmCatalogOrchestrationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.EntityTypeEntryKindEnum;
@@ -42,7 +42,7 @@ import java.util.Objects;
  * </p>
  * <p>
  * 权威路径：型号 {@code changeDomain(__none__)}（级联实体行 domain 与分类关联镜像）→ 软删域分组 →
- * 软删本目录布局/栏关系/五维编排 → 软删同编码门户 → 注册项 status=inactive 后逻辑删。
+ * 软删本目录布局/栏关系/编排头 → 软删同编码门户 → 注册项 status=inactive 后逻辑删。
  * </p>
  */
 @Service
@@ -68,7 +68,7 @@ public class DomainEntityTypeRetireService {
     @Resource
     private DmDataTabColumnRelationMapper dmDataTabColumnRelationMapper;
     @Resource
-    private DmFiveWOrchestrationMapper dmFiveWOrchestrationMapper;
+    private DmCatalogOrchestrationMapper catalogOrchestrationMapper;
     @Resource
     private JdbcTemplate jdbcTemplate;
 
@@ -102,7 +102,7 @@ public class DomainEntityTypeRetireService {
         // 2) 域分组节点 {registry}_dir（级联软删，含 status=0）
         softDeleteDomainCategoryFolder(registryCode, storage);
 
-        // 3) 本目录数据页布局 / 栏关系 / 五维编排
+        // 3) 本目录数据页布局 / 栏关系 / 编排头
         softDeleteCatalogLayouts(registryCode, domainType.getDataLayoutId());
 
         // 4) 同编码门户叶子（若有）
@@ -189,9 +189,9 @@ public class DomainEntityTypeRetireService {
             dmDataTabColumnRelationMapper.deleteById(row.getId());
         }
 
-        DmFiveWOrchestrationDO orchestration = dmFiveWOrchestrationMapper.selectByEntityTypeCode(registryCode);
+        DmCatalogOrchestrationDO orchestration = catalogOrchestrationMapper.selectByEntityTypeCode(registryCode);
         if (orchestration != null) {
-            dmFiveWOrchestrationMapper.deleteById(orchestration.getId());
+            catalogOrchestrationMapper.deleteById(orchestration.getId());
         }
     }
 

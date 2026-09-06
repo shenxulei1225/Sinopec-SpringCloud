@@ -105,6 +105,50 @@ public class EntityRepositoryImpl implements EntityRepository {
     }
 
     /**
+     * 慢路径：候选 id ∩ 专用表物理列条件（如 facility_id），保序；不走字段索引。
+     */
+    @Override
+    public List<Long> retainOrderedIdsByPhysicalFilters(
+            List<Long> orderedIds,
+            String entityTypeCode,
+            List<PhysicalColumnFilter> physicalFilters) {
+        if (CollUtil.isEmpty(orderedIds) || !org.springframework.util.StringUtils.hasText(entityTypeCode)) {
+            return Collections.emptyList();
+        }
+        List<Long> ids = orderedIds.stream().filter(Objects::nonNull).toList();
+        if (ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        if (physicalFilters == null || physicalFilters.isEmpty()) {
+            return List.copyOf(ids);
+        }
+        String typeCode = entityTypeCode.trim();
+        java.util.HashSet<Long> matched = new java.util.HashSet<>();
+        final int chunkSize = 1000;
+        for (int from = 0; from < ids.size(); from += chunkSize) {
+            List<Long> chunk = ids.subList(from, Math.min(from + chunkSize, ids.size()));
+            List<EntityDO> rows = withTableName(typeCode, () -> {
+                LambdaQueryWrapperX<EntityDO> wrapper = new LambdaQueryWrapperX<>();
+                wrapper.select(EntityDO::getId).in(EntityDO::getId, chunk);
+                applyPhysicalFilters(wrapper, physicalFilters);
+                return entityMapper.selectList(wrapper);
+            });
+            if (rows == null || rows.isEmpty()) {
+                continue;
+            }
+            for (EntityDO row : rows) {
+                if (row != null && row.getId() != null) {
+                    matched.add(row.getId());
+                }
+            }
+        }
+        if (matched.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return ids.stream().filter(matched::contains).toList();
+    }
+
+    /**
      * 一次 SELECT：核心列 + 全部启用基础字段物理列；按 orderedIds 保序（含 custom_fields）。
      */
     @Override
@@ -800,7 +844,7 @@ public class EntityRepositoryImpl implements EntityRepository {
         }
     }
 
-    private static final Set<String> CORE_ORDER_BY_COLUMNS = Set.of("name", "code", "status", "id");
+    private static final Set<String> CORE_ORDER_BY_COLUMNS = Set.of("name", "code", "status", "id", "sort");
     private static final java.util.regex.Pattern SAFE_PHYSICAL_COLUMN =
             java.util.regex.Pattern.compile("^[a-z][a-z0-9_]*$");
 
@@ -938,6 +982,13 @@ public class EntityRepositoryImpl implements EntityRepository {
                         wrapper.orderByAsc(EntityDO::getId);
                     } else {
                         wrapper.orderByDesc(EntityDO::getId);
+                    }
+                }
+                case "sort" -> {
+                    if (asc) {
+                        wrapper.orderByAsc(EntityDO::getSort);
+                    } else {
+                        wrapper.orderByDesc(EntityDO::getSort);
                     }
                 }
                 default -> wrapper.orderByAsc(EntityDO::getSort);

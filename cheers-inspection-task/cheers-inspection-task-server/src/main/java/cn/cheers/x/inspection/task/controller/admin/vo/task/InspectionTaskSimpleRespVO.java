@@ -31,11 +31,14 @@ public class InspectionTaskSimpleRespVO {
     @Schema(description = "任务名称")
     private String taskName;
 
-    @Schema(description = "状态")
+    @Schema(description = "展示状态：由 enabled + runtimeJobId 派生（0 草稿 / 1 启用 / 2 停用），不读库里已废弃的 status 列")
     private Integer status;
 
-    @Schema(description = "是否启用")
+    @Schema(description = "是否启用（启停唯一权威字段，编排 reserve/enable/abort 写入）")
     private Boolean enabled;
+
+    @Schema(description = "编排运行作业 ID；已排过期的任务才有值，用于排期板把计划点对回任务")
+    private String runtimeJobId;
 
     // ==================== 子任务数量 ====================
     @Schema(description = "子任务数量")

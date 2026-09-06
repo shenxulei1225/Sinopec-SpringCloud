@@ -12,12 +12,15 @@ platform-import/
   smart-corridor/seed/   管廊产品增量
   smart-station/         站场产品包（04–07，由 generate-smart-station-import.py 维护）
   inspection-method/     检查方法类型与字段（01–04；前置 Flyway V43）
-  five-w-orchestration/  五维编排 bundle seed（前置 Flyway V51）
+  catalog-orchestration/ 数据目录编排头 seed（前置 Flyway V88）
   action/                动作库平台 seed（V76+）
   sop/                   SOP 库平台 seed（动作树；V78+）
+  standard/              规范标准库 seed（字段/型号/分类/参考资料样例；前置 Flyway V90）
   recipes/inspection/    可选检查演示配方（How 挂 sopHow；非平台内核）
-  import-dev-all.sh      system + corridor + station + inspection-method + five-w-orchestration
+  import-dev-all.sh      system + corridor + station + inspection-method + catalog-orchestration
 ```
+
+设备宿主 SOP 参数包字段：`system/seed/dynamic_equipment_host_sop_param_pack.sql`（前置 Flyway **V91**；由 `system/import.sh` 在 `dynamic_field` 之后执行）。
 
 ## 新空库部署（推荐）
 

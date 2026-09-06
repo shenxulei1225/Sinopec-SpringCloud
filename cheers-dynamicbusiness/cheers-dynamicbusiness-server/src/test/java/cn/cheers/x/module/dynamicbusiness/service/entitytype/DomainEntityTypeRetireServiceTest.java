@@ -7,7 +7,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.business.BusinessMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmDataTabColumnRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmDataTabLayoutMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmFiveWOrchestrationMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmCatalogOrchestrationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
@@ -55,7 +55,7 @@ class DomainEntityTypeRetireServiceTest {
     @Mock
     private DmDataTabColumnRelationMapper dmDataTabColumnRelationMapper;
     @Mock
-    private DmFiveWOrchestrationMapper dmFiveWOrchestrationMapper;
+    private DmCatalogOrchestrationMapper catalogOrchestrationMapper;
     @Mock
     private JdbcTemplate jdbcTemplate;
 
@@ -88,7 +88,7 @@ class DomainEntityTypeRetireServiceTest {
         when(dmDataTabLayoutMapper.selectListByLayoutId(99L)).thenReturn(List.of());
         when(dmDataTabColumnRelationMapper.selectList(any())).thenReturn(List.of());
         when(dmDataTabColumnRelationMapper.selectListByLayoutId(99L)).thenReturn(List.of());
-        when(dmFiveWOrchestrationMapper.selectByEntityTypeCode("task_patrol")).thenReturn(null);
+        when(catalogOrchestrationMapper.selectByEntityTypeCode("task_patrol")).thenReturn(null);
         when(businessMapper.selectByCode("task_patrol")).thenReturn(null);
         when(jdbcTemplate.update(any(String.class), eq("task_patrol"))).thenReturn(0);
 

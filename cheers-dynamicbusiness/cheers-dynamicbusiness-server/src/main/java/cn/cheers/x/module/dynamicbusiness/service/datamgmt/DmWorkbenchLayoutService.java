@@ -1,6 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.datamgmt;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmLayoutSectionVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmWorkbenchLayoutSettingsRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmWorkbenchLayoutSettingsUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryTypeDO;
@@ -21,7 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,15 +33,18 @@ import java.util.Set;
 /**
  * 工作台布局：模版列表、从模版生成实例、解析页面/目录上的 layoutId。
  * <p>
- * 权威：创建 NATIVE / SCOPE / DOMAIN / REUSE 目录时从此处实例化布局行——
- * 一次写好同类分类/型号/实体栏及类型码与区段，禁止半截空壳。
+ * 权威：创建目录时从此处用<strong>同一份</strong>「通用台账」模版实例化布局行——
+ * 一次写好同类分类/型号/实体栏、类型码，以及栏所在<strong>区域编号</strong>（本份布局头上的区域清单），禁止半截空壳。
+ * <ul>
+ *   <li>基础数据（NATIVE）与 REUSE/DOMAIN/SCOPE：四栏全开（列表台账）。</li>
+ *   <li>分类绑定实体（CATEGORY）：仍复制四栏，再关掉型号/实体栏（树即对象）。</li>
+ * </ul>
  * 显示名用底座类型 / 分类种类 / 本目录中文名，不用类型编码冒充 label。
  * 创建时同步写好分类/型号/实体栏默认展示配置 propsId（经资源服务）；不负责打开页现造 props。
+ * 不负责：按固定区段名字猜区域；读路径把旧区段语义映射成新区；另起第二套模版。
  */
 @Service
 public class DmWorkbenchLayoutService {
-
-    private static final Set<String> SECTION_KEYS = Set.of("FILTER", "OBJECT", "WHAT");
 
     @Resource
     private DmWorkbenchLayoutMapper dmWorkbenchLayoutMapper;
@@ -76,16 +83,14 @@ public class DmWorkbenchLayoutService {
         return row;
     }
 
-    /** 读取布局头设置；缺省 JSON 或缺键均返回未隐藏语义。 */
+    /** 读取布局头：区域清单 + 按区域编号的隐藏。缺清单不补默认三块。 */
     public DmWorkbenchLayoutSettingsRespVO getSettings(Long layoutId) {
-        DmWorkbenchLayoutSettingsRespVO vo = new DmWorkbenchLayoutSettingsRespVO();
-        vo.setSectionHidden(readSectionHidden(requireLayout(layoutId).getSettingsJson()));
-        return vo;
+        return toSettingsVo(requireLayout(layoutId).getSettingsJson());
     }
 
     /**
-     * 只替换布局头的 sectionHidden，保留 settingsJson 中其它设置。
-     * 区段隐藏权威只在此写入；栏行 enabled 与浏览器折叠状态不得补写该字段。
+     * 只替换布局头的 sectionHidden，保留 settingsJson 中其它设置（含区域清单）。
+     * 隐藏键必须是本布局已有区域编号；栏行 enabled 与浏览器折叠状态不得补写该字段。
      */
     @Transactional(rollbackFor = Exception.class)
     public DmWorkbenchLayoutSettingsRespVO updateSettings(
@@ -95,16 +100,19 @@ public class DmWorkbenchLayoutService {
         Map<String, Object> settings = layout.getSettingsJson() == null
                 ? new LinkedHashMap<>()
                 : new LinkedHashMap<>(layout.getSettingsJson());
-        Map<String, Boolean> sectionHidden = normalizeSectionHidden(reqVO.getSectionHidden());
+        Set<String> allowed = sectionIds(readSections(settings));
+        Map<String, Boolean> sectionHidden = normalizeSectionHidden(reqVO.getSectionHidden(), allowed);
         settings.put("sectionHidden", sectionHidden);
         DmWorkbenchLayoutDO update = new DmWorkbenchLayoutDO();
         update.setId(layoutId);
         update.setSettingsJson(settings);
         dmWorkbenchLayoutMapper.updateById(update);
+        return toSettingsVo(settings);
+    }
 
-        DmWorkbenchLayoutSettingsRespVO vo = new DmWorkbenchLayoutSettingsRespVO();
-        vo.setSectionHidden(sectionHidden);
-        return vo;
+    /** 本份页面布局上已写入的区域编号；缺清单返回空，不发明默认三块。 */
+    public Set<String> sectionIdsOf(Long layoutId) {
+        return sectionIds(readSections(requireLayout(layoutId).getSettingsJson()));
     }
 
     /**
@@ -168,7 +176,7 @@ public class DmWorkbenchLayoutService {
      * SCOPE / DOMAIN / REUSE：分类/型号/实体类型码 = 底座（同类台账），由调用方传入
      * {@code categoryTypeCode}（底座编码）。实体栏显示名可用本目录中文名，类型码仍是底座。
      * <p>
-     * 区段：分类、型号 → 筛选；实体 → Who/对象。即使模版旧数据区段不对，实例化时也会盖章。
+     * 栏所在区域：分类、型号 → 本模板第一块；实体 → 第二块。按清单位置盖章，不按 5W 名称猜。
      * 分类 Tab 编号必须非空。启用中的分类/型号/实体一次写好 propsId（禁止半截交给前端补）。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -185,6 +193,7 @@ public class DmWorkbenchLayoutService {
         if (templateRows.isEmpty()) {
             throw new ServiceException(500, "模版无栏行：" + templateId);
         }
+        assertLedgerTemplateCoreKinds(templateId, templateRows);
         if (!StringUtils.hasText(entityTypeCode)) {
             throw new ServiceException(400, "实例化布局必须提供目录注册编码");
         }
@@ -193,10 +202,20 @@ public class DmWorkbenchLayoutService {
         instance.setName(instanceName);
         instance.setIsTemplate(false);
         instance.setSourceTemplateId(templateId);
-        instance.setSettingsJson(template.getSettingsJson() == null
+        Map<String, Object> instanceSettings = template.getSettingsJson() == null
                 ? new LinkedHashMap<>()
-                : new LinkedHashMap<>(template.getSettingsJson()));
+                : new LinkedHashMap<>(template.getSettingsJson());
+        if (readSections(instanceSettings).isEmpty()) {
+            throw new ServiceException(500, "布局模版缺少区域清单，无法实例化目录数据页");
+        }
+        instance.setSettingsJson(instanceSettings);
         dmWorkbenchLayoutMapper.insert(instance);
+
+        List<Map<String, Object>> sections = readSections(instance.getSettingsJson());
+        Set<String> allowedSectionIds = sectionIds(sections);
+        if (allowedSectionIds.isEmpty()) {
+            throw new ServiceException(500, "布局模版未配置可用区域，无法实例化栏布局");
+        }
 
         String code = entityTypeCode.trim();
         // 同类台账类型码：调用方已解析底座；缺省与注册码相同（NATIVE）
@@ -212,6 +231,17 @@ public class DmWorkbenchLayoutService {
         }
         // 分类 Tab 编号：按同类种类生成稳定非空编号；栏分组键（columnKey）与编号分开
         String categoryTabId = storageCode + "-1";
+        Set<String> usedDetailTabIds = new HashSet<>();
+        for (DmDataTabLayoutDO existing : templateRows) {
+            if (!DmDataTabLayoutKindEnum.DETAIL.getCode().equals(existing.getColumnKind())) {
+                continue;
+            }
+            String tab = existing.getTabId() == null ? "" : existing.getTabId().trim();
+            if (!StringUtils.hasText(tab) || "default".equalsIgnoreCase(tab)) {
+                continue;
+            }
+            usedDetailTabIds.add(tab);
+        }
 
         for (DmDataTabLayoutDO src : templateRows) {
             DmDataTabLayoutDO row = new DmDataTabLayoutDO();
@@ -222,6 +252,8 @@ public class DmWorkbenchLayoutService {
             row.setPropsId(null);
             row.setEnabled(src.getEnabled());
             row.setColumnMeta(copyMeta(src.getColumnMeta()));
+            String sourceSectionId = requireSectionIdInTemplateRow(
+                    row.getColumnMeta(), row.getColumnKind(), allowedSectionIds);
 
             if (DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(src.getColumnKind())) {
                 // 模版若仍是旧字面 default / 空，换成真实编号；已有合法编号则保留
@@ -234,7 +266,7 @@ public class DmWorkbenchLayoutService {
                         : new LinkedHashMap<>();
                 meta.put("categoryTypeCode", storageCode);
                 meta.put("label", categoryDisplayName);
-                meta.put("columnSection", DmDataTabLayoutBootstrapMeta.SECTION_FILTER);
+                meta.put("columnSection", sourceSectionId);
                 Object existingKey = meta.get("columnKey");
                 String keyStr = existingKey == null ? "" : String.valueOf(existingKey).trim();
                 // 分组键用种类码，禁止 default；看身份能知道是哪类分类
@@ -259,7 +291,7 @@ public class DmWorkbenchLayoutService {
                         : new LinkedHashMap<>();
                 meta.put("modelEntityTypeCode", storageCode);
                 meta.put("label", storageDisplayName);
-                meta.put("columnSection", DmDataTabLayoutBootstrapMeta.SECTION_FILTER);
+                meta.put("columnSection", sourceSectionId);
                 if (!(meta.get("widthPx") instanceof Number)) {
                     meta.put("widthPx", DmDataTabLayoutBootstrapMeta.MODEL_COLUMN_WIDTH_PX);
                 }
@@ -279,12 +311,31 @@ public class DmWorkbenchLayoutService {
                 meta.put("entityEntityTypeCode", storageCode);
                 meta.put("label", StringUtils.hasText(registryDisplayName)
                         ? registryDisplayName : storageDisplayName);
-                meta.put("columnSection", DmDataTabLayoutBootstrapMeta.SECTION_OBJECT);
+                meta.put("columnSection", sourceSectionId);
                 if (!(meta.get("widthPx") instanceof Number)) {
                     meta.put("widthPx", DmDataTabLayoutBootstrapMeta.ENTITY_COLUMN_WIDTH_PX);
                 }
                 if (!(meta.get("sectionWidthPx") instanceof Number)) {
                     meta.put("sectionWidthPx", DmDataTabLayoutBootstrapMeta.OBJECT_SECTION_WIDTH_PX);
+                }
+                row.setColumnMeta(meta);
+            } else if (DmDataTabLayoutKindEnum.DETAIL.getCode().equals(src.getColumnKind())) {
+                String detailTab = row.getTabId() == null ? "" : row.getTabId().trim();
+                if (!StringUtils.hasText(detailTab) || "default".equalsIgnoreCase(detailTab)) {
+                    row.setTabId(allocateTabId("detail", usedDetailTabIds));
+                }
+                row.setEnabled(true);
+                Map<String, Object> meta = row.getColumnMeta() != null
+                        ? new LinkedHashMap<>(row.getColumnMeta())
+                        : new LinkedHashMap<>();
+                meta.put("columnSection", sourceSectionId);
+                if (!metaHasText(meta, "label")) {
+                    // 仅在模板未配置展示名时给中性默认文案；禁止这里写死业务语义名。
+                    meta.put("label", "区段栏");
+                }
+                meta.put("entityEntityTypeCode", storageCode);
+                if (!(meta.get("sectionWidthPx") instanceof Number)) {
+                    meta.put("sectionWidthPx", DmDataTabLayoutBootstrapMeta.DETAIL_SECTION_WIDTH_PX);
                 }
                 row.setColumnMeta(meta);
             }
@@ -345,6 +396,11 @@ public class DmWorkbenchLayoutService {
                 if (!StringUtils.hasText(tab) || "default".equalsIgnoreCase(tab)) {
                     throw new ServiceException(500, "自动创建布局失败：实体栏 tabId 须为底座类型编码");
                 }
+            } else if (DmDataTabLayoutKindEnum.DETAIL.getCode().equals(kind)) {
+                String tab = row.getTabId() == null ? "" : row.getTabId().trim();
+                if (!StringUtils.hasText(tab) || "default".equalsIgnoreCase(tab)) {
+                    throw new ServiceException(500, "自动创建布局失败：详情栏 tabId 不能为空或 default");
+                }
             }
         }
     }
@@ -386,38 +442,104 @@ public class DmWorkbenchLayoutService {
         DmWorkbenchLayoutDO tpl = dmWorkbenchLayoutMapper.selectDefaultTemplate();
         if (tpl == null) {
             List<DmWorkbenchLayoutDO> all = dmWorkbenchLayoutMapper.selectTemplates();
-            if (!all.isEmpty()) {
-                return all.get(0).getId();
+            if (all.isEmpty()) {
+                return createDefaultLedgerTemplate();
             }
-            return createDefaultLedgerTemplate();
+            throw new ServiceException(500, "缺少默认布局模版：请先设置默认模版后再创建目录");
         }
-        return tpl.getId();
+        Long templateId = tpl.getId();
+        // 共用一份通用台账：模版不完整时直接报错，禁止按固定区段猜测补行。
+        ensureLedgerTemplateCoreColumns(templateId);
+        return templateId;
     }
 
-    /** 当前租户尚无模版时写入「通用台账」模版栏行（与 Flyway V66 种子一致） */
+    /**
+     * 通用台账模版必须具备分类/型号/实体/详情四栏。
+     * 模版行故意不写底座类型码（实例化时再盖章）；缺口要暴露，禁止在此处补丁式猜测补行。
+     */
+    private void ensureLedgerTemplateCoreColumns(Long templateId) {
+        DmWorkbenchLayoutDO header = requireLayout(templateId);
+        Map<String, Object> settings = header.getSettingsJson() == null
+                ? new LinkedHashMap<>()
+                : new LinkedHashMap<>(header.getSettingsJson());
+        List<Map<String, Object>> sections = readSections(settings);
+        Set<String> existingSections = sectionIds(sections);
+        if (existingSections.isEmpty()) {
+            throw new ServiceException(500, "通用台账模版缺少区域清单（layoutId=" + templateId + "）");
+        }
+        List<DmDataTabLayoutDO> rows = dmDataTabLayoutMapper.selectListByLayoutId(templateId);
+        Set<String> kinds = new LinkedHashSet<>();
+        for (DmDataTabLayoutDO row : rows) {
+            if (row.getColumnKind() != null) {
+                kinds.add(row.getColumnKind().trim().toUpperCase());
+            }
+        }
+        for (DmDataTabLayoutKindEnum required : List.of(
+                DmDataTabLayoutKindEnum.CATEGORY,
+                DmDataTabLayoutKindEnum.MODEL,
+                DmDataTabLayoutKindEnum.ENTITY,
+                DmDataTabLayoutKindEnum.DETAIL)) {
+            if (!kinds.contains(required.getCode())) {
+                throw new ServiceException(500,
+                        "通用台账模版缺少「" + required.getCode() + "」栏（layoutId=" + templateId + "）");
+            }
+        }
+        for (DmDataTabLayoutDO row : rows) {
+            if (row.getColumnKind() == null) {
+                continue;
+            }
+            String kind = row.getColumnKind().trim().toUpperCase();
+            if (!DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(kind)
+                    && !DmDataTabLayoutKindEnum.MODEL.getCode().equals(kind)
+                    && !DmDataTabLayoutKindEnum.ENTITY.getCode().equals(kind)
+                    && !DmDataTabLayoutKindEnum.DETAIL.getCode().equals(kind)) {
+                continue;
+            }
+            requireSectionIdInTemplateRow(row.getColumnMeta(), kind, existingSections);
+        }
+        assertLedgerTemplateCoreKinds(templateId, dmDataTabLayoutMapper.selectListByLayoutId(templateId));
+    }
+
+    /** 模版缺任一核心栏则拒绝实例化，避免再写出半截目录布局。 */
+    private static void assertLedgerTemplateCoreKinds(Long templateId, List<DmDataTabLayoutDO> rows) {
+        Set<String> kinds = new LinkedHashSet<>();
+        for (DmDataTabLayoutDO row : rows) {
+            if (row.getColumnKind() != null) {
+                kinds.add(row.getColumnKind().trim().toUpperCase());
+            }
+        }
+        for (DmDataTabLayoutKindEnum required : List.of(
+                DmDataTabLayoutKindEnum.CATEGORY,
+                DmDataTabLayoutKindEnum.MODEL,
+                DmDataTabLayoutKindEnum.ENTITY,
+                DmDataTabLayoutKindEnum.DETAIL)) {
+            if (!kinds.contains(required.getCode())) {
+                throw new ServiceException(500,
+                        "通用台账模版缺少「" + required.getCode() + "」栏（layoutId=" + templateId
+                                + "），无法生成目录数据页布局");
+            }
+        }
+    }
+
+    /** 当前租户尚无模版时写入「通用台账」模版：区域清单 + 栏行（与常用台账模板一致） */
     private Long createDefaultLedgerTemplate() {
         DmWorkbenchLayoutDO header = new DmWorkbenchLayoutDO();
         header.setName(DmWorkbenchLayoutNames.DEFAULT_LEDGER_TEMPLATE);
         header.setIsTemplate(true);
         header.setSourceTemplateId(null);
-        header.setSettingsJson(new LinkedHashMap<>());
+        header.setSettingsJson(DmDataTabLayoutBootstrapMeta.settingsWithLedgerSections());
         dmWorkbenchLayoutMapper.insert(header);
         Long layoutId = header.getId();
 
         insertTemplateRow(layoutId, DmDataTabLayoutKindEnum.CATEGORY.getCode(), "category-1", true,
-                Map.of(
-                        "label", "分类",
-                        "columnKey", "category",
-                        "columnSection", DmDataTabLayoutBootstrapMeta.SECTION_FILTER,
-                        "widthPx", DmDataTabLayoutBootstrapMeta.CATEGORY_COLUMN_WIDTH_PX,
-                        "sectionWidthPx", DmDataTabLayoutBootstrapMeta.FILTER_SECTION_WIDTH_PX
-                ));
-        // 型号进筛选（不领头）；实体进 Who 并领头写区段宽
+                DmDataTabLayoutBootstrapMeta.categoryMeta(
+                        "分类", null, "category", DmDataTabLayoutBootstrapMeta.SECTION_ID_A));
         insertTemplateRow(layoutId, DmDataTabLayoutKindEnum.MODEL.getCode(), null, true,
-                DmDataTabLayoutBootstrapMeta.modelMeta(false));
+                DmDataTabLayoutBootstrapMeta.modelMeta(DmDataTabLayoutBootstrapMeta.SECTION_ID_A, false));
         insertTemplateRow(layoutId, DmDataTabLayoutKindEnum.ENTITY.getCode(), null, true,
-                DmDataTabLayoutBootstrapMeta.entityMeta(true));
-        insertTemplateRow(layoutId, DmDataTabLayoutKindEnum.DETAIL.getCode(), null, false, null);
+                DmDataTabLayoutBootstrapMeta.entityMeta(DmDataTabLayoutBootstrapMeta.SECTION_ID_B, true));
+        insertTemplateRow(layoutId, DmDataTabLayoutKindEnum.DETAIL.getCode(), "tab-detail-1", true,
+                DmDataTabLayoutBootstrapMeta.detailMeta(DmDataTabLayoutBootstrapMeta.SECTION_ID_C, "区段C栏"));
         return layoutId;
     }
 
@@ -452,27 +574,132 @@ public class DmWorkbenchLayoutService {
         return new LinkedHashMap<>(src);
     }
 
-    private Map<String, Boolean> normalizeSectionHidden(Map<String, Boolean> input) {
+    private DmWorkbenchLayoutSettingsRespVO toSettingsVo(Map<String, Object> settings) {
+        List<Map<String, Object>> sections = readSections(settings);
+        DmWorkbenchLayoutSettingsRespVO vo = new DmWorkbenchLayoutSettingsRespVO();
+        vo.setSections(toSectionVos(sections));
+        vo.setSectionHidden(readSectionHidden(settings, sectionIds(sections)));
+        return vo;
+    }
+
+    private static List<DmLayoutSectionVO> toSectionVos(List<Map<String, Object>> sections) {
+        List<DmLayoutSectionVO> vos = new ArrayList<>();
+        for (Map<String, Object> row : sections) {
+            DmLayoutSectionVO vo = new DmLayoutSectionVO();
+            vo.setId(String.valueOf(row.get("id")));
+            vo.setName(String.valueOf(row.get("name")));
+            Object arrange = row.get("arrange");
+            if (arrange != null) {
+                vo.setArrange(String.valueOf(arrange));
+            }
+            vos.add(vo);
+        }
+        return vos;
+    }
+
+    static List<Map<String, Object>> readSections(Map<String, Object> settings) {
+        if (settings == null || !(settings.get("sections") instanceof List<?> rawList)) {
+            return List.of();
+        }
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Object item : rawList) {
+            if (!(item instanceof Map<?, ?> map)) {
+                continue;
+            }
+            Object idObj = map.get("id");
+            String id = idObj == null ? "" : String.valueOf(idObj).trim();
+            if (!StringUtils.hasText(id)) {
+                continue;
+            }
+            Object nameObj = map.get("name");
+            String name = nameObj == null ? "" : String.valueOf(nameObj).trim();
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("id", id);
+            row.put("name", StringUtils.hasText(name) ? name : id);
+            String arrange = readArrange(map.get("arrange"));
+            if (arrange != null) {
+                row.put("arrange", arrange);
+            }
+            out.add(row);
+        }
+        return out;
+    }
+
+    static Set<String> sectionIds(List<Map<String, Object>> sections) {
+        Set<String> ids = new LinkedHashSet<>();
+        for (Map<String, Object> row : sections) {
+            ids.add(String.valueOf(row.get("id")));
+        }
+        return ids;
+    }
+
+    /**
+     * 只认创建/迁移已写入的摆法。缺字段或非法值原样丢掉，读路径不猜水平并排或自由摆放。
+     */
+    static String readArrange(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        String arrange = String.valueOf(raw).trim().toLowerCase();
+        if (DmDataTabLayoutBootstrapMeta.ARRANGE_HORIZONTAL.equals(arrange)
+                || DmDataTabLayoutBootstrapMeta.ARRANGE_FREE.equals(arrange)) {
+            return arrange;
+        }
+        return null;
+    }
+
+    private static String requireSectionIdInTemplateRow(
+            Map<String, Object> meta, String kind, Set<String> allowedSectionIds) {
+        if (meta == null || !metaHasText(meta, "columnSection")) {
+            throw new ServiceException(500,
+                    "布局模版栏缺少 columnSection（kind=" + kind + "），无法实例化");
+        }
+        String sectionId = String.valueOf(meta.get("columnSection")).trim();
+        if (!allowedSectionIds.contains(sectionId)) {
+            throw new ServiceException(500,
+                    "布局模版栏的 columnSection 不在区域清单中（kind=" + kind + ", section=" + sectionId + "）");
+        }
+        return sectionId;
+    }
+
+    private static String allocateTabId(String kindSlug, Set<String> usedTabIds) {
+        String slug = StringUtils.hasText(kindSlug) ? kindSlug.trim().toLowerCase() : "column";
+        int seq = 1;
+        while (true) {
+            String candidate = "tab-" + slug + "-" + seq;
+            if (!usedTabIds.contains(candidate)) {
+                usedTabIds.add(candidate);
+                return candidate;
+            }
+            seq++;
+        }
+    }
+
+    private Map<String, Boolean> normalizeSectionHidden(
+            Map<String, Boolean> input,
+            Set<String> allowedIds) {
         if (input == null || input.isEmpty()) {
             return new LinkedHashMap<>();
         }
         Map<String, Boolean> normalized = new LinkedHashMap<>();
         for (Map.Entry<String, Boolean> entry : input.entrySet()) {
-            String key = entry.getKey() == null ? "" : entry.getKey().trim().toUpperCase();
-            if (!SECTION_KEYS.contains(key)) {
-                throw new ServiceException(400, "无效的区段隐藏键：" + entry.getKey());
+            String key = entry.getKey() == null ? "" : entry.getKey().trim();
+            if (!StringUtils.hasText(key) || !allowedIds.contains(key)) {
+                throw new ServiceException(400, "无效的区域隐藏键：" + entry.getKey());
             }
-            normalized.put(key, Boolean.TRUE.equals(entry.getValue()));
+            if (Boolean.TRUE.equals(entry.getValue())) {
+                normalized.put(key, true);
+            }
         }
         return normalized;
     }
 
-    private Map<String, Boolean> readSectionHidden(Map<String, Object> settings) {
+    private Map<String, Boolean> readSectionHidden(Map<String, Object> settings, Set<String> allowedIds) {
         if (settings == null || !(settings.get("sectionHidden") instanceof Map<?, ?> raw)) {
             return new LinkedHashMap<>();
         }
         Map<String, Boolean> result = new LinkedHashMap<>();
-        for (String key : SECTION_KEYS) {
+        for (String key : allowedIds) {
             if (Boolean.TRUE.equals(raw.get(key))) {
                 result.put(key, true);
             }

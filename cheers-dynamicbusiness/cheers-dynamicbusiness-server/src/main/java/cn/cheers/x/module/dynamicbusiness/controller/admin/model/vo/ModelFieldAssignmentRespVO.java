@@ -7,7 +7,8 @@ import lombok.Data;
 /**
  * 模型字段分配响应 VO
  * 
- * 支持三种字段来源：
+ * 支持四种字段来源：
+ * - SYSTEM：平台系统字段（如站场级所属场站），只读展示，不可从型号移除
  * - BASE：固定列字段，来自业务类型配置，自动继承到该业务类型下的所有 Model
  * - CUSTOM：扩展字段，用户通过 ModelFieldAssignment 添加
  * - RELATION：关联字段，引用其他业务实体
@@ -53,7 +54,7 @@ public class ModelFieldAssignmentRespVO {
 
     // ========== 字段来源标识 ==========
 
-    @Schema(description = "字段来源标识：BASE=固定列字段，CUSTOM=扩展字段，RELATION=关联字段", example = "CUSTOM")
+    @Schema(description = "字段来源标识：SYSTEM=系统字段，BASE=固定列字段，CUSTOM=扩展字段，RELATION=关联字段", example = "CUSTOM")
     private String fieldSource;
 
     @Schema(description = "是否可编辑", example = "true")
@@ -96,6 +97,7 @@ public class ModelFieldAssignmentRespVO {
     /**
      * 字段来源常量
      */
+    public static final String FIELD_SOURCE_SYSTEM = "SYSTEM";
     public static final String FIELD_SOURCE_BASE = "BASE";
     public static final String FIELD_SOURCE_CUSTOM = "CUSTOM";
     public static final String FIELD_SOURCE_RELATION = "RELATION";

@@ -17,10 +17,14 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.framework.field.EntityTypeFieldLabelHelper;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityBaseFieldColumnNames;
+import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypePlatformFieldSupport;
 import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
+import cn.cheers.x.module.dynamicbusiness.framework.hierarchy.OrgTreeParentFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.capability.BusinessCapabilityService;
 import cn.cheers.x.module.dynamicbusiness.service.dynamictable.DynamicTableService;
+import cn.cheers.x.module.dynamicbusiness.service.hierarchy.OrgTreeParentFieldEnsureService;
 import cn.hutool.core.util.StrUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +66,9 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
     @Resource
     @Lazy
     private FacilityOwningFieldEnsureService facilityOwningFieldEnsureService;
+    @Resource
+    @Lazy
+    private OrgTreeParentFieldEnsureService orgTreeParentFieldEnsureService;
     @Resource
     @Qualifier("systemAsyncExecutor")
     private Executor systemAsyncExecutor;
@@ -123,6 +130,7 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
         }
 
         FieldDO libraryField = requireLibraryField(reqVO.getLibraryFieldId());
+        assertPlatformOwnedBaseFieldCreatable(reqVO.getEntityTypeCode(), libraryField);
         if (existsByLibraryField(reqVO.getEntityTypeCode(), libraryField.getId(), null)) {
             throw new ServiceException(400, "该字段已加入当前业务类型的基础字段");
         }
@@ -269,7 +277,8 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
         }
         assertFacilityOwningFieldDeletable(field);
         String entityTypeCode = field.getEntityTypeCode();
-        Long libraryFieldId = field.getLibraryFieldId();
+        // library_field_id 可能为空（seed 只写了 field_code），须按编码解析后再卸型号
+        Long libraryFieldId = resolveLibraryFieldIdForSync(field);
 
         syncDedicatedTableDeprecateColumn(field);
 
@@ -278,6 +287,24 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
         if (libraryFieldId != null) {
             baseFieldLibrarySyncService.removeLibraryFieldFromAllModels(entityTypeCode, libraryFieldId);
         }
+    }
+
+    /**
+     * 解析基础字段对应的字段库 id，供删除/停用后从型号卸下。
+     * 优先 library_field_id；为空则按 field_code 查字段库。
+     */
+    private Long resolveLibraryFieldIdForSync(EntityTypeBaseFieldDO field) {
+        if (field == null) {
+            return null;
+        }
+        if (field.getLibraryFieldId() != null) {
+            return field.getLibraryFieldId();
+        }
+        if (!StringUtils.hasText(field.getFieldCode())) {
+            return null;
+        }
+        FieldDO libraryField = fieldMapper.selectByCode(field.getFieldCode().trim());
+        return libraryField != null ? libraryField.getId() : null;
     }
 
     /** 站场级类型的所属场站系统字段不可删。 */
@@ -316,6 +343,7 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
     @Override
     public List<EntityTypeBaseFieldRespVO> listByEntityTypeCode(String entityTypeCode) {
         return baseFieldMapper.selectByEntityTypeCode(entityTypeCode).stream()
+                .filter(field -> !EntityTypePlatformFieldSupport.excludeFromUserBaseFieldList(field.getFieldCode()))
                 .map(EntityTypeBaseFieldConvert.INSTANCE::convert)
                 .map(this::enrichLibraryInfo)
                 .toList();
@@ -355,9 +383,20 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
         field.setStatus(status);
         baseFieldMapper.updateById(field);
         if (status != null && status == 0) {
+            // 停用 = 不再参与型号展示：卸各型号 BASE 分配，避免幽灵字段
             syncDedicatedTableDeprecateColumn(field);
+            Long libraryFieldId = resolveLibraryFieldIdForSync(field);
+            if (libraryFieldId != null) {
+                baseFieldLibrarySyncService.removeLibraryFieldFromAllModels(
+                        field.getEntityTypeCode(), libraryFieldId);
+            }
         } else if (status != null && status == 1 && (previous == null || previous != 1)) {
             syncDedicatedTableAddColumn(field);
+            FieldDO libraryField = resolveLibraryFieldForUpdate(field, field.getLibraryFieldId());
+            if (libraryField != null) {
+                baseFieldLibrarySyncService.assignLibraryFieldToAllModels(
+                        field.getEntityTypeCode(), libraryField, field);
+            }
         }
         notifyEntityTypeFieldDefinitionChanged(field.getEntityTypeCode());
     }
@@ -365,6 +404,11 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
     /** 专用表：基础字段新增 → 固定列（列名=字段编码规范化）。 */
     private void syncDedicatedTableAddColumn(EntityTypeBaseFieldDO field) {
         if (field == null) {
+            return;
+        }
+        // 组织上级对应实体核心列 parent_id，禁止再 ADD COLUMN
+        if (OrgTreeParentFieldCodes.FIELD_CODE.equalsIgnoreCase(
+                field.getFieldCode() == null ? "" : field.getFieldCode().trim())) {
             return;
         }
         String dt = field.getDataType() == null ? "" : field.getDataType().trim().toUpperCase().replace('-', '_');
@@ -451,6 +495,8 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
         if (FacilityOwningFieldEnsureService.shouldEnsure(entityType)) {
             facilityOwningFieldEnsureService.ensureForEntityTypeCode(entityType.getCode());
         }
+        // 高级分类：幂等补齐系统组织上级（parentId / 同数据类型引用）
+        orgTreeParentFieldEnsureService.ensureForEntityTypeCode(entityType.getCode());
         List<EntityTypePlatformFieldRespVO> fields = new ArrayList<>(4);
         fields.add(buildPlatformField(entityType, "name", "名称", "TEXT"));
         fields.add(buildPlatformField(entityType, "status", "状态", "NUMBER"));
@@ -465,6 +511,19 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
                     FacilityOwningFieldCodes.FIELD_CODE,
                     owningLabel,
                     "REF"));
+        }
+        if (orgTreeParentFieldEnsureService.hasAdvancedCategoryType(entityType.getCode())) {
+            String parentLabel = OrgTreeParentFieldCodes.DISPLAY_NAME;
+            EntityTypeBaseFieldDO parentBase = baseFieldMapper.selectByEntityTypeCodeAndFieldCode(
+                    entityType.getCode(), OrgTreeParentFieldCodes.FIELD_CODE);
+            if (parentBase != null && StringUtils.hasText(parentBase.getFieldName())) {
+                parentLabel = parentBase.getFieldName().trim();
+            }
+            fields.add(buildPlatformField(
+                    entityType,
+                    OrgTreeParentFieldCodes.FIELD_CODE,
+                    parentLabel,
+                    FieldTypeEnum.ENTITY_SELF_REF.getCode()));
         }
         return fields;
     }
@@ -602,6 +661,7 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
             case "JSON" -> "JSON";
             case "ENTITY_REF" -> "REF";
             case "ENTITY_REF_MULTI" -> "REF_Multi";
+            case "ENTITY_SELF_REF" -> "ENTITY_SELF_REF";
             default -> libraryType.trim();
         };
     }
@@ -682,7 +742,39 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
         return "name".equals(fieldCode)
                 || "status".equals(fieldCode)
                 || "code".equals(fieldCode)
-                || FacilityOwningFieldCodes.FIELD_CODE.equals(fieldCode);
+                || FacilityOwningFieldCodes.FIELD_CODE.equals(fieldCode)
+                || OrgTreeParentFieldCodes.FIELD_CODE.equalsIgnoreCase(fieldCode == null ? "" : fieldCode);
+    }
+
+    /**
+     * 系统独占基础字段：所属场站 / 组织上级。禁止用户从字段库重复添加；仅 ensure 可挂。
+     */
+    private void assertPlatformOwnedBaseFieldCreatable(String entityTypeCode, FieldDO libraryField) {
+        if (libraryField == null
+                || !EntityTypePlatformFieldSupport.isPlatformOwnedPersistedFieldCode(libraryField.getCode())) {
+            return;
+        }
+        String code = libraryField.getCode().trim();
+        if (OrgTreeParentFieldCodes.FIELD_CODE.equalsIgnoreCase(code)) {
+            if (!orgTreeParentFieldEnsureService.hasAdvancedCategoryType(entityTypeCode)) {
+                throw new ServiceException(400, "组织上级仅适用于高级分类（分类即实体）的数据类型，且由系统自动挂接");
+            }
+            EntityTypeBaseFieldDO existing = baseFieldMapper.selectByEntityTypeCodeAndFieldCode(
+                    entityTypeCode.trim(), OrgTreeParentFieldCodes.FIELD_CODE);
+            if (existing != null) {
+                throw new ServiceException(400, "组织上级为系统字段，已由平台自动挂接");
+            }
+            return;
+        }
+        EntityTypeDO entityType = entityTypeMapper.selectByCode(entityTypeCode.trim());
+        if (!FacilityOwningFieldEnsureService.shouldEnsure(entityType)) {
+            throw new ServiceException(400, "所属场站仅适用于站场级（非网络级）且自有存储的数据类型");
+        }
+        EntityTypeBaseFieldDO existing = baseFieldMapper.selectByEntityTypeCodeAndFieldCode(
+                entityTypeCode.trim(), libraryField.getCode().trim());
+        if (existing != null) {
+            throw new ServiceException(400, "所属场站为系统字段，已由平台自动挂接");
+        }
     }
 
     private EntityTypeBaseFieldDO resolveRegisteredBaseField(

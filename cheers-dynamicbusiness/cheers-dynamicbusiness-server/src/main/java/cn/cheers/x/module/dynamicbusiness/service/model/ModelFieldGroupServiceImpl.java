@@ -543,7 +543,8 @@ public class ModelFieldGroupServiceImpl implements ModelFieldGroupService {
             if (assign == null || assign.getFieldId() == null) {
                 continue;
             }
-            if (ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE.equals(assign.getFieldSource())) {
+            if (ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE.equals(assign.getFieldSource())
+                    || ModelFieldAssignmentRespVO.FIELD_SOURCE_SYSTEM.equals(assign.getFieldSource())) {
                 ids.add(assign.getFieldId());
             }
         }
@@ -558,8 +559,9 @@ public class ModelFieldGroupServiceImpl implements ModelFieldGroupService {
 
         ModelFieldAssignmentDO assignment = modelFieldAssignmentMapper.selectByModelIdAndFieldId(modelId, fieldId);
         if (assignment != null
-                && ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE.equals(assignment.getFieldSource())) {
-            throw new ServiceException(400, "类型基础字段不属于型号分组，请在「基础信息」中维护启用集");
+                && (ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE.equals(assignment.getFieldSource())
+                        || ModelFieldAssignmentRespVO.FIELD_SOURCE_SYSTEM.equals(assignment.getFieldSource()))) {
+            throw new ServiceException(400, "类型基础字段与系统字段不属于型号分组，请在「基础信息」中维护");
         }
 
         FieldGroupsConfig config = readFieldGroupsConfig(modelId);

@@ -80,6 +80,9 @@ public class InspectionTaskRespVO {
     @Schema(description = "当前激活的编排批次ID")
     private Long activePlanId;
 
+    @Schema(description = "编排运行作业 ID；排期预占（reserve）后写入")
+    private String runtimeJobId;
+
     @Schema(description = "历史编排批次ID列表")
     private List<Long> planIds = new ArrayList<>();
 

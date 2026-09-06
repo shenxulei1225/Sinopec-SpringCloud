@@ -1,6 +1,5 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity;
 
-import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityBatchCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityBatchDeleteReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.BatchEntityCategoryAssociationRespVO;
@@ -12,9 +11,6 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityBatch
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCloneReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityPageReqVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntitySearchReqVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntitySearchRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntitySceneQueryRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntitySortSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.CategoryIdGroupReqVO;
@@ -164,15 +160,6 @@ public interface EntityService {
     EntityRespVO get(Long id, String entityTypeCode, boolean includeAssociations,
             List<AssociationCategoryViewReqVO> associationCategoryViews);
 
-    /**
-     * 分页搜索实体列表
-     *
-     * <p>通过 Repository 层查询，自动路由到对应的存储表。</p>
-     *
-     * @param reqVO 搜索分页参数
-     * @return 分页结果
-     */
-    PageResult<EntityRespVO> pageSearchEntities(EntityPageReqVO reqVO);
 
     /**
      * 移动实体到新的父实体下，建立层级关系。
@@ -220,14 +207,6 @@ public interface EntityService {
 
     // ==================== 分类关联操作（已移除，请直接使用 EntityCategoryRelationService）====================
 
-    /**
-     * 高级搜索实体
-     * 支持全文搜索、高级过滤、多字段排序
-     *
-     * @param reqVO 搜索请求参数
-     * @return 搜索结果（包含分页信息和聚合统计）
-     */
-    EntitySearchRespVO searchAdvanced(EntitySearchReqVO reqVO);
 
     // ==================== 统一实体查询接口 ====================
 

@@ -6,8 +6,8 @@ import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartRe
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionWritebackReqDTO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCreateReqVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityPageReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntitySceneQueryRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.inspection.vo.TaskExecutionBootstrapReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.inspection.vo.TaskExecutionBootstrapRespVO;
@@ -106,8 +106,11 @@ class TaskExecutionSessionServiceImplTest {
                 "name", "停靠 s1", "modelId", 66L, "step_code", "s1", "step_status", "pending")));
         EntityRespVO stepListItem = new EntityRespVO();
         stepListItem.setId(11L);
-        when(entityService.pageSearchEntities(any(EntityPageReqVO.class)))
-                .thenReturn(new PageResult<>(List.of(stepListItem), 1L));
+        EntitySceneQueryRespVO stepQuery = EntitySceneQueryRespVO.page(
+                new PageResult<>(List.of(stepListItem), 1L), "LIGHT");
+        when(entityService.queryEntities(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(stepQuery);
         when(entityService.get(11L, "task_execution_step")).thenReturn(step);
 
         TaskExecutionWritebackReqDTO req = new TaskExecutionWritebackReqDTO();

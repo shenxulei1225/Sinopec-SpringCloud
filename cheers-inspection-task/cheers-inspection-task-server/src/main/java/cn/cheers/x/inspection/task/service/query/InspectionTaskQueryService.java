@@ -3,6 +3,7 @@ package cn.cheers.x.inspection.task.service.query;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskRespVO;
 import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskSimpleRespVO;
+import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskStatisticsRespVO;
 import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskPageReqVO;
 
 /**
@@ -25,4 +26,11 @@ public interface InspectionTaskQueryService {
      * @return 任务详情
      */
     InspectionTaskRespVO getTaskDetail(Long id);
+
+    /**
+     * 任务统计（首页卡片等聚合展示）。
+     *
+     * <p>各计数与列表展示状态同一派生口径（enabled + runtimeJobId）。</p>
+     */
+    InspectionTaskStatisticsRespVO getTaskStatistics();
 }

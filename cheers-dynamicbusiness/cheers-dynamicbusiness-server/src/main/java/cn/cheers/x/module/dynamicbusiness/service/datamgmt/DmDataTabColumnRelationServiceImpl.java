@@ -45,8 +45,11 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
             "CATEGORY_CATEGORY",
             "CATEGORY_MODEL",
             "CATEGORY_ENTITY",
+            "CATEGORY_DETAIL",
             "MODEL_MODEL",
             "MODEL_ENTITY",
+            "MODEL_DETAIL",
+            "ENTITY_DETAIL",
             "ENTITY_ENTITY"
     );
 
@@ -61,26 +64,26 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
             "ownershipWrite"
     );
 
-    private static final Set<String> ALLOWED_EDGE_ROLES = Set.of("filter", "write");
+    private static final Set<String> ALLOWED_EDGE_ACTIONS = Set.of("filter", "write");
 
     /**
-     * 读路径只认 meta.edgeRole；禁止从 enabledInteractions 推断。
+     * 读路径只认 meta.edgeAction；禁止从 enabledInteractions 推断。
      * 缺则抛错暴露缺口（须由 saveRelations / bootstrap / 迁移写出）。
      */
-    private static String requireEdgeRoleFromMeta(Map<String, Object> meta, String edgeId) {
+    private static String requireEdgeActionFromMeta(Map<String, Object> meta, String edgeId) {
         if (meta == null) {
             throw new ServiceException(400,
-                    "栏间关系缺少 edgeRole（edgeId=" + edgeId + "）。须为 filter 或 write，禁止推断");
+                    "栏间关系缺少 edgeAction（edgeId=" + edgeId + "）。须为 filter 或 write，禁止推断");
         }
-        Object role = meta.get("edgeRole");
+        Object role = meta.get("edgeAction");
         if (role != null) {
             String text = String.valueOf(role).trim();
-            if (ALLOWED_EDGE_ROLES.contains(text)) {
+            if (ALLOWED_EDGE_ACTIONS.contains(text)) {
                 return text;
             }
         }
         throw new ServiceException(400,
-                "栏间关系缺少或无效 edgeRole（edgeId=" + edgeId + "）。须为 filter 或 write，禁止推断");
+                "栏间关系缺少或无效 edgeAction（edgeId=" + edgeId + "）。须为 filter 或 write，禁止推断");
     }
 
     @Resource
@@ -128,16 +131,10 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
         List<DmDataTabColumnRelationSaveItemVO> items =
                 reqVO.getRelations() == null ? List.of() : reqVO.getRelations();
 
-        List<DmDataTabColumnRelationDO> existing =
-                dmDataTabColumnRelationMapper.selectListByLayoutId(layoutId);
-        Map<String, DmDataTabColumnRelationDO> existingByEdge = new LinkedHashMap<>();
-        for (DmDataTabColumnRelationDO row : existing) {
-            existingByEdge.put(row.getEdgeId(), row);
-        }
-
         Set<String> savedEdgeIds = new HashSet<>();
         Set<String> pairKeys = new HashSet<>();
         Set<String> validIdentities = currentLayoutIdentities(layoutId);
+        List<DmDataTabColumnRelationDO> toInsert = new ArrayList<>();
         for (DmDataTabColumnRelationSaveItemVO item : items) {
             validateItem(item);
             String from = item.getFromColumnIdentity().trim();
@@ -153,8 +150,8 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
                 throw new ServiceException(400,
                         "栏间关系 to 端点不在当前布局栏身份中：" + to);
             }
-            String edgeRole = resolveEdgeRole(item);
-            String dedupeKey = ColumnRelationLayoutEndpoints.pairKey(from, to, edgeRole);
+            String edgeAction = resolveEdgeAction(item);
+            String dedupeKey = ColumnRelationLayoutEndpoints.pairKey(from, to, edgeAction);
             if (!pairKeys.add(dedupeKey)) {
                 throw new ServiceException(400, "重复的栏间关系（同两端同用途）：" + dedupeKey);
             }
@@ -167,24 +164,9 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
                 throw new ServiceException(400, "重复的 edgeId: " + edgeId);
             }
 
-            List<String> interactions = normalizeInteractions(item.getEnabledInteractions(), edgeRole);
+            List<String> interactions = normalizeInteractions(item.getEnabledInteractions(), edgeAction);
             Map<String, Object> meta = buildMeta(
-                    edgeRole, interactions, item.getLinkKeys(), item.getPresentation());
-
-            DmDataTabColumnRelationDO row = existingByEdge.get(edgeId);
-            if (row != null) {
-                row.setFromColumnIdentity(from);
-                row.setToColumnIdentity(to);
-                row.setRelationKind(kind);
-                row.setFromTypeCode(item.getFromTypeCode().trim());
-                row.setToTypeCode(item.getToTypeCode().trim());
-                row.setRelationMeta(meta);
-                if (code != null) {
-                    row.setEntityTypeCode(code);
-                }
-                dmDataTabColumnRelationMapper.updateById(row);
-                continue;
-            }
+                    edgeAction, interactions, item.getLinkKeys(), item.getPresentation());
 
             DmDataTabColumnRelationDO insert = new DmDataTabColumnRelationDO();
             insert.setLayoutId(layoutId);
@@ -196,15 +178,19 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
             insert.setFromTypeCode(item.getFromTypeCode().trim());
             insert.setToTypeCode(item.getToTypeCode().trim());
             insert.setRelationMeta(meta);
-            dmDataTabColumnRelationMapper.insert(insert);
+            toInsert.add(insert);
         }
 
+        // 整页替换：先清空该 layout 已有关系，再按请求全集重建，杜绝历史旧边残留回流。
+        List<DmDataTabColumnRelationDO> existing =
+                dmDataTabColumnRelationMapper.selectListByLayoutId(layoutId);
         for (DmDataTabColumnRelationDO row : existing) {
-            if (!savedEdgeIds.contains(row.getEdgeId())) {
-                dmDataTabColumnRelationMapper.deleteById(row.getId());
-            }
+            dmDataTabColumnRelationMapper.deleteById(row.getId());
         }
         dmDataTabColumnRelationMapper.deletePhysicalSoftDeletedByLayoutId(layoutId);
+        for (DmDataTabColumnRelationDO row : toInsert) {
+            dmDataTabColumnRelationMapper.insert(row);
+        }
     }
 
     /**
@@ -367,8 +353,11 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
             case "CATEGORY_CATEGORY" -> "CATEGORY_CATEGORY";
             case "CATEGORY_MODEL" -> "CATEGORY_MODEL";
             case "CATEGORY_ENTITY" -> "CATEGORY_ENTITY";
+            case "CATEGORY_DETAIL" -> "CATEGORY_DETAIL";
             case "MODEL_MODEL" -> "MODEL_MODEL";
             case "MODEL_ENTITY" -> "MODEL_ENTITY";
+            case "MODEL_DETAIL" -> "MODEL_DETAIL";
+            case "ENTITY_DETAIL" -> "ENTITY_DETAIL";
             case "ENTITY_ENTITY" -> "ENTITY_ENTITY";
             default -> null;
         };
@@ -387,21 +376,22 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
     }
 
     /**
-     * 写路径：edgeRole 必须显式传入；禁止从交互列表猜 filter/write。
+     * 写路径：edgeAction 必须显式传入；禁止从交互列表猜 filter/write。
      */
-    private String resolveEdgeRole(DmDataTabColumnRelationSaveItemVO item) {
-        if (!StringUtils.hasText(item.getEdgeRole())) {
-            throw new ServiceException(400, "栏间关系必须指定 edgeRole（filter 或 write）");
+    private String resolveEdgeAction(DmDataTabColumnRelationSaveItemVO item) {
+        String raw = item.getEdgeAction();
+        if (!StringUtils.hasText(raw)) {
+            throw new ServiceException(400, "栏间关系必须指定 edgeAction（filter 或 write）");
         }
-        String role = item.getEdgeRole().trim();
-        if (!ALLOWED_EDGE_ROLES.contains(role)) {
-            throw new ServiceException(400, "无效的边用途: " + item.getEdgeRole());
+        String edgeAction = raw.trim();
+        if (!ALLOWED_EDGE_ACTIONS.contains(edgeAction)) {
+            throw new ServiceException(400, "无效的边用途: " + raw);
         }
-        return role;
+        return edgeAction;
     }
 
-    private List<String> normalizeInteractions(List<String> raw, String edgeRole) {
-        if ("filter".equals(edgeRole)) {
+    private List<String> normalizeInteractions(List<String> raw, String edgeAction) {
+        if ("filter".equals(edgeAction)) {
             return List.of();
         }
         if (raw == null || raw.isEmpty()) {
@@ -429,12 +419,12 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
     }
 
     private Map<String, Object> buildMeta(
-            String edgeRole,
+            String edgeAction,
             List<String> interactions,
             List<String> linkKeys,
             Map<String, Object> presentation) {
         Map<String, Object> meta = new LinkedHashMap<>();
-        meta.put("edgeRole", edgeRole);
+        meta.put("edgeAction", edgeAction);
         meta.put("enabledInteractions", interactions);
         if (linkKeys != null && !linkKeys.isEmpty()) {
             List<String> keys = new ArrayList<>();
@@ -466,8 +456,8 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
         vo.setFromTypeCode(row.getFromTypeCode());
         vo.setToTypeCode(row.getToTypeCode());
         Map<String, Object> meta = row.getRelationMeta();
-        String edgeRole = requireEdgeRoleFromMeta(meta, row.getEdgeId());
-        vo.setEdgeRole(edgeRole);
+        String edgeAction = requireEdgeActionFromMeta(meta, row.getEdgeId());
+        vo.setEdgeAction(edgeAction);
         if (meta != null) {
             Object interactions = meta.get("enabledInteractions");
             if (interactions instanceof List<?> list) {
@@ -513,8 +503,8 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
         for (DmDataTabColumnRelationDO row : rows) {
             String from = row.getFromColumnIdentity() == null ? "" : row.getFromColumnIdentity().trim();
             String to = row.getToColumnIdentity() == null ? "" : row.getToColumnIdentity().trim();
-            String role = requireEdgeRoleFromMeta(row.getRelationMeta(), row.getEdgeId());
-            String key = ColumnRelationLayoutEndpoints.pairKey(from, to, role);
+            String edgeAction = requireEdgeActionFromMeta(row.getRelationMeta(), row.getEdgeId());
+            String key = ColumnRelationLayoutEndpoints.pairKey(from, to, edgeAction);
             byPair.putIfAbsent(key, row);
         }
         return new ArrayList<>(byPair.values());

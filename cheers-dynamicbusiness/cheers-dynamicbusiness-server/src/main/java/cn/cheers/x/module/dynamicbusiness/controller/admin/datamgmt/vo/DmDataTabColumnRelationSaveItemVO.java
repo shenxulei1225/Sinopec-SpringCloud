@@ -20,7 +20,7 @@ public class DmDataTabColumnRelationSaveItemVO {
     @NotBlank(message = "toColumnIdentity 不能为空")
     private String toColumnIdentity;
 
-    @Schema(description = "关联种类；可空，由两端列身份推断")
+    @Schema(description = "关联种类（两端端点类型组合）；可空，由两端列身份推断")
     private String relationKind;
 
     @NotBlank(message = "fromTypeCode 不能为空")
@@ -29,8 +29,8 @@ public class DmDataTabColumnRelationSaveItemVO {
     @NotBlank(message = "toTypeCode 不能为空")
     private String toTypeCode;
 
-    @Schema(description = "边用途：filter=条件筛选，write=修改关联")
-    private String edgeRole;
+    @Schema(description = "边动作：filter=条件筛选，write=修改关联")
+    private String edgeAction;
 
     @Schema(description = "启用的交互方式；写边至少一项；条件筛选边可空")
     private List<String> enabledInteractions;

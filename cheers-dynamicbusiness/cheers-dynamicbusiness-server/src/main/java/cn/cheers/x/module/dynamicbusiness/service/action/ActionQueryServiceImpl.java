@@ -25,8 +25,9 @@ import java.util.Set;
 /**
  * 动作库列表查询实现。
  *
- * <p><b>权威</b>：动作行来自 {@code ent_action*}；启用集来自 V77 {@code dynamic_action_enablement}。</p>
- * <p><b>禁止</b>：owner 过滤下启用为空时改拉全库；依赖 inspection 包。</p>
+ * <p><b>权威</b>：动作行来自 {@code ent_action*}；启用集来自 V77 {@code dynamic_action_enablement}；
+ * 参数槽列表来自 {@code param_slots_json}（定稿外形 fields[].fieldCode）。</p>
+ * <p><b>禁止</b>：owner 过滤下启用为空时改拉全库；依赖 inspection 包；按型号 LIBRARY 分配拼参数槽。</p>
  */
 @Service
 public class ActionQueryServiceImpl implements ActionQueryService {
@@ -165,6 +166,15 @@ public class ActionQueryServiceImpl implements ActionQueryService {
         if (raw == null) {
             return List.of();
         }
+        // 定稿外形：{ version, fields: [{ fieldCode, required, defaultValue }, ...] }
+        if (raw instanceof Map<?, ?> root) {
+            Object fields = root.get("fields");
+            if (fields != null) {
+                return parseStringList(fields);
+            }
+            Object single = firstFieldCode(root);
+            return single != null ? List.of(single) : List.of();
+        }
         if (raw instanceof List<?> list) {
             List<String> out = new ArrayList<>(list.size());
             for (Object item : list) {
@@ -172,12 +182,9 @@ public class ActionQueryServiceImpl implements ActionQueryService {
                     continue;
                 }
                 if (item instanceof Map<?, ?> map) {
-                    Object slot = map.get("slotKey");
-                    if (slot == null) {
-                        slot = map.get("code");
-                    }
-                    if (slot != null) {
-                        out.add(String.valueOf(slot));
+                    String code = firstFieldCode(map);
+                    if (code != null) {
+                        out.add(code);
                     }
                     continue;
                 }
@@ -190,7 +197,7 @@ public class ActionQueryServiceImpl implements ActionQueryService {
             if (trimmed.isEmpty()) {
                 return List.of();
             }
-            if (trimmed.startsWith("[")) {
+            if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
                 try {
                     return parseStringList(JSON.readValue(trimmed, Object.class));
                 } catch (Exception ignored) {
@@ -200,6 +207,22 @@ public class ActionQueryServiceImpl implements ActionQueryService {
             return List.of(trimmed);
         }
         return List.of(Objects.toString(raw));
+    }
+
+    /** 从参数槽对象取 fieldCode（定稿）或历史 slotKey/code */
+    private static String firstFieldCode(Map<?, ?> map) {
+        Object slot = map.get("fieldCode");
+        if (slot == null) {
+            slot = map.get("slotKey");
+        }
+        if (slot == null) {
+            slot = map.get("code");
+        }
+        if (slot == null) {
+            return null;
+        }
+        String text = String.valueOf(slot).trim();
+        return text.isEmpty() ? null : text;
     }
 
     private record OwnerFilter(String kind, Long id) {

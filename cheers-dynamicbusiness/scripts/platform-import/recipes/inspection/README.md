@@ -29,7 +29,7 @@
 1. Flyway 至 **V80**（通用绑定表；V78+ 动作树列）
 2. 平台：`../action/import.sh`、`../sop/import.sh`
 3. 检查类型与目录：`../inspection-method/`（及 system seed 中的 `inspection_item`）
-4. 五维编排头：`../five-w-orchestration/import.sh`（会为 `inspection_item` 写默认 How=`NONE`）
+4. 目录编排头：`../catalog-orchestration/import.sh`（为 `inspection_item` 写点列表这一行）
 
 然后才跑本配方，把 **标准检查库（`inspection_item`）** 的 How 改成 `sopHow`。
 
@@ -57,32 +57,30 @@ psql "$DATABASE_URL" -f recipes/inspection/03_sample_method_bindings.sql
 | 文件 | 职责 |
 |------|------|
 | `01_ensure_inspection_prereqs.sql` | 检查 `inspection_item` / `equipment` / 编排头是否存在；缺则 NOTICE，**不**建整套类型 |
-| `02_patch_inspection_item_sop_how.sql` | 更新 `dm_five_w_orchestration`（目录码 `inspection_item`）：`how_mode=FOLLOW_WHAT`，`how_config` 挂 `capability=sopHow` 与键映射 |
+| `02_patch_inspection_item_sop_how.sql` | 确保检查项编排头存在：只写启用与点列表行即对象；不再写 How 槽 |
 | `03_sample_method_bindings.sql` | 若存在 V80 表，幂等写入泄漏类检查项 × MANUAL/UAV → 样例 SOP 模板；**不**强制造实例绑定（需真实设备 id，由管理端创建） |
 | `04_demo_tank_sop_bindings.sql` | 储罐演示：原油储罐 6 项补 UAV 方法行；北 1# / 南 10# 储罐 × MANUAL/UAV 实例 + 绑定（任务创建可解析 ready） |
 | `05_demo_tank_route_bindings.sql` | 储罐演示：设备↔停靠点（金桥厂区 44）；SOP 实例挂 LEAK 模板并写 location_ref，路线规划可展开 |
 | `06_patrol_target_layout_default_identities.sql` | **布局数据整理**：`patrol_target` 页面布局型号/实体栏 tabId 收成 `default`，边上栏身份与之一致（与 `patrol_equipment` 同口径）；可重复执行 |
-| `remove.sql` | 还原 How 为 NONE；软删本配方写入的方法选用、实例绑定与停靠点绑定 |
-| `import.sh` | 按序执行 01→06 |
+| `07_what_workface_props.sql` | 已退场：编排头不再写工作面指针；详情认栏 + 关系图连线 |
+| `remove.sql` | 软删本配方写入的方法选用、实例绑定、停靠点绑定与历史工作面 props |
+| `import.sh` | 按序执行 01→07 |
 
 全库「边改名 / 补型号→实体边」（**绝不自动删边**）见：  
 `../system/repair_dm_layout_column_identities.sql`（需时单独 `psql -f`，不默认挂进本配方以免误跑）。
 
 ### 巡检 SCOPE 页面布局 · 栏身份定稿（方案 A）
 
-任务创建浏览目录用 **巡检目标管理**（目录注册编码 `patrol_target`），与 **巡检设备管理**（`patrol_equipment`）一样：
+任务创建浏览目录用 **巡检目标管理**（目录注册编码 `patrol_target`）。布局建议：
 
-- 型号栏、实体栏的标签页编号（tabId）用 **`default`**（空也会被读成 `MODEL:default` / `ENTITY:default`）
-- 栏间关系边只写 **`MODEL:default` / `ENTITY:default`**，禁止一边具名 tab、一边还写 default
+- **分类区**：按运维需要配置多个分类维 Tab（分区、专业、检查项视角等）
+- **实体列多 Tab**：每 Tab 一种底座类型（如 `equipment`、`pipeline`、`building`、摄像机类型等）
+- **数据关系图**：配置分类→实体、型号→实体等查数边（任务嵌入内可打开关系图维护）
+- **SCOPE 成员**：仅圈内、且任务页叠当前站场（`workScope=FACILITY` + `pageScopeMember`）
 
-**正确规则只有这一条**：边上的「从哪栏 / 到哪栏」必须等于当前布局行算出来的栏身份。不要再搞「有的目录全 default、有的目录用 equipment-tab-1」两套修法。
+可执行 `06_patrol_target_layout_default_identities.sql` 整理栏身份；多实体 Tab 须在数据管理「巡检目标管理」布局中自行添加实体列并保存关系图。
 
-How 键映射（写在配方 SQL 里，合法）：
-
-- `subjectType` = `inspection_item`
-- `hostType` = `equipment`
-- `dimensionKey` = `execution_means`
-- 维度选项：MANUAL 人工 / UAV 无人机 / ROBOT 机器人 / FIXED_CAMERA 固定摄像机
+作业指导不再写进编排头。任务创建页的作业面走自己的绑定，不认编排 How 槽。
 
 ## 如何移除
 
@@ -90,23 +88,21 @@ How 键映射（写在配方 SQL 里，合法）：
 psql "$DATABASE_URL" -f recipes/inspection/remove.sql
 ```
 
-移除后：检查目录仍可存在（来自 inspection-method / system seed）；仅本配方改过的 How 与样例方法选用被清掉。平台动作库 / SOP / 绑定 API / How 组件不受影响。
+移除后：检查目录仍可存在（来自 inspection-method / system seed）；仅本配方写入的样例方法选用被清掉。平台动作库 / SOP / 绑定 API 不受影响。
 
 ## 验收
 
 ```sql
 SET search_path TO dynamicbusiness;
-SELECT entity_type_code, how_mode,
-       how_config->>'capability' AS capability,
-       how_config->'sopHow'->>'subjectType' AS subject_type
-FROM dm_five_w_orchestration
+SELECT entity_type_code, enabled, object_pick_from
+FROM dm_catalog_orchestration
 WHERE entity_type_code = 'inspection_item' AND tenant_id = 1 AND deleted = false;
 ```
 
-期望：`FOLLOW_WHAT` / `sopHow` / `inspection_item`。
+期望：启用、`LIST_ROW`。编排头不再有 What/How 列。
 
 ```http
-GET /admin-api/dynamicbusiness/data-mgmt/five-w-orchestration/inspection_item
+GET /admin-api/dynamicbusiness/data-mgmt/catalog-orchestration/inspection_item
 ```
 
-期望响应 `howSlot.capability=sopHow` 且含 `sopHow` 键映射（依赖服务端已透传 `how_config`）。
+期望响应只有目录编码、启用、`objectPickFrom`，没有 `whatSlot` / `howSlot`。
