@@ -390,7 +390,7 @@ public class EntitySyncServiceImpl implements EntitySyncService {
         }
 
         // 查询字段详情，过滤出可查询的字段
-        // 注意：isSearchable 已移至 ModelFieldAssignmentDO，这里需要从模型字段分配中判断
+        // 注意：isSearchable 已移至 ModelFieldAssignmentDO，这里需要从模型字段中判断
         List<ModelFieldAssignmentDO> assignments = modelFieldAssignmentMapper.selectByModelId(modelId);
         Map<Long, ModelFieldAssignmentDO> assignmentMap = assignments.stream()
                 .collect(Collectors.toMap(ModelFieldAssignmentDO::getFieldId, a -> a));
@@ -401,7 +401,7 @@ public class EntitySyncServiceImpl implements EntitySyncService {
                     if (field == null) {
                         return false;
                     }
-                    // 优先使用模型字段分配中的配置，如果为 null 则使用智能默认值
+                    // 优先使用模型字段中的配置，如果为 null 则使用智能默认值
                     ModelFieldAssignmentDO assignment = assignmentMap.get(field.getId());
                     Boolean isSearchable;
                     if (assignment != null && assignment.getIsSearchable() != null) {

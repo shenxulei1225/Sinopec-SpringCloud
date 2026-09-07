@@ -78,19 +78,19 @@ public class FieldIndexServiceImpl implements FieldIndexService {
             return new ArrayList<>();
         }
 
-        // 2. 查询字段分配信息（优先使用模型字段分配中的配置）
+        // 2. 查询字段分配信息（优先使用模型字段中的配置）
         List<ModelFieldAssignmentDO> assignments = modelFieldAssignmentMapper.selectByModelId(modelId);
         Map<Long, ModelFieldAssignmentDO> assignmentMap = assignments.stream()
                 .collect(Collectors.toMap(ModelFieldAssignmentDO::getFieldId, a -> a));
 
-        // 3. 查询字段详情，过滤出可查询的字段（优先使用模型字段分配中的配置）
+        // 3. 查询字段详情，过滤出可查询的字段（优先使用模型字段中的配置）
         return fieldIds.stream()
                 .map(fieldMapper::selectById)
                 .filter(field -> {
                     if (field == null) {
                         return false;
                     }
-                    // 优先使用模型字段分配中的配置，如果为 null 则使用智能默认值
+                    // 优先使用模型字段中的配置，如果为 null 则使用智能默认值
                     ModelFieldAssignmentDO assignment = assignmentMap.get(field.getId());
                     Boolean isSearchable;
                     if (assignment != null && assignment.getIsSearchable() != null) {
@@ -133,19 +133,19 @@ public class FieldIndexServiceImpl implements FieldIndexService {
             return new ArrayList<>();
         }
 
-        // 2. 查询字段分配信息（优先使用模型字段分配中的配置）
+        // 2. 查询字段分配信息（优先使用模型字段中的配置）
         List<ModelFieldAssignmentDO> assignments = modelFieldAssignmentMapper.selectByModelId(modelId);
         Map<Long, ModelFieldAssignmentDO> assignmentMap = assignments.stream()
                 .collect(Collectors.toMap(ModelFieldAssignmentDO::getFieldId, a -> a));
 
-        // 3. 查询字段详情，过滤出可排序的字段（优先使用模型字段分配中的配置）
+        // 3. 查询字段详情，过滤出可排序的字段（优先使用模型字段中的配置）
         return fieldIds.stream()
                 .map(fieldMapper::selectById)
                 .filter(field -> {
                     if (field == null) {
                         return false;
                     }
-                    // 优先使用模型字段分配中的配置，如果为 null 则使用智能默认值
+                    // 优先使用模型字段中的配置，如果为 null 则使用智能默认值
                     ModelFieldAssignmentDO assignment = assignmentMap.get(field.getId());
                     Boolean isSortable;
                     if (assignment != null && assignment.getIsSortable() != null) {
@@ -164,7 +164,7 @@ public class FieldIndexServiceImpl implements FieldIndexService {
         if (fieldCode == null || fieldCode.isEmpty()) {
             return false;
         }
-        // 核心列始终可按名称等检索，不依赖模型分配上的可搜索开关
+        // 核心列始终可按名称等检索，不依赖模型字段上的可搜索开关
         if (isCoreQueryableField(fieldCode)) {
             return true;
         }
@@ -184,7 +184,7 @@ public class FieldIndexServiceImpl implements FieldIndexService {
             return false;
         }
 
-        // 3. 检查是否可查询（优先使用模型字段分配中的配置，如果为 null 则使用智能默认值）
+        // 3. 检查是否可查询（优先使用模型字段中的配置，如果为 null 则使用智能默认值）
         Boolean isSearchable;
         if (assignment.getIsSearchable() != null) {
             isSearchable = assignment.getIsSearchable();
@@ -230,7 +230,7 @@ public class FieldIndexServiceImpl implements FieldIndexService {
             return false;
         }
 
-        // 3. 检查是否可排序（优先使用模型字段分配中的配置，如果为 null 则使用智能默认值）
+        // 3. 检查是否可排序（优先使用模型字段中的配置，如果为 null 则使用智能默认值）
         Boolean isSortable;
         if (assignment.getIsSortable() != null) {
             isSortable = assignment.getIsSortable();

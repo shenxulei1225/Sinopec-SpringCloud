@@ -8,7 +8,7 @@ import cn.cheers.x.module.dynamicbusiness.framework.hierarchy.OrgTreeParentField
  * 平台系统字段与「用户可配基础字段」的边界。
  *
  * <p>部分系统字段（如站场级 {@code facility_id}、高级分类 {@code parentId}）由 ensure 落库，
- * 界面只经系统区 / 型号分配展示，不得出现在用户基础字段拖入区。</p>
+ * 界面只经系统区 / 模型字段展示，不得出现在用户基础字段拖入区。</p>
  */
 public final class EntityTypePlatformFieldSupport {
 
@@ -35,7 +35,7 @@ public final class EntityTypePlatformFieldSupport {
     }
 
     /**
-     * 型号分配行 {@code field_source}：站场级所属场站为 SYSTEM，其余基础字段为 BASE。
+     * 模型字段行 {@code field_source}：站场级所属场站为 SYSTEM，其余基础字段为 BASE。
      */
     public static String resolveModelAssignmentFieldSource(String fieldCode) {
         return isPlatformOwnedPersistedFieldCode(fieldCode)

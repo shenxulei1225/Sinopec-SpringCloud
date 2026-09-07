@@ -240,7 +240,7 @@ public class FieldServiceImpl implements FieldService {
 
     /**
      * 字段列表只认创建时写定的治理身份：公司字段全网可见，本地字段仅发起站或全网管理员可见。
-     * 禁止按型号分配关系在读取时补写或推断字段身份。
+     * 禁止按模型字段关系在读取时补写或推断字段身份。
      */
     private List<FieldDO> filterVisibleFields(List<FieldDO> candidates, Long effectiveFacilityId) {
         if (candidates == null || candidates.isEmpty()) {

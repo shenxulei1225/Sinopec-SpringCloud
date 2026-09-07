@@ -492,6 +492,38 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         relationMapper.updateSortByModelAndCategory(sourceModelId, categoryId, newSort, entityTypeCode);
     }
 
+    /**
+     * 列表拖拽：按整份有序列表重写该分类下关联 sort。
+     * 权威在关联表；禁止改型号主表 sort 冒充分类内顺序。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void reindexModelSortInCategory(Long categoryId, String entityTypeCode, List<Long> modelIdsInOrder) {
+        if (categoryId == null) {
+            throw new ServiceException(400, "分类 ID 不能为空");
+        }
+        if (modelIdsInOrder == null || modelIdsInOrder.isEmpty()) {
+            throw new ServiceException(400, "型号排序列表不能为空");
+        }
+        String typeCode = entityTypeCode == null ? "" : entityTypeCode.trim();
+        if (typeCode.isEmpty()) {
+            throw new ServiceException(400, "业务类型编码不能为空");
+        }
+        int idx = 0;
+        for (Long modelId : modelIdsInOrder) {
+            if (modelId == null) {
+                continue;
+            }
+            ModelCategoryRelationDO relation = relationMapper.selectByModelIdAndCategoryId(
+                    modelId, categoryId, typeCode);
+            if (relation == null) {
+                throw new ServiceException(400, "型号未关联到该分类: " + modelId);
+            }
+            relationMapper.updateSortByModelAndCategory(
+                    modelId, categoryId, SparseSortUtils.reindexSortByPosition(idx++), typeCode);
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void moveOrBindModelToCategory(Long modelId, Long sourceCategoryId, Long targetCategoryId) {

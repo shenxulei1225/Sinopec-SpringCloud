@@ -64,7 +64,12 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
             "ownershipWrite"
     );
 
-    private static final Set<String> ALLOWED_EDGE_ACTIONS = Set.of("filter", "write");
+    private static final Set<String> ALLOWED_EDGE_ACTIONS = Set.of("filter", "write", "detail_follow");
+    private static final Set<String> DETAIL_FOLLOW_KINDS = Set.of(
+            "CATEGORY_DETAIL",
+            "MODEL_DETAIL",
+            "ENTITY_DETAIL"
+    );
 
     /**
      * 读路径只认 meta.edgeAction；禁止从 enabledInteractions 推断。
@@ -73,7 +78,7 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
     private static String requireEdgeActionFromMeta(Map<String, Object> meta, String edgeId) {
         if (meta == null) {
             throw new ServiceException(400,
-                    "栏间关系缺少 edgeAction（edgeId=" + edgeId + "）。须为 filter 或 write，禁止推断");
+                    "栏间关系缺少 edgeAction（edgeId=" + edgeId + "）。须为 filter / write / detail_follow，禁止推断");
         }
         Object role = meta.get("edgeAction");
         if (role != null) {
@@ -83,7 +88,7 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
             }
         }
         throw new ServiceException(400,
-                "栏间关系缺少或无效 edgeAction（edgeId=" + edgeId + "）。须为 filter 或 write，禁止推断");
+                "栏间关系缺少或无效 edgeAction（edgeId=" + edgeId + "）。须为 filter / write / detail_follow，禁止推断");
     }
 
     @Resource
@@ -157,6 +162,7 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
             }
 
             String kind = resolveRelationKind(item);
+            validateEdgeActionAgainstKind(edgeAction, kind);
             String edgeId = StringUtils.hasText(item.getEdgeId())
                     ? item.getEdgeId().trim()
                     : "edge-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
@@ -376,12 +382,12 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
     }
 
     /**
-     * 写路径：edgeAction 必须显式传入；禁止从交互列表猜 filter/write。
+     * 写路径：edgeAction 必须显式传入；禁止从交互列表猜 filter/write/detail_follow。
      */
     private String resolveEdgeAction(DmDataTabColumnRelationSaveItemVO item) {
         String raw = item.getEdgeAction();
         if (!StringUtils.hasText(raw)) {
-            throw new ServiceException(400, "栏间关系必须指定 edgeAction（filter 或 write）");
+            throw new ServiceException(400, "栏间关系必须指定 edgeAction（filter、write 或 detail_follow）");
         }
         String edgeAction = raw.trim();
         if (!ALLOWED_EDGE_ACTIONS.contains(edgeAction)) {
@@ -390,8 +396,20 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
         return edgeAction;
     }
 
+    private void validateEdgeActionAgainstKind(String edgeAction, String relationKind) {
+        if ("write".equals(edgeAction) && DETAIL_FOLLOW_KINDS.contains(relationKind)) {
+            throw new ServiceException(400, "详情栏不支持修改关联 write，请改用筛选连线（内部会记为详情跟随）");
+        }
+        if ("detail_follow".equals(edgeAction) && !DETAIL_FOLLOW_KINDS.contains(relationKind)) {
+            throw new ServiceException(400, "detail_follow 仅允许 CATEGORY_DETAIL / MODEL_DETAIL / ENTITY_DETAIL");
+        }
+        if ("filter".equals(edgeAction) && DETAIL_FOLLOW_KINDS.contains(relationKind)) {
+            throw new ServiceException(400, "详情跟随请使用 detail_follow，禁止再用 filter 复用语义");
+        }
+    }
+
     private List<String> normalizeInteractions(List<String> raw, String edgeAction) {
-        if ("filter".equals(edgeAction)) {
+        if ("filter".equals(edgeAction) || "detail_follow".equals(edgeAction)) {
             return List.of();
         }
         if (raw == null || raw.isEmpty()) {

@@ -16,6 +16,8 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityCategoryRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeResolver;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryEntityLinkDO;
+import cn.cheers.x.module.dynamicbusiness.service.category.CategoryEntityLinkService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryService;
 import cn.cheers.x.module.dynamicbusiness.service.category.EntityAssociationModeSupport;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
@@ -73,6 +75,10 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
     @Resource
     @Lazy
     private EntityCategoryRefWritebackService entityCategoryRefWritebackService;
+
+    @Resource
+    @Lazy
+    private CategoryEntityLinkService categoryEntityLinkService;
 
     // ==================== 关联身份解析 ====================
 
@@ -166,15 +172,23 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
     }
 
     private void syncEntityModelToCategories(Long entityId, Collection<Long> categoryIds, String storageEntityTypeCode) {
-        if (entityId == null || categoryIds == null || categoryIds.isEmpty()) {
+        if (entityId == null || categoryIds == null || categoryIds.isEmpty()
+                || !StringUtils.hasText(storageEntityTypeCode)) {
             return;
         }
+        String storage = storageEntityTypeCode.trim();
+        List<EntityCategoryRelationDO> edges = new ArrayList<>();
         for (Long categoryId : categoryIds) {
             if (categoryId == null) {
                 continue;
             }
-            syncEntityModelToCategory(entityId, categoryId, storageEntityTypeCode);
+            edges.add(EntityCategoryRelationDO.builder()
+                    .entityId(entityId)
+                    .categoryId(categoryId)
+                    .entityTypeCode(storage)
+                    .build());
         }
+        syncModelsAfterAddedEntityCategoryEdges(edges);
     }
 
     /**
@@ -225,6 +239,71 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         modelCategoryRelationService.disassociate(modelId, categoryId, storage);
         log.info("末实例解除型号-分类关联: modelId={}, categoryId={}, entityTypeCode={}",
                 modelId, categoryId, storage);
+    }
+
+    /**
+     * 批量：已新增/恢复的分类–实体边对应的型号，按 (modelId, categoryId) 去重后批量挂型号–分类。
+     * <p>与 {@link #unsyncModelsAfterRemovedEntityCategoryEdges} 对称；禁止再对每条实体调单条 associate。</p>
+     */
+    private void syncModelsAfterAddedEntityCategoryEdges(List<EntityCategoryRelationDO> addedEdges) {
+        if (addedEdges == null || addedEdges.isEmpty()) {
+            return;
+        }
+        Map<String, Set<Long>> entityIdsByStorage = new LinkedHashMap<>();
+        List<EntityCategoryRelationDO> typedEdges = new ArrayList<>();
+        for (EntityCategoryRelationDO rel : addedEdges) {
+            if (rel == null || rel.getEntityId() == null || rel.getCategoryId() == null
+                    || !StringUtils.hasText(rel.getEntityTypeCode())) {
+                continue;
+            }
+            String storage = rel.getEntityTypeCode().trim();
+            entityIdsByStorage.computeIfAbsent(storage, k -> new LinkedHashSet<>()).add(rel.getEntityId());
+            typedEdges.add(rel);
+        }
+        if (typedEdges.isEmpty()) {
+            return;
+        }
+        Map<String, Map<Long, Long>> modelByEntityByStorage = new HashMap<>();
+        for (Map.Entry<String, Set<Long>> entry : entityIdsByStorage.entrySet()) {
+            Map<Long, Long> modelByEntity = new HashMap<>();
+            List<EntityDO> ents = entityCoreService.listByIds(new ArrayList<>(entry.getValue()), entry.getKey());
+            if (ents != null) {
+                for (EntityDO ent : ents) {
+                    if (ent != null && ent.getId() != null && ent.getModelId() != null) {
+                        modelByEntity.put(ent.getId(), ent.getModelId());
+                    }
+                }
+            }
+            modelByEntityByStorage.put(entry.getKey(), modelByEntity);
+        }
+        // storage → categoryId → modelIds（去重后批量挂，避免笛卡尔积多挂）
+        Map<String, Map<Long, Set<Long>>> modelsByCategoryByStorage = new LinkedHashMap<>();
+        for (EntityCategoryRelationDO rel : typedEdges) {
+            String storage = rel.getEntityTypeCode().trim();
+            Long modelId = modelByEntityByStorage
+                    .getOrDefault(storage, Map.of())
+                    .get(rel.getEntityId());
+            if (modelId == null) {
+                continue;
+            }
+            modelsByCategoryByStorage
+                    .computeIfAbsent(storage, k -> new LinkedHashMap<>())
+                    .computeIfAbsent(rel.getCategoryId(), k -> new LinkedHashSet<>())
+                    .add(modelId);
+        }
+        for (Map.Entry<String, Map<Long, Set<Long>>> storageEntry : modelsByCategoryByStorage.entrySet()) {
+            String storage = storageEntry.getKey();
+            for (Map.Entry<Long, Set<Long>> categoryEntry : storageEntry.getValue().entrySet()) {
+                List<Long> modelIds = new ArrayList<>(categoryEntry.getValue());
+                if (modelIds.isEmpty()) {
+                    continue;
+                }
+                modelCategoryRelationService.batchAssociateModelsToCategory(
+                        modelIds, categoryEntry.getKey(), storage);
+                log.debug("批量同步型号-分类: categoryId={}, modelCount={}, entityTypeCode={}",
+                        categoryEntry.getKey(), modelIds.size(), storage);
+            }
+        }
     }
 
     /**
@@ -279,6 +358,42 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
     }
 
     /**
+     * 批量挂接后的分类元数据缓存：同一批内每个分类只查一次种类 / 台账绑定。
+     * <p>不管什么：不缓存实体行；REF 字段解析仍在回写服务内按实体执行（仅当有台账绑定时）。</p>
+     */
+    private final class AssociationPostProcessCache {
+        private final Map<Long, CategoryDO> categoryById = new HashMap<>();
+        private final Map<String, CategoryTypeDO> typeByCode = new HashMap<>();
+        /** categoryId → 是否存在可用台账绑定（有绑定实体 id） */
+        private final Map<Long, Boolean> hasLedgerLinkByCategoryId = new HashMap<>();
+
+        CategoryDO category(Long categoryId) {
+            if (categoryId == null) {
+                return null;
+            }
+            return categoryById.computeIfAbsent(categoryId, categoryMapper::selectById);
+        }
+
+        CategoryTypeDO categoryType(String typeCode) {
+            if (!StringUtils.hasText(typeCode)) {
+                return null;
+            }
+            String key = typeCode.trim();
+            return typeByCode.computeIfAbsent(key, categoryTypeMapper::selectByCategoryTypeCode);
+        }
+
+        boolean hasLedgerLink(Long categoryId) {
+            if (categoryId == null) {
+                return false;
+            }
+            return hasLedgerLinkByCategoryId.computeIfAbsent(categoryId, id -> {
+                CategoryEntityLinkDO link = categoryEntityLinkService.getLinkByCategoryId(id);
+                return link != null && link.getEntityId() != null;
+            });
+        }
+    }
+
+    /**
      * 单归属：摘掉本种类树上其它节点；再回写主体上应对齐本次分类的引用（有则写，无则跳过）。
      *
      * @param associationModeOverride 请求侧挂靠模式（分类列配置器）；null 时回退分类种类配置
@@ -286,15 +401,25 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
     private void applyAssociationModeAndRefWriteback(Long entityId, Long categoryId,
                                                        String storageEntityTypeCode,
                                                        String associationModeOverride) {
-        if (entityId == null || categoryId == null || !StringUtils.hasText(storageEntityTypeCode)) {
+        applyAssociationModeAndRefWriteback(
+                entityId, categoryId, storageEntityTypeCode, associationModeOverride,
+                new AssociationPostProcessCache());
+    }
+
+    private void applyAssociationModeAndRefWriteback(Long entityId, Long categoryId,
+                                                       String storageEntityTypeCode,
+                                                       String associationModeOverride,
+                                                       AssociationPostProcessCache cache) {
+        if (entityId == null || categoryId == null || !StringUtils.hasText(storageEntityTypeCode)
+                || cache == null) {
             return;
         }
-        CategoryDO category = categoryMapper.selectById(categoryId);
+        CategoryDO category = cache.category(categoryId);
         if (category == null || !StringUtils.hasText(category.getCategoryTypeCode())) {
             return;
         }
         String typeCode = category.getCategoryTypeCode().trim();
-        CategoryTypeDO categoryType = categoryTypeMapper.selectByCategoryTypeCode(typeCode);
+        CategoryTypeDO categoryType = cache.categoryType(typeCode);
         boolean single = StringUtils.hasText(associationModeOverride)
                 ? EntityAssociationModeSupport.isSingle(associationModeOverride)
                 : EntityAssociationModeSupport.isSingle(categoryType);
@@ -311,15 +436,21 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                         && !storageEntityTypeCode.equals(rel.getEntityTypeCode().trim())) {
                     continue;
                 }
-                CategoryDO other = categoryMapper.selectById(rel.getCategoryId());
+                CategoryDO other = cache.category(rel.getCategoryId());
                 if (other == null || !typeCode.equals(
                         other.getCategoryTypeCode() != null ? other.getCategoryTypeCode().trim() : null)) {
                     continue;
                 }
-                markEntitiesExcludedFromCategory(List.of(entityId), other.getId(), storageEntityTypeCode);
+                List<EntityCategoryRelationDO> oldEdges =
+                        markEntitiesExcludedFromCategory(List.of(entityId), other.getId(), storageEntityTypeCode);
+                unsyncModelsAfterRemovedEntityCategoryEdges(oldEdges);
                 log.info("单归属换挂：解除旧分类 entityId={}, oldCategoryId={}, keepCategoryId={}",
                         entityId, other.getId(), categoryId);
             }
+        }
+        // 无台账绑定：REF 回写必然空操作；跳过以免每实体重复 resolveContext
+        if (!cache.hasLedgerLink(categoryId)) {
+            return;
         }
         entityCategoryRefWritebackService.afterAssociated(
                 entityId, categoryId, storageEntityTypeCode, associationModeOverride);
@@ -458,7 +589,9 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         }
         String storageEntityTypeCode = resolveStorageEntityTypeCode(entityTypeCode);
         validateEntitiesInEntryDomain(entityTypeCode, storageEntityTypeCode, List.of(entityId));
-        markEntitiesExcludedFromCategory(List.of(entityId), categoryId, storageEntityTypeCode);
+        List<EntityCategoryRelationDO> removedEdges =
+                markEntitiesExcludedFromCategory(List.of(entityId), categoryId, storageEntityTypeCode);
+        unsyncModelsAfterRemovedEntityCategoryEdges(removedEdges);
         log.info("删除实体-分类关联: entityId={}, categoryId={}, entityTypeCode={}", entityId, categoryId, storageEntityTypeCode);
         entityCategoryRefWritebackService.afterDisassociated(entityId, categoryId, storageEntityTypeCode);
         return EntityCategoryAssociationRespVO.builder()
@@ -764,16 +897,23 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         }
 
         validateEntitiesInEntryDomain(entityTypeCode, storageEntityTypeCode, entityIds);
-        int successCount = markEntitiesExcludedFromCategory(entityIds, categoryId, storageEntityTypeCode);
+        List<EntityCategoryRelationDO> removedActiveEdges =
+                markEntitiesExcludedFromCategory(entityIds, categoryId, storageEntityTypeCode);
 
-        log.info("批量取消实体与分类的关联: entityIds={}, categoryId={}, entityTypeCode={}",
-                entityIds, categoryId, storageEntityTypeCode);
+        log.info("批量取消实体与分类的关联: entityIds={}, categoryId={}, entityTypeCode={}, removedActive={}",
+                entityIds.size(), categoryId, storageEntityTypeCode, removedActiveEdges.size());
 
-        // 与单条 disassociate 一致：回写 REF（末实例解除型号–分类已在 markEntitiesExcludedFromCategory 内）
-        for (Long entityId : entityIds) {
-            if (entityId == null) {
-                continue;
+        // 型号–分类：整批删边后再按「涉及型号」去重收尾（禁止每实体重扫整分类）
+        unsyncModelsAfterRemovedEntityCategoryEdges(removedActiveEdges);
+
+        // REF 回写：仅对曾有有效关联的实体；无分类即实体绑定则内部快速跳过
+        Set<Long> refTargets = new LinkedHashSet<>();
+        for (EntityCategoryRelationDO edge : removedActiveEdges) {
+            if (edge != null && edge.getEntityId() != null) {
+                refTargets.add(edge.getEntityId());
             }
+        }
+        for (Long entityId : refTargets) {
             entityCategoryRefWritebackService.afterDisassociated(entityId, categoryId, storageEntityTypeCode);
         }
 
@@ -781,48 +921,95 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                 .operationType("BATCH_DISASSOCIATE")
                 .totalEntityCount(entityIds.size())
                 .totalCategoryCount(1)
-                .successEntityCount(successCount)
+                .successEntityCount(entityIds.size())
                 .failEntityCount(0)
                 .executionTime(System.currentTimeMillis() - startTime)
                 .build();
     }
 
     /**
-     * 解除实体与分类关联：删除有效关联；若无有效关联则写入 deleted=true 排除标记，
-     * 防止实体仍通过「型号关联分类」出现在该分类范围内。
+     * 批量解除实体与分类：集合删有效边；无有效边时批量写入排除标记。
+     * <p><b>不</b>在此处做型号–分类收尾（由调用方 {@link #unsyncModelsAfterRemovedEntityCategoryEdges} 一次完成）。</p>
      *
-     * @param storageEntityTypeCode 实际存储类型，调用方须先归一（注册编码不入库）
+     * @return 本次软删掉的有效关联边（供型号收尾 / REF 回写）
      */
-    private int markEntitiesExcludedFromCategory(List<Long> entityIds, Long categoryId, String storageEntityTypeCode) {
-        Map<Long, String> domainByEntityId = loadEntityDomains(entityIds, storageEntityTypeCode);
-        int successCount = 0;
-        for (Long entityId : entityIds) {
-            if (entityId == null) {
+    private List<EntityCategoryRelationDO> markEntitiesExcludedFromCategory(
+            List<Long> entityIds, Long categoryId, String storageEntityTypeCode) {
+        LinkedHashSet<Long> uniqueIds = new LinkedHashSet<>();
+        for (Long id : entityIds) {
+            if (id != null && id > 0) {
+                uniqueIds.add(id);
+            }
+        }
+        if (uniqueIds.isEmpty() || categoryId == null) {
+            return List.of();
+        }
+        List<Long> ids = List.copyOf(uniqueIds);
+
+        // 1) 一次查出本批有效边，再一次 IN 软删
+        List<EntityCategoryRelationDO> activeEdges =
+                relationMapper.selectByEntityIdsAndCategoryIds(ids, List.of(categoryId), storageEntityTypeCode);
+        if (activeEdges == null) {
+            activeEdges = List.of();
+        }
+        Set<Long> activeEntityIds = new HashSet<>();
+        List<EntityCategoryRelationDO> removed = new ArrayList<>(activeEdges.size());
+        for (EntityCategoryRelationDO edge : activeEdges) {
+            if (edge == null || edge.getEntityId() == null) {
                 continue;
             }
-            EntityCategoryRelationDO active = relationMapper.selectByEntityAndCategory(entityId, categoryId, storageEntityTypeCode);
-            if (active != null) {
-                relationMapper.deleteByEntityAndCategory(entityId, categoryId, storageEntityTypeCode);
-                unsyncEntityModelFromCategoryIfLast(entityId, categoryId, storageEntityTypeCode);
-            } else {
-                List<EntityCategoryRelationDO> deletedRelations = relationMapper
-                        .selectByEntityAndCategoryIdsIncludingDeleted(entityId, List.of(categoryId), storageEntityTypeCode);
-                if (deletedRelations.isEmpty()) {
-                    relationMapper.insert(EntityCategoryRelationDO.builder()
+            activeEntityIds.add(edge.getEntityId());
+            removed.add(edge);
+        }
+        if (!activeEntityIds.isEmpty()) {
+            relationMapper.deleteByCategoryIdAndEntityIds(
+                    categoryId, new ArrayList<>(activeEntityIds), storageEntityTypeCode);
+        }
+
+        // 2) 无有效边：需排除标记（防仍靠型号–分类出现在范围内）；已有 deleted 行则跳过
+        List<Long> needExclude = new ArrayList<>();
+        for (Long id : ids) {
+            if (!activeEntityIds.contains(id)) {
+                needExclude.add(id);
+            }
+        }
+        if (!needExclude.isEmpty()) {
+            List<EntityCategoryRelationDO> alreadyExcluded =
+                    relationMapper.selectExcludedPairsByEntityIdsAndCategoryIds(
+                            needExclude, List.of(categoryId), storageEntityTypeCode);
+            Set<Long> excludedEntityIds = new HashSet<>();
+            if (alreadyExcluded != null) {
+                for (EntityCategoryRelationDO row : alreadyExcluded) {
+                    if (row != null && row.getEntityId() != null) {
+                        excludedEntityIds.add(row.getEntityId());
+                    }
+                }
+            }
+            List<Long> toMark = new ArrayList<>();
+            for (Long id : needExclude) {
+                if (!excludedEntityIds.contains(id)) {
+                    toMark.add(id);
+                }
+            }
+            if (!toMark.isEmpty()) {
+                Map<Long, String> domainByEntityId = loadEntityDomains(toMark, storageEntityTypeCode);
+                List<EntityCategoryRelationDO> toInsert = new ArrayList<>(toMark.size());
+                for (Long entityId : toMark) {
+                    toInsert.add(EntityCategoryRelationDO.builder()
                             .entityId(entityId)
                             .categoryId(categoryId)
                             .entityTypeCode(storageEntityTypeCode)
                             .domain(domainByEntityId.get(entityId))
                             .sort(0)
                             .build());
-                    relationMapper.deleteByEntityAndCategory(entityId, categoryId, storageEntityTypeCode);
                 }
+                relationMapper.insertBatchRelations(toInsert);
+                relationMapper.deleteByCategoryIdAndEntityIds(categoryId, toMark, storageEntityTypeCode);
             }
-            successCount++;
         }
-        return successCount;
-    }
 
+        return removed;
+    }
 
     // ==================== 多实体-多分类操作 ====================
 
@@ -901,6 +1088,9 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         Map<Long, EntityResultData> entityResultDataMap = new HashMap<>();
         Map<Long, Integer> insertCountByEntity = new HashMap<>();
         Map<Long, List<Long>> restoreCategoryIdsByEntity = new HashMap<>();
+        // 已存在边：仅挂靠模式 / REF，不需再挂型号–分类
+        List<long[]> alreadyActivePairs = new ArrayList<>();
+        AssociationPostProcessCache postCache = new AssociationPostProcessCache();
 
         for (Long entityId : entityIds) {
             if (!existingEntityIds.contains(entityId)) {
@@ -916,9 +1106,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
 
             for (Long categoryId : validCategoryIds) {
                 if (existedCategories.contains(categoryId)) {
-                    // 已关联仍要执行挂靠模式（单归属换挂 / REF 回写）
-                    applyAssociationModeAndRefWriteback(
-                            entityId, categoryId, storageEntityTypeCode, entityAssociationMode);
+                    alreadyActivePairs.add(new long[]{entityId, categoryId});
                     continue;
                 }
                 if (excludedCategories.contains(categoryId)) {
@@ -942,13 +1130,16 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         }
 
         // 5.1 恢复排除标记：同时刷新 domain，使关联行与实体当前业务域一致
+        List<EntityCategoryRelationDO> restoredEdges = new ArrayList<>();
         for (Map.Entry<Long, List<Long>> entry : restoreCategoryIdsByEntity.entrySet()) {
             relationMapper.restoreDeletedRelationsBatch(entry.getKey(), entry.getValue(),
                     storageEntityTypeCode, domainByEntityId.get(entry.getKey()));
-            syncEntityModelToCategories(entry.getKey(), entry.getValue(), storageEntityTypeCode);
             for (Long categoryId : entry.getValue()) {
-                applyAssociationModeAndRefWriteback(
-                        entry.getKey(), categoryId, storageEntityTypeCode, entityAssociationMode);
+                restoredEdges.add(EntityCategoryRelationDO.builder()
+                        .entityId(entry.getKey())
+                        .categoryId(categoryId)
+                        .entityTypeCode(storageEntityTypeCode)
+                        .build());
             }
         }
 
@@ -959,12 +1150,28 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                 relation.setSort(calculateSortWithBase(baseSortMap, sortOffsetMap, relation.getCategoryId()));
             }
             relationMapper.insertBatchRelations(relationsToInsert);
-            for (EntityCategoryRelationDO relation : relationsToInsert) {
-                syncEntityModelToCategory(relation.getEntityId(), relation.getCategoryId(), storageEntityTypeCode);
-                applyAssociationModeAndRefWriteback(
-                        relation.getEntityId(), relation.getCategoryId(), storageEntityTypeCode,
-                        entityAssociationMode);
-            }
+        }
+
+        // 6.1 型号–分类：新增/恢复边一次去重批量挂（禁止逐实体 syncEntityModelToCategory）
+        List<EntityCategoryRelationDO> edgesForModelSync = new ArrayList<>(restoredEdges.size() + relationsToInsert.size());
+        edgesForModelSync.addAll(restoredEdges);
+        edgesForModelSync.addAll(relationsToInsert);
+        syncModelsAfterAddedEntityCategoryEdges(edgesForModelSync);
+
+        // 6.2 挂靠模式 + REF：分类元数据 / 台账绑定本批只解析一次
+        for (long[] pair : alreadyActivePairs) {
+            applyAssociationModeAndRefWriteback(
+                    pair[0], pair[1], storageEntityTypeCode, entityAssociationMode, postCache);
+        }
+        for (EntityCategoryRelationDO edge : restoredEdges) {
+            applyAssociationModeAndRefWriteback(
+                    edge.getEntityId(), edge.getCategoryId(), storageEntityTypeCode,
+                    entityAssociationMode, postCache);
+        }
+        for (EntityCategoryRelationDO relation : relationsToInsert) {
+            applyAssociationModeAndRefWriteback(
+                    relation.getEntityId(), relation.getCategoryId(), storageEntityTypeCode,
+                    entityAssociationMode, postCache);
         }
 
         // 7. 构建返回结果

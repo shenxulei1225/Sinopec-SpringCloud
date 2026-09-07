@@ -155,17 +155,19 @@
         </plugins>
     </build>
 
-    <!-- 使用 huawei / aliyun 的 Maven 源，提升下载速度 -->
+    <!-- 公共依赖走阿里云；不再默认走华为云（本机代理/fake-ip 下 mirrors.huaweicloud.com 易 HTTPS 超时，
+         且会反复刷 cn.cheers.x SNAPSHOT metadata——这些包应来自本仓库 install，不在远端镜像）。 -->
     <repositories>
-        <repository>
-            <id>huaweicloud</id>
-            <name>huawei</name>
-            <url>https://mirrors.huaweicloud.com/repository/maven/</url>
-        </repository>
         <repository>
             <id>aliyunmaven</id>
             <name>aliyun</name>
             <url>https://maven.aliyun.com/repository/public</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
         </repository>
 
         <repository>

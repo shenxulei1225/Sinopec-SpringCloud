@@ -10,7 +10,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
 
 /**
- * 模型字段分配 DO
+ * 模型字段 DO
  *
  * 业务含义：将 Model（业务模型/品类）与 Field（字段）进行多对多关联，
  * 用于定义某个 Model 有哪些字段、字段类型与校验规则。

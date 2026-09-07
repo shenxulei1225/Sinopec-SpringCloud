@@ -10,8 +10,8 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityChang
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityChangeModelPreviewRespVO;
 
 /**
- * 实体变更模型：预览 fieldCode 交集迁移，提交时保留共有字段并归档源专有字段。
- * 批量接口按实体 ID 列表处理（列表勾选），不使用「当前高亮单行」。
+ * 实体换型号：扩展字段按编码差分；预览与提交同一算法。
+ * 批量接口共享目标型号字段方案并批量读实体，不按条重复加载元数据。
  */
 public interface EntityModelChangeService {
 

@@ -42,11 +42,11 @@
 bash Sinopec-SpringCloud/cheers-dynamicbusiness/scripts/platform-import/corridor-tenant/import.sh
 ```
 
-顺序：`00_repair_sequences` → `system_tenant_zhgl.sql` → `dynamic_corridor_spatial_entity_types.sql` → `dynamic_corridor_structure.sql` → **`dynamic_corridor_zone_structure_split.sql`** → **`dynamic_corridor_field_library.sql`**（tenant 1 全量字段 + 分组）→ **`dynamic_corridor_model_fields.sql`**（设施/分区/构筑物模型字段分配：`FLD-BASE-*` + `FLD-UT-*`）→ **`dynamic_corridor_base_field_labels.sql`** → 导出 Python → **`dynamic_corridor_spatial_entities.generated.sql`** → 分类树缓存失效。
+顺序：`00_repair_sequences` → `system_tenant_zhgl.sql` → `dynamic_corridor_spatial_entity_types.sql` → `dynamic_corridor_structure.sql` → **`dynamic_corridor_zone_structure_split.sql`** → **`dynamic_corridor_field_library.sql`**（tenant 1 全量字段 + 分组）→ **`dynamic_corridor_model_fields.sql`**（设施/分区/构筑物模型字段：`FLD-BASE-*` + `FLD-UT-*`）→ **`dynamic_corridor_base_field_labels.sql`** → 导出 Python → **`dynamic_corridor_spatial_entities.generated.sql`** → 分类树缓存失效。
 
 **字段库**：`dynamic_corridor_field_library.sql` 将 tenant 1 **全部**启用字段、21 个 FIELD 分组及分组关系复制到管廊 tenant（**FLD-UT-*** 等本租户独有 code 保留）；无用字段在界面自行删除。请用 **zhgl** 登录 tenant 2 查看。
 
-**模型字段分配**（`dynamic_corridor_model_fields.sql`）：
+**模型字段**（`dynamic_corridor_model_fields.sql`）：
 
 | 模型 | 分配内容 |
 |------|----------|

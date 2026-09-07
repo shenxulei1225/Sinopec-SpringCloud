@@ -6,7 +6,7 @@
 --       如果父菜单不存在,脚本会静默跳过,不会报错
 -- ========================================
 
--- 查询权限（按钮权限,添加到模型字段分配菜单下）
+-- 查询权限（按钮权限,添加到模型字段菜单下）
 INSERT INTO dynamic_menu (
     name, permission, type, sort, parent_id,
     path, icon, component, component_name, status,
@@ -17,7 +17,7 @@ SELECT
     'system:model-field-group-assignment:query',
     3,  -- 类型：3=按钮
     1,  -- 排序
-    (SELECT id FROM dynamic_menu WHERE permission = 'system:model-field-assignment:query' AND type = 2 LIMIT 1),  -- 父菜单：模型字段分配菜单
+    (SELECT id FROM dynamic_menu WHERE permission = 'system:model-field-assignment:query' AND type = 2 LIMIT 1),  -- 父菜单：模型字段菜单
     '', '', '', '', 0, true, true, false, 'admin', NOW(), 'admin', NOW(), false
 WHERE NOT EXISTS (
     SELECT 1 FROM dynamic_menu WHERE permission = 'system:model-field-group-assignment:query'

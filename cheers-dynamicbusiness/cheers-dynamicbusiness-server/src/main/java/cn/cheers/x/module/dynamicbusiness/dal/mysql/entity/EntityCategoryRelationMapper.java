@@ -167,6 +167,22 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
     }
 
     /**
+     * 按分类 + 多实体批量软删有效关联（批量解除用，避免逐条 delete）。
+     */
+    default void deleteByCategoryIdAndEntityIds(Long categoryId, List<Long> entityIds, String entityTypeCode) {
+        if (categoryId == null || entityIds == null || entityIds.isEmpty()) {
+            return;
+        }
+        LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
+                .eq(EntityCategoryRelationDO::getCategoryId, categoryId)
+                .in(EntityCategoryRelationDO::getEntityId, entityIds);
+        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
+            query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
+        }
+        delete(query);
+    }
+
+    /**
      * 删除实体的所有关联
      */
     default void deleteByEntityId(Long entityId) {

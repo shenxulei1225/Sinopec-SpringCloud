@@ -4,6 +4,7 @@ import cn.cheers.x.framework.apilog.core.annotation.ApiAccessLog;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.CategoryIdGroupReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelAvailableFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCloneReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCreateReqVO;
@@ -16,6 +17,8 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelUpdateR
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelSortSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFromEntityCategoryGroupsReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFromModelCategoryGroupsReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldFilterReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelListBySceneReqVO;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelFacilityFootprintQueryService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelService;
@@ -25,13 +28,18 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 
 import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.CREATE;
 import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.UPDATE;
@@ -76,7 +84,7 @@ public class ModelController {
             "- Model 的 code 字段由系统自动生成（格式：MODEL-{UUID}）\n" +
             "- name 在同一租户内必须唯一\n" +
             "- Model 创建后，需要分配字段才能用于 Entity\n" +
-            "- 可以通过 ModelFieldAssignmentController 为模型分配字段"
+            "- 可以通过 ModelFieldAssignmentController 为模型字段"
     )
     @ApiAccessLog(operateType = CREATE)
     @PreAuthorize("@ss.hasPermission('system:model:create')")
@@ -278,6 +286,7 @@ public class ModelController {
             @RequestParam(value = "categoryId", required = false) Long categoryId,
             @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam(value = "domain", required = false) String domain,
+            @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "includeDescendants", required = false, defaultValue = "true")
                     Boolean includeDescendants) {
         List<Long> resolvedCategoryIds = new ArrayList<>();
@@ -311,7 +320,7 @@ public class ModelController {
                             resolvedCategoryIds, entityTypeCode);
         }
         List<ModelRespVO> models = modelIds.isEmpty() ? List.of() : modelService.getModelsByIds(modelIds);
-        return success(modelService.filterModelsByDomain(models, domain));
+        return success(applyKeywordFilter(modelService.filterModelsByDomain(models, domain), keyword));
     }
 
     @GetMapping("/list-by-entity-type")
@@ -330,10 +339,12 @@ public class ModelController {
     public CommonResult<List<ModelRespVO>> listModelsByEntityType(
             @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam(value = "domain", required = false) String domain,
+            @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "categoryTypeCode", required = false) String categoryTypeCode,
             @RequestParam(value = "effectiveFacilityId", required = false) Long effectiveFacilityId) {
-        return success(modelService.listModelsByEntityType(
-                entityTypeCode, domain, categoryTypeCode, effectiveFacilityId));
+        List<ModelRespVO> models = modelService.listModelsByEntityType(
+                entityTypeCode, domain, categoryTypeCode, effectiveFacilityId);
+        return success(applyKeywordFilter(models, keyword));
     }
 
     @GetMapping("/list-uncategorized-by-category-type")
@@ -347,8 +358,11 @@ public class ModelController {
     public CommonResult<List<ModelRespVO>> listUncategorizedModelsByCategoryType(
             @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam("categoryTypeCode") String categoryTypeCode,
-            @RequestParam(value = "domain", required = false) String domain) {
-        return success(modelService.listUncategorizedModelsByCategoryType(categoryTypeCode, entityTypeCode, domain));
+            @RequestParam(value = "domain", required = false) String domain,
+            @RequestParam(value = "keyword", required = false) String keyword) {
+        List<ModelRespVO> models = modelService.listUncategorizedModelsByCategoryType(
+                categoryTypeCode, entityTypeCode, domain);
+        return success(applyKeywordFilter(models, keyword));
     }
 
     @GetMapping("/list-categorized-by-category-type")
@@ -362,8 +376,11 @@ public class ModelController {
     public CommonResult<List<ModelRespVO>> listCategorizedModelsByCategoryType(
             @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam("categoryTypeCode") String categoryTypeCode,
-            @RequestParam(value = "domain", required = false) String domain) {
-        return success(modelService.listCategorizedModelsByCategoryType(categoryTypeCode, entityTypeCode, domain));
+            @RequestParam(value = "domain", required = false) String domain,
+            @RequestParam(value = "keyword", required = false) String keyword) {
+        List<ModelRespVO> models = modelService.listCategorizedModelsByCategoryType(
+                categoryTypeCode, entityTypeCode, domain);
+        return success(applyKeywordFilter(models, keyword));
     }
 
     @GetMapping("/list-all")
@@ -405,7 +422,8 @@ public class ModelController {
     @PutMapping("/sort")
     @Operation(
         summary = "更新模型排序（保存顺序）",
-        description = "拖拽调整列表顺序后，按提交的整份有序列表重写模型 sort。"
+        description = "拖拽调整列表顺序后，按提交的整份有序列表重写排序。"
+            + "带 categoryId 时写分类—型号关联 sort；不带时写型号主表 sort。"
     )
     @ApiAccessLog(operateType = UPDATE)
     @PreAuthorize("@ss.hasPermission('system:model:update')")
@@ -487,11 +505,12 @@ public class ModelController {
     @PreAuthorize("@ss.hasPermission('system:model:query')")
     public CommonResult<List<ModelRespVO>> listModelsFromModelCategoryGroups(
             @Valid @RequestBody ModelFromModelCategoryGroupsReqVO reqVO) {
-        return success(modelService.listModelsByIntersectingCategoryGroups(
+        List<ModelRespVO> models = modelService.listModelsByIntersectingCategoryGroups(
                 reqVO.getCategoryIdGroups(),
                 reqVO.getEntityTypeCode(),
                 reqVO.getDomain(),
-                reqVO.getIncludeDescendants()));
+                reqVO.getIncludeDescendants());
+        return success(applyKeywordFilter(models, reqVO.getKeyword()));
     }
 
     @PostMapping("/list-from-entity-category-groups")
@@ -514,7 +533,385 @@ public class ModelController {
             return success(List.of());
         }
         List<ModelRespVO> models = modelService.getModelsByIds(modelIds);
-        return success(modelService.filterModelsByDomain(models, reqVO.getDomain()));
+        return success(applyKeywordFilter(modelService.filterModelsByDomain(models, reqVO.getDomain()), reqVO.getKeyword()));
+    }
+
+    @PostMapping("/list-by-scene")
+    @Operation(
+        summary = "模型统一列表查询（数据管理）",
+        description = "统一承接模型列表查询：分类节点、多栏分类求交、已分类/未分类、业务域与关键词可叠加。"
+                + "关键词只做附加过滤，不改变分类语义。"
+    )
+    @PreAuthorize("@ss.hasPermission('system:model:query')")
+    public CommonResult<List<ModelRespVO>> listModelsByScene(@Valid @RequestBody ModelListBySceneReqVO reqVO) {
+        String entityTypeCode = reqVO.getEntityTypeCode().trim();
+        String categoryTypeCode = StringUtils.hasText(reqVO.getCategoryTypeCode())
+                ? reqVO.getCategoryTypeCode().trim()
+                : entityTypeCode;
+        String filterMode = normalizeFilterMode(reqVO.getFilterMode());
+        boolean includeDescendants = reqVO.getIncludeDescendants() == null || reqVO.getIncludeDescendants();
+        List<Long> categoryIds = normalizeCategoryIds(reqVO.getCategoryIds());
+        List<CategoryIdGroupReqVO> categoryGroups = normalizeCategoryGroups(reqVO.getCategoryIdGroups());
+        String categoryFilterSource = normalizeCategoryFilterSource(reqVO.getCategoryFilterSource());
+        List<ModelFieldFilterReqVO> fieldFilters = normalizeModelFieldFilters(reqVO.getFieldFilters());
+
+        List<ModelRespVO> models;
+        if (!categoryGroups.isEmpty()) {
+            models = resolveModelsByCategoryGroups(
+                    entityTypeCode,
+                    categoryTypeCode,
+                    reqVO.getDomain(),
+                    includeDescendants,
+                    categoryFilterSource,
+                    categoryGroups);
+        } else if (!categoryIds.isEmpty()) {
+            models = resolveModelsByCategoryIds(entityTypeCode, reqVO.getDomain(), includeDescendants, categoryIds);
+        } else if ("NODE".equals(filterMode)) {
+            models = List.of();
+        } else if ("UNCATEGORIZED".equals(filterMode)) {
+            models = modelService.listUncategorizedModelsByCategoryType(categoryTypeCode, entityTypeCode, reqVO.getDomain());
+        } else if ("CATEGORIZED".equals(filterMode)) {
+            models = modelService.listCategorizedModelsByCategoryType(categoryTypeCode, entityTypeCode, reqVO.getDomain());
+        } else {
+            models = modelService.listModelsByEntityType(entityTypeCode, reqVO.getDomain(), categoryTypeCode, null);
+        }
+
+        return success(applyKeywordFilter(applyModelFieldFilters(models, fieldFilters), reqVO.getKeyword()));
+    }
+
+    /**
+     * 统一关键词过滤：模型名称 / 描述任一包含即保留。
+     *
+     * 查询入口会按分类语义先拿到候选集；keyword 只作为附加条件，避免“有搜索词就丢分类条件”。
+     */
+    private List<ModelRespVO> applyKeywordFilter(List<ModelRespVO> models, String keyword) {
+        if (models == null || models.isEmpty() || !StringUtils.hasText(keyword)) {
+            return models == null ? List.of() : models;
+        }
+        String normalized = keyword.trim().toLowerCase(Locale.ROOT);
+        return models.stream()
+                .filter(model -> containsIgnoreCase(model == null ? null : model.getName(), normalized)
+                        || containsIgnoreCase(model == null ? null : model.getDescription(), normalized))
+                .toList();
+    }
+
+    private boolean containsIgnoreCase(String value, String normalizedKeyword) {
+        return StringUtils.hasText(value)
+                && value.toLowerCase(Locale.ROOT).contains(normalizedKeyword);
+    }
+
+    /**
+     * 模型统一查询的字段筛选：
+     * 只接受模型元数据字段；关系筛选（relationField=true）在模型列表语义下直接拒绝。
+     */
+    private List<ModelRespVO> applyModelFieldFilters(List<ModelRespVO> models, List<ModelFieldFilterReqVO> fieldFilters) {
+        if (models == null || models.isEmpty() || fieldFilters == null || fieldFilters.isEmpty()) {
+            return models == null ? List.of() : models;
+        }
+        return models.stream()
+                .filter(model -> matchesAllModelFilters(model, fieldFilters))
+                .toList();
+    }
+
+    private boolean matchesAllModelFilters(ModelRespVO model, List<ModelFieldFilterReqVO> filters) {
+        for (ModelFieldFilterReqVO filter : filters) {
+            if (!matchesModelFieldFilter(model, filter)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean matchesModelFieldFilter(ModelRespVO model, ModelFieldFilterReqVO filter) {
+        String fieldCode = filter.getFieldCode().trim().toLowerCase(Locale.ROOT);
+        String op = normalizeModelFilterOp(filter.getOp());
+        Object left = resolveModelFieldValue(model, fieldCode);
+        Object right = filter.getValue();
+        return switch (op) {
+            case "EQ" -> compareEquals(left, right);
+            case "NE" -> !compareEquals(left, right);
+            case "CONTAINS", "LIKE" -> containsText(left, right);
+            case "IN" -> inList(left, right);
+            case "NOT_IN" -> !inList(left, right);
+            case "GT" -> compareAsNumber(left, right) > 0;
+            case "GTE" -> compareAsNumber(left, right) >= 0;
+            case "LT" -> compareAsNumber(left, right) < 0;
+            case "LTE" -> compareAsNumber(left, right) <= 0;
+            case "BETWEEN" -> betweenNumber(left, right);
+            default -> throw new ServiceException(400, "不支持的模型筛选操作符: " + op);
+        };
+    }
+
+    private Object resolveModelFieldValue(ModelRespVO model, String fieldCode) {
+        return switch (fieldCode) {
+            case "id" -> model == null ? null : model.getId();
+            case "code" -> model == null ? null : model.getCode();
+            case "name" -> model == null ? null : model.getName();
+            case "description" -> model == null ? null : model.getDescription();
+            case "status" -> model == null ? null : model.getStatus();
+            case "domain" -> model == null ? null : model.getDomain();
+            case "entitytypecode" -> model == null ? null : model.getEntityTypeCode();
+            case "sort" -> model == null ? null : model.getSort();
+            default -> throw new ServiceException(400, "模型字段筛选不支持字段: " + fieldCode);
+        };
+    }
+
+    private List<ModelFieldFilterReqVO> normalizeModelFieldFilters(List<ModelFieldFilterReqVO> fieldFilters) {
+        if (fieldFilters == null || fieldFilters.isEmpty()) {
+            return List.of();
+        }
+        List<ModelFieldFilterReqVO> normalized = new ArrayList<>();
+        for (ModelFieldFilterReqVO raw : fieldFilters) {
+            if (raw == null || !StringUtils.hasText(raw.getFieldCode())) {
+                continue;
+            }
+            if (Boolean.TRUE.equals(raw.getRelationField())) {
+                throw new ServiceException(400, "模型列表不支持 relationField=true 的筛选条件");
+            }
+            ModelFieldFilterReqVO item = new ModelFieldFilterReqVO();
+            item.setFieldCode(raw.getFieldCode().trim());
+            item.setOp(normalizeModelFilterOp(raw.getOp()));
+            item.setValue(raw.getValue());
+            item.setRelationField(false);
+            normalized.add(item);
+        }
+        return normalized;
+    }
+
+    private String normalizeModelFilterOp(String rawOp) {
+        String op = StringUtils.hasText(rawOp) ? rawOp.trim().toUpperCase(Locale.ROOT) : "EQ";
+        return switch (op) {
+            case "EQ", "NE", "IN", "NOT_IN", "GTE", "LTE", "GT", "LT", "BETWEEN", "CONTAINS", "LIKE" -> op;
+            default -> throw new ServiceException(400, "不支持的模型筛选操作符: " + op);
+        };
+    }
+
+    private boolean compareEquals(Object left, Object right) {
+        if (left == null && right == null) {
+            return true;
+        }
+        if (left == null || right == null) {
+            return false;
+        }
+        if (left instanceof Number || right instanceof Number) {
+            Double lv = toDouble(left);
+            Double rv = toDouble(right);
+            if (lv != null && rv != null) {
+                return Double.compare(lv, rv) == 0;
+            }
+        }
+        return String.valueOf(left).equalsIgnoreCase(String.valueOf(right));
+    }
+
+    private boolean containsText(Object left, Object right) {
+        if (left == null || right == null) {
+            return false;
+        }
+        String leftText = String.valueOf(left).toLowerCase(Locale.ROOT);
+        String rightText = String.valueOf(right).trim().toLowerCase(Locale.ROOT);
+        if (rightText.isEmpty()) {
+            return false;
+        }
+        return leftText.contains(rightText);
+    }
+
+    private boolean inList(Object left, Object right) {
+        if (left == null) {
+            return false;
+        }
+        List<Object> values = flattenToList(right);
+        if (values.isEmpty()) {
+            return false;
+        }
+        for (Object value : values) {
+            if (compareEquals(left, value)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private int compareAsNumber(Object left, Object right) {
+        Double lv = toDouble(left);
+        Double rv = toDouble(right);
+        if (lv == null || rv == null) {
+            throw new ServiceException(400, "数字比较筛选值无效，字段值或条件值不是数字");
+        }
+        return Double.compare(lv, rv);
+    }
+
+    private boolean betweenNumber(Object left, Object right) {
+        Double lv = toDouble(left);
+        if (lv == null) {
+            return false;
+        }
+        List<Object> values = flattenToList(right);
+        if (values.size() < 2) {
+            throw new ServiceException(400, "BETWEEN 条件需要两个边界值");
+        }
+        Double from = toDouble(values.get(0));
+        Double to = toDouble(values.get(1));
+        if (from == null || to == null) {
+            throw new ServiceException(400, "BETWEEN 条件值必须是数字");
+        }
+        return lv >= Math.min(from, to) && lv <= Math.max(from, to);
+    }
+
+    private Double toDouble(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        if (raw instanceof Number number) {
+            double value = number.doubleValue();
+            return Double.isFinite(value) ? value : null;
+        }
+        if (raw instanceof String text && StringUtils.hasText(text)) {
+            try {
+                double value = Double.parseDouble(text.trim());
+                return Double.isFinite(value) ? value : null;
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private List<Object> flattenToList(Object raw) {
+        if (raw == null) {
+            return List.of();
+        }
+        if (raw instanceof List<?> list) {
+            List<Object> values = new ArrayList<>(list.size());
+            for (Object item : list) {
+                if (item != null) {
+                    values.add(item);
+                }
+            }
+            return values;
+        }
+        if (raw instanceof java.util.Collection<?> collection) {
+            List<Object> values = new ArrayList<>(collection.size());
+            for (Object item : collection) {
+                if (item != null) {
+                    values.add(item);
+                }
+            }
+            return values;
+        }
+        if (raw.getClass().isArray()) {
+            int len = Array.getLength(raw);
+            List<Object> values = new ArrayList<>(len);
+            for (int i = 0; i < len; i++) {
+                Object value = Array.get(raw, i);
+                if (value != null) {
+                    values.add(value);
+                }
+            }
+            return values;
+        }
+        if (raw instanceof String text && text.contains(",")) {
+            String[] parts = text.split(",");
+            List<Object> values = new ArrayList<>(parts.length);
+            for (String part : parts) {
+                if (StringUtils.hasText(part)) {
+                    values.add(part.trim());
+                }
+            }
+            return values;
+        }
+        return List.of(raw);
+    }
+
+    private String normalizeFilterMode(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return "UNFILTERED";
+        }
+        String normalized = raw.trim().toUpperCase(Locale.ROOT);
+        return switch (normalized) {
+            case "NODE", "CATEGORIZED", "UNCATEGORIZED", "NONE" -> normalized;
+            default -> "UNFILTERED";
+        };
+    }
+
+    private String normalizeCategoryFilterSource(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return "MODEL_CATEGORY";
+        }
+        return "ENTITY_CATEGORY".equalsIgnoreCase(raw.trim()) ? "ENTITY_CATEGORY" : "MODEL_CATEGORY";
+    }
+
+    private List<Long> normalizeCategoryIds(List<Long> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return List.of();
+        }
+        return categoryIds.stream()
+                .filter(Objects::nonNull)
+                .filter(id -> id > 0)
+                .distinct()
+                .toList();
+    }
+
+    private List<CategoryIdGroupReqVO> normalizeCategoryGroups(List<CategoryIdGroupReqVO> categoryIdGroups) {
+        if (categoryIdGroups == null || categoryIdGroups.isEmpty()) {
+            return List.of();
+        }
+        List<CategoryIdGroupReqVO> normalized = new ArrayList<>();
+        for (CategoryIdGroupReqVO group : categoryIdGroups) {
+            if (group == null || !StringUtils.hasText(group.getCategoryTypeCode())) {
+                continue;
+            }
+            CategoryIdGroupReqVO item = new CategoryIdGroupReqVO();
+            item.setCategoryTypeCode(group.getCategoryTypeCode().trim());
+            item.setCategoryIds(normalizeCategoryIds(group.getCategoryIds()));
+            normalized.add(item);
+        }
+        return normalized;
+    }
+
+    private List<ModelRespVO> resolveModelsByCategoryGroups(String entityTypeCode,
+                                                            String categoryTypeCode,
+                                                            String domain,
+                                                            boolean includeDescendants,
+                                                            String categoryFilterSource,
+                                                            List<CategoryIdGroupReqVO> categoryGroups) {
+        if ("ENTITY_CATEGORY".equals(categoryFilterSource)) {
+            List<Long> modelIds = entityService.listDistinctModelIdsByCategoryScope(
+                    entityTypeCode,
+                    null,
+                    categoryGroups,
+                    categoryTypeCode,
+                    domain,
+                    includeDescendants);
+            if (modelIds.isEmpty()) {
+                return List.of();
+            }
+            List<ModelRespVO> models = modelService.getModelsByIds(modelIds);
+            return modelService.filterModelsByDomain(models, domain);
+        }
+        return modelService.listModelsByIntersectingCategoryGroups(
+                categoryGroups, entityTypeCode, domain, includeDescendants);
+    }
+
+    private List<ModelRespVO> resolveModelsByCategoryIds(String entityTypeCode,
+                                                         String domain,
+                                                         boolean includeDescendants,
+                                                         List<Long> categoryIds) {
+        List<Long> modelIds;
+        if (includeDescendants) {
+            modelIds = categoryIds.size() == 1
+                    ? modelCategoryRelationService.listModelIdsByCategoryIdWithDescendants(categoryIds.get(0), entityTypeCode)
+                    : modelCategoryRelationService.listModelIdsByCategoryIdsWithDescendants(categoryIds, entityTypeCode);
+        } else {
+            modelIds = categoryIds.size() == 1
+                    ? modelCategoryRelationService.listModelIdsByCategoryIdOnly(categoryIds.get(0), entityTypeCode)
+                    : modelCategoryRelationService.listModelIdsByCategoryIdsOnly(categoryIds, entityTypeCode);
+        }
+        if (modelIds.isEmpty()) {
+            return List.of();
+        }
+        List<Long> deduplicated = new ArrayList<>(new LinkedHashSet<>(modelIds));
+        List<ModelRespVO> models = modelService.getModelsByIds(deduplicated);
+        return modelService.filterModelsByDomain(models, domain);
     }
 }
 

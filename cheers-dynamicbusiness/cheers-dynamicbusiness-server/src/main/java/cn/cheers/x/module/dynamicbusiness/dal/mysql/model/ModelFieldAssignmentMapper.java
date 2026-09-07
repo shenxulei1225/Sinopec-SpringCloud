@@ -12,7 +12,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * 模型字段分配 Mapper
+ * 模型字段 Mapper
  *
  * @author yudao
  */
@@ -56,7 +56,7 @@ public interface ModelFieldAssignmentMapper extends BaseMapperX<ModelFieldAssign
         }
 
         /**
-         * 根据字段ID查询模型分配列表
+         * 根据字段ID查询模型字段列表
          */
         default List<ModelFieldAssignmentDO> selectByFieldId(Long fieldId) {
                 return selectList(new LambdaQueryWrapperX<ModelFieldAssignmentDO>()
@@ -124,7 +124,7 @@ public interface ModelFieldAssignmentMapper extends BaseMapperX<ModelFieldAssign
         }
 
         /**
-         * 根据字段ID删除所有模型分配
+         * 根据字段ID删除所有模型字段
          */
         default void deleteByFieldId(Long fieldId) {
                 delete(new LambdaQueryWrapperX<ModelFieldAssignmentDO>()

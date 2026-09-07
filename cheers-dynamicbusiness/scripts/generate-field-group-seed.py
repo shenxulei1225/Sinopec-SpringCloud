@@ -181,7 +181,7 @@ def render_sql(assignments: dict[str, list[dict]]) -> str:
         "",
         "SET search_path TO dynamicbusiness;",
         "",
-        "-- 1) 清除旧 FIELD 分组关联（保留字段与模型分配）",
+        "-- 1) 清除旧 FIELD 分组关联（保留字段与模型字段）",
         "UPDATE dynamic_group_relation SET deleted = true, updater = 'field-group-industry', update_time = CURRENT_TIMESTAMP",
         "WHERE tenant_id = 1 AND group_type = 'FIELD' AND deleted = false;",
         "",

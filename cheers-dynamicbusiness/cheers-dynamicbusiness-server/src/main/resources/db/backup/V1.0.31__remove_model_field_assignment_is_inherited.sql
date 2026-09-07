@@ -12,4 +12,4 @@ ALTER TABLE dynamic_model_field_assignment
     DROP COLUMN IF EXISTS is_inherited;
 
 -- 3. 更新表注释
-COMMENT ON TABLE dynamic_model_field_assignment IS '模型字段分配表,定义 Model 有哪些字段';
+COMMENT ON TABLE dynamic_model_field_assignment IS '模型字段表,定义 Model 有哪些字段';

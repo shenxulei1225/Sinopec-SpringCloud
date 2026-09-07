@@ -64,7 +64,7 @@ public class EntityBusinessHelper {
     }
 
     /**
-     * 校验型号分配字段；写前分桶后 BASE 来源（如所属场站 facility_id）在 baseFields，须一并传入。
+     * 校验模型字段；写前分桶后 BASE 来源（如所属场站 facility_id）在 baseFields，须一并传入。
      */
     public void validateCustomFields(Long modelId,
                                      Map<String, Object> baseFields,

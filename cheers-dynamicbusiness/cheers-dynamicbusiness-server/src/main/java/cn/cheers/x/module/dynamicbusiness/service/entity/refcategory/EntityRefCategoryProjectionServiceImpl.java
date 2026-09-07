@@ -221,7 +221,7 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
     }
 
     /**
-     * 主体上的 REF 字段：基础字段 + 型号分配字段（同编码以分配侧为准）。
+     * 主体上的 REF 字段：基础字段 + 模型字段（同编码以分配侧为准）。
      */
     private List<RefFieldSpec> listRefFields(Long modelId, String subjectEntityTypeCode) {
         Map<String, RefFieldSpec> byCode = new LinkedHashMap<>();

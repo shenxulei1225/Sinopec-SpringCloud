@@ -19,7 +19,7 @@ public class DmDataTabColumnRelationRespVO {
     private String relationKind;
     private String fromTypeCode;
     private String toTypeCode;
-    /** 边动作：filter=条件筛选；write=修改关联 */
+    /** 边动作：filter=条件筛选；write=修改关联；detail_follow=详情跟随 */
     private String edgeAction;
     /** 启用的交互方式编码列表 */
     private List<String> enabledInteractions;

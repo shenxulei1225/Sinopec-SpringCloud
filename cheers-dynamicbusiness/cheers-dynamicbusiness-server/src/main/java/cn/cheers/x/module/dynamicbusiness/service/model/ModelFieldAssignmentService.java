@@ -6,7 +6,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFilterF
 import java.util.List;
 
 /**
- * 模型字段分配 Service 接口
+ * 模型字段 Service 接口
  * 
  * 支持三种字段类型：
  * - 固定列字段（BASE）：来自业务类型配置，自动继承
@@ -18,7 +18,7 @@ import java.util.List;
 public interface ModelFieldAssignmentService {
 
     /**
-     * 为模型分配单个字段
+     * 为模型字段单个字段
      *
      * @param modelId 模型ID
      * @param fieldId 字段ID
@@ -31,7 +31,7 @@ public interface ModelFieldAssignmentService {
     void assignFieldToModel(Long modelId, Long fieldId, Boolean required, Boolean isSearchable, Boolean isFilterable, Boolean isSortable, String defaultValue, String validationRules);
 
     /**
-     * 为模型分配字段（支持批量）
+     * 为模型字段（支持批量）
      *
      * @param reqVO 字段分配请求
      */

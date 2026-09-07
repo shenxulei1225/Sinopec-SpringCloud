@@ -30,7 +30,7 @@ import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.UPDATE;
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
- * 管理后台 - 模型字段分配 Controller
+ * 管理后台 - 模型字段 Controller
  * 
  * 用于管理 Model 与 Field 的关联关系，以及字段在 Model 中的业务规则配置。
  * 字段定义（Field）只挂在 Model 上，Model 决定「这一类东西有哪些字段」「字段类型与校验规则」。
@@ -38,7 +38,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
  * 
  * @author yudao
  */
-@Tag(name = "管理后台 - 模型字段分配", description = "提供模型字段的分配、解除、查询、规则更新等功能。用于管理模型与字段的关联关系及业务规则配置")
+@Tag(name = "管理后台 - 模型字段", description = "提供模型字段的分配、解除、查询、规则更新等功能。用于管理模型与字段的关联关系及业务规则配置")
 @RestController
 @RequestMapping("/dynamicbusiness/business/models")
 @Validated
@@ -52,8 +52,8 @@ public class ModelFieldAssignmentController {
 
     @PostMapping("/fields/assign")
     @Operation(
-        summary = "为模型分配单个字段",
-        description = "为业务模型分配单个字段，并配置业务规则（必填、默认值、验证规则等）。\n" +
+        summary = "为模型字段单个字段",
+        description = "为业务模型字段单个字段，并配置业务规则（必填、默认值、验证规则等）。\n" +
             "- 字段定义（Field）只挂在 Model 上，Model 决定「这一类东西有哪些字段」「字段类型与校验规则」\n" +
             "- 如果字段已分配，会更新业务规则配置\n" +
             "- 业务规则包括：required（必填）、defaultValue（默认值）、validationRules（验证规则）"
@@ -75,9 +75,9 @@ public class ModelFieldAssignmentController {
 
     @PostMapping("/fields/batch-assign")
     @Operation(
-        summary = "批量为模型分配字段",
+        summary = "批量为模型字段",
         description = "为业务模型批量分配字段，并配置业务规则（必填、默认值、验证规则等）。\n" +
-            "- 支持一次为模型分配多个字段\n" +
+            "- 支持一次为模型字段多个字段\n" +
             "- 每个字段可以配置独立的业务规则\n" +
             "- 如果字段已分配，会更新业务规则配置"
     )
@@ -145,7 +145,7 @@ public class ModelFieldAssignmentController {
     @PutMapping("/fields/rules")
     @Operation(
         summary = "更新字段业务规则",
-        description = "更新模型字段分配的业务规则（必填、范围、默认值等）。\n" +
+        description = "更新模型字段的业务规则（必填、范围、默认值等）。\n" +
             "- 字段定义中只包含基础规则（数据类型、格式）\n" +
             "- 业务规则在字段分配到 Model 时配置\n" +
             "- 更新规则会影响使用该模型的所有实体\n" +

@@ -4,9 +4,9 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBa
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 
 /**
- * 固定列字段与字段库、模型分配的同步能力。
+ * 固定列字段与字段库、模型字段的同步能力。
  *
- * <p>权威：类型「启用中」的基础字段（status=1）。停用字段不得挂在型号分配上。
+ * <p>权威：类型「启用中」的基础字段（status=1）。停用字段不得挂在模型字段上。
  */
 public interface BaseFieldLibrarySyncService {
 

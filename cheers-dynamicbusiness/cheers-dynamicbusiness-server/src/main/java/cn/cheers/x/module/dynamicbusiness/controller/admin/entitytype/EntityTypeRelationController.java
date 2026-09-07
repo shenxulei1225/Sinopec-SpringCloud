@@ -23,12 +23,12 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
  *
  * 职责：
  * - 在业务类型（EntityType）维度管理“业务之间允许建立引用/关联”的门禁关系。
- * - 为字段-模型分配（尤其是 REFERENCE 字段）、跨业务查询与组合提供类型级关联规则依据。
+ * - 为字段-模型字段（尤其是 REFERENCE 字段）、跨业务查询与组合提供类型级关联规则依据。
  *
  * 说明：
  * - 这里只管理 EntityType 级别的“可以/不可以关联”规则；
  * - 实体和模型层面是否真的建立引用字段，由字段管理与模型配置决定
- *   （参见《字段管理与字段库-模型分配约定（权威）》）。
+ *   （参见《字段管理与字段库-模型字段约定（权威）》）。
  */
 @Tag(name = "管理后台 - EntityType 关联", description = "管理业务类型之间的关联规则（类型级门禁），用于约束和发现跨业务引用能力")
 @RestController

@@ -19,7 +19,7 @@ import java.util.Map;
  * <ul>
  *   <li>BR-VAL-003: parent_id 必须指向同 Model 的 Entity（系统强制）</li>
  *   <li>BR-VAL-004: parent_id 不能形成循环引用（系统强制）</li>
- *   <li>BR-VAL-005: ENTITY_REF 引用目标须存在，且能按模型字段分配（关联字段库/模型关系/目标业务类型）解析存储</li>
+ *   <li>BR-VAL-005: ENTITY_REF 引用目标须存在，且能按模型字段（关联字段库/模型关系/目标业务类型）解析存储</li>
  *   <li>BR-VAL-006: 所有 Entity 引用验证在保存时执行，不依赖前端验证</li>
  * </ul>
  * 

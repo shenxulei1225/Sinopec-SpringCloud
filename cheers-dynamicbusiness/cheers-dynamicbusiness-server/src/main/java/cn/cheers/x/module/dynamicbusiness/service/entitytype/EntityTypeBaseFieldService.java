@@ -145,7 +145,7 @@ public interface EntityTypeBaseFieldService {
     void updatePlatformFieldLabel(String entityTypeCode, String fieldCode, String label);
 
     /**
-     * 按模型分配信息删除基础字段：优先删注册记录，无注册记录时仍从全部模型移除。
+     * 按模型字段信息删除基础字段：优先删注册记录，无注册记录时仍从全部模型移除。
      */
     void deleteBaseFieldByAssignment(String entityTypeCode, Long libraryFieldId, String fieldCode);
 

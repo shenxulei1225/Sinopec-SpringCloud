@@ -42,7 +42,7 @@ WHERE deleted = false
   AND tenant_id = 1
   AND model_code LIKE 'action_param_%';
 
--- 3) 从动作类型基础字段 / 型号分配去掉「执行手段」
+-- 3) 从动作类型基础字段 / 模型字段去掉「执行手段」
 UPDATE dynamic_entity_type_base_field
 SET
   deleted = true,
@@ -64,7 +64,7 @@ WHERE deleted = false
   AND model_code = 'action'
   AND field_code = 'execution_means';
 
--- 4) 结构字段保留（写路径 / 专用面板），并确保有默认值 → 新建弹窗按平台规则自动隐藏
+-- 4) 结构字段保留（写路径 / 专用面板），并补齐默认值 + 显式 createVisible=false
 UPDATE dynamic_entity_type_base_field
 SET
   field_name = CASE field_code
@@ -77,6 +77,7 @@ SET
     WHEN 'is_composite' THEN COALESCE(NULLIF(TRIM(default_value), ''), 'false')
     ELSE default_value
   END,
+  type_config = '{"createVisible":false}',
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP
 WHERE deleted = false

@@ -22,7 +22,7 @@
 |------|------|
 | `01_fields.sql` | 字段库：`param_slots_json` / `child_action_ids_json` / `is_composite`（**不含** execution_means） |
 | `02_entity_type.sql` | 类型 `action`（动作库），知识库 · 全网 · SINGLE |
-| `03_base_fields.sql` | 基础字段挂载（仅结构列；带默认值 → 新建弹窗不展示） |
+| `03_base_fields.sql` | 基础字段挂载（仅结构列；通过 `type_config.createVisible=false` 控制新建不展示） |
 | `04_model.sql` | 规范型号 `action`（目录）+ 字段分配；**必须 status=1** |
 | `09_action_param_models.sql` | **常用执行参数字段库**（供勾进 param_slots_json）；取消历史 action_param_* 实体必填 |
 | `12_retire_param_models_and_execution_means.sql` | **纠偏**：启用 `action`、停用 `action_param_*`、去掉执行手段基础字段、清表单缓存 |
@@ -46,7 +46,7 @@
 
 样例动作挂规范型号 **`action`**。参数清单权威在 **`param_slots_json`**（外形 `{version,fields[{fieldCode,required,defaultValue}]}`）。How 侧宿主填值写入宿主 SOP 参数包，不长期双写实例 `param_override`。
 
-**禁止**：再用 `action_param_*` 型号字段分配冒充动作参数清单。  
+**禁止**：再用 `action_param_*` 模型字段冒充动作参数清单。  
 **禁止**：把 `location_ref` / 执行手段等挂成动作实体 CRUD 字段——新建表单只投影名称/状态等标准字段；参数在详情「配置参数」维护。
 
 **产品入口**：知识库 → **动作库**。具体动作一律建为**实体实例**，不要再建第二型号。

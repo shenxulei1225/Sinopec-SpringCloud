@@ -402,9 +402,8 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
                 throw new ServiceException(400, "实体栏缺少类型码 entityEntityTypeCode，请先选择实体所属类型");
             }
         } else if (DmDataTabLayoutKindEnum.DETAIL.getCode().equals(kind)) {
-            if (!metaHasText(meta, "entityEntityTypeCode")) {
-                throw new ServiceException(400, "详情栏缺少类型码 entityEntityTypeCode，请先选择详情所属类型");
-            }
+            // 详情可由详情跟随线决定类型，不再强制在栏配置里手填 entityEntityTypeCode。
+            // 若既没跟随线也没手填类型，运行时会在详情栏显示占位提示，不在写入层补默认值。
         }
     }
 

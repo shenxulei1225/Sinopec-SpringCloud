@@ -25,12 +25,12 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
  *
  * 职责：
  * - 在 EntityType 维度维护一组固定列字段（基于字段库定义），作为该业务类型下各模型的“基础字段候选集/基线”。
- * - 为字段-模型分配提供类型级的字段约束与推荐来源。
+ * - 为字段-模型字段提供类型级的字段约束与推荐来源。
  *
  * 说明：
  * - 固定列字段本身不会直接决定某个 Model 的最终字段集合；
- * - 某个 Model 是否采用某个固定列字段，由“字段-模型分配”机制决定
- *   （参见《字段管理与字段库-模型分配约定（权威）》）。
+ * - 某个 Model 是否采用某个固定列字段，由“字段-模型字段”机制决定
+ *   （参见《字段管理与字段库-模型字段约定（权威）》）。
  */
 @Tag(name = "管理后台 - 业务类型固定列字段", description = "在业务类型维度维护固定列字段候选集，用于约定该类型下各模型的基础字段基线")
 @RestController
@@ -88,7 +88,7 @@ public class EntityTypeBaseFieldController {
     }
 
     @PutMapping("/update-status")
-    @Operation(summary = "更新固定列字段状态", description = "启用/停用某个 EntityType 级固定列字段，影响其在后续模型分配中的可用性")
+    @Operation(summary = "更新固定列字段状态", description = "启用/停用某个 EntityType 级固定列字段，影响其在后续模型字段中的可用性")
     @PreAuthorize("@ss.hasPermission('system:entity-type-base-field:update')")
     public CommonResult<Boolean> updateBaseFieldStatus(@RequestParam("id") Long id,
                                                         @RequestParam("status") Integer status) {
@@ -177,7 +177,7 @@ public class EntityTypeBaseFieldController {
     }
 
     @DeleteMapping("/delete-by-assignment")
-    @Operation(summary = "按模型分配删除基础字段", description = "优先删除注册记录；无注册记录时仍从该类型下全部模型移除")
+    @Operation(summary = "按模型字段删除基础字段", description = "优先删除注册记录；无注册记录时仍从该类型下全部模型移除")
     @PreAuthorize("@ss.hasPermission('system:entity-type-base-field:delete')")
     public CommonResult<Boolean> deleteByAssignment(
             @RequestParam("entityTypeCode") String entityTypeCode,

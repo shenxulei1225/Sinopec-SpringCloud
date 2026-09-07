@@ -42,7 +42,7 @@ import lombok.*;
  *
  * 关于“基础字段/固定列字段（BASE）”：
  * - BASE 字段的“定义”不存放在 dynamic_model 表中，而是由业务类型固定列字段配置统一定义，并在模型维度自动继承展示
- * - 模型“拥有哪些字段/规则”由模型字段分配承载（dynamic_model_field_assignment 等），BASE 字段在返回时会标记为不可编辑/删除（仅限制字段定义，不限制实体实例的字段值编辑）
+ * - 模型“拥有哪些字段/规则”由模型字段承载（dynamic_model_field_assignment 等），BASE 字段在返回时会标记为不可编辑/删除（仅限制字段定义，不限制实体实例的字段值编辑）
  * 
  * @author yudao
  */

@@ -29,7 +29,7 @@ public class DmDataTabColumnRelationSaveItemVO {
     @NotBlank(message = "toTypeCode 不能为空")
     private String toTypeCode;
 
-    @Schema(description = "边动作：filter=条件筛选，write=修改关联")
+    @Schema(description = "边动作：filter=条件筛选，write=修改关联，detail_follow=详情跟随")
     private String edgeAction;
 
     @Schema(description = "启用的交互方式；写边至少一项；条件筛选边可空")

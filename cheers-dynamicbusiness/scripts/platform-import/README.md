@@ -69,7 +69,7 @@ python3 regenerate-v1-from-db.py
 | `entity-types` | 实体类型、配置、类型间关系、基础字段 |
 | `fields` | 字段库、字段分组、分组-字段关联 |
 | `models` | 模型、模型关系、关联声明 |
-| `assignments` | 模型字段分配 |
+| `assignments` | 模型字段 |
 | `categories` | 分类类型、分类树、模型-分类、页面配置 |
 | `portal` | 业务门户、入口、能力投影 |
 | `entities` | 可选业务实例 SQL（默认不导入） |

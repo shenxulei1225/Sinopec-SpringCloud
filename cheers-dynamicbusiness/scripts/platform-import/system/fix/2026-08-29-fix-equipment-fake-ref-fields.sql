@@ -156,7 +156,7 @@ WHERE b.entity_type_code = 'equipment'
   AND f.code = 'next_inspection'
   AND f.tenant_id = b.tenant_id;
 
--- 3) 型号字段分配：改编码、挂新 field_id、清假目标类型
+-- 3) 模型字段：改编码、挂新 field_id、清假目标类型
 UPDATE dynamic_model_field_assignment a
 SET field_code = CASE a.field_code
       WHEN 'operation_status_id' THEN 'operation_status'

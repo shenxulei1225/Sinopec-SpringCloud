@@ -138,7 +138,7 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
     }
 
     /**
-     * 型号分配字段取值：BASE 来源（如 facility_id 物理列）在写前分桶后只存在于 baseFields。
+     * 模型字段取值：BASE 来源（如 facility_id 物理列）在写前分桶后只存在于 baseFields。
      */
     private static Object resolveAssignedFieldValue(Map<String, Object> baseFields,
                                                     Map<String, Object> customFields,

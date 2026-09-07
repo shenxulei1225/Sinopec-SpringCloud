@@ -31,7 +31,6 @@ INSERT INTO ent_sop_t1 (
   is_template, execution_means, procedure_kind,
   action_tree_json, default_params_by_node_json,
   default_steps_json, default_params_json,
-  steps_json,
   creator, deleted
 )
 SELECT
@@ -51,7 +50,6 @@ SELECT
   v.default_params_by_node_json::jsonb,
   '[]'::jsonb,
   '{}'::jsonb,
-  '[]'::jsonb,
   'seed',
   false
 FROM dynamic_model m

@@ -17,6 +17,9 @@ public class ModelSortSaveReqVO {
     @NotBlank(message = "业务类型编码不能为空")
     private String entityTypeCode;
 
+    @Schema(description = "分类 ID；有值时写入分类—型号关联 sort，无值时写入型号主表 sort", example = "12")
+    private Long categoryId;
+
     @Schema(description = "按目标顺序提交的模型列表", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotEmpty(message = "模型排序列表不能为空")
     @Valid

@@ -103,7 +103,7 @@ public class LocalPackagePromotionServiceImpl implements LocalPackagePromotionSe
         for (ModelFieldAssignmentDO assignment : assignments == null ? List.<ModelFieldAssignmentDO>of() : assignments) {
             FieldDO field = fieldMapper.selectById(assignment.getFieldId());
             if (field == null) {
-                throw new ServiceException(400, "型号字段分配引用了不存在的字段");
+                throw new ServiceException(400, "模型字段引用了不存在的字段");
             }
             if (!GOVERNANCE_LOCAL.equals(field.getGovernanceStatus())) {
                 continue;

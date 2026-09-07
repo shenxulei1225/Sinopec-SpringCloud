@@ -1,5 +1,6 @@
 -- ============================================================================
--- sop · 01 字段库：version_no / publish_status / steps_json
+-- sop · 01 字段库：version_no / publish_status
+-- steps_json（步骤定义）已退役：编排权威为 action_tree_json，本文件不再挂载。
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;
@@ -17,11 +18,6 @@ INSERT INTO dynamic_field (
     'publish_status', '发布状态', 'TEXT', NULL,
     'DRAFT=草稿；PUBLISHED=已发布', 'BASE', 1, 1, 'NONE',
     NULL, NULL, 'publish_status', 1, 'seed'
-  ),
-  (
-    'steps_json', '步骤定义', 'TEXT', NULL,
-    '有序步骤 JSON 数组（怎么做唯一正文）', 'BASE', 1, 1, 'NONE',
-    NULL, NULL, 'steps_json', 1, 'seed'
   )
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
@@ -30,3 +26,15 @@ DO UPDATE SET
   description = EXCLUDED.description,
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
+
+-- 幂等退役：旧「步骤定义」字段库项（若仍存在）
+UPDATE dynamic_field
+SET
+  deleted = true,
+  status = 0,
+  description = '【废弃】原步骤定义 JSON；编排权威为 action_tree_json',
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP
+WHERE code = 'steps_json'
+  AND tenant_id = 1
+  AND deleted = false;

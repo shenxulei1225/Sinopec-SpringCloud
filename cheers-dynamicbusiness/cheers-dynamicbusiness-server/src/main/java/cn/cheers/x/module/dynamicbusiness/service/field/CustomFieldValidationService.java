@@ -21,7 +21,7 @@ public interface CustomFieldValidationService {
     void validateCustomFields(Long modelId, Map<String, Object> customFields);
 
     /**
-     * 验证型号分配字段；{@code field_source=BASE} 的分配从 {@code baseFields} 取值（写前分桶后不在 custom 里）。
+     * 验证模型字段；{@code field_source=BASE} 的分配从 {@code baseFields} 取值（写前分桶后不在 custom 里）。
      */
     void validateCustomFields(Long modelId,
                               Map<String, Object> baseFields,
@@ -35,7 +35,7 @@ public interface CustomFieldValidationService {
                               Map<String, Object> customFields);
 
     /**
-     * 验证型号分配字段（预加载配置）；BASE 来源字段从 baseFields 解析。
+     * 验证模型字段（预加载配置）；BASE 来源字段从 baseFields 解析。
      */
     void validateCustomFields(Map<Long, FieldDO> fieldMap,
                               Map<Long, ModelFieldAssignmentDO> assignmentMap,

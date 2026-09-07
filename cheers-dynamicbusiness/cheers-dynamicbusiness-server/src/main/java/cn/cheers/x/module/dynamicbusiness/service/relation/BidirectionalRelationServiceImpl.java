@@ -624,7 +624,7 @@ public class BidirectionalRelationServiceImpl implements BidirectionalRelationSe
     }
 
     /**
-     * 根据模型字段分配解析引用实体所在 entityTypeCode。
+     * 根据模型字段解析引用实体所在 entityTypeCode。
      */
     private String resolveRefEntityTypeCode(FieldDO field, Long refEntityId, ModelFieldAssignmentDO assignment) {
         if (assignment == null) {

@@ -183,7 +183,7 @@ public interface ErrorCodeConstants {
     ErrorCode CATEGORY_TYPE_CANNOT_DELETE = new ErrorCode(1_002_032_002, "该分类类型下有分类数据，无法删除");
     ErrorCode CATEGORY_TYPE_MODE_INVALID = new ErrorCode(1_002_032_003, "分类建立方式无效，仅支持 SIMPLE 或 ADVANCED");
 
-    // ========== 模型字段分配 1-002-030-000 ==========
+    // ========== 模型字段 1-002-030-000 ==========
     ErrorCode MODEL_FIELD_ASSIGNMENT_NOT_EXISTS = new ErrorCode(1_002_030_000, "字段分配不存在");
     ErrorCode MODEL_FIELD_BASE_FIELD_CANNOT_UNASSIGN = new ErrorCode(1_002_030_001, "固定列字段不允许修改");
     ErrorCode MODEL_FIELD_BASE_FIELD_CANNOT_UPDATE = new ErrorCode(1_002_030_002, "固定列字段不允许修改业务规则");

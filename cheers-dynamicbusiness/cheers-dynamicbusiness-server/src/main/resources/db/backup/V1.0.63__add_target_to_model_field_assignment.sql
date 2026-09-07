@@ -1,4 +1,4 @@
--- 为模型字段分配表增加关联目标兜底字段
+-- 为模型字段表增加关联目标兜底字段
 -- 说明：
 -- 1. 正常情况下,关联字段的目标信息来自 RelationFieldLibrary / ModelRelation / Field.refModelCodes 等“权威来源”
 -- 2. 当前端在拖拽 ENTITY_REF / ENTITY_REF_MULTI / BATCH_ENTITY_REF 字段到模型时,会选择 targetBusinessType / targetModelCode

@@ -21,7 +21,7 @@
 | 版本 | 文件 | 职责 |
 |------|------|------|
 | V1 | `V1__init_dynamicbusiness_schema.sql` | 全量 DDL |
-| V2 | `V2__model_field_assignment_codes.sql` | 模型字段分配 code 幂等键 |
+| V2 | `V2__model_field_assignment_codes.sql` | 模型字段 code 幂等键 |
 | V8 | `V8__ent_custom_fields_jsonb.sql` | 实体 custom_fields jsonb |
 | V9 | `V9__dm_entity_dimension_dedupe.sql` | 去重 dm_entity_dimension 同 scope 有效行 |
 | V10 | `V10__base_field_library_field_id.sql` | 基础字段 `library_field_id` 列、历史数据对齐、删除别名表 |
@@ -105,8 +105,16 @@
 | V89 | `V89__selection_source_and_edge_action_only.sql` | 编排头列改为 `selection_source`；关系 `relation_meta` 仅保留 `edgeAction` |
 | V90 | `V90__standard_entity_columns.sql` | 规范标准 `ent_standard*` 补业务固定列（编号/级别/发布单位/年份/摘要/出处）；元数据见 `platform-import/standard/` |
 | V91 | `V91__host_sop_param_pack.sql` | 设备 `ent_equipment*` 增 `host_sop_param_pack`（宿主 SOP 参数包）；动作 `param_slots_json` 注释改为动作参数定义 |
-
-> **版本号说明**：本仓库已登记至 **V91**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。
+| V92 | `V92__dynamic_business_plugin_manifest.sql` | 新增动态业务插件清单表 `dynamic_business_plugin_manifest`，后端权威下发插件启停（默认 seed `action-library`） |
+| V93 | `V93__detail_follow_edge_action.sql` | 详情跟随线语义独立：历史详情 filter 边迁移为 `edgeAction=detail_follow` |
+| V94 | `V94__sop_base_fields_trim_for_editor.sql` | SOP 基础字段收敛：移除实例差量/执行手段/流程种类，动作树仅保留给解析器维护 |
+| V95 | `V95__sop_flow_graph_json.sql` | SOP 增 `flow_graph_json` 流程图展示字段（只读预览先行） |
+| V96 | `V96__sop_retire_template_base_fields.sql` | SOP 基础字段去模板化：隐藏/移除模板实例语义字段，保留解析器路径 |
+| V97 | `V97__sop_standard_pdf_url.sql` | SOP 增 `standard_pdf_url`，支持标准 PDF 预览与下载 |
+| V99 | `V99__sop_migrate_steps_json_to_action_tree.sql` | 退役 steps_json 元数据；旧步骤 JSON（`_deprecated_steps_json`/`steps_json`）迁入 `action_tree_json`（缺动作则按标题建 `act-mig-*`） |
+| V98 | `V98__sop_cleanup_retired_field_assignments.sql` | 清理 SOP 历史模板字段分配；`deleted=true` 基础字段统一禁用，避免继续进入 CRUD 投影 |
+| V100 | `V100__trim_inspection_item_create_fields.sql` | 检查项新建表单收敛：下线执行统计字段分配（`FLD-INS-004/008/009`） |
+> **版本号说明**：本仓库已登记至 **V100**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。
 
 
 > **跨机合并说明**：本机布局迁移已占用 V26–V28 且已执行；对方原 `V26__category_*` / `V27__ent_structure` 在合并后改为 V29/V30。若对方库已按旧文件名执行过 V26/V27，需对齐历史表 `version`/`script` 后 `flyway:repair`，再拉本分支。
@@ -172,6 +180,15 @@ PGPASSWORD=Coolhomer psql -h 127.0.0.1 -U postgres -d sinopec -c \
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-07 | V100：检查项新建表单收敛，下线执行统计字段分配（FLD-INS-004/008/009） |
+| 2026-09-07 | V99：退役 steps_json；将 `_deprecated_steps_json`/`steps_json` 迁入 `action_tree_json`（同标题共用迁移动作） |
+| 2026-09-07 | V98：清理 SOP 模型字段中的历史模板字段；归一 `dynamic_entity_type_base_field` 中 `deleted=true` 行为禁用状态 |
+| 2026-09-07 | V97：SOP 增 standard_pdf_url 字段，提供标准 PDF 预览/下载入口 |
+| 2026-09-07 | V96：SOP 基础字段去模板化，移除 is_template/sop_template_id 等模板实例字段展示 |
+| 2026-09-07 | V95：SOP 增 flow_graph_json（流程图展示字段），步骤权威仍为 action_tree_json |
+| 2026-09-07 | V94：SOP 基础字段收敛，隐藏动作树原始 JSON，移除实例差量/执行手段/流程种类基础字段 |
+| 2026-09-07 | V93：详情跟随语义独立为 `detail_follow`，迁移历史详情 filter 边 |
+| 2026-09-07 | V92：新增动态业务插件清单表（后端权威插件启停），默认注入 `action-library` |
 | 2026-09-05 | V84：清掉数据类型 `parent_id` 误指 `dynamic_group` 的行，补写 `group_name`（应急资源/应急队伍） |
 | 2026-08-29 | V76–V80：动作库、动作启用、SOP 动作树列、删步骤模板、通用 SOP 方法/实例绑定（迁出检查专用表） |
 | 2026-08-27 | V73–V75：步骤模板表、SOP 模板/实例列、设备检查绑定表；seed 见 `scripts/platform-import/sop/10–13` |

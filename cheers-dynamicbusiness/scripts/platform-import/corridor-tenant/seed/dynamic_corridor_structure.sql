@@ -124,7 +124,7 @@ DO UPDATE SET
   updater = 'corridor-seed',
   update_time = CURRENT_TIMESTAMP;
 
--- ---------- 字段库 + 模型分配（自 tenant 1 退役 region 模型） ----------
+-- ---------- 字段库 + 模型字段（自 tenant 1 退役 region 模型） ----------
 
 WITH legacy_field_codes AS (
   SELECT DISTINCT a.field_code

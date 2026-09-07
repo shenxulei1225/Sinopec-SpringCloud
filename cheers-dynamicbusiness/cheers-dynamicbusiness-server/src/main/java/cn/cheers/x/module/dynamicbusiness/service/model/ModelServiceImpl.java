@@ -250,11 +250,11 @@ public class ModelServiceImpl implements ModelService {
         defaultGroupReq.setColor("#409eff");
         modelFieldGroupService.createModelFieldGroup(defaultGroupReq);
 
-        // 高级分类：先确保系统组织上级已挂到类型，再物化进本型号分配
+        // 高级分类：先确保系统组织上级已挂到类型，再物化进本型号的模型字段
         if (reqVO.getEntityTypeCode() != null) {
             orgTreeParentFieldEnsureService.ensureForEntityTypeCode(reqVO.getEntityTypeCode());
         }
-        // 物化该业务类型已有固定列到本型号分配表（读路径不再虚合并 BASE）
+        // 物化该业务类型已有固定列到本模型字段表（读路径不再虚合并 BASE）
         baseFieldLibrarySyncService.assignAllBaseFieldsToModel(model.getId());
 
         // 发布 Model 创建事件（用于事件驱动机制）
@@ -1135,7 +1135,14 @@ public class ModelServiceImpl implements ModelService {
     }
 
     /**
-     * 收集业务类型编码及其全部子业务编码（广度优先，保序去重）
+     * 保存型号列表拖拽顺序。
+     *
+     * <p>权威分流（与实体栏对齐）：
+     * <ul>
+     *   <li>请求带 {@code categoryId} → 只写分类—型号关联 sort（该分类下展示序）</li>
+     *   <li>不带分类 → 写型号主表 sort（类型内全局序）</li>
+     * </ul>
+     * 禁止：有选中分类时仍只改主表 sort，导致数据页按关联序回读时「已保存却不变」。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -1143,31 +1150,52 @@ public class ModelServiceImpl implements ModelService {
         if (reqVO == null || reqVO.getItems() == null || reqVO.getItems().isEmpty()) {
             throw new ServiceException(400, "模型排序列表不能为空");
         }
+        String entityTypeCode = reqVO.getEntityTypeCode() == null ? "" : reqVO.getEntityTypeCode().trim();
+        if (!StringUtils.hasText(entityTypeCode)) {
+            throw new ServiceException(400, "业务类型编码不能为空");
+        }
 
         List<ModelSortSaveReqVO.Item> orderedItems = reqVO.getItems().stream()
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(ModelSortSaveReqVO.Item::getIndex))
                 .toList();
 
-        for (ModelSortSaveReqVO.Item item : orderedItems) {
-            ModelDO model = modelCoreService.get(item.getModelId());
+        List<Long> orderedModelIds = orderedItems.stream()
+                .map(ModelSortSaveReqVO.Item::getModelId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (orderedModelIds.isEmpty()) {
+            throw new ServiceException(400, "模型排序列表不能为空");
+        }
+
+        for (Long modelId : orderedModelIds) {
+            ModelDO model = modelCoreService.get(modelId);
             if (model == null) {
-                throw new ServiceException(404, "模型不存在: " + item.getModelId());
+                throw new ServiceException(404, "模型不存在: " + modelId);
             }
-            if (!reqVO.getEntityTypeCode().equals(model.getEntityTypeCode())) {
-                throw new ServiceException(400, "模型不属于指定业务类型: " + item.getModelId());
+            if (!entityTypeCode.equals(model.getEntityTypeCode())) {
+                throw new ServiceException(400, "模型不属于指定业务类型: " + modelId);
             }
         }
 
+        if (reqVO.getCategoryId() != null) {
+            modelCategoryRelationService.reindexModelSortInCategory(
+                    reqVO.getCategoryId(), entityTypeCode, orderedModelIds);
+            return;
+        }
+
         int idx = 0;
-        for (ModelSortSaveReqVO.Item item : orderedItems) {
+        for (Long modelId : orderedModelIds) {
             ModelDO updateDO = new ModelDO();
-            updateDO.setId(item.getModelId());
+            updateDO.setId(modelId);
             updateDO.setSort(SparseSortUtils.reindexSortByPosition(idx++));
             modelCoreService.update(updateDO);
         }
     }
 
+    /**
+     * 收集业务类型编码及其全部子业务编码（广度优先，保序去重）
+     */
     private List<String> collectEntityTypeCodesWithChildren(String entityTypeCode) {
         List<EntityTypeRespVO> children =
                 entityTypeService.listChildrenTreeByCode(entityTypeCode);

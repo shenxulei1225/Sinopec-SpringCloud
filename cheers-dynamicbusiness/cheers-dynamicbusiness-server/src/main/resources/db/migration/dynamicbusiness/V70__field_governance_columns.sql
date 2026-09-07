@@ -1,4 +1,4 @@
--- 字段治理身份在创建时定稿；读取字段或型号分配时不得反推或补写。
+-- 字段治理身份在创建时定稿；读取字段或模型字段时不得反推或补写。
 ALTER TABLE dynamic_field
     ADD COLUMN IF NOT EXISTS governance_status VARCHAR(16),
     ADD COLUMN IF NOT EXISTS origin_facility_id BIGINT,

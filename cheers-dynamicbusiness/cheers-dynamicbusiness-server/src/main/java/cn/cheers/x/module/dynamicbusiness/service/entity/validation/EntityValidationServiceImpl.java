@@ -172,7 +172,7 @@ public class EntityValidationServiceImpl implements EntityValidationService {
     }
 
     /**
-     * 根据模型字段分配（关联字段库 / 模型关系 / 兜底 targetEntityType）解析引用实体所在业务类型。
+     * 根据模型字段（关联字段库 / 模型关系 / 兜底 targetEntityType）解析引用实体所在业务类型。
      */
     private String resolveRefEntityTypeCode(FieldDO field, Long refEntityId, Long modelId) {
         ModelFieldAssignmentDO assignment = modelFieldAssignmentMapper.selectByModelIdAndFieldId(modelId, field.getId());

@@ -1,4 +1,4 @@
--- 模型字段分配：增加 model_code / field_code，跨环境迁移以 code 为幂等键（与 dynamic_model_relation 一致）
+-- 模型字段：增加 model_code / field_code，跨环境迁移以 code 为幂等键（与 dynamic_model_relation 一致）
 -- 运行时仍保留 model_id / field_id 便于 JOIN；导入 seed 应写 code，由本表或 INSERT 解析 id。
 
 SET search_path TO dynamicbusiness;

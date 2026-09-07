@@ -14,7 +14,7 @@
 | `02_entity_type.sql` | 类型 `inspection_method`、`DEDICATED`、`model_workbench_mode=SINGLE` |
 | `03_base_fields.sql` | 类型基础字段挂载（编码=列名） |
 | `04_model.sql` | 规范型号 `code=inspection_method` + 字段分配 |
-| `05_patch_inspection_item_method_ref.sql` | 字段库/基础字段/型号分配 `method_template_id`；停用旧 `FLD-INS-003` |
+| `05_patch_inspection_item_method_ref.sql` | 字段库/基础字段/模型字段 `method_template_id`；停用旧 `FLD-INS-003` |
 | `06_sample_bind.sql` | 样例模板 + 绑定 `INS-ITEM-101`（验收用） |
 | `07_sample_templates.sql` | 扩展标准库方法模板（目视/仪表/机泵阀门/视频门禁等）+ 首轮名称绑定 |
 | `08_bind_inspection_items.sql` | 补齐缺口模板 + 检查内容↔方法模板语义绑定（仅填空，不整库兜底） |
@@ -31,7 +31,7 @@
 | `12_retire_inspection_item_domains.sql` | **定稿**：软删检查内容 DOMAIN 入口；清空检查内容实体 `domain`；保留知识库 NATIVE |
 | `13_fix_inspection_method_catalog.sql` | **定稿**：`inspection_method` 名称「检查方法」、分组「知识库」、`work_scope=NETWORK`（纠正误标「检查内容」/站场管理） |
 | `14_seed_inspection_method_categories.py` | **定稿**：检查方法分类树（手段分组）+ `dynamic_entity_category_relation` 关联模板 |
-| `15_instance_fields.sql` | **Wave 2**：字段库/基础字段/型号分配 `equipment_id`、`inspection_item_id`（前置 Flyway V50） |
+| `15_instance_fields.sql` | **Wave 2**：字段库/基础字段/模型字段 `equipment_id`、`inspection_item_id`（前置 Flyway V50） |
 
 **目录定稿**
 

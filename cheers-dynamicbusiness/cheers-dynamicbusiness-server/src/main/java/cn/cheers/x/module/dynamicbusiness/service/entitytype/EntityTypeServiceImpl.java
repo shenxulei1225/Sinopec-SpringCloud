@@ -864,7 +864,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
     }
 
     /**
-     * 获取模型字段分配结果。
+     * 获取模型字段结果。
      *
      * 适用场景：
      * - 业务类型配置页查看模型字段绑定；

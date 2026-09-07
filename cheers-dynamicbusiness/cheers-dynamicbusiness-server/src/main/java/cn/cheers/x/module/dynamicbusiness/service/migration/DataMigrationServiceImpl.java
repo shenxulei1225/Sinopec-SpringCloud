@@ -220,7 +220,7 @@ public class DataMigrationServiceImpl implements DataMigrationService {
         StringBuilder changes = new StringBuilder();
 
         // 注意：isSearchable 和 isSortable 已移至 ModelFieldAssignmentDO 中配置
-        // 字段创建时不再设置这些属性，这些属性在模型字段分配时根据字段类型应用智能默认值
+        // 字段创建时不再设置这些属性，这些属性在模型字段时根据字段类型应用智能默认值
 
         // 检查是否需要设置 indexStrategy
         if (overwriteExisting || StrUtil.isBlank(field.getIndexStrategy())) {
@@ -362,8 +362,8 @@ public class DataMigrationServiceImpl implements DataMigrationService {
                 .count();
         status.setFieldsWithIndexStrategy((int) withIndexStrategy);
         
-        // 统计已设置可查询属性的字段（从模型字段分配中统计）
-        // 注意：这里不再从字段定义中统计，因为已移至模型字段分配级别
+        // 统计已设置可查询属性的字段（从模型字段中统计）
+        // 注意：这里不再从字段定义中统计，因为已移至模型字段级别
         status.setFieldsWithSearchable(0); // 不再统计字段级别的可查询属性
 
         // 统计待应用智能默认的字段（只检查索引策略）

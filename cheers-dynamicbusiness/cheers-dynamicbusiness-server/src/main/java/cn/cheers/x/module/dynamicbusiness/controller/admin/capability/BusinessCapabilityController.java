@@ -3,22 +3,28 @@ package cn.cheers.x.module.dynamicbusiness.controller.admin.capability;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.capability.vo.BusinessCapabilityFullRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.capability.vo.BusinessCapabilitySummaryRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.capability.vo.CapabilityComponentProjectionRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.capability.vo.DynamicBusinessPluginEnabledUpdateReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.capability.vo.DynamicBusinessPluginManifestRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.capability.vo.ModelCrudFormDefinitionRespVO;
 import cn.cheers.x.module.dynamicbusiness.service.capability.BusinessCapabilityService;
+import cn.cheers.x.module.dynamicbusiness.service.capability.plugin.DynamicBusinessPluginManifestQueryService;
 import cn.cheers.x.framework.apilog.core.annotation.ApiAccessLog;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
@@ -44,6 +50,8 @@ public class BusinessCapabilityController {
 
     @Resource
     private BusinessCapabilityService businessCapabilityService;
+    @Resource
+    private DynamicBusinessPluginManifestQueryService dynamicBusinessPluginManifestQueryService;
 
     @GetMapping("/list")
     @Operation(summary = "获取业务能力列表", description = "供前端业务数据来源下拉使用；可按 businessCategory 过滤。")
@@ -84,6 +92,25 @@ public class BusinessCapabilityController {
             @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam("modelId") Long modelId) {
         return success(businessCapabilityService.getModelCrudFormDefinition(entityTypeCode, modelId));
+    }
+
+    @GetMapping("/plugin-manifests")
+    @Operation(summary = "读取动态业务插件清单")
+    @PreAuthorize("@ss.hasPermission('system:entity-type:query')")
+    public CommonResult<List<DynamicBusinessPluginManifestRespVO>> listPluginManifests() {
+        return success(dynamicBusinessPluginManifestQueryService.listPluginManifests());
+    }
+
+    @PutMapping("/plugin-manifests/{pluginId}/enabled")
+    @Operation(summary = "更新动态业务插件启停状态")
+    @Parameter(name = "pluginId", description = "插件标识", required = true, example = "action-library")
+    @ApiAccessLog(operateType = UPDATE)
+    @PreAuthorize("@ss.hasPermission('system:entity-type:update')")
+    public CommonResult<Boolean> updatePluginEnabled(
+            @PathVariable("pluginId") String pluginId,
+            @Valid @RequestBody DynamicBusinessPluginEnabledUpdateReqVO reqVO) {
+        dynamicBusinessPluginManifestQueryService.updatePluginEnabled(pluginId, Boolean.TRUE.equals(reqVO.getEnabled()));
+        return success(true);
     }
 
     @GetMapping("/{entityTypeCode}/model/{modelId}/crud-form")

@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
- * 模型字段分配响应 VO
+ * 模型字段响应 VO
  * 
  * 支持四种字段来源：
  * - SYSTEM：平台系统字段（如站场级所属场站），只读展示，不可从型号移除
@@ -15,7 +15,7 @@ import lombok.Data;
  * 
  * @author yudao
  */
-@Schema(description = "管理后台 - 模型字段分配响应")
+@Schema(description = "管理后台 - 模型字段响应")
 @Data
 public class ModelFieldAssignmentRespVO {
 

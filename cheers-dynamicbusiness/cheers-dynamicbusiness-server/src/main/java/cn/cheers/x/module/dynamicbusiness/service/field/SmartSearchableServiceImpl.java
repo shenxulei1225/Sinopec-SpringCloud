@@ -190,7 +190,7 @@ public class SmartSearchableServiceImpl implements SmartSearchableService {
         SmartDefaultConfigVO config = getConfigInternal(fieldType);
         
         // 注意：isSearchable 和 isSortable 已移至 ModelFieldAssignmentDO 中配置
-        // 字段创建时不再设置这些属性，这些属性在模型字段分配时根据字段类型应用智能默认值
+        // 字段创建时不再设置这些属性，这些属性在模型字段时根据字段类型应用智能默认值
         
         // 如果用户未显式设置 indexStrategy，则应用智能默认值
         if (field.getIndexStrategy() == null || field.getIndexStrategy().isEmpty()) {

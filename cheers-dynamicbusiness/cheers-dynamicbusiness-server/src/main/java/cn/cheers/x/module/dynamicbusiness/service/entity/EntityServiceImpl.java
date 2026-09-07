@@ -33,7 +33,10 @@ import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategory
 import cn.cheers.x.module.dynamicbusiness.service.entity.refcategory.EntityRefCategoryProjectionService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.refdisplay.EntityRefDisplayEnrichService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryEntityLinkService;
+import cn.cheers.x.module.dynamicbusiness.service.sop.SopFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.util.SparseSortUtils;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -56,6 +59,18 @@ import cn.cheers.x.module.dynamicbusiness.service.entity.scene.EntitySceneQueryS
 public class EntityServiceImpl implements EntityService {
 
     private static final String ENTITY_NOT_EXISTS = "实体不存在";
+    /**
+     * SOP 系统字段（由 SOP 专用命令维护）。
+     *
+     * 通用实体 update 入口不得改写这些字段，防止通过 generic CRUD 绕过 SOP 业务约束。
+     */
+    private static final List<String> SOP_SYSTEM_FIELD_CODES = List.of(
+            SopFieldCodes.ACTION_TREE_JSON,
+            SopFieldCodes.FLOW_GRAPH_JSON,
+            SopFieldCodes.VERSION_NO,
+            SopFieldCodes.PUBLISH_STATUS,
+            SopFieldCodes.STANDARD_PDF_URL
+    );
     @Resource
     private EntityCoreService entityCoreService;
     @Resource
@@ -280,6 +295,11 @@ public class EntityServiceImpl implements EntityService {
         if (oldEntity == null) {
             throw new ServiceException(404, ENTITY_NOT_EXISTS);
         }
+        String requestedEntityTypeCode = EntityFieldMapsSupport.getEntityTypeCode(reqVO.getBaseFields());
+        String effectiveEntityTypeCode = StringUtils.hasText(requestedEntityTypeCode)
+                ? requestedEntityTypeCode.trim()
+                : oldEntity.getEntityTypeCode();
+        guardSopSystemFieldMutation(reqVO, oldEntity, effectiveEntityTypeCode);
 
         Long requestedModelId = EntityFieldMapsSupport.getModelId(reqVO.getBaseFields());
         if (!allowModelIdChange
@@ -346,6 +366,85 @@ public class EntityServiceImpl implements EntityService {
                 entityTypeCode,
                 changedFields,
                 data);
+    }
+
+    /**
+     * SOP 写入兜底：
+     * 通用实体更新接口只允许改普通业务字段，禁止直接改 SOP 系统字段。
+     *
+     * 说明：这里只拦「值发生变化」的写入；若前端只是把旧值原样回传，不视为改写。
+     */
+    private void guardSopSystemFieldMutation(
+            EntityUpdateReqVO reqVO,
+            EntityDO oldEntity,
+            String entityTypeCode) {
+        if (!SopFieldCodes.ENTITY_TYPE_CODE.equalsIgnoreCase(entityTypeCode == null ? "" : entityTypeCode.trim())) {
+            return;
+        }
+        Map<String, Object> reqBase = EntityFieldMapsSupport.normalizeMap(reqVO.getBaseFields());
+        Map<String, Object> reqCustom = EntityFieldMapsSupport.normalizeMap(reqVO.getCustomFields());
+        Map<String, Object> oldFieldValues = new LinkedHashMap<>(
+                entityBusinessHelper.emptyIfNull(oldEntity.getCustomFields()));
+        entityDedicatedColumnService.mergePhysicalColumnsIntoBaseFields(oldEntity, oldFieldValues);
+
+        List<String> changedLockedFields = new ArrayList<>();
+        for (String fieldCode : SOP_SYSTEM_FIELD_CODES) {
+            // 系统字段不允许出现在 custom 桶（避免绕过 base 校验）
+            if (reqCustom.containsKey(fieldCode)) {
+                changedLockedFields.add(fieldCode);
+                continue;
+            }
+            if (!reqBase.containsKey(fieldCode)) {
+                continue;
+            }
+            Object requested = reqBase.get(fieldCode);
+            Object existing = oldFieldValues.get(fieldCode);
+            if (!sameStructuredValue(requested, existing)) {
+                changedLockedFields.add(fieldCode);
+            }
+        }
+        if (!changedLockedFields.isEmpty()) {
+            throw new ServiceException(
+                    400,
+                    "SOP 系统字段仅允许专用命令维护，通用实体更新接口禁止改写："
+                            + String.join("、", changedLockedFields));
+        }
+    }
+
+    private boolean sameStructuredValue(Object requested, Object existing) {
+        return Objects.equals(normalizeStructuredValueForCompare(requested), normalizeStructuredValueForCompare(existing));
+    }
+
+    private String normalizeStructuredValueForCompare(Object value) {
+        if (value == null) {
+            return "__NULL__";
+        }
+        if (value instanceof String text) {
+            String trimmed = text.trim();
+            Object parsed = tryParseJson(trimmed);
+            if (parsed != null) {
+                return JSON.toJSONString(parsed);
+            }
+            return trimmed;
+        }
+        if (value instanceof Map<?, ?> || value instanceof Collection<?>) {
+            return JSON.toJSONString(value);
+        }
+        return String.valueOf(value);
+    }
+
+    private Object tryParseJson(String text) {
+        if (!StringUtils.hasText(text)) {
+            return "";
+        }
+        if (!text.startsWith("{") && !text.startsWith("[")) {
+            return null;
+        }
+        try {
+            return JSON.parse(text);
+        } catch (JSONException ignored) {
+            return null;
+        }
     }
 
     /**

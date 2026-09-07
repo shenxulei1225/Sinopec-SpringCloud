@@ -3,7 +3,7 @@
 为所有已创建的站场级（work_scope=FACILITY）NATIVE/CATEGORY 类型补齐：
 1) 物理表 facility_id 列（含 _t{tenant} 与遗留无后缀表）
 2) dynamic_entity_type_base_field 基础字段行
-3) dynamic_model_field_assignment 型号分配
+3) dynamic_model_field_assignment 模型字段
 
 不回填业务数据行（避免误把空表/跨站数据写成某一站）。
 幂等可重复执行。

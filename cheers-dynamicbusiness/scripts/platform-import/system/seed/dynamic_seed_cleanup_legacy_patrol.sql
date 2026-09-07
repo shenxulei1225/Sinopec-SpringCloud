@@ -27,7 +27,7 @@ DELETE FROM ent_patrol_object WHERE tenant_id = 1 AND id = 301;
 DELETE FROM ent_patrol_schedule WHERE tenant_id = 1 AND id = 201;
 DELETE FROM ent_inspection_item WHERE tenant_id = 1 AND id IN (101, 102);
 
--- 4) 退役模型字段分配与模型
+-- 4) 退役模型字段与模型
 DELETE FROM dynamic_model_field_assignment
 WHERE tenant_id = 1 AND model_code IN ('patrol_route', 'route_checkpoint');
 

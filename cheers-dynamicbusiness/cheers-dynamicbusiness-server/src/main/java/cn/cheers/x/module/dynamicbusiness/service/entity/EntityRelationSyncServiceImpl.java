@@ -251,7 +251,7 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
     /**
      * 场景：按模型提取“引用类字段”元数据，用于后续关系同步。
      *
-     * <p>Step 1：读取模型字段分配；</p>
+     * <p>Step 1：读取模型字段；</p>
      * <p>Step 2：批量读取字段定义；</p>
      * <p>Step 3：筛出 ENTITY_REF / ENTITY_REF_MULTI 并补全元数据。</p>
      */

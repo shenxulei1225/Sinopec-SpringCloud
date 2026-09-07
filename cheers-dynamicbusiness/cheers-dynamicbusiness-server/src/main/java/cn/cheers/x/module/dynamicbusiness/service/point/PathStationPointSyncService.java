@@ -59,7 +59,7 @@ public class PathStationPointSyncService {
     /** 归属网（种子 FLD-PNT-005；MULTI_SELECT 数组 HUMAN/GROUND_ROBOT/UAV） */
     public static final String MEMBERSHIP_FIELD_SEED_CODE = "FLD-PNT-005";
     public static final String MEMBERSHIP_FIELD_SEMANTIC = "network_membership";
-    /** 型号分配必填：所属设施 REF（与 facility_id 同指设施，须一并写入 customFields） */
+    /** 模型字段必填：所属设施 REF（与 facility_id 同指设施，须一并写入 customFields） */
     public static final String FACILITY_FIELD_SEED_CODE = "FLD-PNT-001";
 
     /** @deprecated 使用 {@link #PATH_NODE_FIELD_SEED_CODE} */

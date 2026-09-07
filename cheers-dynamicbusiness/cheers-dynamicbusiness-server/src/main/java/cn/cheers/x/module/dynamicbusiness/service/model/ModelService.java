@@ -237,7 +237,8 @@ public interface ModelService {
                                                               Boolean includeDescendants);
 
     /**
-     * 更新模型排序（保存顺序）：拖拽后按提交的整份顺序重写 sort。
+     * 更新模型排序（保存顺序）。
+     * 带 categoryId 时写分类—型号关联 sort；不带时写型号主表 sort。
      */
     void saveModelSort(ModelSortSaveReqVO reqVO);
 }

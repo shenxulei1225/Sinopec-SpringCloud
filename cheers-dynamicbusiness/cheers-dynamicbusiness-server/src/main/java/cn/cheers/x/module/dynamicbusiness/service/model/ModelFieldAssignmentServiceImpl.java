@@ -60,7 +60,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.util.StringUtils;
 
 /**
- * 模型字段分配 Service 实现类
+ * 模型字段 Service 实现类
  *
  * <p>负责：把字段库字段挂到型号、改分配规则、卸分配；关联字段写入目标类型等。</p>
  * <p>不负责：实体层级（parentId）写入、分类树同步；组织上级由系统 ensure，不靠本服务发明。</p>
@@ -478,7 +478,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
 
         List<ModelFieldAssignmentRespVO> result = new ArrayList<>();
 
-        // 只读模型字段分配表；固定列必须在创建/同步型号时写入分配，禁止读路径再补 BASE
+        // 只读模型字段表；固定列必须在创建/同步型号时写入分配，禁止读路径再补 BASE
         List<ModelFieldAssignmentDO> assignments = modelFieldAssignmentMapper.selectByModelId(modelId);
         if (!assignments.isEmpty()) {
             // 查询字段详情
@@ -505,7 +505,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 respVO.setFieldId(assignment.getFieldId());
                 respVO.setField(FieldConvert.INSTANCE.convert(field));
                 respVO.setRequired(assignment.getRequired());
-                // 优先使用模型字段分配中的配置,如果为 null 则使用智能默认值
+                // 优先使用模型字段中的配置,如果为 null 则使用智能默认值
                 Boolean isSearchable = assignment.getIsSearchable();
                 if (isSearchable == null) {
                     isSearchable = smartSearchableService.getDefaultSearchable(field.getType());
@@ -636,7 +636,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
      * 
      * @param baseField 固定列字段
      * @param sourceEntityTypeCode 源业务类型编码（用于查询关联关系）
-     * @return 模型字段分配响应 VO
+     * @return 模型字段响应 VO
      */
     private void applyBaseFieldDisplayAlias(
             ModelFieldAssignmentRespVO respVO, String entityTypeCode, String physicalFieldCode) {

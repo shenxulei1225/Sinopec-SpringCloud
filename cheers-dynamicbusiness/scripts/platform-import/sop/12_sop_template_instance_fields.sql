@@ -115,7 +115,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
--- 停止挂载废弃列（不删物理列；仅软删基础字段与型号分配）
+-- 停止挂载废弃列（不删物理列；仅软删基础字段与模型字段）
 UPDATE dynamic_entity_type_base_field
 SET deleted = true,
     updater = 'seed',
@@ -123,7 +123,7 @@ SET deleted = true,
 WHERE entity_type_code = 'sop'
   AND tenant_id = 1
   AND deleted = false
-  AND field_code IN ('default_steps_json', 'default_params_json', 'step_override_json');
+  AND field_code IN ('default_steps_json', 'default_params_json', 'step_override_json', 'steps_json');
 
 UPDATE dynamic_model_field_assignment
 SET deleted = true,
@@ -132,7 +132,7 @@ SET deleted = true,
 WHERE model_code = 'sop'
   AND tenant_id = 1
   AND deleted = false
-  AND field_code IN ('default_steps_json', 'default_params_json', 'step_override_json');
+  AND field_code IN ('default_steps_json', 'default_params_json', 'step_override_json', 'steps_json');
 
 INSERT INTO dynamic_model_field_assignment (
   model_id, field_id, model_code, field_code,

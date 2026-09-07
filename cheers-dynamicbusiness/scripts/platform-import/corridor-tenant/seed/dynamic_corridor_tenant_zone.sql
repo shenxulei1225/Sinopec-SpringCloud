@@ -130,7 +130,7 @@ DO UPDATE SET
   update_time = CURRENT_TIMESTAMP;
 
 -- --------------------------------------------------------------------------
--- 4. 模型字段分配：按显示名从 tenant 1 退役 region 模型复制到管廊 zone 模型
+-- 4. 模型字段：按显示名从 tenant 1 退役 region 模型复制到管廊 zone 模型
 -- --------------------------------------------------------------------------
 
 INSERT INTO dynamic_model_field_assignment (

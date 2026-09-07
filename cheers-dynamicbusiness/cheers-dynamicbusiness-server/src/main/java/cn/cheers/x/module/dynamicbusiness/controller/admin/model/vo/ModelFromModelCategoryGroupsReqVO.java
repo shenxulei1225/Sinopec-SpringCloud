@@ -25,6 +25,9 @@ public class ModelFromModelCategoryGroupsReqVO {
     @Schema(description = "业务域（可选）", example = "巡检")
     private String domain;
 
+    @Schema(description = "关键词（可选，匹配模型名称/描述）", example = "阀门")
+    private String keyword;
+
     @Schema(description = "是否按分类树展开子孙后再求交（默认 true）", example = "true")
     private Boolean includeDescendants;
 }

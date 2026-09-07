@@ -201,7 +201,7 @@ public class DmDataTabColumnRelationBootstrapService {
             throw new ServiceException(500, "栏间关系缺少 edgeAction，无法识别用途");
         }
         String text = String.valueOf(role).trim();
-        if ("write".equals(text) || "filter".equals(text)) {
+        if ("write".equals(text) || "filter".equals(text) || "detail_follow".equals(text)) {
             return text;
         }
         throw new ServiceException(500, "栏间关系 edgeAction 非法：" + text);

@@ -24,7 +24,7 @@ public interface ModelGovernanceCommandService {
     /**
      * 硬删除当前用户在当前站场创建且尚未被实体占用的本地型号。
      *
-     * <p>公司规格始终拒绝硬删除；本方法负责清理型号字段分配、分类关系和型号本体。</p>
+     * <p>公司规格始终拒绝硬删除；本方法负责清理模型字段、分类关系和型号本体。</p>
      */
     void deleteOwnLocal(Long modelId, Long effectiveFacilityId, Long currentUserId);
 

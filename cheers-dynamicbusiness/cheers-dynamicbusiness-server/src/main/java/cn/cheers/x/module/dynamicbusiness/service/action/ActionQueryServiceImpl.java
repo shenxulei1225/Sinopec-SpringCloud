@@ -172,7 +172,7 @@ public class ActionQueryServiceImpl implements ActionQueryService {
             if (fields != null) {
                 return parseStringList(fields);
             }
-            Object single = firstFieldCode(root);
+            String single = firstFieldCode(root);
             return single != null ? List.of(single) : List.of();
         }
         if (raw instanceof List<?> list) {

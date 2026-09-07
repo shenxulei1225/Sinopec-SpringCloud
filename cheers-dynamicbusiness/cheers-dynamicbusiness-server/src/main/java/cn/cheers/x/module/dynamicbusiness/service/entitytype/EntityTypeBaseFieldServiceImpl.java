@@ -86,8 +86,9 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
         Long tenantId = TenantContextHolder.getTenantId();
         Runnable refresh = () -> {
             try {
-                Runnable work = () -> businessCapabilityService
-                        .refreshAfterEntityTypeFieldDefinitionChanged(code);
+                // 字段定义变更后需要让「列表投影 + 各型号 CRUD 表单」同时更新，
+                // 否则会出现新建/编辑表单仍读到旧字段的问题。
+                Runnable work = () -> businessCapabilityService.rebuildByEntityTypeCode(code);
                 if (tenantId != null) {
                     TenantUtils.execute(tenantId, work);
                 } else {
@@ -170,6 +171,8 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
     @Transactional(rollbackFor = Exception.class)
     public void updateBaseField(EntityTypeBaseFieldSaveReqVO reqVO) {
         applyBaseFieldUpdate(reqVO);
+        // 单条更新也要触发能力重建；否则 CRUD 表单可能继续使用旧字段投影。
+        notifyEntityTypeFieldDefinitionChanged(reqVO.getEntityTypeCode());
     }
 
     private void applyBaseFieldUpdate(EntityTypeBaseFieldSaveReqVO reqVO) {

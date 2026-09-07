@@ -72,7 +72,7 @@ public interface BusinessCapabilityService {
     void rebuildByModelId(Long modelId);
 
     /**
-     * 模型字段分配或规则变更后，重建该模型的 CRUD 表单定义（写路径触发）。
+     * 模型字段或规则变更后，重建该模型的 CRUD 表单定义（写路径触发）。
      */
     void refreshModelCrudFormDefinition(Long modelId);
 

@@ -152,6 +152,10 @@ public final class ModelCrudFormFieldAssembler {
         if (!StringUtils.hasText(fieldCode)) {
             return true;
         }
+        // 软删字段永不进入 CRUD 表单（即使历史数据 status 仍为 1）。
+        if (baseField != null && Boolean.TRUE.equals(baseField.getDeleted())) {
+            return true;
+        }
         String code = fieldCode.trim();
         if ("name".equals(code) || "status".equals(code)) {
             return true;
@@ -511,6 +515,9 @@ public final class ModelCrudFormFieldAssembler {
         if (config.containsKey("options")) {
             putStaticOptions(item, config.get("options"));
         }
+        copyBooleanRule(item, config, "createVisible", "create_visible");
+        copyBooleanRule(item, config, "editVisible", "edit_visible");
+        copyBooleanRule(item, config, "detailVisible", "detail_visible");
     }
 
     private static void applyFieldTypeExtensions(
@@ -793,6 +800,23 @@ public final class ModelCrudFormFieldAssembler {
         Number value = rules.getObject(key, Number.class);
         if (value != null) {
             item.put(key, value);
+        }
+    }
+
+    private static void copyBooleanRule(
+            Map<String, Object> item, JSONObject rules, String canonicalKey, String legacySnakeKey) {
+        if (rules.containsKey(canonicalKey)) {
+            Boolean value = rules.getObject(canonicalKey, Boolean.class);
+            if (value != null) {
+                item.put(canonicalKey, value);
+                return;
+            }
+        }
+        if (rules.containsKey(legacySnakeKey)) {
+            Boolean value = rules.getObject(legacySnakeKey, Boolean.class);
+            if (value != null) {
+                item.put(canonicalKey, value);
+            }
         }
     }
 

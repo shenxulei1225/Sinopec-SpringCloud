@@ -186,7 +186,7 @@ CREATE INDEX IF NOT EXISTS idx_model_business_status_deleted
     ON dynamic_model(entity_type_code, status, deleted);
 
 -- =====================================================
--- 6. 模型字段分配表 (dynamic_model_field_assignment) 索引优化
+-- 6. 模型字段表 (dynamic_model_field_assignment) 索引优化
 -- =====================================================
 
 -- 模型ID索引

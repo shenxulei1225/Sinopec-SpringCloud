@@ -24,7 +24,7 @@ BEGIN
   SET parent_id = NULL, updater = 'purge-patrol-domain', update_time = CURRENT_TIMESTAMP
   WHERE deleted = false AND tenant_id = 1 AND code = 'fault';
 
-  -- 1. task 模型字段分配：去掉指向 patrol 域的 ENTITY_REF
+  -- 1. task 模型字段：去掉指向 patrol 域的 ENTITY_REF
   DELETE FROM dynamic_model_field_assignment
   WHERE tenant_id = 1
     AND (
@@ -79,7 +79,7 @@ BEGIN
   DELETE FROM business_capability
   WHERE tenant_id = 1 AND entity_type_code = ANY (patrol_codes);
 
-  -- 8. 模型字段分配（patrol 模型自身）
+  -- 8. 模型字段（patrol 模型自身）
   DELETE FROM dynamic_model_field_assignment
   WHERE tenant_id = 1
     AND model_code IN ('patrol_schedule', 'patrol_object', 'patrol_point');
