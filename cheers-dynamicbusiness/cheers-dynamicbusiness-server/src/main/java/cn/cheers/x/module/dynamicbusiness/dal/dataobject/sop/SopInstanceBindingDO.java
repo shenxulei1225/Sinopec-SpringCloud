@@ -46,6 +46,6 @@ public class SopInstanceBindingDO extends TenantBaseDO {
 
     private String dimensionValue;
 
-    /** SOP 实例实体 id（须 is_template=false） */
+    /** SOP 实例实体 id */
     private Long sopInstanceId;
 }

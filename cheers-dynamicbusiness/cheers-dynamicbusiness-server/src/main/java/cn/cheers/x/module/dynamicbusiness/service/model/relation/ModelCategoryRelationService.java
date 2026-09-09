@@ -99,15 +99,18 @@ public interface ModelCategoryRelationService {
     void reorderModelInCategory(Long sourceModelId, Long targetModelId, Long categoryId, String position);
 
     /**
-     * 按提交顺序重写指定分类下型号关联的 sort（SparseSortUtils.reindexSortByPosition）。
+     * 按提交顺序重写分类语境下的型号关联 sort。
      *
-     * <p>仅更新 {@code dynamic_model_category_relation.sort}，不改型号主表 sort。
-     * 列表拖拽在「已选中分类节点」时走本方法，与读路径 find-by-category 的关联序对齐；
-     * 与实体侧 {@code reindexEntitySortInCategory} 同口径。</p>
+     * <p>仅更新 {@code dynamic_model_category_relation.sort}，不改型号主表 sort。</p>
+     * <ul>
+     *   <li>叶子节点：写该节点上的关联 sort</li>
+     *   <li>父节点（含子树）：写每个型号在子树里<strong>真实挂接</strong>那条关联的 sort；
+     *       列表读路径按子分类分桶拼接，故<strong>禁止跨子分类</strong>调序——发现跨桶则拒绝并提示选中子分类再排</li>
+     * </ul>
      *
-     * @param categoryId 分类 ID（须为关联表上的精确节点）
+     * @param categoryId 树上当前选中的分类（可为父节点）
      * @param entityTypeCode 业务类型编码
-     * @param modelIdsInOrder 目标顺序的型号 ID（从前往后为第 0、1、… 位）
+     * @param modelIdsInOrder 拖拽后的扁列表顺序（通常为当前页）
      */
     void reindexModelSortInCategory(Long categoryId, String entityTypeCode, List<Long> modelIdsInOrder);
 

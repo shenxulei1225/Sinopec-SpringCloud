@@ -20,6 +20,9 @@ import java.util.Objects;
  *
  * <p>治理身份只在创建和后续专用治理命令中写入。本实现不从角色码、默认站场或其它字段
  * 猜测身份；缺少当前用户或有效站场时直接拒绝本地型号写入。</p>
+ *
+ * <p>删除权威：软删型号本体并清字段分配/分类关联；有实体占用则拒绝。
+ * 禁止把删除落成 {@code status=0} 停用。</p>
  */
 @Service
 @RequiredArgsConstructor
@@ -64,46 +67,40 @@ public class ModelGovernanceCommandServiceImpl implements ModelGovernanceCommand
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteOwnLocal(Long modelId, Long effectiveFacilityId, Long currentUserId) {
+    public void deleteModel(Long modelId, Long effectiveFacilityId, Long currentUserId) {
         ModelDO model = requireModel(modelId);
-        if (!GOVERNANCE_LOCAL.equals(model.getGovernanceStatus())) {
-            throw new ServiceException(400, "公司规格禁止硬删除，请使用停用");
-        }
-        if (currentUserId == null || !Objects.equals(currentUserId, model.getCreatorUserId())) {
-            throw new ServiceException(403, "只能删除自己创建的本地型号");
-        }
-        if (effectiveFacilityId == null || !Objects.equals(effectiveFacilityId, model.getOriginFacilityId())) {
-            throw new ServiceException(403, "只能在本地型号的发起站场删除");
+        boolean local = GOVERNANCE_LOCAL.equals(normalizeGovernanceStatus(model.getGovernanceStatus()));
+        if (local) {
+            if (currentUserId == null || !Objects.equals(currentUserId, model.getCreatorUserId())) {
+                throw new ServiceException(403, "只能删除自己创建的本地型号");
+            }
+            if (effectiveFacilityId == null) {
+                throw new ServiceException(400, "删除本地型号必须指定当前有效站场");
+            }
+            if (!Objects.equals(effectiveFacilityId, model.getOriginFacilityId())) {
+                throw new ServiceException(403, "只能在本地型号的发起站场删除");
+            }
+        } else {
+            // 公司规格或无发起站场的种子：须全网型号治理能力；删除仍是软删，不是停用
+            if (!capabilityChecker.canManageNetworkModelData()) {
+                throw new ServiceException(403, "无权删除公司规格");
+            }
         }
 
-        String storageEntityTypeCode =
-                entityTypeScopeResolver.resolveStorageEntityTypeCode(model.getEntityTypeCode());
-        if (!StringUtils.hasText(storageEntityTypeCode)) {
-            throw new ServiceException(400, "型号缺少有效的存储类型编码");
-        }
-        if (entityRepository.existsByModelId(modelId, storageEntityTypeCode)) {
-            throw new ServiceException(400, "本站仍有实体使用该本地型号，禁止删除");
-        }
-
+        assertNotOccupied(model);
         modelFieldAssignmentMapper.deleteByModelId(modelId);
         modelCategoryRelationService.deleteAllByModelId(modelId);
         modelCoreService.delete(modelId);
     }
 
+    /**
+     * @deprecated 停用不再作为删除替代；调用方应改走 {@link #deleteModel}。
+     */
     @Override
+    @Deprecated
     @Transactional(rollbackFor = Exception.class)
     public void deactivateCompany(Long modelId) {
-        if (!capabilityChecker.canDeactivateCompanyStandard()) {
-            throw new ServiceException(403, "无权停用公司规格");
-        }
-        ModelDO model = requireModel(modelId);
-        if (!GOVERNANCE_COMPANY.equals(model.getGovernanceStatus())) {
-            throw new ServiceException(400, "只有公司规格可以执行公司规格停用");
-        }
-        ModelDO update = new ModelDO();
-        update.setId(modelId);
-        update.setStatus(0);
-        modelCoreService.update(update);
+        throw new ServiceException(400, "型号停用已废弃，请使用删除；有实体占用时删除会被拒绝");
     }
 
     @Override
@@ -119,13 +116,24 @@ public class ModelGovernanceCommandServiceImpl implements ModelGovernanceCommand
         if (GOVERNANCE_COMPANY.equals(existingModel.getGovernanceStatus())
                 && requestedStatus != null
                 && !Objects.equals(requestedStatus, existingModel.getStatus())) {
-            throw new ServiceException(400, "公司规格状态不能通过普通更新修改，请使用治理命令");
+            throw new ServiceException(400, "公司规格状态不能通过普通更新修改");
+        }
+    }
+
+    private void assertNotOccupied(ModelDO model) {
+        String storageEntityTypeCode =
+                entityTypeScopeResolver.resolveStorageEntityTypeCode(model.getEntityTypeCode());
+        if (!StringUtils.hasText(storageEntityTypeCode)) {
+            throw new ServiceException(400, "型号缺少有效的存储类型编码");
+        }
+        if (entityRepository.existsByModelId(model.getId(), storageEntityTypeCode)) {
+            throw new ServiceException(400, "仍有实体使用该型号，禁止删除");
         }
     }
 
     private ModelDO requireModel(Long modelId) {
         if (modelId == null) {
-            throw new ServiceException(400, "modelId 不能为空");
+            throw new ServiceException(400, "型号 ID 不能为空");
         }
         ModelDO model = modelCoreService.get(modelId);
         if (model == null) {
@@ -134,10 +142,10 @@ public class ModelGovernanceCommandServiceImpl implements ModelGovernanceCommand
         return model;
     }
 
-    private String normalizeGovernanceStatus(String governanceStatus) {
-        if (!StringUtils.hasText(governanceStatus)) {
+    private static String normalizeGovernanceStatus(String raw) {
+        if (raw == null || raw.isBlank()) {
             return null;
         }
-        return governanceStatus.trim().toUpperCase(Locale.ROOT);
+        return raw.trim().toUpperCase(Locale.ROOT);
     }
 }

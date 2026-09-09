@@ -142,6 +142,36 @@ public class DmWorkbenchLayoutService {
         return layoutId;
     }
 
+    /**
+     * 目录「模型管理」页签：若尚无 modelLayoutId，从通用台账模版生成<strong>独立</strong>实例并写回类型。
+     * <p>
+     * 与 {@link #ensureCatalogDataLayout} 对称：栏行写真实目录注册编码；禁止伪编码分行；
+     * 与数据页 layoutId 不得相同。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public Long ensureCatalogModelLayout(EntityTypeDO entityType,
+                                         String categoryTypeCode,
+                                         boolean categoryAsEntityLayout) {
+        if (entityType.getModelLayoutId() != null) {
+            List<DmDataTabLayoutDO> rows =
+                    dmDataTabLayoutMapper.selectListByLayoutId(entityType.getModelLayoutId());
+            if (!rows.isEmpty()) {
+                return entityType.getModelLayoutId();
+            }
+        }
+        Long templateId = requireDefaultTemplateId();
+        String name = "模型管理·" + entityType.getCode();
+        Long layoutId = instantiateFromTemplate(
+                templateId,
+                name,
+                entityType.getCode(),
+                categoryTypeCode,
+                categoryAsEntityLayout);
+        entityType.setModelLayoutId(layoutId);
+        entityTypeMapper.updateById(entityType);
+        return layoutId;
+    }
+
     public Long resolveLayoutIdForEntityType(String entityTypeCode) {
         EntityTypeDO entityType = entityTypeMapper.selectByCode(entityTypeCode.trim());
         if (entityType == null) {

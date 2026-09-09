@@ -102,8 +102,9 @@ public class DomainEntityTypeRetireService {
         // 2) 域分组节点 {registry}_dir（级联软删，含 status=0）
         softDeleteDomainCategoryFolder(registryCode, storage);
 
-        // 3) 本目录数据页布局 / 栏关系 / 编排头
-        softDeleteCatalogLayouts(registryCode, domainType.getDataLayoutId());
+        // 3) 本目录数据页 / 模型管理布局 / 栏关系 / 编排头
+        softDeleteCatalogLayouts(
+                registryCode, domainType.getDataLayoutId(), domainType.getModelLayoutId());
 
         // 4) 同编码门户叶子（若有）
         softDeletePortalByCode(registryCode);
@@ -116,6 +117,7 @@ public class DomainEntityTypeRetireService {
         patch.setId(domainType.getId());
         patch.setStatus(EntityTypeDO.STATUS_INACTIVE);
         patch.setDataLayoutId(null);
+        patch.setModelLayoutId(null);
         entityTypeMapper.updateById(patch);
         entityTypeMapper.deleteById(domainType.getId());
 
@@ -156,18 +158,12 @@ public class DomainEntityTypeRetireService {
         categoryService.deleteCategory(req);
     }
 
-    private void softDeleteCatalogLayouts(String registryCode, Long dataLayoutId) {
+    private void softDeleteCatalogLayouts(String registryCode, Long dataLayoutId, Long modelLayoutId) {
         List<DmDataTabLayoutDO> layouts = dmDataTabLayoutMapper.selectList(new LambdaQueryWrapperX<DmDataTabLayoutDO>()
                 .eq(DmDataTabLayoutDO::getEntityTypeCode, registryCode)
                 .eq(DmDataTabLayoutDO::getDeleted, false));
-        if (dataLayoutId != null) {
-            List<DmDataTabLayoutDO> byLayoutId = dmDataTabLayoutMapper.selectListByLayoutId(dataLayoutId);
-            for (DmDataTabLayoutDO row : byLayoutId) {
-                if (layouts.stream().noneMatch(existing -> Objects.equals(existing.getId(), row.getId()))) {
-                    layouts.add(row);
-                }
-            }
-        }
+        appendLayoutsByLayoutId(layouts, dataLayoutId);
+        appendLayoutsByLayoutId(layouts, modelLayoutId);
         for (DmDataTabLayoutDO row : layouts) {
             dmDataTabLayoutMapper.deleteById(row.getId());
         }
@@ -176,15 +172,8 @@ public class DomainEntityTypeRetireService {
                 new LambdaQueryWrapperX<DmDataTabColumnRelationDO>()
                         .eq(DmDataTabColumnRelationDO::getEntityTypeCode, registryCode)
                         .eq(DmDataTabColumnRelationDO::getDeleted, false));
-        if (dataLayoutId != null) {
-            List<DmDataTabColumnRelationDO> byLayoutId =
-                    dmDataTabColumnRelationMapper.selectListByLayoutId(dataLayoutId);
-            for (DmDataTabColumnRelationDO row : byLayoutId) {
-                if (relations.stream().noneMatch(existing -> Objects.equals(existing.getId(), row.getId()))) {
-                    relations.add(row);
-                }
-            }
-        }
+        appendRelationsByLayoutId(relations, dataLayoutId);
+        appendRelationsByLayoutId(relations, modelLayoutId);
         for (DmDataTabColumnRelationDO row : relations) {
             dmDataTabColumnRelationMapper.deleteById(row.getId());
         }
@@ -192,6 +181,28 @@ public class DomainEntityTypeRetireService {
         DmCatalogOrchestrationDO orchestration = catalogOrchestrationMapper.selectByEntityTypeCode(registryCode);
         if (orchestration != null) {
             catalogOrchestrationMapper.deleteById(orchestration.getId());
+        }
+    }
+
+    private void appendLayoutsByLayoutId(List<DmDataTabLayoutDO> layouts, Long layoutId) {
+        if (layoutId == null) {
+            return;
+        }
+        for (DmDataTabLayoutDO row : dmDataTabLayoutMapper.selectListByLayoutId(layoutId)) {
+            if (layouts.stream().noneMatch(existing -> Objects.equals(existing.getId(), row.getId()))) {
+                layouts.add(row);
+            }
+        }
+    }
+
+    private void appendRelationsByLayoutId(List<DmDataTabColumnRelationDO> relations, Long layoutId) {
+        if (layoutId == null) {
+            return;
+        }
+        for (DmDataTabColumnRelationDO row : dmDataTabColumnRelationMapper.selectListByLayoutId(layoutId)) {
+            if (relations.stream().noneMatch(existing -> Objects.equals(existing.getId(), row.getId()))) {
+                relations.add(row);
+            }
         }
     }
 

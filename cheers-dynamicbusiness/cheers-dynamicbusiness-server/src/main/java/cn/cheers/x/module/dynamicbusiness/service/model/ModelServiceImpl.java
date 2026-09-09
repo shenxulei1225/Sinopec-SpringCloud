@@ -696,29 +696,21 @@ public class ModelServiceImpl implements ModelService {
 
     @Override
     public void deleteModel(Long id, Long effectiveFacilityId) {
-        // 删除入口按治理身份分流，不发明第二套治理：
-        // - 公司规格 / 无发起站场 → 禁止硬删，提示走停用
-        // - 本地型号缺站场 → 明确要求站场
-        // - 本地型号有站场 → 仅走 ModelGovernanceCommandService.deleteOwnLocal
+        // 删除即软删：公司规格与本地型号统一走治理命令；有实体占用则拒绝。
+        // 禁止再把公司规格删除拐成停用（status=0）。
         ModelDO model = modelCoreService.get(id);
         if (model == null) {
             throw new ServiceException(404, "模型不存在");
         }
-        String governance = model.getGovernanceStatus() == null
-                ? ""
-                : model.getGovernanceStatus().trim().toUpperCase();
-        boolean companyOrNoOrigin = "COMPANY".equals(governance) || model.getOriginFacilityId() == null;
-        if (companyOrNoOrigin) {
-            throw new ServiceException(400, "公司规格请用停用");
-        }
-        if (effectiveFacilityId == null) {
-            throw new ServiceException(400, "删除本地型号必须指定当前有效站场");
-        }
-        modelGovernanceCommandService.deleteOwnLocal(
+        modelGovernanceCommandService.deleteModel(
                 id, effectiveFacilityId, SecurityFrameworkUtils.getLoginUserId());
     }
 
+    /**
+     * @deprecated 停用已废弃；请调用 {@link #deleteModel(Long, Long)}。
+     */
     @Override
+    @Deprecated
     public void deactivateCompanyModel(Long id) {
         modelGovernanceCommandService.deactivateCompany(id);
     }
@@ -1139,7 +1131,8 @@ public class ModelServiceImpl implements ModelService {
      *
      * <p>权威分流（与实体栏对齐）：
      * <ul>
-     *   <li>请求带 {@code categoryId} → 只写分类—型号关联 sort（该分类下展示序）</li>
+     *   <li>请求带 {@code categoryId} → 写分类—型号关联 sort（父节点下写子树真实挂接；
+     *       跨子分类调序拒绝并提示选中子分类）</li>
      *   <li>不带分类 → 写型号主表 sort（类型内全局序）</li>
      * </ul>
      * 禁止：有选中分类时仍只改主表 sort，导致数据页按关联序回读时「已保存却不变」。
@@ -1347,8 +1340,10 @@ public class ModelServiceImpl implements ModelService {
             return List.of();
         }
 
-        // 批量查询模型
-        List<ModelDO> models = modelCoreService.listByIds(ids);
+        // 批量查询模型（@TableLogic 已排除软删）；再排除历史「停用冒充删除」残留的 status≠1
+        List<ModelDO> models = modelCoreService.listByIds(ids).stream()
+                .filter(m -> m != null && Objects.equals(m.getStatus(), 1))
+                .toList();
         if (models.isEmpty()) {
             return List.of();
         }

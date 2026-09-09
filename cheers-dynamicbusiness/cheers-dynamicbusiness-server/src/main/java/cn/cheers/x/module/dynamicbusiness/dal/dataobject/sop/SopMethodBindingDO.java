@@ -3,6 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.dal.dataobject.sop;
 import cn.cheers.x.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.KeySequence;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
@@ -15,7 +16,7 @@ import lombok.ToString;
 /**
  * SOP 方法选用行（V80 {@code dynamic_sop_method_binding}）。
  *
- * <p><b>负责</b>：按「对象类型 + 对象 id + 维度键/值」存指向的 SOP 模板 id。</p>
+ * <p><b>负责</b>：按「对象类型 + 对象 id + 维度键/值」存指向的标准 SOP id。</p>
  * <p><b>不负责</b>：宿主侧实例绑定；业务类型码含义（由调用方传入）。</p>
  * <p><b>禁止</b>：读路径静默补方法行；在本表硬编码某一业务的 subject_type。</p>
  */
@@ -42,6 +43,7 @@ public class SopMethodBindingDO extends TenantBaseDO {
 
     private String dimensionValue;
 
-    /** SOP 模板实体 id（须 is_template=true） */
-    private Long sopTemplateId;
+    /** 标准 SOP 实体 id（底层列名沿用 sop_template_id） */
+    @TableField("sop_template_id")
+    private Long sopId;
 }

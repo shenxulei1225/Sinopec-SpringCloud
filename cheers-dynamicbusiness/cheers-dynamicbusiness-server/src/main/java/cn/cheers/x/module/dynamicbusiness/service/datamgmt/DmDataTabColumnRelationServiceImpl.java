@@ -36,6 +36,7 @@ import java.util.UUID;
  * </ul>
  * 禁止：按 enabled / 缺类型码 /「当前看起来不像有效端点」反扫全表删边。
  * 默认补 filter 边在 {@link DmDataTabColumnRelationBootstrapService}，只 insert 不删。
+ * 筛选边空选模式（filterEmptySkip / filterEmptyVisible）经 saveRelations 写入 meta.enabledInteractions，读回不得清空。
  */
 @Service
 @Validated
@@ -53,7 +54,8 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
             "ENTITY_ENTITY"
     );
 
-    private static final Set<String> ALLOWED_INTERACTIONS = Set.of(
+    /** 写关联交互（勾选 / 拖入等）；不得出现在筛选边。 */
+    private static final Set<String> ALLOWED_WRITE_INTERACTIONS = Set.of(
             "browseFilter",
             "dragAssociate",
             "unbindChecked",
@@ -62,6 +64,16 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
             "associationFilterTriad",
             "cascadeClip",
             "ownershipWrite"
+    );
+
+    /**
+     * 筛选边空选模式（互斥，落在 enabledInteractions）：
+     * filterEmptySkip = 上游未点则本维不参与；filterEmptyVisible = 未点则按上游可见项 id 参与。
+     * 旧数据空数组与 skip 同语义；前端新边默认写 skip。
+     */
+    private static final Set<String> FILTER_EMPTY_SELECTION_MODES = Set.of(
+            "filterEmptySkip",
+            "filterEmptyVisible"
     );
 
     private static final Set<String> ALLOWED_EDGE_ACTIONS = Set.of("filter", "write", "detail_follow");
@@ -172,7 +184,7 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
 
             List<String> interactions = normalizeInteractions(item.getEnabledInteractions(), edgeAction);
             Map<String, Object> meta = buildMeta(
-                    edgeAction, interactions, item.getLinkKeys(), item.getPresentation());
+                    edgeAction, interactions, item.getRefFieldCodes(), item.getPresentation());
 
             DmDataTabColumnRelationDO insert = new DmDataTabColumnRelationDO();
             insert.setLayoutId(layoutId);
@@ -408,9 +420,21 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
         }
     }
 
+    /**
+     * 按边动作归一 enabledInteractions。
+     * <ul>
+     *   <li>detail_follow：固定空（无交互配置）</li>
+     *   <li>filter：只允许空选模式 filterEmptySkip / filterEmptyVisible；空数组保留（旧边=不点不参与）</li>
+     *   <li>write：至少一种勾选/拖入类交互</li>
+     * </ul>
+     * 禁止：筛选边清空前端写入的空选模式（会导致保存后回读不一致）。
+     */
     private List<String> normalizeInteractions(List<String> raw, String edgeAction) {
-        if ("filter".equals(edgeAction) || "detail_follow".equals(edgeAction)) {
+        if ("detail_follow".equals(edgeAction)) {
             return List.of();
+        }
+        if ("filter".equals(edgeAction)) {
+            return normalizeFilterEmptySelectionMode(raw);
         }
         if (raw == null || raw.isEmpty()) {
             throw new ServiceException(400, "写关联至少启用一种交互方式（勾选或拖入）");
@@ -421,7 +445,10 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
                 continue;
             }
             String code = item.trim();
-            if (!ALLOWED_INTERACTIONS.contains(code)) {
+            if (FILTER_EMPTY_SELECTION_MODES.contains(code)) {
+                throw new ServiceException(400, "写关联不可配置筛选边空选模式: " + code);
+            }
+            if (!ALLOWED_WRITE_INTERACTIONS.contains(code)) {
                 throw new ServiceException(400, "无效的交互方式: " + code);
             }
             if ("browseFilter".equals(code) || "cascadeClip".equals(code)
@@ -436,23 +463,59 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
         return new ArrayList<>(out);
     }
 
+    /**
+     * 筛选边空选模式归一：互斥只留一项；visible 优先于 skip；无有效项则空数组。
+     */
+    private List<String> normalizeFilterEmptySelectionMode(List<String> raw) {
+        if (raw == null || raw.isEmpty()) {
+            return List.of();
+        }
+        boolean wantSkip = false;
+        boolean wantVisible = false;
+        for (String item : raw) {
+            if (!StringUtils.hasText(item)) {
+                continue;
+            }
+            String code = item.trim();
+            if ("filterEmptySkip".equals(code)) {
+                wantSkip = true;
+                continue;
+            }
+            if ("filterEmptyVisible".equals(code)) {
+                wantVisible = true;
+                continue;
+            }
+            if (ALLOWED_WRITE_INTERACTIONS.contains(code)) {
+                throw new ServiceException(400, "筛选边不可配置写关联交互: " + code);
+            }
+            throw new ServiceException(400, "无效的筛选边空选模式: " + code);
+        }
+        if (wantVisible) {
+            return List.of("filterEmptyVisible");
+        }
+        if (wantSkip) {
+            return List.of("filterEmptySkip");
+        }
+        return List.of();
+    }
+
     private Map<String, Object> buildMeta(
             String edgeAction,
             List<String> interactions,
-            List<String> linkKeys,
+            List<String> refFieldCodes,
             Map<String, Object> presentation) {
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("edgeAction", edgeAction);
         meta.put("enabledInteractions", interactions);
-        if (linkKeys != null && !linkKeys.isEmpty()) {
+        if (refFieldCodes != null && !refFieldCodes.isEmpty()) {
             List<String> keys = new ArrayList<>();
-            for (String key : linkKeys) {
+            for (String key : refFieldCodes) {
                 if (StringUtils.hasText(key)) {
                     keys.add(key.trim());
                 }
             }
             if (!keys.isEmpty()) {
-                meta.put("linkKeys", keys);
+                meta.put("refFieldCodes", keys);
             }
         }
         if (presentation != null && !presentation.isEmpty()) {
@@ -487,15 +550,15 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
                 }
                 vo.setEnabledInteractions(codes);
             }
-            Object linkKeys = meta.get("linkKeys");
-            if (linkKeys instanceof List<?> list) {
+            Object refFieldCodes = meta.get("refFieldCodes");
+            if (refFieldCodes instanceof List<?> list) {
                 List<String> keys = new ArrayList<>();
                 for (Object item : list) {
                     if (item != null && StringUtils.hasText(String.valueOf(item))) {
                         keys.add(String.valueOf(item).trim());
                     }
                 }
-                vo.setLinkKeys(keys);
+                vo.setRefFieldCodes(keys);
             }
             Object presentation = meta.get("presentation");
             if (presentation instanceof Map<?, ?> map) {

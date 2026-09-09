@@ -58,16 +58,17 @@ public interface ModelService {
     void updateModel(ModelUpdateReqVO reqVO);
 
     /**
-     * 删除业务模型
+     * 删除业务模型（软删）。公司规格与本地型号均可删；有实体占用则拒绝。
      *
      * @param id 模型ID
-     * @param effectiveFacilityId 当前有效站场
+     * @param effectiveFacilityId 当前有效站场（删除本地型号时必填）
      */
     void deleteModel(Long id, Long effectiveFacilityId);
 
     /**
-     * 停用公司规格；普通型号更新不能代替此治理命令。
+     * @deprecated 停用已废弃，请使用 {@link #deleteModel(Long, Long)}。
      */
+    @Deprecated
     void deactivateCompanyModel(Long id);
 
     // ==================== 业务域迁移 ====================

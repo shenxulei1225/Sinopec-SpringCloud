@@ -3,7 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.service.sop;
 import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopActionTreeNode;
 import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopEffectiveConfig;
 import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopMergeResult;
-import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopTemplateSnapshot;
+import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopStandardSnapshot;
 import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopTreeOverride;
 import org.springframework.stereotype.Service;
 
@@ -15,22 +15,22 @@ import java.util.Map;
 /**
  * SOP merge 实现（动作树 + 按节点参数）。
  *
- * <p><b>权威</b>：生效配置 = merge(模板动作树/按节点参数, 树差量, 参数差量)。</p>
+ * <p><b>权威</b>：生效配置 = merge(标准动作树/按节点参数, 树差量, 参数差量)。</p>
  * <p><b>禁止</b>：静默补参、解析业务巡检点 / 停靠站、跨实例共享参数。</p>
  */
 @Service
 public class SopMergeServiceImpl implements SopMergeService {
 
     @Override
-    public SopMergeResult merge(SopTemplateSnapshot template,
+    public SopMergeResult merge(SopStandardSnapshot standard,
                                 SopTreeOverride treeOverride,
                                 Map<String, Map<String, Object>> paramOverride,
                                 boolean requireParamValues) {
-        if (template == null) {
-            return SopMergeResult.failure(List.of("MISSING_TEMPLATE"));
+        if (standard == null) {
+            return SopMergeResult.failure(List.of("MISSING_STANDARD_SOP"));
         }
-        List<SopActionTreeNode> nodes = resolveEffectiveNodes(template, treeOverride);
-        Map<String, Map<String, Object>> paramsByNode = mergeParamsByNode(template, nodes, paramOverride);
+        List<SopActionTreeNode> nodes = resolveEffectiveNodes(standard, treeOverride);
+        Map<String, Map<String, Object>> paramsByNode = mergeParamsByNode(standard, nodes, paramOverride);
         if (requireParamValues) {
             List<String> gapCodes = validateRequiredParams(nodes, paramsByNode);
             if (!gapCodes.isEmpty()) {
@@ -43,7 +43,7 @@ public class SopMergeServiceImpl implements SopMergeService {
         return SopMergeResult.success(effective);
     }
 
-    private List<SopActionTreeNode> resolveEffectiveNodes(SopTemplateSnapshot template,
+    private List<SopActionTreeNode> resolveEffectiveNodes(SopStandardSnapshot standard,
                                                           SopTreeOverride treeOverride) {
         List<SopActionTreeNode> source;
         if (treeOverride != null
@@ -51,7 +51,7 @@ public class SopMergeServiceImpl implements SopMergeService {
                 && !treeOverride.getReplaceTree().isEmpty()) {
             source = treeOverride.getReplaceTree();
         } else {
-            source = template.getActionTree() != null ? template.getActionTree() : List.of();
+            source = standard.getActionTree() != null ? standard.getActionTree() : List.of();
         }
         List<SopActionTreeNode> result = new ArrayList<>(source.size());
         for (int i = 0; i < source.size(); i++) {
@@ -70,15 +70,15 @@ public class SopMergeServiceImpl implements SopMergeService {
     }
 
     private Map<String, Map<String, Object>> mergeParamsByNode(
-            SopTemplateSnapshot template,
+            SopStandardSnapshot standard,
             List<SopActionTreeNode> nodes,
             Map<String, Map<String, Object>> paramOverride) {
-        Map<String, Map<String, Object>> templateParams =
-                template.getParamsByNode() != null ? template.getParamsByNode() : Map.of();
+        Map<String, Map<String, Object>> standardParams =
+                standard.getParamsByNode() != null ? standard.getParamsByNode() : Map.of();
         Map<String, Map<String, Object>> result = new LinkedHashMap<>();
         for (SopActionTreeNode node : nodes) {
             Map<String, Object> merged = new LinkedHashMap<>();
-            Map<String, Object> defaults = templateParams.get(node.getNodeKey());
+            Map<String, Object> defaults = standardParams.get(node.getNodeKey());
             if (defaults != null) {
                 merged.putAll(defaults);
             }

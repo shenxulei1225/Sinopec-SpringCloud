@@ -113,6 +113,12 @@ public interface EntityTypeService {
     boolean checkEntityTypeExists(String entityTypeCode);
 
     /**
+     * 确保目录已挂载「模型管理」页签独立布局，返回 modelLayoutId。
+     * 划分（SCOPE）无模型管理页，调用方勿用。
+     */
+    Long ensureModelLayout(String entityTypeCode);
+
+    /**
      * 根据编码获取业务类型详情
      *
      * @param code 业务类型编码

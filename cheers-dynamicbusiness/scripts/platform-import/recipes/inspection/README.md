@@ -63,8 +63,35 @@ psql "$DATABASE_URL" -f recipes/inspection/03_sample_method_bindings.sql
 | `05_demo_tank_route_bindings.sql` | 储罐演示：设备↔停靠点（金桥厂区 44）；SOP 实例挂 LEAK 模板并写 location_ref，路线规划可展开 |
 | `06_patrol_target_layout_default_identities.sql` | **布局数据整理**：`patrol_target` 页面布局型号/实体栏 tabId 收成 `default`，边上栏身份与之一致（与 `patrol_equipment` 同口径）；可重复执行 |
 | `07_what_workface_props.sql` | 已退场：编排头不再写工作面指针；详情认栏 + 关系图连线 |
+| `08_audit_sop_standard_pack_candidates.sql` | **只读审计**：评估旧方法绑定可迁移价值（模板完整度、分类挂接、脏数据） |
+| `09_migrate_sop_standard_pack_from_method_bindings.sql` | **迁移脚本**：把旧 `inspection_item -> sop` 绑定收敛为 `dynamic_sop_item_pack`（标准检查项包） |
+| `10_clear_all_sop_instances.sql` | **实例清理**（破坏性）：软删全部 SOP 实例行与实例绑定，给“大范围标准 SOP”重建留干净基线 |
+| `11_clear_sop_main_and_method_bindings.sql` | **主表清理**（破坏性）：软删 SOP 主表与旧检查项方法绑定，清空旧口径 |
+| `12_seed_macro_scope_sops.sql` | **大范围 SOP 初始化**：创建储罐/生产工艺/安防三类标准流程，并写入范围与标准检查项包 |
+| `13_add_sop_universal_definition_fields.sql` | **通用定义字段**：为 SOP 型号补对象分类类型码、内容实体类型码、对象内容定义 JSON 字段 |
 | `remove.sql` | 软删本配方写入的方法选用、实例绑定、停靠点绑定与历史工作面 props |
 | `import.sh` | 按序执行 01→07 |
+
+08/09 不在 `import.sh` 默认链路里，需在切换窗口按「先审计、后迁移」手工执行：
+
+```bash
+psql "$DATABASE_URL" -f recipes/inspection/08_audit_sop_standard_pack_candidates.sql
+psql "$DATABASE_URL" -f recipes/inspection/09_migrate_sop_standard_pack_from_method_bindings.sql
+```
+
+如需按新口径重建前先清空历史 SOP 实例，可单独执行：
+
+```bash
+psql "$DATABASE_URL" -f recipes/inspection/10_clear_all_sop_instances.sql
+```
+
+若要按新口径直接重建“大范围 SOP”，可执行：
+
+```bash
+psql "$DATABASE_URL" -f recipes/inspection/11_clear_sop_main_and_method_bindings.sql
+psql "$DATABASE_URL" -f recipes/inspection/12_seed_macro_scope_sops.sql
+psql "$DATABASE_URL" -f recipes/inspection/13_add_sop_universal_definition_fields.sql
+```
 
 全库「边改名 / 补型号→实体边」（**绝不自动删边**）见：  
 `../system/repair_dm_layout_column_identities.sql`（需时单独 `psql -f`，不默认挂进本配方以免误跑）。
@@ -81,6 +108,10 @@ psql "$DATABASE_URL" -f recipes/inspection/03_sample_method_bindings.sql
 可执行 `06_patrol_target_layout_default_identities.sql` 整理栏身份；多实体 Tab 须在数据管理「巡检目标管理」布局中自行添加实体列并保存关系图。
 
 作业指导不再写进编排头。任务创建页的作业面走自己的绑定，不认编排 How 槽。
+
+**前端默认投影（2026-09-08）**：标准检查库检查项详情由 `inspection.compositeDetail`（组合壳）+ 结构化插件 `INSPECTION_SOP_HOW` 渲染；`assembleDefaultWorkBlocks` / 插件 `inspection-library` 均可注册。无需编排 How 槽。配方仍负责样例方法选用行与编排头启用。
+  
+**SOP 一期改造补充（2026-09-08）**：SOP 的「该查什么」权威切到 `dynamic_sop_item_pack` / `dynamic_sop_scope_rule`。旧 `sop-bindings/methods` 仅保留历史观测，不再作为新增权威写入入口。
 
 ## 如何移除
 

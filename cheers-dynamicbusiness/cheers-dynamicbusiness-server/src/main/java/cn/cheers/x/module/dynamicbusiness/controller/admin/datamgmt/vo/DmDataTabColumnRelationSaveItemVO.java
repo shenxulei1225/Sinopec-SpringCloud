@@ -36,7 +36,7 @@ public class DmDataTabColumnRelationSaveItemVO {
     private List<String> enabledInteractions;
 
     @Schema(description = "可选引用字段列表；实体—实体时可空（允许仅拖挂关联）")
-    private List<String> linkKeys;
+    private List<String> refFieldCodes;
 
     private Map<String, Object> presentation;
 }

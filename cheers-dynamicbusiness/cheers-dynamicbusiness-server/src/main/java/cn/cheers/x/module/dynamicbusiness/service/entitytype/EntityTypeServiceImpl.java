@@ -720,6 +720,16 @@ public class EntityTypeServiceImpl implements EntityTypeService {
     }
 
     /**
+     * 确保本目录已挂载独立的「模型管理」布局，返回 modelLayoutId。
+     * 与数据页 dataLayoutId 分离；保存键仍用真实目录注册编码。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long ensureModelLayout(String entityTypeCode) {
+        return entityTypeCategoryBootstrapService.ensureModelLayoutForCode(entityTypeCode);
+    }
+
+    /**
      * 按业务编码获取详情。
      *
      * 适用场景：
@@ -1035,6 +1045,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
                         ? entityType.getModelWorkbenchMode()
                         : EntityTypeDO.MODEL_WORKBENCH_MULTI);
         vo.setDataLayoutId(entityType.getDataLayoutId());
+        vo.setModelLayoutId(entityType.getModelLayoutId());
         return vo;
     }
 

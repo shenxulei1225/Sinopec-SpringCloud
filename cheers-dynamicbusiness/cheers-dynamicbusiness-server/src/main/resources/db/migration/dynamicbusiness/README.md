@@ -114,7 +114,9 @@
 | V99 | `V99__sop_migrate_steps_json_to_action_tree.sql` | 退役 steps_json 元数据；旧步骤 JSON（`_deprecated_steps_json`/`steps_json`）迁入 `action_tree_json`（缺动作则按标题建 `act-mig-*`） |
 | V98 | `V98__sop_cleanup_retired_field_assignments.sql` | 清理 SOP 历史模板字段分配；`deleted=true` 基础字段统一禁用，避免继续进入 CRUD 投影 |
 | V100 | `V100__trim_inspection_item_create_fields.sql` | 检查项新建表单收敛：下线执行统计字段分配（`FLD-INS-004/008/009`） |
-> **版本号说明**：本仓库已登记至 **V100**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。
+| V107 | `V107__rename_inspection_content_registry_code.sql` | 保留检查项管理目录注册码 `inspection-content`，统一分类/型号/实体为检查项口径并清理旧「检查内容」标签 |
+| V108 | `V108__cleanup_orphan_column_relations.sql` | 清理栏间关系历史孤儿边（端点不在当前布局身份集合），避免图上不可见但保存报端点错误 |
+> **版本号说明**：本仓库已登记至 **V108**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。
 
 
 > **跨机合并说明**：本机布局迁移已占用 V26–V28 且已执行；对方原 `V26__category_*` / `V27__ent_structure` 在合并后改为 V29/V30。若对方库已按旧文件名执行过 V26/V27，需对齐历史表 `version`/`script` 后 `flyway:repair`，再拉本分支。
@@ -180,6 +182,9 @@ PGPASSWORD=Coolhomer psql -h 127.0.0.1 -U postgres -d sinopec -c \
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-10 | V108：清理 `dm_data_tab_column_relation` 历史孤儿边（from/to 任一端点不在当前布局身份集合），消除关系图不可见边导致的保存报错 |
+| 2026-09-10 | V107：保留 `inspection-content` 目录注册码；统一底座 `inspection_item` 的分类/型号/实体显示口径（检查分类/检查项），并回填检查项管理布局历史「检查内容」标签 |
+| 2026-09-09 | V106：`dm_data_tab_column_relation.relation_meta` 历史键名从 `linkKeys` 迁移到 `refFieldCodes`，并清理旧键 |
 | 2026-09-07 | V100：检查项新建表单收敛，下线执行统计字段分配（FLD-INS-004/008/009） |
 | 2026-09-07 | V99：退役 steps_json；将 `_deprecated_steps_json`/`steps_json` 迁入 `action_tree_json`（同标题共用迁移动作） |
 | 2026-09-07 | V98：清理 SOP 模型字段中的历史模板字段；归一 `dynamic_entity_type_base_field` 中 `deleted=true` 行为禁用状态 |

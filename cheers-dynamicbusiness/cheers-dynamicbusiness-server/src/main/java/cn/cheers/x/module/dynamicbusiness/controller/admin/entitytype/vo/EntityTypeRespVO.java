@@ -26,6 +26,9 @@ public class EntityTypeRespVO extends EntityTypeBaseVO {
     @Schema(description = "该目录「数据」页签引用的工作台布局实例 id")
     private Long dataLayoutId;
 
+    @Schema(description = "该目录「模型管理」页签引用的工作台布局实例 id（与数据页独立）")
+    private Long modelLayoutId;
+
     @Schema(description = "子业务类型列表")
     private List<EntityTypeRespVO> children;
 

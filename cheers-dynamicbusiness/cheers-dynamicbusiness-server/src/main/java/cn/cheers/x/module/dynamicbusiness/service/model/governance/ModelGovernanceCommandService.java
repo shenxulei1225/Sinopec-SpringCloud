@@ -5,8 +5,11 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 /**
  * 型号治理命令服务。
  *
- * <p>本服务是型号治理身份、硬删除权限和公司规格停用的写入权威。
- * 普通型号更新不得改写治理身份，也不得绕过本服务停用公司规格。</p>
+ * <p>本服务是型号治理身份与删除权限的写入权威。
+ * 普通型号更新不得改写治理身份。</p>
+ *
+ * <p>删除口径：删除即软删（{@code deleted=true}）。公司规格与本地型号都可删；
+ * 有实体占用则拒绝。禁止把「删除」实现成停用（{@code status=0}）。</p>
  */
 public interface ModelGovernanceCommandService {
 
@@ -22,19 +25,24 @@ public interface ModelGovernanceCommandService {
                           Long effectiveFacilityId, Long currentUserId);
 
     /**
-     * 硬删除当前用户在当前站场创建且尚未被实体占用的本地型号。
+     * 删除型号（软删），并清理模型字段分配与分类关联。
      *
-     * <p>公司规格始终拒绝硬删除；本方法负责清理模型字段、分类关系和型号本体。</p>
+     * <ul>
+     *   <li>本地型号：仅创建人在发起站场可删；须传有效站场</li>
+     *   <li>公司规格（或无发起站场的种子）：须具备全网型号治理能力</li>
+     *   <li>任一身份：仍有实体占用则拒绝删除</li>
+     * </ul>
      */
-    void deleteOwnLocal(Long modelId, Long effectiveFacilityId, Long currentUserId);
+    void deleteModel(Long modelId, Long effectiveFacilityId, Long currentUserId);
 
     /**
-     * 停用公司规格。只有具备公司规格停用能力的调用方可以执行。
+     * @deprecated 停用已不再作为删除的替代；请走 {@link #deleteModel}。保留方法签名以免旧调用方编译失败，实现将直接拒绝。
      */
+    @Deprecated
     void deactivateCompany(Long modelId);
 
     /**
-     * 校验普通更新没有改变治理身份，也没有借普通更新停用公司规格。
+     * 校验普通更新没有改变治理身份，也没有借普通更新改公司规格 status。
      */
     void validateRegularUpdate(ModelDO existingModel, String requestedGovernanceStatus, Integer requestedStatus);
 }

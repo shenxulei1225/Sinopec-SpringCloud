@@ -8,8 +8,6 @@ public final class SopFieldCodes {
 
     public static final String ENTITY_TYPE_CODE = "sop";
 
-    public static final String IS_TEMPLATE = "is_template";
-    public static final String SOP_TEMPLATE_ID = "sop_template_id";
     public static final String ACTION_TREE_OVERRIDE_JSON = "action_tree_override_json";
     public static final String PARAM_OVERRIDE_JSON = "param_override_json";
     public static final String ACTION_TREE_JSON = "action_tree_json";

@@ -179,6 +179,12 @@ public class EntityTypeDO extends TenantBaseDO {
     private Long dataLayoutId;
 
     /**
+     * 该目录「模型管理」页签引用的工作台布局实例 id（非模版；与 dataLayoutId 独立）。
+     */
+    @TableField("model_layout_id")
+    private Long modelLayoutId;
+
+    /**
      * 物理列映射配置(JSON 格式)
      */
     @TableField(value = "physical_column_mapping", typeHandler = JsonbStringTypeHandler.class)

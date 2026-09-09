@@ -1,7 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.sop;
 
 import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopMergeResult;
-import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopTemplateSnapshot;
+import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopStandardSnapshot;
 import cn.cheers.x.module.dynamicbusiness.service.sop.dto.SopTreeOverride;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
@@ -47,7 +47,7 @@ class SopMergeServiceTest {
         for (int i = 0; i < vectors.size(); i++) {
             JSONObject v = vectors.getJSONObject(i);
             String id = v.getString("id");
-            SopTemplateSnapshot template = v.getObject("template", SopTemplateSnapshot.class);
+            SopStandardSnapshot standard = v.getObject("template", SopStandardSnapshot.class);
             SopTreeOverride treeOverride = v.getObject("treeOverride", SopTreeOverride.class);
             Map<String, Map<String, Object>> paramOverride = null;
             if (v.get("paramOverride") != null && !(v.get("paramOverride") instanceof String)) {
@@ -56,7 +56,7 @@ class SopMergeServiceTest {
                         });
             }
 
-            SopMergeResult result = mergeService.merge(template, treeOverride, paramOverride);
+            SopMergeResult result = mergeService.merge(standard, treeOverride, paramOverride);
             JSONObject expect = v.getJSONObject("expect");
             boolean expectOk = expect.getBooleanValue("ok");
             assertEquals(expectOk, result.isOk(), "vector " + id + " ok");

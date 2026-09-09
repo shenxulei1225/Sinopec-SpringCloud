@@ -12,7 +12,6 @@ public class SopMethodBindingRespVO {
     private Long subjectId;
     private String dimensionKey;
     private String dimensionValue;
-    private Long sopTemplateId;
+    private Long sopId;
     private String sopName;
-    private Boolean sopIsTemplate;
 }

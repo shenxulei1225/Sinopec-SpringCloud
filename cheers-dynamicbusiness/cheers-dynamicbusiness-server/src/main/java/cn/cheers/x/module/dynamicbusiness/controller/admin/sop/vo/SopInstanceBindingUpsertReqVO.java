@@ -28,6 +28,6 @@ public class SopInstanceBindingUpsertReqVO {
     private String dimensionValue;
 
     @NotNull
-    @Schema(description = "SOP 实例 id（is_template=false）")
+    @Schema(description = "SOP 实例 id")
     private Long sopInstanceId;
 }

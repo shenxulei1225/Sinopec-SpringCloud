@@ -3,7 +3,6 @@ package cn.cheers.x.module.dynamicbusiness.controller.admin.sop;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.sop.vo.SopInstanceBindingRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.sop.vo.SopInstanceBindingUpsertReqVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.sop.vo.SopInstanceCreateFromTemplateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.sop.vo.SopMethodBindingRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.sop.vo.SopMethodBindingUpsertReqVO;
 import cn.cheers.x.module.dynamicbusiness.service.sop.SopBindingService;
@@ -17,16 +16,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
@@ -56,7 +52,7 @@ public class SopBindingController {
     }
 
     @PutMapping("/methods")
-    @Operation(summary = "upsert 方法选用：同对象同维度更新模板引用")
+    @Operation(summary = "upsert 方法选用：同对象同维度更新标准 SOP 引用")
     @PreAuthorize("@ss.hasPermission('system:entity:update')")
     public CommonResult<Long> upsertMethod(@Valid @RequestBody SopMethodBindingUpsertReqVO reqVO) {
         return success(sopBindingService.upsertMethod(reqVO));
@@ -89,14 +85,4 @@ public class SopBindingController {
         return success(true);
     }
 
-    @PostMapping("/instances/from-template")
-    @Operation(summary = "从 SOP 模板新建独占实例并绑定")
-    @PreAuthorize("@ss.hasPermission('system:entity:create')")
-    public CommonResult<Map<String, Long>> createInstanceFromTemplate(
-            @Valid @RequestBody SopInstanceCreateFromTemplateReqVO reqVO) {
-        long sopInstanceId = sopBindingService.createInstanceFromTemplate(reqVO);
-        Map<String, Long> body = new LinkedHashMap<>();
-        body.put("sopInstanceId", sopInstanceId);
-        return success(body);
-    }
 }

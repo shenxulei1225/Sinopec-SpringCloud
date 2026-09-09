@@ -73,13 +73,47 @@ class ModelGovernanceCommandServiceImplTest {
     }
 
     @Test
-    void deleteCompanyAlwaysFails() {
+    void deleteCompanyWithoutNetworkCapabilityFails() {
         ModelDO company = model(1L, "COMPANY", null, 100L);
+        company.setEntityTypeCode("equipment");
         when(modelCoreService.get(1L)).thenReturn(company);
+        when(capabilityChecker.canManageNetworkModelData()).thenReturn(false);
 
-        assertThrows(ServiceException.class, () -> service.deleteOwnLocal(1L, 10L, 100L));
+        assertThrows(ServiceException.class, () -> service.deleteModel(1L, null, 100L));
 
         verify(modelCoreService, never()).delete(1L);
+    }
+
+    @Test
+    void deleteUnoccupiedCompanySucceeds() {
+        ModelDO company = model(10L, "COMPANY", null, 100L);
+        company.setEntityTypeCode("equipment");
+        when(modelCoreService.get(10L)).thenReturn(company);
+        when(capabilityChecker.canManageNetworkModelData()).thenReturn(true);
+        when(entityTypeScopeResolver.resolveStorageEntityTypeCode("equipment")).thenReturn("equipment");
+        when(entityRepository.existsByModelId(10L, "equipment")).thenReturn(false);
+
+        service.deleteModel(10L, null, 100L);
+
+        verify(modelFieldAssignmentMapper).deleteByModelId(10L);
+        verify(modelCategoryRelationService).deleteAllByModelId(10L);
+        verify(modelCoreService).delete(10L);
+    }
+
+    @Test
+    void deleteOccupiedCompanyFails() {
+        ModelDO company = model(11L, "COMPANY", null, 100L);
+        company.setEntityTypeCode("equipment");
+        when(modelCoreService.get(11L)).thenReturn(company);
+        when(capabilityChecker.canManageNetworkModelData()).thenReturn(true);
+        when(entityTypeScopeResolver.resolveStorageEntityTypeCode("equipment")).thenReturn("equipment");
+        when(entityRepository.existsByModelId(11L, "equipment")).thenReturn(true);
+
+        ServiceException error = assertThrows(ServiceException.class,
+                () -> service.deleteModel(11L, null, 100L));
+
+        assertEquals("仍有实体使用该型号，禁止删除", error.getMessage());
+        verify(modelCoreService, never()).delete(11L);
     }
 
     @Test
@@ -87,7 +121,7 @@ class ModelGovernanceCommandServiceImplTest {
         ModelDO local = model(2L, "LOCAL", 10L, 200L);
         when(modelCoreService.get(2L)).thenReturn(local);
 
-        assertThrows(ServiceException.class, () -> service.deleteOwnLocal(2L, 10L, 100L));
+        assertThrows(ServiceException.class, () -> service.deleteModel(2L, 10L, 100L));
 
         verify(modelCoreService, never()).delete(2L);
     }
@@ -97,7 +131,7 @@ class ModelGovernanceCommandServiceImplTest {
         ModelDO local = model(3L, "LOCAL", 20L, 100L);
         when(modelCoreService.get(3L)).thenReturn(local);
 
-        assertThrows(ServiceException.class, () -> service.deleteOwnLocal(3L, 10L, 100L));
+        assertThrows(ServiceException.class, () -> service.deleteModel(3L, 10L, 100L));
 
         verify(modelCoreService, never()).delete(3L);
     }
@@ -110,7 +144,7 @@ class ModelGovernanceCommandServiceImplTest {
         when(entityTypeScopeResolver.resolveStorageEntityTypeCode("equipment")).thenReturn("equipment");
         when(entityRepository.existsByModelId(4L, "equipment")).thenReturn(true);
 
-        assertThrows(ServiceException.class, () -> service.deleteOwnLocal(4L, 10L, 100L));
+        assertThrows(ServiceException.class, () -> service.deleteModel(4L, 10L, 100L));
 
         verify(modelCoreService, never()).delete(4L);
     }
@@ -123,7 +157,7 @@ class ModelGovernanceCommandServiceImplTest {
         when(entityTypeScopeResolver.resolveStorageEntityTypeCode("equipment")).thenReturn("equipment");
         when(entityRepository.existsByModelId(5L, "equipment")).thenReturn(false);
 
-        service.deleteOwnLocal(5L, 10L, 100L);
+        service.deleteModel(5L, 10L, 100L);
 
         verify(modelFieldAssignmentMapper).deleteByModelId(5L);
         verify(modelCategoryRelationService).deleteAllByModelId(5L);
@@ -131,27 +165,10 @@ class ModelGovernanceCommandServiceImplTest {
     }
 
     @Test
-    void deactivateCompanyRequiresCapability() {
-        ModelDO company = model(6L, "COMPANY", null, 100L);
-        when(modelCoreService.get(6L)).thenReturn(company);
-        when(capabilityChecker.canDeactivateCompanyStandard()).thenReturn(false);
-
-        assertThrows(ServiceException.class, () -> service.deactivateCompany(6L));
-
+    void deactivateCompanyIsRejectedAsDeprecated() {
+        ServiceException error = assertThrows(ServiceException.class, () -> service.deactivateCompany(6L));
+        assertEquals(400, error.getCode());
         verify(modelCoreService, never()).update(org.mockito.ArgumentMatchers.any());
-    }
-
-    @Test
-    void deactivateCompanySetsStatusToDisabled() {
-        ModelDO company = model(7L, "COMPANY", null, 100L);
-        company.setStatus(1);
-        when(modelCoreService.get(7L)).thenReturn(company);
-        when(capabilityChecker.canDeactivateCompanyStandard()).thenReturn(true);
-
-        service.deactivateCompany(7L);
-
-        verify(modelCoreService).update(org.mockito.ArgumentMatchers.argThat(
-                update -> update.getId().equals(7L) && update.getStatus().equals(0)));
     }
 
     @Test
@@ -163,7 +180,7 @@ class ModelGovernanceCommandServiceImplTest {
     }
 
     @Test
-    void updateCannotDeactivateCompanyOutsideGovernanceCommand() {
+    void updateCannotChangeCompanyStatusOutsideGovernanceCommand() {
         ModelDO company = model(9L, "COMPANY", null, 100L);
         company.setStatus(1);
 

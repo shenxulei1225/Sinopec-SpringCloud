@@ -55,6 +55,7 @@ public class EntityTypeCategoryBootstrapService {
         }
         ensureCategoryType(entityType);
         ensureCatalogDataLayout(entityType);
+        ensureCatalogModelLayout(entityType);
     }
 
     private void ensureCategoryType(EntityTypeDO entityType) {
@@ -210,6 +211,56 @@ public class EntityTypeCategoryBootstrapService {
             log.error("[ensureCatalogDataLayout] 从模版生成布局失败, entityTypeCode={}", code, e);
             throw new ServiceException(500, "自动创建数据管理工作台布局失败：" + e.getMessage());
         }
+    }
+
+    /**
+     * 从通用台账模版生成「模型管理」页签独立布局，写回 {@code model_layout_id}。
+     * 划分（SCOPE）无模型管理页签，跳过。
+     */
+    private void ensureCatalogModelLayout(EntityTypeDO entityType) {
+        EntityTypeEntryKindEnum kind = EntityTypeEntryKindEnum.fromCode(entityType.getEntryKind());
+        if (kind.isScopeEntry()) {
+            return;
+        }
+        String code = entityType.getCode();
+        boolean categoryAsEntity = kind.isCategory() || isCategoryAsEntityType(code);
+        String categoryTypeCode = code;
+        if (kind.reusesBaseStorage()) {
+            String baseCode = entityType.getBaseEntityTypeCode();
+            if (!StringUtils.hasText(baseCode)) {
+                log.warn("{} {} 缺少基础数据类型编码，跳过模型布局 bootstrap",
+                        kindLabel(kind), code);
+                return;
+            }
+            categoryTypeCode = baseCode.trim();
+        }
+        try {
+            dmWorkbenchLayoutService.ensureCatalogModelLayout(entityType, categoryTypeCode, categoryAsEntity);
+        } catch (ServiceException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("[ensureCatalogModelLayout] 从模版生成模型布局失败, entityTypeCode={}", code, e);
+            throw new ServiceException(500, "自动创建模型管理工作台布局失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 供命令入口调用：已有目录首次进模型管理时 ensure 并返回 modelLayoutId。
+     */
+    public Long ensureModelLayoutForCode(String entityTypeCode) {
+        if (!StringUtils.hasText(entityTypeCode)) {
+            throw new ServiceException(400, "entityTypeCode 不能为空");
+        }
+        EntityTypeDO entityType = entityTypeMapper.selectByCode(entityTypeCode.trim());
+        if (entityType == null) {
+            throw new ServiceException(404, "数据类型不存在：" + entityTypeCode);
+        }
+        ensureCatalogModelLayout(entityType);
+        EntityTypeDO refreshed = entityTypeMapper.selectByCode(entityTypeCode.trim());
+        if (refreshed == null || refreshed.getModelLayoutId() == null) {
+            throw new ServiceException(500, "模型管理布局挂载失败：" + entityTypeCode);
+        }
+        return refreshed.getModelLayoutId();
     }
 
     private boolean isCategoryAsEntityType(String entityTypeCode) {

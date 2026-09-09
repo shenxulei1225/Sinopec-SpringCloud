@@ -493,8 +493,11 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
     }
 
     /**
-     * 列表拖拽：按整份有序列表重写该分类下关联 sort。
-     * 权威在关联表；禁止改型号主表 sort 冒充分类内顺序。
+     * 列表拖拽保存分类语境下的型号顺序。
+     *
+     * <p>读路径在父节点下按子分类分桶拼接；写路径必须与之对齐：
+     * 只允许同一子分类（桶）内调序，把 sort 写到该型号在子树里的真实挂接行上。
+     * 跨子分类拖拽拒绝并提示用户先选中子分类——禁止静默禁用或假装全局扁序可落库。</p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -509,19 +512,92 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         if (typeCode.isEmpty()) {
             throw new ServiceException(400, "业务类型编码不能为空");
         }
-        int idx = 0;
-        for (Long modelId : modelIdsInOrder) {
-            if (modelId == null) {
+
+        List<Long> requestedIds = modelIdsInOrder.stream()
+                .filter(Objects::nonNull)
+                .toList();
+        if (requestedIds.isEmpty()) {
+            throw new ServiceException(400, "型号排序列表不能为空");
+        }
+
+        List<Long> subtreeCategoryIds = categoryService.getAllCategoryIdsIncludingChildren(categoryId, null);
+        if (subtreeCategoryIds == null || subtreeCategoryIds.isEmpty()) {
+            subtreeCategoryIds = List.of(categoryId);
+        }
+
+        // 与读路径一致：按子树分类顺序分桶，型号首次出现的分类即其「展示桶」
+        Map<Long, Long> modelToBucketCategory = resolveModelBucketCategoryInSubtree(
+                subtreeCategoryIds, typeCode);
+        List<Long> canonicalIds = listModelIdsByCategoryIdWithDescendants(categoryId, typeCode);
+        Set<Long> requestedSet = new LinkedHashSet<>(requestedIds);
+        List<Long> canonicalOnPage = canonicalIds.stream()
+                .filter(requestedSet::contains)
+                .toList();
+
+        List<Long> expectedBucketSeq = new ArrayList<>(canonicalOnPage.size());
+        for (Long modelId : canonicalOnPage) {
+            Long bucket = modelToBucketCategory.get(modelId);
+            if (bucket == null) {
+                throw new ServiceException(400, "型号未关联到当前分类或其子分类: " + modelId);
+            }
+            expectedBucketSeq.add(bucket);
+        }
+
+        List<Long> actualBucketSeq = new ArrayList<>(requestedIds.size());
+        for (Long modelId : requestedIds) {
+            Long bucket = modelToBucketCategory.get(modelId);
+            if (bucket == null) {
+                throw new ServiceException(400, "型号未关联到当前分类或其子分类: " + modelId);
+            }
+            actualBucketSeq.add(bucket);
+        }
+
+        if (!expectedBucketSeq.equals(actualBucketSeq)) {
+            throw new ServiceException(400,
+                    "不能在不同的子分类之间调整排序。请选中具体子分类后再排序。");
+        }
+
+        // 同桶内：按提交顺序重写各型号在真实挂接分类上的 sort
+        Map<Long, List<Long>> modelsByBucket = new LinkedHashMap<>();
+        for (Long modelId : requestedIds) {
+            Long bucket = modelToBucketCategory.get(modelId);
+            modelsByBucket.computeIfAbsent(bucket, k -> new ArrayList<>()).add(modelId);
+        }
+        for (Map.Entry<Long, List<Long>> entry : modelsByBucket.entrySet()) {
+            Long bucketCategoryId = entry.getKey();
+            List<Long> orderedInBucket = entry.getValue();
+            int idx = 0;
+            for (Long modelId : orderedInBucket) {
+                relationMapper.updateSortByModelAndCategory(
+                        modelId,
+                        bucketCategoryId,
+                        SparseSortUtils.reindexSortByPosition(idx++),
+                        typeCode);
+            }
+        }
+    }
+
+    /**
+     * 子树内型号 → 展示桶（首次命中的分类 id），与 {@link #resolveOrderedModelIds} 去重规则一致。
+     */
+    private Map<Long, Long> resolveModelBucketCategoryInSubtree(
+            List<Long> subtreeCategoryIds, String entityTypeCode) {
+        Map<Long, Long> modelToBucket = new LinkedHashMap<>();
+        if (subtreeCategoryIds == null || subtreeCategoryIds.isEmpty()) {
+            return modelToBucket;
+        }
+        for (Long catId : subtreeCategoryIds) {
+            if (catId == null) {
                 continue;
             }
-            ModelCategoryRelationDO relation = relationMapper.selectByModelIdAndCategoryId(
-                    modelId, categoryId, typeCode);
-            if (relation == null) {
-                throw new ServiceException(400, "型号未关联到该分类: " + modelId);
+            List<Long> inCategory = listModelIdsByCategoryIdOnly(catId, entityTypeCode);
+            for (Long modelId : inCategory) {
+                if (modelId != null) {
+                    modelToBucket.putIfAbsent(modelId, catId);
+                }
             }
-            relationMapper.updateSortByModelAndCategory(
-                    modelId, categoryId, SparseSortUtils.reindexSortByPosition(idx++), typeCode);
         }
+        return modelToBucket;
     }
 
     @Override

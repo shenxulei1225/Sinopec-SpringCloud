@@ -181,18 +181,20 @@ public class ModelController {
     @DeleteMapping("/delete")
     @Operation(
         summary = "删除业务模型",
-        description = "删除业务模型。\n" +
-            "- 删除前会检查是否有业务实体关联，如果存在关联则禁止删除\n" +
-            "- 删除会同时删除模型与字段的分配关系\n" +
-            "- 删除会同时删除模型与分类的关联关系"
+        description = "删除业务模型（软删）。\n" +
+            "- 公司规格与本地型号均可删除\n" +
+            "- 删除前检查是否有业务实体占用，存在则禁止删除\n" +
+            "- 删除会同时删除模型与字段的分配关系、模型与分类的关联关系\n" +
+            "- 本地型号须传 effectiveFacilityId（发起站场）"
     )
     @Parameter(name = "id", description = "模型编号", required = true, example = "1")
+    @Parameter(name = "effectiveFacilityId", description = "当前有效站场（删除本地型号时必填）", example = "10")
     @ApiAccessLog(operateType = DELETE)
     @PreAuthorize("@ss.hasPermission('system:model:delete')")
     /**
-     * 用途：删除模型。
+     * 用途：删除模型（软删）。
      * Service 映射：{@link ModelService#deleteModel(Long, Long)}。
-     * 边界：是否允许删除由 Service 内部校验（如实体占用、关联清理）决定。
+     * 边界：是否允许删除由 Service 内部校验（实体占用、治理权限、关联清理）决定。
      */
     public CommonResult<Boolean> deleteModel(
             @RequestParam("id") Long id,
@@ -201,8 +203,12 @@ public class ModelController {
         return success(true);
     }
 
+    /**
+     * @deprecated 停用已废弃，请使用 {@link #deleteModel(Long, Long)}。
+     */
+    @Deprecated
     @PutMapping("/deactivate-company")
-    @Operation(summary = "停用公司规格", description = "具备公司规格停用能力的调用方可将公司规格状态设为停用；不执行硬删除。")
+    @Operation(summary = "停用公司规格（已废弃）", description = "已废弃：请改用删除接口。调用将返回业务错误。", deprecated = true)
     @Parameter(name = "id", description = "公司规格型号编号", required = true, example = "1")
     @ApiAccessLog(operateType = UPDATE)
     @PreAuthorize("@ss.hasPermission('system:model:update')")

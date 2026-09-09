@@ -24,6 +24,6 @@ public class DmDataTabColumnRelationRespVO {
     /** 启用的交互方式编码列表 */
     private List<String> enabledInteractions;
     /** 可选：引用字段编码列表；空则运行时按两端类型合并同目标 REF */
-    private List<String> linkKeys;
+    private List<String> refFieldCodes;
     private Map<String, Object> presentation;
 }

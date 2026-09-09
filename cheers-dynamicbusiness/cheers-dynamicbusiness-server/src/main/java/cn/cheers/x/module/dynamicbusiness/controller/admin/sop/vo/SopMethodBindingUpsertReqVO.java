@@ -25,6 +25,6 @@ public class SopMethodBindingUpsertReqVO {
     private String dimensionValue;
 
     @NotNull
-    @Schema(description = "SOP 模板实体 id")
-    private Long sopTemplateId;
+    @Schema(description = "标准 SOP 实体 id")
+    private Long sopId;
 }

@@ -99,6 +99,17 @@ public class EntityTypeController {
         return success(entityTypeService.checkEntityTypeExists(entityTypeCode));
     }
 
+    @PostMapping("/ensure-model-layout")
+    @Operation(
+            summary = "确保模型管理页布局已挂载",
+            description = "返回独立 modelLayoutId；与数据页 dataLayoutId 分离。划分类型无模型管理页，勿调用。")
+    @Parameter(name = "entityTypeCode", description = "目录注册编码", required = true, example = "zone")
+    @ApiAccessLog(operateType = UPDATE)
+    @PreAuthorize("@ss.hasPermission('system:entity-type:update')")
+    public CommonResult<Long> ensureModelLayout(@RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(entityTypeService.ensureModelLayout(entityTypeCode));
+    }
+
     @GetMapping("/list-tree")
     @Operation(summary = "获取全量业务类型树", description = "用于系统级业务树导航或全局层级管理；业务排序调整请在业务管理界面完成")
     @PreAuthorize("@ss.hasPermission('system:entity-type:query')")
