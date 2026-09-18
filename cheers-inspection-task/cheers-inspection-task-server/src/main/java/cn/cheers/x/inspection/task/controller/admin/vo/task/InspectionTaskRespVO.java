@@ -35,6 +35,9 @@ public class InspectionTaskRespVO {
     @Schema(description = "任务名称")
     private String taskName;
 
+    @Schema(description = "业务域（任务分池）")
+    private String domain;
+
     @Schema(description = "状态")
     private Integer status;
 
@@ -67,6 +70,12 @@ public class InspectionTaskRespVO {
 
     @Schema(description = "执行设备绑定（打开任务可见具体执行设备与对接参数）")
     private ExecutionDeviceBinding executionDeviceBinding;
+
+    @Schema(description = "巡检方式：MANUAL / UAV / ROBOT / FIXED_CAMERA")
+    private String patrolExecutionMode;
+
+    @Schema(description = "建任务已放行到哪一步：0 选对象 / 1 路线 / 2 资源 / 3 排期")
+    private Integer createUnlockedStep;
 
     @Schema(description = "设备侧运行态：IDLE/DISPATCHED/RUNNING/COMPLETED/FAULT")
     private String deviceRunStatus;
@@ -103,8 +112,11 @@ public class InspectionTaskRespVO {
     @Schema(description = "停靠点规划序（stopSequence）")
     private List<String> stopSequence = new ArrayList<>();
 
-    @Schema(description = "固定起点停靠点 id；未落库时为空（routing 无独立终点字段）")
+    @Schema(description = "任务创建选定的起点（无人机起飞点）")
     private String startStopId;
+
+    @Schema(description = "任务创建选定的终点（无人机降落点）")
+    private String endStopId;
 
     @Schema(description = "已保存路线摘要；无 segments 折线时前端不得假装完整三维轨迹")
     private TaskSavedRoutePreviewVO routePreview;

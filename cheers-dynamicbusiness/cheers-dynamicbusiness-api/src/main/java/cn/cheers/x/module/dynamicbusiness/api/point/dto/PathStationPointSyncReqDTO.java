@@ -61,5 +61,18 @@ public class PathStationPointSyncReqDTO {
          */
         @Schema(description = "归属网多选：HUMAN | GROUND_ROBOT | UAV")
         private List<String> memberships;
+
+        /**
+         * 地理坐标，从路网节点 payload 原样带过来。
+         * 键名跟节点一致：longitude / latitude；高程有才带，不用场景 y 冒充。
+         */
+        @Schema(description = "经度（节点 payload.longitude）")
+        private Double longitude;
+
+        @Schema(description = "纬度（节点 payload.latitude）")
+        private Double latitude;
+
+        @Schema(description = "高程（节点 payload.height，可空）")
+        private Double height;
     }
 }

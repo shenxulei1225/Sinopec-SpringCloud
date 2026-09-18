@@ -6,8 +6,9 @@ import cn.cheers.x.inspection.inspection_content.dal.mysql.route.InspectionRoute
 import cn.cheers.x.inspection.inspection_content.service.orchestration.impl.PatrolConfirmServiceImpl;
 import cn.cheers.x.inspection.orchestration.dto.PatrolConfirmReqDTO;
 import cn.cheers.x.inspection.orchestration.dto.PatrolConfirmRespDTO;
-import cn.cheers.x.inspection.task.dal.dataobject.task.InspectionTaskDO;
-import cn.cheers.x.inspection.task.dal.mysql.task.InspectionTaskMapper;
+import cn.cheers.x.inspection.task.service.execution.steptree.TaskStepTreeGenerateService;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
 import cn.cheers.x.module.platform.contract.dto.work.WorkItemDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -41,13 +43,16 @@ class PatrolConfirmServiceTest {
     @Mock
     private InspectionRoutePlanMapper routePlanMapper;
     @Mock
-    private InspectionTaskMapper taskMapper;
+    private PatrolTaskEntityStore patrolTaskEntityStore;
+    @Mock
+    private TaskStepTreeGenerateService taskStepTreeGenerateService;
 
     private PatrolConfirmServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new PatrolConfirmServiceImpl(routePlanMapper, taskMapper, new ObjectMapper());
+        service = new PatrolConfirmServiceImpl(
+                routePlanMapper, patrolTaskEntityStore, taskStepTreeGenerateService, new ObjectMapper());
     }
 
     @Test
@@ -75,13 +80,15 @@ class PatrolConfirmServiceTest {
 
         assertTrue(resp.getDryRun());
         verify(routePlanMapper, never()).insert(any(InspectionRoutePlanDO.class));
-        verify(taskMapper, never()).updateById(any(InspectionTaskDO.class));
+        verify(patrolTaskEntityStore, never()).writePlannedRoute(any(), any());
+        verify(taskStepTreeGenerateService, never()).generate(any(), any());
     }
 
     @Test
-    @DisplayName("正常确认 → 插入路线方案并更新任务快照")
-    void confirm_happyPath_insertsRoutePlanAndUpdatesTask() {
-        when(taskMapper.selectById(TASK_ID)).thenReturn(task(TASK_ID));
+    @DisplayName("正常确认 → 插入路线方案并写总任务路径与步骤图")
+    void confirm_happyPath_writesEntityAndGeneratesTree() {
+        when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(new PatrolTaskDraft(
+                TASK_ID, "task", "巡检", FACILITY_ID, "MANUAL", null, null, null, null, null, "draft", 1, null, null));
         doAnswer(invocation -> {
             InspectionRoutePlanDO plan = invocation.getArgument(0);
             plan.setId(900L);
@@ -102,13 +109,8 @@ class PatrolConfirmServiceTest {
         assertEquals(45, plan.getDurationEstimateMinutes());
         assertEquals(TASK_ID, plan.getTaskId());
 
-        ArgumentCaptor<InspectionTaskDO> taskCaptor = ArgumentCaptor.forClass(InspectionTaskDO.class);
-        verify(taskMapper).updateById(taskCaptor.capture());
-        InspectionTaskDO updated = taskCaptor.getValue();
-        assertEquals(900L, updated.getRoutePlanId());
-        assertEquals("net-a", updated.getNetworkRef());
-        assertEquals(45, updated.getDurationEstimateMinutes());
-        assertEquals("HUMAN", updated.getInspectionType());
+        verify(patrolTaskEntityStore).writePlannedRoute(eq(TASK_ID), any());
+        verify(taskStepTreeGenerateService).generate(TASK_ID, null);
     }
 
     private static PatrolConfirmReqDTO happyReq(boolean dryRun) {
@@ -138,12 +140,5 @@ class PatrolConfirmServiceTest {
                 .durationEstimateMinutes(45)
                 .payload(payload)
                 .build();
-    }
-
-    private static InspectionTaskDO task(Long id) {
-        InspectionTaskDO task = new InspectionTaskDO();
-        task.setId(id);
-        task.setTaskName("task-" + id);
-        return task;
     }
 }

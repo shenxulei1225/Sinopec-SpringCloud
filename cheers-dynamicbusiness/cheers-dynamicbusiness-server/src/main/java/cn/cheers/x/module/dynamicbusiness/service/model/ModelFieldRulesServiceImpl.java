@@ -9,8 +9,9 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.service.capability.BusinessCapabilityService;
+import cn.cheers.x.module.dynamicbusiness.service.entity.index.ExtensionFieldIndexEligibility;
 import cn.cheers.x.module.dynamicbusiness.service.entity.index.FieldIndexService;
-import cn.cheers.x.module.dynamicbusiness.service.field.SmartSearchableService;
+import cn.cheers.x.module.dynamicbusiness.service.field.FieldQueryCapability;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -44,9 +45,6 @@ public class ModelFieldRulesServiceImpl implements ModelFieldRulesService {
     private FieldMapper fieldMapper;
 
     @Resource
-    private SmartSearchableService smartSearchableService;
-
-    @Resource
     @Lazy
     private FieldIndexService fieldIndexService;
 
@@ -74,7 +72,12 @@ public class ModelFieldRulesServiceImpl implements ModelFieldRulesService {
             throw new ServiceException(404, "字段不存在：" + fieldId);
         }
 
-        boolean oldSearchable = resolveSearchable(assignment.getIsSearchable(), field.getType());
+        boolean oldIndexed = shouldWriteIndex(
+                assignment.getIsSearchable(), assignment.getIsFilterable(),
+                assignment.getIsSortable(), field.getType());
+
+        FieldQueryCapability.assertCanEnable(
+                field.getType(), reqVO.getIsSearchable(), reqVO.getIsFilterable(), reqVO.getIsSortable());
 
         // 更新业务规则（只更新业务规则相关字段，不涉及分组关联）
         if (reqVO.getRequired() != null) {
@@ -99,29 +102,26 @@ public class ModelFieldRulesServiceImpl implements ModelFieldRulesService {
         modelFieldAssignmentMapper.updateById(assignment);
         businessCapabilityService.refreshModelCrudFormDefinition(modelId);
 
-        // 可搜索变更：提交后立即按模型增删扩展字段索引，避免只改配置不生效
-        if (reqVO.getIsSearchable() != null) {
-            boolean newSearchable = resolveSearchable(assignment.getIsSearchable(), field.getType());
-            if (oldSearchable != newSearchable && StringUtils.hasText(field.getCode())) {
-                scheduleSearchableIndexSync(fieldId, modelId, field.getCode(), newSearchable);
-            }
+        boolean newIndexed = shouldWriteIndex(
+                assignment.getIsSearchable(), assignment.getIsFilterable(),
+                assignment.getIsSortable(), field.getType());
+        if (oldIndexed != newIndexed && StringUtils.hasText(field.getCode())) {
+            scheduleIndexMembershipSync(fieldId, modelId, field.getCode(), newIndexed);
         }
     }
 
-    private boolean resolveSearchable(Boolean configured, String fieldType) {
-        if (configured != null) {
-            return Boolean.TRUE.equals(configured);
-        }
-        return Boolean.TRUE.equals(smartSearchableService.getDefaultSearchable(fieldType));
+    private boolean shouldWriteIndex(Boolean searchable, Boolean filterable, Boolean sortable, String fieldType) {
+        return ExtensionFieldIndexEligibility.shouldWriteIndex(
+                searchable, filterable, sortable, fieldType);
     }
 
-    private void scheduleSearchableIndexSync(Long fieldId, Long modelId, String fieldCode, boolean newSearchable) {
+    private void scheduleIndexMembershipSync(Long fieldId, Long modelId, String fieldCode, boolean shouldIndex) {
         Runnable sync = () -> {
             try {
-                fieldIndexService.onSearchableChanged(fieldId, modelId, fieldCode, newSearchable);
+                fieldIndexService.onIndexMembershipChanged(fieldId, modelId, fieldCode, shouldIndex);
             } catch (Exception e) {
-                log.error("[updateFieldRules] 同步扩展字段索引失败: modelId={}, fieldCode={}, searchable={}, error={}",
-                        modelId, fieldCode, newSearchable, e.getMessage(), e);
+                log.error("[updateFieldRules] 同步扩展字段索引失败: modelId={}, fieldCode={}, shouldIndex={}, error={}",
+                        modelId, fieldCode, shouldIndex, e.getMessage(), e);
             }
         };
         if (TransactionSynchronizationManager.isSynchronizationActive()) {

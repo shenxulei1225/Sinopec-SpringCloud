@@ -21,7 +21,6 @@ import org.springframework.validation.annotation.Validated;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldRespVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeRelationRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.CustomRelationFieldCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldBatchAssignReqVO;
@@ -45,12 +44,13 @@ import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypePlatformFieldSupport;
 import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
+import cn.cheers.x.module.dynamicbusiness.service.entity.EntityRefFieldTarget;
+import cn.cheers.x.module.dynamicbusiness.service.entity.index.ExtensionFieldIndexEligibility;
 import cn.cheers.x.module.dynamicbusiness.service.entity.index.FieldIndexService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeBaseFieldService;
-import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.capability.BusinessCapabilityService;
 import cn.cheers.x.module.dynamicbusiness.service.capability.form.ModelCrudFormFieldAssembler;
-import cn.cheers.x.module.dynamicbusiness.service.field.SmartSearchableService;
+import cn.cheers.x.module.dynamicbusiness.service.field.FieldQueryCapability;
 import cn.cheers.x.module.dynamicbusiness.service.relation.RelationFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.relation.RelationFieldLibraryService;
 import jakarta.annotation.Resource;
@@ -98,11 +98,6 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
     @Lazy // 避免循环依赖
     private ModelService modelService;
     @Resource
-    private SmartSearchableService smartSearchableService;
-    @Resource
-    @Lazy // 避免循环依赖
-    private EntityTypeRelationService entityTypeRelationService;
-    @Resource
     private ModelFieldGroupService modelFieldGroupService;
     @Resource
     @Lazy
@@ -111,33 +106,39 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
     @Lazy
     private FieldIndexService fieldIndexService;
 
+    /**
+     * 型号字段增删改后：刷该型号 CRUD 表单，并重建类型级列表投影。
+     * 禁止只刷表单不刷投影，否则配置器展示列/搜索范围会和库里的字段分配不一致。
+     */
     private void notifyModelFieldDefinitionChanged(Long modelId) {
         if (modelId == null) {
             return;
         }
         businessCapabilityService.refreshModelCrudFormDefinition(modelId);
+        ModelDO model = modelMapper.selectById(modelId);
+        if (model != null && StringUtils.hasText(model.getEntityTypeCode())) {
+            businessCapabilityService.refreshAfterEntityTypeFieldDefinitionChanged(model.getEntityTypeCode());
+        }
     }
 
-    private boolean resolveSearchable(Boolean configured, String fieldType) {
-        if (configured != null) {
-            return Boolean.TRUE.equals(configured);
-        }
-        return Boolean.TRUE.equals(smartSearchableService.getDefaultSearchable(fieldType));
+    private boolean shouldWriteIndex(Boolean searchable, Boolean filterable, Boolean sortable, String fieldType) {
+        return ExtensionFieldIndexEligibility.shouldWriteIndex(
+                searchable, filterable, sortable, fieldType);
     }
 
     /**
-     * 可搜索开关变更后，在事务提交后立即按模型增删扩展字段索引（dynamic_entity_field_index）。
+     * 可搜索 / 可筛选 / 可排序变化后，按「现在该不该进索引」建或清。
      */
-    private void scheduleSearchableIndexSync(Long fieldId, Long modelId, String fieldCode, boolean newSearchable) {
+    private void scheduleIndexMembershipSync(Long fieldId, Long modelId, String fieldCode, boolean shouldIndex) {
         if (fieldId == null || modelId == null || !StringUtils.hasText(fieldCode)) {
             return;
         }
         Runnable sync = () -> {
             try {
-                fieldIndexService.onSearchableChanged(fieldId, modelId, fieldCode, newSearchable);
+                fieldIndexService.onIndexMembershipChanged(fieldId, modelId, fieldCode, shouldIndex);
             } catch (Exception e) {
-                log.error("[scheduleSearchableIndexSync] 同步扩展字段索引失败: modelId={}, fieldCode={}, searchable={}, error={}",
-                        modelId, fieldCode, newSearchable, e.getMessage(), e);
+                log.error("[scheduleIndexMembershipSync] 同步扩展字段索引失败: modelId={}, fieldCode={}, shouldIndex={}, error={}",
+                        modelId, fieldCode, shouldIndex, e.getMessage(), e);
             }
         };
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
@@ -205,13 +206,19 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
 
         Long tenantId = getTenantId();
         Boolean previousSearchableConfig = null;
+        Boolean previousFilterableConfig = null;
+        Boolean previousSortableConfig = null;
         boolean hadAssignment = false;
+
+        FieldQueryCapability.assertCanEnable(field.getType(), isSearchable, isFilterable, isSortable);
 
         // 检查是否已分配（正常记录）
         ModelFieldAssignmentDO exist = modelFieldAssignmentMapper.selectByModelIdAndFieldId(modelId, fieldId);
         if (exist != null) {
             hadAssignment = true;
             previousSearchableConfig = exist.getIsSearchable();
+            previousFilterableConfig = exist.getIsFilterable();
+            previousSortableConfig = exist.getIsSortable();
             // 已存在,更新业务规则
             exist.setRequired(required != null ? required : exist.getRequired());
             exist.setIsSearchable(isSearchable != null ? isSearchable : exist.getIsSearchable());
@@ -248,9 +255,9 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 ModelFieldAssignmentDO assignment = new ModelFieldAssignmentDO();
                 syncAssignmentIdentity(assignment, model, field);
                 assignment.setRequired(required != null ? required : false);
-                assignment.setIsSearchable(isSearchable);
-                assignment.setIsFilterable(isFilterable);
-                assignment.setIsSortable(isSortable);
+                assignment.setIsSearchable(defaultSearchableOnAssign(isSearchable, field.getType()));
+                assignment.setIsFilterable(defaultFilterableOnAssign(isFilterable));
+                assignment.setIsSortable(defaultSortableOnAssign(isSortable));
                 assignment.setDefaultValue(defaultValue);
                 assignment.setValidationRules(validationRules);
                 assignment.setTenantId(tenantId);
@@ -260,10 +267,12 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         notifyModelFieldDefinitionChanged(modelId);
 
         ModelFieldAssignmentDO latest = modelFieldAssignmentMapper.selectByModelIdAndFieldId(modelId, fieldId);
-        boolean newSearchable = latest != null && resolveSearchable(latest.getIsSearchable(), field.getType());
-        boolean oldSearchable = hadAssignment && resolveSearchable(previousSearchableConfig, field.getType());
-        if (newSearchable != oldSearchable) {
-            scheduleSearchableIndexSync(fieldId, modelId, field.getCode(), newSearchable);
+        boolean newIndexed = latest != null && shouldWriteIndex(
+                latest.getIsSearchable(), latest.getIsFilterable(), latest.getIsSortable(), field.getType());
+        boolean oldIndexed = hadAssignment && shouldWriteIndex(
+                previousSearchableConfig, previousFilterableConfig, previousSortableConfig, field.getType());
+        if (newIndexed != oldIndexed) {
+            scheduleIndexMembershipSync(fieldId, modelId, field.getCode(), newIndexed);
         }
     }
 
@@ -288,8 +297,13 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 throw new ServiceException(404, "字段不存在：" + item.getFieldId());
             }
 
+            FieldQueryCapability.assertCanEnable(
+                    field.getType(), item.getIsSearchable(), item.getIsFilterable(), item.getIsSortable());
+
             boolean isEntityRef = FieldTypeEnum.isEntityRef(field.getType());
             Boolean previousSearchableConfig = null;
+            Boolean previousFilterableConfig = null;
+            Boolean previousSortableConfig = null;
             boolean hadAssignment = false;
 
             // 检查是否已分配（正常记录）
@@ -298,6 +312,8 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
             if (exist != null) {
                 hadAssignment = true;
                 previousSearchableConfig = exist.getIsSearchable();
+                previousFilterableConfig = exist.getIsFilterable();
+                previousSortableConfig = exist.getIsSortable();
                 // 已存在,更新业务规则
                 exist.setRequired(item.getRequired());
                 exist.setIsSearchable(item.getIsSearchable());
@@ -348,9 +364,9 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                     ModelFieldAssignmentDO assignment = new ModelFieldAssignmentDO();
                     syncAssignmentIdentity(assignment, model, field);
                     assignment.setRequired(item.getRequired() != null ? item.getRequired() : false);
-                    assignment.setIsSearchable(item.getIsSearchable());
-                    assignment.setIsFilterable(item.getIsFilterable());
-                    assignment.setIsSortable(item.getIsSortable());
+                    assignment.setIsSearchable(defaultSearchableOnAssign(item.getIsSearchable(), field.getType()));
+                    assignment.setIsFilterable(defaultFilterableOnAssign(item.getIsFilterable()));
+                    assignment.setIsSortable(defaultSortableOnAssign(item.getIsSortable()));
                     assignment.setDefaultValue(item.getDefaultValue());
                     assignment.setValidationRules(item.getValidationRules());
                     assignment.setSort(item.getSort());
@@ -368,10 +384,12 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
             }
 
             ModelFieldAssignmentDO latest = modelFieldAssignmentMapper.selectByModelIdAndFieldId(modelId, item.getFieldId());
-            boolean newSearchable = latest != null && resolveSearchable(latest.getIsSearchable(), field.getType());
-            boolean oldSearchable = hadAssignment && resolveSearchable(previousSearchableConfig, field.getType());
-            if (newSearchable != oldSearchable) {
-                scheduleSearchableIndexSync(item.getFieldId(), modelId, field.getCode(), newSearchable);
+            boolean newIndexed = latest != null && shouldWriteIndex(
+                    latest.getIsSearchable(), latest.getIsFilterable(), latest.getIsSortable(), field.getType());
+            boolean oldIndexed = hadAssignment && shouldWriteIndex(
+                    previousSearchableConfig, previousFilterableConfig, previousSortableConfig, field.getType());
+            if (newIndexed != oldIndexed) {
+                scheduleIndexMembershipSync(item.getFieldId(), modelId, field.getCode(), newIndexed);
             }
         }
         if (affectedCount > 0) {
@@ -401,10 +419,12 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         ModelFieldAssignmentDO assignment = modelFieldAssignmentMapper.selectByModelIdAndFieldId(modelId, fieldId);
         if (assignment != null) {
             assertSystemFieldNotUnassignable(assignment, field);
-            boolean wasSearchable = resolveSearchable(assignment.getIsSearchable(), field.getType());
+            boolean wasIndexed = shouldWriteIndex(
+                    assignment.getIsSearchable(), assignment.getIsFilterable(),
+                    assignment.getIsSortable(), field.getType());
             modelFieldAssignmentMapper.deleteById(assignment.getId());
             notifyModelFieldDefinitionChanged(modelId);
-            if (wasSearchable) {
+            if (wasIndexed) {
                 scheduleRemoveFieldIndex(modelId, field.getCode());
             }
         }
@@ -447,12 +467,14 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 new LambdaQueryWrapperX<ModelFieldAssignmentDO>()
                         .eq(ModelFieldAssignmentDO::getModelId, modelId)
                         .in(ModelFieldAssignmentDO::getFieldId, fieldIds));
-        List<String> searchableFieldCodes = new ArrayList<>();
+        List<String> indexedFieldCodes = new ArrayList<>();
         for (ModelFieldAssignmentDO assignment : toRemove) {
             FieldDO field = fieldById.get(assignment.getFieldId());
             assertSystemFieldNotUnassignable(assignment, field);
-            if (field != null && resolveSearchable(assignment.getIsSearchable(), field.getType())) {
-                searchableFieldCodes.add(field.getCode());
+            if (field != null && shouldWriteIndex(
+                    assignment.getIsSearchable(), assignment.getIsFilterable(),
+                    assignment.getIsSortable(), field.getType())) {
+                indexedFieldCodes.add(field.getCode());
             }
         }
         int deleted = modelFieldAssignmentMapper.delete(
@@ -461,7 +483,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                         .in(ModelFieldAssignmentDO::getFieldId, fieldIds));
         if (deleted > 0) {
             notifyModelFieldDefinitionChanged(modelId);
-            for (String fieldCode : searchableFieldCodes) {
+            for (String fieldCode : indexedFieldCodes) {
                 scheduleRemoveFieldIndex(modelId, fieldCode);
             }
         }
@@ -505,20 +527,9 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 respVO.setFieldId(assignment.getFieldId());
                 respVO.setField(FieldConvert.INSTANCE.convert(field));
                 respVO.setRequired(assignment.getRequired());
-                // 优先使用模型字段中的配置,如果为 null 则使用智能默认值
-                Boolean isSearchable = assignment.getIsSearchable();
-                if (isSearchable == null) {
-                    isSearchable = smartSearchableService.getDefaultSearchable(field.getType());
-                }
-                respVO.setIsSearchable(isSearchable);
-
+                respVO.setIsSearchable(assignment.getIsSearchable());
                 respVO.setIsFilterable(assignment.getIsFilterable());
-
-                Boolean isSortable = assignment.getIsSortable();
-                if (isSortable == null) {
-                    isSortable = smartSearchableService.getDefaultSortable(field.getType());
-                }
-                respVO.setIsSortable(isSortable);
+                respVO.setIsSortable(assignment.getIsSortable());
                 respVO.setDefaultValue(assignment.getDefaultValue());
                 respVO.setValidationRules(assignment.getValidationRules());
                 respVO.setSort(assignment.getSort());
@@ -731,11 +742,9 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
 
         respVO.setField(fieldRespVO);
         respVO.setRequired(baseField.getRequired());
-        // 固定列字段的 isSearchable 和 isSortable 使用字段 definition 中的默认值（通常固定列字段都是可查询和可排序的）
-        // 由于固定列字段没有 ModelFieldAssignment,这里设置为 null,前端可以根据字段类型智能判断
-        respVO.setIsSearchable(true); // 固定列字段默认可搜索
-        respVO.setIsFilterable(true); // 固定列字段默认可筛选
-        respVO.setIsSortable(true);   // 固定列字段默认可排序
+        respVO.setIsSearchable(baseField.getIsSearchable());
+        respVO.setIsFilterable(baseField.getIsFilterable());
+        respVO.setIsSortable(baseField.getIsSortable());
         respVO.setDefaultValue(baseField.getDefaultValue());
         respVO.setSort(baseField.getSortOrder()); // 使用 sortOrder 作为 sort
         
@@ -758,30 +767,20 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 // 注意：fieldCode 中的 targetEntityTypeCode 是大写的（如 REL_REGION）,
                 // 但实际的 targetEntityTypeCode 可能是 "Region",需要不区分大小写匹配
                 String fieldCodeSuffix = baseField.getFieldCode().substring(4); // 去掉 "REL_" 前缀
-                
-                // 查询 EntityType 关联关系,获取关联信息
-                if (sourceEntityTypeCode != null) {
-                    // 查询所有从源业务类型出发的关联关系
-                    List<EntityTypeRelationRespVO> relations = entityTypeRelationService.getRelationsBySourceCode(sourceEntityTypeCode);
-                    
-                    // 不区分大小写匹配 targetEntityTypeCode
-                    EntityTypeRelationRespVO relation = relations.stream()
-                            .filter(r -> r.getTargetEntityTypeCode() != null 
-                                    && r.getTargetEntityTypeCode().equalsIgnoreCase(fieldCodeSuffix))
-                            .findFirst()
-                            .orElse(null);
-                    
-                    if (relation != null) {
-                        respVO.setTargetEntityType(relation.getTargetEntityTypeCode());
-                        respVO.setTargetEntityTypeName(relation.getTargetEntityTypeName());
-                        respVO.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_RELATION);
-                        
-                        log.debug("[convertBaseFieldToAssignmentRespVO][为关联字段设置关联信息: fieldCode={}, targetEntityType={}]",
-                                baseField.getFieldCode(), relation.getTargetEntityTypeCode());
-                    } else {
-                        log.debug("[convertBaseFieldToAssignmentRespVO][未找到匹配的关联关系: fieldCode={}, sourceEntityType={}]",
-                                baseField.getFieldCode(), sourceEntityTypeCode);
-                    }
+                // 目标类型只认固定列编码后缀对上的业务类型，不查旧许可表。
+                EntityTypeDO targetType = entityTypeMapper.selectAllList().stream()
+                        .filter(item -> item.getCode() != null && item.getCode().equalsIgnoreCase(fieldCodeSuffix))
+                        .findFirst()
+                        .orElse(null);
+                if (targetType != null) {
+                    respVO.setTargetEntityType(targetType.getCode());
+                    respVO.setTargetEntityTypeName(targetType.getName());
+                    respVO.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_RELATION);
+                    log.debug("[convertBaseFieldToAssignmentRespVO][为关联字段设置目标类型: fieldCode={}, targetEntityType={}]",
+                            baseField.getFieldCode(), targetType.getCode());
+                } else {
+                    log.debug("[convertBaseFieldToAssignmentRespVO][固定列编码对不上业务类型: fieldCode={}]",
+                            baseField.getFieldCode());
                 }
             } catch (Exception e) {
                 log.warn("[convertBaseFieldToAssignmentRespVO][解析关联字段信息失败: fieldCode={}, error={}]",
@@ -976,18 +975,22 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                         }
                     }
                 }
-            } else if (assignment.getTargetEntityType() != null) {
-                // 3. 兜底：从字段分配记录中读取前端选择的目标业务类型
-                respVO.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_RELATION);
-                respVO.setTargetEntityType(assignment.getTargetEntityType());
-                EntityTypeDO targetEntityType = entityTypeMapper.selectByCode(assignment.getTargetEntityType());
-                if (targetEntityType != null) {
-                    respVO.setTargetEntityTypeName(targetEntityType.getName());
+            }
+            if (!StringUtils.hasText(respVO.getTargetEntityType())) {
+                String declaredTarget = EntityRefFieldTarget.firstDeclared(
+                        assignment.getTargetEntityType(),
+                        EntityRefFieldTarget.fromProviderCode(field.getProviderCode()));
+                if (StringUtils.hasText(declaredTarget)) {
+                    respVO.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_RELATION);
+                    respVO.setTargetEntityType(declaredTarget);
+                    EntityTypeDO targetEntityType = entityTypeMapper.selectByCode(declaredTarget);
+                    if (targetEntityType != null) {
+                        respVO.setTargetEntityTypeName(targetEntityType.getName());
+                    }
+                } else {
+                    log.warn("[getModelRelationFields][引用字段未声明目标类型,fieldId={}, fieldCode={}, modelId={}]",
+                            field.getId(), field.getCode(), modelId);
                 }
-            } else {
-                // 关联信息缺失,记录警告日志
-                log.warn("[getModelRelationFields][关联字段缺少关联目标信息,fieldId={}, fieldCode={}, modelId={}]",
-                        field.getId(), field.getCode(), modelId);
             }
 
             result.add(respVO);
@@ -1137,12 +1140,8 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 continue;
             }
             FieldRespVO f = item.getField();
-            // 文本类字段走 keyword 搜索，不进入筛选面板
-            if (isTextLikeType(f.getType())) {
-                continue;
-            }
-            // 仅显式 isFilterable=true 的字段进入筛选面板
-            if (!Boolean.TRUE.equals(item.getIsFilterable())) {
+            if (!FieldQueryCapability.canFilter(f.getType())
+                    || !Boolean.TRUE.equals(item.getIsFilterable())) {
                 continue;
             }
             ModelFilterFieldMetaRespVO meta = new ModelFilterFieldMetaRespVO();
@@ -1160,9 +1159,19 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
         return result;
     }
 
-    private boolean isTextLikeType(String rawType) {
-        String t = rawType == null ? "" : rawType.trim().toUpperCase();
-        return "TEXT".equals(t) || "STRING".equals(t) || "LONG_TEXT".equals(t);
+    private Boolean defaultSearchableOnAssign(Boolean requested, String fieldType) {
+        if (requested != null) {
+            return requested;
+        }
+        return FieldQueryCapability.canSearch(fieldType);
+    }
+
+    private Boolean defaultFilterableOnAssign(Boolean requested) {
+        return Boolean.TRUE.equals(requested);
+    }
+
+    private Boolean defaultSortableOnAssign(Boolean requested) {
+        return Boolean.TRUE.equals(requested);
     }
 
     private List<String> resolveOperatorsByFieldType(String rawType) {

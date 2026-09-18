@@ -1,158 +1,143 @@
 package cn.cheers.x.inspection.task.service.execution.impl;
 
-import cn.cheers.x.device.protocolgateway.api.DeviceProtocolMissionApi;
 import cn.cheers.x.device.protocolgateway.api.dto.MissionStartRespDTO;
-import cn.cheers.x.device.protocolgateway.api.mission.DeviceMissionPlan;
-import cn.cheers.x.device.protocolgateway.api.mission.MissionPointActionType;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.CommonResult;
-import cn.cheers.x.inspection.inspection_content.dal.dataobject.binding.ObjectStationBindingDO;
-import cn.cheers.x.inspection.inspection_content.dal.dataobject.route.InspectionRoutePlanDO;
-import cn.cheers.x.inspection.inspection_content.dal.mysql.binding.ObjectStationBindingMapper;
-import cn.cheers.x.inspection.inspection_content.dal.mysql.route.InspectionRoutePlanMapper;
-import cn.cheers.x.inspection.task.dal.dataobject.task.InspectionTaskDO;
-import cn.cheers.x.inspection.task.dal.mysql.task.InspectionTaskMapper;
 import cn.cheers.x.inspection.task.model.task.ExecutionDeviceBinding;
 import cn.cheers.x.inspection.task.model.task.InspectionContent;
-import cn.cheers.x.module.dynamicbusiness.api.execution.TaskExecutionSessionApi;
-import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartReqDTO;
-import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartRespDTO;
-import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionWritebackReqDTO;
-import cn.cheers.x.module.platform.contract.dto.network.PathNetworkDTO;
-import cn.cheers.x.module.platform.contract.dto.network.PathNodeDTO;
-import cn.cheers.x.module.platform.contract.dto.topology.TopologyPointDTO;
-import cn.cheers.x.module.platform.topology.api.PathNetworkApi;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import cn.cheers.x.inspection.task.service.execution.steptree.EntityRpcTaskStepTreeCatalog;
+import cn.cheers.x.inspection.task.service.execution.steptree.HostSopParamPack;
+import cn.cheers.x.inspection.task.service.execution.steptree.TaskStepNode;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
+import cn.cheers.x.module.dynamicbusiness.api.strategy.StrategyRuntimeApi;
+import cn.cheers.x.module.dynamicbusiness.api.strategy.dto.StrategyHandleRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.strategy.dto.StrategyTriggerEventDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class InspectionTaskStartExecutionServiceImplTest {
 
-    private InspectionTaskMapper taskMapper;
-    private InspectionRoutePlanMapper routePlanMapper;
-    private ObjectStationBindingMapper bindingMapper;
-    private PathNetworkApi pathNetworkApi;
-    private TaskExecutionSessionApi sessionApi;
-    private DeviceProtocolMissionApi missionApi;
+    private PatrolTaskEntityStore store;
+    private StrategyRuntimeApi strategyRuntimeApi;
+    private EntityRpcTaskStepTreeCatalog catalog;
     private InspectionTaskStartExecutionServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        taskMapper = mock(InspectionTaskMapper.class);
-        routePlanMapper = mock(InspectionRoutePlanMapper.class);
-        bindingMapper = mock(ObjectStationBindingMapper.class);
-        pathNetworkApi = mock(PathNetworkApi.class);
-        sessionApi = mock(TaskExecutionSessionApi.class);
-        missionApi = mock(DeviceProtocolMissionApi.class);
-        service = new InspectionTaskStartExecutionServiceImpl(
-                taskMapper, routePlanMapper, bindingMapper, pathNetworkApi,
-                sessionApi, missionApi, new ObjectMapper());
+        store = mock(PatrolTaskEntityStore.class);
+        strategyRuntimeApi = mock(StrategyRuntimeApi.class);
+        catalog = mock(EntityRpcTaskStepTreeCatalog.class);
+        service = new InspectionTaskStartExecutionServiceImpl(store, strategyRuntimeApi, catalog);
     }
 
     @Test
     void missingBinding_throws() {
-        InspectionTaskDO task = new InspectionTaskDO();
-        task.setId(1L);
-        task.setNetworkRef("net-a");
-        when(taskMapper.selectById(1L)).thenReturn(task);
+        when(store.require(1L)).thenReturn(new PatrolTaskDraft(
+                1L, "样例", "巡检", 1L, "ROBOT", null, null, null, null, null, "draft", 0, null, null));
 
         ServiceException ex = assertThrows(ServiceException.class, () -> service.startExecution(1L));
         assertTrue(ex.getMessage().contains("未绑定执行设备"));
     }
 
     @Test
-    void happyPath_createsExecutionRecord_thenDispatchesWithRecordId() {
-        InspectionTaskDO task = sampleTask();
-        when(taskMapper.selectById(1L)).thenReturn(task);
+    void missingStepTree_throws() {
+        when(store.require(1L)).thenReturn(sampleDraft());
+        when(catalog.requireStepTree(1L)).thenThrow(
+                new ServiceException(400, "任务没有执行步骤图，请先在路径规划时生成步骤"));
 
-        InspectionRoutePlanDO plan = new InspectionRoutePlanDO();
-        plan.setId(10L);
-        plan.setFacilityId(100L);
-        plan.setStopIds("[\"s1\",\"s2\"]");
-        when(routePlanMapper.selectById(10L)).thenReturn(plan);
+        ServiceException ex = assertThrows(ServiceException.class, () -> service.startExecution(1L));
+        assertTrue(ex.getMessage().contains("没有执行步骤图"));
+        verify(strategyRuntimeApi, never()).handle(any());
+    }
 
-        ObjectStationBindingDO stationBinding = new ObjectStationBindingDO();
-        stationBinding.setObjectId(7L);
-        stationBinding.setStationNodeId("s1");
-        when(bindingMapper.selectByFacilityAndObjectIds(eq(100L), anyCollection()))
-                .thenReturn(List.of(stationBinding));
-
-        PathNodeDTO n1 = PathNodeDTO.builder()
-                .nodeId("s1")
-                .position(TopologyPointDTO.builder().x(117.0).y(39.1).build())
-                .build();
-        PathNodeDTO n2 = PathNodeDTO.builder()
-                .nodeId("s2")
-                .position(TopologyPointDTO.builder().x(117.1).y(39.2).build())
-                .build();
-        when(pathNetworkApi.getNetwork("net-a")).thenReturn(CommonResult.success(
-                PathNetworkDTO.builder().networkRef("net-a").nodes(List.of(n1, n2)).build()));
-
-        TaskExecutionStartRespDTO sessionResp = new TaskExecutionStartRespDTO();
-        sessionResp.setExecutionRecordId(9001L);
-        sessionResp.setStepIds(List.of(11L, 12L));
-        when(sessionApi.start(any())).thenReturn(CommonResult.success(sessionResp));
-        when(sessionApi.writeback(any())).thenReturn(CommonResult.success(true));
-        when(missionApi.dispatchAndStartup(any())).thenReturn(CommonResult.success(
-                new MissionStartRespDTO(true, true, true, true, null, "{}")));
+    @Test
+    void startExecution_publishesPreparedStartEvent() {
+        when(store.require(1L)).thenReturn(sampleDraft());
+        when(catalog.requireStepTree(1L)).thenReturn(List.of(
+                new TaskStepNode("n-move", 1, null, "action", "act-arrive", 11L, "到达指定位置",
+                        Map.of("location_ref", "SHOULD_NOT_USE")),
+                new TaskStepNode("n-item", 2, null, "inspection_item", null, 7L, "检查阀", Map.of()),
+                new TaskStepNode("n-human", 3, "n-item", "action", "act-human", 33L, "人工确认", Map.of())
+        ));
+        when(catalog.loadHostPack(eq(200L))).thenReturn(HostSopParamPack.empty());
+        when(catalog.resolveActionId(any())).thenReturn(Optional.empty());
+        when(strategyRuntimeApi.handle(any())).thenReturn(CommonResult.success(startedOk(88L)));
 
         MissionStartRespDTO result = service.startExecution(1L);
 
         assertTrue(result.success());
-        ArgumentCaptor<TaskExecutionStartReqDTO> sessionCaptor =
-                ArgumentCaptor.forClass(TaskExecutionStartReqDTO.class);
-        verify(sessionApi).start(sessionCaptor.capture());
-        assertEquals(1L, sessionCaptor.getValue().getTaskDefinitionId());
-        assertEquals(2, sessionCaptor.getValue().getSteps().size());
-
-        ArgumentCaptor<DeviceMissionPlan> missionCaptor = ArgumentCaptor.forClass(DeviceMissionPlan.class);
-        verify(missionApi).dispatchAndStartup(missionCaptor.capture());
-        assertEquals("9001", missionCaptor.getValue().taskId());
-        assertEquals("TASK-1", missionCaptor.getValue().templateId());
-        assertEquals(MissionPointActionType.PHOTO, missionCaptor.getValue().waypoints().get(0).action());
-
-        ArgumentCaptor<TaskExecutionWritebackReqDTO> writebackCaptor =
-                ArgumentCaptor.forClass(TaskExecutionWritebackReqDTO.class);
-        verify(sessionApi).writeback(writebackCaptor.capture());
-        assertEquals(9001L, writebackCaptor.getValue().getExecutionRecordId());
-        assertEquals("in_progress", writebackCaptor.getValue().getExecutionStatus());
-
-        ArgumentCaptor<InspectionTaskDO> updateCaptor = ArgumentCaptor.forClass(InspectionTaskDO.class);
-        verify(taskMapper).updateById(updateCaptor.capture());
-        assertEquals("DISPATCHED", updateCaptor.getValue().getDeviceRunStatus());
+        ArgumentCaptor<StrategyTriggerEventDTO> captor = ArgumentCaptor.forClass(StrategyTriggerEventDTO.class);
+        verify(strategyRuntimeApi).handle(captor.capture());
+        StrategyTriggerEventDTO event = captor.getValue();
+        assertEquals(StrategyTriggerEventDTO.EVENT_EXECUTION_START, event.getEventType());
+        assertEquals("robot-ws", event.getProtocolVersion());
+        assertEquals("SN-001", event.getLogicalDeviceId());
+        assertEquals("任务准备", event.getSteps().get(0).get("name"));
+        assertEquals(11L, ((Number) event.getDispatchActions().get(0).get("actionId")).longValue());
+        verify(catalog).loadHostPack(200L);
+        verify(catalog, never()).loadHostPack(99L);
     }
 
-    private static InspectionTaskDO sampleTask() {
-        InspectionTaskDO task = new InspectionTaskDO();
-        task.setId(1L);
-        task.setTaskCode("TASK-1");
-        task.setTaskName("样例");
-        task.setNetworkRef("net-a");
-        task.setRoutePlanId(10L);
-        task.setPlannedRoute("{\"stopIds\":[\"s1\",\"s2\"]}");
+    @Test
+    void dispatchFailed_returnsFailureWithoutPretendingStarted() {
+        when(store.require(1L)).thenReturn(sampleDraft());
+        when(catalog.requireStepTree(1L)).thenReturn(List.of(
+                new TaskStepNode("n-move", 1, null, "action", "act-arrive", 11L, "到达指定位置", Map.of())
+        ));
+        when(catalog.loadHostPack(eq(200L))).thenReturn(HostSopParamPack.empty());
+        StrategyHandleRespDTO handled = startedOk(88L);
+        handled.setDispatchSuccess(false);
+        handled.setDispatchFailureReason("设备当前未连接：SN-001");
+        when(strategyRuntimeApi.handle(any())).thenReturn(CommonResult.success(handled));
+
+        MissionStartRespDTO result = service.startExecution(1L);
+
+        assertFalse(result.success());
+        assertEquals("设备当前未连接：SN-001", result.failureReason());
+    }
+
+    private static StrategyHandleRespDTO startedOk(Long recordId) {
+        StrategyHandleRespDTO resp = new StrategyHandleRespDTO();
+        resp.setMatched(true);
+        resp.setExecutionRecordId(recordId);
+        resp.setDispatchSuccess(true);
+        resp.setDispatchOnline(true);
+        resp.setDispatchCommandSent(true);
+        resp.setDispatchStartupSent(true);
+        resp.setActionName("更新这次执行的状态");
+        return resp;
+    }
+
+    private static PatrolTaskDraft sampleDraft() {
         ExecutionDeviceBinding binding = new ExecutionDeviceBinding();
         binding.setEquipmentId(99L);
-        binding.setProtocolCode("zhiren-robot-ws");
+        binding.setProtocolCode("robot-ws");
         binding.setLogicalDeviceId("SN-001");
-        task.setExecutionDeviceBinding(binding);
         InspectionContent content = new InspectionContent();
         InspectionContent.ObjectContent object = new InspectionContent.ObjectContent();
-        object.setObjectId(7L);
-        content.getCustomObjects().add(object);
-        task.setInspectionContent(content);
-        return task;
+        object.setObjectId(200L);
+        InspectionContent.ItemContent item = new InspectionContent.ItemContent();
+        item.setItemId(7L);
+        object.setItems(List.of(item));
+        content.setCustomObjects(List.of(object));
+        return new PatrolTaskDraft(
+                1L, "样例", "巡检", 8L, "ROBOT", content, binding, null, null, null, "draft", 2, null, null);
     }
 }

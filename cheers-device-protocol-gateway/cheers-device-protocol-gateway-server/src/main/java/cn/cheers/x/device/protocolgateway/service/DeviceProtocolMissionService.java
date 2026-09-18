@@ -14,6 +14,7 @@ import java.util.UUID;
 /**
  * 正式下行编排：翻译 → 500104 → 500201。
  * <p>不读巡检库表；不查设备台账。逻辑设备当前无连接时返回失败，不假装成功。
+ * <p>success 仅当两步都等到同号业务答卷且 code=200。写出成功还不算成功。
  */
 @Service
 @RequiredArgsConstructor
@@ -27,8 +28,8 @@ public class DeviceProtocolMissionService {
     /**
      * 翻译执行意图并下发指令包与启动执行。
      *
-     * @param plan 已含 protocolCode、逻辑设备标识、waypoints
-     * @return success 仅当两步均写出成功
+     * @param plan 已含协议版本、动作列表、逻辑设备标识
+     * @return success 仅当 500104 与 500201 都收到同号成功答卷
      */
     public MissionStartRespDTO dispatchAndStartup(DeviceMissionPlan plan) {
         if (plan == null || plan.deviceId() == null || plan.deviceId().isBlank()) {
@@ -40,11 +41,11 @@ public class DeviceProtocolMissionService {
         if (!online) {
             return fail(false, false, false, "设备当前未连接：" + plan.deviceId(), wireJson);
         }
-        boolean commandSent = downlinkService.sendCommandPackage(command);
-        if (!commandSent) {
-            return fail(true, false, false, "指令包写出失败：" + plan.deviceId(), wireJson);
+        SyncDownlinkResult commandResult = downlinkService.sendCommandPackage(command);
+        if (!commandResult.accepted()) {
+            return fail(true, commandResult.written(), false,
+                    commandResult.failureReason(), wireJson);
         }
-        // taskId / templateId 分开：业务回绑用 taskId，地面站存包键用 templateId
         String wireTaskId = (plan.taskId() != null && !plan.taskId().isBlank())
                 ? plan.taskId().trim()
                 : plan.templateId();
@@ -55,9 +56,10 @@ public class DeviceProtocolMissionService {
                 plan.templateId(),
                 System.currentTimeMillis() / 1000L
         );
-        boolean startupSent = downlinkService.startupExecute(startup);
-        if (!startupSent) {
-            return fail(true, true, false, "启动执行写出失败：" + plan.deviceId(), wireJson);
+        SyncDownlinkResult startupResult = downlinkService.startupExecute(startup);
+        if (!startupResult.accepted()) {
+            return fail(true, true, startupResult.written(),
+                    startupResult.failureReason(), wireJson);
         }
         return new MissionStartRespDTO(true, true, true, true, null, wireJson);
     }

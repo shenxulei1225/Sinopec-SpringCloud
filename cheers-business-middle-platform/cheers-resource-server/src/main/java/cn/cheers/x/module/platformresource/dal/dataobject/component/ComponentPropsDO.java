@@ -31,10 +31,13 @@ public class ComponentPropsDO extends BaseDO {
     /** true=模板（props 全量）；false=实例（props_override 差异） */
     private Boolean isTemplate;
 
-    /** 关联 pr_component.id */
+    /**
+     * 可选。以前绑过组件库目录行才有。
+     * 新建配置不写；打开页面、读配置不读。
+     */
     private Long componentId;
 
-    /** 语义化组件编码，与 pr_component.component_code 一致 */
+    /** 这是哪种组件（list / tree / entity-detail）。建配置只写这一项。 */
     private String componentCode;
 
     /**

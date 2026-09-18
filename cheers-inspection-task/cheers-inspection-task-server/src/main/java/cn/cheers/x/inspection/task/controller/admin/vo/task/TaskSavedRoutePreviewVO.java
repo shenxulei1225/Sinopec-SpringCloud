@@ -28,8 +28,11 @@ public class TaskSavedRoutePreviewVO {
     @Schema(description = "机动剖面 id")
     private String mobilityProfileId;
 
-    @Schema(description = "固定起点停靠点 id（若规划时传入并落库）")
+    @Schema(description = "任务创建选定的起点（无人机起飞点）")
     private String startStopId;
+
+    @Schema(description = "任务创建选定的终点（无人机降落点）")
+    private String endStopId;
 
     @Schema(description = "是否回到起点")
     private Boolean returnToStart;

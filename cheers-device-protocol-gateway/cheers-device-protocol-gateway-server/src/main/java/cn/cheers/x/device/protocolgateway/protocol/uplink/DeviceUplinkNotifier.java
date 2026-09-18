@@ -10,22 +10,28 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
 /**
- * 上行业务回调：按配置 URL 推送事件；未配置则只记日志。
+ * 过渡消费者：把已出队的上报用 HTTP 推给业务。
+ * <p>正式主路径是持久化总线；本类待替换，禁止再从收包线程直接调用。
  * <p>不依赖巡检模块；业务服务自行暴露接收端。
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class DeviceUplinkNotifier {
+public class DeviceUplinkNotifier implements UplinkEventConsumer {
 
     private final DeviceProtocolGatewayProperties properties;
     private final RestClient.Builder restClientBuilder;
 
+    @Override
+    public void consume(DeviceUplinkEventDTO event) {
+        notifyBusiness(event);
+    }
+
     public void notifyBusiness(DeviceUplinkEventDTO event) {
         String url = properties.getUplinkNotifyUrl();
         if (!StringUtils.hasText(url)) {
-            log.debug("[device-protocol] 未配置 uplink-notify-url，跳过业务回调 deviceId={} opcode={}",
-                    event.deviceId(), event.opcode());
+            log.debug("[device-protocol] 未配置 uplink-notify-url，跳过过渡 HTTP channel={} deviceId={} messageKind={}",
+                    event.channelCode(), event.deviceId(), event.messageKind());
             return;
         }
         try {
@@ -33,12 +39,12 @@ public class DeviceUplinkNotifier {
                     .post()
                     .uri(url.trim())
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(event)
+                    .body(event.sample())
                     .retrieve()
                     .toBodilessEntity();
         } catch (Exception ex) {
-            log.warn("[device-protocol] 上行业务回调失败 url={} deviceId={} opcode={}: {}",
-                    url, event.deviceId(), event.opcode(), ex.getMessage());
+            log.warn("[device-protocol] 过渡 HTTP 回调失败 url={} channel={} deviceId={} messageKind={}: {}",
+                    url, event.channelCode(), event.deviceId(), event.messageKind(), ex.getMessage());
         }
     }
 }

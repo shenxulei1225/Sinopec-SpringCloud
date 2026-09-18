@@ -3,21 +3,21 @@ package cn.cheers.x.device.protocolgateway.api.mission;
 import java.util.List;
 
 /**
- * 中立执行意图：网关翻译层入参。
- * <p>内容应由「本次巡检对象 + 巡检内容 + 路径」动态算出后填入；
- * 不是系统预制的固定指令包。网关不读巡检库表。
+ * 指令下发入参：协议版本 + 已排好的动作列表。
+ * <p>网关只按对照表填空包，不发明起飞/移动/降落顺序。
+ * <p>禁止：用厂商名冒充协议版本；动作列表空了还组包。
  *
- * @param protocolCode 对接协议编码（选适配器），如 {@code zhiren-robot-ws}
- * @param deviceId     逻辑设备标识（注册表用它找当前连接；不是瞬时连接句柄）
- * @param taskId       外部会话 id = 任务模块执行记录 id（写入 500201；上行回绑执行记录）
- * @param templateId   本次任务模板编号（地面站存包键；与 taskId 可不同）
- * @param waypoints    本次有序停靠与点上动作
+ * @param protocolVersion 对接协议版本（如 {@code robot-ws} / {@code uav-ws}）
+ * @param deviceId        逻辑设备标识
+ * @param taskId          这次任务台账（执行记录）id，回执和上报用它挂回同一行
+ * @param templateId      本次任务模板编号
+ * @param actions         已排好的动作；每步带动作 id 和参数袋
  */
 public record DeviceMissionPlan(
-        String protocolCode,
+        String protocolVersion,
         String deviceId,
         String taskId,
         String templateId,
-        List<MissionWaypoint> waypoints
+        List<DispatchAction> actions
 ) {
 }

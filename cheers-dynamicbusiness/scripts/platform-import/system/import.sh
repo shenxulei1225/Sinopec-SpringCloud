@@ -25,8 +25,17 @@ run "${SCRIPT_DIR}/seed/dynamic_base_field_library_fields.sql"
 run "${SCRIPT_DIR}/seed/dynamic_field.sql"
 # 设备宿主 SOP 参数包（字段库 + equipment 基础字段；前置 Flyway V91）
 run "${SCRIPT_DIR}/seed/dynamic_equipment_host_sop_param_pack.sql"
+# 设备协议版本（字段库 + equipment 基础字段；前置 Flyway V128）
+run "${SCRIPT_DIR}/seed/dynamic_equipment_protocol_versions.sql"
 run "${SCRIPT_DIR}/seed/dynamic_group.sql"
+run "${SCRIPT_DIR}/seed/dynamic_protocol_management.sql"
+run "${SCRIPT_DIR}/seed/dynamic_protocol_ground_station.sql"
+run "${SCRIPT_DIR}/seed/dynamic_protocol_ground_station_tabs.sql"
+# 指令协议对接：目录本体须已由创建接口建出；本文件只补型号、字段和对照行
+run "${SCRIPT_DIR}/seed/dynamic_protocol_mapping.sql"
 run "${SCRIPT_DIR}/seed/dynamic_group_relation.sql"
+run "${SCRIPT_DIR}/seed/retire_split_location_decimals.sql"
+run "${SCRIPT_DIR}/seed/repair_equipment_coordinate_type.sql"
 run "${SCRIPT_DIR}/seed/dynamic_model.sql"
 run "${SCRIPT_DIR}/seed/dynamic_model_task.sql"
 run "${SCRIPT_DIR}/seed/dynamic_model_facility.sql"
@@ -59,9 +68,12 @@ run "${SCRIPT_DIR}/seed/dynamic_purge_patrol_domain.sql"
 run "${SCRIPT_DIR}/seed/dynamic_seed_retire_route_inspection_point.sql"
 # 点位/路线 Scope 与两站样例须在 purge/retire 之后（重新注册 patrol_point / route）
 run "${SCRIPT_DIR}/seed/dynamic_entity_point_route_scope.sql"
+run "${SCRIPT_DIR}/seed/repair_route_point_coordinate_from_network.sql"
 run "${SCRIPT_DIR}/seed/dynamic_entity_facility_jinqiao_luoyang.sql"
 # 三维场景/摆放阶段 1（前置 Flyway V17）
 run "${SCRIPT_DIR}/seed/dynamic_scene_3d_phase1.sql"
+# 导入完整性闸门：布局/关系图缺核心数据时立即失败（禁止读路径补丁兜底）
+run "${SCRIPT_DIR}/seed/dynamic_seed_layout_relation_integrity_check.sql"
 
 bash "${SCRIPT_DIR}/evict_category_tree_cache.sh"
 

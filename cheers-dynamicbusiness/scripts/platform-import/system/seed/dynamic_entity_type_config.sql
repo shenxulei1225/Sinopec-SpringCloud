@@ -90,7 +90,7 @@ INSERT INTO dynamic_entity_type_config (
   'DEDICATED', 'ent_equipment',
   NULL, TRUE,
   'equipment业务类型存储配置', 1,
-  '{"code": {"type": "VARCHAR", "column": "code", "length": 100}, "guid": {"type": "VARCHAR", "column": "guid"}, "FLD-BASE-equipment-REF_ZONE": {"type": "BIGINT", "column": "fld_base_equipment_ref_zone"}, "device_code": {"type": "VARCHAR", "column": "device_code"}, "device_type": {"type": "BIGINT", "column": "device_type"}, "FLD-BASE-equipment-REF_FACILITY": {"type": "BIGINT", "column": "fld_base_equipment_ref_facility"}, "coordinate_3d": {"type": "VARCHAR", "column": "coordinate_3d"}, "coordinate_gis": {"type": "VARCHAR", "column": "coordinate_gis"}}', 1, 'seed'
+  '{"code": {"type": "VARCHAR", "column": "code", "length": 100}, "guid": {"type": "VARCHAR", "column": "guid"}, "FLD-BASE-equipment-REF_ZONE": {"type": "BIGINT", "column": "fld_base_equipment_ref_zone"}, "device_code": {"type": "VARCHAR", "column": "device_code"}, "device_type": {"type": "BIGINT", "column": "device_type"}, "FLD-BASE-equipment-REF_FACILITY": {"type": "BIGINT", "column": "fld_base_equipment_ref_facility"}, "coordinate_3d": {"type": "JSONB", "column": "coordinate_3d"}, "coordinate_gis": {"type": "JSONB", "column": "coordinate_gis"}}', 1, 'seed'
 )
 ON CONFLICT (entity_type_code, tenant_id) WHERE deleted = false
 DO UPDATE SET

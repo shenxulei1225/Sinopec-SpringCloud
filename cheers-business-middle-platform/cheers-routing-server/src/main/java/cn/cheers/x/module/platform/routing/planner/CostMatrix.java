@@ -3,6 +3,7 @@ package cn.cheers.x.module.platform.routing.planner;
 import cn.cheers.x.module.platform.contract.dto.network.PathNodeDTO;
 import cn.cheers.x.module.platform.contract.dto.topology.TopologyPointDTO;
 import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;
@@ -115,11 +116,11 @@ public final class CostMatrix {
     public double cost(String from, String to) {
         Map<String, Double> row = costs.get(from);
         if (row == null) {
-            throw new IllegalArgumentException("Unknown stop: " + from);
+            throw ServiceExceptionUtil.invalidParamException("停靠点不在路网：{}", from);
         }
         Double value = row.get(to);
         if (value == null) {
-            throw new IllegalArgumentException("Unknown stop: " + to);
+            throw ServiceExceptionUtil.invalidParamException("停靠点不在路网：{}", to);
         }
         return value;
     }

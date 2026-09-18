@@ -1,6 +1,8 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity.refcategory;
 
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryTypeDO;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeResolver;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryModeSupport;
@@ -25,6 +27,8 @@ class EntityRefCategoryCategoryProjectionServiceImplTest {
     @Mock
     private CategoryTypeMapper categoryTypeMapper;
     @Mock
+    private CategoryMapper categoryMapper;
+    @Mock
     private ModelCategoryRelationService modelCategoryRelationService;
     @Mock
     private CategoryCategoryRelationService categoryCategoryRelationService;
@@ -37,6 +41,7 @@ class EntityRefCategoryCategoryProjectionServiceImplTest {
     void setUp() {
         service = new EntityRefCategoryCategoryProjectionServiceImpl(
                 categoryTypeMapper,
+                categoryMapper,
                 modelCategoryRelationService,
                 categoryCategoryRelationService,
                 entityTypeScopeResolver);
@@ -49,11 +54,29 @@ class EntityRefCategoryCategoryProjectionServiceImplTest {
         when(categoryTypeMapper.selectByCategoryTypeCode("equipment")).thenReturn(simpleType("equipment"));
         when(modelCategoryRelationService.listCategoryIdsByModelId(50L, "equipment"))
                 .thenReturn(List.of(200L, 201L));
+        when(categoryMapper.selectByIdAndCategoryTypeCode(200L, "equipment")).thenReturn(category(200L, "equipment"));
+        when(categoryMapper.selectByIdAndCategoryTypeCode(201L, "equipment")).thenReturn(category(201L, "equipment"));
 
         service.syncCategoryCategoryOnRefAssociate(50L, "equipment", 100L, "region");
 
         verify(categoryCategoryRelationService).associate(100L, 200L, "region", "equipment");
         verify(categoryCategoryRelationService).associate(100L, 201L, "region", "equipment");
+    }
+
+    @Test
+    void sync_skipsModelLinkedCategoryOfWrongKind() {
+        when(entityTypeScopeResolver.resolveStorageEntityTypeCode("task")).thenReturn("task");
+        when(categoryTypeMapper.selectByCategoryTypeCode("facility")).thenReturn(advancedType("facility"));
+        when(categoryTypeMapper.selectByCategoryTypeCode("task")).thenReturn(simpleType("task"));
+        when(modelCategoryRelationService.listCategoryIdsByModelId(532L, "task"))
+                .thenReturn(List.of(4049L, 4103L));
+        when(categoryMapper.selectByIdAndCategoryTypeCode(4049L, "task")).thenReturn(category(4049L, "task"));
+        when(categoryMapper.selectByIdAndCategoryTypeCode(4103L, "task")).thenReturn(null);
+
+        service.syncCategoryCategoryOnRefAssociate(532L, "task", 2104756L, "facility");
+
+        verify(categoryCategoryRelationService).associate(2104756L, 4049L, "facility", "task");
+        verify(categoryCategoryRelationService, never()).associate(2104756L, 4103L, "facility", "task");
     }
 
     @Test
@@ -96,5 +119,12 @@ class EntityRefCategoryCategoryProjectionServiceImplTest {
         type.setCategoryTypeCode(code);
         type.setCategoryMode(CategoryModeSupport.SIMPLE);
         return type;
+    }
+
+    private static CategoryDO category(Long id, String typeCode) {
+        CategoryDO row = new CategoryDO();
+        row.setId(id);
+        row.setCategoryTypeCode(typeCode);
+        return row;
     }
 }

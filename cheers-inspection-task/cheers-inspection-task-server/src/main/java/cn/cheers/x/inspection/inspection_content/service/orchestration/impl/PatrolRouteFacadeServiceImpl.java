@@ -8,6 +8,10 @@ import cn.cheers.x.inspection.inspection_content.controller.admin.vo.orchestrati
 import cn.cheers.x.inspection.inspection_content.service.orchestration.PatrolRouteFacadeService;
 import cn.cheers.x.inspection.task.dal.dataobject.task.InspectionTaskDO;
 import cn.cheers.x.inspection.task.dal.mysql.task.InspectionTaskMapper;
+import cn.cheers.x.inspection.task.service.task.PatrolPlannedRouteSupport;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
+import cn.cheers.x.inspection.task.service.task.impl.InspectionTaskServiceImpl;
 import cn.cheers.x.module.platform.contract.ContractVersions;
 import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunRequest;
 import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunResponse;
@@ -66,7 +70,10 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
     static final String FROM_CONFIRMED_SNAPSHOT = "fromConfirmedSnapshot";
     static final String TASK_ENABLED = "taskEnabled";
     static final String START_STOP_ID = "startStopId";
+    static final String END_STOP_ID = "endStopId";
     static final String RETURN_TO_START = "returnToStart";
+    static final String STOP_IDS = "stopIds";
+    static final String INSPECTION_TYPE = "inspectionType";
 
     private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Shanghai");
 
@@ -86,6 +93,9 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
 
     @Resource
     private InspectionTaskMapper taskMapper;
+
+    @Resource
+    private PatrolTaskEntityStore patrolTaskEntityStore;
 
     @Override
     public ScheduleRunResponse previewRoute(PatrolRouteRunReqVO reqVO) {
@@ -366,20 +376,30 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
         return LocalDate.parse(text.substring(0, Math.min(text.length(), 10)));
     }
 
+    /**
+     * 路线是否已确认：认总任务 FLD-TSK-027 plannedRoute（非空 stopIds），
+     * 不认旧固定表 routePlanId（建任务已迁总任务，二者常不同步）。
+     */
     private InspectionTaskDO requireTaskWithConfirmedRoute(Long taskId) {
-        InspectionTaskDO task = requireTask(taskId);
-        if (task.getRoutePlanId() == null) {
+        PatrolTaskDraft draft = patrolTaskEntityStore.require(taskId);
+        if (!PatrolPlannedRouteSupport.hasConfirmedRoute(draft.plannedRoute())) {
             throw exception(PATROL_FACADE_ROUTE_NOT_CONFIRMED);
         }
-        return task;
+        return resolveTaskRow(draft);
     }
 
     private InspectionTaskDO requireTask(Long taskId) {
-        InspectionTaskDO task = taskMapper.selectById(taskId);
-        if (task == null) {
-            throw exception(PATROL_FACADE_TASK_NOT_FOUND);
+        PatrolTaskDraft draft = patrolTaskEntityStore.require(taskId);
+        return resolveTaskRow(draft);
+    }
+
+    /** 排期启停字段仍写旧表；无行时用总任务投影最小 DO。 */
+    private InspectionTaskDO resolveTaskRow(PatrolTaskDraft draft) {
+        InspectionTaskDO task = taskMapper.selectById(draft.id());
+        if (task != null) {
+            return task;
         }
-        return task;
+        return InspectionTaskServiceImpl.toLegacyDo(draft);
     }
 
     private static WorkItemDTO seedWorkItem(PatrolRouteRunReqVO reqVO, Long taskId, boolean fromConfirmedSnapshot) {
@@ -395,8 +415,17 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
         if (StringUtils.hasText(reqVO.getStartStopId())) {
             payload.put(START_STOP_ID, reqVO.getStartStopId().trim());
         }
+        if (StringUtils.hasText(reqVO.getEndStopId())) {
+            payload.put(END_STOP_ID, reqVO.getEndStopId().trim());
+        }
         if (reqVO.getReturnToStart() != null) {
             payload.put(RETURN_TO_START, reqVO.getReturnToStart());
+        }
+        if (!CollectionUtils.isEmpty(reqVO.getStopIds())) {
+            payload.put(STOP_IDS, reqVO.getStopIds());
+        }
+        if (StringUtils.hasText(reqVO.getInspectionType())) {
+            payload.put(INSPECTION_TYPE, reqVO.getInspectionType().trim());
         }
         payload.put(FROM_CONFIRMED_SNAPSHOT, fromConfirmedSnapshot);
 

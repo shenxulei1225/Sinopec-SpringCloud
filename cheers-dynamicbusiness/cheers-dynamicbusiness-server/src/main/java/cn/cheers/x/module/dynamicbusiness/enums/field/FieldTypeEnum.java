@@ -9,7 +9,7 @@ import java.util.Arrays;
  * 字段类型枚举
  * 
  * 定义系统支持的所有字段类型，包括：
- * - 基础类型：TEXT, NUMBER, DATE, DATETIME, BOOLEAN, ENUM, JSON
+ * - 基础类型：TEXT, NUMBER, DATE, DATETIME, BOOLEAN, ENUM, JSON, COORDINATE
  * - 关联类型：ENTITY_REF（单选关联字段）、ENTITY_REF_MULTI（多选关联字段）
  * - 引用类型：REFERENCE（固定列字段使用，引用系统表）
  * 
@@ -63,6 +63,15 @@ public enum FieldTypeEnum {
      * JSON类型
      */
     JSON("JSON", "JSON", false),
+
+    /**
+     * 地理坐标（值类型，不是插件用途）
+     *
+     * <p>一份结构化值，固定子项：经度 longitude、纬度 latitude、高程 height（GB/T 16831 / ISO 6709）。
+     * 路网点位「坐标」、设备 GIS 坐标、设备三维坐标都是这个值类型；字段码可以不同，子项不能另造一套。</p>
+     * <p>禁止：用多行文本冒充；拆成三条独立小数当主定义；对照读路径补子项。</p>
+     */
+    COORDINATE("COORDINATE", "地理坐标", false),
 
     /**
  * 引用数据（单选）
@@ -184,5 +193,12 @@ ENTITY_SELF_REF("ENTITY_SELF_REF", "系统组织上级", true),
     public static boolean isMultiEntityRef(String code) {
         return ENTITY_REF_MULTI.getCode().equalsIgnoreCase(code)
                 || BATCH_ENTITY_REF.getCode().equalsIgnoreCase(code);
+    }
+
+    /**
+     * 地理坐标值类型。空对象或未填经纬度视为未填，不得当半成品坐标校验。
+     */
+    public static boolean isCoordinate(String code) {
+        return COORDINATE.getCode().equalsIgnoreCase(code);
     }
 }

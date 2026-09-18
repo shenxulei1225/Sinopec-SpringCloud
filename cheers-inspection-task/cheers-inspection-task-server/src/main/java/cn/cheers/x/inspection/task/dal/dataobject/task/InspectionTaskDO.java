@@ -51,6 +51,12 @@ public class InspectionTaskDO extends BaseDO {
     private String taskName;
 
     /**
+     * 业务域（任务功能点分池；与编排 taskDomain 对齐，如「巡检」）。
+     * <p>由创建/更新写入；禁止读路径猜默认域。
+     */
+    private String domain;
+
+    /**
      * 状态。
      */
     private Integer status;
@@ -156,8 +162,7 @@ public class InspectionTaskDO extends BaseDO {
     private String runtimeJobId;
 
     /**
-     * 设备侧运行态（任务会话权威）：IDLE / DISPATCHED / RUNNING / COMPLETED / FAULT。
-     * <p>开跑下发成功 → DISPATCHED；上行任务状态/故障回写后续状态。不存瞬时连接。
+     * 历史展示字段，不是开跑权威。开跑进度只写执行记录，不再回写本列。
      */
     private String deviceRunStatus;
 

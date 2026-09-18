@@ -167,6 +167,14 @@ cheers:
     enable: true
     ignore-urls:
     ignore-tables:
+  infra:
+    file:
+      # 服务端权威识别命令（需在部署机安装 magika CLI）
+      magika:
+        command: magika
+        timeout-seconds: 10
+      # 文件类型白名单（按 Magika label 判断）
+      allowed-types: pdf,doc,docx,xls,xlsx,ppt,pptx,txt,md,markdown,zip,rar,sevenzip,7z,7zip,tar,gzip,gz,bzip,bzip2,xz
 
 debug: false
 

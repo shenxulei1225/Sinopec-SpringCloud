@@ -10,6 +10,8 @@ import cn.cheers.x.inspection.inspection_content.controller.admin.vo.orchestrati
 import cn.cheers.x.inspection.inspection_content.service.orchestration.impl.PatrolRouteFacadeServiceImpl;
 import cn.cheers.x.inspection.task.dal.dataobject.task.InspectionTaskDO;
 import cn.cheers.x.inspection.task.dal.mysql.task.InspectionTaskMapper;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
 import cn.cheers.x.module.platform.contract.dto.route.RoutePreviewDTO;
 import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunRequest;
 import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunResponse;
@@ -35,6 +37,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -69,6 +72,9 @@ class PatrolRouteFacadeServiceTest {
     @Mock
     private InspectionTaskMapper taskMapper;
 
+    @Mock
+    private PatrolTaskEntityStore patrolTaskEntityStore;
+
     private PatrolRouteFacadeServiceImpl facadeService;
 
     @BeforeEach
@@ -78,6 +84,7 @@ class PatrolRouteFacadeServiceTest {
         ReflectionTestUtils.setField(facadeService, "runtimeQueryApi", runtimeQueryApi);
         ReflectionTestUtils.setField(facadeService, "runtimeSlotWriteApi", runtimeSlotWriteApi);
         ReflectionTestUtils.setField(facadeService, "taskMapper", taskMapper);
+        ReflectionTestUtils.setField(facadeService, "patrolTaskEntityStore", patrolTaskEntityStore);
     }
 
     @Test
@@ -121,10 +128,11 @@ class PatrolRouteFacadeServiceTest {
     }
 
     @Test
-    @DisplayName("preview：透传 startStopId / returnToStart 到编排种子 payload")
+    @DisplayName("preview：透传 startStopId / endStopId / returnToStart 到编排种子 payload")
     void previewRoute_forwardsStartStopId() {
         PatrolRouteRunReqVO reqVO = routeReq("net-a", null);
         reqVO.setStartStopId("sta-depot");
+        reqVO.setEndStopId("sta-pad");
         reqVO.setReturnToStart(Boolean.FALSE);
         when(scheduleRunApi.run(any())).thenReturn(CommonResult.success(
                 ScheduleRunResponse.builder().runtimeJobId("job-preview").build()));
@@ -133,6 +141,7 @@ class PatrolRouteFacadeServiceTest {
 
         Map<String, Object> payload = captureRunRequest().getWorkItems().get(0).getPayload();
         assertEquals("sta-depot", payload.get("startStopId"));
+        assertEquals("sta-pad", payload.get("endStopId"));
         assertEquals(Boolean.FALSE, payload.get("returnToStart"));
         assertSeedPayload(payload, reqVO, false);
     }
@@ -145,10 +154,10 @@ class PatrolRouteFacadeServiceTest {
     }
 
     @Test
-    @DisplayName("reserve：taskEnabled=false，写入 runtimeJobId，任务 enabled=false")
+    @DisplayName("reserve：总任务已有 plannedRoute 时通过路线校验")
     void reserveSchedule_buildsRequestAndUpdatesTask() {
         PatrolScheduleEnableReqVO reqVO = scheduleReq();
-        when(taskMapper.selectById(TASK_ID)).thenReturn(taskWithRoute(false, null));
+        stubTaskWithConfirmedPlannedRoute(false, null);
         when(scheduleRunApi.run(any())).thenReturn(CommonResult.success(
                 ScheduleRunResponse.builder().runtimeJobId(RUNTIME_JOB_ID).build()));
 
@@ -169,10 +178,19 @@ class PatrolRouteFacadeServiceTest {
     }
 
     @Test
+    @DisplayName("reserve：总任务无 plannedRoute 时拒绝排期")
+    void reserveSchedule_withoutPlannedRoute_throws() {
+        PatrolScheduleEnableReqVO reqVO = scheduleReq();
+        when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draftWithoutRoute());
+        assertThrows(ServiceException.class, () -> facadeService.reserveSchedule(reqVO));
+        verify(scheduleRunApi, never()).run(any());
+    }
+
+    @Test
     @DisplayName("enable：验窗通过后 enabled=true，不再触发编排 solve")
     void enableSchedule_verifiesWindowAndEnablesTask() {
         PatrolScheduleEnableReqVO reqVO = scheduleReq();
-        when(taskMapper.selectById(TASK_ID)).thenReturn(taskWithRoute(false, RUNTIME_JOB_ID));
+        stubTaskWithConfirmedPlannedRoute(false, RUNTIME_JOB_ID);
         ScheduleSlotDTO ownSlot = slot("slot-a", RUNTIME_JOB_ID, "2026-07-21T08:00:00+08:00",
                 "2026-07-21T09:00:00+08:00", "res-1");
         when(runtimeQueryApi.listSlotsByJobId(RUNTIME_JOB_ID))
@@ -194,7 +212,7 @@ class PatrolRouteFacadeServiceTest {
     @DisplayName("enable：占用冲突显式失败")
     void enableSchedule_occupancyConflict_throws() {
         PatrolScheduleEnableReqVO reqVO = scheduleReq();
-        when(taskMapper.selectById(TASK_ID)).thenReturn(taskWithRoute(false, RUNTIME_JOB_ID));
+        stubTaskWithConfirmedPlannedRoute(false, RUNTIME_JOB_ID);
         ScheduleSlotDTO ownSlot = slot("slot-a", RUNTIME_JOB_ID, "2026-07-21T08:00:00+08:00",
                 "2026-07-21T09:00:00+08:00", "res-1");
         ScheduleSlotDTO foreignSlot = slot("slot-b", "job-other", "2026-07-21T08:30:00+08:00",
@@ -211,7 +229,7 @@ class PatrolRouteFacadeServiceTest {
     @DisplayName("yield-pause：调用 releaseUnfinished YIELD_PAUSE")
     void yieldPause_callsReleaseUnfinished() {
         PatrolTaskPauseReqVO reqVO = pauseReq();
-        when(taskMapper.selectById(TASK_ID)).thenReturn(taskWithRoute(false, RUNTIME_JOB_ID));
+        stubTaskWithConfirmedPlannedRoute(false, RUNTIME_JOB_ID);
         when(runtimeSlotWriteApi.releaseUnfinished(any())).thenReturn(CommonResult.success(true));
 
         facadeService.yieldPause(reqVO);
@@ -230,7 +248,7 @@ class PatrolRouteFacadeServiceTest {
         reqVO.setSourceRuntimeJobId(RUNTIME_JOB_ID);
         reqVO.setRemainingStopIds(List.of("stop-2", "stop-3"));
         reqVO.setSchedulingSpec(SchedulingSpecDTO.builder().mode("once").build());
-        when(taskMapper.selectById(TASK_ID)).thenReturn(taskWithRoute(true, RUNTIME_JOB_ID));
+        stubTaskWithConfirmedPlannedRoute(true, RUNTIME_JOB_ID);
         when(scheduleRunApi.run(any())).thenReturn(CommonResult.success(
                 ScheduleRunResponse.builder().runtimeJobId("job-replan").build()));
 
@@ -272,6 +290,7 @@ class PatrolRouteFacadeServiceTest {
         reqVO.setObjectIds(OBJECT_IDS);
         reqVO.setPreferredNetworkRef(preferredNetworkRef);
         reqVO.setTaskId(taskId);
+        reqVO.setStopIds(List.of("sta-1"));
         return reqVO;
     }
 
@@ -294,10 +313,28 @@ class PatrolRouteFacadeServiceTest {
         return reqVO;
     }
 
-    private static InspectionTaskDO taskWithRoute(boolean enabled, String runtimeJobId) {
+    private void stubTaskWithConfirmedPlannedRoute(boolean enabled, String runtimeJobId) {
+        when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draftWithConfirmedRoute());
+        when(taskMapper.selectById(TASK_ID)).thenReturn(taskRow(enabled, runtimeJobId));
+    }
+
+    private static PatrolTaskDraft draftWithConfirmedRoute() {
+        Map<String, Object> planned = new LinkedHashMap<>();
+        planned.put("stopIds", List.of("sta-1", "sta-2"));
+        return new PatrolTaskDraft(
+                TASK_ID, "task", "巡检", FACILITY_ID, "UAV", null, null, null,
+                null, planned, "draft", 2, "sta-start", "sta-end");
+    }
+
+    private static PatrolTaskDraft draftWithoutRoute() {
+        return new PatrolTaskDraft(
+                TASK_ID, "task", "巡检", FACILITY_ID, "UAV", null, null, null,
+                null, Map.of(), "draft", 2, null, null);
+    }
+
+    private static InspectionTaskDO taskRow(boolean enabled, String runtimeJobId) {
         InspectionTaskDO task = new InspectionTaskDO();
         task.setId(TASK_ID);
-        task.setRoutePlanId(1L);
         task.setEnabled(enabled);
         task.setRuntimeJobId(runtimeJobId);
         return task;
@@ -331,8 +368,14 @@ class PatrolRouteFacadeServiceTest {
         if (reqVO.getStartStopId() != null) {
             assertEquals(reqVO.getStartStopId(), payload.get("startStopId"));
         }
+        if (reqVO.getEndStopId() != null) {
+            assertEquals(reqVO.getEndStopId(), payload.get("endStopId"));
+        }
         if (reqVO.getReturnToStart() != null) {
             assertEquals(reqVO.getReturnToStart(), payload.get("returnToStart"));
+        }
+        if (reqVO.getStopIds() != null) {
+            assertEquals(reqVO.getStopIds(), payload.get("stopIds"));
         }
         assertEquals(fromConfirmedSnapshot, payload.get("fromConfirmedSnapshot"));
     }

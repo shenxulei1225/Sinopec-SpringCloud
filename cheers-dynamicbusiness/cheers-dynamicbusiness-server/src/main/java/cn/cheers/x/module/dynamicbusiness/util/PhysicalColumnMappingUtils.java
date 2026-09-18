@@ -596,6 +596,18 @@ public final class PhysicalColumnMappingUtils {
         }
 
         /**
+         * 添加 JSONB 类型字段（地理坐标等结构化值）
+         *
+         * @param fieldCode 字段编码
+         * @param column 列名
+         * @return 构建器
+         */
+        public MappingBuilder jsonb(String fieldCode, String column) {
+            mapping.put(fieldCode, PhysicalColumnConfig.jsonb(column));
+            return this;
+        }
+
+        /**
          * 添加自定义配置
          * 
          * @param fieldCode 字段编码

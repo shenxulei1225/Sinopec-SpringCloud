@@ -12,8 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 协议能力联调入口。
- * <p>入参为本次动态执行意图（protocolCode + deviceId + templateId + waypoints），
- * 不是预制指令包，也不是巡检业务「开始执行」。
+ * <p>入参为协议版本 + 已排好的动作列表，不是预制指令包，也不是巡检「开始执行」。
  */
 @RestController
 @RequestMapping("/device-protocol/capability")

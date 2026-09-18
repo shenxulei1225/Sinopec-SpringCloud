@@ -30,7 +30,7 @@ JOIN (
     ('issuing_body', '发布单位', 'STRING', false, NULL, '标准发布单位', 30),
     ('publish_year', '发布年份', 'INTEGER', false, NULL, '发布年份', 40),
     ('summary', '摘要说明', 'TEXT', false, NULL, '用途简述', 50),
-    ('source_ref', '引用出处', 'TEXT', false, NULL, '参考资料出处', 60)
+    ('attachments', '附件', 'TEXT', false, NULL, '规范附件，供介绍、预览、下载', 60)
 ) AS v(field_code, field_name, data_type, required, default_value, description, sort_order)
   ON f.code = v.field_code AND f.deleted = false AND f.tenant_id = 1
 ON CONFLICT (entity_type_code, field_code, tenant_id) WHERE deleted = false

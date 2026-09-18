@@ -22,6 +22,8 @@ import static cn.cheers.x.framework.common.util.date.LocalDateTimeUtils.buildTim
 import static cn.cheers.x.framework.test.core.util.AssertUtils.assertServiceException;
 import static cn.cheers.x.framework.test.core.util.RandomUtils.*;
 import static cn.cheers.x.infra.enums.ErrorCodeConstants.FILE_NOT_EXISTS;
+import static cn.cheers.x.infra.enums.ErrorCodeConstants.FILE_STORAGE_TIMEOUT;
+import static cn.cheers.x.infra.enums.ErrorCodeConstants.FILE_STORAGE_UNAVAILABLE;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.*;
@@ -141,6 +143,27 @@ public class FileServiceImplTest extends BaseDbUnitTest {
         assertEquals(url, file.getUrl());
         assertEquals(type, file.getType());
         assertEquals(content.length, file.getSize());
+    }
+
+    @Test
+    public void testCreateFile_storageTimeout() throws Exception {
+        byte[] content = ResourceUtil.readBytes("file/erweima.jpg");
+        FileClient client = mock(FileClient.class);
+        when(fileConfigService.getMasterFileClient()).thenReturn(client);
+        when(client.upload(any(), any(), any()))
+                .thenThrow(new RuntimeException(new java.net.SocketTimeoutException("Read timed out")));
+        assertServiceException(() -> fileService.createFile(content, "a.pdf", "standard-docs", "application/pdf"),
+                FILE_STORAGE_TIMEOUT);
+    }
+
+    @Test
+    public void testCreateFile_storageUnavailable() throws Exception {
+        byte[] content = ResourceUtil.readBytes("file/erweima.jpg");
+        FileClient client = mock(FileClient.class);
+        when(fileConfigService.getMasterFileClient()).thenReturn(client);
+        when(client.upload(any(), any(), any())).thenThrow(new RuntimeException("bucket not found"));
+        assertServiceException(() -> fileService.createFile(content, "a.pdf", "standard-docs", "application/pdf"),
+                FILE_STORAGE_UNAVAILABLE);
     }
 
     @Test

@@ -66,4 +66,19 @@ public interface EntityRelationService {
     List<Long> listSubjectEntityIdsByRefFieldAndTargetIds(String refFieldCode,
                                                           String subjectEntityTypeCode,
                                                           List<Long> targetEntityIds);
+
+    /**
+     * 实体—实体筛选：按关联表双向取对端实体 id，不按 field_code 过滤。
+     *
+     * <p>勾选适用写入的行没有 REF 字段码。方向 1：related 作 source、list 作 target → 取 target id；
+     * 方向 2：list 作 source、related 作 target → 取 source id。</p>
+     *
+     * @param relatedEntityIds 上游已选实体 id
+     * @param relatedEntityTypeCode 上游实体存储类型
+     * @param listEntityTypeCode 当前列表实体存储类型
+     * @return 对端实体 id（去重保序）；任一侧空则空列表
+     */
+    List<Long> listCounterpartEntityIds(List<Long> relatedEntityIds,
+                                        String relatedEntityTypeCode,
+                                        String listEntityTypeCode);
 }

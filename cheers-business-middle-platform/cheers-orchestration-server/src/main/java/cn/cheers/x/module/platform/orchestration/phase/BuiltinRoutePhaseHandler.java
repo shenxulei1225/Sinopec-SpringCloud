@@ -81,6 +81,7 @@ public class BuiltinRoutePhaseHandler implements PhaseHandler {
                 .mobilityProfileId(mobilityProfileId)
                 .strategy(asString(payload.get(RoutePayloadKeys.STRATEGY)))
                 .startStopId(asString(payload.get(RoutePayloadKeys.START_STOP_ID)))
+                .endStopId(asString(payload.get(RoutePayloadKeys.END_STOP_ID)))
                 .returnToStart(asBoolean(payload.get(RoutePayloadKeys.RETURN_TO_START)))
                 .build();
 
@@ -97,10 +98,20 @@ public class BuiltinRoutePhaseHandler implements PhaseHandler {
         planned.put("networkRef", preview.getNetworkRef() != null ? preview.getNetworkRef() : networkRef);
         planned.put("totalDistanceMeters", preview.getTotalDistanceMeters());
         planned.put("mobilityProfileId", mobilityProfileId);
-        planned.put("stopIds", stopIds);
+        List<String> plannedStops = !CollectionUtils.isEmpty(preview.getOrderedStopIds())
+                ? preview.getOrderedStopIds()
+                : stopIds;
+        planned.put("stopIds", plannedStops);
+        if (!CollectionUtils.isEmpty(preview.getVisitNodeIds())) {
+            planned.put(RoutePayloadKeys.VISIT_NODE_IDS, preview.getVisitNodeIds());
+        }
         String startStopId = asString(payload.get(RoutePayloadKeys.START_STOP_ID));
         if (StringUtils.hasText(startStopId)) {
             planned.put(RoutePayloadKeys.START_STOP_ID, startStopId);
+        }
+        String endStopId = asString(payload.get(RoutePayloadKeys.END_STOP_ID));
+        if (StringUtils.hasText(endStopId)) {
+            planned.put(RoutePayloadKeys.END_STOP_ID, endStopId);
         }
         Boolean returnToStart = asBoolean(payload.get(RoutePayloadKeys.RETURN_TO_START));
         if (returnToStart != null) {

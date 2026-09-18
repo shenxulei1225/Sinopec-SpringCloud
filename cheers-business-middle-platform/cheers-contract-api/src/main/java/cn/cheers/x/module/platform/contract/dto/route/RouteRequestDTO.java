@@ -33,7 +33,12 @@ public class RouteRequestDTO {
      */
     private String startStopId;
     /**
-     * 是否回到起点充电。未传且 {@link #startStopId} 有值时默认 true。
+     * 任务创建选定的终点（无人机降落点）。
+     * 与起点相同或配合 {@link #returnToStart} 时回到起点；不同则路线最后一站落到该点。
+     */
+    private String endStopId;
+    /**
+     * 是否回到起点充电。未传且 {@link #startStopId} 有值、且未指定不同终点时默认 true。
      */
     private Boolean returnToStart;
     private String mobilityProfileId;

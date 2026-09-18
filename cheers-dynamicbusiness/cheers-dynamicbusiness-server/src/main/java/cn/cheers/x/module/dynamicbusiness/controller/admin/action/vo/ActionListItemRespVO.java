@@ -4,7 +4,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Schema(description = "动作库列表项")
 @Data
@@ -25,8 +27,11 @@ public class ActionListItemRespVO {
     @Schema(description = "执行手段", example = "UAV")
     private String executionMeans;
 
-    @Schema(description = "参数槽编码列表（过渡；优先用 modelId 读参数型号字段）")
+    @Schema(description = "参数槽编码列表（param_slots_json 全手段合并）")
     private List<String> paramSlots = new ArrayList<>();
+
+    @Schema(description = "按执行手段拆开的参数槽（param_slots_json methods）")
+    private Map<String, List<String>> paramSlotsByMeans = new LinkedHashMap<>();
 
     @Schema(description = "是否复合动作")
     private Boolean composite;

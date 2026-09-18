@@ -7,7 +7,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldCreateR
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldAssignmentRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelRespVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeRelationDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.group.GroupMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.group.GroupTypeEnum;
@@ -15,7 +15,6 @@ import cn.cheers.x.module.dynamicbusiness.service.group.GroupService;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.EntityTypeEntryKindEnum;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
@@ -33,6 +32,7 @@ import org.springframework.validation.annotation.Validated;
 
 import jakarta.annotation.Resource;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -47,9 +47,6 @@ public class EntityTypeServiceImpl implements EntityTypeService {
 
     @Resource
     private EntityTypeMapper entityTypeMapper;
-
-    @Resource
-    private EntityTypeRelationMapper entityTypeRelationMapper;
 
     @Resource
     private FieldService fieldService;
@@ -765,30 +762,26 @@ public class EntityTypeServiceImpl implements EntityTypeService {
     }
 
     /**
-     * 查询某业务的“配置型子业务”列表（门禁关系驱动）。
-     *
-     * 适用场景：
-     * - 主业务配置面板中加载可关联的资源/配置子业务；
-     * - 按 relation(source->target) 做精确过滤。
+     * 某类业务的型号上已经分配了指向哪些业务的引用字段。
+     * 不查旧的业务类型关联许可表。
      */
     @Override
     public List<EntityTypeRespVO> listConfigChildrenByCode(String entityTypeCode) {
         if (!StringUtils.hasText(entityTypeCode)) {
             throw new ServiceException(400, "业务类型编码不能为空");
         }
-        // 基于 EntityTypeRelationDO 定义的门禁关系,按 sourceCode=主业务、relationType=CONFIG 过滤
-        List<EntityTypeRelationDO> relations = entityTypeRelationMapper.selectList(
-                new LambdaQueryWrapperX<EntityTypeRelationDO>()
-                        .eq(EntityTypeRelationDO::getSourceEntityTypeCode, entityTypeCode.trim())
-                        .eq(EntityTypeRelationDO::getDeleted, false)
-        );
-        if (relations.isEmpty()) {
-            return List.of();
+        List<ModelDO> models = modelMapper.selectByEntityTypeCode(entityTypeCode.trim());
+        Set<String> targetCodes = new LinkedHashSet<>();
+        for (ModelDO model : models) {
+            if (model == null || model.getId() == null) {
+                continue;
+            }
+            for (ModelFieldAssignmentRespVO field : modelFieldAssignmentService.getModelRelationFields(model.getId())) {
+                if (field != null && StringUtils.hasText(field.getTargetEntityType())) {
+                    targetCodes.add(field.getTargetEntityType().trim());
+                }
+            }
         }
-        Set<String> targetCodes = relations.stream()
-                .map(EntityTypeRelationDO::getTargetEntityTypeCode)
-                .filter(StringUtils::hasText)
-                .collect(Collectors.toSet());
         if (targetCodes.isEmpty()) {
             return List.of();
         }

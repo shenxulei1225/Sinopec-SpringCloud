@@ -1,6 +1,8 @@
 package cn.cheers.x.device.protocolgateway.transport.websocket;
 
-import cn.cheers.x.device.protocolgateway.protocol.uplink.UplinkDispatcher;
+import cn.cheers.x.device.protocolgateway.api.channel.AccessChannelCodes;
+import cn.cheers.x.device.protocolgateway.protocol.monitor.ProtocolMonitorHub;
+import cn.cheers.x.device.protocolgateway.protocol.uplink.UplinkIngressService;
 import cn.cheers.x.device.protocolgateway.transport.DeviceSessionRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +13,8 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 /**
- * WebSocket 处理器：路径末段为 deviceId；上行交给 UplinkDispatcher。
+ * 巡检接入通道：单口 WebSocket，路径末段为设备编号（与旧系统一致）；正文交给通信层收包顺序。
+ * <p>不负责填包、不读巡检库、不接工业报文。禁止在本类写业务回写或 HTTP；禁止把本口当成工业通道。
  */
 @Slf4j
 @Component
@@ -19,26 +22,29 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 public class DeviceProtocolWebSocketHandler extends TextWebSocketHandler {
 
     private final DeviceSessionRegistry sessionRegistry;
-    private final UplinkDispatcher uplinkDispatcher;
+    private final UplinkIngressService uplinkIngressService;
+    private final ProtocolMonitorHub protocolMonitorHub;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
         String deviceId = extractDeviceId(session);
         sessionRegistry.bind(deviceId, session);
-        log.info("[device-protocol] 地面站已连接 deviceId={}", deviceId);
+        protocolMonitorHub.copySession(deviceId, "设备已连接");
+        log.info("[device-protocol] 无人机系统已连接 deviceId={}", deviceId);
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         String deviceId = extractDeviceId(session);
         sessionRegistry.unbind(deviceId);
-        log.info("[device-protocol] 地面站已断开 deviceId={} status={}", deviceId, status);
+        protocolMonitorHub.copySession(deviceId, "设备已断开");
+        log.info("[device-protocol] 无人机系统已断开 deviceId={} status={}", deviceId, status);
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) {
         String deviceId = extractDeviceId(session);
-        uplinkDispatcher.dispatch(deviceId, message.getPayload());
+        uplinkIngressService.handle(AccessChannelCodes.INSPECTION, deviceId, message.getPayload());
     }
 
     static String extractDeviceId(WebSocketSession session) {

@@ -4,6 +4,7 @@ import cn.cheers.x.framework.apilog.core.annotation.ApiAccessLog;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.*;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeCapabilityService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -41,6 +42,8 @@ public class EntityTypeController {
 
     @Resource
     private EntityTypeService entityTypeService;
+    @Resource
+    private EntityTypeCapabilityService entityTypeCapabilityService;
 
     // ========== 业务类型本体 (EntityType) CRUD ==========
 
@@ -151,7 +154,7 @@ public class EntityTypeController {
     }
 
     @GetMapping("/list-config-children")
-    @Operation(summary = "获取某业务的配置子业务列表", description = "获取主业务(如巡检)所关联的配置/资源类业务元素(如巡检点、检查项),用于 How 维度建模")
+    @Operation(summary = "获取某业务已分配引用所指向的目标业务", description = "只认型号上已分配的引用字段，不查旧业务类型关联许可表")
     @Parameter(name = "entityTypeCode", description = "主业务类型编码", required = true, example = "INSPECTION_TASK")
     @PreAuthorize("@ss.hasPermission('system:entity-type:query')")
     public CommonResult<List<EntityTypeRespVO>> listConfigChildren(@RequestParam("entityTypeCode") String entityTypeCode) {
@@ -197,6 +200,29 @@ public class EntityTypeController {
     public CommonResult<Map<String, Object>> getStatistics(
             @RequestParam("entityTypeCode") String entityTypeCode) {
         return success(entityTypeService.getEntityTypeStatistics(entityTypeCode));
+    }
+
+    @GetMapping("/capabilities")
+    @Operation(summary = "获取目录能力开关", description = "统一入口：查询某数据目录可配置能力及启用状态")
+    @Parameter(name = "entityTypeCode", description = "数据目录编码", required = true, example = "sop")
+    @PreAuthorize("@ss.hasPermission('system:entity-type:query')")
+    public CommonResult<EntityTypeCapabilityRespVO> getCapabilities(
+            @RequestParam("entityTypeCode") String entityTypeCode) {
+        return success(entityTypeCapabilityService.getCapabilities(entityTypeCode));
+    }
+
+    @PutMapping("/capabilities")
+    @Operation(summary = "保存目录能力开关", description = "统一入口：覆盖保存某数据目录启用能力")
+    @ApiAccessLog(operateType = UPDATE)
+    @PreAuthorize("@ss.hasPermission('system:entity-type:update')")
+    public CommonResult<Boolean> saveCapabilities(
+            @Valid @RequestBody EntityTypeCapabilityUpsertReqVO reqVO) {
+        entityTypeCapabilityService.saveEnabledCapabilities(
+                reqVO.getEntityTypeCode(),
+                reqVO.getEnabledCapabilityCodes(),
+                reqVO.getStepTreeHangableTypeCodes(),
+                reqVO.getStepTreeAllowMixed());
+        return success(true);
     }
     /**
      * 存储类型选项

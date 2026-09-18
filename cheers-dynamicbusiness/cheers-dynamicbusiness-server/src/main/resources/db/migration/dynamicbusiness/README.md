@@ -116,7 +116,29 @@
 | V100 | `V100__trim_inspection_item_create_fields.sql` | 检查项新建表单收敛：下线执行统计字段分配（`FLD-INS-004/008/009`） |
 | V107 | `V107__rename_inspection_content_registry_code.sql` | 保留检查项管理目录注册码 `inspection-content`，统一分类/型号/实体为检查项口径并清理旧「检查内容」标签 |
 | V108 | `V108__cleanup_orphan_column_relations.sql` | 清理栏间关系历史孤儿边（端点不在当前布局身份集合），避免图上不可见但保存报端点错误 |
-> **版本号说明**：本仓库已登记至 **V108**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。
+| V109 | `V109__rename_sop_binding_to_relation_target.sql` | 通用绑定去 SOP 语义：方法/宿主绑定表重命名为 relation，列改为 `target_type`/`target_id`，并迁移存量值 |
+| V110 | `V110__dynamic_business_orchestration.sql` | 动态业务编排能力主迁移（流程与编排结构） |
+| V113 | `V113__sop_step_tree_json_unify.sql` | SOP 步骤字段权威切到 `step_tree_json`，存量从 `action_tree_json` 回填并切换模型字段分配 |
+| V114 | `V114__inspection_step_tree_field_enable.sql` | 检查项补齐 `step_tree_json` 字段库/基础字段/型号分配，退役 `action_tree_json` 分配 |
+| V115 | `V115__fix_inspection_step_field_path.sql` | 检查项步骤字段落层修复（历史已执行并经 repair，对外以 V116 做统一收敛） |
+| V116 | `V116__repair_inspection_step_tree_base_path.sql` | V115 后增量纠偏：恢复检查项步骤字段到“基础字段 + 物理列 + BASE 分配”统一路径 |
+| V117 | `V117__repair_inspection_flow_graph_base_path.sql` | 检查项流程图字段统一收敛到“基础字段 + 物理列 + BASE 分配”路径 |
+| V118 | `V118__protocol_legacy_field_names_retire.sql` | 协议解析旧字段命名一次性退役，只保留新命名（command/translation/signal-mapping/sample-messages） |
+| V119 | `V119__repair_data_protocol_catalog_bootstrap.sql` | 修复 data_protocol 目录 bootstrap 缺口（分类类型、编排头、布局绑定） |
+| V121 | `V121__data_protocol_protocol_matrix_and_index_fields.sql` | data_protocol 全网作用域 + 多协议模型矩阵 + 检索字段标准化分配 |
+| V122 | `V122__ent_data_protocol_tenant_tables.sql` | 按租户隔离规则创建 `ent_data_protocol` 模板表与 `ent_data_protocol_t{tenantId}` 物理表，并回写目录表名 |
+| V123 | `V123__rename_standard_source_ref_to_attachments.sql` | 规范标准附件列从 `source_ref` 改名为 `attachments`（字段编码=物理列名），清 CRUD 缓存 |
+| V124 | `V124__dissolve_title_after_field_groups.sql` | 去掉型号分组名「标题后」魔术；字段回未分组，标题后改由详情栏配置勾选 |
+| V125 | `V125__official_structured_semantics_and_step_tree_hang.sql` | 结构化列正式用途收口；`type_config` 收成 jsonb；已知目录写下步骤树挂载；登记步骤树/协议解析插件 |
+| V126 | `V126__action_execution_means_hidden_jsonb.sql` | 动作适用手段恢复为隐藏基础字段；`execution_means` 列改为 jsonb，从 custom_fields 收口 |
+| V127 | `V127__ent_data_protocol_command_direction.sql` | 数据协议「方向」升成类型基础字段；`ent_data_protocol` / `ent_data_protocol_t*` 补 `command_direction`，从 custom_fields 收口 |
+| V128 | `V128__ent_equipment_protocol_versions.sql` | 设备台账 `protocol_versions` jsonb 数组；执行取第一种。元数据见 `dynamic_equipment_protocol_versions.sql` |
+| V129 | `V129__layout_tab_id_stable_prefix.sql` | 布局页编号收口为 `tab-*`；边上栏身份跟着改名，不删边 |
+| V130 | `V130__step_tree_pack_hang.sql` | 检查项步骤树挂载改为 `step_tree_pack`，并写下人/无人机/机器人/摄像机的 packMethods |
+| V131 | `V131__condition_strategy.sql` | 条件策略主表；平台预置「采集结果到了就往执行账里记一条过程」 |
+| V132 | `V132__condition_strategy_inspection.sql` | 巡检开跑三连与采集后更新账/步的平台预置策略 |
+| V133 | `V133__ent_equipment_platform_protocol.sql` | 设备台账 `platform_protocol` 单值列；当前使用的平台对接协议。元数据见 `dynamic_equipment_protocol_versions.sql` |
+> **版本号说明**：本仓库已登记至 **V133**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。
 
 
 > **跨机合并说明**：本机布局迁移已占用 V26–V28 且已执行；对方原 `V26__category_*` / `V27__ent_structure` 在合并后改为 V29/V30。若对方库已按旧文件名执行过 V26/V27，需对齐历史表 `version`/`script` 后 `flyway:repair`，再拉本分支。
@@ -182,6 +204,22 @@ PGPASSWORD=Coolhomer psql -h 127.0.0.1 -U postgres -d sinopec -c \
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-18 | V132：巡检开跑三连与采集后更新账/步的平台预置策略 |
+| 2026-09-17 | V131：条件策略主表；平台预置「采集结果到了就往执行账里记一条过程」 |
+| 2026-09-16 | V129：布局页编号收口为稳定 `tab-*`；类型写在这一页布局行；边上栏身份跟着改名，不删边 |
+| 2026-09-14 | V125：结构化用途收口；`type_config` 收成 jsonb；步骤树挂载写入目录配置；登记步骤树/协议解析插件 |
+| 2026-09-14 | V124：溶解型号分组名「标题后」；标题后字段改由该数据目录详情栏配置勾选 |
+| 2026-09-14 | V123：规范标准附件列 `source_ref` → `attachments`（字段库/基础字段/分配/台账列/列映射），不再把引用出处当附件 |
+| 2026-09-13 | V122：按租户物理隔离创建 `ent_data_protocol` 模板表与各租户 `ent_data_protocol_t{id}`，元数据改写带后缀真表名 |
+| 2026-09-13 | V121：data_protocol 升级为全网作用域（NETWORK），并预置 WS/MQTT/HTTP/OPC/Modbus/BACnet/IEC/DNP3 协议模型矩阵与可检索字段分配 |
+| 2026-09-13 | V119：修复 data_protocol 目录创建链路缺口，补齐分类类型、编排头、data_layout 绑定，避免数据管理空白工作区 |
+| 2026-09-13 | V118：协议解析能力旧字段命名退役（`protocol_schema_json` 等），统一只保留新命名字段链路 |
+| 2026-09-13 | V117：修复 inspection_item 的 flow_graph_json 路径，统一回基础字段 + 物理列 + BASE 分配，消除流程图字段未分配报错 |
+| 2026-09-13 | V116：在 V115 已执行且 repair 后做前向纠偏，统一 inspection_item 步骤字段为基础字段主路径（补物理列、恢复基础字段、分配改回 BASE） |
+| 2026-09-13 | V115：修复 inspection_item 的 step_tree_json 落层，补实体物理列并统一回基础字段路径，消除 query-by-scene 列不存在错误 |
+| 2026-09-13 | V114：检查项补齐 `step_tree_json`（字段库、基础字段、型号分配），并退役 `action_tree_json` 分配 |
+| 2026-09-13 | V113：SOP 步骤字段权威改为 `step_tree_json`，回填历史 `action_tree_json`，并切换 `dynamic_entity_type_base_field` / `dynamic_model_field_assignment` 到新字段 |
+| 2026-09-10 | V109：通用绑定模型去 SOP 语义，方法/宿主绑定表改名为 relation，并统一为 `target_type`/`target_id` |
 | 2026-09-10 | V108：清理 `dm_data_tab_column_relation` 历史孤儿边（from/to 任一端点不在当前布局身份集合），消除关系图不可见边导致的保存报错 |
 | 2026-09-10 | V107：保留 `inspection-content` 目录注册码；统一底座 `inspection_item` 的分类/型号/实体显示口径（检查分类/检查项），并回填检查项管理布局历史「检查内容」标签 |
 | 2026-09-09 | V106：`dm_data_tab_column_relation.relation_meta` 历史键名从 `linkKeys` 迁移到 `refFieldCodes`，并清理旧键 |

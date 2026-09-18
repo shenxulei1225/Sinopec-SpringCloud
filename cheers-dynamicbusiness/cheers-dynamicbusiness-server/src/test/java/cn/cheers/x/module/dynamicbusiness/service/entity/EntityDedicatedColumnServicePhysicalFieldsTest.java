@@ -161,4 +161,31 @@ class EntityDedicatedColumnServicePhysicalFieldsTest {
         assertEquals(true, custom.isEmpty());
         verifyNoInteractions(jdbcTemplate);
     }
+
+    @Test
+    void extractPhysicalValuesAndStrip_wrapsCoordinateObjectAsJsonb() {
+        EntityTypeDO type = new EntityTypeDO();
+        type.setCode("equipment");
+        type.setStorageType(StorageTypeEnum.DEDICATED.getCode());
+        type.setDedicatedTableName("ent_equipment_t1");
+        when(entityTypeMapper.selectByCode("equipment")).thenReturn(type);
+
+        EntityTypeBaseFieldDO gis = new EntityTypeBaseFieldDO();
+        gis.setFieldCode("coordinate_gis");
+        gis.setDataType("COORDINATE");
+        gis.setStatus(1);
+        when(baseFieldMapper.selectByEntityTypeCode("equipment")).thenReturn(List.of(gis));
+
+        Map<String, Object> custom = new LinkedHashMap<>();
+        custom.put("coordinate_gis", Map.of("longitude", 121.5, "latitude", 31.2));
+
+        Map<String, Object> physical = service.extractPhysicalValuesAndStrip("equipment", custom);
+
+        assertEquals(1, physical.size());
+        Object val = physical.get("coordinate_gis");
+        assertInstanceOf(PGobject.class, val);
+        assertEquals("jsonb", ((PGobject) val).getType());
+        assertEquals(true, custom.isEmpty());
+        verifyNoInteractions(jdbcTemplate);
+    }
 }

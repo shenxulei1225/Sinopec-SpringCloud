@@ -25,13 +25,29 @@ public class PatrolRouteRunReqVO {
     private Long taskId;
 
     /**
-     * 固定起点停靠点 id（透传至路径引擎 {@code RouteRequestDTO.startStopId}）。
-     * <p>routing 当前不支持独立终点字段；勿在请求中伪造 endStopId。</p>
+     * 任务创建选定的起点（无人机起飞点），透传到路径引擎。
      */
     private String startStopId;
 
     /**
-     * 是否回到起点。未传且 {@link #startStopId} 有值时，路径侧默认 true。
+     * 任务创建选定的终点（无人机降落点）。
+     * 与起点相同则回到起点；不同则路线最后一站落到该点。
+     */
+    private String endStopId;
+
+    /**
+     * 是否回到起点。起终点相同时为 true。
      */
     private Boolean returnToStart;
+
+    /**
+     * 检查项位置展开后的路网点。算路只认这个，不读对象↔停靠点绑定。
+     */
+    @NotEmpty(message = "stopIds 不能为空")
+    private List<String> stopIds;
+
+    /**
+     * 任务已选巡检方式对应的路网类型（HUMAN / UAV / GROUND_ROBOT）。
+     */
+    private String inspectionType;
 }

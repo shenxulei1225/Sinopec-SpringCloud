@@ -10,6 +10,7 @@ import cn.cheers.x.framework.tenant.core.aop.TenantIgnore;
 import cn.cheers.x.infra.controller.admin.file.vo.file.*;
 import cn.cheers.x.infra.dal.dataobject.file.FileDO;
 import cn.cheers.x.infra.service.file.FileService;
+import cn.cheers.x.infra.service.file.FileUploadSecurityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -30,7 +31,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.infra.enums.ErrorCodeConstants.FILE_IS_EMPTY;
 import static cn.cheers.x.infra.framework.file.core.utils.FileTypeUtils.writeAttachment;
 
 @Tag(name = "管理后台 - 文件存储")
@@ -42,16 +45,31 @@ public class FileController {
 
     @Resource
     private FileService fileService;
+    @Resource
+    private FileUploadSecurityService fileUploadSecurityService;
 
     @PostMapping("/upload")
     @Operation(summary = "上传文件", description = "模式一：后端上传文件")
     @Parameter(name = "file", description = "文件附件", required = true,
             schema = @Schema(type = "string", format = "binary"))
-    public CommonResult<String> uploadFile(@Valid FileUploadReqVO uploadReqVO) throws Exception {
+    public CommonResult<FileUploadRespVO> uploadFile(@Valid FileUploadReqVO uploadReqVO) throws Exception {
         MultipartFile file = uploadReqVO.getFile();
+        // 没选文件才拒绝。0 字节的空文件可以上传，不在这里拦。
+        if (isMissingUpload(file)) {
+            throw exception(FILE_IS_EMPTY);
+        }
         byte[] content = IoUtil.readBytes(file.getInputStream());
-        return success(fileService.createFile(content, file.getOriginalFilename(),
-                uploadReqVO.getDirectory(), file.getContentType()));
+        FileUploadSecurityService.FileDetectionResult detect = fileUploadSecurityService
+                .detectAndValidate(content, file.getOriginalFilename(), file.getContentType());
+        String url = fileService.createFile(content, file.getOriginalFilename(),
+                uploadReqVO.getDirectory(), detect.mime());
+        FileUploadRespVO respVO = new FileUploadRespVO();
+        respVO.setUrl(url);
+        respVO.setName(file.getOriginalFilename());
+        respVO.setMime(detect.mime());
+        respVO.setSize((long) content.length);
+        respVO.setDetectedType(detect.detectedType());
+        return success(respVO);
     }
 
     @GetMapping("/presigned-url")
@@ -132,6 +150,19 @@ public class FileController {
     public CommonResult<PageResult<FileRespVO>> getFilePage(@Valid FilePageReqVO pageVO) {
         PageResult<FileDO> pageResult = fileService.getFilePage(pageVO);
         return success(BeanUtils.toBean(pageResult, FileRespVO.class));
+    }
+
+    /**
+     * 没选文件：既没有文件名，内容也是空的。
+     * 选了 0 字节文件（例如空 txt）不算没选，应继续上传。
+     */
+    public static boolean isMissingUpload(MultipartFile file) {
+        if (file == null) {
+            return true;
+        }
+        String name = file.getOriginalFilename();
+        boolean named = name != null && !name.isBlank();
+        return !named && file.isEmpty();
     }
 
 }

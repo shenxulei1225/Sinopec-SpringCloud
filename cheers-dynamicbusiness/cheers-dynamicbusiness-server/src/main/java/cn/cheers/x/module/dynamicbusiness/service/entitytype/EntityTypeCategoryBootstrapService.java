@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.UUID;
+
 /**
  * 为数据类型自动创建默认分类体系，并从工作台布局模版生成「数据」页签实例。
  */
@@ -282,9 +284,9 @@ public class EntityTypeCategoryBootstrapService {
     }
 
     /**
-     * 新建分类栏默认 tabId：与实例化布局一致，{种类码}-1；禁止 {种类码}-default。
+     * 新建分类栏默认页编号：稳定 tab-xxxxxx，不再把种类码写进编号。
      */
     public static String defaultTabId(String entityTypeCode) {
-        return entityTypeCode.trim() + "-1";
+        return "tab-" + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
     }
 }

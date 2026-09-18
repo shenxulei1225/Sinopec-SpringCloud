@@ -39,6 +39,14 @@ public class EntitySceneQueryReqVO extends PageParam {
             example = "equipment")
     private String modelEntityTypeCode;
 
+    @Schema(description = "实体—实体筛选：上游已选实体 id。有此键表示该维参与；空数组表示确认无关联，结果必须空页，不得省略后当未参与",
+            example = "[900107]")
+    private List<Long> relatedEntityIds;
+
+    @Schema(description = "实体—实体筛选：上游实体存储类型。relatedEntityIds 已传入时必填，禁止猜默认类型",
+            example = "equipment")
+    private String relatedEntityTypeCode;
+
     @Schema(description = "分类 ID 列表", example = "[1, 2]")
     private List<Long> categoryIds;
 

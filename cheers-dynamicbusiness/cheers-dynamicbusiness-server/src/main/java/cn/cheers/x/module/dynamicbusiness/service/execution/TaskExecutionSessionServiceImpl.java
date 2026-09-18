@@ -1,6 +1,8 @@
 package cn.cheers.x.module.dynamicbusiness.service.execution;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessReqDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionWritebackReqDTO;
@@ -31,9 +33,10 @@ import java.util.Map;
 /**
  * 任务模块标准执行会话实现。
  *
- * <p><b>负责</b>：一次执行记录创建 + bootstrap；按执行记录 id 回写状态/步骤。</p>
- * <p><b>权威</b>：执行记录与步骤实体；过程字段写入 custom_fields（task_id / pending_execution_id / execution_status）。</p>
- * <p><b>禁止</b>：写域任务表 device* 列；无执行记录时猜任务定义；有 gapCodes 仍开跑。</p>
+ * <p><b>负责</b>：新建这次执行的账；更新这次/某一步的状态；往账里记一条过程。</p>
+ * <p><b>权威</b>：执行记录与步骤实体；过程写在 custom_fields.process_entries，其它过程字段同袋
+ * （task_id / pending_execution_id / execution_status）。</p>
+ * <p><b>禁止</b>：写域任务表 device* 列；无执行记录时猜任务或设备；用日志冒充已记过程。</p>
  */
 @Service
 public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionService {
@@ -46,6 +49,9 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
     public static final String STATUS_COMPLETED = "completed";
     public static final String STATUS_FAULT = "fault";
     public static final String STATUS_FAILED = "failed";
+
+    /** 执行账上「何时收到了什么」的过程列表，写在 custom_fields */
+    public static final String PROCESS_ENTRIES_KEY = "process_entries";
 
     @Resource
     private EntityService entityService;
@@ -105,9 +111,7 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void writeback(TaskExecutionWritebackReqDTO req) {
-        String entityTypeCode = StringUtils.hasText(req.getEntityTypeCode())
-                ? req.getEntityTypeCode().trim()
-                : DEFAULT_RECORD_TYPE;
+        String entityTypeCode = resolveRecordType(req.getEntityTypeCode());
         EntityRespVO record = entityService.get(req.getExecutionRecordId(), entityTypeCode);
         if (record == null || record.getId() == null) {
             throw new ServiceException(404, "执行记录不存在：" + req.getExecutionRecordId());
@@ -137,6 +141,43 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
         for (TaskExecutionWritebackReqDTO.StepUpdate stepUpdate : req.getStepUpdates()) {
             applyStepUpdate(req.getExecutionRecordId(), stepUpdate);
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public TaskExecutionAppendProcessRespDTO appendProcess(TaskExecutionAppendProcessReqDTO req) {
+        if (req.getExecutionRecordId() == null) {
+            throw new ServiceException(400, "往执行账记过程必须带这次执行的账本编号，禁止按设备号猜");
+        }
+        String entityTypeCode = resolveRecordType(req.getEntityTypeCode());
+        EntityRespVO record = entityService.get(req.getExecutionRecordId(), entityTypeCode);
+        if (record == null || record.getId() == null) {
+            throw new ServiceException(404, "执行记录不存在：" + req.getExecutionRecordId());
+        }
+
+        EntityUpdateReqVO updateReq = new EntityUpdateReqVO();
+        updateReq.setId(record.getId());
+        Map<String, Object> base = copyMap(record.getBaseFields());
+        base.put("entityTypeCode", entityTypeCode);
+        if (record.getModelId() != null) {
+            base.put("modelId", record.getModelId());
+        }
+        if (record.getName() != null) {
+            base.put("name", record.getName());
+        }
+        updateReq.setBaseFields(base);
+
+        Map<String, Object> custom = copyMap(record.getCustomFields());
+        List<Map<String, Object>> entries = readProcessEntries(custom.get(PROCESS_ENTRIES_KEY));
+        entries.add(toProcessEntry(req));
+        custom.put(PROCESS_ENTRIES_KEY, entries);
+        updateReq.setCustomFields(custom);
+        entityService.update(updateReq);
+
+        TaskExecutionAppendProcessRespDTO resp = new TaskExecutionAppendProcessRespDTO();
+        resp.setExecutionRecordId(record.getId());
+        resp.setProcessEntryCount(entries.size());
+        return resp;
     }
 
     private void applyStepUpdate(Long executionRecordId, TaskExecutionWritebackReqDTO.StepUpdate stepUpdate) {
@@ -204,11 +245,60 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
                 filters,
                 null,
                 null,
+                null,
+                null,
                 null);
         if (resp == null || resp.getPage() == null || CollectionUtils.isEmpty(resp.getPage().getList())) {
             throw new ServiceException(404, "执行步骤不存在 stepCode=" + stepCode);
         }
         return resp.getPage().getList().get(0).getId();
+    }
+
+    private static String resolveRecordType(String entityTypeCode) {
+        return StringUtils.hasText(entityTypeCode) ? entityTypeCode.trim() : DEFAULT_RECORD_TYPE;
+    }
+
+    /**
+     * 读出已有过程列表。只接受列表或 JSON 数组文本；其它形态当空，避免把脏值当一条过程。
+     */
+    static List<Map<String, Object>> readProcessEntries(Object raw) {
+        List<Map<String, Object>> entries = new ArrayList<>();
+        if (raw == null) {
+            return entries;
+        }
+        Object parsed = raw;
+        if (raw instanceof String text && StringUtils.hasText(text)) {
+            parsed = JSON.parse(text);
+        }
+        if (!(parsed instanceof List<?> list)) {
+            return entries;
+        }
+        for (Object item : list) {
+            if (item instanceof Map<?, ?> map) {
+                Map<String, Object> copy = new LinkedHashMap<>();
+                for (Map.Entry<?, ?> e : map.entrySet()) {
+                    if (e.getKey() != null) {
+                        copy.put(String.valueOf(e.getKey()), e.getValue());
+                    }
+                }
+                entries.add(copy);
+            }
+        }
+        return entries;
+    }
+
+    private static Map<String, Object> toProcessEntry(TaskExecutionAppendProcessReqDTO req) {
+        Map<String, Object> entry = new LinkedHashMap<>();
+        entry.put("receivedAtEpochMs", req.getReceivedAtEpochMs());
+        entry.put("messageKind", req.getMessageKind().trim());
+        entry.put("protocolQualify", req.getProtocolQualify().trim());
+        entry.put("qualifyErrors", req.getQualifyErrors() == null
+                ? List.of()
+                : List.copyOf(req.getQualifyErrors()));
+        if (StringUtils.hasText(req.getSummary())) {
+            entry.put("summary", req.getSummary().trim());
+        }
+        return entry;
     }
 
     private Long resolveModelId(TaskExecutionStartReqDTO req) {

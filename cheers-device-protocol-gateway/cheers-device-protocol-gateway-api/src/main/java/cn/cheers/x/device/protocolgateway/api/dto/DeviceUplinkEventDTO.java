@@ -1,18 +1,42 @@
 package cn.cheers.x.device.protocolgateway.api.dto;
 
+import cn.cheers.x.device.protocolgateway.api.datacollection.CollectionSample;
+import cn.cheers.x.device.protocolgateway.api.identity.UplinkIdentity;
+
 /**
- * 设备上行事件（网关 → 业务回调）。
- * <p>网关不解析巡检业务语义；业务侧按 opcode / templateId 回写任务态。
- *
- * @param deviceId           逻辑设备标识
- * @param opcode             外层操作码
- * @param payloadJson        原始报文
- * @param receivedAtEpochMs  收到时间
+ * 总线投递信封：里面只带采集样本。
+ * <p>业务处理方法认 {@link CollectionSample}，不要再拆原始 JSON。
+ * <p>禁止：通道为空默认巡检；把本对象当说明书核对器。
  */
-public record DeviceUplinkEventDTO(
-        String deviceId,
-        int opcode,
-        String payloadJson,
-        long receivedAtEpochMs
-) {
+public record DeviceUplinkEventDTO(CollectionSample sample) {
+
+    public DeviceUplinkEventDTO {
+        if (sample == null) {
+            throw new IllegalArgumentException("上报事件缺少采集样本");
+        }
+    }
+
+    public static DeviceUplinkEventDTO of(CollectionSample sample) {
+        return new DeviceUplinkEventDTO(sample);
+    }
+
+    public String channelCode() {
+        return sample.channelCode();
+    }
+
+    public String deviceId() {
+        return sample.deviceId();
+    }
+
+    public String messageKind() {
+        return sample.messageKind();
+    }
+
+    public String msgId() {
+        return sample.msgId();
+    }
+
+    public UplinkIdentity identity() {
+        return sample.identity();
+    }
 }

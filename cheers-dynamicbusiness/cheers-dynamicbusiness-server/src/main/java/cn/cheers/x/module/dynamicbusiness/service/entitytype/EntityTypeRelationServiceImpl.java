@@ -16,6 +16,9 @@ import org.springframework.validation.annotation.Validated;
 import jakarta.annotation.Resource;
 import java.util.List;
 
+/**
+ * 旧「业务类型关联」表的维护实现。运行时保存引用不再调用本类。
+ */
 @Service
 @Validated
 @Slf4j

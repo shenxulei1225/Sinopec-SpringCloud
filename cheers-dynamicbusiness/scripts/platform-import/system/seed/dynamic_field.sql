@@ -4938,74 +4938,7 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_field (
-  code, name, type, unit, description, source, status, max_relations,
-  index_strategy, options, provider_code, semantic_type, tenant_id, creator
-) VALUES (
-  'FLD-LOC-008', '经度', 'DECIMAL',
-  NULL, NULL,
-  'SYSTEM', 1,
-  NULL, 'NONE',
-  NULL, NULL,
-  NULL, 1, 'seed'
-)
-ON CONFLICT (code, tenant_id) WHERE deleted = false
-DO UPDATE SET
-  name = EXCLUDED.name,
-  type = EXCLUDED.type,
-  unit = EXCLUDED.unit,
-  description = EXCLUDED.description,
-  options = EXCLUDED.options,
-  provider_code = EXCLUDED.provider_code,
-  semantic_type = EXCLUDED.semantic_type,
-  updater = 'seed',
-  update_time = CURRENT_TIMESTAMP;
-
-INSERT INTO dynamic_field (
-  code, name, type, unit, description, source, status, max_relations,
-  index_strategy, options, provider_code, semantic_type, tenant_id, creator
-) VALUES (
-  'FLD-LOC-009', '纬度', 'DECIMAL',
-  NULL, NULL,
-  'SYSTEM', 1,
-  NULL, 'NONE',
-  NULL, NULL,
-  NULL, 1, 'seed'
-)
-ON CONFLICT (code, tenant_id) WHERE deleted = false
-DO UPDATE SET
-  name = EXCLUDED.name,
-  type = EXCLUDED.type,
-  unit = EXCLUDED.unit,
-  description = EXCLUDED.description,
-  options = EXCLUDED.options,
-  provider_code = EXCLUDED.provider_code,
-  semantic_type = EXCLUDED.semantic_type,
-  updater = 'seed',
-  update_time = CURRENT_TIMESTAMP;
-
-INSERT INTO dynamic_field (
-  code, name, type, unit, description, source, status, max_relations,
-  index_strategy, options, provider_code, semantic_type, tenant_id, creator
-) VALUES (
-  'FLD-LOC-010', '海拔', 'DECIMAL',
-  '米', NULL,
-  'SYSTEM', 1,
-  NULL, 'NONE',
-  NULL, NULL,
-  NULL, 1, 'seed'
-)
-ON CONFLICT (code, tenant_id) WHERE deleted = false
-DO UPDATE SET
-  name = EXCLUDED.name,
-  type = EXCLUDED.type,
-  unit = EXCLUDED.unit,
-  description = EXCLUDED.description,
-  options = EXCLUDED.options,
-  provider_code = EXCLUDED.provider_code,
-  semantic_type = EXCLUDED.semantic_type,
-  updater = 'seed',
-  update_time = CURRENT_TIMESTAMP;
+-- FLD-LOC-008/009/010 经度/纬度/海拔已收回，平台只认「坐标」FLD-LOC-014。见 retire_split_location_decimals.sql
 
 INSERT INTO dynamic_field (
   code, name, type, unit, description, source, status, max_relations,

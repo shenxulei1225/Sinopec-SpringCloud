@@ -3,6 +3,7 @@ package cn.cheers.x.device.protocolgateway.transport;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,5 +29,20 @@ public class InMemoryDeviceSessionRegistry implements DeviceSessionRegistry {
     @Override
     public Optional<WebSocketSession> find(String deviceId) {
         return Optional.ofNullable(sessions.get(deviceId));
+    }
+
+    @Override
+    public List<String> listOnlineDeviceIds() {
+        return sessions.entrySet().stream()
+                .filter(entry -> entry.getValue() != null && entry.getValue().isOpen())
+                .map(Map.Entry::getKey)
+                .sorted()
+                .toList();
+    }
+
+    @Override
+    public boolean isOnline(String deviceId) {
+        WebSocketSession session = sessions.get(deviceId);
+        return session != null && session.isOpen();
     }
 }

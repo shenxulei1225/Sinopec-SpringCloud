@@ -32,7 +32,13 @@ public interface ErrorCodeConstants {
     // ========= 文件相关 1-001-003-000 =================
     ErrorCode FILE_PATH_EXISTS = new ErrorCode(1_001_003_000, "文件路径已存在");
     ErrorCode FILE_NOT_EXISTS = new ErrorCode(1_001_003_001, "文件不存在");
-    ErrorCode FILE_IS_EMPTY = new ErrorCode(1_001_003_002, "文件为空");
+    ErrorCode FILE_IS_EMPTY = new ErrorCode(1_001_003_002, "请选择要上传的文件");
+    ErrorCode FILE_TYPE_NOT_ALLOWED = new ErrorCode(1_001_003_003, "上传失败：这个文件被识别为「{}」，当前不能上传。可以上传：{}");
+    ErrorCode FILE_MAGIKA_UNAVAILABLE = new ErrorCode(1_001_003_004, "上传失败：服务端暂时无法识别文件类型，请稍后重试或联系管理员");
+    ErrorCode FILE_MAGIKA_TIMEOUT = new ErrorCode(1_001_003_005, "上传失败：服务端识别文件超时，请稍后重试");
+    ErrorCode FILE_MAGIKA_RESULT_INVALID = new ErrorCode(1_001_003_006, "上传失败：无法识别这个文件的类型。请换一份 PDF、Word、Excel、PPT、文本或压缩包再试");
+    ErrorCode FILE_STORAGE_TIMEOUT = new ErrorCode(1_001_003_007, "上传失败：文件存储超时，请检查主存储器是否可用");
+    ErrorCode FILE_STORAGE_UNAVAILABLE = new ErrorCode(1_001_003_008, "上传失败：文件存储不可用，请检查主存储器配置");
 
     // ========== 代码生成器 1-001-004-000 ==========
     ErrorCode CODEGEN_TABLE_EXISTS = new ErrorCode(1_001_004_002, "表定义已经存在");

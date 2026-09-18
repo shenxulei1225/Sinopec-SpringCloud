@@ -6,6 +6,7 @@ import cn.cheers.x.module.platform.contract.dto.network.PathNodeDTO;
 import cn.cheers.x.module.platform.contract.enums.NetworkKind;
 import cn.cheers.x.module.platform.contract.enums.NetworkLayer;
 import cn.cheers.x.module.platform.contract.enums.NodeType;
+import cn.cheers.x.module.platform.topology.api.dto.PathNetworkSummaryDTO;
 import cn.cheers.x.module.platform.topology.api.dto.TopologyValidateRespDTO;
 import cn.cheers.x.module.platform.topology.dal.dataobject.PathNetworkDO;
 import cn.cheers.x.module.platform.topology.dal.mysql.PathNetworkMapper;
@@ -19,10 +20,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Map;
 
 import static cn.cheers.x.module.platform.topology.enums.ErrorCodeConstants.NETWORK_VALIDATE_FAILED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -138,6 +141,43 @@ class PathNetworkServiceTest {
                 .nodes(nodes)
                 .edges(edges)
                 .build();
+    }
+
+    @Test
+    void readPayloadDouble_prefersFullNameAndSkipsBlank() {
+        assertEquals(
+                117.0193,
+                PathNetworkServiceImpl.readPayloadDouble(
+                        Map.of("longitude", "117.0193", "lng", "1"), "longitude", "lng"));
+        assertEquals(
+                39.1,
+                PathNetworkServiceImpl.readPayloadDouble(Map.of("lat", 39.1), "latitude", "lat"));
+        assertNull(PathNetworkServiceImpl.readPayloadDouble(Map.of("longitude", ""), "longitude"));
+        assertNull(PathNetworkServiceImpl.readPayloadDouble(null, "longitude"));
+    }
+
+    @Test
+    void listPublishedExcludesHistoricalCompanions() {
+        when(pathNetworkMapper.selectAllByFacilityId(44L)).thenReturn(List.of(
+                published("net_44_5a30e669c4f1_draft"),
+                published("net_44_site_published"),
+                published("net_44_site_v6")));
+
+        List<PathNetworkSummaryDTO> published = pathNetworkService.listPublished(44L);
+
+        assertEquals(1, published.size());
+        assertEquals("net_44_5a30e669c4f1_draft", published.get(0).getNetworkRef());
+    }
+
+    private static PathNetworkDO published(String id) {
+        PathNetworkDO row = new PathNetworkDO();
+        row.setId(id);
+        row.setFacilityId(44L);
+        row.setStatus(cn.cheers.x.module.platform.topology.enums.GraphStatus.PUBLISHED);
+        row.setApplicableEquipmentTypes("[\"GROUND_ROBOT\"]");
+        row.setNodes("[]");
+        row.setEdges("[]");
+        return row;
     }
 
     private static PathNodeDTO node(String nodeId, NodeType nodeType, NetworkLayer layer, Long zoneId) {

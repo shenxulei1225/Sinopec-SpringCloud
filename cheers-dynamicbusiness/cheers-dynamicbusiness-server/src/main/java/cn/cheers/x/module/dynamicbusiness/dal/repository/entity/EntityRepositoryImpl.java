@@ -1,6 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.dal.repository.entity;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.PageParam;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
@@ -32,6 +33,7 @@ import java.util.function.Supplier;
  * 实体 Repository 实现。
  *
  * <p>职责：统一封装 EntityDO 的数据库访问，并通过 entityTypeCode 动态路由到对应业务表。</p>
+ * <p>认表只走 {@link EntityTableNameHandler}；禁止业务层再拼 {@code ent_*}。</p>
  */
 @Repository
 @RequiredArgsConstructor
@@ -652,6 +654,27 @@ public class EntityRepositoryImpl implements EntityRepository {
     }
 
     @Override
+    public boolean existsByExactCodeAndVersion(String entityTypeCode, String code, Integer versionNo, Long excludeId) {
+        if (!org.springframework.util.StringUtils.hasText(entityTypeCode)
+                || !org.springframework.util.StringUtils.hasText(code)
+                || versionNo == null) {
+            return false;
+        }
+        return withTableName(entityTypeCode, () -> {
+            com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<EntityDO> wrapper =
+                    new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+            wrapper.eq("code", code.trim());
+            wrapper.eq("version_no", versionNo);
+            wrapper.eq("deleted", false);
+            if (excludeId != null) {
+                wrapper.ne("id", excludeId);
+            }
+            wrapper.last("LIMIT 1");
+            return entityMapper.selectOne(wrapper) != null;
+        });
+    }
+
+    @Override
     public EntityDO findByExactCode(String entityTypeCode, String code) {
         if (!org.springframework.util.StringUtils.hasText(entityTypeCode)
                 || !org.springframework.util.StringUtils.hasText(code)) {
@@ -825,6 +848,34 @@ public class EntityRepositoryImpl implements EntityRepository {
             throw new IllegalArgumentException("entityTypeCode 不能为空：实体访问必须经 EntityRepository 并指定存储类型");
         }
         return entityTableNameHandler.resolvePhysicalTableName(entityTypeCode.trim());
+    }
+
+    @Override
+    public String requireExistingPhysicalTable(String entityTypeCode) {
+        String physicalTable;
+        try {
+            physicalTable = resolvePhysicalTableName(entityTypeCode);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            throw new ServiceException(400, "无法解析数据目录对应实体表：" + entityTypeCode);
+        }
+        if (!SAFE_PHYSICAL_COLUMN.matcher(physicalTable).matches()) {
+            throw new ServiceException(400, "非法实体物理表名: " + physicalTable);
+        }
+        Integer count = jdbcTemplate.queryForObject(
+                """
+                SELECT COUNT(1)
+                FROM information_schema.tables
+                WHERE table_schema = 'dynamicbusiness'
+                  AND table_type = 'BASE TABLE'
+                  AND table_name = ?
+                """,
+                Integer.class,
+                physicalTable
+        );
+        if (count == null || count <= 0) {
+            throw new ServiceException(400, "未找到数据目录对应实体表：" + entityTypeCode);
+        }
+        return physicalTable;
     }
 
     // ==================== 私有方法 ====================

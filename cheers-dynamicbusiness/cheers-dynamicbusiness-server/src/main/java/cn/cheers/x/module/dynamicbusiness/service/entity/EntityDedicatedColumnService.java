@@ -526,7 +526,7 @@ public class EntityDedicatedColumnService {
     private static boolean isJsonbStorageField(EntityTypeBaseFieldDO field, Object raw) {
         if (field != null && StrUtil.isNotBlank(field.getDataType())) {
             String type = field.getDataType().trim().toUpperCase(Locale.ROOT).replace('-', '_');
-            if ("JSON".equals(type) || "JSONB".equals(type)) {
+            if ("JSON".equals(type) || "JSONB".equals(type) || "COORDINATE".equals(type)) {
                 return true;
             }
         }

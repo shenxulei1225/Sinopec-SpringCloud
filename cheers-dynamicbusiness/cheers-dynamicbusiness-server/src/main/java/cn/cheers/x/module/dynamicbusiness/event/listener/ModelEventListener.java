@@ -2,16 +2,11 @@ package cn.cheers.x.module.dynamicbusiness.event.listener;
 
 import cn.cheers.x.framework.tenant.core.util.TenantUtils;
 import cn.cheers.x.module.dynamicbusiness.event.ModelCreatedEvent;
-import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeRelationService;
-import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 /**
  * Model 事件监听器
@@ -33,10 +28,6 @@ import java.util.List;
 @Component
 @Slf4j
 public class ModelEventListener {
-
-    @Resource
-    @Lazy // 避免循环依赖
-    private EntityTypeRelationService entityTypeRelationService;
 
     /**
      * 处理 Model 创建事件

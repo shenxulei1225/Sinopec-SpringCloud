@@ -14,8 +14,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConstants.BAD_REQUEST;
-
 /**
  * 对象巡检类型台账查询服务实现。
  */
@@ -28,10 +26,10 @@ public class ObjectProfileQueryServiceImpl implements ObjectProfileQueryService 
     @Override
     public String requireConsistentInspectionType(Long facilityId, Collection<Long> objectIds) {
         if (facilityId == null) {
-            throw ServiceExceptionUtil.exception(BAD_REQUEST, "facilityId 不能为空");
+            throw ServiceExceptionUtil.invalidParamException("facilityId 不能为空");
         }
         if (objectIds == null || objectIds.isEmpty()) {
-            throw ServiceExceptionUtil.exception(BAD_REQUEST, "objectIds 不能为空");
+            throw ServiceExceptionUtil.invalidParamException("objectIds 不能为空");
         }
 
         List<Long> requestedObjectIds = objectIds.stream()
@@ -39,7 +37,7 @@ public class ObjectProfileQueryServiceImpl implements ObjectProfileQueryService 
                 .distinct()
                 .collect(Collectors.toList());
         if (requestedObjectIds.isEmpty()) {
-            throw ServiceExceptionUtil.exception(BAD_REQUEST, "objectIds 不能为空");
+            throw ServiceExceptionUtil.invalidParamException("objectIds 不能为空");
         }
 
         List<InspectionObjectProfileDO> profiles = profileMapper.selectByFacilityAndObjectIds(facilityId, requestedObjectIds);
@@ -53,16 +51,16 @@ public class ObjectProfileQueryServiceImpl implements ObjectProfileQueryService 
             }
         }
         if (!missingObjectIds.isEmpty()) {
-            throw ServiceExceptionUtil.exception(BAD_REQUEST,
-                    "缺少对象巡检类型台账，objectIds=" + missingObjectIds);
+            throw ServiceExceptionUtil.invalidParamException(
+                    "缺少对象巡检类型台账，objectIds={}", missingObjectIds);
         }
 
         Set<String> inspectionTypes = profiles.stream()
                 .map(InspectionObjectProfileDO::getInspectionType)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         if (inspectionTypes.size() != 1) {
-            throw ServiceExceptionUtil.exception(BAD_REQUEST,
-                    "对象巡检类型不一致，types=" + inspectionTypes);
+            throw ServiceExceptionUtil.invalidParamException(
+                    "对象巡检类型不一致，types={}", inspectionTypes);
         }
         return inspectionTypes.iterator().next();
     }

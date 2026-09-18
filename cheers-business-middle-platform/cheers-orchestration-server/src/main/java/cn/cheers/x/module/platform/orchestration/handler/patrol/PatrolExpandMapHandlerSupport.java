@@ -24,7 +24,10 @@ final class PatrolExpandMapHandlerSupport {
     static final String TASK_ID = "taskId";
     static final String FROM_CONFIRMED_SNAPSHOT = "fromConfirmedSnapshot";
     static final String START_STOP_ID = "startStopId";
+    static final String END_STOP_ID = "endStopId";
     static final String RETURN_TO_START = "returnToStart";
+    static final String STOP_IDS = "stopIds";
+    static final String INSPECTION_TYPE = "inspectionType";
 
     private PatrolExpandMapHandlerSupport() {
     }
@@ -35,16 +38,19 @@ final class PatrolExpandMapHandlerSupport {
         if (payload == null) {
             throw exception(SCHEDULE_RUN_WORK_ITEMS_EMPTY);
         }
-        return PatrolExpandReqDTO.builder()
-                .facilityId(asLong(payload.get(FACILITY_ID)))
-                .objectIds(asLongList(payload.get(OBJECT_IDS)))
-                .preferredNetworkRef(asString(payload.get(PREFERRED_NETWORK_REF)))
-                .taskId(asLong(payload.get(TASK_ID)))
-                .fromConfirmedSnapshot(asBoolean(payload.get(FROM_CONFIRMED_SNAPSHOT)))
-                .seedWorkId(seed.getWorkId())
-                .startStopId(asString(payload.get(START_STOP_ID)))
-                .returnToStart(asBoolean(payload.get(RETURN_TO_START)))
-                .build();
+        PatrolExpandReqDTO req = new PatrolExpandReqDTO();
+        req.setFacilityId(asLong(payload.get(FACILITY_ID)));
+        req.setObjectIds(asLongList(payload.get(OBJECT_IDS)));
+        req.setPreferredNetworkRef(asString(payload.get(PREFERRED_NETWORK_REF)));
+        req.setTaskId(asLong(payload.get(TASK_ID)));
+        req.setFromConfirmedSnapshot(asBoolean(payload.get(FROM_CONFIRMED_SNAPSHOT)));
+        req.setSeedWorkId(seed.getWorkId());
+        req.setStartStopId(asString(payload.get(START_STOP_ID)));
+        req.setEndStopId(asString(payload.get(END_STOP_ID)));
+        req.setReturnToStart(asBoolean(payload.get(RETURN_TO_START)));
+        req.setStopIds(asStringList(payload.get(STOP_IDS)));
+        req.setInspectionType(asString(payload.get(INSPECTION_TYPE)));
+        return req;
     }
 
     private static WorkItemDTO resolveSeedWorkItem(PhaseContext context) {
@@ -100,6 +106,27 @@ final class PatrolExpandMapHandlerSupport {
                 out.add(number.longValue());
             } else {
                 out.add(Long.parseLong(String.valueOf(item)));
+            }
+        }
+        return out;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<String> asStringList(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (!(value instanceof List<?> list)) {
+            return null;
+        }
+        List<String> out = new ArrayList<>(list.size());
+        for (Object item : list) {
+            if (item == null) {
+                continue;
+            }
+            String text = String.valueOf(item).trim();
+            if (!text.isEmpty()) {
+                out.add(text);
             }
         }
         return out;

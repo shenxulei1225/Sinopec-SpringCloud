@@ -38,7 +38,17 @@ JOIN (
       20
     ),
     ('child_action_ids_json', '子动作列表', 'TEXT', false, '[]', '复合动作有序子动作 code 列表', '{"createVisible":false}', 30),
-    ('is_composite', '是否复合动作', 'BOOLEAN', false, 'false', 'true=开跑时展开子动作', '{"createVisible":false}', 40)
+    ('is_composite', '是否复合动作', 'BOOLEAN', false, 'false', 'true=开跑时展开子动作', '{"createVisible":false}', 40),
+    (
+      'execution_means',
+      '适用手段',
+      'JSON',
+      false,
+      '[]',
+      '动作适用的执行手段编码数组。详情勾选；新建/编辑表单不展示。',
+      '{"createVisible":false,"editVisible":false,"detailVisible":false}',
+      10
+    )
 ) AS v(field_code, field_name, data_type, required, default_value, description, type_config, sort_order)
   ON f.code = v.field_code AND f.deleted = false AND f.tenant_id = 1
 ON CONFLICT (entity_type_code, field_code, tenant_id) WHERE deleted = false

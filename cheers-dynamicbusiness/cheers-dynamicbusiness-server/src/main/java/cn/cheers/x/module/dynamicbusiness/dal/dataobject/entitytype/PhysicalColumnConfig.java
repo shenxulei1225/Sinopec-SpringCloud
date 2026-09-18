@@ -36,8 +36,9 @@ import java.io.Serializable;
  *   <li>DATE - 日期</li>
  *   <li>TIMESTAMP - 时间戳</li>
  *   <li>BOOLEAN - 布尔值</li>
- *   <li>TEXT - 长文本</li>
- * </ul>
+     *   <li>TEXT - 长文本</li>
+     *   <li>JSONB - 结构化 JSON（地理坐标等）</li>
+     * </ul>
  * 
  * <h3>配置示例</h3>
  * <pre>
@@ -85,6 +86,9 @@ public class PhysicalColumnConfig implements Serializable {
     /** TEXT 类型 - 长文本 */
     public static final String TYPE_TEXT = "TEXT";
 
+    /** JSONB 类型 - 结构化值（地理坐标等） */
+    public static final String TYPE_JSONB = "JSONB";
+
     // ==================== 默认值常量 ====================
 
     /** VARCHAR 默认长度 */
@@ -110,7 +114,7 @@ public class PhysicalColumnConfig implements Serializable {
     /**
      * 数据类型
      * 
-     * <p>支持的类型：VARCHAR, INTEGER, BIGINT, DECIMAL, DATE, TIMESTAMP, BOOLEAN, TEXT</p>
+     * <p>支持的类型：VARCHAR, INTEGER, BIGINT, DECIMAL, DATE, TIMESTAMP, BOOLEAN, TEXT, JSONB</p>
      * 
      * @see #TYPE_VARCHAR
      * @see #TYPE_INTEGER
@@ -279,6 +283,19 @@ public class PhysicalColumnConfig implements Serializable {
                 .build();
     }
 
+    /**
+     * 创建 JSONB 类型配置（地理坐标等结构化值）
+     *
+     * @param column 列名
+     * @return 配置对象
+     */
+    public static PhysicalColumnConfig jsonb(String column) {
+        return PhysicalColumnConfig.builder()
+                .column(column)
+                .type(TYPE_JSONB)
+                .build();
+    }
+
     // ==================== 核心方法 ====================
 
     /**
@@ -296,6 +313,7 @@ public class PhysicalColumnConfig implements Serializable {
      *   <li>TIMESTAMP</li>
      *   <li>BOOLEAN</li>
      *   <li>TEXT</li>
+     *   <li>JSONB</li>
      * </ul>
      * 
      * @return 数据库类型字符串
@@ -334,6 +352,9 @@ public class PhysicalColumnConfig implements Serializable {
                 
             case TYPE_TEXT:
                 return "TEXT";
+
+            case TYPE_JSONB:
+                return "JSONB";
                 
             default:
                 throw new IllegalStateException("不支持的物理列类型: " + type);
@@ -373,7 +394,8 @@ public class PhysicalColumnConfig implements Serializable {
             !TYPE_DATE.equals(upperType) && 
             !TYPE_TIMESTAMP.equals(upperType) && 
             !TYPE_BOOLEAN.equals(upperType) && 
-            !TYPE_TEXT.equals(upperType)) {
+            !TYPE_TEXT.equals(upperType) &&
+            !TYPE_JSONB.equals(upperType)) {
             return "不支持的物理列类型: " + type;
         }
         

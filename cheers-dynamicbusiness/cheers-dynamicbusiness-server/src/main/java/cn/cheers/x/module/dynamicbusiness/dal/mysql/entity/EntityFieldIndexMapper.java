@@ -68,10 +68,11 @@ public interface EntityFieldIndexMapper extends BaseMapperX<EntityFieldIndexDO> 
     }
 
     /**
-     * 按关键词在索引表中查询命中的实体ID（仅字符串索引列）。
+     * 按关键词在索引表中查询命中的实体ID。
      *
      * <p>说明：
-     * - 仅匹配 value_string（对应 STRING/SELECT/ENTITY_REF 等）；
+     * - 字符串索引列认 value_string（STRING/SELECT/ENTITY_REF 等）；
+     * - 数值索引列认 value_number（INTEGER/DECIMAL，如协议指令编码 opcode）；
      * - 不按 model 预过滤，避免多模型场景漏检；
      * - 返回去重后的 entityId 列表。</p>
      */
@@ -85,6 +86,10 @@ public interface EntityFieldIndexMapper extends BaseMapperX<EntityFieldIndexDO> 
 
     /**
      * 按关键词命中的索引行（含 modelId/fieldCode，供上层校验可搜索）。
+     *
+     * <p>权威在类型列：数字只写在 value_number，禁止只扫 value_string 把整数指令编码漏掉。
+     * 数值按文本包含匹配，与字符串 LIKE 同一套「搜 2005 也能中 200501」语义。
+     * 不负责：读路径把数字再抄进 value_string。</p>
      */
     default List<EntityFieldIndexDO> selectRowsByKeyword(String keywordLower) {
         if (keywordLower == null || keywordLower.isBlank()) {
@@ -92,8 +97,11 @@ public interface EntityFieldIndexMapper extends BaseMapperX<EntityFieldIndexDO> 
         }
         LambdaQueryWrapperX<EntityFieldIndexDO> wrapper = new LambdaQueryWrapperX<>();
         wrapper.isNotNull(EntityFieldIndexDO::getEntityId);
-        wrapper.isNotNull(EntityFieldIndexDO::getValueString);
-        wrapper.like(EntityFieldIndexDO::getValueString, keywordLower);
+        wrapper.and(w -> w
+                .like(EntityFieldIndexDO::getValueString, keywordLower)
+                .or()
+                .apply("value_number IS NOT NULL AND CAST(value_number AS TEXT) LIKE {0}",
+                        "%" + keywordLower + "%"));
         return selectList(wrapper);
     }
 
@@ -287,7 +295,7 @@ public interface EntityFieldIndexMapper extends BaseMapperX<EntityFieldIndexDO> 
     }
 
     /**
-     * 根据模型ID和字段编码删除索引记录（用于字段取消可查询）
+     * 根据模型ID和字段编码删除索引记录（该字段不再需要进索引表时整批清）
      */
     default int deleteByModelIdAndFieldCode(Long modelId, String fieldCode) {
         return delete(new LambdaQueryWrapperX<EntityFieldIndexDO>()

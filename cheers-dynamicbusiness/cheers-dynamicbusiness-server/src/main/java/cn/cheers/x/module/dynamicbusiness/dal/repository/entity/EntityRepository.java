@@ -309,6 +309,11 @@ public interface EntityRepository {
     boolean existsByExactCode(String entityTypeCode, String code, Long excludeId);
 
     /**
+     * 当前实体类型物理表内是否存在相同编码+版本号（精确匹配，未删除）。
+     */
+    boolean existsByExactCodeAndVersion(String entityTypeCode, String code, Integer versionNo, Long excludeId);
+
+    /**
      * 按业务编码精确取一条未删除实体（同表；用于系统同步 upsert，避免误 create 撞唯一索引）。
      *
      * @return 命中行；不存在返回 null
@@ -357,6 +362,12 @@ public interface EntityRepository {
      * <p>业务层不得自行拼 {@code ent_*} 或回落已废止表；一律经本方法。</p>
      */
     String resolvePhysicalTableName(String entityTypeCode);
+
+    /**
+     * 当前目录、当前租户已经落库的那一张实体表。
+     * 开能力补列只问这里：表不存在就失败，不扫其它分表、不按目录码再拼一遍。
+     */
+    String requireExistingPhysicalTable(String entityTypeCode);
 
     // ==================== 查询条件类 ====================
 

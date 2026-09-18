@@ -69,6 +69,11 @@ psql "$DATABASE_URL" -f recipes/inspection/03_sample_method_bindings.sql
 | `11_clear_sop_main_and_method_bindings.sql` | **主表清理**（破坏性）：软删 SOP 主表与旧检查项方法绑定，清空旧口径 |
 | `12_seed_macro_scope_sops.sql` | **大范围 SOP 初始化**：创建储罐/生产工艺/安防三类标准流程，并写入范围与标准检查项包 |
 | `13_add_sop_universal_definition_fields.sql` | **通用定义字段**：为 SOP 型号补对象分类类型码、内容实体类型码、对象内容定义 JSON 字段 |
+| `14_init_facility44_check_item_params.sql` | **⛔ 已停用**：历史错位源（项→SOP 当怎么查）；再执行会直接报错 |
+| `20_audit_misplaced_item_sop_method_bindings.sql` | **P2 只读审计**：统计检查项方法绑定废数据（兼容 V109 前后表名） |
+| `21_clear_misplaced_item_sop_method_bindings.sql` | **P2 定点软删**：仅清配方 creator 的 `inspection_item` 方法绑定；**不**清 SOP 主表、**不**改宿主参数包 |
+| `22_audit_host_pack_target_sop.sql` | **P2b 只读审计**：统计 `host_sop_param_pack` 中 `targetType=sop` |
+| `23_rekey_host_pack_target_to_inspection_item.sql` | **P2b 重键**：`subject=inspection_item` 且 `target=sop` → `target=inspection_item/subjectId` |
 | `remove.sql` | 软删本配方写入的方法选用、实例绑定、停靠点绑定与历史工作面 props |
 | `import.sh` | 按序执行 01→07 |
 
@@ -78,6 +83,30 @@ psql "$DATABASE_URL" -f recipes/inspection/03_sample_method_bindings.sql
 psql "$DATABASE_URL" -f recipes/inspection/08_audit_sop_standard_pack_candidates.sql
 psql "$DATABASE_URL" -f recipes/inspection/09_migrate_sop_standard_pack_from_method_bindings.sql
 ```
+
+### 巡检试点 P2 · 错位方法绑定收口（2026-09-11）
+
+**禁止**再跑 `14`（会造项→SOP 错位）。**禁止**用 `11` 当 P2 清库（会软删全部 SOP 主表）。
+
+正确顺序：
+
+```bash
+psql "$DATABASE_URL" -f recipes/inspection/20_audit_misplaced_item_sop_method_bindings.sql
+psql "$DATABASE_URL" -f recipes/inspection/21_clear_misplaced_item_sop_method_bindings.sql
+psql "$DATABASE_URL" -f recipes/inspection/20_audit_misplaced_item_sop_method_bindings.sql
+```
+
+宿主参数包 `host_sop_param_pack` 中仍可能有 `targetType=sop` 旧键；开跑读路径可回退同检查项条目，**本轮不自动改写**（重键另案）。
+
+### 巡检试点 P2b · 宿主参数包重键（2026-09-11）
+
+```bash
+psql "$DATABASE_URL" -f recipes/inspection/22_audit_host_pack_target_sop.sql
+psql "$DATABASE_URL" -f recipes/inspection/23_rekey_host_pack_target_to_inspection_item.sql
+psql "$DATABASE_URL" -f recipes/inspection/22_audit_host_pack_target_sop.sql
+```
+
+规则：`subjectType=inspection_item` 且 `targetType=sop` → `targetType=inspection_item`、`targetId=subjectId`。
 
 如需按新口径重建前先清空历史 SOP 实例，可单独执行：
 

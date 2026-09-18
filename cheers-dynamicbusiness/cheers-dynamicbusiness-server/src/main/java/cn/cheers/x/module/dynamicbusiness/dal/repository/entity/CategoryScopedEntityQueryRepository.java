@@ -5,6 +5,7 @@ import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityTableNameHandle
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
 import cn.cheers.x.module.dynamicbusiness.framework.tenant.TenantPhysicalTableNames;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
@@ -23,6 +24,7 @@ import java.util.regex.Pattern;
  */
 @Repository
 @RequiredArgsConstructor
+@Slf4j
 public class CategoryScopedEntityQueryRepository {
 
     private static final Set<String> SQL_ORDER_COLUMNS = Set.of("name", "code", "status", "id", "sort");
@@ -106,8 +108,20 @@ public class CategoryScopedEntityQueryRepository {
             return new PageResult<>(List.of(), 0L);
         }
 
+        if (StringUtils.hasText(keyword)) {
+            log.warn(
+                    "[SEARCH-DIAG][CATEGORY-SQL] entityTypeCode={} keyword={} likeColumns={} extensionFieldCodes={} countSql={} args={}",
+                    entityTypeCode, keyword,
+                    keywordSearch == null ? null : keywordSearch.likeColumns(),
+                    keywordSearch == null ? null : keywordSearch.extensionFieldCodes(),
+                    parts.countSql, parts.args);
+        }
         Long total = jdbcTemplate.queryForObject(parts.countSql, Long.class, parts.args.toArray());
         long totalCount = total == null ? 0L : total;
+        if (StringUtils.hasText(keyword)) {
+            log.warn("[SEARCH-DIAG][CATEGORY-SQL-RESULT] entityTypeCode={} keyword={} total={}",
+                    entityTypeCode, keyword, totalCount);
+        }
         if (totalCount <= 0) {
             return new PageResult<>(List.of(), 0L);
         }

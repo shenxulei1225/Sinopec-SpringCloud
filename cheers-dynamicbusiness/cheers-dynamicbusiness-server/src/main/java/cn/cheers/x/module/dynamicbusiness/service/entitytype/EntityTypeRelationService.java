@@ -7,15 +7,10 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.Relatab
 import java.util.List;
 
 /**
- * EntityType 关联服务接口
- * 
- * 业务含义：管理 EntityType 之间的关联关系（双向门禁许可关系）。
- * 
- * 关联机制：
- * 1. 业务关联作为“门禁”：必须先建立业务关联，模型才允许添加引用字段。
- * 2. 不自动展开：建立关联后，不会自动在所有模型中创建字段，避免字段爆炸。
- * 3. 实体可见性：由模型管理按需添加字段后，实体表单才可见。
- * 
+ * 旧「业务类型关联」表的维护接口。
+ *
+ * <p>不再作为保存引用的门禁。运行时保存只认型号已分配引用字段声明的目标类型。</p>
+ *
  * @author yudao
  */
 public interface EntityTypeRelationService {

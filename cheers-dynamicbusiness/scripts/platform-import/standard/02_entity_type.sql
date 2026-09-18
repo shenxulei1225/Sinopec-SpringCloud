@@ -21,7 +21,7 @@ INSERT INTO dynamic_entity_type (
     "issuing_body":{"type":"VARCHAR","column":"issuing_body"},
     "publish_year":{"type":"INTEGER","column":"publish_year"},
     "summary":{"type":"TEXT","column":"summary"},
-    "source_ref":{"type":"TEXT","column":"source_ref"}
+    "attachments":{"type":"TEXT","column":"attachments"}
   }'::jsonb,
   'SINGLE', '知识库', 'NETWORK', 1, 'seed'
 )
@@ -57,14 +57,14 @@ INSERT INTO dynamic_entity_type_config (
   'standard', '规范标准',
   'DEDICATED', 'ent_standard',
   NULL, TRUE,
-  '规范标准专用表；固定列 standard_no / standard_level / issuing_body / publish_year / summary / source_ref', 1,
+  '规范标准专用表；固定列 standard_no / standard_level / issuing_body / publish_year / summary / attachments', 1,
   '{
     "standard_no":{"type":"VARCHAR","column":"standard_no"},
     "standard_level":{"type":"VARCHAR","column":"standard_level"},
     "issuing_body":{"type":"VARCHAR","column":"issuing_body"},
     "publish_year":{"type":"INTEGER","column":"publish_year"},
     "summary":{"type":"TEXT","column":"summary"},
-    "source_ref":{"type":"TEXT","column":"source_ref"}
+    "attachments":{"type":"TEXT","column":"attachments"}
   }'::jsonb,
   1, 'seed'
 )

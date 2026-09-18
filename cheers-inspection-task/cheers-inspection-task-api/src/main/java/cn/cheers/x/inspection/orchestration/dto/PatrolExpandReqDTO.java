@@ -26,9 +26,23 @@ public class PatrolExpandReqDTO {
     /** 种子工作项 id（可选，回写 workItems 时使用） */
     private String seedWorkId;
 
-    /** 固定起点停靠点 id（透传至 ROUTE 阶段 payload） */
+    /** 任务创建选定的起点（无人机起飞点） */
     private String startStopId;
 
-    /** 是否回到起点（透传至 ROUTE 阶段 payload） */
+    /** 任务创建选定的终点（无人机降落点） */
+    private String endStopId;
+
+    /** 是否回到起点 */
     private Boolean returnToStart;
+
+    /**
+     * 检查项位置展开后的路网点。算路只认这个，不读对象↔停靠点绑定。
+     */
+    private List<String> stopIds;
+
+    /**
+     * 任务已选巡检方式对应的路网类型（HUMAN / UAV / GROUND_ROBOT）。
+     * 选网只认这个，不读被巡检设备上的对象巡检类型台账。
+     */
+    private String inspectionType;
 }

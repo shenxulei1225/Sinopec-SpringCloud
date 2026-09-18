@@ -29,6 +29,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * 工作台布局：模版列表、从模版生成实例、解析页面/目录上的 layoutId。
@@ -259,18 +260,22 @@ public class DmWorkbenchLayoutService {
         if (!StringUtils.hasText(categoryDisplayName)) {
             categoryDisplayName = storageDisplayName;
         }
-        // 分类 Tab 编号：按同类种类生成稳定非空编号；栏分组键（columnKey）与编号分开
-        String categoryTabId = storageCode + "-1";
-        Set<String> usedDetailTabIds = new HashSet<>();
+        // 页编号与类型分开：已有 tab-* 原样复制；空 / default / 类型码旧编号当场生成 tab-xxxxxx
+        Set<String> usedTabIds = new HashSet<>();
+        Set<String> usedColumnKeys = new HashSet<>();
         for (DmDataTabLayoutDO existing : templateRows) {
-            if (!DmDataTabLayoutKindEnum.DETAIL.getCode().equals(existing.getColumnKind())) {
-                continue;
-            }
             String tab = existing.getTabId() == null ? "" : existing.getTabId().trim();
-            if (!StringUtils.hasText(tab) || "default".equalsIgnoreCase(tab)) {
-                continue;
+            if (isStableGeneratedTabId(tab)) {
+                usedTabIds.add(tab);
             }
-            usedDetailTabIds.add(tab);
+            Map<String, Object> existingMeta = existing.getColumnMeta();
+            if (existingMeta != null && existingMeta.get("columnKey") != null) {
+                String key = String.valueOf(existingMeta.get("columnKey")).trim();
+                if (StringUtils.hasText(key) && !"default".equalsIgnoreCase(key)
+                        && !key.toLowerCase().endsWith("-default")) {
+                    usedColumnKeys.add(key);
+                }
+            }
         }
 
         for (DmDataTabLayoutDO src : templateRows) {
@@ -288,8 +293,8 @@ public class DmWorkbenchLayoutService {
             if (DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(src.getColumnKind())) {
                 // 模版若仍是旧字面 default / 空，换成真实编号；已有合法编号则保留
                 String srcTab = row.getTabId() == null ? "" : row.getTabId().trim();
-                if (!StringUtils.hasText(srcTab) || "default".equalsIgnoreCase(srcTab)) {
-                    row.setTabId(categoryTabId);
+                if (!isStableGeneratedTabId(srcTab)) {
+                    row.setTabId(allocateStableTabId(usedTabIds));
                 }
                 Map<String, Object> meta = row.getColumnMeta() != null
                         ? new LinkedHashMap<>(row.getColumnMeta())
@@ -299,9 +304,10 @@ public class DmWorkbenchLayoutService {
                 meta.put("columnSection", sourceSectionId);
                 Object existingKey = meta.get("columnKey");
                 String keyStr = existingKey == null ? "" : String.valueOf(existingKey).trim();
-                // 分组键用种类码，禁止 default；看身份能知道是哪类分类
-                if (!StringUtils.hasText(keyStr) || "default".equalsIgnoreCase(keyStr)) {
-                    meta.put("columnKey", storageCode);
+                // 分组键只认「这一栏」；空 / default 生成 col-xxxxxx，不把类型码写进分组键
+                if (!StringUtils.hasText(keyStr) || "default".equalsIgnoreCase(keyStr)
+                        || keyStr.toLowerCase().endsWith("-default")) {
+                    meta.put("columnKey", allocateStableColumnKey(usedColumnKeys));
                 }
                 if (!(meta.get("widthPx") instanceof Number)) {
                     meta.put("widthPx", DmDataTabLayoutBootstrapMeta.CATEGORY_COLUMN_WIDTH_PX);
@@ -311,10 +317,10 @@ public class DmWorkbenchLayoutService {
                 }
                 row.setColumnMeta(meta);
             } else if (DmDataTabLayoutKindEnum.MODEL.getCode().equals(src.getColumnKind())) {
-                // 型号栏 tabId = 底座类型编码；身份 MODEL:{tabId}；禁止空与 default
+                // 型号栏编号稳定；类型写在 modelEntityTypeCode。禁止空与 default。
                 String modelTab = row.getTabId() == null ? "" : row.getTabId().trim();
-                if (!StringUtils.hasText(modelTab) || "default".equalsIgnoreCase(modelTab)) {
-                    row.setTabId(storageCode);
+                if (!isStableGeneratedTabId(modelTab)) {
+                    row.setTabId(allocateStableTabId(usedTabIds));
                 }
                 Map<String, Object> meta = row.getColumnMeta() != null
                         ? new LinkedHashMap<>(row.getColumnMeta())
@@ -329,10 +335,10 @@ public class DmWorkbenchLayoutService {
                 meta.remove("sectionWidthPx");
                 row.setColumnMeta(meta);
             } else if (DmDataTabLayoutKindEnum.ENTITY.getCode().equals(src.getColumnKind())) {
-                // 实体栏 tabId = 底座类型编码；身份 ENTITY:{tabId}；禁止空与 default
+                // 实体栏编号稳定；类型写在 entityEntityTypeCode。禁止空与 default。
                 String entityTab = row.getTabId() == null ? "" : row.getTabId().trim();
-                if (!StringUtils.hasText(entityTab) || "default".equalsIgnoreCase(entityTab)) {
-                    row.setTabId(storageCode);
+                if (!isStableGeneratedTabId(entityTab)) {
+                    row.setTabId(allocateStableTabId(usedTabIds));
                 }
                 Map<String, Object> meta = row.getColumnMeta() != null
                         ? new LinkedHashMap<>(row.getColumnMeta())
@@ -351,8 +357,8 @@ public class DmWorkbenchLayoutService {
                 row.setColumnMeta(meta);
             } else if (DmDataTabLayoutKindEnum.DETAIL.getCode().equals(src.getColumnKind())) {
                 String detailTab = row.getTabId() == null ? "" : row.getTabId().trim();
-                if (!StringUtils.hasText(detailTab) || "default".equalsIgnoreCase(detailTab)) {
-                    row.setTabId(allocateTabId("detail", usedDetailTabIds));
+                if (!isStableGeneratedTabId(detailTab)) {
+                    row.setTabId(allocateStableTabId(usedTabIds));
                 }
                 row.setEnabled(true);
                 Map<String, Object> meta = row.getColumnMeta() != null
@@ -402,13 +408,13 @@ public class DmWorkbenchLayoutService {
                 String tab = row.getTabId() == null ? "" : row.getTabId().trim();
                 if (!StringUtils.hasText(tab) || "default".equalsIgnoreCase(tab)
                         || tab.toLowerCase().endsWith("-default")) {
-                    throw new ServiceException(500, "自动创建布局失败：分类栏 tabId 须为种类码编号，禁止 default/-default");
+                    throw new ServiceException(500, "自动创建布局失败：分类栏 tabId 须为稳定编号，禁止空/default/-default");
                 }
                 Object keyObj = meta == null ? null : meta.get("columnKey");
                 String key = keyObj == null ? "" : String.valueOf(keyObj).trim();
                 if (!StringUtils.hasText(key) || "default".equalsIgnoreCase(key)
                         || key.toLowerCase().endsWith("-default")) {
-                    throw new ServiceException(500, "自动创建布局失败：分类栏 columnKey 须为种类码，禁止 default/-default");
+                    throw new ServiceException(500, "自动创建布局失败：分类栏 columnKey 须为稳定分组键，禁止空/default/-default");
                 }
             } else if (DmDataTabLayoutKindEnum.MODEL.getCode().equals(kind)) {
                 if (!metaHasText(meta, "modelEntityTypeCode")) {
@@ -416,7 +422,7 @@ public class DmWorkbenchLayoutService {
                 }
                 String tab = row.getTabId() == null ? "" : row.getTabId().trim();
                 if (!StringUtils.hasText(tab) || "default".equalsIgnoreCase(tab)) {
-                    throw new ServiceException(500, "自动创建布局失败：型号栏 tabId 须为底座类型编码");
+                    throw new ServiceException(500, "自动创建布局失败：型号栏 tabId 须为稳定编号，禁止空/default");
                 }
             } else if (DmDataTabLayoutKindEnum.ENTITY.getCode().equals(kind)) {
                 if (!metaHasText(meta, "entityEntityTypeCode")) {
@@ -424,7 +430,7 @@ public class DmWorkbenchLayoutService {
                 }
                 String tab = row.getTabId() == null ? "" : row.getTabId().trim();
                 if (!StringUtils.hasText(tab) || "default".equalsIgnoreCase(tab)) {
-                    throw new ServiceException(500, "自动创建布局失败：实体栏 tabId 须为底座类型编码");
+                    throw new ServiceException(500, "自动创建布局失败：实体栏 tabId 须为稳定编号，禁止空/default");
                 }
             } else if (DmDataTabLayoutKindEnum.DETAIL.getCode().equals(kind)) {
                 String tab = row.getTabId() == null ? "" : row.getTabId().trim();
@@ -561,7 +567,7 @@ public class DmWorkbenchLayoutService {
         dmWorkbenchLayoutMapper.insert(header);
         Long layoutId = header.getId();
 
-        insertTemplateRow(layoutId, DmDataTabLayoutKindEnum.CATEGORY.getCode(), "category-1", true,
+        insertTemplateRow(layoutId, DmDataTabLayoutKindEnum.CATEGORY.getCode(), "tab-category-1", true,
                 DmDataTabLayoutBootstrapMeta.categoryMeta(
                         "分类", null, "category", DmDataTabLayoutBootstrapMeta.SECTION_ID_A));
         insertTemplateRow(layoutId, DmDataTabLayoutKindEnum.MODEL.getCode(), null, true,
@@ -692,17 +698,40 @@ public class DmWorkbenchLayoutService {
         return sectionId;
     }
 
-    private static String allocateTabId(String kindSlug, Set<String> usedTabIds) {
-        String slug = StringUtils.hasText(kindSlug) ? kindSlug.trim().toLowerCase() : "column";
-        int seq = 1;
-        while (true) {
-            String candidate = "tab-" + slug + "-" + seq;
+    /** 已生成的正式页编号：以 tab- 开头，且不是空 / default。 */
+    private static boolean isStableGeneratedTabId(String tabId) {
+        if (!StringUtils.hasText(tabId)) {
+            return false;
+        }
+        String tab = tabId.trim();
+        if ("default".equalsIgnoreCase(tab) || tab.toLowerCase().endsWith("-default")) {
+            return false;
+        }
+        return tab.startsWith("tab-");
+    }
+
+    /** 生成稳定页编号 tab-xxxxxx，避开本轮已占用编号。不把类型码写进编号。 */
+    private static String allocateStableTabId(Set<String> usedTabIds) {
+        for (int i = 0; i < 32; i++) {
+            String candidate = "tab-" + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
             if (!usedTabIds.contains(candidate)) {
                 usedTabIds.add(candidate);
                 return candidate;
             }
-            seq++;
         }
+        throw new ServiceException(500, "无法分配稳定栏编号");
+    }
+
+    /** 分类栏分组键：col-xxxxxx。与页编号、类型码分开。 */
+    private static String allocateStableColumnKey(Set<String> usedKeys) {
+        for (int i = 0; i < 32; i++) {
+            String candidate = "col-" + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
+            if (!usedKeys.contains(candidate)) {
+                usedKeys.add(candidate);
+                return candidate;
+            }
+        }
+        throw new ServiceException(500, "无法分配稳定栏分组键");
     }
 
     private Map<String, Boolean> normalizeSectionHidden(

@@ -1,6 +1,8 @@
 package cn.cheers.x.module.dynamicbusiness.api.execution;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessReqDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionWritebackReqDTO;
@@ -13,7 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 /**
- * 任务模块执行会话 RPC：开始执行 / 执行回写。
+ * 任务模块执行会话 RPC：新建这次执行的账 / 更新状态与步骤 / 往账里记一条过程。
  * <p>不绑定设备或某一业务域。
  */
 @FeignClient(name = ApiConstants.NAME)
@@ -27,6 +29,11 @@ public interface TaskExecutionSessionApi {
     CommonResult<TaskExecutionStartRespDTO> start(@Valid @RequestBody TaskExecutionStartReqDTO req);
 
     @PostMapping(PREFIX + "/writeback")
-    @Operation(summary = "按执行记录 id 回写状态与步骤")
+    @Operation(summary = "更新这次执行的状态或某一步的状态")
     CommonResult<Boolean> writeback(@Valid @RequestBody TaskExecutionWritebackReqDTO req);
+
+    @PostMapping(PREFIX + "/append-process")
+    @Operation(summary = "往这次执行的账里记一条过程")
+    CommonResult<TaskExecutionAppendProcessRespDTO> appendProcess(
+            @Valid @RequestBody TaskExecutionAppendProcessReqDTO req);
 }

@@ -87,6 +87,34 @@ class BuiltinRoutePhaseHandlerTest {
     }
 
     @Test
+    @DisplayName("规划结果写入算出的站序，不把请求里的检查点原样当结果")
+    void execute_writesOrderedStopIdsAsPlannedStops() {
+        when(routePlanApi.plan(any(RouteRequestDTO.class))).thenReturn(CommonResult.success(
+                RoutePreviewDTO.builder()
+                        .networkRef("net_1")
+                        .totalDistanceMeters(60L)
+                        .orderedStopIds(List.of("home", "s1", "s2", "home"))
+                        .visitNodeIds(List.of("home", "via", "s1", "s2", "home"))
+                        .build()));
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put(RoutePayloadKeys.NETWORK_REF, "net_1");
+        payload.put(RoutePayloadKeys.STOP_IDS, List.of("s1", "s2"));
+        payload.put(RoutePayloadKeys.START_STOP_ID, "home");
+        payload.put(RoutePayloadKeys.END_STOP_ID, "home");
+        payload.put(RoutePayloadKeys.INSPECTION_TYPE, "HUMAN");
+        WorkItemDTO item = WorkItemDTO.builder().workId("w1").payload(payload).build();
+        PhaseContext context = PhaseContext.builder().workItems(List.of(item)).build();
+
+        handler.execute(context);
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> planned = (Map<String, Object>) item.getPayload().get(RoutePayloadKeys.PLANNED_ROUTE);
+        assertEquals(List.of("home", "s1", "s2", "home"), planned.get("stopIds"));
+        assertEquals(List.of("home", "via", "s1", "s2", "home"), planned.get(RoutePayloadKeys.VISIT_NODE_IDS));
+    }
+
+    @Test
     @DisplayName("handlerId 为 platform.route.plan_v1")
     void handlerId_isPlatformRoutePlanV1() {
         assertEquals(BuiltinRoutePhaseHandler.HANDLER_ID, handler.handlerId());

@@ -1,40 +1,20 @@
 #!/bin/bash
 
 # ============================================================================
-# ZHGL 微服务启动脚本
+# 本地微服务启停（按职责分套件，不按旧名 platform-* 使用）
 # ============================================================================
-# 使用方法:
-#   ./start-microservices.sh                    # 显示所有可用服务
-#   ./start-microservices.sh all                # 启动所有核心服务
-#   ./start-microservices.sh <服务名>            # 启动单个服务
-#   ./start-microservices.sh status             # 查看服务状态
-#   ./start-microservices.sh stop <服务名>       # 停止服务
-#   ./start-microservices.sh stop-all           # 停止所有服务
-#   ./start-microservices.sh nacos              # 启动 Nacos
-#   ./start-microservices.sh nacos status       # 查看 Nacos 状态
-#   ./start-microservices.sh nacos stop         # 停止 Nacos
-#   ./start-microservices.sh bmp              # 推荐：过程引擎 + 路径规划（7 个服务）
-#   ./start-microservices.sh bmp-process       # 仅过程引擎（5）
-#   ./start-microservices.sh bmp-path          # 仅路径规划（2）
-#   ./start-microservices.sh bmp-scene-3d      # 三维 scene-3d
-#   ./start-microservices.sh bmp-gis           # GIS
-#   ./start-microservices.sh bmp-alarm         # 告警标准服务
-#   ./start-microservices.sh bmp-work-order    # 工单标准服务
-#   ./start-microservices.sh bmp-maintenance   # 维护手册
-#   ./start-microservices.sh bmp-station-dev   # path + scene-3d
-#   ./start-microservices.sh twin-dev          # 孪生联调：dynamic + scene-3d + twin
-#   ./start-microservices.sh stop-bmp          # 停止 bmp（process+path）
-#   ./start-microservices.sh stop-bmp-process|stop-bmp-path|stop-bmp-scene-3d|stop-bmp-gis|stop-bmp-alarm|stop-bmp-work-order|stop-bmp-maintenance
-#   ./start-microservices.sh stop-twin-dev     # 停止 twin-dev
-#   ./start-microservices.sh platform-all      # [弃用] 等同 bmp
+# 先看这四档：
+#   ./start-microservices.sh base      # 底盘：登录、网关、文件日志
+#   ./start-microservices.sh biz       # 动态业务 + 巡检 + 孪生 + 协议网关
+#   ./start-microservices.sh bmp       # 中台全部（配置/过程/路网/告警工单手册/三维地图）
+#   ./start-microservices.sh all       # 底盘 + 工作流 + 动态业务 + 中台
+# 只改组件配置时：
+#   ./start-microservices.sh stop resource && ./start-microservices.sh resource
 #
-# 本地微服务监听端口段：15xxx（网关 15080）。与 start-microservices.ps1 保持一致。
-# 网关 15080；前端只连网关，勿直连业务端口（旧 58xxx 文案已废弃）。
-# 业务中台父工程：cheers-business-middle-platform
-# bmp = bmp-process + bmp-path（不含 scene-3d / gis / twin）
-# twin = cheers-twin（整合层，在 BMP 与 dynamic 之上；不进 bmp 标准套件）
-# dynamic = cheers-dynamicbusiness/cheers-dynamicbusiness-server（勿用旧 cheers-module-dynamicbusiness）
-# Maven 本地仓库：默认 ~/MavenRepositoy（历史目录名拼写），可用 MAVEN_REPO_LOCAL 覆盖；须与 IDE 全量 install 一致。
+# 本地端口 15xxx（网关 15080；协议网关 8095，设备 WebSocket 直连）。前端业务页只连网关。
+# 中台工程：cheers-business-middle-platform
+# 动态业务：cheers-dynamicbusiness/cheers-dynamicbusiness-server
+# Maven 本地仓库：默认 ~/MavenRepositoy，可用 MAVEN_REPO_LOCAL 覆盖。
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -152,19 +132,19 @@ get_service_path() {
         alarm|bmp-alarm) echo "cheers-business-middle-platform/cheers-alarm-server" ;;
         work-order|bmp-work-order) echo "cheers-business-middle-platform/cheers-work-order-server" ;;
         maintenance|bmp-maintenance) echo "cheers-business-middle-platform/cheers-maintenance-server" ;;
-        scene|scene-3d) echo "cheers-business-middle-platform/cheers-scene-3d-server" ;;
+        scene|scene-3d|bmp-scene-3d) echo "cheers-business-middle-platform/cheers-scene-3d-server" ;;
         gis|bmp-gis) echo "cheers-business-middle-platform/cheers-gis-server" ;;
         twin|cheers-twin) echo "cheers-twin/cheers-twin-server" ;;
         inspection) echo "cheers-inspection-task/cheers-inspection-task-server" ;;
+        protocol|device-protocol|protocol-gateway|cheers-device-protocol-gateway) echo "cheers-device-protocol-gateway/cheers-device-protocol-gateway-server" ;;
         dynamic) echo "cheers-dynamicbusiness/cheers-dynamicbusiness-server" ;;
-        # 业务中台 BMP：资源库（旧名 platform / resource）
-        platform|resource|bmp-resource) echo "cheers-business-middle-platform/cheers-resource-server" ;;
-        platform-runtime|runtime-l4|bmp-runtime) echo "cheers-business-middle-platform/cheers-runtime-server" ;;
-        platform-orchestration|orchestration|bmp-orchestration) echo "cheers-business-middle-platform/cheers-orchestration-server" ;;
-        platform-policy|policy|bmp-policy) echo "cheers-business-middle-platform/cheers-policy-server" ;;
-        platform-capability|capability|bmp-capability) echo "cheers-business-middle-platform/cheers-capability-server" ;;
-        platform-topology|topology|bmp-topology) echo "cheers-business-middle-platform/cheers-topology-server" ;;
-        platform-routing|routing|bmp-routing) echo "cheers-business-middle-platform/cheers-routing-server" ;;
+        resource|platform|bmp-resource) echo "cheers-business-middle-platform/cheers-resource-server" ;;
+        runtime|platform-runtime|runtime-l4|bmp-runtime) echo "cheers-business-middle-platform/cheers-runtime-server" ;;
+        orchestration|platform-orchestration|bmp-orchestration) echo "cheers-business-middle-platform/cheers-orchestration-server" ;;
+        policy|platform-policy|bmp-policy) echo "cheers-business-middle-platform/cheers-policy-server" ;;
+        capability|platform-capability|bmp-capability) echo "cheers-business-middle-platform/cheers-capability-server" ;;
+        topology|platform-topology|bmp-topology) echo "cheers-business-middle-platform/cheers-topology-server" ;;
+        routing|platform-routing|bmp-routing) echo "cheers-business-middle-platform/cheers-routing-server" ;;
         *) echo "" ;;
     esac
 }
@@ -191,47 +171,72 @@ get_service_port() {
         alarm|bmp-alarm) echo "15097" ;;
         work-order|bmp-work-order) echo "15110" ;;
         maintenance|bmp-maintenance) echo "15111" ;;
-        scene|scene-3d) echo "15093" ;;
+        scene|scene-3d|bmp-scene-3d) echo "15093" ;;
         gis|bmp-gis) echo "15109" ;;
         twin|cheers-twin) echo "15094" ;;
         inspection) echo "15095" ;;
+        protocol|device-protocol|protocol-gateway|cheers-device-protocol-gateway) echo "8095" ;;
         dynamic) echo "15096" ;;
-        platform|resource|bmp-resource) echo "15098" ;;
-        platform-runtime|runtime-l4|bmp-runtime) echo "15099" ;;
-        platform-orchestration|orchestration|bmp-orchestration) echo "15104" ;;
-        platform-policy|policy|bmp-policy) echo "15105" ;;
-        platform-capability|capability|bmp-capability) echo "15106" ;;
-        platform-topology|topology|bmp-topology) echo "15107" ;;
-        platform-routing|routing|bmp-routing) echo "15108" ;;
+        resource|platform|bmp-resource) echo "15098" ;;
+        runtime|platform-runtime|runtime-l4|bmp-runtime) echo "15099" ;;
+        orchestration|platform-orchestration|bmp-orchestration) echo "15104" ;;
+        policy|platform-policy|bmp-policy) echo "15105" ;;
+        capability|platform-capability|bmp-capability) echo "15106" ;;
+        topology|platform-topology|bmp-topology) echo "15107" ;;
+        routing|platform-routing|bmp-routing) echo "15108" ;;
         *) echo "" ;;
     esac
 }
 
-# 服务列表（platform：resource → policy/capability → runtime → orchestration → topology → routing）
-# 演示/商城类（member/pay/report/mp/mall/crm/erp/ai/iot）不进默认列表；get_service_path 仍保留，可手动启动
-KNOWN_SERVICES=(
-    gateway system infra bpm alarm work-order dynamic
-    platform platform-runtime platform-orchestration platform-policy platform-capability
-    platform-topology platform-routing
-    scene gis twin inspection
+# 旧名收到正名，日志和 status 只认正名
+canonical_service_name() {
+    case "$1" in
+        gateway|cheers-gateway) echo "gateway" ;;
+        system|cheers-system) echo "system" ;;
+        infra|cheers-infra) echo "infra" ;;
+        bpm) echo "bpm" ;;
+        alarm|bmp-alarm) echo "alarm" ;;
+        work-order|bmp-work-order) echo "work-order" ;;
+        maintenance|bmp-maintenance) echo "maintenance" ;;
+        scene|scene-3d|bmp-scene-3d) echo "scene-3d" ;;
+        gis|bmp-gis) echo "gis" ;;
+        twin|cheers-twin) echo "twin" ;;
+        inspection) echo "inspection" ;;
+        protocol|device-protocol|protocol-gateway|cheers-device-protocol-gateway) echo "protocol" ;;
+        dynamic) echo "dynamic" ;;
+        resource|platform|bmp-resource) echo "resource" ;;
+        runtime|platform-runtime|runtime-l4|bmp-runtime) echo "runtime" ;;
+        orchestration|platform-orchestration|bmp-orchestration) echo "orchestration" ;;
+        policy|platform-policy|bmp-policy) echo "policy" ;;
+        capability|platform-capability|bmp-capability) echo "capability" ;;
+        topology|platform-topology|bmp-topology) echo "topology" ;;
+        routing|platform-routing|bmp-routing) echo "routing" ;;
+        *) echo "$1" ;;
+    esac
+}
+
+# 按职责套件（正名）。商城/演示类不进默认列表，路径仍保留可手启。
+BASE_SERVICES=(infra system gateway)
+WORKFLOW_SERVICES=(bpm)
+BIZ_SERVICES=(dynamic inspection twin protocol)
+BMP_SERVICES=(
+    resource
+    policy capability runtime orchestration
+    topology routing
+    alarm work-order maintenance
+    scene-3d gis
 )
-CORE_START_SERVICES=(
-    infra system gateway bpm alarm work-order dynamic
-    platform platform-runtime platform-orchestration platform-policy platform-capability
-    platform-topology platform-routing
-    scene gis twin inspection
-)
-ALL_START_SERVICES=(
-    system infra gateway bpm alarm work-order dynamic
-    platform platform-runtime platform-orchestration platform-policy platform-capability
-    platform-topology platform-routing
-    scene gis twin inspection
-)
+BMP_PROCESS_SERVICES=(resource policy capability runtime orchestration)
+BMP_PATH_SERVICES=(topology routing)
+ALL_DUTY_SERVICES=("${BASE_SERVICES[@]}" "${WORKFLOW_SERVICES[@]}" "${BIZ_SERVICES[@]}" "${BMP_SERVICES[@]}")
+KNOWN_SERVICES=("${ALL_DUTY_SERVICES[@]}")
+CORE_START_SERVICES=("${ALL_DUTY_SERVICES[@]}")
+ALL_START_SERVICES=("${ALL_DUTY_SERVICES[@]}")
 STOP_SERVICES=(
-    gateway infra system bpm alarm work-order dynamic
-    platform-routing platform-topology
-    platform-orchestration platform-runtime platform-policy platform-capability platform
-    scene gis twin inspection
+    gateway infra system bpm
+    dynamic inspection twin protocol
+    routing topology orchestration runtime policy capability resource
+    alarm work-order maintenance scene-3d gis
 )
 is_service_running() {
     local service_name=$1
@@ -256,8 +261,13 @@ get_service_app_pid() {
 
 # 启动服务
 start_service() {
-    local service_name=$1
+    local raw_name=$1
+    local service_name
+    service_name=$(canonical_service_name "$raw_name")
     local show_logs=${2:-false}  # 第二个参数控制是否显示日志
+    if [ "$raw_name" != "$service_name" ]; then
+        echo -e "${YELLOW}   旧名 ${raw_name} → 正名 ${service_name}${NC}"
+    fi
     local service_path=$(get_service_path "$service_name")
     
     if [ -z "$service_path" ]; then
@@ -295,16 +305,8 @@ start_service() {
     # 本仓 SNAPSHOT API 需先 install 到 ~/MavenRepositoy；否则 spring-boot:run 会去远程找 jar
     # 一律从仓库根 -pl <相对路径> -am，才能拉到跨父工程依赖（如 orchestration → emergency-api）
     case "$service_name" in
-        platform|resource|bmp-resource|\
-        platform-runtime|runtime-l4|bmp-runtime|\
-        platform-orchestration|orchestration|bmp-orchestration|\
-        platform-policy|policy|bmp-policy|\
-        platform-capability|capability|bmp-capability|\
-        platform-topology|topology|bmp-topology|\
-        platform-routing|routing|bmp-routing|\
-        alarm|bmp-alarm|work-order|bmp-work-order|maintenance|bmp-maintenance|\
-        scene|scene-3d|gis|bmp-gis|\
-        twin|cheers-twin|dynamic|inspection|bpm|system)
+        resource|runtime|orchestration|policy|capability|topology|routing|\
+        alarm|work-order|maintenance|scene-3d|gis|twin|dynamic|inspection|protocol|bpm|system)
             echo -e "${BLUE}   安装 ${service_path} 及依赖到 ${MAVEN_REPO_LOCAL}（-am install -DskipTests）...${NC}"
             (
                 cd "$SCRIPT_DIR" || exit 1
@@ -418,7 +420,8 @@ start_service() {
 
 # 停止服务
 stop_service() {
-    local service_name=$1
+    local service_name
+    service_name=$(canonical_service_name "$1")
     local port=$(get_service_port "$service_name")
     
     if [ -z "$port" ]; then
@@ -562,81 +565,55 @@ show_status() {
 
 # 显示所有服务
 show_services() {
-    echo -e "${BLUE}📋 可用微服务列表:${NC}"
+    echo -e "${BLUE}按职责启停（先看这里）${NC}"
     echo ""
-    printf "%-22s %-50s %-10s\n" "服务名" "模块路径" "端口"
+    echo "  ./start-microservices.sh base       # 底盘：登录、网关、文件日志"
+    echo "  ./start-microservices.sh biz        # 动态业务 + 巡检 + 孪生 + 协议网关"
+    echo "  ./start-microservices.sh bmp        # 中台全部"
+    echo "  ./start-microservices.sh all        # 底盘 + 工作流 + 动态业务 + 中台"
+    echo "  ./start-microservices.sh resource   # 只开组件配置（改配置表用这个）"
+    echo "  ./start-microservices.sh stop-base|stop-biz|stop-bmp|stop-all"
+    echo "  ./start-microservices.sh status"
+    echo "  ./start-microservices.sh logs resource"
+    echo ""
+    echo -e "${BLUE}中台里只开一块${NC}"
+    echo "  bmp-process   组件配置 + 过程（策略/能力/运行时/编排）"
+    echo "  bmp-path      路网（拓扑 + 算路）"
+    echo "  alarm / work-order / maintenance / scene-3d / gis"
+    echo ""
+    echo -e "${BLUE}各进程正名${NC}"
+    echo ""
+    printf "%-16s %-58s %-8s\n" "正名" "管什么 / 路径" "端口"
     echo "----------------------------------------------------------------------------------------"
-    for svc in "${KNOWN_SERVICES[@]}"; do
-        local path=$(get_service_path "$svc")
-        local port=$(get_service_port "$svc")
-        if [ -n "$path" ]; then
-            printf "%-22s %-50s %-10s\n" "$svc" "$path" "$port"
-        fi
-    done
+    printf "%-16s %-58s %-8s\n" "infra" "底盘·文件日志  cheers-infra/cheers-infra-server" "15082"
+    printf "%-16s %-58s %-8s\n" "system" "底盘·账号权限  cheers-system/cheers-system-server" "15081"
+    printf "%-16s %-58s %-8s\n" "gateway" "底盘·网关      cheers-gateway" "15080"
+    printf "%-16s %-58s %-8s\n" "bpm" "工作流          cheers-bpm/cheers-bpm-server" "15083"
+    printf "%-16s %-58s %-8s\n" "dynamic" "动态业务台账    cheers-dynamicbusiness/...-server" "15096"
+    printf "%-16s %-58s %-8s\n" "inspection" "巡检任务" "15095"
+    printf "%-16s %-58s %-8s\n" "twin" "孪生" "15094"
+    printf "%-16s %-58s %-8s\n" "protocol" "设备协议网关    cheers-device-protocol-gateway-server" "8095"
+    printf "%-16s %-58s %-8s\n" "resource" "中台·组件配置   cheers-resource-server" "15098"
+    printf "%-16s %-58s %-8s\n" "policy" "中台·过程策略" "15105"
+    printf "%-16s %-58s %-8s\n" "capability" "中台·过程能力" "15106"
+    printf "%-16s %-58s %-8s\n" "runtime" "中台·过程运行" "15099"
+    printf "%-16s %-58s %-8s\n" "orchestration" "中台·过程编排" "15104"
+    printf "%-16s %-58s %-8s\n" "topology" "中台·路网拓扑" "15107"
+    printf "%-16s %-58s %-8s\n" "routing" "中台·算路" "15108"
+    printf "%-16s %-58s %-8s\n" "alarm" "中台·告警" "15097"
+    printf "%-16s %-58s %-8s\n" "work-order" "中台·工单" "15110"
+    printf "%-16s %-58s %-8s\n" "maintenance" "中台·维护手册" "15111"
+    printf "%-16s %-58s %-8s\n" "scene-3d" "中台·三维" "15093"
+    printf "%-16s %-58s %-8s\n" "gis" "中台·地图" "15109"
     echo ""
-    echo -e "${BLUE}使用方法:${NC}"
-    echo "  ./start-microservices.sh                    # 显示所有可用服务"
-    echo "  ./start-microservices.sh all                # 启动所有核心服务（后台运行）"
-    echo "  ./start-microservices.sh all -f            # 启动所有核心服务（显示日志）"
-    echo "  ./start-microservices.sh all-services       # 启动所有服务包括业务服务（后台运行）"
-    echo "  ./start-microservices.sh all-services -f    # 启动所有服务包括业务服务（显示日志）"
-    echo "  ./start-microservices.sh <服务名>            # 启动单个服务（后台运行）"
-    echo "  ./start-microservices.sh <服务名> -f         # 启动单个服务（显示日志）"
-    echo "  ./start-microservices.sh bmp                   # 推荐：业务中台 process+path（7）"
-    echo "  ./start-microservices.sh bmp-process           # 仅过程引擎（5）"
-    echo "  ./start-microservices.sh bmp-path              # 仅路径规划（2）"
-    echo "  ./start-microservices.sh bmp-scene-3d          # 三维（scene-3d）"
-    echo "  ./start-microservices.sh bmp-gis               # GIS（坐标/CRS）"
-    echo "  ./start-microservices.sh bmp-alarm             # 告警标准服务"
-    echo "  ./start-microservices.sh bmp-work-order        # 工单标准服务"
-    echo "  ./start-microservices.sh bmp-maintenance       # 维护手册"
-    echo "  ./start-microservices.sh bmp-station-dev       # path + scene-3d"
-    echo "  ./start-microservices.sh twin-dev              # 孪生联调：dynamic + scene-3d + twin"
-    echo "  ./start-microservices.sh stop-bmp              # 停止 bmp（process+path）"
-    echo "  ./start-microservices.sh stop-bmp-process|stop-bmp-path|stop-bmp-scene-3d|stop-bmp-gis|stop-bmp-alarm|stop-bmp-work-order|stop-bmp-maintenance"
-    echo "  ./start-microservices.sh stop-twin-dev         # 停止 twin-dev"
-    echo "  ./start-microservices.sh platform-all           # [弃用] → bmp"
-    echo "  ./start-microservices.sh status             # 查看服务状态"
-    echo "  ./start-microservices.sh logs               # 查看所有运行中服务的日志"
-    echo "  ./start-microservices.sh logs <服务名>       # 实时查看指定服务的日志"
-    echo "  ./start-microservices.sh stop <服务名>       # 停止服务"
-    echo "  ./start-microservices.sh stop-all           # 停止所有服务"
-    echo "  ./start-microservices.sh nacos                # 启动 Nacos"
-    echo "  ./start-microservices.sh nacos status         # 查看 Nacos 状态"
-    echo "  ./start-microservices.sh nacos stop           # 停止 Nacos"
-    echo ""
-    echo -e "${BLUE}说明:${NC}"
-    echo "  - Nacos 默认路径: $NACOS_HOME（可通过 NACOS_HOME 环境变量覆盖）"
-    echo "  - 默认后台运行,日志保存到 logs/ 目录"
-    echo "  - 每次启动覆盖写 logs/<服务名>-server.log（只保留当次运行）"
-    echo "  - 使用 -f 参数可以实时查看启动日志"
-    echo ""
-    echo -e "${BLUE}核心服务（推荐启动顺序）:${NC}"
-    echo "  1. infra     - 基础设施服务（必需,提供日志、文件等服务）"
-    echo "  2. system    - 系统服务（必需,依赖 infra 的日志服务）"
-    echo "  3. gateway   - 网关服务（必需）"
-    echo "  4. bpm       - 工作流服务（必需）"
-    echo "  5. alarm     - 告警管理服务（必需）"
-    echo "  6. dynamic    - 动态业务服务（设施/设备等实体，twin 等模块依赖）"
-    echo "  7. platform   - 平台资源库（组件/视图，别名 resource，15098）"
-    echo "     路径: cheers-business-middle-platform/cheers-resource-server"
-    echo "  8. platform-policy - 平台策略（15105）"
-    echo "  9. platform-capability - 平台能力映射（15106）"
-    echo "  10. platform-runtime - 平台 L4 运行时（15099）"
-    echo "  11. platform-orchestration - 平台编排/排程 run（15104，依赖 runtime）"
-    echo "  12. platform-topology - 站场拓扑/路网（15107，路径规划必需）"
-    echo "  13. platform-routing - 路径规划引擎（15108，试走/算路必需）"
-    echo "     （./start-microservices.sh bmp 一键启动 7→13；按需再用 bmp-process / bmp-path）"
-    echo ""
-    echo -e "${BLUE}按需启动:${NC}"
-    echo "  - work-order - 工单（亦可 bmp-work-order）"
-    echo "  - scene / gis / twin / inspection / maintenance"
+    echo "旧名 platform / platform-* 仍能敲，会收到上表正名。不要用 platform-all。"
+    echo "Nacos: $NACOS_HOME   日志: logs/<正名>-server.log"
 }
 
 # 启动所有核心服务
 start_all_core() {
     local show_logs=${1:-false}  # 是否显示日志
-    echo -e "${BLUE}🚀 启动所有核心服务...${NC}"
+    echo -e "${BLUE}🚀 全开：底盘 + 工作流 + 动态业务 + 中台...${NC}"
     echo ""
     
     check_nacos
@@ -756,6 +733,7 @@ show_logs() {
     fi
     
     # 查看单个服务的日志
+    service_name=$(canonical_service_name "$service_name")
     local service_path=$(get_service_path "$service_name")
     if [ -z "$service_path" ]; then
         echo -e "${RED}❌ 错误: 未知的服务 '$service_name'${NC}"
@@ -811,17 +789,11 @@ stop_all_services() {
     fi
 }
 
-# 业务中台套件：按列表启动 / 停止（短名仍用 platform-* 以便 status 一致）
-BMP_PROCESS_SERVICES=(platform platform-policy platform-capability platform-runtime platform-orchestration)
-BMP_PATH_SERVICES=(platform-topology platform-routing)
-# bmp / bmp-all = 过程引擎 + 路径规划（不含 scene）
-BMP_CORE_SERVICES=("${BMP_PROCESS_SERVICES[@]}" "${BMP_PATH_SERVICES[@]}")
 BMP_SCENE_3D_SERVICES=(scene-3d)
 BMP_GIS_SERVICES=(gis)
 BMP_ALARM_SERVICES=(alarm)
 BMP_WORK_ORDER_SERVICES=(work-order)
 BMP_MAINTENANCE_SERVICES=(maintenance)
-# 孪生整合层联调（不入 bmp）：设施实体 + 三维 + Twin 映射
 TWIN_DEV_SERVICES=(dynamic scene-3d twin)
 
 start_suite_services() {
@@ -869,11 +841,31 @@ main() {
         "")
             show_services
             ;;
-        "all")
+        "all"|"all-services")
+            echo -e "${BLUE}🚀 全开：底盘 + 工作流 + 动态业务 + 中台${NC}"
             start_all_core "$show_logs"
             ;;
-        "all-services")
-            start_all_services "$show_logs"
+        "base")
+            check_nacos
+            check_redis
+            echo -e "${BLUE}🚀 底盘（登录 / 网关 / 文件日志）${NC}"
+            echo ""
+            start_suite_services "$show_logs" "${BASE_SERVICES[@]}"
+            ;;
+        "stop-base")
+            echo -e "${BLUE}🛑 停止底盘${NC}"
+            stop_suite_services "${BASE_SERVICES[@]}"
+            ;;
+        "biz")
+            check_nacos
+            check_redis
+            echo -e "${BLUE}🚀 动态业务 + 巡检 + 孪生 + 协议网关${NC}"
+            echo ""
+            start_suite_services "$show_logs" "${BIZ_SERVICES[@]}"
+            ;;
+        "stop-biz")
+            echo -e "${BLUE}🛑 停止动态业务套件${NC}"
+            stop_suite_services "${BIZ_SERVICES[@]}"
             ;;
         "bmp"|"bmp-all"|"platform-all")
             if [ "$1" = "platform-all" ]; then
@@ -881,9 +873,9 @@ main() {
             fi
             check_nacos
             check_redis
-            echo -e "${BLUE}🚀 业务中台核心套件 (bmp = process + path，共 ${#BMP_CORE_SERVICES[@]} 个)${NC}"
+            echo -e "${BLUE}🚀 中台全部（共 ${#BMP_SERVICES[@]} 个）${NC}"
             echo ""
-            start_suite_services "$show_logs" "${BMP_CORE_SERVICES[@]}"
+            start_suite_services "$show_logs" "${BMP_SERVICES[@]}"
             ;;
         "bmp-process")
             check_nacos
@@ -969,8 +961,8 @@ main() {
             stop_suite_services "${TWIN_DEV_SERVICES[@]}"
             ;;
         "stop-bmp"|"stop-bmp-all")
-            echo -e "${BLUE}🛑 停止 bmp（process + path）${NC}"
-            stop_suite_services "${BMP_CORE_SERVICES[@]}"
+            echo -e "${BLUE}🛑 停止中台全部${NC}"
+            stop_suite_services "${BMP_SERVICES[@]}"
             ;;
         "stop-bmp-process")
             echo -e "${BLUE}🛑 停止 bmp-process${NC}"

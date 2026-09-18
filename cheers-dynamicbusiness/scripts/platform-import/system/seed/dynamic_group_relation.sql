@@ -2084,60 +2084,6 @@ INSERT INTO dynamic_group_relation (
   group_type, group_code, target_code, group_id, target_id, sort, tenant_id, creator
 )
 SELECT
-  'FIELD', g.code, f.code, g.id, f.id, 1090, 1, 'zhgl-seed'
-FROM dynamic_group g
-JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
-WHERE g.deleted = false AND g.tenant_id = 1 AND g.group_type = 'FIELD'
-  AND g.code = 'FG-BIZ-LOCATION'
-  AND f.code = 'FLD-LOC-008'
-ON CONFLICT (group_type, group_code, target_code, tenant_id) WHERE deleted = false
-DO UPDATE SET
-  group_id = EXCLUDED.group_id,
-  target_id = EXCLUDED.target_id,
-  sort = EXCLUDED.sort,
-  updater = 'zhgl-seed',
-  update_time = CURRENT_TIMESTAMP;
-
-INSERT INTO dynamic_group_relation (
-  group_type, group_code, target_code, group_id, target_id, sort, tenant_id, creator
-)
-SELECT
-  'FIELD', g.code, f.code, g.id, f.id, 1100, 1, 'zhgl-seed'
-FROM dynamic_group g
-JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
-WHERE g.deleted = false AND g.tenant_id = 1 AND g.group_type = 'FIELD'
-  AND g.code = 'FG-BIZ-LOCATION'
-  AND f.code = 'FLD-LOC-009'
-ON CONFLICT (group_type, group_code, target_code, tenant_id) WHERE deleted = false
-DO UPDATE SET
-  group_id = EXCLUDED.group_id,
-  target_id = EXCLUDED.target_id,
-  sort = EXCLUDED.sort,
-  updater = 'zhgl-seed',
-  update_time = CURRENT_TIMESTAMP;
-
-INSERT INTO dynamic_group_relation (
-  group_type, group_code, target_code, group_id, target_id, sort, tenant_id, creator
-)
-SELECT
-  'FIELD', g.code, f.code, g.id, f.id, 1110, 1, 'zhgl-seed'
-FROM dynamic_group g
-JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
-WHERE g.deleted = false AND g.tenant_id = 1 AND g.group_type = 'FIELD'
-  AND g.code = 'FG-BIZ-LOCATION'
-  AND f.code = 'FLD-LOC-010'
-ON CONFLICT (group_type, group_code, target_code, tenant_id) WHERE deleted = false
-DO UPDATE SET
-  group_id = EXCLUDED.group_id,
-  target_id = EXCLUDED.target_id,
-  sort = EXCLUDED.sort,
-  updater = 'zhgl-seed',
-  update_time = CURRENT_TIMESTAMP;
-
-INSERT INTO dynamic_group_relation (
-  group_type, group_code, target_code, group_id, target_id, sort, tenant_id, creator
-)
-SELECT
   'FIELD', g.code, f.code, g.id, f.id, 1120, 1, 'zhgl-seed'
 FROM dynamic_group g
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1

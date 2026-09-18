@@ -2,35 +2,24 @@ package cn.cheers.x.inspection.inspection_content.service.orchestration.impl;
 
 import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import cn.cheers.x.framework.common.pojo.CommonResult;
-import cn.cheers.x.inspection.inspection_content.dal.dataobject.profile.InspectionObjectProfileDO;
-import cn.cheers.x.inspection.inspection_content.dal.dataobject.route.InspectionRoutePlanDO;
-import cn.cheers.x.inspection.inspection_content.dal.mysql.profile.InspectionObjectProfileMapper;
-import cn.cheers.x.inspection.inspection_content.dal.mysql.route.InspectionRoutePlanMapper;
-import cn.cheers.x.inspection.inspection_content.service.binding.ObjectStationBindingQueryService;
-import cn.cheers.x.inspection.inspection_content.service.binding.model.BindingResolveResult;
-import cn.cheers.x.inspection.inspection_content.service.binding.model.ObjectStationBindingView;
 import cn.cheers.x.inspection.inspection_content.service.orchestration.PatrolExpandMapService;
-import cn.cheers.x.inspection.inspection_content.service.profile.ObjectProfileQueryService;
 import cn.cheers.x.inspection.orchestration.dto.PatrolExpandReqDTO;
 import cn.cheers.x.inspection.orchestration.dto.PatrolExpandRespDTO;
-import cn.cheers.x.inspection.task.dal.dataobject.task.InspectionTaskDO;
-import cn.cheers.x.inspection.task.dal.mysql.task.InspectionTaskMapper;
+import cn.cheers.x.inspection.task.service.task.PatrolPlannedRouteSupport;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
 import cn.cheers.x.module.platform.contract.dto.work.WorkItemDTO;
 import cn.cheers.x.module.platform.topology.api.PathNetworkApi;
 import cn.cheers.x.module.platform.topology.api.dto.PathNetworkSummaryDTO;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -46,15 +35,11 @@ public class PatrolExpandMapServiceImpl implements PatrolExpandMapService {
     static final String WORK_MINUTES = "workMinutes";
     static final String PLANNED_ROUTE = "plannedRoute";
     static final String START_STOP_ID = "startStopId";
+    static final String END_STOP_ID = "endStopId";
     static final String RETURN_TO_START = "returnToStart";
 
-    private final ObjectProfileQueryService objectProfileQueryService;
-    private final ObjectStationBindingQueryService bindingQueryService;
-    private final InspectionObjectProfileMapper profileMapper;
-    private final InspectionTaskMapper taskMapper;
-    private final InspectionRoutePlanMapper routePlanMapper;
+    private final PatrolTaskEntityStore patrolTaskEntityStore;
     private final PathNetworkApi pathNetworkApi;
-    private final ObjectMapper objectMapper;
 
     @Override
     public PatrolExpandRespDTO expand(PatrolExpandReqDTO request) {
@@ -64,59 +49,69 @@ public class PatrolExpandMapServiceImpl implements PatrolExpandMapService {
         if (Boolean.TRUE.equals(request.getFromConfirmedSnapshot()) && request.getTaskId() != null) {
             return expandFromConfirmedSnapshot(request);
         }
-        return expandFromBindings(request);
+        return expandFromInspectionStops(request);
     }
 
+    /**
+     * 从总任务 FLD-TSK-027 读已确认路线快照展开；不认旧固定表 networkRef / routePlanId。
+     */
     private PatrolExpandRespDTO expandFromConfirmedSnapshot(PatrolExpandReqDTO request) {
-        InspectionTaskDO task = taskMapper.selectById(request.getTaskId());
-        if (task == null) {
-            throw ServiceExceptionUtil.invalidParamException("任务不存在，taskId={}", request.getTaskId());
-        }
-        if (!StringUtils.hasText(task.getNetworkRef())) {
-            throw ServiceExceptionUtil.invalidParamException("任务缺少已确认路网快照 networkRef");
-        }
-        if (!StringUtils.hasText(task.getInspectionType())) {
-            throw ServiceExceptionUtil.invalidParamException("任务缺少已确认巡检类型快照");
-        }
-        if (task.getDurationEstimateMinutes() == null) {
-            throw ServiceExceptionUtil.invalidParamException("任务缺少已确认路线时长快照");
-        }
-        if (!StringUtils.hasText(task.getPlannedRoute())) {
+        PatrolTaskDraft draft = patrolTaskEntityStore.require(request.getTaskId());
+        Map<String, Object> planned = PatrolPlannedRouteSupport.asPlannedMap(draft.plannedRoute());
+        if (planned == null || planned.isEmpty()) {
             throw ServiceExceptionUtil.invalidParamException("任务缺少已确认规划路线快照");
         }
 
-        List<String> stopIds = resolveStopIdsFromTask(task);
+        String networkRef = PatrolPlannedRouteSupport.networkRef(draft.plannedRoute());
+        if (!StringUtils.hasText(networkRef)) {
+            throw ServiceExceptionUtil.invalidParamException("任务缺少已确认路网快照 networkRef");
+        }
+
+        List<String> stopIds = PatrolPlannedRouteSupport.asStringList(planned.get(STOP_IDS));
         if (CollectionUtils.isEmpty(stopIds)) {
             throw ServiceExceptionUtil.invalidParamException("任务缺少停靠点快照 stopIds");
         }
 
-        Map<String, Object> planned = parseJsonMap(task.getPlannedRoute());
+        String inspectionType = normalizeInspectionType(draft.patrolExecutionMode());
+        if (!StringUtils.hasText(inspectionType)) {
+            throw ServiceExceptionUtil.invalidParamException("任务缺少已确认巡检类型快照");
+        }
+
+        Integer durationMinutes = PatrolPlannedRouteSupport.resolveDurationMinutes(
+                draft.plannedRoute(), draft.patrolExecutionMode());
+        if (durationMinutes == null) {
+            throw ServiceExceptionUtil.invalidParamException("任务缺少已确认路线时长快照");
+        }
+
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put(NETWORK_REF, task.getNetworkRef());
+        payload.put(NETWORK_REF, networkRef);
         payload.put(STOP_IDS, stopIds);
-        payload.put(INSPECTION_TYPE, task.getInspectionType());
+        payload.put(INSPECTION_TYPE, inspectionType);
         payload.put(PLANNED_ROUTE, planned);
         Integer workMinutes = extractWorkMinutes(planned);
         if (workMinutes != null) {
             payload.put(WORK_MINUTES, workMinutes);
         }
-        putStartConstraints(payload, request, planned);
+        putRouteAnchors(payload, request, planned);
 
         WorkItemDTO workItem = WorkItemDTO.builder()
                 .workId(resolveWorkId(request))
-                .durationEstimateMinutes(task.getDurationEstimateMinutes())
+                .durationEstimateMinutes(durationMinutes)
                 .payload(payload)
                 .build();
 
         return PatrolExpandRespDTO.builder()
                 .workItems(List.of(workItem))
-                .networkRef(task.getNetworkRef())
+                .networkRef(networkRef)
                 .stopIds(stopIds)
-                .inspectionType(task.getInspectionType())
+                .inspectionType(inspectionType)
                 .build();
     }
 
-    private PatrolExpandRespDTO expandFromBindings(PatrolExpandReqDTO request) {
+    /**
+     * 按请求里的检查项停靠点展开。不读对象↔停靠点绑定，缺 stopIds 直接失败。
+     */
+    private PatrolExpandRespDTO expandFromInspectionStops(PatrolExpandReqDTO request) {
         Long facilityId = request.getFacilityId();
         List<Long> objectIds = request.getObjectIds();
         if (facilityId == null) {
@@ -125,50 +120,22 @@ public class PatrolExpandMapServiceImpl implements PatrolExpandMapService {
         if (CollectionUtils.isEmpty(objectIds)) {
             throw ServiceExceptionUtil.invalidParamException("objectIds 不能为空");
         }
-
-        String inspectionType = objectProfileQueryService.requireConsistentInspectionType(facilityId, objectIds);
-
-        BindingResolveResult bindingResult = bindingQueryService.listByObjectIds(facilityId, objectIds);
-        if (!CollectionUtils.isEmpty(bindingResult.getMissingObjectIds())) {
-            throw ServiceExceptionUtil.invalidParamException(
-                    "缺少对象↔停靠点绑定，objectIds={}", bindingResult.getMissingObjectIds());
+        List<String> stopIds = normalizeStopIds(request.getStopIds());
+        if (stopIds.isEmpty()) {
+            throw ServiceExceptionUtil.invalidParamException("缺少检查项位置展开的停靠点");
         }
 
+        String inspectionType = normalizeInspectionType(request.getInspectionType());
+        if (!StringUtils.hasText(inspectionType)) {
+            throw ServiceExceptionUtil.invalidParamException("请先选择巡检方式");
+        }
         String networkRef = selectNetworkRef(facilityId, inspectionType, request.getPreferredNetworkRef());
-
-        List<String> stopIds = new ArrayList<>();
-        int totalWorkMinutes = 0;
-        Map<Long, InspectionObjectProfileDO> profileByObjectId = loadProfiles(facilityId, objectIds);
-
-        for (Long objectId : objectIds) {
-            List<ObjectStationBindingView> bindings = new ArrayList<>(
-                    bindingResult.getBindingsByObjectId().get(objectId));
-            if (CollectionUtils.isEmpty(bindings)) {
-                throw ServiceExceptionUtil.invalidParamException(
-                        "缺少对象↔停靠点绑定，objectIds=[{}]", objectId);
-            }
-            bindings.sort(Comparator.comparingInt(b -> b.getSortNo() != null ? b.getSortNo() : 0));
-            InspectionObjectProfileDO profile = profileByObjectId.get(objectId);
-            for (ObjectStationBindingView binding : bindings) {
-                stopIds.add(binding.getStationNodeId());
-                Integer minutes = binding.getWorkMinutes();
-                if (minutes == null && profile != null) {
-                    minutes = profile.getDefaultWorkMinutes();
-                }
-                if (minutes == null) {
-                    throw ServiceExceptionUtil.invalidParamException(
-                            "缺少作业时长，objectId={} stationNodeId={}", objectId, binding.getStationNodeId());
-                }
-                totalWorkMinutes += minutes;
-            }
-        }
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put(NETWORK_REF, networkRef);
         payload.put(STOP_IDS, stopIds);
         payload.put(INSPECTION_TYPE, inspectionType);
-        payload.put(WORK_MINUTES, totalWorkMinutes);
-        putStartConstraints(payload, request, null);
+        putRouteAnchors(payload, request, null);
 
         WorkItemDTO workItem = WorkItemDTO.builder()
                 .workId(resolveWorkId(request))
@@ -183,21 +150,61 @@ public class PatrolExpandMapServiceImpl implements PatrolExpandMapService {
                 .build();
     }
 
-    /**
-     * 将起点约束写入 expand 工作项 payload，供 ROUTE 阶段读取。
-     * 请求显式值优先；快照路径可从 plannedRoute 回填已保存的 startStopId。
-     */
-    private static void putStartConstraints(Map<String, Object> payload, PatrolExpandReqDTO request,
-                                            Map<String, Object> plannedRoute) {
-        String startStopId = request != null ? request.getStartStopId() : null;
-        if (!StringUtils.hasText(startStopId) && plannedRoute != null) {
-            Object fromPlanned = plannedRoute.get(START_STOP_ID);
-            if (fromPlanned != null) {
-                startStopId = String.valueOf(fromPlanned);
+    private static List<String> normalizeStopIds(List<String> raw) {
+        if (CollectionUtils.isEmpty(raw)) {
+            return List.of();
+        }
+        List<String> out = new ArrayList<>();
+        for (String item : raw) {
+            if (!StringUtils.hasText(item)) {
+                continue;
+            }
+            String text = item.trim();
+            if (!out.contains(text)) {
+                out.add(text);
             }
         }
+        return out;
+    }
+
+    /**
+     * 任务页的巡检方式落到选网用的类型。人工=HUMAN，机器人=GROUND_ROBOT。
+     */
+    static String normalizeInspectionType(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return null;
+        }
+        String key = raw.trim().toUpperCase();
+        if ("MANUAL".equals(key) || "HUMAN".equals(key)) {
+            return "HUMAN";
+        }
+        if ("ROBOT".equals(key) || "GROUND_ROBOT".equals(key)) {
+            return "GROUND_ROBOT";
+        }
+        if ("UAV".equals(key)) {
+            return "UAV";
+        }
+        throw ServiceExceptionUtil.invalidParamException("不支持的巡检方式：{}", raw.trim());
+    }
+
+    /**
+     * 把任务创建选定的起点、终点写入 expand 工作项，供算路阶段读取。
+     * 请求显式值优先；确认快照可从已保存路线回填。
+     */
+    private static void putRouteAnchors(Map<String, Object> payload, PatrolExpandReqDTO request,
+                                        Map<String, Object> plannedRoute) {
+        String startStopId = firstText(
+                request != null ? request.getStartStopId() : null,
+                plannedText(plannedRoute, START_STOP_ID));
         if (StringUtils.hasText(startStopId)) {
             payload.put(START_STOP_ID, startStopId.trim());
+        }
+
+        String endStopId = firstText(
+                request != null ? request.getEndStopId() : null,
+                plannedText(plannedRoute, END_STOP_ID));
+        if (StringUtils.hasText(endStopId)) {
+            payload.put(END_STOP_ID, endStopId.trim());
         }
 
         Boolean returnToStart = request != null ? request.getReturnToStart() : null;
@@ -212,6 +219,21 @@ public class PatrolExpandMapServiceImpl implements PatrolExpandMapService {
         if (returnToStart != null) {
             payload.put(RETURN_TO_START, returnToStart);
         }
+    }
+
+    private static String firstText(String preferred, String fallback) {
+        if (StringUtils.hasText(preferred)) {
+            return preferred;
+        }
+        return fallback;
+    }
+
+    private static String plannedText(Map<String, Object> plannedRoute, String key) {
+        if (plannedRoute == null) {
+            return null;
+        }
+        Object raw = plannedRoute.get(key);
+        return raw == null ? null : String.valueOf(raw);
     }
 
     private String selectNetworkRef(Long facilityId, String inspectionType, String preferredNetworkRef) {
@@ -232,14 +254,15 @@ public class PatrolExpandMapServiceImpl implements PatrolExpandMapService {
             return matched.get(0).getNetworkRef();
         }
         if (!StringUtils.hasText(preferredNetworkRef)) {
-            throw ServiceExceptionUtil.invalidParamException("多条路网需指定 preferredNetworkRef");
+            throw ServiceExceptionUtil.invalidParamException(
+                    "本设施有多条已发布路网，请先在路网管理确认当前用哪一条");
         }
         return matched.stream()
                 .map(PathNetworkSummaryDTO::getNetworkRef)
                 .filter(ref -> preferredNetworkRef.equals(ref))
                 .findFirst()
                 .orElseThrow(() -> ServiceExceptionUtil.invalidParamException(
-                        "preferredNetworkRef 未命中已发布匹配路网：{}", preferredNetworkRef));
+                        "指定的路网不在本设施已发布且匹配当前巡检方式的路网中"));
     }
 
     private static boolean applicableForInspectionType(PathNetworkSummaryDTO network, String inspectionType) {
@@ -250,68 +273,6 @@ public class PatrolExpandMapServiceImpl implements PatrolExpandMapService {
         return types != null && types.contains(inspectionType);
     }
 
-    private Map<Long, InspectionObjectProfileDO> loadProfiles(Long facilityId, List<Long> objectIds) {
-        return profileMapper.selectByFacilityAndObjectIds(facilityId, objectIds).stream()
-                .collect(Collectors.toMap(InspectionObjectProfileDO::getObjectId, p -> p, (a, b) -> a));
-    }
-
-    private List<String> resolveStopIdsFromTask(InspectionTaskDO task) {
-        if (task.getRoutePlanId() != null) {
-            InspectionRoutePlanDO plan = routePlanMapper.selectById(task.getRoutePlanId());
-            if (plan != null && StringUtils.hasText(plan.getStopIds())) {
-                List<String> fromPlan = parseStringList(plan.getStopIds());
-                if (!CollectionUtils.isEmpty(fromPlan)) {
-                    return fromPlan;
-                }
-            }
-        }
-        Map<String, Object> planned = parseJsonMap(task.getPlannedRoute());
-        if (planned != null) {
-            Object raw = planned.get(STOP_IDS);
-            List<String> fromPlanned = asStringList(raw);
-            if (!CollectionUtils.isEmpty(fromPlanned)) {
-                return fromPlanned;
-            }
-        }
-        return List.of();
-    }
-
-    private Map<String, Object> parseJsonMap(String json) {
-        if (!StringUtils.hasText(json)) {
-            return null;
-        }
-        try {
-            return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {
-            });
-        } catch (Exception ex) {
-            throw ServiceExceptionUtil.invalidParamException("规划路线快照 JSON 无效");
-        }
-    }
-
-    private List<String> parseStringList(String json) {
-        if (!StringUtils.hasText(json)) {
-            return List.of();
-        }
-        try {
-            return objectMapper.readValue(json, new TypeReference<List<String>>() {
-            });
-        } catch (Exception ex) {
-            return List.of();
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static List<String> asStringList(Object raw) {
-        if (raw == null) {
-            return List.of();
-        }
-        if (raw instanceof List<?> list) {
-            return list.stream().filter(Objects::nonNull).map(String::valueOf).collect(Collectors.toList());
-        }
-        return List.of();
-    }
-
-    @SuppressWarnings("unchecked")
     private static Integer extractWorkMinutes(Object plannedRoute) {
         if (!(plannedRoute instanceof Map<?, ?> map)) {
             return null;

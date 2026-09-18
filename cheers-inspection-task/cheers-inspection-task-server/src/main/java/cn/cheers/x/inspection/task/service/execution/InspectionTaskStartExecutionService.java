@@ -3,16 +3,17 @@ package cn.cheers.x.inspection.task.service.execution;
 import cn.cheers.x.device.protocolgateway.api.dto.MissionStartRespDTO;
 
 /**
- * 巡检任务「开始执行」：读任务会话意图与执行设备绑定，调协议网关下发。
- * <p>与排程 enable 分开；不查设备台账；不绑瞬时 WebSocket。
+ * 巡检任务「开始执行」：读任务步骤图与执行设备绑定，发出「人点了开始」。
+ * <p>新建账、发给设备、标进行中由条件策略做。与排程 enable 分开。
+ * <p>步骤图读任务台账；实参读设备检查参数包。
  */
 public interface InspectionTaskStartExecutionService {
 
     /**
-     * 开始向地面站下发本任务的执行意图。
+     * 按任务步骤图向终端下发本次执行。
      *
      * @param taskId 巡检任务 id
-     * @return 网关下行结果；success=false 时调用方已抛业务错，正常返回则 success=true
+     * @return 网关下行结果。设备离线或答卷失败时 {@code success=false}，不假装成功。
      */
     MissionStartRespDTO startExecution(Long taskId);
 }

@@ -53,7 +53,7 @@ BEGIN
       publish_status = COALESCE(NULLIF(s.publish_status, ''), 'DRAFT'),
       is_template = FALSE,
       sop_template_id = NULL,
-      action_tree_json = COALESCE(s.action_tree_json, '[]'::jsonb),
+      step_tree_json = COALESCE(s.step_tree_json, '[]'::jsonb),
       default_params_by_node_json = COALESCE(s.default_params_by_node_json, '{}'::jsonb),
       creator = COALESCE(s.creator, 'recipe-inspection-seed'),
       updater = 'recipe-inspection-seed',
@@ -67,7 +67,7 @@ BEGIN
     name, code, status,
     version_no, publish_status,
     is_template, sop_template_id,
-    action_tree_json, default_params_by_node_json,
+    step_tree_json, default_params_by_node_json,
     default_steps_json, default_params_json,
     creator, create_time, updater, update_time, deleted
   )

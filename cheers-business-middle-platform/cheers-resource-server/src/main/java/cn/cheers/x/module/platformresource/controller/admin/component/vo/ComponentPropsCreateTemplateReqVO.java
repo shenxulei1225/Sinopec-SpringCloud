@@ -8,7 +8,7 @@ import java.util.Map;
 @Data
 public class ComponentPropsCreateTemplateReqVO {
 
-    @NotBlank(message = "componentCode 不能为空")
+    @NotBlank(message = "未说明这是哪种组件（列表、树还是详情栏）")
     private String componentCode;
 
     @NotBlank(message = "schemaVersion 不能为空")

@@ -15,8 +15,8 @@ import java.util.List;
  * <h3>同步流程</h3>
  * <ol>
  *   <li>Entity 保存时触发异步同步</li>
- *   <li>获取 Model 的可查询字段列表</li>
- *   <li>将可查询字段值同步到 entity_field_index 表</li>
+ *   <li>获取 Model 下应进索引表的扩展字段（可搜索 / 可筛选 / 可排序任一为真）</li>
+ *   <li>将这些字段值按批写入 entity_field_index</li>
  *   <li>同步失败时自动重试（1秒、5秒、30秒）</li>
  *   <li>超过重试次数后记录到失败日志表</li>
  * </ol>

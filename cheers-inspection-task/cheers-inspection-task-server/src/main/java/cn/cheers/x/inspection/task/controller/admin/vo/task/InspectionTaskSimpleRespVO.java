@@ -31,6 +31,9 @@ public class InspectionTaskSimpleRespVO {
     @Schema(description = "任务名称")
     private String taskName;
 
+    @Schema(description = "业务域（任务分池）")
+    private String domain;
+
     @Schema(description = "展示状态：由 enabled + runtimeJobId 派生（0 草稿 / 1 启用 / 2 停用），不读库里已废弃的 status 列")
     private Integer status;
 

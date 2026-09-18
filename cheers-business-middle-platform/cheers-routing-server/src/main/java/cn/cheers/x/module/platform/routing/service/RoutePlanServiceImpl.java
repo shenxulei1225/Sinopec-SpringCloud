@@ -1,5 +1,6 @@
 package cn.cheers.x.module.platform.routing.service;
 
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.platform.contract.ContractVersions;
 import cn.cheers.x.module.platform.contract.dto.network.MobilityProfileDTO;
 import cn.cheers.x.module.platform.contract.dto.network.PathEdgeDTO;
@@ -43,7 +44,9 @@ import java.util.stream.Collectors;
 import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_MOBILITY_PROFILE_NOT_FOUND;
 import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_NETWORK_NOT_FOUND;
 import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_REQUEST_INVALID;
+import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_UNREACHABLE;
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.invalidParamException;
 
 @Service
 public class RoutePlanServiceImpl implements RoutePlanService {
@@ -102,20 +105,21 @@ public class RoutePlanServiceImpl implements RoutePlanService {
         for (int i = 0; i < stops.size() - 1; i++) {
             String fromId = stops.get(i);
             String toId = stops.get(i + 1);
-            ShortestPathResult path = dijkstraPlanner.shortestPath(fromId, toId, view);
+            ShortestPathResult path;
+            try {
+                path = dijkstraPlanner.shortestPath(fromId, toId, view);
+            } catch (ServiceException ex) {
+                if (ROUTE_UNREACHABLE.getCode().equals(ex.getCode())) {
+                    throw invalidParamException("路网走不到：从「{}」到「{}」", fromId, toId);
+                }
+                throw ex;
+            }
             RoutePreviewSegmentDTO segment = buildSegment(i, path, view, network, profileId);
             segments.add(segment);
             totalCost += path.getTotalCost();
         }
 
-        return RoutePreviewDTO.builder()
-                .contractVersion(ContractVersions.MVP)
-                .networkRef(networkRef)
-                .topologyRef(networkRef)
-                .segments(segments)
-                .totalDistanceMeters(toDistanceMeters(totalCost))
-                .decisionTraceId("trace_" + UUID.randomUUID())
-                .build();
+        return buildPreview(networkRef, networkRef, segments, toDistanceMeters(totalCost), stops, view);
     }
 
     private RoutePreviewDTO planMultimodal(RouteRequestDTO request) {
@@ -159,9 +163,13 @@ public class RoutePlanServiceImpl implements RoutePlanService {
         String resolvedStart = StringUtils.hasText(request.getStartStopId())
                 ? PortalGraphAssembler.resolveStopNodeId(request.getStartStopId(), assembled.networksByRef())
                 : null;
+        String resolvedEnd = StringUtils.hasText(request.getEndStopId())
+                ? PortalGraphAssembler.resolveStopNodeId(request.getEndStopId(), assembled.networksByRef())
+                : null;
         RouteRequestDTO orderedRequest = RouteRequestDTO.builder()
                 .stopIds(resolvedStops)
                 .startStopId(resolvedStart)
+                .endStopId(resolvedEnd)
                 .returnToStart(request.getReturnToStart())
                 .strategy(strategy)
                 .build();
@@ -188,14 +196,83 @@ public class RoutePlanServiceImpl implements RoutePlanService {
         }
 
         String primaryNetworkRef = networkRefs.get(0);
+        return buildPreview(
+                primaryNetworkRef,
+                primaryNetworkRef,
+                segments,
+                toDistanceMeters(totalCost),
+                stops,
+                assembled.view());
+    }
+
+    /**
+     * 规划预览必须带回经过顺序：必经站序 + 实际走过的点位（含途径点、可重复）。
+     * 禁止只回折线、把请求里的检查点当成结果站序。
+     */
+    private static RoutePreviewDTO buildPreview(
+            String networkRef,
+            String topologyRef,
+            List<RoutePreviewSegmentDTO> segments,
+            long totalDistanceMeters,
+            List<String> orderedStopIds,
+            GraphView view) {
+        List<String> visitNodeIds = flattenVisitNodeIds(segments);
         return RoutePreviewDTO.builder()
                 .contractVersion(ContractVersions.MVP)
-                .networkRef(primaryNetworkRef)
-                .topologyRef(primaryNetworkRef)
+                .networkRef(networkRef)
+                .topologyRef(topologyRef)
                 .segments(segments)
-                .totalDistanceMeters(toDistanceMeters(totalCost))
+                .totalDistanceMeters(totalDistanceMeters)
                 .decisionTraceId("trace_" + UUID.randomUUID())
+                .orderedStopIds(List.copyOf(orderedStopIds == null ? List.of() : orderedStopIds))
+                .visitNodeIds(visitNodeIds)
+                .visitPositions(positionsFor(visitNodeIds, view))
                 .build();
+    }
+
+    static List<String> flattenVisitNodeIds(List<RoutePreviewSegmentDTO> segments) {
+        List<String> visits = new ArrayList<>();
+        if (CollectionUtils.isEmpty(segments)) {
+            return visits;
+        }
+        for (RoutePreviewSegmentDTO segment : segments) {
+            if (segment == null || CollectionUtils.isEmpty(segment.getNodeIds())) {
+                continue;
+            }
+            for (String nodeId : segment.getNodeIds()) {
+                if (!StringUtils.hasText(nodeId)) {
+                    continue;
+                }
+                if (visits.isEmpty() || !nodeId.equals(visits.get(visits.size() - 1))) {
+                    visits.add(nodeId);
+                }
+            }
+        }
+        return visits;
+    }
+
+    private static List<TopologyPointDTO> positionsFor(List<String> visitNodeIds, GraphView view) {
+        List<TopologyPointDTO> positions = new ArrayList<>();
+        if (CollectionUtils.isEmpty(visitNodeIds) || view == null) {
+            return positions;
+        }
+        for (String nodeId : visitNodeIds) {
+            PathNodeDTO node = resolveNode(view, nodeId);
+            positions.add(node != null ? node.getPosition() : null);
+        }
+        return positions;
+    }
+
+    private static PathNodeDTO resolveNode(GraphView view, String nodeId) {
+        if (view == null || !StringUtils.hasText(nodeId)) {
+            return null;
+        }
+        PathNodeDTO node = view.getNode(nodeId);
+        if (node != null) {
+            return node;
+        }
+        String localId = ShortestPathResult.localNodeId(nodeId);
+        return StringUtils.hasText(localId) ? view.getNode(localId) : null;
     }
 
     private static boolean isMultimodal(RouteRequestDTO request) {
@@ -255,11 +332,19 @@ public class RoutePlanServiceImpl implements RoutePlanService {
         }
         String home = request != null && StringUtils.hasText(request.getStartStopId())
                 ? request.getStartStopId().trim() : null;
+        String end = request != null && StringUtils.hasText(request.getEndStopId())
+                ? request.getEndStopId().trim() : null;
+        List<String> inspectionStops = List.copyOf(stopIds);
         if (home != null && !stopIds.contains(home)) {
             stopIds = new ArrayList<>(stopIds);
             stopIds.add(0, home);
         }
-        boolean returnToStart = home != null
+        if (end != null && !stopIds.contains(end)) {
+            stopIds = new ArrayList<>(stopIds);
+            stopIds.add(end);
+        }
+        boolean distinctEnd = end != null && (home == null || !end.equals(home));
+        boolean returnToStart = home != null && !distinctEnd
                 && (request.getReturnToStart() == null || Boolean.TRUE.equals(request.getReturnToStart()));
 
         StopOrderStrategy stopOrderStrategy = stopOrderStrategyRegistry.resolve(strategy);
@@ -271,11 +356,17 @@ public class RoutePlanServiceImpl implements RoutePlanService {
         }
 
         List<String> others = DepotTourSupport.withoutHome(stopIds, home);
+        if (distinctEnd && !inspectionStops.contains(end)) {
+            others = DepotTourSupport.withoutHome(others, end);
+        }
         if (others.isEmpty()) {
+            if (distinctEnd) {
+                return List.of(home, end);
+            }
             return returnToStart ? List.of(home, home) : List.of(home);
         }
         List<String> middle = stopOrderStrategy.order(others, matrix.submatrix(others), view);
-        return DepotTourSupport.assemble(home, middle, matrix, returnToStart);
+        return DepotTourSupport.assemble(home, middle, matrix, returnToStart, distinctEnd ? end : null);
     }
 
     private static Map<NetworkKind, String> buildProfileIdByKind(RouteRequestDTO request, String defaultProfileId) {

@@ -31,6 +31,7 @@ import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldGroupRespVO;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelFieldGroupService;
 import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityBaseFieldColumnNames;
+import cn.cheers.x.module.dynamicbusiness.framework.field.StructuredFieldSemantics;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
 import cn.cheers.x.module.dynamicbusiness.framework.field.EntityTypeFieldLabelHelper;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
@@ -212,6 +213,12 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         } else if (isEntityListProjectionFragmentedTypeBaseGroup(data.getComponentInterface(), comp, kind)) {
             // 基础列同名「基础信息」却带多个型号 groupId：类型级分组被污染，须重建
             log.info("[getProjection][基础信息分组被型号 groupId 拆散，触发投影重建][entityTypeCode={}][componentCode={}][dataKind={}]",
+                    code, comp, kind);
+            rebuildCapabilityAndProjections(code);
+            data = capabilityComponentProjectionMapper.selectByEntityTypeComponentAndDataKind(code, comp, kind);
+        } else if (isEntityListProjectionFieldSetStale(data.getComponentInterface(), comp, kind, code)) {
+            // 已停用基础字段仍标 baseField、或型号扩展字段未进投影：配置与库不一致，须重建
+            log.info("[getProjection][投影字段集与当前基础/扩展字段不一致，触发投影重建][entityTypeCode={}][componentCode={}][dataKind={}]",
                     code, comp, kind);
             rebuildCapabilityAndProjections(code);
             data = capabilityComponentProjectionMapper.selectByEntityTypeComponentAndDataKind(code, comp, kind);
@@ -531,20 +538,25 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             LinkedHashMap<String, Map<String, Object>> sourceMeta) {
         LinkedHashMap<String, Map<String, Object>> byFieldKey = deepCopyFieldMeta(sourceMeta);
         mergeBusinessBaseFieldMeta(entityTypeCode, byFieldKey);
-        ensureBuiltinDisplayField(byFieldKey, "id", "ID", 0);
-        ensureBuiltinDisplayField(byFieldKey, "name", "名称", 1);
-        ensureBuiltinDisplayField(byFieldKey, "code", "编码", 2);
+        EntityTypeDO entityType = entityTypeMapper.selectByCode(entityTypeCode);
+        Map<String, String> fieldLabels = EntityTypeFieldLabelHelper.readLabels(entityType);
+        ensureBuiltinDisplayField(byFieldKey, "id",
+                EntityTypeFieldLabelHelper.resolveLabel(entityType, "id", "ID"), 0);
+        ensureBuiltinDisplayField(byFieldKey, "name",
+                EntityTypeFieldLabelHelper.resolveLabel(entityType, "name", "名称"), 1);
+        ensureBuiltinDisplayField(byFieldKey, "code",
+                EntityTypeFieldLabelHelper.resolveLabel(entityType, "code", "编码"), 2);
 
         List<Map<String, Object>> displayFields = new ArrayList<>();
         int order = 0;
         for (Map<String, Object> meta : byFieldKey.values()) {
             String fieldKey = String.valueOf(meta.get("fieldKey"));
-            // 列表展示列 + 全量字段目录（含非基础字段）；列表 UI 用 defaultVisible 控制默认列
+            // 投影含基础+扩展全量：展示列只认 baseField=true；搜索范围用全量
             boolean visibleByDefault = isBaseDisplayField(meta, fieldKey);
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("id", fieldKey);
             item.put("fieldKey", fieldKey);
-            item.put("label", meta.get("label"));
+            item.put("label", resolveProjectionFieldLabel(fieldLabels, fieldKey, meta.get("label")));
             item.put("renderAs", mapDisplayRenderAs(String.valueOf(meta.get("fieldType"))));
             item.put("sortOrder", meta.get("sortOrder") != null ? meta.get("sortOrder") : order++);
             item.put("defaultVisible", visibleByDefault);
@@ -722,6 +734,73 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         meta.put("groupSortOrder", 0);
     }
 
+    /**
+     * 把目录写下的步骤树挂载投影到字段 meta。缺 editorKind 不猜。
+     */
+    private void applyStepTreeHangFromTypeConfig(Map<String, Object> meta, String typeConfig) {
+        if (meta == null || !StringUtils.hasText(typeConfig)) {
+            return;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(typeConfig);
+            if (root == null || !root.hasNonNull("editorKind")) {
+                return;
+            }
+            String editorKind = officialStepTreeEditorKind(root.get("editorKind").asText("").trim());
+            if (!StringUtils.hasText(editorKind)) {
+                return;
+            }
+            List<String> hangable = new ArrayList<>();
+            JsonNode codes = root.get("hangableTypeCodes");
+            if (codes != null && codes.isArray()) {
+                for (JsonNode item : codes) {
+                    String code = item.asText("").trim();
+                    if (StringUtils.hasText(code)) {
+                        hangable.add(code);
+                    }
+                }
+            }
+            Map<String, Object> hang = new LinkedHashMap<>();
+            hang.put("hangableTypeCodes", hangable);
+            hang.put("allowMixed", root.path("allowMixed").asBoolean(false));
+            hang.put("editorKind", editorKind);
+            hang.put("packMethods", readStepTreePackMethods(root.get("packMethods")));
+            meta.put("stepTreeHang", hang);
+        } catch (JsonProcessingException ignored) {
+            // 挂载配置坏了就暴露为空，不在读路径修补。
+        }
+    }
+
+    /** 历史 methods_by_means 投影成步骤树包，不保留旧名并行判定。 */
+    private static String officialStepTreeEditorKind(String editorKind) {
+        if ("methods_by_means".equals(editorKind)) {
+            return "step_tree_pack";
+        }
+        return editorKind;
+    }
+
+    private static List<Map<String, Object>> readStepTreePackMethods(JsonNode raw) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        if (raw == null || !raw.isArray()) {
+            return out;
+        }
+        for (JsonNode item : raw) {
+            if (item == null || !item.isObject()) {
+                continue;
+            }
+            String key = item.path("key").asText("").trim();
+            if (!StringUtils.hasText(key)) {
+                continue;
+            }
+            String label = item.path("label").asText("").trim();
+            Map<String, Object> method = new LinkedHashMap<>();
+            method.put("key", key);
+            method.put("label", StringUtils.hasText(label) ? label : key);
+            out.add(method);
+        }
+        return out;
+    }
+
     private void mergeBusinessBaseFieldMeta(String entityTypeCode, LinkedHashMap<String, Map<String, Object>> byFieldKey) {
         List<EntityTypeBaseFieldDO> baseFields = entityTypeBaseFieldMapper.selectByEntityTypeCode(entityTypeCode);
         if (baseFields == null || baseFields.isEmpty()) {
@@ -746,6 +825,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             meta.put("sortable", Boolean.TRUE.equals(baseField.getIsSortable())
                     || Boolean.TRUE.equals(meta.get("sortable")));
             applyTypeBaseGroupMeta(meta);
+            applyStepTreeHangFromTypeConfig(meta, baseField.getTypeConfig());
         }
         enrichBaseFieldSemanticsFromLibrary(byFieldKey);
     }
@@ -804,7 +884,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         if (field != null && StringUtils.hasText(field.getSemanticType())) {
             semantic = field.getSemanticType().trim();
         }
-        if (!StringUtils.hasText(semantic)) {
+        if (!StringUtils.hasText(semantic) && !StructuredFieldSemantics.isPluginSlotColumn(fieldKey)) {
             semantic = EntityBaseFieldColumnNames.inferSemanticType(fieldKey);
         }
         if (StringUtils.hasText(semantic) && !meta.containsKey("semanticType")) {
@@ -852,6 +932,9 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         }
         if (meta.get("refTarget") != null) {
             item.put("refTarget", meta.get("refTarget"));
+        }
+        if (meta.get("stepTreeHang") != null) {
+            item.put("stepTreeHang", meta.get("stepTreeHang"));
         }
     }
 
@@ -917,6 +1000,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             case "NUMBER", "INTEGER", "DECIMAL" -> "input";
             case "ENTITY_REF", "REFERENCE", "REF" -> "ref-picker";
             case "ENTITY_REF_MULTI", "REF_MULTI", "BATCH_ENTITY_REF" -> "ref-picker-multi";
+            case "COORDINATE" -> "coordinate";
             default -> "input";
         };
     }
@@ -1451,10 +1535,12 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
     }
 
     /**
-     * entity + list/table/card：类型已启用的基础字段未出现在 getList.fields。
+     * entity + list/table/card：类型已启用的基础字段未出现在 getList.fields，
+     * 或已出现但 {@code baseField} 不是 true。
      * <p>
-     * 投影应含基础+扩展全量；配置器展示列/搜索只筛 baseField=true。
-     * 若投影仍只有 id/name/code，配置器就勾不到「标准编号」等业务基础字段。
+     * 投影应含基础+扩展全量。配置器展示列只筛系统+基础字段（baseField=true）；
+     * 搜索范围用投影全量（系统+基础+扩展）。后补基础字段若只写入库、投影仍标
+     * {@code baseField:false}，用户勾不到展示列/筛选，须重建。
      * </p>
      */
     private boolean isEntityListProjectionMissingTypeBaseFields(
@@ -1485,34 +1571,49 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         }
         try {
             JsonNode root = objectMapper.readTree(componentInterface.trim());
-            JsonNode fields = root.path("getList").path("fields");
-            if (!fields.isArray()) {
-                return true;
-            }
-            Set<String> projectedKeys = new HashSet<>();
-            for (JsonNode field : fields) {
-                if (field == null || !field.isObject()) {
-                    continue;
-                }
-                String fieldKey = field.path("fieldKey").asText("").trim();
-                if (!StringUtils.hasText(fieldKey)) {
-                    fieldKey = field.path("fieldCode").asText("").trim();
-                }
-                if (StringUtils.hasText(fieldKey)) {
-                    projectedKeys.add(fieldKey);
-                }
-            }
-            for (String expected : expectedKeys) {
-                if (!projectedKeys.contains(expected)) {
-                    return true;
-                }
-            }
-            return false;
+            return isTypeBaseFieldProjectionStale(expectedKeys, root.path("getList").path("fields"));
         } catch (Exception ex) {
             log.warn("[isEntityListProjectionMissingTypeBaseFields][解析失败，跳过过期判定][entityTypeCode={}][componentCode={}]",
                     entityTypeCode, componentCode, ex);
             return false;
         }
+    }
+
+    /**
+     * 类型基础字段必须出现在 getList.fields，且 {@code baseField === true}。
+     * <p>
+     * 只认 key 不认 flag 会漏掉「后补基础字段」：列已在投影里，配置器仍当扩展字段藏起来。
+     * 缺 key、缺 flag、flag 为 false，一律视为过期。
+     * </p>
+     */
+    static boolean isTypeBaseFieldProjectionStale(Set<String> expectedKeys, JsonNode fields) {
+        if (expectedKeys == null || expectedKeys.isEmpty()) {
+            return false;
+        }
+        if (fields == null || !fields.isArray()) {
+            return true;
+        }
+        Map<String, Boolean> projectedBaseFlags = new HashMap<>();
+        for (JsonNode field : fields) {
+            if (field == null || !field.isObject()) {
+                continue;
+            }
+            String fieldKey = field.path("fieldKey").asText("").trim();
+            if (!StringUtils.hasText(fieldKey)) {
+                fieldKey = field.path("fieldCode").asText("").trim();
+            }
+            if (!StringUtils.hasText(fieldKey)) {
+                continue;
+            }
+            boolean markedBase = field.path("baseField").isBoolean() && field.path("baseField").booleanValue();
+            projectedBaseFlags.put(fieldKey, markedBase);
+        }
+        for (String expected : expectedKeys) {
+            if (!Boolean.TRUE.equals(projectedBaseFlags.get(expected))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -1563,6 +1664,74 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                     componentCode, dataKind, ex);
             return false;
         }
+    }
+
+    /**
+     * 列表投影字段集必须等于：内置列 + 当前启用的类型基础字段 + 当前型号分配的扩展字段。
+     * 多出来的已停用基础字段、缺了的扩展字段（如 opcode）都视为过期，打开页面时自动重建。
+     */
+    private boolean isEntityListProjectionFieldSetStale(
+            String componentInterface, String componentCode, String dataKind, String entityTypeCode) {
+        if (!BusinessCategoryConstants.KIND_ENTITY.equals(dataKind)) {
+            return false;
+        }
+        if (!"list".equals(componentCode) && !"table".equals(componentCode) && !"card".equals(componentCode)) {
+            return false;
+        }
+        if (!StringUtils.hasText(componentInterface) || !StringUtils.hasText(entityTypeCode)) {
+            return false;
+        }
+        Set<String> expectedKeys = new LinkedHashSet<>(BUILTIN_BASE_DISPLAY_KEYS);
+        List<EntityTypeBaseFieldDO> typeBaseFields =
+                entityTypeBaseFieldMapper.selectByEntityTypeCode(entityTypeCode.trim());
+        if (typeBaseFields != null) {
+            for (EntityTypeBaseFieldDO baseField : typeBaseFields) {
+                if (baseField != null && StringUtils.hasText(baseField.getFieldCode())) {
+                    expectedKeys.add(baseField.getFieldCode().trim());
+                }
+            }
+        }
+        expectedKeys.addAll(collectFieldMeta(entityTypeCode.trim()).keySet());
+        try {
+            JsonNode root = objectMapper.readTree(componentInterface.trim());
+            JsonNode fields = root.path("getList").path("fields");
+            if (!fields.isArray()) {
+                return !expectedKeys.isEmpty();
+            }
+            Set<String> projectedKeys = new HashSet<>();
+            Map<String, String> fieldLabels = EntityTypeFieldLabelHelper.readLabels(
+                    entityTypeMapper.selectByCode(entityTypeCode.trim()));
+            for (JsonNode field : fields) {
+                if (field == null || !field.isObject()) {
+                    continue;
+                }
+                String fieldKey = field.path("fieldKey").asText("").trim();
+                if (!StringUtils.hasText(fieldKey)) {
+                    fieldKey = field.path("fieldCode").asText("").trim();
+                }
+                if (!StringUtils.hasText(fieldKey)) {
+                    continue;
+                }
+                projectedKeys.add(fieldKey);
+                String expectedLabel = fieldLabels.get(fieldKey);
+                if (StringUtils.hasText(expectedLabel)
+                        && !expectedLabel.equals(field.path("label").asText("").trim())) {
+                    return true;
+                }
+            }
+            return !projectedKeys.equals(expectedKeys);
+        } catch (Exception ex) {
+            log.warn("[isEntityListProjectionFieldSetStale][解析失败，跳过过期判定][entityTypeCode={}][componentCode={}]",
+                    entityTypeCode, componentCode, ex);
+            return false;
+        }
+    }
+
+    private String resolveProjectionFieldLabel(Map<String, String> fieldLabels, String fieldKey, Object fallback) {
+        if (fieldLabels != null && StringUtils.hasText(fieldKey) && fieldLabels.containsKey(fieldKey)) {
+            return fieldLabels.get(fieldKey);
+        }
+        return fallback == null ? fieldKey : String.valueOf(fallback);
     }
 
     /**

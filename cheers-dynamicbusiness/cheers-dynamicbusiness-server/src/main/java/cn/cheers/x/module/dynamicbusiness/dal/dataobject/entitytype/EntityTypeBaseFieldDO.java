@@ -1,10 +1,13 @@
 package cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype;
 
+import cn.cheers.x.framework.mybatis.core.type.JsonbStringTypeHandler;
 import cn.cheers.x.framework.tenant.core.db.TenantBaseDO;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.KeySequence;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import org.apache.ibatis.type.JdbcType;
 import lombok.*;
 
 /**
@@ -21,7 +24,7 @@ import lombok.*;
  * 
  * @author yudao
  */
-@TableName("dynamic_entity_type_base_field")
+@TableName(value = "dynamic_entity_type_base_field", autoResultMap = true)
 @KeySequence("dynamic_entity_type_base_field_seq")
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -73,6 +76,7 @@ public class EntityTypeBaseFieldDO extends TenantBaseDO {
      * - DATETIME: 日期时间类型
      * - BOOLEAN: 布尔类型
      * - ENUM: 枚举类型
+     * - COORDINATE: 地理坐标（经度/纬度/高程，存 jsonb）
      * - REFERENCE: 引用类型(关联其他模型)
      */
     private String dataType;
@@ -110,13 +114,10 @@ public class EntityTypeBaseFieldDO extends TenantBaseDO {
     private String description;
 
     /**
-     * 类型配置(JSON格式)
-     * 
-     * 根据数据类型存储不同的配置:
-     * - NUMBER: {"precision": 10, "scale": 2, "min": 0, "max": 100}
-     * - ENUM: {"options": [{"value": "NORMAL", "label": "正常"}, ...]}
-     * - REFERENCE: {"refModel": "area", "refField": "id", "refDisplayField": "name"}
+     * 目录字段规则文档（库列 jsonb）。
+     * 可见性、数值边界、枚举选项、步骤树挂载等；Java 仍持有 JSON 文本，由 JsonbStringTypeHandler 读写。
      */
+    @TableField(value = "type_config", jdbcType = JdbcType.OTHER, typeHandler = JsonbStringTypeHandler.class)
     private String typeConfig;
 
     /**

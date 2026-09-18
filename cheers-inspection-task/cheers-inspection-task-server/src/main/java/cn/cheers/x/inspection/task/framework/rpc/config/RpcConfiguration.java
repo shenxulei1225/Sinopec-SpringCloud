@@ -3,6 +3,7 @@ package cn.cheers.x.inspection.task.framework.rpc.config;
 import cn.cheers.x.device.protocolgateway.api.DeviceProtocolMissionApi;
 import cn.cheers.x.module.dynamicbusiness.api.entity.EntityRpcApi;
 import cn.cheers.x.module.dynamicbusiness.api.execution.TaskExecutionSessionApi;
+import cn.cheers.x.module.dynamicbusiness.api.strategy.StrategyRuntimeApi;
 import cn.cheers.x.module.platform.orchestration.api.ScheduleRunApi;
 import cn.cheers.x.module.platform.runtime.api.RuntimeQueryApi;
 import cn.cheers.x.module.platform.runtime.api.RuntimeSlotWriteApi;
@@ -24,6 +25,7 @@ import org.springframework.context.annotation.Configuration;
                 FileApi.class,
                 EntityRpcApi.class,
                 TaskExecutionSessionApi.class,
+                StrategyRuntimeApi.class,
                 DeviceProtocolMissionApi.class,
                 ScheduleRunApi.class,
                 RuntimeQueryApi.class,

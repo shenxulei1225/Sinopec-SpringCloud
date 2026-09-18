@@ -30,13 +30,13 @@ public class DeviceProtocolCapabilityService {
     }
 
     /**
-     * 翻译后尝试下发；离线时仍返回预览，sent=false。
+     * 翻译后尝试下发；离线或未等到同号成功答卷时 sent=false，不假装成功。
      */
     public CapabilityDispatchResult dispatch(DeviceMissionPlan plan) {
         CapabilityPreview preview = preview(plan);
         boolean sent = false;
         if (preview.online()) {
-            sent = downlinkService.sendCommandPackage(preview.envelope());
+            sent = downlinkService.sendCommandPackage(preview.envelope()).accepted();
         }
         return new CapabilityDispatchResult(preview, sent);
     }

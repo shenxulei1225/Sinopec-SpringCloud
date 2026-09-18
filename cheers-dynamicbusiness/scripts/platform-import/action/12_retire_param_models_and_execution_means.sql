@@ -3,10 +3,11 @@
 --
 -- 现象：新建弹出「执行手段」「到达位置」——不是前端写死表单，而是：
 --   1) 规范型号 action 被停用 (status=0)，新建落到历史 action_param_*（LIBRARY 挂了 location_ref）
---   2) execution_means 误挂在动作类型基础字段，投影进 model-crud-form
+--   2) execution_means 曾以可见字段投影进新建弹窗
 --
--- 定稿：动作参数只在 param_slots_json（详情「配置参数」）；谁去执行不写在动作实体上。
--- 本脚本幂等；不删物理列 execution_means（历史数据可留）。
+-- 定稿：动作参数只在 param_slots_json（详情「配置参数」）。
+-- 适用手段仍是隐藏基础字段 execution_means（详情勾选，createVisible/editVisible/detailVisible=false）。
+-- 本脚本幂等。
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;
@@ -42,28 +43,7 @@ WHERE deleted = false
   AND tenant_id = 1
   AND model_code LIKE 'action_param_%';
 
--- 3) 从动作类型基础字段 / 模型字段去掉「执行手段」
-UPDATE dynamic_entity_type_base_field
-SET
-  deleted = true,
-  status = 0,
-  updater = 'seed',
-  update_time = CURRENT_TIMESTAMP
-WHERE deleted = false
-  AND tenant_id = 1
-  AND entity_type_code = 'action'
-  AND field_code = 'execution_means';
-
-UPDATE dynamic_model_field_assignment
-SET
-  deleted = true,
-  updater = 'seed',
-  update_time = CURRENT_TIMESTAMP
-WHERE deleted = false
-  AND tenant_id = 1
-  AND model_code = 'action'
-  AND field_code = 'execution_means';
-
+-- 3) 适用手段留在隐藏基础字段（详情勾选，不进新建弹窗），不再软删
 -- 4) 结构字段保留（写路径 / 专用面板），并补齐默认值 + 显式 createVisible=false
 UPDATE dynamic_entity_type_base_field
 SET

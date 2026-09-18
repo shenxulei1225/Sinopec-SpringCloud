@@ -35,9 +35,9 @@ INSERT INTO dynamic_field (
     NULL, NULL, 'summary', 1, 'seed'
   ),
   (
-    'source_ref', '引用出处', 'TEXT', NULL,
-    '哪份规格书/招标文件中出现', 'BASE', 1, 1, 'NONE',
-    NULL, NULL, 'source_ref', 1, 'seed'
+    'attachments', '附件', 'TEXT', NULL,
+    '规范相关附件（手册、报文、扫描件等），供介绍、预览、下载', 'BASE', 1, 1, 'NONE',
+    NULL, NULL, 'attachments', 1, 'seed'
   )
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET

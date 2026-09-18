@@ -26,7 +26,27 @@ BEGIN
         update_time = CURRENT_TIMESTAMP
     WHERE tenant_id = v_tenant
       AND deleted = false
-      AND creator = 'recipe-inspection-demo';
+      AND creator IN (
+        'recipe-inspection-demo',
+        'recipe-inspection-bulk',
+        'recipe-inspection'
+      );
+  END IF;
+
+  -- V109 后表名
+  IF to_regclass('dynamicbusiness.dynamic_relation_method_binding_t1') IS NOT NULL THEN
+    UPDATE dynamic_relation_method_binding_t1
+    SET deleted = true,
+        updater = 'recipe-inspection-remove',
+        update_time = CURRENT_TIMESTAMP
+    WHERE tenant_id = v_tenant
+      AND deleted = false
+      AND subject_type = 'inspection_item'
+      AND creator IN (
+        'recipe-inspection-demo',
+        'recipe-inspection-bulk',
+        'recipe-inspection'
+      );
   END IF;
 
   IF to_regclass('dynamicbusiness.dynamic_sop_instance_binding_t1') IS NOT NULL THEN

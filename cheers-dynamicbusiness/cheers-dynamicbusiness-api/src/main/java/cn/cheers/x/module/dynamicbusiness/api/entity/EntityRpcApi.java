@@ -1,21 +1,26 @@
 package cn.cheers.x.module.dynamicbusiness.api.entity;
 
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityWriteReqDTO;
 import cn.cheers.x.module.dynamicbusiness.enums.ApiConstants;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
 /**
- * 动态业务通用实体读 RPC 接口。
+ * 动态业务通用实体 RPC。读按 id / 编码；写按型号编码落到对应底座表。
  *
- * <p>跨模块只存实体 id；读时须带 {@code entityTypeCode} 路由到对应存储策略。</p>
+ * <p>跨模块只存实体 id；读写都须带 {@code entityTypeCode} 路由到对应存储策略。</p>
  */
 @FeignClient(name = ApiConstants.NAME)
 @Tag(name = "RPC 服务 - 动态业务实体读")
@@ -63,6 +68,24 @@ public interface EntityRpcApi {
     CommonResult<List<EntityRespDTO>> listEntitiesByCodes(
             @RequestParam("codes") List<String> codes,
             @Parameter(description = "实体类型编码", required = true, example = "facility")
+            @RequestParam("entityTypeCode") String entityTypeCode);
+
+    @PostMapping(PREFIX + "/create")
+    @Operation(summary = "按型号编码创建实体")
+    CommonResult<Long> createEntity(@RequestBody EntityWriteReqDTO req);
+
+    @PutMapping(PREFIX + "/update-fields")
+    @Operation(summary = "按字段编码更新实体")
+    CommonResult<Boolean> updateEntityFields(@RequestBody EntityWriteReqDTO req);
+
+    @GetMapping(PREFIX + "/model-id")
+    @Operation(summary = "按型号编码取型号 id")
+    CommonResult<Long> getModelIdByCode(@RequestParam("modelCode") String modelCode);
+
+    @DeleteMapping(PREFIX + "/delete")
+    @Operation(summary = "删除实体")
+    CommonResult<Boolean> deleteEntity(
+            @RequestParam("id") Long id,
             @RequestParam("entityTypeCode") String entityTypeCode);
 
 }

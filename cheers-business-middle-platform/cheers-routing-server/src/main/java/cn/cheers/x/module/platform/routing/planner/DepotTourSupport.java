@@ -51,6 +51,18 @@ public final class DepotTourSupport {
                                         List<String> middleOrdered,
                                         CostMatrix matrix,
                                         boolean returnToStart) {
+        return assemble(home, middleOrdered, matrix, returnToStart, null);
+    }
+
+    /**
+     * 任务创建指定了不同终点时：home → 检查停靠点 → end。
+     * 终点不是检查项位置，只作为路线最后一站。
+     */
+    public static List<String> assemble(String home,
+                                        List<String> middleOrdered,
+                                        CostMatrix matrix,
+                                        boolean returnToStart,
+                                        String endStopId) {
         if (!StringUtils.hasText(home)) {
             return List.copyOf(middleOrdered);
         }
@@ -62,9 +74,15 @@ public final class DepotTourSupport {
                 Collections.reverse(middle);
             }
         }
-        List<String> tour = new ArrayList<>(middle.size() + 2);
+        List<String> tour = new ArrayList<>(middle.size() + 3);
         tour.add(home);
         tour.addAll(middle);
+        if (StringUtils.hasText(endStopId) && !endStopId.equals(home)) {
+            if (tour.isEmpty() || !endStopId.equals(tour.get(tour.size() - 1))) {
+                tour.add(endStopId);
+            }
+            return tour;
+        }
         if (returnToStart) {
             tour.add(home);
         }

@@ -4,8 +4,9 @@ import lombok.Data;
 
 /**
  * 任务会话上的执行设备绑定。
- * <p>用户绑设备时写入，详情展示「具体执行设备」；开跑读此结构调网关。
- * <p>不管：瞬时 WebSocket 连接、设备台账整行、排期资源池策略。
+ * <p>选设备后带出设备默认对接协议和逻辑标识；本次任务可临时改协议。
+ * <p>开跑只读此结构里的 protocolCode，不回设备台账改默认值。
+ * <p>不管瞬时连接、排期资源池。
  * <p>禁止：开跑时再挖台账补 protocolCode / logicalDeviceId。
  */
 @Data
@@ -17,7 +18,8 @@ public class ExecutionDeviceBinding {
     private Long equipmentId;
 
     /**
-     * 对接协议编码，如 zhiren-robot-ws。
+     * 本次任务使用的平台对接协议（robot-ws / uav-ws）。
+     * 选设备时先写入设备默认协议；用户可临时改。不是软件版本，也不是厂商名。
      */
     private String protocolCode;
 

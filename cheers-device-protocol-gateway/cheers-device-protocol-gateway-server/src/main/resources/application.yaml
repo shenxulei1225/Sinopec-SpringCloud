@@ -23,6 +23,20 @@ logging:
   file:
     name: ${user.home}/logs/${spring.application.name}.log
 
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui
+  default-flat-param-object: true
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
 cheers:
   device-protocol-gateway:
     path-pattern: /{deviceId}
@@ -33,6 +47,13 @@ cheers:
   info:
     version: 1.0.0
     base-package: cn.cheers.x.device.protocolgateway
+  web:
+    admin-ui:
+      url: http://dashboard.local
+  swagger:
+    title: 设备协议网关
+    description: 设备 WebSocket 与协议监控
+    version: ${cheers.info.version}
   security:
     mock-enable: true
   tenant:

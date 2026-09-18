@@ -26,7 +26,7 @@ import java.util.Set;
  * 动作库列表查询实现。
  *
  * <p><b>权威</b>：动作行来自 {@code ent_action*}；启用集来自 V77 {@code dynamic_action_enablement}；
- * 参数槽列表来自 {@code param_slots_json}（定稿外形 fields[].fieldCode）。</p>
+ * 参数槽列表来自 {@code param_slots_json}（定稿外形 methods[].fields[].fieldCode，也认旧版顶层 fields）。</p>
  * <p><b>禁止</b>：owner 过滤下启用为空时改拉全库；依赖 inspection 包；按型号 LIBRARY 分配拼参数槽。</p>
  */
 @Service
@@ -126,8 +126,10 @@ public class ActionQueryServiceImpl implements ActionQueryService {
         if (base == null) {
             base = Map.of();
         }
-        vo.setExecutionMeans(asString(base.get(ActionFieldCodes.EXECUTION_MEANS)));
-        vo.setParamSlots(parseStringList(base.get(ActionFieldCodes.PARAM_SLOTS_JSON)));
+        vo.setExecutionMeans(meansToApiString(resolveExecutionMeans(entity, base)));
+        ActionParamSlotsParser.Snapshot slots = ActionParamSlotsParser.parse(base.get(ActionFieldCodes.PARAM_SLOTS_JSON));
+        vo.setParamSlots(slots.paramSlots());
+        vo.setParamSlotsByMeans(slots.paramSlotsByMeans());
         vo.setChildActionIds(parseStringList(base.get(ActionFieldCodes.CHILD_ACTION_IDS_JSON)));
         vo.setComposite(readBool(base.get(ActionFieldCodes.IS_COMPOSITE)));
         return vo;
@@ -138,6 +140,31 @@ public class ActionQueryServiceImpl implements ActionQueryService {
             return null;
         }
         return raw.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private static Object resolveExecutionMeans(EntityDO entity, Map<String, Object> base) {
+        if (entity.getCustomFields() != null) {
+            Object fromCustom = entity.getCustomFields().get(ActionFieldCodes.EXECUTION_MEANS);
+            if (fromCustom != null) {
+                return fromCustom;
+            }
+        }
+        return base.get(ActionFieldCodes.EXECUTION_MEANS);
+    }
+
+    /** 多选手段按 JSON 数组写出，避免列表接口只剩单个旧值。 */
+    private static String meansToApiString(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        if (raw instanceof List<?> list) {
+            try {
+                return JSON.writeValueAsString(list);
+            } catch (Exception ignored) {
+                return asString(raw);
+            }
+        }
+        return asString(raw);
     }
 
     private static String asString(Object raw) {

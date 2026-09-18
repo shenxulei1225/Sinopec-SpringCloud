@@ -5,8 +5,8 @@ import cn.cheers.x.inspection.inspection_content.dal.mysql.route.InspectionRoute
 import cn.cheers.x.inspection.inspection_content.service.orchestration.PatrolConfirmService;
 import cn.cheers.x.inspection.orchestration.dto.PatrolConfirmReqDTO;
 import cn.cheers.x.inspection.orchestration.dto.PatrolConfirmRespDTO;
-import cn.cheers.x.inspection.task.dal.dataobject.task.InspectionTaskDO;
-import cn.cheers.x.inspection.task.dal.mysql.task.InspectionTaskMapper;
+import cn.cheers.x.inspection.task.service.execution.steptree.TaskStepTreeGenerateService;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
 import cn.cheers.x.module.platform.contract.dto.work.WorkItemDTO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -44,7 +44,8 @@ public class PatrolConfirmServiceImpl implements PatrolConfirmService {
     static final String PLANNED_ROUTE = "plannedRoute";
 
     private final InspectionRoutePlanMapper routePlanMapper;
-    private final InspectionTaskMapper taskMapper;
+    private final PatrolTaskEntityStore patrolTaskEntityStore;
+    private final TaskStepTreeGenerateService taskStepTreeGenerateService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -69,10 +70,7 @@ public class PatrolConfirmServiceImpl implements PatrolConfirmService {
             throw exception(PATROL_CONFIRM_FACILITY_ID_REQUIRED);
         }
 
-        InspectionTaskDO task = taskMapper.selectById(request.getTaskId());
-        if (task == null) {
-            throw exception(PATROL_CONFIRM_TASK_NOT_FOUND);
-        }
+        patrolTaskEntityStore.require(request.getTaskId());
 
         InspectionRoutePlanDO plan = new InspectionRoutePlanDO();
         plan.setFacilityId(facilityId);
@@ -85,12 +83,8 @@ public class PatrolConfirmServiceImpl implements PatrolConfirmService {
         plan.setTaskId(request.getTaskId());
         routePlanMapper.insert(plan);
 
-        task.setRoutePlanId(plan.getId());
-        task.setNetworkRef(snapshot.networkRef());
-        task.setPlannedRoute(plan.getPlannedRoute());
-        task.setDurationEstimateMinutes(snapshot.durationEstimateMinutes());
-        task.setInspectionType(snapshot.inspectionType());
-        taskMapper.updateById(task);
+        patrolTaskEntityStore.writePlannedRoute(request.getTaskId(), snapshot.plannedRoute());
+        taskStepTreeGenerateService.generate(request.getTaskId(), null);
 
         return PatrolConfirmRespDTO.builder()
                 .routePlanId(plan.getId())

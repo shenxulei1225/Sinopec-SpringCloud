@@ -202,8 +202,7 @@ public class PathNetworkServiceImpl implements PathNetworkService {
         }
         // 排除历史「发布伴侣」行（*_published / *_vN），列表只展示用户可编辑的路网记录
         return rows.stream()
-                .filter(row -> row.getId() == null
-                        || (!row.getId().endsWith("_published") && !row.getId().matches(".*_v\\d+$")))
+                .filter(row -> !isHistoricalPublishedCompanion(row.getId()))
                 .map(PathNetworkServiceImpl::toSummary)
                 .toList();
     }
@@ -213,10 +212,23 @@ public class PathNetworkServiceImpl implements PathNetworkService {
         if (facilityId == null) {
             return List.of();
         }
+        // 算路选网与编辑列表同一口径：历史发布副本不算当前已发布路网
         return pathNetworkMapper.selectAllByFacilityId(facilityId).stream()
                 .filter(row -> GraphStatus.PUBLISHED.equals(row.getStatus()))
+                .filter(row -> !isHistoricalPublishedCompanion(row.getId()))
                 .map(PathNetworkServiceImpl::toSummary)
                 .toList();
+    }
+
+    /**
+     * 旧「发布另存」留下的伴侣行：id 以 _published 结尾，或 _v1 / _v2…
+     * 不是用户当前在编的那条路网；选网时当成第二、第三条就会逼任务页填内部编号。
+     */
+    static boolean isHistoricalPublishedCompanion(String networkId) {
+        if (!StringUtils.hasText(networkId)) {
+            return false;
+        }
+        return networkId.endsWith("_published") || networkId.matches(".*_v\\d+$");
     }
 
     @Override
@@ -319,8 +331,9 @@ public class PathNetworkServiceImpl implements PathNetworkService {
     }
 
     /**
-     * 路网保存后：停靠站 / 途径点 / 门点同步到数据管理点位台账（含点位类型）。
-     * 失败只记日志，不回滚路网几何（几何权威在路网）。
+     * 路网保存后：停靠站 / 途径点 / 门点同步到数据管理点位台账。
+     * 带上节点已有经度 / 纬度（payload 原键），目录才能看见 GPS、对照才能取值。
+     * 失败只记日志，不回滚路网几何（几何权威仍在路网节点）。
      */
     private void syncStationPointsBestEffort(PathNetworkDTO network) {
         if (network == null || network.getFacilityId() == null) {
@@ -346,6 +359,9 @@ public class PathNetworkServiceImpl implements PathNetworkService {
                     .displayName(node.getDisplayName())
                     .nodeType(node.getNodeType().name())
                     .memberships(node.getMemberships())
+                    .longitude(readPayloadDouble(node.getPayload(), "longitude", "lng", "lon"))
+                    .latitude(readPayloadDouble(node.getPayload(), "latitude", "lat"))
+                    .height(readPayloadDouble(node.getPayload(), "height"))
                     .build());
         }
         PathStationPointSyncReqDTO req = PathStationPointSyncReqDTO.builder()
@@ -696,5 +712,33 @@ public class PathNetworkServiceImpl implements PathNetworkService {
 
     private static String toJson(List<?> values) {
         return JSON.toJSONString(values != null ? values : List.of());
+    }
+
+    /**
+     * 读路网节点 payload 上的数字。优先全称键，兼容旧缩写；读不到就空，不编 0。
+     */
+    static Double readPayloadDouble(Map<String, Object> payload, String... keys) {
+        if (payload == null || keys == null) {
+            return null;
+        }
+        for (String key : keys) {
+            if (key == null || key.isBlank()) {
+                continue;
+            }
+            Object raw = payload.get(key);
+            if (raw instanceof Number number) {
+                double value = number.doubleValue();
+                return Double.isFinite(value) ? value : null;
+            }
+            if (raw instanceof String text && !text.isBlank()) {
+                try {
+                    double value = Double.parseDouble(text.trim());
+                    return Double.isFinite(value) ? value : null;
+                } catch (NumberFormatException ignored) {
+                    return null;
+                }
+            }
+        }
+        return null;
     }
 }

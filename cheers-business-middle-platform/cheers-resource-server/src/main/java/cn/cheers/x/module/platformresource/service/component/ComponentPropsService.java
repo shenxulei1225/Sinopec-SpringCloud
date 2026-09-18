@@ -13,6 +13,10 @@ public interface ComponentPropsService {
 
     List<ComponentPropsRespVO> getPropsList(ComponentPropsListReqVO reqVO);
 
+    /**
+     * 新建一份组件配置模板。
+     * 只写「这是哪种组件」；不查、不补组件库目录。
+     */
     Long createTemplate(ComponentPropsCreateTemplateReqVO reqVO);
 
     Long createInstance(ComponentPropsCreateInstanceReqVO reqVO);

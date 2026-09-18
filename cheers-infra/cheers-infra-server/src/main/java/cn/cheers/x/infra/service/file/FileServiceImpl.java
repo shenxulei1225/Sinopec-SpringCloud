@@ -5,6 +5,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.framework.common.util.http.HttpUtils;
 import cn.cheers.x.framework.common.util.object.BeanUtils;
@@ -18,20 +19,27 @@ import cn.cheers.x.infra.framework.file.core.utils.FileTypeUtils;
 import com.google.common.annotations.VisibleForTesting;
 import jakarta.annotation.Resource;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.net.SocketTimeoutException;
 import java.util.List;
 
 import static cn.hutool.core.date.DatePattern.PURE_DATE_PATTERN;
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.cheers.x.infra.enums.ErrorCodeConstants.FILE_NOT_EXISTS;
+import static cn.cheers.x.infra.enums.ErrorCodeConstants.FILE_STORAGE_TIMEOUT;
+import static cn.cheers.x.infra.enums.ErrorCodeConstants.FILE_STORAGE_UNAVAILABLE;
 
 /**
- * 文件 Service 实现类
+ * 文件写入与元数据。
  *
- * 
+ * 管什么：把已识别过的文件字节写入当前主存储器，并记下路径。
+ * 不管什么：文件类型识别（由上传安全服务负责）。
+ * 禁止：主存储器超时或不可用时仍返回成功地址；禁止把存储失败吞成空 500。
  */
 @Service
+@Slf4j
 public class FileServiceImpl implements FileService {
 
     /**
@@ -80,16 +88,47 @@ public class FileServiceImpl implements FileService {
 
         // 2.1 生成上传的 path，需要保证唯一
         String path = generateUploadPath(name, directory);
-        // 2.2 上传到文件存储器
+        // 2.2 上传到文件存储器。主存储器连不上时立刻转成业务错误，不要让 SDK 超时冒成系统 500。
         FileClient client = fileConfigService.getMasterFileClient();
         Assert.notNull(client, "客户端(master) 不能为空");
-        String url = client.upload(content, path, type);
+        String url;
+        try {
+            url = client.upload(content, path, type);
+        } catch (ServiceException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            if (isStorageTimeout(ex)) {
+                throw exception(FILE_STORAGE_TIMEOUT);
+            }
+            log.error("[createFile][master storage upload failed] path={}", path, ex);
+            throw exception(FILE_STORAGE_UNAVAILABLE);
+        }
 
         // 3. 保存到数据库
         fileMapper.insert(new FileDO().setConfigId(client.getId())
                 .setName(name).setPath(path).setUrl(url)
                 .setType(type).setSize((long) content.length));
         return url;
+    }
+
+    /**
+     * 对象存储读超时、连接超时都归到存储超时，方便页面直接提示，而不是「系统异常」。
+     */
+    static boolean isStorageTimeout(Throwable ex) {
+        Throwable current = ex;
+        int depth = 0;
+        while (current != null && depth < 16) {
+            if (current instanceof SocketTimeoutException) {
+                return true;
+            }
+            String message = current.getMessage();
+            if (message != null && (message.contains("Read timed out") || message.contains("timed out"))) {
+                return true;
+            }
+            current = current.getCause();
+            depth++;
+        }
+        return false;
     }
 
     @VisibleForTesting

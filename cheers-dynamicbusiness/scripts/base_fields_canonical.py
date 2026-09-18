@@ -101,8 +101,8 @@ CANONICAL_BASE_FIELDS: dict[str, list[dict[str, Any]]] = {
         _f("REF_REGION", "所属区域", "REF_Multi", sort_order=44,
            type_config=REL_REGION,
            description="历史兼容；新数据以 REF_FACILITY 为主归属"),
-        _f("coordinate_3d", "三维坐标", "TEXT", sort_order=41),
-        _f("coordinate_gis", "GIS坐标", "TEXT", sort_order=42),
+        _f("coordinate_3d", "三维坐标", "COORDINATE", sort_order=41),
+        _f("coordinate_gis", "GIS坐标", "COORDINATE", sort_order=42),
         _f("model_3d", "三维模型", "TEXT", sort_order=43,
            description="三维模型资源标识或路径"),
         # 人员（台账归属；若对接人员主数据可改为 REF，不在此表冗余快照）

@@ -2,10 +2,12 @@ package cn.cheers.x.infra.controller.app.file;
 
 import cn.hutool.core.io.IoUtil;
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.infra.controller.admin.file.vo.file.FileUploadRespVO;
 import cn.cheers.x.infra.controller.admin.file.vo.file.FileCreateReqVO;
 import cn.cheers.x.infra.controller.admin.file.vo.file.FilePresignedUrlRespVO;
 import cn.cheers.x.infra.controller.app.file.vo.AppFileUploadReqVO;
 import cn.cheers.x.infra.service.file.FileService;
+import cn.cheers.x.infra.service.file.FileUploadSecurityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -30,17 +32,28 @@ public class AppFileController {
 
     @Resource
     private FileService fileService;
+    @Resource
+    private FileUploadSecurityService fileUploadSecurityService;
 
     @PostMapping("/upload")
     @Operation(summary = "上传文件")
     @Parameter(name = "file", description = "文件附件", required = true,
             schema = @Schema(type = "string", format = "binary"))
     @PermitAll
-    public CommonResult<String> uploadFile(AppFileUploadReqVO uploadReqVO) throws Exception {
+    public CommonResult<FileUploadRespVO> uploadFile(@Valid AppFileUploadReqVO uploadReqVO) throws Exception {
         MultipartFile file = uploadReqVO.getFile();
         byte[] content = IoUtil.readBytes(file.getInputStream());
-        return success(fileService.createFile(content, file.getOriginalFilename(),
-                uploadReqVO.getDirectory(), file.getContentType()));
+        FileUploadSecurityService.FileDetectionResult detect = fileUploadSecurityService
+                .detectAndValidate(content, file.getOriginalFilename(), file.getContentType());
+        String url = fileService.createFile(content, file.getOriginalFilename(),
+                uploadReqVO.getDirectory(), detect.mime());
+        FileUploadRespVO respVO = new FileUploadRespVO();
+        respVO.setUrl(url);
+        respVO.setName(file.getOriginalFilename());
+        respVO.setMime(detect.mime());
+        respVO.setSize((long) content.length);
+        respVO.setDetectedType(detect.detectedType());
+        return success(respVO);
     }
 
     @GetMapping("/presigned-url")

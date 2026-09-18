@@ -10,7 +10,9 @@ import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.index.FieldIndexService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityRelationService;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -19,6 +21,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -26,10 +29,12 @@ import java.util.Set;
 
 /**
  * Postgres 实体字段查询引擎：
- * - keyword：索引表 value_string + name 双通道
+ * - keyword：索引表类型列（value_string / value_number）+ 实体表核心/基础列
  * - filter：relation 走关系表，non-relation 走索引表类型列
+ * 不负责：读路径把数值再抄进 value_string，或放宽分类过滤来「搜出结果」。
  */
 @Service
+@Slf4j
 public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
 
     @Resource
@@ -47,13 +52,16 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
     @Resource
     private FieldIndexService fieldIndexService;
 
+    @Resource
+    private EntityDedicatedColumnService entityDedicatedColumnService;
+
     /**
      * 全局关键词搜索（keyword）。
      *
      * <p>语义说明：</p>
      * <ul>
      *   <li>keyword 是“全局检索入口”，不限定单一 fieldCode；</li>
-     *   <li>当前实现覆盖：索引表 value_string（仅可搜索字段）+ 实体 name；</li>
+     *   <li>当前实现覆盖：索引表 value_string 与 value_number（仅可搜索字段）+ 实体表核心/基础列；</li>
      *   <li>与字段级 CONTAINS 的区别：字段级 CONTAINS 是高级筛选，必须指定 fieldCode。</li>
      * </ul>
      */
@@ -80,16 +88,32 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
         Set<Long> matched = new HashSet<>();
         Set<String> allowed = normalizeSearchFieldCodes(searchFieldCodes);
         boolean restrict = allowed != null;
+        boolean hasExtensionSearch = hasExtensionFieldInSearchScope(entityTypeCode, allowed, restrict);
+        log.warn(
+                "[SEARCH-DIAG][ENGINE] entityTypeCode={} keyword={} rawSearchFieldCodes={} allowed={} restrict={} hasExtensionSearch={} candidateCount={}",
+                entityTypeCode, keyword, searchFieldCodes, allowed, restrict, hasExtensionSearch,
+                candidateEntityIds.size());
+
+        // 搜索范围仅包含核心列/基础字段：直接走实体表（含专用列），不经索引表。
+        if (restrict && !hasExtensionSearch) {
+            Set<Long> entityHits = matchByEntityTableKeyword(entityTypeCode, k, candidateEntityIds, allowed, true);
+            log.warn("[SEARCH-DIAG][ENGINE-ENTITY-ONLY] hits={} sample={}",
+                    entityHits.size(), sampleIds(entityHits));
+            return entityHits;
+        }
 
         // 索引命中必须再校验该行 model+field 仍可搜索，避免不可搜索字段残留索引被 keyword 命中
-        if (!restrict || !allowed.isEmpty()) {
+        if (!restrict || hasExtensionSearch) {
             List<EntityFieldIndexDO> indexHits = entityFieldIndexMapper.selectRowsByKeyword(k);
             if (indexHits != null) {
                 for (EntityFieldIndexDO row : indexHits) {
                     if (row == null || row.getEntityId() == null || !candidateSet.contains(row.getEntityId())) {
                         continue;
                     }
-                    if (restrict && (row.getFieldCode() == null || !allowed.contains(row.getFieldCode()))) {
+                    String indexFieldCode = row.getFieldCode() == null
+                            ? null
+                            : row.getFieldCode().trim().toLowerCase(Locale.ROOT);
+                    if (restrict && (indexFieldCode == null || !allowed.contains(indexFieldCode))) {
                         continue;
                     }
                     if (fieldIndexService.isFieldSearchable(row.getModelId(), row.getFieldCode())) {
@@ -99,18 +123,77 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
             }
         }
 
-        List<EntityDO> entities = entityCoreService.listByIds(candidateEntityIds, entityTypeCode);
-        if (entities != null) {
-            for (EntityDO e : entities) {
-                if (e == null || e.getId() == null) {
-                    continue;
-                }
-                if (matchesCoreKeyword(e, k, allowed, restrict)) {
-                    matched.add(e.getId());
-                }
+        // 有扩展字段时：索引表承担扩展命中，实体表承担核心/基础字段命中，最终并集。
+        Set<Long> entityHits = matchByEntityTableKeyword(entityTypeCode, k, candidateEntityIds, allowed, restrict);
+        matched.addAll(entityHits);
+        log.warn("[SEARCH-DIAG][ENGINE-MIXED] indexPlusCoreHits={} entityHits={} sample={}",
+                matched.size(), entityHits.size(), sampleIds(matched));
+        return matched;
+    }
+
+    private static List<Long> sampleIds(Set<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return ids.stream().filter(id -> id != null).limit(8).toList();
+    }
+
+    private Set<Long> matchByEntityTableKeyword(
+            String entityTypeCode,
+            String keywordLower,
+            List<Long> candidateEntityIds,
+            Set<String> allowed,
+            boolean restrict) {
+        if (!StringUtils.hasText(entityTypeCode)
+                || candidateEntityIds == null
+                || candidateEntityIds.isEmpty()) {
+            return Collections.emptySet();
+        }
+        List<EntityDO> entities = entityCoreService.listByIdsWithDedicatedBaseFields(
+                candidateEntityIds, entityTypeCode, false);
+        if (entities == null || entities.isEmpty()) {
+            log.warn("[SEARCH-DIAG][ENTITY-TABLE] noEntitiesLoaded entityTypeCode={} candidateCount={} allowed={}",
+                    entityTypeCode, candidateEntityIds.size(), allowed);
+            return Collections.emptySet();
+        }
+        Set<Long> matched = new LinkedHashSet<>();
+        for (EntityDO entity : entities) {
+            if (entity == null || entity.getId() == null) {
+                continue;
+            }
+            if (matchesCoreKeyword(entity, keywordLower, allowed, restrict)
+                    || matchesDedicatedBaseKeyword(entity, keywordLower, allowed, restrict)) {
+                matched.add(entity.getId());
             }
         }
+        if (matched.isEmpty()) {
+            EntityDO sample = entities.get(0);
+            log.warn(
+                    "[SEARCH-DIAG][ENTITY-TABLE-MISS] entityTypeCode={} keyword={} allowed={} loaded={} sampleId={} sampleName={} sampleDedicatedKeys={}",
+                    entityTypeCode, keywordLower, allowed, entities.size(),
+                    sample == null ? null : sample.getId(),
+                    sample == null ? null : sample.getName(),
+                    sample == null || sample.getDedicatedBaseFieldValues() == null
+                            ? null
+                            : sample.getDedicatedBaseFieldValues().keySet());
+        }
         return matched;
+    }
+
+    private boolean hasExtensionFieldInSearchScope(String entityTypeCode, Set<String> allowed, boolean restrict) {
+        if (!restrict || allowed == null || allowed.isEmpty() || !StringUtils.hasText(entityTypeCode)) {
+            return false;
+        }
+        for (String code : allowed) {
+            if (isCoreSearchField(code)) {
+                continue;
+            }
+            String physicalColumn = entityDedicatedColumnService.resolvePhysicalColumn(entityTypeCode, code);
+            if (!StringUtils.hasText(physicalColumn)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static Set<String> normalizeSearchFieldCodes(List<String> searchFieldCodes) {
@@ -122,8 +205,13 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
             if (raw == null || raw.isBlank()) {
                 continue;
             }
-            out.add(raw.trim());
-            out.add(raw.trim().toLowerCase(Locale.ROOT));
+            String[] parts = raw.split(",");
+            for (String part : parts) {
+                if (part == null || part.isBlank()) {
+                    continue;
+                }
+                out.add(part.trim().toLowerCase(Locale.ROOT));
+            }
         }
         return out.isEmpty() ? null : out;
     }
@@ -153,8 +241,52 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
         return false;
     }
 
+    private boolean matchesDedicatedBaseKeyword(
+            EntityDO entity,
+            String keywordLower,
+            Set<String> allowed,
+            boolean restrict) {
+        if (!restrict || allowed == null || allowed.isEmpty()) {
+            return false;
+        }
+        Map<String, Object> dedicated = entity.getDedicatedBaseFieldValues();
+        if (dedicated == null || dedicated.isEmpty()) {
+            return false;
+        }
+        for (Map.Entry<String, Object> entry : dedicated.entrySet()) {
+            String fieldCode = entry.getKey();
+            if (fieldCode == null || fieldCode.isBlank()) {
+                continue;
+            }
+            String normalized = fieldCode.trim().toLowerCase(Locale.ROOT);
+            if (!allowed.contains(normalized)) {
+                continue;
+            }
+            String text = normalizeKeywordText(entry.getValue());
+            if (text != null && text.contains(keywordLower)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isCoreSearchField(String code) {
+        if (code == null || code.isBlank()) {
+            return false;
+        }
+        return "id".equals(code) || "name".equals(code) || "code".equals(code) || "status".equals(code);
+    }
+
     private static boolean allowedContains(Set<String> allowed, String code) {
-        return allowed != null && (allowed.contains(code) || allowed.contains(code.toLowerCase(Locale.ROOT)));
+        return allowed != null && code != null && allowed.contains(code.toLowerCase(Locale.ROOT));
+    }
+
+    private static String normalizeKeywordText(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String text = String.valueOf(value).trim().toLowerCase(Locale.ROOT);
+        return text.isBlank() ? null : text;
     }
 
     @Override
@@ -197,7 +329,7 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
                     }
                     return Collections.emptySet();
                 }
-                Set<Long> matchedQueryable = retainQueryableByField(
+                Set<Long> matchedQueryable = retainFilterableByField(
                         entityTypeCode, filter.getFieldCode(), new HashSet<>(matched), result);
                 if (matchedQueryable.isEmpty()) {
                     if (isNegativeOp) {
@@ -370,14 +502,14 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
             return null;
         }
 
-        // 不可搜索字段不得按字段命中（含索引残留、跨模型同 fieldCode）
-        return retainQueryableByField(entityTypeCode, filter.getFieldCode(), matched, candidateIds);
+        // 未开可筛选的不得按字段筛中（含索引残留、跨模型同 fieldCode）。禁止再用可搜索挡筛选。
+        return retainFilterableByField(entityTypeCode, filter.getFieldCode(), matched, candidateIds);
     }
 
     /**
-     * 仅保留：在候选内、且该实体所属模型上该字段仍可搜索的实体。
+     * 仅保留：在候选内、且该实体所属型号上该字段已开可筛选。
      */
-    private Set<Long> retainQueryableByField(
+    private Set<Long> retainFilterableByField(
             String entityTypeCode,
             String fieldCode,
             Set<Long> matchedIds,
@@ -403,7 +535,7 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
             if (entity == null || entity.getId() == null) {
                 continue;
             }
-            if (fieldIndexService.isFieldSearchable(entity.getModelId(), fieldCode)) {
+            if (fieldIndexService.isFieldFilterable(entity.getModelId(), fieldCode)) {
                 allowed.add(entity.getId());
             }
         }

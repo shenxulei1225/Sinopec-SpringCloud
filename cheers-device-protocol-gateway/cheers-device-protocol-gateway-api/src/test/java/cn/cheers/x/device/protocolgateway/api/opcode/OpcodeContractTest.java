@@ -15,6 +15,9 @@ class OpcodeContractTest {
         assertEquals(500104, TransportOpcode.COMMAND_SEND.code());
         assertEquals(500201, TransportOpcode.STARTUP_EXECUTE.code());
         assertEquals(500205, TransportOpcode.TASK_STOP.code());
+        assertEquals(500106, TransportOpcode.ACK.code());
+        assertEquals(500401, TransportOpcode.STREAM_START.code());
+        assertEquals(500402, TransportOpcode.STREAM_STOP.code());
     }
 
     @Test

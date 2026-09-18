@@ -8,6 +8,8 @@ import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskUpdate
 import cn.cheers.x.inspection.task.dal.dataobject.task.InspectionTaskDO;
 import cn.cheers.x.inspection.task.dal.mysql.task.InspectionTaskMapper;
 import cn.cheers.x.inspection.task.service.task.InspectionTaskService;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,36 +30,15 @@ import static cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConsta
 public class InspectionTaskServiceImpl implements InspectionTaskService {
 
     private final InspectionTaskMapper inspectionTaskMapper;
+    private final PatrolTaskEntityStore patrolTaskEntityStore;
 
     // ==================== 基础CRUD ====================
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createTask(InspectionTaskCreateReqVO reqVO) {
-        // 自动生成任务编码（如果未提供）
-        if (reqVO.getTaskCode() == null || reqVO.getTaskCode().isBlank()) {
-            reqVO.setTaskCode(generateTaskCode());
-        } else {
-            validateTaskCodeUnique(reqVO.getTaskCode(), null);
-        }
-
-        validateParentTask(reqVO.getParentId());
-        validateScheduleInheritance(reqVO.getInheritParentSchedule(), reqVO.getParentId(),
-                reqVO.getScheduleRequirementId(), reqVO.getSchedulePolicyId());
-        validateResourceInheritance(reqVO.getInheritParentResourcePolicy(), reqVO.getParentId(),
-                reqVO.getResourcePolicy());
         validateExecutionDeviceBinding(reqVO.getExecutionDeviceBinding());
-
-        InspectionTaskDO taskDO = BeanUtils.toBean(reqVO, InspectionTaskDO.class);
-        // 草稿创建：允许分步保存后再启用（status=0 草稿，enabled 默认关闭）
-        if (taskDO.getStatus() == null) {
-            taskDO.setStatus(0);
-        }
-        if (taskDO.getEnabled() == null) {
-            taskDO.setEnabled(Boolean.FALSE);
-        }
-        inspectionTaskMapper.insert(taskDO);
-        return taskDO.getId();
+        return patrolTaskEntityStore.createDraft(reqVO);
     }
 
     /**
@@ -74,27 +55,14 @@ public class InspectionTaskServiceImpl implements InspectionTaskService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateTask(InspectionTaskUpdateReqVO reqVO) {
-        validateTaskExists(reqVO.getId());
-        // 注意：taskCode 不允许修改，不调用 validateTaskCodeUnique
-        validateParentTask(reqVO.getParentId());
-        if (Objects.equals(reqVO.getId(), reqVO.getParentId())) {
-            throw ServiceExceptionUtil.exception(BAD_REQUEST, "任务不能将自己设置为父任务");
-        }
-        validateScheduleInheritance(reqVO.getInheritParentSchedule(), reqVO.getParentId(),
-                reqVO.getScheduleRequirementId(), reqVO.getSchedulePolicyId());
-        validateResourceInheritance(reqVO.getInheritParentResourcePolicy(), reqVO.getParentId(),
-                reqVO.getResourcePolicy());
         validateExecutionDeviceBinding(reqVO.getExecutionDeviceBinding());
-
-        InspectionTaskDO updateDO = BeanUtils.toBean(reqVO, InspectionTaskDO.class);
-        inspectionTaskMapper.updateById(updateDO);
+        patrolTaskEntityStore.updateDraft(reqVO);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteTask(Long id) {
-        validateTaskExists(id);
-        inspectionTaskMapper.deleteById(id);
+        patrolTaskEntityStore.delete(id);
     }
 
     @Override
@@ -119,7 +87,7 @@ public class InspectionTaskServiceImpl implements InspectionTaskService {
 
     @Override
     public InspectionTaskDO getTask(Long id) {
-        return inspectionTaskMapper.selectById(id);
+        return toLegacyDo(patrolTaskEntityStore.require(id));
     }
 
     @Override
@@ -200,10 +168,22 @@ public class InspectionTaskServiceImpl implements InspectionTaskService {
     // ==================== 私有方法 ====================
 
     private InspectionTaskDO validateTaskExists(Long id) {
-        InspectionTaskDO task = inspectionTaskMapper.selectById(id);
-        if (task == null) {
-            throw ServiceExceptionUtil.exception(BAD_REQUEST, "任务不存在");
-        }
+        return toLegacyDo(patrolTaskEntityStore.require(id));
+    }
+
+    /**
+     * 排期等旧调用方仍吃 InspectionTaskDO。只从总任务投影，不再读固定表。
+     */
+    public static InspectionTaskDO toLegacyDo(PatrolTaskDraft draft) {
+        InspectionTaskDO task = new InspectionTaskDO();
+        task.setId(draft.id());
+        task.setTaskName(draft.name());
+        task.setDomain(draft.domain());
+        task.setInspectionContent(draft.inspectionContent());
+        task.setExecutionDeviceBinding(draft.executionDeviceBinding());
+        task.setResourcePolicy(draft.resourcePolicy());
+        task.setStatus("draft".equals(draft.manageStatus()) ? 0 : 1);
+        task.setEnabled(Boolean.FALSE);
         return task;
     }
 

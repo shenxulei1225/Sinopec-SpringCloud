@@ -33,7 +33,7 @@ import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategory
 import cn.cheers.x.module.dynamicbusiness.service.entity.refcategory.EntityRefCategoryProjectionService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.refdisplay.EntityRefDisplayEnrichService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryEntityLinkService;
-import cn.cheers.x.module.dynamicbusiness.service.sop.SopFieldCodes;
+import cn.cheers.x.module.dynamicbusiness.service.sop.FlowFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.util.SparseSortUtils;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONException;
@@ -60,16 +60,17 @@ public class EntityServiceImpl implements EntityService {
 
     private static final String ENTITY_NOT_EXISTS = "实体不存在";
     /**
-     * SOP 系统字段（由 SOP 专用命令维护）。
+     * SOP 受控字段（发布治理口径）。
      *
-     * 通用实体 update 入口不得改写这些字段，防止通过 generic CRUD 绕过 SOP 业务约束。
+     * 说明：
+     * - 发布治理相关字段由专用命令维护，通用实体更新入口禁止直接改写；
+     * - 步骤编排字段 step_tree_json / flow_graph_json 允许在草稿态通过实体更新保存；
+     * - 已发布版本若改动步骤，必须走「新建版本/重新发布」动作，避免覆盖已发布版本。
      */
     private static final List<String> SOP_SYSTEM_FIELD_CODES = List.of(
-            SopFieldCodes.ACTION_TREE_JSON,
-            SopFieldCodes.FLOW_GRAPH_JSON,
-            SopFieldCodes.VERSION_NO,
-            SopFieldCodes.PUBLISH_STATUS,
-            SopFieldCodes.STANDARD_PDF_URL
+            FlowFieldCodes.VERSION_NO,
+            FlowFieldCodes.PUBLISH_STATUS,
+            FlowFieldCodes.STANDARD_PDF_URL
     );
     @Resource
     private EntityCoreService entityCoreService;
@@ -130,11 +131,13 @@ public class EntityServiceImpl implements EntityService {
             Long entityId, Long rootEntityId, String entitySourceEntityType,
             Integer pageNo, Integer pageSize, String keyword, String domain,
             List<FieldFilterReqVO> filters, String orderByColumn, Boolean isAsc,
-            List<String> searchFieldCodes) {
+            List<String> searchFieldCodes,
+            List<Long> relatedEntityIds, String relatedEntityTypeCode) {
         return entitySceneQueryService.queryEntities(scene, resultShape, resultDetail, categoryTypeCode, entityTypeCode,
                 modelIds, modelEntityTypeCode, categoryIds, categoryIdGroups, categoryViaRefPathCode,
                 categoryFilterMode, entityId, rootEntityId, entitySourceEntityType,
-                pageNo, pageSize, keyword, domain, filters, orderByColumn, isAsc, searchFieldCodes);
+                pageNo, pageSize, keyword, domain, filters, orderByColumn, isAsc, searchFieldCodes,
+                relatedEntityIds, relatedEntityTypeCode);
     }
 
     @Override
@@ -145,6 +148,11 @@ public class EntityServiceImpl implements EntityService {
     @Override
     public List<EntityRespVO> getEntityTreeByModelId(String entityTypeCode, Long modelId) {
         return entitySceneQueryService.getEntityTreeByModelId(entityTypeCode, modelId);
+    }
+
+    @Override
+    public List<EntityRespVO> getEntityTreeByModelId(String entityTypeCode, Long modelId, Long facilityId) {
+        return entitySceneQueryService.getEntityTreeByModelId(entityTypeCode, modelId, facilityId);
     }
 
     @Override
@@ -378,7 +386,7 @@ public class EntityServiceImpl implements EntityService {
             EntityUpdateReqVO reqVO,
             EntityDO oldEntity,
             String entityTypeCode) {
-        if (!SopFieldCodes.ENTITY_TYPE_CODE.equalsIgnoreCase(entityTypeCode == null ? "" : entityTypeCode.trim())) {
+        if (!FlowFieldCodes.ENTITY_TYPE_CODE.equalsIgnoreCase(entityTypeCode == null ? "" : entityTypeCode.trim())) {
             return;
         }
         Map<String, Object> reqBase = EntityFieldMapsSupport.normalizeMap(reqVO.getBaseFields());
@@ -409,6 +417,35 @@ public class EntityServiceImpl implements EntityService {
                     "SOP 系统字段仅允许专用命令维护，通用实体更新接口禁止改写："
                             + String.join("、", changedLockedFields));
         }
+        guardSopPublishedStepMutation(reqBase, oldFieldValues);
+    }
+
+    /**
+     * 已发布 SOP 版本不允许在通用保存里直接覆盖步骤正文。
+     *
+     * 正确路径：先生成新版本（草稿）并修改，再通过发布动作指定版本发布。
+     */
+    private void guardSopPublishedStepMutation(
+            Map<String, Object> reqBase,
+            Map<String, Object> oldFieldValues) {
+        String oldPublishStatus = String.valueOf(oldFieldValues.get(FlowFieldCodes.PUBLISH_STATUS))
+                .trim()
+                .toUpperCase(Locale.ROOT);
+        if (!"PUBLISHED".equals(oldPublishStatus)) {
+            return;
+        }
+        boolean stepTreeChanged = reqBase.containsKey(FlowFieldCodes.STEP_TREE_JSON)
+                && !sameStructuredValue(reqBase.get(FlowFieldCodes.STEP_TREE_JSON),
+                oldFieldValues.get(FlowFieldCodes.STEP_TREE_JSON));
+        boolean flowGraphChanged = reqBase.containsKey(FlowFieldCodes.FLOW_GRAPH_JSON)
+                && !sameStructuredValue(reqBase.get(FlowFieldCodes.FLOW_GRAPH_JSON),
+                oldFieldValues.get(FlowFieldCodes.FLOW_GRAPH_JSON));
+        if (!stepTreeChanged && !flowGraphChanged) {
+            return;
+        }
+        throw new ServiceException(
+                400,
+                "当前是已发布版本，不能直接修改步骤。请先新建版本保存，再按版本号执行发布。");
     }
 
     private boolean sameStructuredValue(Object requested, Object existing) {

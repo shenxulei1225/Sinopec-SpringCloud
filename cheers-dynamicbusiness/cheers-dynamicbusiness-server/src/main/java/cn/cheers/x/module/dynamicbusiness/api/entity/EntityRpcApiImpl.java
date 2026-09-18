@@ -1,6 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.api.entity;
 
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityWriteReqDTO;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityRpcFacadeService;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import jakarta.annotation.Resource;
@@ -49,6 +50,28 @@ public class EntityRpcApiImpl implements EntityRpcApi {
     @Override
     public CommonResult<List<EntityRespDTO>> listEntitiesByCodes(List<String> codes, String entityTypeCode) {
         return success(entityRpcFacadeService.listByCodes(codes, entityTypeCode));
+    }
+
+    @Override
+    public CommonResult<Long> createEntity(EntityWriteReqDTO req) {
+        return success(entityRpcFacadeService.create(req));
+    }
+
+    @Override
+    public CommonResult<Boolean> updateEntityFields(EntityWriteReqDTO req) {
+        entityRpcFacadeService.updateFields(req);
+        return success(true);
+    }
+
+    @Override
+    public CommonResult<Long> getModelIdByCode(String modelCode) {
+        return success(entityRpcFacadeService.getModelIdByCode(modelCode));
+    }
+
+    @Override
+    public CommonResult<Boolean> deleteEntity(Long id, String entityTypeCode) {
+        entityRpcFacadeService.delete(id, entityTypeCode);
+        return success(true);
     }
 
 }

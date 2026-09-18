@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 /**
  * 协议网关正式下行：翻译执行意图并下发指令包 + 启动执行。
- * <p>不管巡检任务编排；入参须已带 protocolCode 与逻辑设备标识。
+ * <p>不管巡检任务编排；入参须已带协议版本、动作列表与逻辑设备标识。
  */
 @FeignClient(name = ApiConstants.NAME)
 @Tag(name = "RPC 服务 - 设备协议任务下行")
@@ -22,7 +22,7 @@ public interface DeviceProtocolMissionApi {
     String PREFIX = ApiConstants.PREFIX + "/mission";
 
     /**
-     * 按对接协议编码翻译 → 下发 500104 → 下发 500201。
+     * 按对照表填包 → 下发 500104 → 下发 500201。
      * <p>设备当前无连接或写出失败时返回 success=false，不假装成功。
      */
     @PostMapping(PREFIX + "/dispatch-and-startup")

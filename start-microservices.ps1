@@ -1,38 +1,11 @@
 ﻿# ============================================================================
-# ZHGL 微服务启动脚本 (Windows PowerShell 版本)
-# 与 start-microservices.sh（Mac）保持同一套路径与套件命令。
+# 本地微服务启停（Windows）。与 start-microservices.sh 同一套职责套件。
 # ============================================================================
-# 使用方法:
-#   .\start-microservices.ps1                    # 显示所有可用服务
-#   .\start-microservices.ps1 all                # 启动所有核心服务
-#   .\start-microservices.ps1 <服务名>            # 启动单个服务
-#   .\start-microservices.ps1 status             # 查看服务状态
-#   .\start-microservices.ps1 stop <服务名>       # 停止服务
-#   .\start-microservices.ps1 stop-all           # 停止所有服务
-#   .\start-microservices.ps1 logs <服务名>       # 查看服务日志
-#   .\start-microservices.ps1 nacos              # 启动 Nacos
-#   .\start-microservices.ps1 nacos status       # 查看 Nacos 状态
-#   .\start-microservices.ps1 nacos stop         # 停止 Nacos
-#   .\start-microservices.ps1 bmp                # 推荐：过程引擎 + 路径规划
-#   .\start-microservices.ps1 bmp-process        # 仅过程引擎（platform 套件）
-#   .\start-microservices.ps1 bmp-path           # 仅路径规划
-#   .\start-microservices.ps1 bmp-scene-3d       # 三维 scene-3d
-#   .\start-microservices.ps1 bmp-gis            # GIS
-#   .\start-microservices.ps1 bmp-alarm          # 告警
-#   .\start-microservices.ps1 bmp-work-order     # 工单
-#   .\start-microservices.ps1 bmp-maintenance    # 维护手册
-#   .\start-microservices.ps1 twin-dev           # 孪生联调：dynamic + scene-3d + twin
-#   .\start-microservices.ps1 stop-twin-dev      # 停止 twin-dev
-#   .\start-microservices.ps1 stop-bmp           # 停止 bmp（process+path）
-#   .\start-microservices.ps1 platform-all       # [弃用] 等同 bmp
-#
-# 本地微服务监听端口段：15xxx（网关 15080）。
-# 避开：kpki 固定口 16080/18080/8877-8879；Windows 临时端口 ≥49152（旧 58xxx 落在此段）。
-# 网关 15080；前端只连网关，勿直连业务端口。
-# 业务中台父工程：cheers-business-middle-platform
-# bmp = bmp-process + bmp-path（不含 scene-3d / gis / twin）
-# twin = cheers-twin（整合层；联调请用 twin-dev）
-# dynamic = cheers-dynamicbusiness\cheers-dynamicbusiness-server（勿用旧 cheers-module-dynamicbusiness）
+#   .\start-microservices.ps1 base       # 底盘
+#   .\start-microservices.ps1 biz        # 动态业务 + 巡检 + 孪生 + 协议网关
+#   .\start-microservices.ps1 bmp        # 中台全部
+#   .\start-microservices.ps1 all        # 底盘 + 工作流 + 动态业务 + 中台
+#   .\start-microservices.ps1 resource   # 只开组件配置
 # ============================================================================
 
 param(
@@ -92,11 +65,16 @@ $ServiceConfig = @{
     "twin"       = @{ Path = "cheers-twin\cheers-twin-server"; Port = 15094 }
     "cheers-twin"= @{ Path = "cheers-twin\cheers-twin-server"; Port = 15094 }
     "inspection" = @{ Path = "cheers-inspection-task\cheers-inspection-task-server"; Port = 15095 }
+    "protocol"   = @{ Path = "cheers-device-protocol-gateway\cheers-device-protocol-gateway-server"; Port = 8095 }
+    "device-protocol" = @{ Path = "cheers-device-protocol-gateway\cheers-device-protocol-gateway-server"; Port = 8095 }
+    "protocol-gateway" = @{ Path = "cheers-device-protocol-gateway\cheers-device-protocol-gateway-server"; Port = 8095 }
+    "cheers-device-protocol-gateway" = @{ Path = "cheers-device-protocol-gateway\cheers-device-protocol-gateway-server"; Port = 8095 }
     "dynamic"    = @{ Path = "cheers-dynamicbusiness\cheers-dynamicbusiness-server"; Port = 15096 }
     # platform / resource：组件库、视图库
     "platform"   = @{ Path = "cheers-business-middle-platform\cheers-resource-server"; Port = 15098 }
     "resource"   = @{ Path = "cheers-business-middle-platform\cheers-resource-server"; Port = 15098 }
     "bmp-resource" = @{ Path = "cheers-business-middle-platform\cheers-resource-server"; Port = 15098 }
+    "runtime"    = @{ Path = "cheers-business-middle-platform\cheers-runtime-server"; Port = 15099 }
     "platform-runtime" = @{ Path = "cheers-business-middle-platform\cheers-runtime-server"; Port = 15099 }
     "runtime-l4" = @{ Path = "cheers-business-middle-platform\cheers-runtime-server"; Port = 15099 }
     "bmp-runtime" = @{ Path = "cheers-business-middle-platform\cheers-runtime-server"; Port = 15099 }
@@ -117,50 +95,34 @@ $ServiceConfig = @{
     "bmp-routing" = @{ Path = "cheers-business-middle-platform\cheers-routing-server"; Port = 15108 }
 }
 
-# 与 start-microservices.sh 保持一致
-# 演示/商城类（member/pay/report/mp/mall/crm/erp/ai/iot）不进默认列表；配置仍保留，可手动启动
-$KnownServices = @(
-    "gateway", "system", "infra", "bpm", "alarm", "work-order", "dynamic",
-    "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
-    "platform-topology", "platform-routing",
-    "scene", "gis", "twin", "inspection"
+$BaseServices = @("infra", "system", "gateway")
+$WorkflowServices = @("bpm")
+$BizServices = @("dynamic", "inspection", "twin", "protocol")
+$BmpServices = @(
+    "resource",
+    "policy", "capability", "runtime", "orchestration",
+    "topology", "routing",
+    "alarm", "work-order", "maintenance",
+    "scene-3d", "gis"
 )
-
-$CoreServices = @(
-    "infra", "system", "gateway", "bpm", "alarm", "work-order", "dynamic",
-    "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
-    "platform-topology", "platform-routing",
-    "scene", "gis", "twin", "inspection"
-)
-
-$AllServices = @(
-    "system", "infra", "gateway", "bpm", "alarm", "work-order", "dynamic",
-    "platform", "platform-runtime", "platform-orchestration", "platform-policy", "platform-capability",
-    "platform-topology", "platform-routing",
-    "scene", "gis", "twin", "inspection"
-)
-
+$BmpProcessServices = @("resource", "policy", "capability", "runtime", "orchestration")
+$BmpPathServices = @("topology", "routing")
+$AllDutyServices = $BaseServices + $WorkflowServices + $BizServices + $BmpServices
+$KnownServices = $AllDutyServices
+$CoreServices = $AllDutyServices
+$AllServices = $AllDutyServices
 $StopServices = @(
-    "gateway", "infra", "system", "bpm", "alarm", "work-order", "dynamic",
-    "platform-routing", "platform-topology",
-    "platform-orchestration", "platform-runtime", "platform-policy", "platform-capability", "platform",
-    "scene", "gis", "twin", "inspection"
+    "gateway", "infra", "system", "bpm",
+    "dynamic", "inspection", "twin", "protocol",
+    "routing", "topology", "orchestration", "runtime", "policy", "capability", "resource",
+    "alarm", "work-order", "maintenance", "scene-3d", "gis"
 )
-
-# 与 Mac start-microservices.sh 套件一致
-$BmpProcessServices = @(
-    "platform", "platform-policy", "platform-capability", "platform-runtime", "platform-orchestration"
-)
-$BmpPathServices = @("platform-topology", "platform-routing")
-$BmpCoreServices = $BmpProcessServices + $BmpPathServices
 $BmpScene3dServices = @("scene-3d")
 $BmpGisServices = @("gis")
 $BmpAlarmServices = @("alarm")
 $BmpWorkOrderServices = @("work-order")
 $BmpMaintenanceServices = @("maintenance")
 $TwinDevServices = @("dynamic", "scene-3d", "twin")
-# [弃用别名] platform-all ≡ bmp
-$PlatformAllServices = $BmpCoreServices
 
 # 颜色输出函数
 function Write-ColorOutput {
@@ -466,6 +428,7 @@ function Start-SingleService {
             "maintenance", "bmp-maintenance",
             "work-order", "bmp-work-order",
             "bpm", "dynamic", "system",
+            "protocol", "device-protocol", "protocol-gateway", "cheers-device-protocol-gateway",
             "platform", "resource", "bmp-resource"
         )) {
         $needsPlatformRoot = $ServiceName -in @(
@@ -708,70 +671,28 @@ function Show-Status {
     }
 }
 
-# 显示所有服务
 function Show-Services {
-    Write-ColorOutput "[LIST] 可用微服务列表:" "Cyan"
+    Write-ColorOutput "按职责启停（先看这里）" "Cyan"
     Write-ColorOutput "" "White"
-    
-    $format = "{0,-15} {1,-55} {2,-10}"
-    Write-ColorOutput ($format -f "服务名", "模块路径", "端口") "White"
+    Write-ColorOutput "  .\start-microservices.ps1 base       # 底盘：登录、网关、文件日志" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 biz        # 动态业务 + 巡检 + 孪生 + 协议网关" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 bmp        # 中台全部" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 all        # 底盘 + 工作流 + 动态业务 + 中台" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 resource   # 只开组件配置" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 stop-base|stop-biz|stop-bmp|stop-all" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 status" "White"
+    Write-ColorOutput "" "White"
+    Write-ColorOutput "中台里只开一块: bmp-process / bmp-path / alarm / work-order / maintenance / scene-3d / gis" "White"
+    Write-ColorOutput "旧名 platform / platform-* 仍能敲。不要用 platform-all。" "Yellow"
+    Write-ColorOutput "" "White"
+    $format = "{0,-16} {1,-55} {2,-8}"
+    Write-ColorOutput ($format -f "正名", "路径", "端口") "White"
     Write-ColorOutput ("-" * 80) "White"
-    
     foreach ($svc in $KnownServices) {
         $config = $ServiceConfig[$svc]
+        if ($null -eq $config) { continue }
         Write-ColorOutput ($format -f $svc, $config.Path, $config.Port) "White"
     }
-    
-    Write-ColorOutput "" "White"
-    Write-ColorOutput "使用方法:" "Cyan"
-    Write-ColorOutput "  .\start-microservices.ps1                    # 显示所有可用服务" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 all                # 启动所有核心服务" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 all -f             # 启动所有核心服务（显示日志）" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 all-services       # 启动所有服务包括业务服务" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 bmp                # 过程引擎 + 路径规划（推荐）" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 bmp-process        # 仅过程引擎（platform 五件套）" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 twin-dev           # 孪生联调：dynamic + scene-3d + twin" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 platform-all       # [弃用] 等同 bmp" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 <服务名>            # 启动单个服务" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 status             # 查看服务状态" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 logs <服务名>       # 查看服务日志" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 stop <服务名>       # 停止服务" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 stop-all           # 停止所有服务" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 stop-twin-dev      # 停止 twin-dev" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 stop-bmp           # 停止 bmp" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 nacos              # 启动 Nacos" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 nacos status       # 查看 Nacos 状态" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 nacos stop         # 停止 Nacos" "White"
-    
-    Write-ColorOutput "" "White"
-    Write-ColorOutput "说明:" "Cyan"
-    Write-ColorOutput "  - Nacos 默认路径: $NacosPath（可通过 NACOS_HOME 覆盖）" "White"
-    Write-ColorOutput "  - 默认后台运行,日志保存到 logs/ 目录" "White"
-    Write-ColorOutput "  - 使用 -f 参数可以实时查看启动日志" "White"
-    
-    Write-ColorOutput "" "White"
-    Write-ColorOutput "核心服务（推荐启动顺序）:" "Cyan"
-    Write-ColorOutput "  1. infra     - 基础设施服务（必需,提供日志、文件等服务）" "White"
-    Write-ColorOutput "  2. system    - 系统服务（必需,依赖 infra 的日志服务）" "White"
-    Write-ColorOutput "  3. gateway   - 网关服务（必需）" "White"
-    Write-ColorOutput "  4. bpm       - 工作流服务（必需）" "White"
-    Write-ColorOutput "  5. alarm     - 告警管理服务（必需）" "White"
-    Write-ColorOutput "  6. dynamic   - 动态业务（cheers-dynamicbusiness\cheers-dynamicbusiness-server，15096）" "White"
-    Write-ColorOutput "  7. platform  - 平台资源库（cheers-resource-server，别名 resource，15098）" "White"
-    Write-ColorOutput "     路径: cheers-business-middle-platform\cheers-resource-server" "Gray"
-    Write-ColorOutput "     套件: .\start-microservices.ps1 bmp / twin-dev（与 Mac .sh 一致）" "Gray"
-    Write-ColorOutput "  8. platform-policy - 平台策略（15105）" "White"
-    Write-ColorOutput "  9. platform-capability - 平台能力映射（15106）" "White"
-    Write-ColorOutput "  10. platform-runtime - 平台 L4 运行时（15099）" "White"
-    Write-ColorOutput "  11. platform-orchestration - 平台编排/排程 run（15104，依赖 runtime）" "White"
-    Write-ColorOutput "  12. platform-topology - 站场拓扑/路网（15107，路径规划必需）" "White"
-    Write-ColorOutput "  13. platform-routing - 路径规划引擎（15108，试走/算路必需）" "White"
-    Write-ColorOutput "     （.\start-microservices.ps1 all / platform-all 已按 7->13 顺序启动 platform 套件）" "Gray"
-    
-    Write-ColorOutput "" "White"
-    Write-ColorOutput "按需启动:" "Cyan"
-    Write-ColorOutput "  - work-order - 工单（亦可 bmp-work-order）" "White"
-    Write-ColorOutput "  - scene / gis / twin / inspection / maintenance" "White"
 }
 
 
@@ -1043,7 +964,7 @@ function Stop-SuiteServices {
 function Start-BmpSuite {
     param(
         [bool]$ShowLogs = $false,
-        [string]$Label = "业务中台核心套件 (bmp = process + path)"
+        [string]$Label = "中台全部"
     )
     if (-not (Start-Nacos)) {
         Write-Error "Nacos 启动失败,无法继续"
@@ -1051,9 +972,9 @@ function Start-BmpSuite {
     }
     Check-Redis
     Write-ColorOutput "" "White"
-    Write-ColorOutput "[START] $Label，共 $($BmpCoreServices.Count) 个" "Cyan"
+    Write-ColorOutput "[START] $Label，共 $($BmpServices.Count) 个" "Cyan"
     Write-ColorOutput "" "White"
-    Start-SuiteServices -Services $BmpCoreServices -ShowLogs $ShowLogs
+    Start-SuiteServices -Services $BmpServices -ShowLogs $ShowLogs
 }
 
 function Start-PlatformAll {
@@ -1097,7 +1018,27 @@ switch ($Command.ToLower()) {
         Start-AllCore -ShowLogs $f.IsPresent | Out-Null
     }
     "all-services" {
-        Start-AllServices -ShowLogs $f.IsPresent | Out-Null
+        Start-AllCore -ShowLogs $f.IsPresent | Out-Null
+    }
+    "base" {
+        if (-not (Start-Nacos)) { Write-Error "Nacos 启动失败,无法继续"; exit 1 }
+        Check-Redis
+        Write-ColorOutput "[START] 底盘（登录 / 网关 / 文件日志）" "Cyan"
+        Start-SuiteServices -Services $BaseServices -ShowLogs $f.IsPresent
+    }
+    "stop-base" {
+        Write-ColorOutput "[STOP] 停止底盘" "Cyan"
+        Stop-SuiteServices -Services $BaseServices
+    }
+    "biz" {
+        if (-not (Start-Nacos)) { Write-Error "Nacos 启动失败,无法继续"; exit 1 }
+        Check-Redis
+        Write-ColorOutput "[START] 动态业务 + 巡检 + 孪生" "Cyan"
+        Start-SuiteServices -Services $BizServices -ShowLogs $f.IsPresent
+    }
+    "stop-biz" {
+        Write-ColorOutput "[STOP] 停止动态业务套件" "Cyan"
+        Stop-SuiteServices -Services $BizServices
     }
     "bmp" {
         Start-BmpSuite -ShowLogs $f.IsPresent | Out-Null
@@ -1163,12 +1104,12 @@ switch ($Command.ToLower()) {
         Start-SuiteServices -Services $TwinDevServices -ShowLogs $f.IsPresent
     }
     "stop-bmp" {
-        Write-ColorOutput "[STOP] 停止 bmp（process + path）" "Cyan"
-        Stop-SuiteServices -Services $BmpCoreServices
+        Write-ColorOutput "[STOP] 停止中台全部" "Cyan"
+        Stop-SuiteServices -Services $BmpServices
     }
     "stop-bmp-all" {
-        Write-ColorOutput "[STOP] 停止 bmp（process + path）" "Cyan"
-        Stop-SuiteServices -Services $BmpCoreServices
+        Write-ColorOutput "[STOP] 停止中台全部" "Cyan"
+        Stop-SuiteServices -Services $BmpServices
     }
     "stop-bmp-process" {
         Write-ColorOutput "[STOP] 停止 bmp-process" "Cyan"

@@ -4,6 +4,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldGr
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityBaseFieldColumnNames;
+import cn.cheers.x.module.dynamicbusiness.framework.field.StructuredFieldSemantics;
 import cn.cheers.x.module.dynamicbusiness.framework.hierarchy.OrgTreeParentFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelRelationDO;
@@ -292,7 +293,7 @@ public final class ModelCrudFormFieldAssembler {
         item.put("groupSortOrder", 0);
         if (libraryField != null && StringUtils.hasText(libraryField.getSemanticType())) {
             item.put("semanticType", libraryField.getSemanticType().trim());
-        } else {
+        } else if (!StructuredFieldSemantics.isPluginSlotColumn(code)) {
             String inferred = EntityBaseFieldColumnNames.inferSemanticType(code);
             if (StringUtils.hasText(inferred)) {
                 item.put("semanticType", inferred);
@@ -402,7 +403,7 @@ public final class ModelCrudFormFieldAssembler {
         item.put("baseField", baseField != null);
         if (StringUtils.hasText(field.getSemanticType())) {
             item.put("semanticType", field.getSemanticType().trim());
-        } else {
+        } else if (!StructuredFieldSemantics.isPluginSlotColumn(code)) {
             String inferred = EntityBaseFieldColumnNames.inferSemanticType(code);
             if (StringUtils.hasText(inferred)) {
                 item.put("semanticType", inferred);
@@ -482,6 +483,7 @@ public final class ModelCrudFormFieldAssembler {
             case "ENTITY_REF", "REFERENCE" -> "ref-picker";
             case "ENTITY_REF_MULTI" -> "ref-picker-multi";
             case "ENTITY_SELF_REF" -> "entity-parent-tree";
+            case "COORDINATE" -> "coordinate";
             default -> "input";
         };
     }
@@ -518,6 +520,71 @@ public final class ModelCrudFormFieldAssembler {
         copyBooleanRule(item, config, "createVisible", "create_visible");
         copyBooleanRule(item, config, "editVisible", "edit_visible");
         copyBooleanRule(item, config, "detailVisible", "detail_visible");
+        applyStepTreeHang(item, config);
+    }
+
+    /**
+     * 步骤树挂载写在目录基础字段 type_config，随表单投影给前端。
+     * 禁止在这里按列名发明 editorKind。
+     */
+    private static void applyStepTreeHang(Map<String, Object> item, JSONObject config) {
+        if (!config.containsKey("editorKind") && !config.containsKey("hangableTypeCodes")) {
+            return;
+        }
+        String editorKind = officialStepTreeEditorKind(config.getString("editorKind"));
+        if (!StringUtils.hasText(editorKind)) {
+            return;
+        }
+        List<String> hangable = new ArrayList<>();
+        if (config.get("hangableTypeCodes") instanceof JSONArray arr) {
+            for (int i = 0; i < arr.size(); i++) {
+                String code = arr.getString(i);
+                if (StringUtils.hasText(code)) {
+                    hangable.add(code.trim());
+                }
+            }
+        }
+        Map<String, Object> hang = new LinkedHashMap<>();
+        hang.put("hangableTypeCodes", hangable);
+        hang.put("allowMixed", config.getBooleanValue("allowMixed"));
+        hang.put("editorKind", editorKind);
+        hang.put("packMethods", readStepTreePackMethods(config.getJSONArray("packMethods")));
+        item.put("stepTreeHang", hang);
+    }
+
+    /** 历史 methods_by_means 投影成步骤树包，不保留旧名并行判定。 */
+    private static String officialStepTreeEditorKind(String editorKind) {
+        if (!StringUtils.hasText(editorKind)) {
+            return editorKind;
+        }
+        String trimmed = editorKind.trim();
+        if ("methods_by_means".equals(trimmed)) {
+            return "step_tree_pack";
+        }
+        return trimmed;
+    }
+
+    private static List<Map<String, Object>> readStepTreePackMethods(JSONArray arr) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        if (arr == null) {
+            return out;
+        }
+        for (int i = 0; i < arr.size(); i++) {
+            JSONObject row = arr.getJSONObject(i);
+            if (row == null) {
+                continue;
+            }
+            String key = row.getString("key");
+            if (!StringUtils.hasText(key)) {
+                continue;
+            }
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("key", key.trim());
+            String label = row.getString("label");
+            item.put("label", StringUtils.hasText(label) ? label.trim() : key.trim());
+            out.add(item);
+        }
+        return out;
     }
 
     private static void applyFieldTypeExtensions(

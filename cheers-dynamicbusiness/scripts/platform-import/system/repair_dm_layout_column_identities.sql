@@ -6,8 +6,8 @@
 --   · 同类型、只有一栏型号+一栏实体、且已经有「分类→型号」筛选时，若缺「型号→实体」就补一条。
 --   · 绝对不自动删边（禁止 deleted=true）。看不准的边原样留下，人工处理。
 --
--- 型号/实体 tabId = 底座类型编码（禁止 default）。
--- 存量先跑 migrate_model_entity_tabid_to_typecode.sql；本脚本不再把栏收成 default。
+-- 页编号以 tab-* 为正式格式（禁止空 / default）。
+-- 存量先跑 Flyway V129；本脚本只改边端点对齐当前布局编号，不再把编号改写成类型码。
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;
@@ -30,6 +30,34 @@ DECLARE
   v_me_pages int := 0;
   v_n int;
 BEGIN
+  -- -------------------------------------------------------------------------
+  -- 0. 历史键收口：统一 relation_meta.edgeAction，移除 edgeRole（幂等）
+  -- -------------------------------------------------------------------------
+  UPDATE dm_data_tab_column_relation
+  SET relation_meta =
+        (
+          COALESCE(relation_meta, '{}'::jsonb)
+          || jsonb_build_object(
+            'edgeAction',
+            CASE
+              WHEN relation_kind IN ('CATEGORY_DETAIL', 'ENTITY_DETAIL') THEN 'detail_follow'
+              WHEN relation_meta->'enabledInteractions' ?| ARRAY[
+                'dragAssociate', 'unbindChecked', 'checkboxSet', 'refFieldPick', 'ownershipWrite'
+              ] THEN 'write'
+              ELSE 'filter'
+            END
+          )
+        ) - 'edgeRole',
+      updater = 'repair-layout-identity',
+      update_time = CURRENT_TIMESTAMP
+  WHERE deleted = false
+    AND (
+      relation_meta IS NULL
+      OR relation_meta->>'edgeAction' IS NULL
+      OR relation_meta->>'edgeAction' NOT IN ('filter', 'write', 'detail_follow')
+      OR relation_meta ? 'edgeRole'
+    );
+
   -- -------------------------------------------------------------------------
   -- A. （已移除）SCOPE→default。请先跑 migrate_model_entity_tabid_to_typecode.sql
   -- -------------------------------------------------------------------------
@@ -189,7 +217,7 @@ BEGIN
       SELECT 1 FROM dm_data_tab_column_relation
       WHERE layout_id = r.layout_id AND deleted = false
         AND relation_kind = 'CATEGORY_MODEL'
-        AND COALESCE(relation_meta->>'edgeRole', 'filter') = 'filter'
+        AND COALESCE(relation_meta->>'edgeAction', 'filter') = 'filter'
     ) INTO v_has_cm;
     IF NOT v_has_cm THEN
       CONTINUE;
@@ -199,7 +227,7 @@ BEGIN
       SELECT 1 FROM dm_data_tab_column_relation
       WHERE layout_id = r.layout_id AND deleted = false
         AND relation_kind = 'MODEL_ENTITY'
-        AND COALESCE(relation_meta->>'edgeRole', 'filter') = 'filter'
+        AND COALESCE(relation_meta->>'edgeAction', 'filter') = 'filter'
         AND from_column_identity = v_model_id
         AND to_column_identity = v_entity_id
     ) INTO v_has_me;
@@ -222,7 +250,7 @@ BEGIN
           from_type_code = v_model_type,
           to_type_code = v_entity_type,
           relation_meta = jsonb_build_object(
-            'edgeRole', 'filter',
+            'edgeAction', 'filter',
             'enabledInteractions', '[]'::jsonb
           ),
           entity_type_code = r.code,
@@ -239,7 +267,7 @@ BEGIN
         v_tenant, r.layout_id, r.code, v_edge_id,
         v_model_id, v_entity_id, 'MODEL_ENTITY',
         v_model_type, v_entity_type,
-        jsonb_build_object('edgeRole', 'filter', 'enabledInteractions', '[]'::jsonb),
+        jsonb_build_object('edgeAction', 'filter', 'enabledInteractions', '[]'::jsonb),
         'repair-layout-identity', false
       );
     END IF;

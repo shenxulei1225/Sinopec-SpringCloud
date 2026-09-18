@@ -1,5 +1,6 @@
 package cn.cheers.x.device.protocolgateway.transport.websocket;
 
+import cn.cheers.x.device.protocolgateway.protocol.monitor.ProtocolMonitorHub;
 import cn.cheers.x.device.protocolgateway.transport.DeviceSessionRegistry;
 import cn.cheers.x.device.protocolgateway.transport.DeviceTransport;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import java.io.IOException;
 public class WebSocketDeviceTransport implements DeviceTransport {
 
     private final DeviceSessionRegistry sessionRegistry;
+    private final ProtocolMonitorHub protocolMonitorHub;
 
     @Override
     public boolean sendText(String deviceId, String text) {
@@ -29,6 +31,7 @@ public class WebSocketDeviceTransport implements DeviceTransport {
         }
         try {
             session.sendMessage(new TextMessage(text));
+            protocolMonitorHub.copyOutbound(deviceId, text);
             return true;
         } catch (IOException e) {
             log.warn("[device-protocol] 发送异常 deviceId={}", deviceId, e);

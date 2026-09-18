@@ -26,11 +26,15 @@ public interface EntitySceneQueryService {
             Long entityId, Long rootEntityId, String entitySourceEntityType,
             Integer pageNo, Integer pageSize, String keyword, String domain,
             List<FieldFilterReqVO> filters, String orderByColumn, Boolean isAsc,
-            List<String> searchFieldCodes);
+            List<String> searchFieldCodes,
+            List<Long> relatedEntityIds, String relatedEntityTypeCode);
 
     EntityRespVO getCategoryLinkedEntity(Long categoryId, String entityTypeCode);
 
     List<EntityRespVO> getEntityTreeByModelId(String entityTypeCode, Long modelId);
+
+    /** 上级树：站场级必须带所属场站。 */
+    List<EntityRespVO> getEntityTreeByModelId(String entityTypeCode, Long modelId, Long facilityId);
 
     List<Long> listDistinctModelIdsByCategoryScope(String entityTypeCode,
                                                    List<Long> categoryIds,

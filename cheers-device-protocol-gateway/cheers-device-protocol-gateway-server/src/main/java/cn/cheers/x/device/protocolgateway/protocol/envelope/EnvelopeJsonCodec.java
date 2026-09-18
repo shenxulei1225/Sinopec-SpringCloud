@@ -17,7 +17,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 外层信封编解码：将指令包序列化为协议要求的 packages JSON 字符串。
+ * 外层信封编解码：下发信封、回执、心跳回显、读操作码/消息 id/业务 code。
+ * <p>不负责交互方式分流、不等待答卷。禁止把回执编成带业务 code 的成功卷。
  */
 @Component
 @RequiredArgsConstructor
@@ -76,13 +77,68 @@ public class EnvelopeJsonCodec {
     }
 
     public int readOpcode(String payloadJson) {
+        JsonNode opcode = readRoot(payloadJson).get("opcode");
+        if (opcode == null || !opcode.isNumber()) {
+            throw new IllegalArgumentException("上报报文缺少 opcode");
+        }
+        return opcode.asInt();
+    }
+
+    /**
+     * 读消息 id。缺省返回空串，不猜一个默认 id。
+     */
+    public String readMsgId(String payloadJson) {
+        JsonNode msgId = readRoot(payloadJson).get("msgId");
+        if (msgId == null || msgId.isNull()) {
+            return "";
+        }
+        return msgId.asText("");
+    }
+
+    /**
+     * 读同号业务答卷的外壳 code。回执没有该字段，返回 empty。
+     */
+    public Integer readBusinessCode(String payloadJson) {
+        JsonNode code = readRoot(payloadJson).get("code");
+        if (code == null || !code.isNumber()) {
+            return null;
+        }
+        return code.asInt();
+    }
+
+    /**
+     * 通信层回执：表示收到了；不当业务成功。
+     */
+    public String encodeAck(String msgId, int originalOpcode, long epochSeconds) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("opcode", originalOpcode);
+        data.put("time", epochSeconds);
+        Map<String, Object> root = new LinkedHashMap<>();
+        root.put("opcode", TransportOpcode.ACK.code());
+        root.put("msgId", msgId == null ? "" : msgId);
+        root.put("data", data);
+        return write(root, "序列化回执失败");
+    }
+
+    /**
+     * 心跳对回：原包加上 time，操作码仍是 500105，不改成 500106。
+     */
+    public String encodeHeartbeatEcho(String payloadJson, long epochSeconds) {
         try {
             JsonNode root = objectMapper.readTree(payloadJson);
-            JsonNode opcode = root.get("opcode");
-            if (opcode == null || !opcode.isNumber()) {
-                throw new IllegalArgumentException("上报报文缺少 opcode");
-            }
-            return opcode.asInt();
+            Map<String, Object> echo = objectMapper.convertValue(root, new TypeReference<>() {
+            });
+            echo.put("time", epochSeconds);
+            echo.put("opcode", TransportOpcode.HEARTBEAT.code());
+            return write(echo, "序列化心跳回显失败");
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("解析心跳报文失败", e);
+        }
+    }
+
+    private JsonNode readRoot(String payloadJson) {
+        try {
+            return objectMapper.readTree(payloadJson);
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException("解析上报报文失败", e);
         }

@@ -8,7 +8,7 @@ SET search_path TO dynamicbusiness;
 
 INSERT INTO ent_standard_t1 (
   tenant_id, entity_type_code, model_id, name, code, status,
-  standard_no, standard_level, issuing_body, publish_year, summary, source_ref,
+  standard_no, standard_level, issuing_body, publish_year, summary, attachments,
   creator, deleted
 )
 SELECT
@@ -23,7 +23,7 @@ SELECT
   v.issuing_body,
   v.publish_year,
   v.summary,
-  v.source_ref,
+  NULL,
   'seed',
   false
 FROM dynamic_model m
@@ -305,7 +305,7 @@ CROSS JOIN (
       '武汉光谷中心城综合管廊项目运营维护手册-终版.md'
     )
 ) AS v(
-  code, name, standard_no, standard_level, issuing_body, publish_year, summary, source_ref
+  code, name, standard_no, standard_level, issuing_body, publish_year, summary, legacy_note
 )
 WHERE m.deleted = false AND m.tenant_id = 1 AND m.code = 'standard'
   AND NOT EXISTS (
@@ -320,7 +320,6 @@ SET standard_no = v.standard_no,
     issuing_body = v.issuing_body,
     publish_year = v.publish_year,
     summary = v.summary,
-    source_ref = v.source_ref,
     model_id = m.id,
     updater = 'seed',
     update_time = CURRENT_TIMESTAMP
@@ -462,7 +461,7 @@ CROSS JOIN (
     ('std-wjg002-2017', 'WJG002-2017', 'ENTERPRISE', '武汉地方技术导则', 2017,
      '武汉管廊建设与运维地方导则；光谷管廊运维手册编制依据',
      '武汉光谷中心城综合管廊项目运营维护手册-终版.md')
-) AS v(code, standard_no, standard_level, issuing_body, publish_year, summary, source_ref)
+) AS v(code, standard_no, standard_level, issuing_body, publish_year, summary, legacy_note)
 WHERE e.deleted = false AND e.tenant_id = 1 AND e.code = v.code
   AND m.deleted = false AND m.tenant_id = 1 AND m.code = 'standard';
 

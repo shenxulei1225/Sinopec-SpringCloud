@@ -16,7 +16,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -47,6 +49,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 @RestController
 @RequestMapping("/dynamicbusiness/business/entities")
 @Validated
+@Slf4j
 public class EntityController {
 
     @Resource
@@ -284,15 +287,18 @@ public class EntityController {
         description = """
             按实体类型返回 parentId 组装的树，供「上级」树状选择。
             可选 modelId：有则限定该型号；无则该类型下全部实体。
+            站场级类型必须带 facilityId（所属场站），禁止拉全租户树。
             """
     )
     @Parameter(name = "entityTypeCode", required = true)
     @Parameter(name = "modelId", description = "可选，限定型号")
+    @Parameter(name = "facilityId", description = "站场级类型必填所属场站")
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<List<EntityRespVO>> getHierarchyTree(
             @RequestParam("entityTypeCode") String entityTypeCode,
-            @RequestParam(value = "modelId", required = false) Long modelId) {
-        return success(entityService.getEntityTreeByModelId(entityTypeCode, modelId));
+            @RequestParam(value = "modelId", required = false) Long modelId,
+            @RequestParam(value = "facilityId", required = false) Long facilityId) {
+        return success(entityService.getEntityTreeByModelId(entityTypeCode, modelId, facilityId));
     }
 
     @GetMapping("/path-by-entity-id")
@@ -340,6 +346,7 @@ public class EntityController {
             - 多选 ID 较多时建议使用 POST /query-by-scene + JSON body
             - ENTITIES_BY_CATEGORY：按分类查实体（含子树；未选≡整树）；可叠 modelIds；categoryTypeCode 必填（禁止默认成 entityTypeCode）；传 categoryViaRefPathCode 时走经 REF 反查
             - ENTITIES_BY_MODEL：按型号或类型查实体；传 modelEntityTypeCode 且与 entityTypeCode 不同时走型号—实体关联表（跨类型挂靠）；未传 modelIds 时可传 categoryIds + categoryFilterMode（NODE/CATEGORIZED/UNCATEGORIZED），由服务端按分类—型号关联展开型号后再查实体
+            - 可叠 relatedEntityIds + relatedEntityTypeCode：按实体—实体关联表双向取对端 id 再与场景结果求交；空数组或无对端 → 空页，不得回退成全量
             - ENTITIES_UNCATEGORIZED：当前分类种类下未挂任何节点的实体（差集）；categoryTypeCode 必填；可叠 modelIds
             - ENTITIES_BY_CATEGORY_LINK：分类节点绑定实体
             - ENTITIES_DETAIL：实体详情
@@ -367,13 +374,16 @@ public class EntityController {
             @RequestParam(value = "domain", required = false) String domain,
             @RequestParam(value = "orderByColumn", required = false) String orderByColumn,
             @RequestParam(value = "isAsc", required = false) Boolean isAsc,
+            @RequestParam(value = "relatedEntityIds", required = false) List<String> relatedEntityIds,
+            @RequestParam(value = "relatedEntityTypeCode", required = false) String relatedEntityTypeCode,
             @RequestBody(required = false) List<FieldFilterReqVO> filters) {
         return queryEntitiesInternal(scene, resultShape, resultDetail, categoryTypeCode, entityTypeCode,
                 parseFlexibleIdList(modelIds), modelEntityTypeCode, parseFlexibleIdList(categoryIds),
                 null,
                 categoryViaRefPathCode, categoryFilterMode,
                 entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword, domain,
-                filters, orderByColumn, isAsc, searchFieldCodes);
+                filters, orderByColumn, isAsc, searchFieldCodes,
+                parseFlexibleIdList(relatedEntityIds), relatedEntityTypeCode);
     }
 
     private CommonResult<EntitySceneQueryRespVO> queryEntitiesInternal(
@@ -398,14 +408,31 @@ public class EntityController {
             List<FieldFilterReqVO> filters,
             String orderByColumn,
             Boolean isAsc,
-            List<String> searchFieldCodes) {
-        return success(entityService.queryEntities(scene, EntityQueryResultShape.ofNullable(resultShape).getCode(),
+            List<String> searchFieldCodes,
+            List<Long> relatedEntityIds,
+            String relatedEntityTypeCode) {
+        if (StringUtils.hasText(keyword)) {
+            log.warn(
+                    "[SEARCH-DIAG][ENTRY] scene={} entityTypeCode={} categoryTypeCode={} keyword={} searchFieldCodes={} modelIds={} categoryIds={} orderBy={} isAsc={} pageNo={} pageSize={}",
+                    scene, entityTypeCode, categoryTypeCode, keyword, searchFieldCodes,
+                    modelIds, categoryIds, orderByColumn, isAsc, pageNo, pageSize);
+        }
+        EntitySceneQueryRespVO resp = entityService.queryEntities(scene, EntityQueryResultShape.ofNullable(resultShape).getCode(),
                 EntityQueryResultDetail.ofNullable(resultDetail).getCode(),
                 categoryTypeCode, entityTypeCode,
                 modelIds, modelEntityTypeCode, categoryIds, categoryIdGroups, categoryViaRefPathCode,
                 categoryFilterMode,
                 entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword,
-                domain, filters, orderByColumn, isAsc, searchFieldCodes));
+                domain, filters, orderByColumn, isAsc, searchFieldCodes,
+                relatedEntityIds, relatedEntityTypeCode);
+        if (StringUtils.hasText(keyword)) {
+            Long total = resp == null || resp.getPage() == null ? null : resp.getPage().getTotal();
+            int listSize = resp == null || resp.getPage() == null || resp.getPage().getList() == null
+                    ? 0 : resp.getPage().getList().size();
+            log.warn("[SEARCH-DIAG][RESULT] scene={} entityTypeCode={} keyword={} searchFieldCodes={} total={} pageSize={}",
+                    scene, entityTypeCode, keyword, searchFieldCodes, total, listSize);
+        }
+        return success(resp);
     }
 
     @PostMapping("/query-by-scene")
@@ -416,6 +443,7 @@ public class EntityController {
             - 适用场景：型号/分类多选、fieldFilters 较多，避免超长 query string
             - body 示例：{"scene":"ENTITIES_BY_MODEL","entityTypeCode":"equipment","modelIds":[48,47],"pageNo":1,"pageSize":10}
             - 跨类型挂靠示例：{"scene":"ENTITIES_BY_MODEL","entityTypeCode":"inspection_item","modelEntityTypeCode":"equipment","modelIds":[48],"pageNo":1,"pageSize":10}
+            - 实体—实体筛选示例：{"scene":"ENTITIES_BY_MODEL","entityTypeCode":"inspection_item","relatedEntityIds":[900107],"relatedEntityTypeCode":"equipment","pageNo":1,"pageSize":10}
             - 划分数据：entityTypeCode 传 SCOPE 入口编码，后端按成员表收窄，勿再传 scopeEntityTypeCode
             """
     )
@@ -428,7 +456,8 @@ public class EntityController {
                 reqVO.getEntityId(), reqVO.getRootEntityId(), reqVO.getEntitySourceEntityType(),
                 reqVO.getPageNo(), reqVO.getPageSize(), reqVO.getKeyword(), reqVO.getDomain(),
                 reqVO.getFieldFilters(), reqVO.getOrderByColumn(), reqVO.getIsAsc(),
-                reqVO.getSearchFieldCodes());
+                reqVO.getSearchFieldCodes(),
+                reqVO.getRelatedEntityIds(), reqVO.getRelatedEntityTypeCode());
     }
 
     /**

@@ -12,13 +12,17 @@ import java.util.PriorityQueue;
 
 import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_UNREACHABLE;
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.invalidParamException;
 
 @Component
 public class DijkstraPlanner {
 
     public ShortestPathResult shortestPath(String from, String to, GraphView view) {
-        if (view.getNode(from) == null || view.getNode(to) == null) {
-            throw exception(ROUTE_UNREACHABLE);
+        if (view.getNode(from) == null) {
+            throw invalidParamException("停靠点不在当前路网：{}", from);
+        }
+        if (view.getNode(to) == null) {
+            throw invalidParamException("停靠点不在当前路网：{}", to);
         }
         if (from.equals(to)) {
             return ShortestPathResult.builder()

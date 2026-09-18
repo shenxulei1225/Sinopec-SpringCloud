@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
 
 /**
- * 网关配置与 HTTP 客户端（上行业务回调）。
+ * 网关配置与 HTTP 客户端（过渡上报消费者，不是正式总线）。
  */
 @Configuration
 @EnableConfigurationProperties(DeviceProtocolGatewayProperties.class)

@@ -7,6 +7,7 @@ import cn.cheers.x.inspection.task.controller.admin.vo.task.*;
 import cn.cheers.x.inspection.task.service.execution.InspectionTaskStartExecutionService;
 import cn.cheers.x.inspection.task.service.query.InspectionTaskQueryService;
 import cn.cheers.x.inspection.task.service.task.InspectionTaskService;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskCreateProcessService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -46,6 +47,12 @@ public class InspectionTaskController {
 
     @Resource
     private InspectionTaskStartExecutionService inspectionTaskStartExecutionService;
+
+    @Resource
+    private cn.cheers.x.inspection.task.service.execution.steptree.TaskStepTreeGenerateService taskStepTreeGenerateService;
+
+    @Resource
+    private PatrolTaskCreateProcessService patrolTaskCreateProcessService;
 
     // ==================== 查询 ====================
 
@@ -126,5 +133,47 @@ public class InspectionTaskController {
     @Parameter(name = "id", required = true, description = "任务ID")
     public CommonResult<MissionStartRespDTO> startExecution(@PathVariable("id") Long id) {
         return success(inspectionTaskStartExecutionService.startExecution(id));
+    }
+
+    @GetMapping("/{id}/create-progress")
+    @Operation(summary = "建任务做到哪一步", description = "已放行步骤可以回头看和改；还没放到的不能跳过")
+    @Parameter(name = "id", required = true, description = "任务ID")
+    public CommonResult<InspectionTaskCreateProgressRespVO> getCreateProgress(@PathVariable("id") Long id) {
+        return success(patrolTaskCreateProcessService.getProgress(id));
+    }
+
+    @PostMapping("/{id}/create-advance")
+    @Operation(summary = "建任务放行下一步", description = "只能一步一步往前；本步该齐的数据必须已经写在总任务上")
+    @Parameter(name = "id", required = true, description = "任务ID")
+    public CommonResult<InspectionTaskCreateProgressRespVO> advanceCreate(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody InspectionTaskCreateAdvanceReqVO reqVO
+    ) {
+        return success(patrolTaskCreateProcessService.advance(id, reqVO.getToStep()));
+    }
+
+    @PostMapping("/{id}/create-invalidate")
+    @Operation(summary = "建任务后面步骤作废", description = "改了对象或检查项后收回后面进度，并作废已保存路线")
+    @Parameter(name = "id", required = true, description = "任务ID")
+    public CommonResult<InspectionTaskCreateProgressRespVO> invalidateCreate(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody InspectionTaskCreateInvalidateReqVO reqVO
+    ) {
+        return success(patrolTaskCreateProcessService.invalidate(id, reqVO.getKeepThroughStep()));
+    }
+
+    @PostMapping("/{id}/generate-step-tree")
+    @Operation(summary = "生成任务步骤图", description = "点路径规划或摄像机按勾选顺序时写入总任务步骤图")
+    @Parameter(name = "id", required = true, description = "任务ID")
+    public CommonResult<Boolean> generateStepTree(
+            @PathVariable("id") Long id,
+            @RequestBody(required = false) GenerateStepTreeReqVO reqVO
+    ) {
+        taskStepTreeGenerateService.generate(
+                id,
+                reqVO == null ? null : reqVO.getEquipmentOrder(),
+                reqVO == null ? null : reqVO.getStartStopId(),
+                reqVO == null ? null : reqVO.getEndStopId());
+        return success(true);
     }
 }

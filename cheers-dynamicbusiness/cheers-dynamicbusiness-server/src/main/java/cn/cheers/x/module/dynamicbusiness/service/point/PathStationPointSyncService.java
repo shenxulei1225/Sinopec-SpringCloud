@@ -32,12 +32,14 @@ import java.util.Set;
 /**
  * 路网节点 → 数据管理「路网点位」同步（DOMAIN route_network / 型号 point_route_network）。
  *
- * <p>管什么：按设施 + 节点 nodeId upsert 到路网点位型号；写入点位类型（停靠站/途径点/门点）与归属网；
+ * <p>管什么：按设施 + 节点 nodeId upsert 到路网点位型号；写入点位类型、归属网，
+ * 以及字段库「坐标」（经度 / 纬度 / 高程，值从路网节点 payload 带来）。
  * 已从路网移除的同步点位软删。</p>
- * <p>不管什么：路网几何、边权重、三维编辑；通用点位（NATIVE point_standard）；
- * 巡检业务如何筛点（REF / SOP 另算）。</p>
- * <p>禁止：把坐标写入点位台账；一期点位类型仅认 STATION/TRAVERSAL/DOOR（写死枚举，不开放用户自增）；
- * 禁止写入通用「标准点位」型号；禁止在未按精确 code 对账时盲目 create（会撞 code+tenant 唯一索引）。</p>
+ * <p>不管什么：路网几何怎么改、边权重、三维编辑器；不改节点 JSON 键名；
+ * 通用点位（NATIVE point_standard）；巡检怎么筛点。</p>
+ * <p>禁止：用场景 position.y 冒充高程；节点没有经纬度时编 0,0；
+ * 一期点位类型仅认 STATION/TRAVERSAL/DOOR；禁止写入通用「标准点位」；
+ * 禁止在未按精确 code 对账时盲目 create。</p>
  */
 @Service
 @RequiredArgsConstructor
@@ -61,6 +63,8 @@ public class PathStationPointSyncService {
     public static final String MEMBERSHIP_FIELD_SEMANTIC = "network_membership";
     /** 模型字段必填：所属设施 REF（与 facility_id 同指设施，须一并写入 customFields） */
     public static final String FACILITY_FIELD_SEED_CODE = "FLD-PNT-001";
+    /** 字段库「坐标」（地理坐标）；子项 longitude / latitude / height */
+    public static final String COORDINATE_FIELD_SEED_CODE = "FLD-LOC-014";
 
     /** @deprecated 使用 {@link #PATH_NODE_FIELD_SEED_CODE} */
     @Deprecated
@@ -119,10 +123,10 @@ public class PathStationPointSyncService {
                 }
             }
             if (existing == null) {
-                createPoint(model.getId(), facilityId, code, name, nodeId, pointKind, memberships);
+                createPoint(model.getId(), facilityId, code, name, nodeId, pointKind, memberships, item);
                 created++;
             } else {
-                updatePoint(existing, model.getId(), facilityId, code, name, nodeId, pointKind, memberships);
+                updatePoint(existing, model.getId(), facilityId, code, name, nodeId, pointKind, memberships, item);
                 updated++;
             }
         }
@@ -240,16 +244,18 @@ public class PathStationPointSyncService {
     }
 
     private void createPoint(Long modelId, Long facilityId, String code, String name,
-                             String nodeId, String pointKind, List<String> memberships) {
+                             String nodeId, String pointKind, List<String> memberships,
+                             PathStationPointSyncReqDTO.StationNodeItem item) {
         EntityCreateReqVO create = new EntityCreateReqVO();
         create.setBaseFields(buildBaseFields(modelId, facilityId, code, name));
-        create.setCustomFields(buildCustomFields(facilityId, nodeId, pointKind, memberships));
+        create.setCustomFields(buildCustomFields(facilityId, nodeId, pointKind, memberships, item));
         entityService.create(create);
     }
 
     private void updatePoint(EntityDO existing, Long modelId, Long facilityId,
                              String code, String name, String nodeId, String pointKind,
-                             List<String> memberships) {
+                             List<String> memberships,
+                             PathStationPointSyncReqDTO.StationNodeItem item) {
         EntityUpdateReqVO update = new EntityUpdateReqVO();
         update.setId(existing.getId());
         update.setBaseFields(buildBaseFields(modelId, facilityId, code, name));
@@ -257,7 +263,7 @@ public class PathStationPointSyncService {
         if (existing.getCustomFields() != null) {
             custom.putAll(existing.getCustomFields());
         }
-        custom.putAll(buildCustomFields(facilityId, nodeId, pointKind, memberships));
+        custom.putAll(buildCustomFields(facilityId, nodeId, pointKind, memberships, item));
         update.setCustomFields(custom);
         entityService.update(update);
     }
@@ -275,11 +281,13 @@ public class PathStationPointSyncService {
     }
 
     /**
-     * 型号 custom：设施 + 路网节点 id + 点位类型 + 归属网。
+     * 型号 custom：设施 + 路网节点 id + 点位类型 + 归属网 + 坐标。
      * FLD-PNT-001 与 base facility_id 同指设施，但校验层分开查，须都写。
+     * 节点没有经纬度时不写坐标键，更新时保留点上已有坐标。
      */
-    private static Map<String, Object> buildCustomFields(
-            long facilityId, String nodeId, String pointKind, List<String> memberships) {
+    static Map<String, Object> buildCustomFields(
+            long facilityId, String nodeId, String pointKind, List<String> memberships,
+            PathStationPointSyncReqDTO.StationNodeItem item) {
         Map<String, Object> custom = new LinkedHashMap<>();
         custom.put(FACILITY_FIELD_SEED_CODE, FacilityOwningFieldCodes.toApiRef(facilityId));
         custom.put(PATH_NODE_FIELD_SEMANTIC, nodeId);
@@ -288,6 +296,30 @@ public class PathStationPointSyncService {
         custom.put(POINT_KIND_FIELD_SEED_CODE, pointKind);
         custom.put(MEMBERSHIP_FIELD_SEMANTIC, memberships);
         custom.put(MEMBERSHIP_FIELD_SEED_CODE, memberships);
+        Map<String, Object> coordinate = buildCoordinateValue(
+                item == null ? null : item.getLongitude(),
+                item == null ? null : item.getLatitude(),
+                item == null ? null : item.getHeight());
+        if (coordinate != null) {
+            custom.put(COORDINATE_FIELD_SEED_CODE, coordinate);
+        }
         return custom;
+    }
+
+    /**
+     * 目录「坐标」只认全称子项。缺经度或纬度 → 不写，避免 0,0 假点。
+     */
+    public static Map<String, Object> buildCoordinateValue(Double longitude, Double latitude, Double height) {
+        if (longitude == null || latitude == null
+                || !Double.isFinite(longitude) || !Double.isFinite(latitude)) {
+            return null;
+        }
+        Map<String, Object> coordinate = new LinkedHashMap<>();
+        coordinate.put("longitude", longitude);
+        coordinate.put("latitude", latitude);
+        if (height != null && Double.isFinite(height)) {
+            coordinate.put("height", height);
+        }
+        return coordinate;
     }
 }

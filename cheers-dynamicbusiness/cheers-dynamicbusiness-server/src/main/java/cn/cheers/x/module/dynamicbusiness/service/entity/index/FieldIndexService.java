@@ -14,13 +14,8 @@ import java.util.List;
  *   <li>管理字段索引的创建和清理</li>
  * </ul>
  *
- * <h3>业务规则</h3>
- * <ul>
- *   <li>FR-019: 系统必须支持标记字段为"可查询"（is_searchable）</li>
- *   <li>FR-020: 系统必须在字段标记为可查询时自动创建索引</li>
- *   <li>FR-021: 系统必须在字段取消可查询标记时清理索引</li>
- *   <li>FR-022: 系统必须支持查询某个 Model 的所有可查询字段列表</li>
- * </ul>
+ * <p>进索引表的权威：可搜索、可筛选、可排序任一为真。
+ * 关键词仍认可搜索；条件筛选认可筛选。禁止用可搜索挡筛选命中。</p>
  *
  * @author 扩展字段查询服务
  */
@@ -71,20 +66,17 @@ public interface FieldIndexService {
     boolean isFieldSortable(Long modelId, String fieldCode);
 
     /**
-     * 处理字段可查询标记变更
-     *
-     * <p>当字段的 is_searchable 标记发生变更时调用此方法：</p>
-     * <ul>
-     *   <li>从 false 变为 true：为该字段创建索引（同步现有 Entity 数据）</li>
-     *   <li>从 true 变为 false：清理该字段的索引数据</li>
-     * </ul>
-     *
-     * @param fieldId 字段 ID
-     * @param modelId Model ID
-     * @param fieldCode 字段编码
-     * @param newSearchable 新的可查询标记
+     * 检查字段是否可筛选（分配上明确打开）。
+     * 筛选查询门禁用这个，不用可搜索。
      */
-    void onSearchableChanged(Long fieldId, Long modelId, String fieldCode, boolean newSearchable);
+    boolean isFieldFilterable(Long modelId, String fieldCode);
+
+    /**
+     * 可搜索 / 可筛选 / 可排序变化后，按「现在该不该进索引表」建或清索引。
+     *
+     * @param shouldIndex true 则按该型号已有实体批量写入该字段索引；false 则按型号+字段编码整批删除
+     */
+    void onIndexMembershipChanged(Long fieldId, Long modelId, String fieldCode, boolean shouldIndex);
 
     /**
      * 为字段创建索引

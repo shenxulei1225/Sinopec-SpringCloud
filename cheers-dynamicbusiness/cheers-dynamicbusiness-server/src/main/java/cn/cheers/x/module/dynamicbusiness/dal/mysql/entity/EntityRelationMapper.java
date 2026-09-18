@@ -461,4 +461,51 @@ public interface EntityRelationMapper extends BaseMapperX<EntityRelationDO> {
                         .eq(EntityRelationDO::getSourceEntityTypeCode, sourceEntityTypeCode)
                         .eq(EntityRelationDO::getDeleted, false));
         }
+
+        /**
+         * 实体—实体筛选：按关联表双向取对端实体 id，不按 field_code 过滤。
+         *
+         * <p>勾选适用写入的行没有 REF 字段码。方向 1：related 作 source、list 作 target → 取 target id；
+         * 方向 2：list 作 source、related 作 target → 取 source id。</p>
+         */
+        default List<Long> selectCounterpartEntityIds(List<Long> relatedEntityIds,
+                                                      String relatedEntityTypeCode,
+                                                      String listEntityTypeCode) {
+                if (relatedEntityIds == null || relatedEntityIds.isEmpty()
+                        || relatedEntityTypeCode == null || relatedEntityTypeCode.isBlank()
+                        || listEntityTypeCode == null || listEntityTypeCode.isBlank()) {
+                        return java.util.Collections.emptyList();
+                }
+                List<Long> ids = relatedEntityIds.stream()
+                        .filter(java.util.Objects::nonNull)
+                        .distinct()
+                        .toList();
+                if (ids.isEmpty()) {
+                        return java.util.Collections.emptyList();
+                }
+                String relatedType = relatedEntityTypeCode.trim();
+                String listType = listEntityTypeCode.trim();
+                java.util.LinkedHashSet<Long> out = new java.util.LinkedHashSet<>();
+                List<EntityRelationDO> asSource = selectList(new LambdaQueryWrapperX<EntityRelationDO>()
+                        .in(EntityRelationDO::getSourceEntityId, ids)
+                        .eq(EntityRelationDO::getSourceEntityTypeCode, relatedType)
+                        .eq(EntityRelationDO::getTargetEntityTypeCode, listType)
+                        .eq(EntityRelationDO::getDeleted, false));
+                for (EntityRelationDO row : asSource) {
+                        if (row.getTargetEntityId() != null) {
+                                out.add(row.getTargetEntityId());
+                        }
+                }
+                List<EntityRelationDO> asTarget = selectList(new LambdaQueryWrapperX<EntityRelationDO>()
+                        .in(EntityRelationDO::getTargetEntityId, ids)
+                        .eq(EntityRelationDO::getTargetEntityTypeCode, relatedType)
+                        .eq(EntityRelationDO::getSourceEntityTypeCode, listType)
+                        .eq(EntityRelationDO::getDeleted, false));
+                for (EntityRelationDO row : asTarget) {
+                        if (row.getSourceEntityId() != null) {
+                                out.add(row.getSourceEntityId());
+                        }
+                }
+                return new java.util.ArrayList<>(out);
+        }
 }

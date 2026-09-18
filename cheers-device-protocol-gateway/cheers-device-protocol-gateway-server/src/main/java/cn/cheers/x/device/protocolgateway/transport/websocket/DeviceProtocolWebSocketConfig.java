@@ -9,7 +9,8 @@ import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 
 /**
- * 注册可配置路径的 WebSocket 处理器（默认 /{deviceId}）。
+ * 注册巡检通道的 WebSocket 处理器（默认 /{deviceId}，与旧系统单口一致）。
+ * <p>不负责工业监听。禁止把本路径写成工业口或写死成「写巡检台账」。
  */
 @Configuration
 @EnableWebSocket

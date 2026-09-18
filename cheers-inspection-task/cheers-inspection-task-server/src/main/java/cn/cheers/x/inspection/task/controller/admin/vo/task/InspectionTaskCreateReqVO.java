@@ -45,6 +45,10 @@ public class InspectionTaskCreateReqVO {
     @Size(max = 500, message = "备注长度不能超过500位")
     private String remark;
 
+    @Schema(description = "业务域（任务分池；巡检创建页写「巡检」。不填则保持空，禁止服务端猜默认）", example = "巡检")
+    @Size(max = 64, message = "业务域长度不能超过64位")
+    private String domain;
+
     // ==================== 巡检内容（可选，后续配置） ====================
     @Schema(description = "巡检内容")
     private InspectionContent inspectionContent;
@@ -68,4 +72,16 @@ public class InspectionTaskCreateReqVO {
 
     @Schema(description = "执行设备绑定（绑设备时写入；开跑只读）")
     private ExecutionDeviceBinding executionDeviceBinding;
+
+    @Schema(description = "所属设施 id（总任务必填）")
+    private Long facilityId;
+
+    @Schema(description = "巡检方式：MANUAL / UAV / ROBOT / FIXED_CAMERA")
+    private String patrolExecutionMode;
+
+    @Schema(description = "任务创建选定的起点（点位路网节点 id）")
+    private String startStopId;
+
+    @Schema(description = "任务创建选定的终点（点位路网节点 id）")
+    private String endStopId;
 }

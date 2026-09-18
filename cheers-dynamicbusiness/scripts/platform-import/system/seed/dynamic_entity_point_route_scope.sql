@@ -305,7 +305,8 @@ FROM (
     ('point_route_network', 'FLD-PNT-001', true,  10, 'facility'),
     ('point_route_network', 'FLD-PNT-004', true,  15, NULL),
     ('point_route_network', 'FLD-PNT-005', false, 18, NULL),
-    ('point_route_network', 'FLD-PNT-002', false, 20, NULL)
+    ('point_route_network', 'FLD-PNT-002', false, 20, NULL),
+    ('point_route_network', 'FLD-LOC-014', false, 25, NULL)
 ) AS v(model_code, field_code, required, sort, target_entity_type)
 JOIN dynamic_model m ON m.deleted = false AND m.tenant_id = 1 AND m.code = v.model_code
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1 AND f.code = v.field_code
@@ -699,7 +700,7 @@ INSERT INTO dm_data_tab_column_relation (
 SELECT
   'route_network_point', v.edge_id, v.from_id, v.to_id,
   v.kind, 'point', 'point',
-  '{"edgeRole":"filter","enabledInteractions":[]}'::jsonb,
+  '{"edgeAction":"filter","enabledInteractions":[]}'::jsonb,
   1, 'seed', et.data_layout_id
 FROM dynamic_entity_type et
 CROSS JOIN (

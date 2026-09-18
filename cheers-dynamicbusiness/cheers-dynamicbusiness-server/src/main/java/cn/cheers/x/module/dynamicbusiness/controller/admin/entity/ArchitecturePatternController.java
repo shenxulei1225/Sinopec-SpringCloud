@@ -292,6 +292,8 @@ public class ArchitecturePatternController {
                 null,
                 null,
                 null,
+                null,
+                null,
                 null
         );
         return success(resp.getPage() == null ? java.util.List.of() : resp.getPage().getList());
@@ -401,6 +403,8 @@ public class ArchitecturePatternController {
                     null,
                     null,
                     null,
+                    null,
+                    null,
                     null
             );
             return success(resp.getList() == null ? List.of() : resp.getList());
@@ -423,6 +427,8 @@ public class ArchitecturePatternController {
                     null,
                     null,
                     contentEntityTypeCode,
+                    null,
+                    null,
                     null,
                     null,
                     null,

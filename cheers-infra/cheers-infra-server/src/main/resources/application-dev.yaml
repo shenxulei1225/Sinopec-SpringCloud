@@ -133,6 +133,12 @@ spring:
 # 芋道配置项，设置当前项目所有自定义的配置
 cheers:
   demo: true # 开启演示模式
+  infra:
+    file:
+      magika:
+        command: magika
+        timeout-seconds: 10
+      allowed-types: pdf,doc,docx,xls,xlsx,ppt,pptx,txt,md,markdown,zip,rar,sevenzip,7z,7zip,tar,gzip,gz,bzip,bzip2,xz
 
 
 

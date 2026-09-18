@@ -1,6 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity.index;
 
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityFieldIndexDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
@@ -9,8 +10,6 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
-import cn.cheers.x.module.dynamicbusiness.service.entity.sync.EntitySyncService;
-import cn.cheers.x.module.dynamicbusiness.service.field.SmartSearchableService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -23,19 +22,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static cn.cheers.x.module.dynamicbusiness.service.entity.index.EntityFieldIndexRecordBuilder.INDEX_INSERT_BATCH_SIZE;
+
 /**
  * 字段索引管理服务实现
  *
  * <p>负责管理扩展字段的索引配置，包括获取可查询字段列表、
  * 处理字段可查询标记变更、管理字段索引的创建和清理。</p>
  *
- * <h3>业务规则</h3>
- * <ul>
- *   <li>FR-019: 系统必须支持标记字段为"可查询"（is_searchable）</li>
- *   <li>FR-020: 系统必须在字段标记为可查询时自动创建索引</li>
- *   <li>FR-021: 系统必须在字段取消可查询标记时清理索引</li>
- *   <li>FR-022: 系统必须支持查询某个 Model 的所有可查询字段列表</li>
- * </ul>
+ * <p>进索引表认可搜索 / 可筛选 / 可排序；建索引按批插入，不清整实体再逐条同步。</p>
  *
  * @author 扩展字段查询服务
  */
@@ -48,9 +43,7 @@ public class FieldIndexServiceImpl implements FieldIndexService {
     private final ModelMapper modelMapper;
     private final ModelFieldAssignmentMapper modelFieldAssignmentMapper;
     private final EntityRepository entityRepository;
-    private final SmartSearchableService smartSearchableService;
     private final EntityFieldIndexMapper entityFieldIndexMapper;
-    private final EntitySyncService entitySyncService;
 
     // ==================== 默认可查询的字段类型 ====================
 
@@ -90,16 +83,9 @@ public class FieldIndexServiceImpl implements FieldIndexService {
                     if (field == null) {
                         return false;
                     }
-                    // 优先使用模型字段中的配置，如果为 null 则使用智能默认值
                     ModelFieldAssignmentDO assignment = assignmentMap.get(field.getId());
-                    Boolean isSearchable;
-                    if (assignment != null && assignment.getIsSearchable() != null) {
-                        isSearchable = assignment.getIsSearchable();
-                    } else {
-                        // 使用智能默认值服务获取字段类型的默认可查询属性
-                        isSearchable = smartSearchableService.getDefaultSearchable(field.getType());
-                    }
-                    return Boolean.TRUE.equals(isSearchable);
+                    Boolean configured = assignment != null ? assignment.getIsSearchable() : null;
+                    return ExtensionFieldIndexEligibility.resolveSearchable(configured, field.getType());
                 })
                 .collect(Collectors.toList());
     }
@@ -145,16 +131,9 @@ public class FieldIndexServiceImpl implements FieldIndexService {
                     if (field == null) {
                         return false;
                     }
-                    // 优先使用模型字段中的配置，如果为 null 则使用智能默认值
                     ModelFieldAssignmentDO assignment = assignmentMap.get(field.getId());
-                    Boolean isSortable;
-                    if (assignment != null && assignment.getIsSortable() != null) {
-                        isSortable = assignment.getIsSortable();
-                    } else {
-                        // 使用智能默认值服务获取字段类型的默认可排序属性
-                        isSortable = smartSearchableService.getDefaultSortable(field.getType());
-                    }
-                    return Boolean.TRUE.equals(isSortable);
+                    Boolean configured = assignment != null ? assignment.getIsSortable() : null;
+                    return ExtensionFieldIndexEligibility.resolveSortable(configured, field.getType());
                 })
                 .collect(Collectors.toList());
     }
@@ -184,15 +163,8 @@ public class FieldIndexServiceImpl implements FieldIndexService {
             return false;
         }
 
-        // 3. 检查是否可查询（优先使用模型字段中的配置，如果为 null 则使用智能默认值）
-        Boolean isSearchable;
-        if (assignment.getIsSearchable() != null) {
-            isSearchable = assignment.getIsSearchable();
-        } else {
-            // 使用智能默认值服务获取字段类型的默认可查询属性
-            isSearchable = smartSearchableService.getDefaultSearchable(field.getType());
-        }
-        return Boolean.TRUE.equals(isSearchable);
+        return ExtensionFieldIndexEligibility.resolveSearchable(
+                assignment.getIsSearchable(), field.getType());
     }
 
     /**
@@ -230,76 +202,82 @@ public class FieldIndexServiceImpl implements FieldIndexService {
             return false;
         }
 
-        // 3. 检查是否可排序（优先使用模型字段中的配置，如果为 null 则使用智能默认值）
-        Boolean isSortable;
-        if (assignment.getIsSortable() != null) {
-            isSortable = assignment.getIsSortable();
-        } else {
-            // 使用智能默认值服务获取字段类型的默认可排序属性
-            isSortable = smartSearchableService.getDefaultSortable(field.getType());
-        }
-        return Boolean.TRUE.equals(isSortable);
+        return ExtensionFieldIndexEligibility.resolveSortable(
+                assignment.getIsSortable(), field.getType());
     }
 
-    // ==================== 处理字段可查询标记变更 ====================
+    @Override
+    public boolean isFieldFilterable(Long modelId, String fieldCode) {
+        if (modelId == null || fieldCode == null || fieldCode.isEmpty()) {
+            return false;
+        }
+        FieldDO field = fieldMapper.selectByCode(fieldCode);
+        if (field == null) {
+            return false;
+        }
+        ModelFieldAssignmentDO assignment =
+                modelFieldAssignmentMapper.selectByModelIdAndFieldId(modelId, field.getId());
+        if (assignment == null) {
+            return false;
+        }
+        return ExtensionFieldIndexEligibility.resolveFilterable(assignment.getIsFilterable(), field.getType());
+    }
 
     @Override
+    @Async("entitySyncExecutor")
     @Transactional(rollbackFor = Exception.class)
-    public void onSearchableChanged(Long fieldId, Long modelId, String fieldCode, boolean newSearchable) {
-        log.info("字段可查询标记变更: fieldId={}, modelId={}, fieldCode={}, newSearchable={}", 
-                fieldId, modelId, fieldCode, newSearchable);
-
-        if (newSearchable) {
-            // 从 false 变为 true：创建索引
+    public void onIndexMembershipChanged(Long fieldId, Long modelId, String fieldCode, boolean shouldIndex) {
+        log.info("扩展字段索引资格变更: fieldId={}, modelId={}, fieldCode={}, shouldIndex={}",
+                fieldId, modelId, fieldCode, shouldIndex);
+        if (shouldIndex) {
             FieldDO field = fieldMapper.selectById(fieldId);
             if (field != null) {
                 createFieldIndex(modelId, fieldCode, field.getType());
             }
         } else {
-            // 从 true 变为 false：清理索引
             removeFieldIndex(modelId, fieldCode);
         }
     }
 
+    /**
+     * 只重建这一个字段的索引行：先按型号+字段编码整批删除，再按批插入。
+     * 禁止对每条实体再跑一遍整实体同步。
+     */
     @Override
     @Async("entitySyncExecutor")
     public void createFieldIndex(Long modelId, String fieldCode, String fieldType) {
-        log.info("开始为字段创建索引: modelId={}, fieldCode={}, fieldType={}", modelId, fieldCode, fieldType);
-
+        log.info("开始为字段批量写入索引: modelId={}, fieldCode={}, fieldType={}", modelId, fieldCode, fieldType);
         try {
-            // 1. 获取 Model 的业务类型
             ModelDO model = modelMapper.selectById(modelId);
             if (model == null) {
                 log.warn("Model 不存在，跳过索引创建: modelId={}", modelId);
                 return;
             }
-            String entityTypeCode = model.getEntityTypeCode();
-
-            // 2. 使用 Repository 获取该 Model 下的所有 Entity
-            List<EntityDO> entities = entityRepository.findByModelId(modelId, entityTypeCode);
-            if (entities.isEmpty()) {
-                log.info("Model 下没有 Entity，跳过索引创建: modelId={}", modelId);
+            FieldDO field = fieldMapper.selectByCode(fieldCode);
+            if (field == null) {
+                log.warn("字段不存在，跳过索引创建: fieldCode={}", fieldCode);
                 return;
             }
-
-            // 4. 批量同步 Entity 到索引表
-            int successCount = 0;
-            int failCount = 0;
-
+            List<EntityDO> entities = entityRepository.findByModelId(modelId, model.getEntityTypeCode());
+            entityFieldIndexMapper.deleteByModelIdAndFieldCode(modelId, fieldCode);
+            if (entities == null || entities.isEmpty()) {
+                log.info("Model 下没有 Entity，已清空该字段索引: modelId={}, fieldCode={}", modelId, fieldCode);
+                return;
+            }
+            List<EntityFieldIndexDO> records = new ArrayList<>();
             for (EntityDO entity : entities) {
-                try {
-                    // 使用同步服务同步单个 Entity
-                    entitySyncService.syncEntity(entity);
-                    successCount++;
-                } catch (Exception e) {
-                    failCount++;
-                    log.error("同步 Entity 到索引表失败: entityId={}, error={}", entity.getId(), e.getMessage());
+                Map<String, Object> customFields = entity.getCustomFields() != null
+                        ? entity.getCustomFields() : Map.of();
+                EntityFieldIndexDO record = EntityFieldIndexRecordBuilder.tryBuild(entity, field, customFields);
+                if (record != null) {
+                    records.add(record);
                 }
             }
-
-            log.info("字段索引创建完成: modelId={}, fieldCode={}, total={}, success={}, fail={}", 
-                    modelId, fieldCode, entities.size(), successCount, failCount);
-
+            if (!records.isEmpty()) {
+                entityFieldIndexMapper.insertBatch(records, INDEX_INSERT_BATCH_SIZE);
+            }
+            log.info("字段索引批量写入完成: modelId={}, fieldCode={}, entityCount={}, indexedRows={}",
+                    modelId, fieldCode, entities.size(), records.size());
         } catch (Exception e) {
             log.error("创建字段索引失败: modelId={}, fieldCode={}, error={}", modelId, fieldCode, e.getMessage(), e);
         }

@@ -2,9 +2,7 @@ package cn.cheers.x.module.platformresource.service.component;
 
 import cn.hutool.core.util.StrUtil;
 import cn.cheers.x.module.platformresource.controller.admin.component.vo.*;
-import cn.cheers.x.module.platformresource.dal.dataobject.component.ComponentDO;
 import cn.cheers.x.module.platformresource.dal.dataobject.component.ComponentPropsDO;
-import cn.cheers.x.module.platformresource.dal.mysql.component.ComponentMapper;
 import cn.cheers.x.module.platformresource.dal.mysql.component.ComponentPropsMapper;
 import cn.cheers.x.module.platformresource.service.component.ComponentDataSource.Normalized;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -22,14 +20,16 @@ import java.util.stream.Collectors;
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.cheers.x.module.platformresource.enums.ErrorCodeConstants.*;
 
+/**
+ * 组件配置读写。
+ * 新建模板只写「这是哪种组件」，不查、不补组件库目录。
+ * 打开页面、读已有配置也不查目录。
+ */
 @Service
 public class ComponentPropsServiceImpl implements ComponentPropsService {
 
     @Resource
     private ComponentPropsMapper componentPropsMapper;
-
-    @Resource
-    private ComponentMapper componentMapper;
 
     @Resource
     private ObjectMapper objectMapper;
@@ -72,11 +72,10 @@ public class ComponentPropsServiceImpl implements ComponentPropsService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createTemplate(ComponentPropsCreateTemplateReqVO reqVO) {
-        ComponentDO component = requireComponentByCode(reqVO.getComponentCode());
         ComponentPropsDO row = new ComponentPropsDO();
         row.setIsTemplate(true);
-        row.setComponentId(component.getId());
-        row.setComponentCode(component.getComponentCode());
+        row.setComponentId(null);
+        row.setComponentCode(requireComponentCode(reqVO.getComponentCode()));
         row.setTemplateId(null);
         row.setSchemaVersion(reqVO.getSchemaVersion());
         row.setPropsOverride(null);
@@ -96,6 +95,7 @@ public class ComponentPropsServiceImpl implements ComponentPropsService {
         ComponentPropsDO template = requireTemplate(reqVO.getTemplateId());
         ComponentPropsDO row = new ComponentPropsDO();
         row.setIsTemplate(false);
+        // 种类跟模板走。目录编号有就抄、没有就空着，不回头查目录。
         row.setComponentId(template.getComponentId());
         row.setComponentCode(template.getComponentCode());
         row.setTemplateId(template.getId());
@@ -212,12 +212,16 @@ public class ComponentPropsServiceImpl implements ComponentPropsService {
         return row;
     }
 
-    private ComponentDO requireComponentByCode(String componentCode) {
-        ComponentDO component = componentMapper.selectByComponentCode(componentCode);
-        if (component == null) {
-            throw exception(COMPONENT_NOT_EXISTS);
+    /**
+     * 建配置只认「这是哪种组件」。
+     * 不查组件库目录，也不自动补一条目录。
+     */
+    private static String requireComponentCode(String componentCode) {
+        String code = StrUtil.trim(componentCode);
+        if (StrUtil.isBlank(code)) {
+            throw exception(COMPONENT_PROPS_UNSUPPORTED_COMPONENT);
         }
-        return component;
+        return code;
     }
 
     private ComponentPropsRespVO convertToRespVO(ComponentPropsDO row) {

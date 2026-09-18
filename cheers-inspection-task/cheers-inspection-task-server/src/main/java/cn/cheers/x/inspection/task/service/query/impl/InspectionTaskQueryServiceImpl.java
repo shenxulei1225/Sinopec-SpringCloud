@@ -13,6 +13,8 @@ import cn.cheers.x.inspection.task.dal.mysql.schedule.InspectionTaskSchedulePlan
 import cn.cheers.x.inspection.task.dal.mysql.task.InspectionTaskMapper;
 import cn.cheers.x.inspection.task.model.task.InspectionContent;
 import cn.cheers.x.inspection.task.service.query.InspectionTaskQueryService;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -42,88 +44,63 @@ public class InspectionTaskQueryServiceImpl implements InspectionTaskQueryServic
     private final ContentEnhancementService contentEnhancementService;
     private final InspectionRoutePlanMapper routePlanMapper;
     private final ObjectMapper objectMapper;
+    private final PatrolTaskEntityStore patrolTaskEntityStore;
 
     // ==================== 分页查询 ====================
 
     @Override
     public PageResult<InspectionTaskSimpleRespVO> getTaskPage(InspectionTaskPageReqVO pageReqVO) {
-        // 1. 查询任务分页
-        PageResult<InspectionTaskDO> pageResult = inspectionTaskMapper.selectPage(pageReqVO);
-        if (pageResult.getList().isEmpty()) {
-            return new PageResult<>(Collections.emptyList(), pageResult.getTotal());
-        }
-
-        List<Long> taskIds = pageResult.getList().stream()
-                .map(InspectionTaskDO::getId)
+        List<PatrolTaskDraft> all = patrolTaskEntityStore.listAll();
+        String name = pageReqVO.getTaskName();
+        List<PatrolTaskDraft> filtered = all.stream()
+                .filter(draft -> !StringUtils.hasText(name)
+                        || (draft.name() != null && draft.name().contains(name.trim())))
+                .toList();
+        int pageNo = pageReqVO.getPageNo() == null || pageReqVO.getPageNo() < 1 ? 1 : pageReqVO.getPageNo();
+        int pageSize = pageReqVO.getPageSize() == null || pageReqVO.getPageSize() < 1 ? 10 : pageReqVO.getPageSize();
+        int from = Math.min((pageNo - 1) * pageSize, filtered.size());
+        int to = Math.min(from + pageSize, filtered.size());
+        List<InspectionTaskSimpleRespVO> voList = filtered.subList(from, to).stream()
+                .map(this::toSimple)
                 .collect(Collectors.toList());
+        return new PageResult<>(voList, (long) filtered.size());
+    }
 
-        // 2. 批量查询激活的排期计划
-        List<InspectionTaskSchedulePlanDO> planList = schedulePlanMapper.selectActivatedPlansByTaskIds(taskIds);
-        Map<Long, InspectionTaskSchedulePlanDO> planMap = planList.stream()
-                .collect(Collectors.toMap(InspectionTaskSchedulePlanDO::getTaskId, p -> p, (v1, v2) -> v1));
-
-        // 3. 批量查询子任务数量
-        Map<Long, Long> subTaskCountMap = inspectionTaskMapper.countSubTasksByParentIds(taskIds);
-
-        // 4. 转换并填充信息
-        List<InspectionTaskSimpleRespVO> voList = pageResult.getList().stream()
-                .map(task -> {
-                    InspectionTaskSimpleRespVO vo = BeanUtils.toBean(task, InspectionTaskSimpleRespVO.class);
-                    // 展示状态由 enabled + runtimeJobId 派生（库里 status 列只在创建时写 0，已废弃不读）
-                    vo.setStatus(deriveDisplayStatus(task));
-                    // 填充子任务数量
-                    Long subTaskCount = subTaskCountMap.get(task.getId());
-                    vo.setSubTaskCount(subTaskCount != null ? subTaskCount.intValue() : 0);
-                    // 填充排期结果信息
-                    InspectionTaskSchedulePlanDO plan = planMap.get(task.getId());
-                    if (plan != null) {
-                        vo.setActivePlanId(plan.getId());
-                        vo.setActivePlanCode(plan.getPlanCode());
-                        vo.setActivePlanStatus(plan.getPlanStatus());
-                        vo.setHorizonStartDate(plan.getHorizonStartDate());
-                        vo.setHorizonEndDate(plan.getHorizonEndDate());
-                        vo.setScheduleCount(plan.getScheduleCount());
-                    }
-                    return vo;
-                })
-                .collect(Collectors.toList());
-
-        return new PageResult<>(voList, pageResult.getTotal());
+    private InspectionTaskSimpleRespVO toSimple(PatrolTaskDraft draft) {
+        InspectionTaskSimpleRespVO vo = new InspectionTaskSimpleRespVO();
+        vo.setId(draft.id());
+        vo.setTaskName(draft.name());
+        vo.setDomain(draft.domain());
+        vo.setStatus("draft".equals(draft.manageStatus()) ? 0 : 0);
+        vo.setEnabled(Boolean.FALSE);
+        vo.setSubTaskCount(0);
+        return vo;
     }
 
     // ==================== 详情查询 ====================
 
     @Override
     public InspectionTaskRespVO getTaskDetail(Long id) {
-        // 1. 查询任务基础信息
-        InspectionTaskDO taskDO = inspectionTaskMapper.selectById(id);
-        if (taskDO == null) {
-            throw ServiceExceptionUtil.exception(NOT_FOUND, "任务不存在");
-        }
+        PatrolTaskDraft draft = patrolTaskEntityStore.require(id);
+        InspectionTaskRespVO respVO = new InspectionTaskRespVO();
+        respVO.setId(draft.id());
+        respVO.setTaskName(draft.name());
+        respVO.setDomain(draft.domain());
+        respVO.setStatus(0);
+        respVO.setEnabled(Boolean.FALSE);
+        respVO.setExecutionDeviceBinding(draft.executionDeviceBinding());
+        respVO.setResourcePolicy(draft.resourcePolicy());
+        respVO.setPatrolExecutionMode(draft.patrolExecutionMode());
+        respVO.setCreateUnlockedStep(draft.createUnlockedStep());
 
-        // 2. 转换为 RespVO（展示状态与列表同一派生口径）
-        InspectionTaskRespVO respVO = BeanUtils.toBean(taskDO, InspectionTaskRespVO.class);
-        respVO.setStatus(deriveDisplayStatus(taskDO));
-
-        // 3. 处理 inspectionContent
-        InspectionContent content = taskDO.getInspectionContent();
+        InspectionContent content = draft.inspectionContent();
         if (content != null) {
             content = contentEnhancementService.enhanceContent(content, true);
             respVO.setInspectionContent(content);
         }
 
-        // 4. 已保存路线读模型（confirm 快照）
-        enrichSavedRoute(respVO, taskDO);
-
-        // 5. 查询直接子任务（轻量级）
-        List<InspectionTaskDO> subTaskDOs = inspectionTaskMapper.selectByParentId(id);
-        if (subTaskDOs != null && !subTaskDOs.isEmpty()) {
-            List<InspectionTaskSubTaskVO> subTasks = BeanUtils.toBean(subTaskDOs, InspectionTaskSubTaskVO.class);
-            respVO.setSubTasks(subTasks);
-        } else {
-            respVO.setSubTasks(Collections.emptyList());
-        }
-
+        enrichSavedRouteFromDraft(respVO, draft);
+        respVO.setSubTasks(Collections.emptyList());
         return respVO;
     }
 
@@ -132,14 +109,11 @@ public class InspectionTaskQueryServiceImpl implements InspectionTaskQueryServic
     @Override
     public InspectionTaskStatisticsRespVO getTaskStatistics() {
         InspectionTaskStatisticsRespVO vo = new InspectionTaskStatisticsRespVO();
-        long total = inspectionTaskMapper.selectCount();
-        long enabled = inspectionTaskMapper.countEnabled();
-        long disabled = inspectionTaskMapper.countDisabledScheduled();
+        long total = patrolTaskEntityStore.listAll().size();
         vo.setTaskTotal(total);
-        vo.setEnabledCount(enabled);
-        vo.setDisabledCount(disabled);
-        // 草稿 = 总数 - 已启用 - 已停用（三态互斥，口径同 deriveDisplayStatus）
-        vo.setDraftCount(Math.max(0, total - enabled - disabled));
+        vo.setEnabledCount(0L);
+        vo.setDisabledCount(0L);
+        vo.setDraftCount(total);
         return vo;
     }
 
@@ -168,9 +142,51 @@ public class InspectionTaskQueryServiceImpl implements InspectionTaskQueryServic
     }
 
     /**
-     * 从任务 DO / 路线方案台账组装 stopSequence、startStopId、routePreview。
-     * 无已确认路线时保持字段为空，不编造。
+     * 已确认路线填停靠序和预览。起点终点优先已确认路线，没有再读草稿袋。
+     * 还没确认过路线时，停靠序和预览保持空，起点终点仍从草稿回显。禁止编造路线。
      */
+    private void enrichSavedRouteFromDraft(InspectionTaskRespVO respVO, PatrolTaskDraft draft) {
+        Map<String, Object> planned = plannedMap(draft.plannedRoute());
+        if (planned == null) {
+            respVO.setStopSequence(Collections.emptyList());
+            respVO.setStartStopId(draft.startStopId());
+            respVO.setEndStopId(draft.endStopId());
+            return;
+        }
+        List<String> stopSequence = asStringList(planned.get("stopIds"));
+        respVO.setStopSequence(stopSequence);
+        respVO.setStartStopId(firstNonBlank(asString(planned.get("startStopId")), draft.startStopId()));
+        respVO.setEndStopId(firstNonBlank(asString(planned.get("endStopId")), draft.endStopId()));
+        TaskSavedRoutePreviewVO preview = new TaskSavedRoutePreviewVO();
+        preview.setNetworkRef(asString(planned.get("networkRef")));
+        preview.setStopIds(new ArrayList<>(stopSequence));
+        preview.setTotalDistanceMeters(asLong(planned.get("totalDistanceMeters")));
+        preview.setMobilityProfileId(asString(planned.get("mobilityProfileId")));
+        preview.setStartStopId(asString(planned.get("startStopId")));
+        preview.setEndStopId(asString(planned.get("endStopId")));
+        preview.setReturnToStart(asBoolean(planned.get("returnToStart")));
+        preview.setDecisionTraceId(asString(planned.get("decisionTraceId")));
+        respVO.setRoutePreview(preview);
+    }
+
+    private static String firstNonBlank(String preferred, String fallback) {
+        return StringUtils.hasText(preferred) ? preferred : fallback;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> plannedMap(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        if (raw instanceof Map<?, ?> map) {
+            return new java.util.LinkedHashMap<>((Map<String, Object>) map);
+        }
+        if (raw instanceof String json) {
+            return parseJsonMap(json);
+        }
+        return null;
+    }
+
     private void enrichSavedRoute(InspectionTaskRespVO respVO, InspectionTaskDO taskDO) {
         respVO.setRoutePlanId(taskDO.getRoutePlanId());
         respVO.setNetworkRef(taskDO.getNetworkRef());
@@ -187,7 +203,9 @@ public class InspectionTaskQueryServiceImpl implements InspectionTaskQueryServic
         respVO.setStopSequence(stopSequence);
 
         String startStopId = asString(planned != null ? planned.get("startStopId") : null);
+        String endStopId = asString(planned != null ? planned.get("endStopId") : null);
         respVO.setStartStopId(startStopId);
+        respVO.setEndStopId(endStopId);
 
         if (!StringUtils.hasText(taskDO.getNetworkRef()) && CollectionUtils.isEmpty(stopSequence)
                 && planned == null) {
@@ -203,6 +221,7 @@ public class InspectionTaskQueryServiceImpl implements InspectionTaskQueryServic
         preview.setTotalDistanceMeters(asLong(planned != null ? planned.get("totalDistanceMeters") : null));
         preview.setMobilityProfileId(asString(planned != null ? planned.get("mobilityProfileId") : null));
         preview.setStartStopId(startStopId);
+        preview.setEndStopId(endStopId);
         preview.setReturnToStart(asBoolean(planned != null ? planned.get("returnToStart") : null));
         preview.setDecisionTraceId(asString(planned != null ? planned.get("decisionTraceId") : null));
         respVO.setRoutePreview(preview);

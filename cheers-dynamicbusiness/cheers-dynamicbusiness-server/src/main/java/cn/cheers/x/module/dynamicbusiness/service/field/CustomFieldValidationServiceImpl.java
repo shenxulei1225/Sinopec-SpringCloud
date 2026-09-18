@@ -44,6 +44,9 @@ import java.util.stream.Collectors;
  * - 范围验证（来自 ModelFieldAssignment.validation_rules）
  * - 格式验证（来自字段定义和 ModelFieldAssignment.validation_rules）
  * - 多选关联字段验证（ENTITY_REF_MULTI）：格式、数量限制、目标实体存在性
+ * - 地理坐标：未填经纬度视为空；控件占位对象不得当已填坐标报缺项
+ * 
+ * 不负责：在读路径补坐标；用 0,0 冒充空值
  * 
  * @author yudao
  */
@@ -124,8 +127,8 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
             FieldDO field = entry.getValue();
             ModelFieldAssignmentDO assignment = assignmentMap.get(fieldId);
             Object value = resolveAssignedFieldValue(base, custom, fieldId, field, assignment);
-            // 必填已在上方汇总；此处只做有值时的类型/规则校验
-            if (value != null && !(value instanceof String && ((String) value).isEmpty())) {
+            // 必填已在上方汇总；此处只做有值时的类型/规则校验。空坐标占位不是值。
+            if (hasTypedValueToValidate(field, value)) {
                 validateValueType(field, value);
                 if (assignment != null) {
                     validateValueWithRules(field, value, assignment);
@@ -178,6 +181,9 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
         if (value == null || (value instanceof String && ((String) value).isEmpty())) {
             return true;
         }
+        if (field != null && FieldTypeEnum.isCoordinate(field.getType())) {
+            return isEmptyCoordinateValue(value);
+        }
         if (field != null && FieldTypeEnum.isMultiEntityRef(field.getType())) {
             List<Long> ids = parseEntityIdList(value);
             return CollectionUtils.isEmpty(ids);
@@ -195,6 +201,32 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
         return false;
     }
 
+    /**
+     * 有可校验的业务值才走类型规则。控件空占位（空串、空坐标）不算已填。
+     */
+    private boolean hasTypedValueToValidate(FieldDO field, Object value) {
+        if (value == null || (value instanceof String && ((String) value).isEmpty())) {
+            return false;
+        }
+        return field == null || !FieldTypeEnum.isCoordinate(field.getType()) || !isEmptyCoordinateValue(value);
+    }
+
+    /**
+     * 地理坐标未填：没有经度且没有纬度。只填一半不算空，交给类型校验报缺项。
+     */
+    private boolean isEmptyCoordinateValue(Object value) {
+        if (value == null) {
+            return true;
+        }
+        if (value instanceof String text) {
+            return text.isBlank();
+        }
+        if (!(value instanceof Map<?, ?> map)) {
+            return false;
+        }
+        return !hasFiniteCoordinate(map.get("longitude")) && !hasFiniteCoordinate(map.get("latitude"));
+    }
+
     @Override
     public void validateFieldValue(FieldDO field, ModelFieldAssignmentDO assignment, Object value) {
         if (assignment != null && Boolean.TRUE.equals(assignment.getRequired())
@@ -205,8 +237,8 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
             throw new ServiceException(400, "以下必填字段未填写：" + label);
         }
 
-        // 如果字段有值，进行类型和规则校验
-        if (value != null && !(value instanceof String && ((String) value).isEmpty())) {
+        // 如果字段有值，进行类型和规则校验。空坐标占位不是值。
+        if (hasTypedValueToValidate(field, value)) {
             validateValueType(field, value);
             if (assignment != null) {
                 validateValueWithRules(field, value, assignment);
@@ -473,6 +505,9 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
             case "JSON":
                 validateJsonType(field, value);
                 break;
+            case "COORDINATE":
+                validateCoordinateType(field, value);
+                break;
             case "ENTITY_REF_MULTI":
                 validateEntityRefMultiType(field, value);
                 break;
@@ -586,6 +621,49 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
                 }
             }
         }
+    }
+
+    /**
+     * 地理坐标：必须是带经度、纬度的结构。高程可空。禁止用一段文本冒充。
+     */
+    private void validateCoordinateType(FieldDO field, Object value) {
+        JSONObject object;
+        if (value instanceof Map<?, ?> map) {
+            object = new JSONObject();
+            map.forEach((key, item) -> {
+                if (key != null) {
+                    object.put(String.valueOf(key), item);
+                }
+            });
+        } else if (value instanceof String text && !text.isBlank()) {
+            try {
+                object = JSON.parseObject(text);
+            } catch (Exception e) {
+                throw new ServiceException(400, String.format("字段[%s]不是有效的地理坐标", field.getName()));
+            }
+        } else {
+            throw new ServiceException(400, String.format("字段[%s]类型错误，期望地理坐标（经度/纬度）", field.getName()));
+        }
+        if (object == null || !hasFiniteCoordinate(object.get("longitude")) || !hasFiniteCoordinate(object.get("latitude"))) {
+            throw new ServiceException(400, String.format("字段[%s]缺少经度或纬度", field.getName()));
+        }
+        if (object.containsKey("height") && object.get("height") != null && !hasFiniteCoordinate(object.get("height"))) {
+            throw new ServiceException(400, String.format("字段[%s]的高程不是数字", field.getName()));
+        }
+    }
+
+    private static boolean hasFiniteCoordinate(Object raw) {
+        if (raw instanceof Number number) {
+            return Double.isFinite(number.doubleValue());
+        }
+        if (raw instanceof String text && !text.isBlank()) {
+            try {
+                return Double.isFinite(Double.parseDouble(text.trim()));
+            } catch (NumberFormatException ignored) {
+                return false;
+            }
+        }
+        return false;
     }
 
     /**

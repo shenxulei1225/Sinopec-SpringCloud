@@ -19,6 +19,7 @@ import cn.cheers.x.framework.mybatis.core.type.JsonbMapTypeHandler;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.FacilityOwningFieldEnsureService;
+import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeCapabilityService;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
@@ -43,6 +44,7 @@ public class EntityBusinessHelper {
     private final EntityRepository entityRepository;
     private final EntityDedicatedColumnService entityDedicatedColumnService;
     private final FacilityOwningFieldEnsureService facilityOwningFieldEnsureService;
+    private final EntityTypeCapabilityService entityTypeCapabilityService;
 
     public ModelDO validateModelExists(Long modelId) {
         ModelDO model = modelMapper.selectById(modelId);
@@ -180,13 +182,15 @@ public class EntityBusinessHelper {
         validateRequestedDomainMatchesModel(baseFields, model);
         validateBaseFields(entityTypeCode, baseFields, reqVO.getCustomFields());
         validateCustomFields(modelId, baseFields, reqVO.getCustomFields());
+        Integer versionNo = resolveVersionNo(baseFields, reqVO.getCustomFields(), null);
+        boolean versionManagementEnabled = isVersionManagementEnabled(entityTypeCode);
 
         EntityDO data = EntityConvert.INSTANCE.convert(reqVO);
         data.setTenantId(getTenantId());
         // 业务域（Domain）最终以型号为准写入；请求域仅作选项校验
         data.setDomain(normalizeDomain(model.getDomain()));
         ensureDedicatedEntityCode(data, entityTypeCode);
-        validateEntityCodeUnique(data, entityTypeCode, null);
+        validateEntityCodeUnique(data, entityTypeCode, null, versionNo, versionManagementEnabled);
 
         validateEntityReferences(data, model, data.getCustomFields(), entityTypeCode);
 
@@ -219,6 +223,8 @@ public class EntityBusinessHelper {
         validateRequestedDomainMatchesModel(baseFields, model);
         validateBaseFields(entityTypeCode, baseFields, reqVO.getCustomFields());
         validateCustomFields(modelId, baseFields, reqVO.getCustomFields());
+        Integer versionNo = resolveVersionNo(baseFields, reqVO.getCustomFields(), dbEntity.getCustomFields());
+        boolean versionManagementEnabled = isVersionManagementEnabled(entityTypeCode);
 
         reqVO.setBaseFields(baseFields);
         EntityDO update = EntityConvert.INSTANCE.convert(reqVO);
@@ -229,7 +235,13 @@ public class EntityBusinessHelper {
         if (StrUtil.isBlank(update.getCode()) && StrUtil.isNotBlank(dbEntity.getCode())) {
             update.setCode(dbEntity.getCode());
         }
-        validateEntityCodeUnique(update, entityTypeCode, dbEntity.getId());
+        validateEntityCodeUnique(
+                update,
+                entityTypeCode,
+                dbEntity.getId(),
+                versionNo,
+                versionManagementEnabled
+        );
 
         validateEntityReferences(update, model, update.getCustomFields(), entityTypeCode);
 
@@ -368,15 +380,66 @@ public class EntityBusinessHelper {
     /**
      * 提交兜底：同实体类型物理表内编码唯一（与 uk_ent_*_code_tenant 口径一致）。
      */
-    private void validateEntityCodeUnique(EntityDO data, String entityTypeCode, Long excludeId) {
+    private void validateEntityCodeUnique(
+            EntityDO data,
+            String entityTypeCode,
+            Long excludeId,
+            Integer versionNo,
+            boolean versionManagementEnabled
+    ) {
         if (data == null || !StrUtil.isNotBlank(data.getCode()) || !StrUtil.isNotBlank(entityTypeCode)) {
             return;
         }
         String code = data.getCode().trim();
         data.setCode(code);
-        if (entityRepository.existsByExactCode(entityTypeCode.trim(), code, excludeId)) {
+        boolean exists = versionManagementEnabled && versionNo != null
+                ? entityRepository.existsByExactCodeAndVersion(entityTypeCode.trim(), code, versionNo, excludeId)
+                : entityRepository.existsByExactCode(entityTypeCode.trim(), code, excludeId);
+        if (exists) {
             throw new ServiceException(400, "编码已存在");
         }
+    }
+
+    private boolean isVersionManagementEnabled(String entityTypeCode) {
+        if (StrUtil.isBlank(entityTypeCode)) {
+            return false;
+        }
+        return entityTypeCapabilityService.hasCapability(
+                entityTypeCode.trim(),
+                EntityTypeCapabilityService.CAPABILITY_VERSION_MANAGEMENT
+        );
+    }
+
+    private Integer resolveVersionNo(
+            Map<String, Object> baseFields,
+            Map<String, Object> customFields,
+            Map<String, Object> fallbackCustomFields
+    ) {
+        Integer versionNo = parsePositiveInt(baseFields, "version_no", "versionNo");
+        if (versionNo != null) return versionNo;
+        versionNo = parsePositiveInt(customFields, "version_no", "versionNo");
+        if (versionNo != null) return versionNo;
+        return parsePositiveInt(fallbackCustomFields, "version_no", "versionNo");
+    }
+
+    private Integer parsePositiveInt(Map<String, Object> source, String... keys) {
+        if (source == null || keys == null) return null;
+        for (String key : keys) {
+            Object raw = source.get(key);
+            if (raw == null) continue;
+            Integer value = null;
+            if (raw instanceof Number n) {
+                value = n.intValue();
+            } else {
+                try {
+                    value = Integer.parseInt(String.valueOf(raw).trim());
+                } catch (Exception ignored) {
+                    value = null;
+                }
+            }
+            if (value != null && value > 0) return value;
+        }
+        return null;
     }
 
     /**

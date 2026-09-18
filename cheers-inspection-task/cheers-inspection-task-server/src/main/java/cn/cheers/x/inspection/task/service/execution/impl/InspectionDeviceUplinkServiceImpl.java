@@ -1,12 +1,17 @@
 package cn.cheers.x.inspection.task.service.execution.impl;
 
-import cn.cheers.x.device.protocolgateway.api.dto.DeviceUplinkEventDTO;
+import cn.cheers.x.device.protocolgateway.api.channel.AccessChannelCodes;
+import cn.cheers.x.device.protocolgateway.api.datacollection.CollectionSample;
+import cn.cheers.x.device.protocolgateway.api.datacollection.ProtocolQualifyStatus;
 import cn.cheers.x.device.protocolgateway.api.opcode.DeviceTaskStatusCode;
 import cn.cheers.x.device.protocolgateway.api.opcode.TransportOpcode;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.task.service.execution.InspectionDeviceUplinkService;
-import cn.cheers.x.module.dynamicbusiness.api.execution.TaskExecutionSessionApi;
-import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionWritebackReqDTO;
+import cn.cheers.x.inspection.task.service.execution.steptree.TaskStepTreeAssembler;
+import cn.cheers.x.module.dynamicbusiness.api.strategy.StrategyRuntimeApi;
+import cn.cheers.x.module.dynamicbusiness.api.strategy.dto.StrategyHandleRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.strategy.dto.StrategyTriggerEventDTO;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -15,11 +20,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * 巡检域外部通道适配器：地面站上行 → 任务模块执行回写。
- * <p>匹配权威 = 报文 taskId（执行记录 id）。禁止扫任务定义表猜设备。
+ * 巡检采集适配：把样本收成「采集结果到了」，并组好要对回的步/整次状态。
+ * <p>记过程、改某一步、改整次状态都由条件策略做。本方法不对账写。
+ * <p>不负责：拆原始报文、按字段说明核对、工业通道。
+ * <p>禁止：执行记录 id 空了猜设备；不合格还把某一步标成完成；用上报点位对步骤。
  */
 @Slf4j
 @Service
@@ -28,47 +37,77 @@ public class InspectionDeviceUplinkServiceImpl implements InspectionDeviceUplink
 
     public static final String PATROL_RECORD_TYPE = "task_record_patrol";
 
-    private final TaskExecutionSessionApi taskExecutionSessionApi;
+    private final StrategyRuntimeApi strategyRuntimeApi;
     private final ObjectMapper objectMapper;
 
     @Override
-    public void applyUplink(DeviceUplinkEventDTO event) {
-        if (event == null) {
+    public void applyCollection(CollectionSample sample) {
+        if (sample == null) {
             return;
         }
-        JsonNode root = parsePayload(event.payloadJson());
-        Long executionRecordId = parseLongId(text(root, "taskId"));
-        if (executionRecordId == null) {
-            log.debug("[patrol-uplink] 缺少可解析的执行记录 taskId opcode={}", event.opcode());
+        if (!AccessChannelCodes.INSPECTION.equals(sample.channelCode())) {
+            log.error("[patrol-uplink] 非巡检通道不得写入巡检回写 channel={} deviceId={}",
+                    sample.channelCode(), sample.deviceId());
             return;
         }
+        StrategyTriggerEventDTO event = buildCollectionEvent(sample);
+        CommonResult<StrategyHandleRespDTO> handled = strategyRuntimeApi.handle(event);
+        if (handled == null || !handled.isSuccess()) {
+            throw new ServiceException(
+                    handled != null ? handled.getCode() : 500,
+                    handled != null && StringUtils.hasText(handled.getMsg())
+                            ? handled.getMsg()
+                            : "采集结果交给策略失败");
+        }
+        StrategyHandleRespDTO data = handled.getData();
+        if (data != null && data.isMatched()) {
+            log.info("[patrol-uplink] 策略已处理 executionRecordId={} action={}",
+                    sample.executionRecordId(), data.getActionName());
+        } else {
+            log.debug("[patrol-uplink] 策略未命中 skipReason={}",
+                    data != null ? data.getSkipReason() : null);
+        }
+    }
 
-        TaskExecutionWritebackReqDTO writeback = new TaskExecutionWritebackReqDTO();
-        writeback.setExecutionRecordId(executionRecordId);
-        writeback.setEntityTypeCode(PATROL_RECORD_TYPE);
-
-        String status = resolveExecutionStatus(event.opcode(), root);
+    /**
+     * 协议不合格只带过程和错误，不带某一步完成、不带整次状态。
+     */
+    private StrategyTriggerEventDTO buildCollectionEvent(CollectionSample sample) {
+        StrategyTriggerEventDTO event = new StrategyTriggerEventDTO();
+        event.setEventType(StrategyTriggerEventDTO.EVENT_COLLECTION_RECEIVED);
+        event.setExecutionRecordId(sample.executionRecordId());
+        event.setEntityTypeCode(PATROL_RECORD_TYPE);
+        event.setReceivedAtEpochMs(sample.receivedAtEpochMs());
+        event.setMessageKind(sample.messageKind());
+        event.setProtocolQualify(sample.protocolQualify().name());
+        event.setQualifyErrors(sample.qualifyErrors());
+        event.setFields(sample.fields());
+        if (sample.protocolQualify() == ProtocolQualifyStatus.UNQUALIFIED) {
+            return event;
+        }
+        JsonNode fields = objectMapper.valueToTree(sample.fields());
+        int opcode = readOpcode(sample);
+        String status = resolveExecutionStatus(opcode, fields);
         if (StringUtils.hasText(status)) {
-            writeback.setExecutionStatus(status);
+            event.setExecutionStatus(status);
         }
-        List<TaskExecutionWritebackReqDTO.StepUpdate> stepUpdates =
-                resolveStepUpdates(event.opcode(), root);
+        List<Map<String, Object>> stepUpdates = resolveStepUpdates(opcode, fields, sample);
         if (!stepUpdates.isEmpty()) {
-            writeback.setStepUpdates(stepUpdates);
+            event.setStepUpdates(stepUpdates);
         }
-        if (!StringUtils.hasText(writeback.getExecutionStatus())
-                && (writeback.getStepUpdates() == null || writeback.getStepUpdates().isEmpty())) {
-            return;
-        }
+        return event;
+    }
 
-        CommonResult<Boolean> rpc = taskExecutionSessionApi.writeback(writeback);
-        if (rpc == null || !rpc.isSuccess()) {
-            log.warn("[patrol-uplink] writeback 失败 executionRecordId={} msg={}",
-                    executionRecordId, rpc != null ? rpc.getMsg() : null);
-            return;
+    static int readOpcode(CollectionSample sample) {
+        try {
+            return Integer.parseInt(sample.messageKind());
+        } catch (NumberFormatException ex) {
+            Object raw = sample.fields().get("opcode");
+            if (raw instanceof Number number) {
+                return number.intValue();
+            }
+            throw new IllegalArgumentException("采集样本报文种类不是操作码: " + sample.messageKind());
         }
-        log.info("[patrol-uplink] writeback ok executionRecordId={} opcode={} status={}",
-                executionRecordId, event.opcode(), writeback.getExecutionStatus());
     }
 
     static String resolveExecutionStatus(int opcode, JsonNode root) {
@@ -98,8 +137,12 @@ public class InspectionDeviceUplinkServiceImpl implements InspectionDeviceUplink
         };
     }
 
-    private List<TaskExecutionWritebackReqDTO.StepUpdate> resolveStepUpdates(int opcode, JsonNode root) {
-        List<TaskExecutionWritebackReqDTO.StepUpdate> updates = new ArrayList<>();
+    /**
+     * 对上哪一步：包内序号 + 内层操作码。组好后交给「更新某一步的状态」，本方法不写账。
+     */
+    private List<Map<String, Object>> resolveStepUpdates(
+            int opcode, JsonNode root, CollectionSample sample) {
+        List<Map<String, Object>> updates = new ArrayList<>();
         TransportOpcode transport;
         try {
             transport = TransportOpcode.fromCode(opcode);
@@ -110,16 +153,27 @@ public class InspectionDeviceUplinkServiceImpl implements InspectionDeviceUplink
             return updates;
         }
         for (JsonNode pkg : extractPackageNodes(root)) {
-            String pointId = extractPointId(pkg);
-            if (!StringUtils.hasText(pointId)) {
+            Integer sequence = intOrNull(pkg, "sequence");
+            Integer innerOpcode = intOrNull(pkg, "opcode");
+            if (sequence == null || innerOpcode == null) {
+                log.error("[patrol-uplink] 步骤结果缺少序号或指令编码，无法对回检查步骤");
                 continue;
             }
-            TaskExecutionWritebackReqDTO.StepUpdate update = new TaskExecutionWritebackReqDTO.StepUpdate();
-            update.setStepCode(pointId);
-            update.setStatus(isFailedResult(pkg.path("result")) ? "failed" : "completed");
+            Map<String, Object> update = new LinkedHashMap<>();
+            update.put("stepCode", TaskStepTreeAssembler.sequenceStepCode(sequence));
+            update.put("status", isFailedResult(pkg.path("result")) ? "failed" : "completed");
+            update.put("resultPayload", receivedSnapshot(sample));
             updates.add(update);
         }
         return updates;
+    }
+
+    private static Map<String, Object> receivedSnapshot(CollectionSample sample) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("receivedAtEpochMs", sample.receivedAtEpochMs());
+        snapshot.put("messageKind", sample.messageKind());
+        snapshot.put("protocolQualify", sample.protocolQualify().name());
+        return snapshot;
     }
 
     private static List<JsonNode> extractPackageNodes(JsonNode root) {
@@ -136,20 +190,6 @@ public class InspectionDeviceUplinkServiceImpl implements InspectionDeviceUplink
         return nodes;
     }
 
-    private static String extractPointId(JsonNode pkg) {
-        if (pkg == null) {
-            return null;
-        }
-        JsonNode reportPoint = pkg.get("reportPoint");
-        if (reportPoint != null && !reportPoint.isNull()) {
-            String fromReport = text(reportPoint, "pointId");
-            if (StringUtils.hasText(fromReport)) {
-                return fromReport;
-            }
-        }
-        return text(pkg, "pointId");
-    }
-
     static boolean isFailedResult(JsonNode result) {
         if (result == null || result.isNull() || result.isMissingNode()) {
             return false;
@@ -158,26 +198,6 @@ public class InspectionDeviceUplinkServiceImpl implements InspectionDeviceUplink
             return true;
         }
         return result.has("code") && result.get("code").isNumber() && result.get("code").asInt() != 0;
-    }
-
-    private JsonNode parsePayload(String payloadJson) {
-        if (!StringUtils.hasText(payloadJson)) {
-            return objectMapper.createObjectNode();
-        }
-        try {
-            return objectMapper.readTree(payloadJson);
-        } catch (Exception ex) {
-            log.warn("[patrol-uplink] payload JSON 无效: {}", ex.getMessage());
-            return objectMapper.createObjectNode();
-        }
-    }
-
-    private static String text(JsonNode node, String field) {
-        if (node == null || !node.has(field) || node.get(field).isNull()) {
-            return null;
-        }
-        String value = node.get(field).asText(null);
-        return StringUtils.hasText(value) ? value.trim() : null;
     }
 
     private static Integer intOrNull(JsonNode node, String field) {
@@ -196,16 +216,5 @@ public class InspectionDeviceUplinkServiceImpl implements InspectionDeviceUplink
             }
         }
         return null;
-    }
-
-    private static Long parseLongId(String raw) {
-        if (!StringUtils.hasText(raw)) {
-            return null;
-        }
-        try {
-            return Long.parseLong(raw.trim());
-        } catch (NumberFormatException ex) {
-            return null;
-        }
     }
 }

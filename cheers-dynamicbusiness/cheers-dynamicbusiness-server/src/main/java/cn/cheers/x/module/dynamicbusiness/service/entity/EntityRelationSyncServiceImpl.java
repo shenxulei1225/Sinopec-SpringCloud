@@ -18,7 +18,6 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.relation.RelationFieldLibrar
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.service.capability.form.ModelCrudFormFieldAssembler;
-import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
 import cn.cheers.x.module.dynamicbusiness.service.relation.BidirectionalRelationService;
 
@@ -37,6 +36,7 @@ import java.util.*;
  * Entity 关联同步服务实现
  *
  * <p>在 Entity 创建/更新/删除时,自动同步 ENTITY_REF 和 ENTITY_REF_MULTI 字段的关联关系到 EntityRelationDO 表。</p>
+ * <p>权威：型号上已分配的引用字段声明了指向哪类业务。禁止再查旧的业务类型关联许可表。</p>
  */
 @Service
 @Slf4j
@@ -56,8 +56,6 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
 
     @Lazy // 避免循环依赖
     private final BidirectionalRelationService bidirectionalRelationService;
-
-    private final EntityTypeRelationService entityTypeRelationService;
 
     private final ObjectProvider<EntityRelationSyncServiceImpl> selfProvider;
 
@@ -294,7 +292,7 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
             info.setFieldName(field.getName());
             info.setFieldType(field.getType());
             info.setMultiRef(resolveMultiRef(field, baseField));
-            resolveMetadata(assignment, info);
+            resolveMetadata(assignment, field, info);
             result.add(info);
         }
         return result;
@@ -342,7 +340,11 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
         return false;
     }
 
-    private void resolveMetadata(ModelFieldAssignmentDO assignment, EntityRefFieldInfo info) {
+    /**
+     * 目标类型只认引用字段自己的声明：分配上的目标、字段库来源、旧关联库/型号关联。
+     * 禁止回查业务类型关联许可表。
+     */
+    private void resolveMetadata(ModelFieldAssignmentDO assignment, FieldDO field, EntityRefFieldInfo info) {
         if (assignment.getRefLibraryId() != null) {
             RelationFieldLibraryDO lib = relationFieldLibraryMapper.selectById(assignment.getRefLibraryId());
             if (lib != null && StringUtils.hasText(lib.getRefEntityType())) {
@@ -359,8 +361,11 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
                     }
                 }
             }
-        } else if (StringUtils.hasText(assignment.getTargetEntityType())) {
-            info.setRefEntityType(assignment.getTargetEntityType().trim());
+        }
+        if (!StringUtils.hasText(info.getRefEntityType())) {
+            info.setRefEntityType(EntityRefFieldTarget.firstDeclared(
+                    assignment.getTargetEntityType(),
+                    field != null ? EntityRefFieldTarget.fromProviderCode(field.getProviderCode()) : ""));
         }
     }
 
@@ -389,14 +394,16 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
             }
         }
 
-        // 1) 强校验：业务门禁必须存在
-        if (model.getEntityTypeCode() == null || refEntityTypeCode == null || refEntityTypeCode.isBlank()) {
-            throw new ServiceException(400, "ASSOC_PARAM_INVALID: 关联参数缺失");
+        String declaredTarget = fieldInfo.getRefEntityType();
+        if (!StringUtils.hasText(declaredTarget)) {
+            throw new ServiceException(400, "引用字段未声明指向哪类业务，不能保存关联");
         }
-        if (!entityTypeRelationService.existsRelation(model.getEntityTypeCode(), refEntityTypeCode)) {
-            throw new ServiceException(400, String.format(
-                    "ASSOC_GATE_DENIED: 当前业务 %s 不允许关联目标业务 %s，请在「业务类型关联」中配置",
-                    model.getEntityTypeCode(), refEntityTypeCode));
+        if (StringUtils.hasText(refEntityTypeCode) && !declaredTarget.equals(refEntityTypeCode)) {
+            throw new ServiceException(400, "关联业务类型与字段配置不一致");
+        }
+        refEntityTypeCode = declaredTarget;
+        if (model.getEntityTypeCode() == null) {
+            throw new ServiceException(400, "ASSOC_PARAM_INVALID: 关联参数缺失");
         }
 
         // 2) 去重校验：同 source + fieldCode + target 的有效关联不重复写入

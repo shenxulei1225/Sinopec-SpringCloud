@@ -1,6 +1,6 @@
 package cn.cheers.x.inspection.task.controller.admin.device;
 
-import cn.cheers.x.device.protocolgateway.api.dto.DeviceUplinkEventDTO;
+import cn.cheers.x.device.protocolgateway.api.datacollection.CollectionSample;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.enums.ApiConstants;
 import cn.cheers.x.inspection.task.service.execution.InspectionDeviceUplinkService;
@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
- * 设备上行回调入口（供协议网关 HTTP 推送）。
- * <p>路径与网关 {@code uplink-notify-url} 对齐；不走业务 admin 鉴权场景时由网关直连 RPC 前缀。
+ * 过渡 HTTP：接收网关采集样本。正式主路径仍是总线。
+ * <p>只消费样本，不接收原始报文当主契约。
  */
 @Tag(name = "RPC - 设备上行回写")
 @RestController
@@ -29,9 +29,9 @@ public class InspectionDeviceUplinkController {
     private InspectionDeviceUplinkService inspectionDeviceUplinkService;
 
     @PostMapping("/notify")
-    @Operation(summary = "接收协议网关上行事件并回写任务设备运行态")
-    public CommonResult<Boolean> notify(@RequestBody DeviceUplinkEventDTO event) {
-        inspectionDeviceUplinkService.applyUplink(event);
+    @Operation(summary = "接收采集样本，经策略往执行账记过程（步骤完成过渡仍写）")
+    public CommonResult<Boolean> notify(@RequestBody CollectionSample sample) {
+        inspectionDeviceUplinkService.applyCollection(sample);
         return success(true);
     }
 }

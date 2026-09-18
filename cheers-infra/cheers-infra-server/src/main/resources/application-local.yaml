@@ -160,5 +160,12 @@ cheers:
     mock-enable: true
   access-log: # 访问日志的配置项
     enable: true
+  infra:
+    file:
+      # 主存储器在库表 infra_file_config.master。本机不要用芋道示例七牛，会读超时后 500。
+      magika:
+        command: /opt/homebrew/bin/magika
+        timeout-seconds: 10
+      allowed-types: pdf,doc,docx,xls,xlsx,ppt,pptx,txt,md,markdown,zip,rar,sevenzip,7z,7zip,tar,gzip,gz,bzip,bzip2,xz
 
 

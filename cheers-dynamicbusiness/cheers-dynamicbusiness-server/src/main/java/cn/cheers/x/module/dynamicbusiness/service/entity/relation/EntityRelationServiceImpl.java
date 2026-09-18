@@ -291,6 +291,14 @@ public class EntityRelationServiceImpl implements EntityRelationService {
                 refFieldCode.trim(), targetEntityIds, subjectEntityTypeCode.trim());
     }
 
+    @Override
+    public List<Long> listCounterpartEntityIds(List<Long> relatedEntityIds,
+                                               String relatedEntityTypeCode,
+                                               String listEntityTypeCode) {
+        return entityRelationMapper.selectCounterpartEntityIds(
+                relatedEntityIds, relatedEntityTypeCode, listEntityTypeCode);
+    }
+
     private void validateRelationType(String relationType) {
         if (!EntityRelationTypeEnum.isValid(relationType)) {
             throw new ServiceException(400, "无效的关联类型：" + relationType +

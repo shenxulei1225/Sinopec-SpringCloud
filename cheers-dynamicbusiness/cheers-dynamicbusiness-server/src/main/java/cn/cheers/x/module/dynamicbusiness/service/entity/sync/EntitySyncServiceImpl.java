@@ -10,9 +10,8 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignm
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
-import cn.cheers.x.module.dynamicbusiness.service.field.SmartSearchableService;
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
+import cn.cheers.x.module.dynamicbusiness.service.entity.index.EntityFieldIndexRecordBuilder;
+import cn.cheers.x.module.dynamicbusiness.service.entity.index.ExtensionFieldIndexEligibility;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.retry.annotation.Backoff;
@@ -22,11 +21,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -39,9 +34,9 @@ import java.util.stream.Collectors;
  * 
  * <h3>同步策略</h3>
  * <ul>
- *   <li>只同步标记为 is_searchable=true 的字段</li>
+ *   <li>同步可搜索 / 可筛选 / 可排序任一为真的扩展字段</li>
  *   <li>根据字段类型存储到对应的值列（value_string、value_number、value_date 等）</li>
- *   <li>同步采用"删除后插入"策略，确保数据一致性</li>
+ *   <li>同一实体：先删后按批插入；型号级重建走字段索引服务的批量写入</li>
  *   <li>使用 Spring Retry 实现自动重试（1秒、5秒、30秒）</li>
  * </ul>
  * 
@@ -66,7 +61,6 @@ public class EntitySyncServiceImpl implements EntitySyncService {
     private final FieldMapper fieldMapper;
     private final ModelFieldAssignmentMapper modelFieldAssignmentMapper;
     private final SyncAlertService syncAlertService;
-    private final SmartSearchableService smartSearchableService;
 
     /**
      * 引擎类型常量
@@ -82,12 +76,6 @@ public class EntitySyncServiceImpl implements EntitySyncService {
      * 告警阈值（连续失败次数）
      */
     private static final int ALERT_THRESHOLD = 10;
-
-    // ==================== 日期格式化器 ====================
-
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    private static final DateTimeFormatter ISO_DATETIME_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     // ==================== 核心同步方法（带 Spring Retry） ====================
 
@@ -166,28 +154,21 @@ public class EntitySyncServiceImpl implements EntitySyncService {
         log.debug("开始同步 Entity 到索引表: entityId={}, modelId={}", entityId, modelId);
 
         try {
-            // 1. 获取 Model 的可查询字段列表
-            List<FieldDO> searchableFields = getSearchableFields(modelId);
-            if (searchableFields.isEmpty()) {
-                log.debug("Model 没有可查询字段，跳过同步: modelId={}", modelId);
-                // 删除可能存在的旧索引数据
+            List<FieldDO> indexableFields = getIndexableFields(modelId);
+            if (indexableFields.isEmpty()) {
+                log.debug("Model 没有应进索引表的扩展字段，跳过同步: modelId={}", modelId);
                 entityFieldIndexMapper.deleteByEntityId(entityId);
                 return;
             }
 
-            // 2. 解析 Entity 的 customFields
             Map<String, Object> customFieldsMap = entity.getCustomFields() != null
                     ? entity.getCustomFields() : Map.of();
 
-            // 3. 删除旧的索引数据
             entityFieldIndexMapper.deleteByEntityId(entityId);
 
-            // 4. 构建并插入新的索引数据
-            List<EntityFieldIndexDO> indexRecords = buildIndexRecords(entity, searchableFields, customFieldsMap);
+            List<EntityFieldIndexDO> indexRecords = buildIndexRecords(entity, indexableFields, customFieldsMap);
             if (!indexRecords.isEmpty()) {
-                for (EntityFieldIndexDO record : indexRecords) {
-                    entityFieldIndexMapper.insert(record);
-                }
+                entityFieldIndexMapper.insertBatch(indexRecords, EntityFieldIndexRecordBuilder.INDEX_INSERT_BATCH_SIZE);
                 log.debug("同步 Entity 到索引表成功: entityId={}, fieldCount={}", entityId, indexRecords.size());
             }
 
@@ -380,219 +361,44 @@ public class EntitySyncServiceImpl implements EntitySyncService {
     // ==================== 私有辅助方法 ====================
 
     /**
-     * 获取 Model 的可查询字段列表
+     * 该型号应写入索引表的扩展字段：可搜索、可筛选、可排序任一为真。
      */
-    private List<FieldDO> getSearchableFields(Long modelId) {
-        // 获取 Model 关联的字段 ID 列表
+    private List<FieldDO> getIndexableFields(Long modelId) {
         List<Long> fieldIds = modelFieldAssignmentMapper.selectFieldIdsByModelId(modelId);
         if (fieldIds.isEmpty()) {
             return new ArrayList<>();
         }
-
-        // 查询字段详情，过滤出可查询的字段
-        // 注意：isSearchable 已移至 ModelFieldAssignmentDO，这里需要从模型字段中判断
         List<ModelFieldAssignmentDO> assignments = modelFieldAssignmentMapper.selectByModelId(modelId);
         Map<Long, ModelFieldAssignmentDO> assignmentMap = assignments.stream()
-                .collect(Collectors.toMap(ModelFieldAssignmentDO::getFieldId, a -> a));
-        
+                .collect(Collectors.toMap(ModelFieldAssignmentDO::getFieldId, a -> a, (a, b) -> a));
+
         return fieldIds.stream()
                 .map(fieldMapper::selectById)
                 .filter(field -> {
                     if (field == null) {
                         return false;
                     }
-                    // 优先使用模型字段中的配置，如果为 null 则使用智能默认值
                     ModelFieldAssignmentDO assignment = assignmentMap.get(field.getId());
-                    Boolean isSearchable;
-                    if (assignment != null && assignment.getIsSearchable() != null) {
-                        isSearchable = assignment.getIsSearchable();
-                    } else {
-                        // 使用智能默认值服务获取字段类型的默认可查询属性
-                        isSearchable = smartSearchableService.getDefaultSearchable(field.getType());
-                    }
-                    return Boolean.TRUE.equals(isSearchable);
+                    Boolean searchable = assignment != null ? assignment.getIsSearchable() : null;
+                    Boolean filterable = assignment != null ? assignment.getIsFilterable() : null;
+                    Boolean sortable = assignment != null ? assignment.getIsSortable() : null;
+                    return ExtensionFieldIndexEligibility.shouldWriteIndex(
+                            searchable, filterable, sortable, field.getType());
                 })
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 构建索引记录列表
-     * 
-     * <p>注意：customFields 使用字段 ID 作为 key，而不是字段 code。
-     * 因此需要使用 field.getId().toString() 来查找值。</p>
-     */
-    private List<EntityFieldIndexDO> buildIndexRecords(EntityDO entity, 
-                                                        List<FieldDO> searchableFields,
-                                                        Map<String, Object> customFieldsMap) {
+    private List<EntityFieldIndexDO> buildIndexRecords(EntityDO entity,
+                                                       List<FieldDO> indexableFields,
+                                                       Map<String, Object> customFieldsMap) {
         List<EntityFieldIndexDO> records = new ArrayList<>();
-
-        for (FieldDO field : searchableFields) {
-            String fieldCode = field.getCode();
-            // customFields 现在使用字段 code 作为 key；同步写入也可能带 semantic_type
-            Object value = customFieldsMap.get(fieldCode);
-            if (value == null && field.getSemanticType() != null && !field.getSemanticType().isBlank()) {
-                value = customFieldsMap.get(field.getSemanticType().trim());
+        for (FieldDO field : indexableFields) {
+            EntityFieldIndexDO record = EntityFieldIndexRecordBuilder.tryBuild(entity, field, customFieldsMap);
+            if (record != null) {
+                records.add(record);
             }
-
-            // 跳过空值
-            if (value == null) {
-                log.debug("字段值为空，跳过: fieldId={}, fieldCode={}", field.getId(), fieldCode);
-                continue;
-            }
-
-            EntityFieldIndexDO record = EntityFieldIndexDO.builder()
-                    .entityId(entity.getId())
-                    .modelId(entity.getModelId())
-                    .fieldCode(fieldCode)
-                    .build();
-            // createTime/updateTime 由 MyBatis Plus 自动填充
-
-            // 根据字段类型设置对应的值列
-            setValueByFieldType(record, field.getType(), value);
-
-            records.add(record);
-            log.debug("构建索引记录: entityId={}, fieldId={}, fieldCode={}, value={}", 
-                    entity.getId(), field.getId(), fieldCode, value);
         }
-
         return records;
-    }
-
-    /**
-     * 根据字段类型设置索引记录的值
-     */
-    private void setValueByFieldType(EntityFieldIndexDO record, String fieldType, Object value) {
-        if (value == null) {
-            return;
-        }
-
-        String upperType = fieldType == null ? "" : fieldType.trim().toUpperCase();
-        // MULTI_SELECT：索引存标准 JSON 数组字符串，供 IN/CONTAINS 精确拆 token
-        if ("MULTI_SELECT".equals(upperType)) {
-            String jsonArray = toMultiSelectIndexString(value);
-            if (jsonArray != null) {
-                if (jsonArray.length() > 500) {
-                    jsonArray = jsonArray.substring(0, 500);
-                }
-                record.setValueString(jsonArray);
-            }
-            return;
-        }
-
-        String valueStr = value.toString();
-
-        switch (upperType) {
-            case "NUMBER":
-            case "INTEGER":
-            case "DECIMAL":
-                try {
-                    record.setValueNumber(new BigDecimal(valueStr));
-                } catch (NumberFormatException e) {
-                    log.warn("数值转换失败，存储为字符串: fieldCode={}, value={}", 
-                            record.getFieldCode(), valueStr);
-                    record.setValueString(valueStr);
-                }
-                break;
-
-            case "DATE":
-                try {
-                    LocalDate date = parseDate(valueStr);
-                    record.setValueDate(date);
-                } catch (DateTimeParseException e) {
-                    log.warn("日期转换失败，存储为字符串: fieldCode={}, value={}", 
-                            record.getFieldCode(), valueStr);
-                    record.setValueString(valueStr);
-                }
-                break;
-
-            case "DATETIME":
-                try {
-                    LocalDateTime dateTime = parseDateTime(valueStr);
-                    record.setValueDatetime(dateTime);
-                } catch (DateTimeParseException e) {
-                    log.warn("日期时间转换失败，存储为字符串: fieldCode={}, value={}", 
-                            record.getFieldCode(), valueStr);
-                    record.setValueString(valueStr);
-                }
-                break;
-
-            case "BOOLEAN":
-                try {
-                    Boolean boolValue = Boolean.parseBoolean(valueStr);
-                    record.setValueBoolean(boolValue);
-                } catch (Exception e) {
-                    record.setValueString(valueStr);
-                }
-                break;
-
-            case "TEXT":
-            case "STRING":
-            case "ENUM":
-            case "SELECT":
-            case "ENTITY_REF":
-            default:
-                // 字符串类型，截断过长的值
-                if (valueStr.length() > 500) {
-                    valueStr = valueStr.substring(0, 500);
-                }
-                record.setValueString(valueStr);
-                break;
-        }
-    }
-
-    /**
-     * MULTI_SELECT 索引值：规范成 JSON 数组字符串（如 ["HUMAN","UAV"]）。
-     * List/数组直接序列化；已是 JSON 数组串则原样；其它标量包成单元素数组。
-     */
-    private static String toMultiSelectIndexString(Object value) {
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof List<?> || value.getClass().isArray()) {
-            return JSON.toJSONString(value);
-        }
-        if (value instanceof String s) {
-            String trimmed = s.trim();
-            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
-                return trimmed;
-            }
-            if (trimmed.isEmpty()) {
-                return null;
-            }
-            return JSON.toJSONString(List.of(trimmed));
-        }
-        return JSON.toJSONString(List.of(String.valueOf(value)));
-    }
-
-    /**
-     * 解析日期字符串
-     */
-    private LocalDate parseDate(String dateStr) {
-        // 尝试多种格式
-        try {
-            return LocalDate.parse(dateStr, DATE_FORMATTER);
-        } catch (DateTimeParseException e) {
-            // 尝试 ISO 格式
-            return LocalDate.parse(dateStr);
-        }
-    }
-
-    /**
-     * 解析日期时间字符串
-     */
-    private LocalDateTime parseDateTime(String dateTimeStr) {
-        // 尝试多种格式
-        try {
-            return LocalDateTime.parse(dateTimeStr, DATETIME_FORMATTER);
-        } catch (DateTimeParseException e) {
-            try {
-                return LocalDateTime.parse(dateTimeStr, ISO_DATETIME_FORMATTER);
-            } catch (DateTimeParseException e2) {
-                // 尝试只有日期的情况
-                LocalDate date = parseDate(dateTimeStr);
-                return date.atStartOfDay();
-            }
-        }
     }
 
     /**

@@ -4,7 +4,7 @@
 
 ## 前置
 
-- Flyway **V90**（`ent_standard*` 固定列：`standard_no` / `standard_level` / `issuing_body` / `publish_year` / `summary` / `source_ref`）
+- Flyway **V90** 建固定列；**V123** 将 `source_ref` 改名为 `attachments`（`standard_no` / `standard_level` / `issuing_body` / `publish_year` / `summary` / `attachments`）
 - 本机 PostgreSQL：`sinopec` / schema `dynamicbusiness`
 
 ## 脚本顺序
@@ -22,7 +22,7 @@
 ## 执行
 
 ```bash
-# 1) 确保 V90 已 migrate（或本机先 psql 执行该迁移文件）
+# 1) 确保 V123 已 migrate（V90 建列，V123 改名为 attachments）
 # 2) seed
 cd scripts/platform-import/standard
 ./import.sh

@@ -2,6 +2,8 @@ package cn.cheers.x.module.dynamicbusiness.service.execution;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessReqDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionWritebackReqDTO;
@@ -109,7 +111,7 @@ class TaskExecutionSessionServiceImplTest {
         EntitySceneQueryRespVO stepQuery = EntitySceneQueryRespVO.page(
                 new PageResult<>(List.of(stepListItem), 1L), "LIGHT");
         when(entityService.queryEntities(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(stepQuery);
         when(entityService.get(11L, "task_execution_step")).thenReturn(step);
 
@@ -144,6 +146,48 @@ class TaskExecutionSessionServiceImplTest {
         req.setExecutionRecordId(1L);
         req.setExecutionStatus("completed");
         assertThrows(ServiceException.class, () -> service.writeback(req));
+    }
+
+    @Test
+    void appendProcess_addsEntryToExistingList() {
+        EntityRespVO record = new EntityRespVO();
+        record.setId(9001L);
+        record.setBaseFields(new LinkedHashMap<>(Map.of("name", "执行-42", "modelId", 55L)));
+        Map<String, Object> custom = new LinkedHashMap<>();
+        custom.put("task_id", 42L);
+        custom.put("process_entries", List.of(Map.of("messageKind", "old")));
+        record.setCustomFields(custom);
+        when(entityService.get(9001L, "task_record_patrol")).thenReturn(record);
+
+        TaskExecutionAppendProcessReqDTO req = new TaskExecutionAppendProcessReqDTO();
+        req.setExecutionRecordId(9001L);
+        req.setEntityTypeCode("task_record_patrol");
+        req.setReceivedAtEpochMs(99L);
+        req.setMessageKind("500202");
+        req.setProtocolQualify("UNQUALIFIED");
+        req.setQualifyErrors(List.of("缺必填"));
+
+        TaskExecutionAppendProcessRespDTO resp = service.appendProcess(req);
+        assertEquals(9001L, resp.getExecutionRecordId());
+        assertEquals(2, resp.getProcessEntryCount());
+
+        ArgumentCaptor<EntityUpdateReqVO> updateCaptor = ArgumentCaptor.forClass(EntityUpdateReqVO.class);
+        verify(entityService).update(updateCaptor.capture());
+        Object raw = updateCaptor.getValue().getCustomFields().get("process_entries");
+        assertTrue(raw instanceof List<?>);
+        assertEquals(2, ((List<?>) raw).size());
+    }
+
+    @Test
+    void appendProcess_missingRecord_fails() {
+        when(entityService.get(eq(1L), any())).thenReturn(null);
+        TaskExecutionAppendProcessReqDTO req = new TaskExecutionAppendProcessReqDTO();
+        req.setExecutionRecordId(1L);
+        req.setReceivedAtEpochMs(1L);
+        req.setMessageKind("500202");
+        req.setProtocolQualify("QUALIFIED");
+        assertThrows(ServiceException.class, () -> service.appendProcess(req));
+        verify(entityService, never()).update(any());
     }
 
     private static TaskExecutionStartReqDTO sampleStartReq() {

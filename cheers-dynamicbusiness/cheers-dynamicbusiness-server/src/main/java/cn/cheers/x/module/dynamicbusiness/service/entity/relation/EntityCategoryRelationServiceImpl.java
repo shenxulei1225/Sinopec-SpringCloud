@@ -36,12 +36,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 实体-分类关联服务实现类
+ * 实体-分类关联：谁挂在哪个分类下。
  *
- * <p>专门负责 Entity 和 Category 之间的多对多关联操作。
- * 遵循单一职责原则，不包含实体或分类的业务逻辑。</p>
- *
- * @author 基础服务模块
+ * <p>负责：分类–实体边的增删；边建好后只把型号挂到「种类=存数类型」的纯分类。</p>
+ * <p>不负责：REF 投影、分类—分类、路网点位几何。</p>
+ * <p>禁止：点位挂到场站分类即实体时，把路网点位型号当成点位纯分类写上去。</p>
  */
 @Service
 @Validated
@@ -154,12 +153,32 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
     }
 
     /**
+     * 分类—型号只挂到「种类 = 实体存数类型」的纯分类。
+     * 点位挂金桥厂区（种类 facility）时，金桥不是点位分类，不能把路网点位型号写上去。
+     */
+    static boolean categoryKindMatchesEntityType(CategoryDO category, String storageEntityTypeCode) {
+        if (category == null || !StringUtils.hasText(category.getCategoryTypeCode())
+                || !StringUtils.hasText(storageEntityTypeCode)) {
+            return false;
+        }
+        return storageEntityTypeCode.trim().equalsIgnoreCase(category.getCategoryTypeCode().trim());
+    }
+
+    /**
      * 建立分类–实体关联时，同步把该实体所属型号关联到同一分类（分类–型号）。
      * <p>场景 2：点分区能看到区内站场类型，依赖型号列按分类–型号过滤；
-     * 幂等，已存在则跳过。实体无型号时不写。</p>
+     * 幂等，已存在则跳过。实体无型号时不写。种类对不上则跳过，不挡分类–实体。</p>
      */
     private void syncEntityModelToCategory(Long entityId, Long categoryId, String storageEntityTypeCode) {
         if (entityId == null || categoryId == null || storageEntityTypeCode == null || storageEntityTypeCode.isBlank()) {
+            return;
+        }
+        CategoryDO category = categoryMapper.selectById(categoryId);
+        if (!categoryKindMatchesEntityType(category, storageEntityTypeCode)) {
+            log.warn("跳过型号-分类：分类种类与实体存数类型不一致 categoryId={}, categoryType={}, entityType={}",
+                    categoryId,
+                    category != null ? category.getCategoryTypeCode() : null,
+                    storageEntityTypeCode);
             return;
         }
         EntityDO entity = entityCoreService.get(entityId, storageEntityTypeCode);
@@ -296,6 +315,14 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             for (Map.Entry<Long, Set<Long>> categoryEntry : storageEntry.getValue().entrySet()) {
                 List<Long> modelIds = new ArrayList<>(categoryEntry.getValue());
                 if (modelIds.isEmpty()) {
+                    continue;
+                }
+                CategoryDO category = categoryMapper.selectById(categoryEntry.getKey());
+                if (!categoryKindMatchesEntityType(category, storage)) {
+                    log.warn("跳过批量型号-分类：分类种类与实体存数类型不一致 categoryId={}, categoryType={}, entityType={}",
+                            categoryEntry.getKey(),
+                            category != null ? category.getCategoryTypeCode() : null,
+                            storage);
                     continue;
                 }
                 modelCategoryRelationService.batchAssociateModelsToCategory(

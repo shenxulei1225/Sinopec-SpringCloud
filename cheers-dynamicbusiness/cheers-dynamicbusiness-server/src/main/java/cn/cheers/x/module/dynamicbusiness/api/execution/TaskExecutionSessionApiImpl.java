@@ -1,6 +1,8 @@
 package cn.cheers.x.module.dynamicbusiness.api.execution;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessReqDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionWritebackReqDTO;
@@ -12,7 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
- * 任务执行会话 RPC。
+ * 执行会话对外入口：新建账、改状态、记过程。
+ * <p>不负责策略匹配。
  */
 @RestController
 @Validated
@@ -29,6 +32,12 @@ public class TaskExecutionSessionApiImpl implements TaskExecutionSessionApi {
     @Override
     public CommonResult<Boolean> writeback(TaskExecutionWritebackReqDTO req) {
         taskExecutionSessionService.writeback(req);
-        return success(Boolean.TRUE);
+        return success(true);
+    }
+
+    @Override
+    public CommonResult<TaskExecutionAppendProcessRespDTO> appendProcess(
+            TaskExecutionAppendProcessReqDTO req) {
+        return success(taskExecutionSessionService.appendProcess(req));
     }
 }

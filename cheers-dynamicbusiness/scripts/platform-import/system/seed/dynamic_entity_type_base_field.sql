@@ -280,8 +280,8 @@ INSERT INTO dynamic_entity_type_base_field (
   entity_type_code, library_field_id, field_code, field_name, data_type, required, default_value,
   description, type_config, sort_order, status, tenant_id, creator
 ) VALUES (
-  'equipment', NULL, 'FLD-BASE-equipment-coordinate_3d',
-  '三维坐标', 'TEXT',
+  'equipment', NULL, 'coordinate_3d',
+  '三维坐标', 'COORDINATE',
   FALSE, NULL,
   NULL, NULL,
   41, 1,
@@ -302,8 +302,8 @@ INSERT INTO dynamic_entity_type_base_field (
   entity_type_code, library_field_id, field_code, field_name, data_type, required, default_value,
   description, type_config, sort_order, status, tenant_id, creator
 ) VALUES (
-  'equipment', NULL, 'FLD-BASE-equipment-coordinate_gis',
-  'GIS坐标', 'TEXT',
+  'equipment', NULL, 'coordinate_gis',
+  'GIS坐标', 'COORDINATE',
   FALSE, NULL,
   NULL, NULL,
   42, 1,

@@ -131,7 +131,7 @@ BEGIN
     'CATEGORY:' || v_tab || ':' || v_tab,
     'MODEL:default',
     'CATEGORY_MODEL', 'action', 'action',
-    '{"edgeRole":"filter","enabledInteractions":[]}'::jsonb,
+    '{"edgeAction":"filter","enabledInteractions":[]}'::jsonb,
     'seed-action-06', FALSE, v_tenant, v_layout
   ),
   (
@@ -140,7 +140,7 @@ BEGIN
     'MODEL:default',
     'ENTITY:default',
     'MODEL_ENTITY', 'action', 'action',
-    '{"edgeRole":"filter","enabledInteractions":[]}'::jsonb,
+    '{"edgeAction":"filter","enabledInteractions":[]}'::jsonb,
     'seed-action-06', FALSE, v_tenant, v_layout
   );
 

@@ -152,6 +152,8 @@ class MultilegPlanTest {
         assertEquals(NetworkKind.FACILITY, preview.getSegments().get(0).getNetworkKind());
         assertEquals("person_walk", preview.getSegments().get(0).getMobilityProfileId());
         assertEquals(List.of("a", "b"), preview.getSegments().get(0).getNodeIds());
+        assertEquals(List.of("a", "b"), preview.getOrderedStopIds());
+        assertEquals(List.of("a", "b"), preview.getVisitNodeIds());
     }
 
     private static PathNetworkDTO siteNetwork() {

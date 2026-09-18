@@ -169,7 +169,7 @@ BEGIN
         v_tenant, v_layout_id, 'sop', 'edge-sop-ce-filter',
         v_cat_identity, v_entity_identity, 'CATEGORY_ENTITY',
         'sop', 'sop',
-        jsonb_build_object('edgeRole', 'filter', 'enabledInteractions', '[]'::jsonb),
+        jsonb_build_object('edgeAction', 'filter', 'enabledInteractions', '[]'::jsonb),
         'seed-15', false
       ),
       (
@@ -177,7 +177,7 @@ BEGIN
         v_cat_identity, v_entity_identity, 'CATEGORY_ENTITY',
         'sop', 'sop',
         jsonb_build_object(
-          'edgeRole', 'write',
+          'edgeAction', 'write',
           'enabledInteractions', jsonb_build_array('dragAssociate', 'unbindChecked')
         ),
         'seed-15', false

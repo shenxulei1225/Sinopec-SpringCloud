@@ -1,6 +1,8 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity.refcategory;
 
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryTypeDO;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeResolver;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryModeSupport;
@@ -20,10 +22,12 @@ import java.util.Set;
 /**
  * REF 投影 · 分类—分类（组合 3）实现。
  *
- * <p><strong>负责</strong>：宿主分类即实体 + 成员纯分类时，REF 保存后 upsert 分类—分类，
- * 供数据管理 CC 裁树读取。</p>
+ * <p><strong>负责</strong>：宿主是分类即实体、成员是主体存数类型的纯分类时，REF 保存后 upsert
+ * 分类—分类，供数据管理按分类—分类裁树。</p>
  * <p><strong>不负责</strong>：分类—实体 / 宿主侧分类—型号（{@code EntityCategoryRelationService}）；
  * REF 解绑时删 CC；组合 1 双 Pattern C 裁树并集（读侧另定）。</p>
+ * <p><strong>禁止</strong>：把型号挂过的其它种类分类（例如巡检任务型号挂了区域分类）当成成员纯分类去建边；
+ * 禁止因此整笔打回主体 REF 写入（所属设施等）。种类对不上只跳过该成员并打日志，缺口留在型号—分类挂接。</p>
  */
 @Service
 @Slf4j
@@ -31,16 +35,19 @@ public class EntityRefCategoryCategoryProjectionServiceImpl
         implements EntityRefCategoryCategoryProjectionService {
 
     private final CategoryTypeMapper categoryTypeMapper;
+    private final CategoryMapper categoryMapper;
     private final ModelCategoryRelationService modelCategoryRelationService;
     private final CategoryCategoryRelationService categoryCategoryRelationService;
     private final EntityTypeScopeResolver entityTypeScopeResolver;
 
     public EntityRefCategoryCategoryProjectionServiceImpl(
             CategoryTypeMapper categoryTypeMapper,
+            CategoryMapper categoryMapper,
             ModelCategoryRelationService modelCategoryRelationService,
             @Lazy CategoryCategoryRelationService categoryCategoryRelationService,
             EntityTypeScopeResolver entityTypeScopeResolver) {
         this.categoryTypeMapper = categoryTypeMapper;
+        this.categoryMapper = categoryMapper;
         this.modelCategoryRelationService = modelCategoryRelationService;
         this.categoryCategoryRelationService = categoryCategoryRelationService;
         this.entityTypeScopeResolver = entityTypeScopeResolver;
@@ -79,11 +86,28 @@ public class EntityRefCategoryCategoryProjectionServiceImpl
             if (memberCategoryId == null || memberCategoryId <= 0) {
                 continue;
             }
+            if (!isMemberPureCategory(memberCategoryId, memberType)) {
+                log.warn("[ref→cc] 跳过：型号挂接的分类不是成员纯分类 memberCategoryId={}, expectedType={}, modelId={}",
+                        memberCategoryId, memberType, subjectModelId);
+                continue;
+            }
             categoryCategoryRelationService.associate(
                     hostCategoryId, memberCategoryId, hostType, memberType);
             log.info("[ref→cc] 分类—分类: hostCategoryId={}, memberCategoryId={}, hostType={}, memberType={}, modelId={}",
                     hostCategoryId, memberCategoryId, hostType, memberType, subjectModelId);
         }
+    }
+
+    /**
+     * 成员必须是「种类 = 主体存数类型」的纯分类。
+     * 型号—分类挂接只记业务类型码，不能证明该分类就是任务/设备纯分类；种类对不上则不能建分类—分类。
+     */
+    private boolean isMemberPureCategory(Long memberCategoryId, String memberType) {
+        CategoryDO member = categoryMapper.selectByIdAndCategoryTypeCode(memberCategoryId, memberType);
+        if (member == null || !StringUtils.hasText(member.getCategoryTypeCode())) {
+            return false;
+        }
+        return memberType.equalsIgnoreCase(member.getCategoryTypeCode().trim());
     }
 
     /**
