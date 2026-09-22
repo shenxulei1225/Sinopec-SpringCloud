@@ -75,9 +75,11 @@ public final class InspectionMethodSnapshotParser {
                 refCode = text(actionRef);
             }
             String title = text(first(row, "stepTitle", "title", "name", "label"));
+            String sourceNodeKey = text(first(row, "nodeKey", "key"));
             if (refId != null || !refCode.isBlank()) {
                 actions.add(new TaskStepTreeGenerator.MethodAction(
-                        refId, refCode.isBlank() ? null : refCode, title));
+                        refId, refCode.isBlank() ? null : refCode, title, Map.of(),
+                        sourceNodeKey.isBlank() ? null : sourceNodeKey, slotsOf(row.get("paramSlots"))));
             }
         }
         Object children = first(row, "children", "nodes");
@@ -140,5 +142,22 @@ public final class InspectionMethodSnapshotParser {
             }
         }
         return null;
+    }
+
+    /**
+     * 检查方法步骤上声明的参数槽。到达位置可能是 location_ref，也可能是选择位置字段编码。
+     */
+    private static List<String> slotsOf(Object raw) {
+        if (!(raw instanceof List<?> list)) {
+            return List.of();
+        }
+        List<String> slots = new ArrayList<>();
+        for (Object row : list) {
+            String slot = text(row);
+            if (!slot.isBlank()) {
+                slots.add(slot);
+            }
+        }
+        return slots;
     }
 }

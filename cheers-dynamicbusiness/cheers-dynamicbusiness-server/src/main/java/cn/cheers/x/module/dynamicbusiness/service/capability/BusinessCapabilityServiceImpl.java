@@ -36,6 +36,7 @@ import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeCo
 import cn.cheers.x.module.dynamicbusiness.framework.field.EntityTypeFieldLabelHelper;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.service.capability.form.ModelCrudFormFieldAssembler;
+import cn.cheers.x.module.dynamicbusiness.service.field.FieldQueryCapability;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.service.capability.projection.CapabilityBlockProjectionBuilder;
 import cn.cheers.x.module.dynamicbusiness.service.capability.system.SystemCapabilityCatalog;
@@ -465,6 +466,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             item.put("id", fieldKey);
             item.put("fieldKey", fieldKey);
             item.put("label", meta.get("label"));
+            item.put("fieldType", meta.get("fieldType") != null ? meta.get("fieldType") : "TEXT");
             item.put("renderAs", "text");
             item.put("sortOrder", meta.get("sortOrder") != null ? meta.get("sortOrder") : order++);
             item.put("defaultVisible", true);
@@ -480,6 +482,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         statusFilter.put("id", "status");
         statusFilter.put("fieldKey", "status");
         statusFilter.put("label", "状态");
+        statusFilter.put("fieldType", "ENUM");
         statusFilter.put("renderAs", "select");
         statusFilter.put("sortOrder", 0);
         statusFilter.put("bindTo", "field-filter");
@@ -557,6 +560,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             item.put("id", fieldKey);
             item.put("fieldKey", fieldKey);
             item.put("label", resolveProjectionFieldLabel(fieldLabels, fieldKey, meta.get("label")));
+            item.put("fieldType", meta.get("fieldType"));
             item.put("renderAs", mapDisplayRenderAs(String.valueOf(meta.get("fieldType"))));
             item.put("sortOrder", meta.get("sortOrder") != null ? meta.get("sortOrder") : order++);
             item.put("defaultVisible", visibleByDefault);
@@ -623,6 +627,7 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             filter.put("id", fieldKey);
             filter.put("fieldKey", fieldKey);
             filter.put("label", meta.get("label"));
+            filter.put("fieldType", fieldType);
             filter.put("renderAs", mapFilterControl(fieldType));
             filter.put("sortOrder", meta.get("sortOrder") != null ? meta.get("sortOrder") : order++);
             filter.put("bindTo", "field-filter");
@@ -691,8 +696,8 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                     meta.put("fieldKey", fieldKey);
                     meta.put("label", StringUtils.hasText(field.getName()) ? field.getName() : fieldKey);
                     meta.put("fieldType", field.getType());
-                    meta.put("filterable", Boolean.TRUE.equals(assign.getIsFilterable()));
-                    meta.put("searchable", Boolean.TRUE.equals(assign.getIsSearchable()));
+                    meta.put("filterable", projectedFilterable(assign.getIsFilterable(), field.getType()));
+                    meta.put("searchable", projectedSearchable(assign.getIsSearchable(), field.getType()));
                     meta.put("sortable", Boolean.TRUE.equals(assign.getIsSortable()));
                     meta.put("sortOrder", assign.getSort() != null ? assign.getSort() : 0);
                     meta.put("baseField", false);
@@ -704,9 +709,9 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
                     continue;
                 }
                 existing.put("filterable", Boolean.TRUE.equals(existing.get("filterable"))
-                        || Boolean.TRUE.equals(assign.getIsFilterable()));
+                        || projectedFilterable(assign.getIsFilterable(), field.getType()));
                 existing.put("searchable", Boolean.TRUE.equals(existing.get("searchable"))
-                        || Boolean.TRUE.equals(assign.getIsSearchable()));
+                        || projectedSearchable(assign.getIsSearchable(), field.getType()));
                 existing.put("sortable", Boolean.TRUE.equals(existing.get("sortable"))
                         || Boolean.TRUE.equals(assign.getIsSortable()));
                 if (!existing.containsKey("options") && field.getOptions() != null) {
@@ -765,6 +770,14 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             hang.put("allowMixed", root.path("allowMixed").asBoolean(false));
             hang.put("editorKind", editorKind);
             hang.put("packMethods", readStepTreePackMethods(root.get("packMethods")));
+            String tabEnumFieldCode = root.path("tabEnumFieldCode").asText("").trim();
+            if (StringUtils.hasText(tabEnumFieldCode)) {
+                hang.put("tabEnumFieldCode", tabEnumFieldCode);
+            }
+            String tabCategoryTypeCode = root.path("tabCategoryTypeCode").asText("").trim();
+            if (!StringUtils.hasText(tabEnumFieldCode) && StringUtils.hasText(tabCategoryTypeCode)) {
+                hang.put("tabCategoryTypeCode", tabCategoryTypeCode);
+            }
             meta.put("stepTreeHang", hang);
         } catch (JsonProcessingException ignored) {
             // 挂载配置坏了就暴露为空，不在读路径修补。
@@ -818,9 +831,11 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             meta.put("fieldType", StringUtils.hasText(baseField.getDataType()) ? baseField.getDataType() : "TEXT");
             meta.put("sortOrder", baseField.getSortOrder() != null ? baseField.getSortOrder() : order++);
             meta.put("baseField", true);
-            meta.put("filterable", Boolean.TRUE.equals(baseField.getIsFilterable())
+            meta.put("filterable", projectedFilterable(baseField.getIsFilterable(),
+                    String.valueOf(meta.get("fieldType")))
                     || Boolean.TRUE.equals(meta.get("filterable")));
-            meta.put("searchable", Boolean.TRUE.equals(baseField.getIsSearchable())
+            meta.put("searchable", projectedSearchable(baseField.getIsSearchable(),
+                    String.valueOf(meta.get("fieldType")))
                     || Boolean.TRUE.equals(meta.get("searchable")));
             meta.put("sortable", Boolean.TRUE.equals(baseField.getIsSortable())
                     || Boolean.TRUE.equals(meta.get("sortable")));
@@ -988,6 +1003,20 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         }
     }
 
+    /**
+     * 投影可筛：分配打开了可筛选，且该类型允许进筛选区。
+     */
+    private static boolean projectedFilterable(Boolean configured, String fieldType) {
+        return FieldQueryCapability.canFilter(fieldType) && Boolean.TRUE.equals(configured);
+    }
+
+    /**
+     * 投影可搜：分配打开了可搜索，且该类型允许进关键词搜索。
+     */
+    private static boolean projectedSearchable(Boolean configured, String fieldType) {
+        return FieldQueryCapability.canSearch(fieldType) && Boolean.TRUE.equals(configured);
+    }
+
     private String mapFilterControl(String fieldType) {
         if (!StringUtils.hasText(fieldType)) {
             return "input";
@@ -996,8 +1025,8 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
             case "BOOLEAN" -> "boolean";
             case "ENUM", "SELECT", "OPTION" -> "select";
             case "MULTI_SELECT" -> "select";
-            case "DATE", "DATETIME", "TIMESTAMP" -> "date";
-            case "NUMBER", "INTEGER", "DECIMAL" -> "input";
+            case "DATE", "DATETIME", "TIMESTAMP" -> "date-range";
+            case "NUMBER", "INTEGER", "DECIMAL", "FLOAT", "LONG", "DOUBLE" -> "number-range";
             case "ENTITY_REF", "REFERENCE", "REF" -> "ref-picker";
             case "ENTITY_REF_MULTI", "REF_MULTI", "BATCH_ENTITY_REF" -> "ref-picker-multi";
             case "COORDINATE" -> "coordinate";

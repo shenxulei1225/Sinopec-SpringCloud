@@ -144,6 +144,24 @@ class StrategyRuntimeServiceImplTest {
     }
 
     @Test
+    void handle_startWithExistingRecord_skipsCreate() {
+        when(conditionStrategyService.listVisibleEnabled(StrategyTriggerEventDTO.EVENT_EXECUTION_START))
+                .thenReturn(List.of(createStrategy(), dispatchStrategy(), markInProgressStrategy()));
+        when(missionApi.dispatchAndStartup(any())).thenReturn(CommonResult.success(
+                new MissionStartRespDTO(true, true, true, true, null, "{}")));
+
+        StrategyTriggerEventDTO event = startEvent();
+        event.setExecutionRecordId(88L);
+
+        StrategyHandleRespDTO resp = service.handle(event);
+        assertTrue(resp.isMatched());
+        assertEquals(88L, resp.getExecutionRecordId());
+        verify(sessionService, never()).start(any());
+        verify(missionApi).dispatchAndStartup(any());
+        verify(sessionService).writeback(any());
+    }
+
+    @Test
     void handle_startChain_createsThenDispatchesThenMarksInProgress() {
         when(conditionStrategyService.listVisibleEnabled(StrategyTriggerEventDTO.EVENT_EXECUTION_START))
                 .thenReturn(List.of(createStrategy(), dispatchStrategy(), markInProgressStrategy()));

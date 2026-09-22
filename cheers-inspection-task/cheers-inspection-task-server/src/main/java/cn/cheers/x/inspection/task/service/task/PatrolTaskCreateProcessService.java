@@ -1,11 +1,13 @@
 package cn.cheers.x.inspection.task.service.task;
 
 import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskCreateProgressRespVO;
+import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskDurationRefreshReqVO;
+import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskDurationRefreshRespVO;
 
 /**
  * 建任务向导进度。
  *
- * <p>负责：读已放到哪一步、放行下一步、前面改了把后面作废。</p>
+ * <p>负责：读已放到哪一步、放行下一步、前面改了把后面作废、打开时现算时长。</p>
  * <p>不负责：算路、排期占窗、开跑；不把条件策略当成创建流程。</p>
  */
 public interface PatrolTaskCreateProcessService {
@@ -14,5 +16,9 @@ public interface PatrolTaskCreateProcessService {
 
     InspectionTaskCreateProgressRespVO advance(Long taskId, Integer toStep);
 
-    InspectionTaskCreateProgressRespVO invalidate(Long taskId, Integer keepThroughStep);
+    InspectionTaskCreateProgressRespVO invalidate(Long taskId, Integer keepThroughStep, Boolean clearPlannedRoute);
+
+    InspectionTaskCreateProgressRespVO invalidate(Long taskId, CreateWizardInvalidation reason);
+
+    InspectionTaskDurationRefreshRespVO refreshDurations(Long taskId, InspectionTaskDurationRefreshReqVO reqVO);
 }

@@ -7,5 +7,5 @@ import java.util.List;
  */
 public interface ObjectStationBindingService {
 
-    void replaceBindings(Long facilityId, Long objectId, List<String> stationNodeIds, Integer workMinutesPerStop);
+    void replaceBindings(Long facilityId, Long objectId, List<String> stationNodeIds, Integer estimatedActionDurationPerStop);
 }

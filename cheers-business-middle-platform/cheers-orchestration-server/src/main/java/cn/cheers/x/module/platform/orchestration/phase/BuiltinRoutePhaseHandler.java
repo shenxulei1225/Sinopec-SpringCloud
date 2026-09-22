@@ -90,9 +90,10 @@ public class BuiltinRoutePhaseHandler implements PhaseHandler {
             throw exception(ORCHESTRATION_PAYLOAD_INVALID);
         }
 
-        Integer workMinutes = asInteger(payload.get(RoutePayloadKeys.WORK_MINUTES));
+        Integer estimatedActionDuration = asInteger(payload.get(RoutePayloadKeys.ESTIMATED_ACTION_DURATION));
         Integer speed = resolveSpeedMetersPerMinute(payload, inspectionType);
-        item.setDurationEstimateMinutes(estimateDurationMinutes(preview.getTotalDistanceMeters(), speed, workMinutes));
+        int totalMinutes = estimateDurationMinutes(preview.getTotalDistanceMeters(), speed, estimatedActionDuration);
+        item.setEstimatedDuration(totalMinutes);
 
         Map<String, Object> planned = new LinkedHashMap<>();
         planned.put("networkRef", preview.getNetworkRef() != null ? preview.getNetworkRef() : networkRef);
@@ -104,6 +105,12 @@ public class BuiltinRoutePhaseHandler implements PhaseHandler {
         planned.put("stopIds", plannedStops);
         if (!CollectionUtils.isEmpty(preview.getVisitNodeIds())) {
             planned.put(RoutePayloadKeys.VISIT_NODE_IDS, preview.getVisitNodeIds());
+        }
+        if (!CollectionUtils.isEmpty(preview.getVisitPositions())) {
+            planned.put(RoutePayloadKeys.VISIT_POSITIONS, preview.getVisitPositions());
+        }
+        if (!CollectionUtils.isEmpty(preview.getSegments())) {
+            planned.put(RoutePayloadKeys.SEGMENTS, preview.getSegments());
         }
         String startStopId = asString(payload.get(RoutePayloadKeys.START_STOP_ID));
         if (StringUtils.hasText(startStopId)) {
@@ -120,25 +127,36 @@ public class BuiltinRoutePhaseHandler implements PhaseHandler {
         if (preview.getDecisionTraceId() != null) {
             planned.put("decisionTraceId", preview.getDecisionTraceId());
         }
+        if (estimatedActionDuration != null) {
+            planned.put(RoutePayloadKeys.ESTIMATED_ACTION_DURATION, estimatedActionDuration);
+        }
+        Integer travelMinutes = estimateTravelMinutes(preview.getTotalDistanceMeters(), speed);
+        if (travelMinutes != null) {
+            planned.put(RoutePayloadKeys.ESTIMATED_TRAVEL_DURATION, travelMinutes);
+        }
         payload.put(RoutePayloadKeys.PLANNED_ROUTE, planned);
         item.setPayload(payload);
         return preview;
     }
 
-    static int estimateDurationMinutes(Long totalDistanceMeters, Integer speedMetersPerMinute,
-                                       Integer workMinutes) {
-        Integer travelCeil = null;
-        if (totalDistanceMeters != null && totalDistanceMeters >= 0
-                && speedMetersPerMinute != null && speedMetersPerMinute > 0) {
-            travelCeil = (int) Math.ceil(totalDistanceMeters / (double) speedMetersPerMinute);
+    static Integer estimateTravelMinutes(Long totalDistanceMeters, Integer speedMetersPerMinute) {
+        if (totalDistanceMeters == null || totalDistanceMeters < 0
+                || speedMetersPerMinute == null || speedMetersPerMinute <= 0) {
+            return null;
         }
+        return (int) Math.ceil(totalDistanceMeters / (double) speedMetersPerMinute);
+    }
+
+    static int estimateDurationMinutes(Long totalDistanceMeters, Integer speedMetersPerMinute,
+                                       Integer estimatedActionDuration) {
+        Integer travelCeil = estimateTravelMinutes(totalDistanceMeters, speedMetersPerMinute);
         if (travelCeil == null) {
-            if (workMinutes == null) {
+            if (estimatedActionDuration == null) {
                 throw exception(ORCHESTRATION_ROUTE_DURATION_UNAVAILABLE);
             }
-            return workMinutes;
+            return estimatedActionDuration;
         }
-        return travelCeil + (workMinutes != null ? workMinutes : 0);
+        return travelCeil + (estimatedActionDuration != null ? estimatedActionDuration : 0);
     }
 
     private static Integer resolveSpeedMetersPerMinute(Map<String, Object> payload, String inspectionType) {

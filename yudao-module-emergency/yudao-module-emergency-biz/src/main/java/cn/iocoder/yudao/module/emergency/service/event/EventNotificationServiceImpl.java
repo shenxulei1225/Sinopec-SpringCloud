@@ -97,15 +97,15 @@ public class EventNotificationServiceImpl implements EventNotificationService {
     }
 
     @Override
-    public void sendEventConfirmedNotification(EmergencyEventDO event, String confirmResult) {
+    public void sendEventConfirmedNotification(EmergencyEventDO event, String saveRouteResult) {
         if (!notificationEnabled) {
             return;
         }
 
         try {
-            log.info("发送事件确认通知: eventId={}, confirmResult={}", event.getId(), confirmResult);
+            log.info("发送事件确认通知: eventId={}, saveRouteResult={}", event.getId(), saveRouteResult);
 
-            String content = buildEventConfirmedContent(event, confirmResult);
+            String content = buildEventConfirmedContent(event, saveRouteResult);
             List<Map<String, Object>> receivers = getEventNotificationReceivers(event);
 
             sendNotification(receivers, content, "事件确认通知");
@@ -442,11 +442,11 @@ public class EventNotificationServiceImpl implements EventNotificationService {
     /**
      * 构建事件确认通知内容
      */
-    private String buildEventConfirmedContent(EmergencyEventDO event, String confirmResult) {
+    private String buildEventConfirmedContent(EmergencyEventDO event, String saveRouteResult) {
         StringBuilder content = new StringBuilder();
         content.append("【事件确认通知】\n");
         content.append("事件编号：").append(event.getEventCode()).append("\n");
-        content.append("确认结果：").append(confirmResult).append("\n");
+        content.append("确认结果：").append(saveRouteResult).append("\n");
         return content.toString();
     }
 

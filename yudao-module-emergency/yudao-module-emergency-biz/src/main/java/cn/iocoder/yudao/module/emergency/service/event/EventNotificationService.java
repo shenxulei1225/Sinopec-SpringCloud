@@ -29,9 +29,9 @@ public interface EventNotificationService {
      * 发送事件确认通知
      *
      * @param event 事件
-     * @param confirmResult 确认结果（real/false_alarm/ignore）
+     * @param saveRouteResult 确认结果（real/false_alarm/ignore）
      */
-    void sendEventConfirmedNotification(EmergencyEventDO event, String confirmResult);
+    void sendEventConfirmedNotification(EmergencyEventDO event, String saveRouteResult);
 
     /**
      * 发送响应启动通知

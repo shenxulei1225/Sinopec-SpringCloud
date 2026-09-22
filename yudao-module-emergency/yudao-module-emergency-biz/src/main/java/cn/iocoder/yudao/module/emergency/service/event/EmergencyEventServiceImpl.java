@@ -416,7 +416,7 @@ public class EmergencyEventServiceImpl implements EmergencyEventService {
             throw ServiceExceptionUtil.exception(ErrorCodeConstants.EVENT_PROCESS_DEFINITION_MISSING);
         }
         Map<String, Object> processVars = new HashMap<>();
-        processVars.put("confirmResult", reqVO.getResult());
+        processVars.put("saveRouteResult", reqVO.getResult());
         if (reqVO.getPlanId() != null) {
             processVars.put("planId", reqVO.getPlanId());
         }

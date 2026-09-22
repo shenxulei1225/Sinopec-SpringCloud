@@ -1,10 +1,16 @@
 package cn.cheers.x.module.platform.scheduling.engine;
 
 import cn.cheers.x.module.platform.contract.ContractVersions;
+import cn.cheers.x.module.platform.contract.dto.reservation.ResourceReservationDTO;
+import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleConflictReportDTO;
 import cn.cheers.x.module.platform.contract.dto.schedule.SchedulingSpecDTO;
+import cn.cheers.x.module.platform.scheduling.conflict.ScheduleConflictReporter;
 import cn.cheers.x.module.platform.contract.dto.slot.AssignedResourceDTO;
 import cn.cheers.x.module.platform.contract.dto.slot.ScheduleSlotDTO;
+import cn.cheers.x.module.platform.contract.enums.CandidateType;
 import cn.cheers.x.module.platform.contract.dto.work.ResourceRequirementDTO;
+import cn.cheers.x.module.platform.contract.dto.work.TimePreferencesDTO;
+import cn.cheers.x.module.platform.contract.dto.work.TimeWindowDTO;
 import cn.cheers.x.module.platform.contract.dto.work.WorkItemDTO;
 import cn.cheers.x.module.platform.contract.enums.SlotLockState;
 import cn.cheers.x.module.platform.contract.enums.SlotStatus;
@@ -30,7 +36,9 @@ import static cn.cheers.x.module.platform.scheduling.enums.ErrorCodeConstants.SC
 import static cn.cheers.x.module.platform.scheduling.enums.ErrorCodeConstants.SCHEDULING_INVALID_CONFLICT_STRATEGY;
 
 /**
- * 排程引擎：展开候选计划点后按资源时间轴解析冲突。
+ * 排程引擎：工作项已带计划时刻则只做资源冲突求解；否则按 mode 展开后再求解。
+ * <p>先判断空闲够不够插入、冲突在前面还是后面；策略只决定能否挪已有任务、最多挪多久。
+ * <p>不负责：从业务排期模板发明执行点；从设备台账拉候选名单。
  */
 @Service
 public class SchedulingEngineImpl implements SchedulingEngine {
@@ -42,20 +50,22 @@ public class SchedulingEngineImpl implements SchedulingEngine {
     private static final String STRATEGY_PRIORITY = "priority_preempt";
 
     @Override
-    public List<ScheduleSlotDTO> solve(List<WorkItemDTO> workItems, SchedulingSpecDTO schedulingSpec,
-                                       String runtimeJobId) {
+    public List<ResourceReservationDTO> solve(List<WorkItemDTO> workItems, SchedulingSpecDTO schedulingSpec,
+                                              String runtimeJobId) {
         return solve(workItems, schedulingSpec, runtimeJobId, List.of());
     }
 
     @Override
-    public List<ScheduleSlotDTO> solve(List<WorkItemDTO> workItems, SchedulingSpecDTO schedulingSpec,
-                                       String runtimeJobId, List<ScheduleSlotDTO> occupiedSlots) {
+    public List<ResourceReservationDTO> solve(List<WorkItemDTO> workItems, SchedulingSpecDTO schedulingSpec,
+                                              String runtimeJobId, List<ResourceReservationDTO> occupiedReservations) {
         if (workItems == null || workItems.isEmpty()) {
             return List.of();
         }
         for (WorkItemDTO workItem : workItems) {
             requirePositiveDuration(workItem);
         }
+
+        int taskGapMinutes = resolveTaskGapMinutes(schedulingSpec);
 
         String mode = schedulingSpec != null && StringUtils.hasText(schedulingSpec.getMode())
                 ? schedulingSpec.getMode() : "once";
@@ -71,7 +81,12 @@ public class SchedulingEngineImpl implements SchedulingEngine {
 
         List<Candidate> candidates = expandCandidates(workItems, mode, horizonStart, horizonEnd, runtimeJobId);
         String strategy = normalizeStrategy(schedulingSpec != null ? schedulingSpec.getConflictStrategy() : null);
-        Map<String, List<BusyInterval>> timelines = seedTimelines(occupiedSlots);
+        String placementPreference = SchedulingConflictPlacer.normalizePreference(
+                schedulingSpec != null ? schedulingSpec.getPlacementPreference() : null);
+        boolean allowShiftExisting = schedulingSpec != null && Boolean.TRUE.equals(schedulingSpec.getAllowShiftExisting());
+        Integer maxShiftMinutes = schedulingSpec != null ? schedulingSpec.getMaxShiftMinutes() : null;
+        Map<String, List<TimelineBlock>> timelines = seedTimelines(occupiedReservations, taskGapMinutes);
+        OffsetDateTime earliestStart = horizonStart.atStartOfDay(DEFAULT_ZONE).toOffsetDateTime();
 
         if (STRATEGY_PRIORITY.equals(strategy)) {
             candidates = new ArrayList<>(candidates);
@@ -81,39 +96,60 @@ public class SchedulingEngineImpl implements SchedulingEngine {
                     .thenComparing(Candidate::preferredStart));
         }
 
-        List<ScheduleSlotDTO> resolved = new ArrayList<>();
+        List<ResourceReservationDTO> resolved = new ArrayList<>();
         for (Candidate candidate : candidates) {
-            String resourceKey = resourceKey(candidate.workItem());
-            List<BusyInterval> busy = timelines.computeIfAbsent(resourceKey, k -> new ArrayList<>());
+            List<String> resourceIds = SchedulingConflictPlacer.candidateIds(candidate.workItem().getResourceRequirements());
             OffsetDateTime preferred = candidate.preferredStart();
-            int minutes = candidate.workItem().getDurationEstimateMinutes();
-
-            OffsetDateTime placedStart;
-            if (STRATEGY_REJECT.equals(strategy)) {
-                if (overlaps(preferred, preferred.plusMinutes(minutes), busy)) {
-                    throw exception(SCHEDULING_BATCH_REJECTED);
-                }
-                placedStart = preferred;
-            } else {
-                placedStart = earliestFit(preferred, minutes, busy, horizonLimit);
-            }
-
+            int minutes = candidate.workItem().getEstimatedDuration();
+            SchedulingConflictPlacer.Placement placement = SchedulingConflictPlacer.place(
+                    strategy, placementPreference, allowShiftExisting, maxShiftMinutes,
+                    preferred, minutes, resourceIds, timelines, earliestStart, horizonLimit);
+            OffsetDateTime placedStart = placement.start();
             OffsetDateTime placedEnd = placedStart.plusMinutes(minutes);
             if (!placedEnd.isBefore(horizonLimit)) {
                 throw exception(SCHEDULING_CANNOT_PLACE);
             }
 
-            ScheduleSlotDTO slot = buildSlot(candidate, placedStart, placedEnd);
-            resolved.add(slot);
-            busy.add(new BusyInterval(placedStart, placedEnd));
-            busy.sort(Comparator.comparing(BusyInterval::start));
+            ResourceReservationDTO reservation = buildReservation(
+                    candidate, placement.resourceId(), placedStart, placedEnd);
+            resolved.add(reservation);
+            for (ResourceReservationDTO shifted : placement.shiftedExisting()) {
+                if (shifted != null && resolved.stream().noneMatch(item -> item == shifted)) {
+                    resolved.add(shifted);
+                }
+            }
+            List<TimelineBlock> busy = timelines.computeIfAbsent(placement.resourceId(), key -> new ArrayList<>());
+            busy.add(new TimelineBlock(placedStart, placedEnd, taskGapMinutes, reservation));
+            busy.sort(Comparator.comparing(TimelineBlock::start));
         }
 
         if (STRATEGY_PRIORITY.equals(strategy)) {
-            resolved.sort(Comparator.comparing(ScheduleSlotDTO::getPlannedStart)
-                    .thenComparing(ScheduleSlotDTO::getWorkId));
+            resolved.sort(Comparator.comparing(ResourceReservationDTO::getCandidateStart)
+                    .thenComparing(ResourceReservationDTO::getWorkId));
         }
         return resolved;
+    }
+
+    @Override
+    public ScheduleConflictReportDTO detectConflicts(List<WorkItemDTO> workItems, SchedulingSpecDTO schedulingSpec,
+                                                     List<ResourceReservationDTO> occupiedReservations) {
+        return ScheduleConflictReporter.report(workItems, occupiedReservations, resolveTaskGapMinutes(schedulingSpec));
+    }
+
+    private static int resolveTaskGapMinutes(SchedulingSpecDTO schedulingSpec) {
+        if (schedulingSpec == null || schedulingSpec.getTaskGapMinutes() == null) {
+            return 0;
+        }
+        return Math.max(0, schedulingSpec.getTaskGapMinutes());
+    }
+
+    /** @deprecated 兼容旧调用 */
+    @Deprecated
+    public List<ScheduleSlotDTO> solveLegacy(List<WorkItemDTO> workItems, SchedulingSpecDTO schedulingSpec,
+                                             String runtimeJobId, List<ScheduleSlotDTO> occupiedSlots) {
+        return solve(workItems, schedulingSpec, runtimeJobId,
+                occupiedSlots == null ? List.of() : occupiedSlots.stream().map(ScheduleSlotDTO::legacyToReservation).toList())
+                .stream().map(ScheduleSlotDTO::from).toList();
     }
 
     private List<Candidate> expandCandidates(List<WorkItemDTO> workItems, String mode,
@@ -122,7 +158,11 @@ public class SchedulingEngineImpl implements SchedulingEngine {
         List<Candidate> candidates = new ArrayList<>();
         int workIndex = 0;
         for (WorkItemDTO workItem : workItems) {
-            if ("weekly".equalsIgnoreCase(mode)) {
+            OffsetDateTime preferred = preferredStartOf(workItem);
+            if (preferred != null) {
+                // 业务侧已给出计划时刻：本引擎只占窗，不再按 mode 复制
+                candidates.add(new Candidate(workItem, runtimeJobId, preferred));
+            } else if ("weekly".equalsIgnoreCase(mode)) {
                 LocalDate cursor = horizonStart.plusDays(workIndex);
                 while (!cursor.isAfter(horizonEnd)) {
                     candidates.add(new Candidate(workItem, runtimeJobId,
@@ -139,29 +179,68 @@ public class SchedulingEngineImpl implements SchedulingEngine {
         return candidates;
     }
 
-    private Map<String, List<BusyInterval>> seedTimelines(List<ScheduleSlotDTO> occupiedSlots) {
-        Map<String, List<BusyInterval>> timelines = new HashMap<>();
-        if (occupiedSlots == null) {
+    /**
+     * 工作项已写入允许窗时，认第一条窗的开始为计划时刻。
+     */
+    private static OffsetDateTime preferredStartOf(WorkItemDTO workItem) {
+        TimePreferencesDTO prefs = workItem.getTimePreferences();
+        if (prefs == null || prefs.getAllowedWindows() == null || prefs.getAllowedWindows().isEmpty()) {
+            return null;
+        }
+        TimeWindowDTO window = prefs.getAllowedWindows().get(0);
+        if (window == null || !StringUtils.hasText(window.getStart())) {
+            return null;
+        }
+        return OffsetDateTime.parse(window.getStart(), DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+    }
+
+    private Map<String, List<TimelineBlock>> seedTimelines(List<ResourceReservationDTO> occupiedReservations,
+                                                           int taskGapMinutes) {
+        Map<String, List<TimelineBlock>> timelines = new HashMap<>();
+        if (occupiedReservations == null) {
             return timelines;
         }
-        for (ScheduleSlotDTO occupied : occupiedSlots) {
-            if (occupied == null || !StringUtils.hasText(occupied.getPlannedStart())
-                    || !StringUtils.hasText(occupied.getPlannedEnd())) {
+        for (ResourceReservationDTO occupied : occupiedReservations) {
+            if (occupied == null) {
                 continue;
             }
-            OffsetDateTime start = OffsetDateTime.parse(occupied.getPlannedStart());
-            OffsetDateTime end = OffsetDateTime.parse(occupied.getPlannedEnd());
+            OffsetDateTime start = parseOccupiedStart(occupied);
+            OffsetDateTime end = parseOccupiedEnd(occupied);
+            if (start == null || end == null) {
+                continue;
+            }
             for (String key : occupiedResourceKeys(occupied)) {
-                timelines.computeIfAbsent(key, k -> new ArrayList<>()).add(new BusyInterval(start, end));
+                timelines.computeIfAbsent(key, k -> new ArrayList<>())
+                        .add(new TimelineBlock(start, end, taskGapMinutes, occupied));
             }
         }
-        for (List<BusyInterval> busy : timelines.values()) {
-            busy.sort(Comparator.comparing(BusyInterval::start));
+        for (List<TimelineBlock> busy : timelines.values()) {
+            busy.sort(Comparator.comparing(TimelineBlock::start));
         }
         return timelines;
     }
 
-    private List<String> occupiedResourceKeys(ScheduleSlotDTO occupied) {
+    private static OffsetDateTime parseOccupiedStart(ResourceReservationDTO occupied) {
+        if (StringUtils.hasText(occupied.getCandidateStart())) {
+            return OffsetDateTime.parse(occupied.getCandidateStart());
+        }
+        if (StringUtils.hasText(occupied.getPlannedStart())) {
+            return OffsetDateTime.parse(occupied.getPlannedStart());
+        }
+        return null;
+    }
+
+    private static OffsetDateTime parseOccupiedEnd(ResourceReservationDTO occupied) {
+        if (StringUtils.hasText(occupied.getCandidateEnd())) {
+            return OffsetDateTime.parse(occupied.getCandidateEnd());
+        }
+        if (StringUtils.hasText(occupied.getPlannedEnd())) {
+            return OffsetDateTime.parse(occupied.getPlannedEnd());
+        }
+        return null;
+    }
+
+    private List<String> occupiedResourceKeys(ResourceReservationDTO occupied) {
         List<String> keys = new ArrayList<>();
         if (occupied.getAssignedResources() != null) {
             for (AssignedResourceDTO assigned : occupied.getAssignedResources()) {
@@ -181,88 +260,51 @@ public class SchedulingEngineImpl implements SchedulingEngine {
         return keys;
     }
 
-    private OffsetDateTime earliestFit(OffsetDateTime preferred, int minutes,
-                                       List<BusyInterval> busy, OffsetDateTime horizonLimit) {
-        OffsetDateTime cursor = preferred;
-        for (BusyInterval interval : busy) {
-            OffsetDateTime tentativeEnd = cursor.plusMinutes(minutes);
-            if (!tentativeEnd.isAfter(interval.start())) {
-                break;
-            }
-            if (cursor.isBefore(interval.end())) {
-                cursor = interval.end();
-            }
-        }
-        OffsetDateTime end = cursor.plusMinutes(minutes);
-        if (!end.isBefore(horizonLimit)) {
-            throw exception(SCHEDULING_CANNOT_PLACE);
-        }
-        return cursor;
-    }
-
-    private boolean overlaps(OffsetDateTime start, OffsetDateTime end, List<BusyInterval> busy) {
-        for (BusyInterval interval : busy) {
-            // overlap if start < interval.end && end > interval.start
-            if (start.isBefore(interval.end()) && end.isAfter(interval.start())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private ScheduleSlotDTO buildSlot(Candidate candidate, OffsetDateTime start, OffsetDateTime end) {
+    private ResourceReservationDTO buildReservation(Candidate candidate, String assignedResourceId,
+                                                    OffsetDateTime start, OffsetDateTime end) {
         WorkItemDTO workItem = candidate.workItem();
-        return ScheduleSlotDTO.builder()
+        String startText = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(start);
+        String endText = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(end);
+        return ResourceReservationDTO.builder()
                 .contractVersion(ContractVersions.MVP)
-                .slotId(UUID.randomUUID().toString())
+                .candidateId(UUID.randomUUID().toString())
                 .runtimeJobId(candidate.runtimeJobId())
+                .candidateType(CandidateType.TASK_EXECUTION)
                 .workId(workItem.getWorkId())
                 .entityTypeCode(workItem.getEntityTypeCode())
-                .plannedStart(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(start))
-                .plannedEnd(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(end))
-                .assignedResources(toAssignedResources(workItem))
+                .candidateStart(startText)
+                .candidateEnd(endText)
+                .assignedResources(toAssignedResources(workItem, assignedResourceId))
                 .lockState(SlotLockState.NONE)
-                .slotStatus(SlotStatus.PLANNED)
+                .candidateStatus(SlotStatus.PLANNED)
                 .build();
     }
 
-    private List<AssignedResourceDTO> toAssignedResources(WorkItemDTO workItem) {
-        if (workItem.getResourceRequirements() == null || workItem.getResourceRequirements().isEmpty()) {
+    private List<AssignedResourceDTO> toAssignedResources(WorkItemDTO workItem, String assignedResourceId) {
+        String resourceType = firstResourceType(workItem);
+        if (!StringUtils.hasText(assignedResourceId) || "__unassigned__".equals(assignedResourceId)) {
             return List.of();
         }
-        List<AssignedResourceDTO> assigned = new ArrayList<>();
-        for (ResourceRequirementDTO req : workItem.getResourceRequirements()) {
-            if (req == null) {
-                continue;
-            }
-            assigned.add(AssignedResourceDTO.builder()
-                    .resourceType(req.getResourceType())
-                    .resourceId(req.getFixedResourceId())
-                    .build());
-        }
-        return assigned;
+        return List.of(AssignedResourceDTO.builder()
+                .resourceType(resourceType)
+                .resourceId(assignedResourceId)
+                .build());
     }
 
-    // Wave1: only the first resolvable requirement participates in resource-timeline locking.
-    private String resourceKey(WorkItemDTO workItem) {
-        if (workItem.getResourceRequirements() != null) {
-            for (ResourceRequirementDTO req : workItem.getResourceRequirements()) {
-                if (req == null) {
-                    continue;
-                }
-                if (StringUtils.hasText(req.getFixedResourceId())) {
-                    return req.getFixedResourceId();
-                }
-                if (StringUtils.hasText(req.getResourceType())) {
-                    return "__type:" + req.getResourceType();
-                }
+    private static String firstResourceType(WorkItemDTO workItem) {
+        if (workItem.getResourceRequirements() == null) {
+            return null;
+        }
+        for (ResourceRequirementDTO req : workItem.getResourceRequirements()) {
+            if (req != null && StringUtils.hasText(req.getResourceType())) {
+                return req.getResourceType();
             }
         }
-        return "__unassigned__";
+        return null;
     }
 
     private void requirePositiveDuration(WorkItemDTO workItem) {
-        Integer minutes = workItem.getDurationEstimateMinutes();
+        Integer minutes = workItem.getEstimatedDuration();
         if (minutes == null || minutes <= 0) {
             throw exception(SCHEDULING_DURATION_REQUIRED);
         }
@@ -297,6 +339,4 @@ public class SchedulingEngineImpl implements SchedulingEngine {
         }
     }
 
-    private record BusyInterval(OffsetDateTime start, OffsetDateTime end) {
-    }
 }

@@ -17,6 +17,9 @@ public class TaskExecutionBootstrapReqVO {
     @Schema(description = "任务执行记录 id（task_excution_record）")
     private Long executionRecordId;
 
+    @Schema(description = "执行记录实体类型；默认 task_excution_record")
+    private String entityTypeCode;
+
     @NotNull
     @Schema(description = "锁定的 standard_snapshot JSON 对象")
     private Object standardSnapshot;

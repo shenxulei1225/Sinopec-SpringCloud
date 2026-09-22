@@ -14,7 +14,7 @@ public class ObjectStationBindingRespVO {
     private String stationNodeId;
 
     @Schema(description = "作业时长（分钟）")
-    private Integer workMinutes;
+    private Integer estimatedActionDuration;
 
     @Schema(description = "排序号")
     private Integer sortNo;

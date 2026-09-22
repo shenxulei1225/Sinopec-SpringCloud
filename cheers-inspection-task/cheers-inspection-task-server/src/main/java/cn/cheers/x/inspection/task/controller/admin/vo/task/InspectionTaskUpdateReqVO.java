@@ -59,11 +59,23 @@ public class InspectionTaskUpdateReqVO {
     private InspectionContent inspectionContent;
 
     // ==================== 排期与资源 ====================
-    @Schema(description = "排期需求 ID")
-    private Long scheduleRequirementId;
-
     @Schema(description = "排期策略 ID")
     private Long schedulePolicyId;
+
+    @Schema(description = "排期策略·冲突处理：defer_slot / reject_batch / priority_preempt")
+    private String conflictStrategy;
+
+    @Schema(description = "排期策略·任务间隔（分钟）")
+    private Integer taskGapMinutes;
+
+    @Schema(description = "空闲不够时是否允许挪动已有任务排期")
+    private Boolean allowShiftExisting;
+
+    @Schema(description = "已有任务单侧最多挪动分钟数")
+    private Integer maxShiftMinutes;
+
+    @Schema(description = "排期模板配置（与前端 ScheduleConfig JSON 对齐，写入 FLD-TSK-018）")
+    private Object scheduleConfig;
 
     @Schema(description = "资源策略")
     private ResourcePolicy resourcePolicy;

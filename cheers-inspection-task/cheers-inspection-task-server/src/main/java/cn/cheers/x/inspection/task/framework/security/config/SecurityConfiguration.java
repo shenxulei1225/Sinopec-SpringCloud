@@ -1,5 +1,6 @@
 package cn.cheers.x.inspection.task.framework.security.config;
 
+import cn.cheers.x.inspection.enums.ApiConstants;
 import cn.cheers.x.framework.security.config.AuthorizeRequestsCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,6 +29,8 @@ public class SecurityConfiguration {
                 // Spring Boot Actuator 的安全配置
                 registry.requestMatchers("/actuator").permitAll()
                         .requestMatchers("/actuator/**").permitAll();
+                // 编排等模块 Feign 调 save-route / map-work-items
+                registry.requestMatchers(ApiConstants.PREFIX + "/**").permitAll();
             }
 
         };

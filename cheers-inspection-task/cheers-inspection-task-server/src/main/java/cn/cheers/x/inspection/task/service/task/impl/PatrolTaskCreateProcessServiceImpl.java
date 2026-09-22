@@ -2,26 +2,37 @@ package cn.cheers.x.inspection.task.service.task.impl;
 
 import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskCreateProgressRespVO;
+import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskDurationRefreshReqVO;
+import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskDurationRefreshRespVO;
 import cn.cheers.x.inspection.task.model.task.InspectionContent;
+import cn.cheers.x.inspection.task.service.task.CreateWizardInvalidation;
+import cn.cheers.x.inspection.task.service.task.PatrolItemActionDurationCalculator;
+import cn.cheers.x.inspection.task.service.task.PatrolItemActionDurationSupport;
+import cn.cheers.x.inspection.task.service.task.PatrolPlannedRouteSupport;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskCreateProcessService;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskDurationSupport;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 建任务向导进度写在总任务草稿里。
  *
  * <p>用户在创建页点「下一步」时，由这里决定能不能往前走：已经做过的可以回头看和改，
- * 还没做到的不能跳过。改了对象或检查项时，把后面步骤收回，已保存路线作废。</p>
- * <p>顺序：选对象 → 路线 → 排期与资源 → 编排确认。
- * 智能编排在排期与资源步触发；编排确认步只展示占窗结果并确认，不负责开跑。
- * 以后会交给 Flowable 同一条建任务流程；现在先写在草稿里让页面能用。</p>
- * <p>禁止：按「已经有路线」反推已放到哪一步；一次跳过多步。</p>
+ * 还没做到的不能跳过。前面事实变了时按 {@link CreateWizardInvalidation} 收回，
+ * 禁止按具体巡检方式两两写死，也禁止用「本步没数据」报错再退一格冒充收回。</p>
+ * <p>顺序：选对象 → 路线（saveRoute）→ 排期与资源 → 核对计划（生成任务）。
+ * 离开选对象步只校验已选对象、检查项、巡检方式；规划路线只在 saveRoute 写入预览结果。
+ * 第 3 步无冲突或智能编排会写试排快照；有快照才能放到核对计划。下一步只放行核查，不生成。
+ * <p>禁止：按「已经有路线」反推已放到哪一步；一次跳过多步；把智能编排当成进入核对的唯一入口。</p>
  */
 @Service
 @RequiredArgsConstructor
@@ -35,6 +46,7 @@ public class PatrolTaskCreateProcessServiceImpl implements PatrolTaskCreateProce
     public static final String MODE_FIXED_CAMERA = "FIXED_CAMERA";
 
     private final PatrolTaskEntityStore patrolTaskEntityStore;
+    private final PatrolItemActionDurationCalculator itemActionDurationCalculator;
 
     @Override
     public InspectionTaskCreateProgressRespVO getProgress(Long taskId) {
@@ -59,19 +71,119 @@ public class PatrolTaskCreateProcessServiceImpl implements PatrolTaskCreateProce
     }
 
     @Override
-    public InspectionTaskCreateProgressRespVO invalidate(Long taskId, Integer keepThroughStep) {
+    public InspectionTaskCreateProgressRespVO invalidate(Long taskId, CreateWizardInvalidation reason) {
+        if (reason == null) {
+            throw ServiceExceptionUtil.invalidParamException("作废原因不能为空");
+        }
+        return invalidate(taskId, reason.keepThroughStep(), reason.clearPlannedRoute());
+    }
+
+    @Override
+    public InspectionTaskCreateProgressRespVO invalidate(Long taskId, Integer keepThroughStep, Boolean clearPlannedRoute) {
         PatrolTaskDraft draft = patrolTaskEntityStore.require(taskId);
         int keepThrough = requireStep(keepThroughStep, "保留到哪一步不能为空");
         int unlocked = unlockedOf(draft);
         int next = Math.min(unlocked, keepThrough);
-        if (keepThrough <= STEP_ROUTE) {
+        boolean clearRoute = clearPlannedRoute == null
+                ? keepThrough <= STEP_ROUTE
+                : Boolean.TRUE.equals(clearPlannedRoute);
+        if (clearRoute) {
             patrolTaskEntityStore.clearPlannedRoute(taskId);
+        }
+        if (next < unlocked || keepThrough <= STEP_SCHEDULE_RESOURCE) {
+            patrolTaskEntityStore.clearLaterComputedResults(taskId);
         }
         if (next < unlocked) {
             patrolTaskEntityStore.mergeDraftFields(
                     taskId, Map.of(PatrolTaskEntityStore.DRAFT_KEY_UNLOCKED, next));
         }
         return progressOf(next);
+    }
+
+    @Override
+    public InspectionTaskDurationRefreshRespVO refreshDurations(Long taskId, InspectionTaskDurationRefreshReqVO reqVO) {
+        PatrolTaskDraft draft = patrolTaskEntityStore.require(taskId);
+        InspectionContent content = draft.inspectionContent();
+        if (content == null) {
+            content = new InspectionContent();
+        }
+        Integer storedAction = PatrolItemActionDurationSupport.minutesOf(content);
+        Integer migrated = PatrolItemActionDurationSupport.migrateFromPlannedRoute(content, draft.plannedRoute());
+        if (migrated != null && storedAction == null) {
+            patrolTaskEntityStore.writeInspectionContent(taskId, content);
+            Map<String, Object> planned = PatrolPlannedRouteSupport.asPlannedMap(draft.plannedRoute());
+            if (planned != null && !planned.isEmpty()) {
+                PatrolItemActionDurationSupport.stripFromPlannedRoute(planned);
+                patrolTaskEntityStore.writePlannedRoute(taskId, planned);
+            }
+            storedAction = migrated;
+        }
+        Integer liveAction = itemActionDurationCalculator
+                .computeLiveMinutes(content, draft.patrolExecutionMode())
+                .orElse(null);
+        boolean itemActionChanged = liveAction != null && storedAction != null && !liveAction.equals(storedAction);
+        if (liveAction != null && (storedAction == null || itemActionChanged)) {
+            content.setItemActionDurationMinutes(liveAction);
+            patrolTaskEntityStore.writeInspectionContent(taskId, content);
+            storedAction = liveAction;
+        }
+        boolean pathChanged = pathInputsChanged(draft, reqVO);
+        boolean alreadyGenerated = Boolean.TRUE.equals(draft.orchestrationCommitted());
+        int unlocked = unlockedOf(draft);
+        String message = null;
+        if ((itemActionChanged || pathChanged) && !alreadyGenerated) {
+            CreateWizardInvalidation reason = pathChanged
+                    ? CreateWizardInvalidation.PATH_INPUTS_CHANGED
+                    : CreateWizardInvalidation.ITEM_ACTION_DURATION_CHANGED;
+            if (unlocked > reason.keepThroughStep()) {
+                unlocked = invalidate(taskId, reason).getUnlockedStep();
+                message = pathChanged
+                        ? "到达位置或路径耗时已变化，请重新规划并保存"
+                        : "检查项动作耗时已变化，请再走一遍排期";
+            } else if (unlocked == reason.keepThroughStep()) {
+                unlocked = invalidate(taskId, reason).getUnlockedStep();
+            }
+        } else if (itemActionChanged || pathChanged) {
+            message = pathChanged
+                    ? "到达位置或路径耗时已变化，是否按新数据重新排期？"
+                    : "检查项动作耗时已变化，是否按新数据重新排期？";
+        }
+        InspectionTaskDurationRefreshRespVO resp = new InspectionTaskDurationRefreshRespVO();
+        resp.setItemActionDurationMinutes(storedAction);
+        resp.setTravelDurationMinutes(
+                PatrolPlannedRouteSupport.resolveTravelMinutesOnly(draft.plannedRoute(), draft.patrolExecutionMode()));
+        resp.setTotalDurationMinutes(
+                PatrolTaskDurationSupport.totalMinutes(content, draft.plannedRoute(), draft.patrolExecutionMode()));
+        resp.setItemActionChanged(itemActionChanged);
+        resp.setPathChanged(pathChanged);
+        resp.setUnlockedStep(unlocked);
+        resp.setAlreadyGenerated(alreadyGenerated);
+        resp.setMessage(message);
+        return resp;
+    }
+
+    private static boolean pathInputsChanged(PatrolTaskDraft draft, InspectionTaskDurationRefreshReqVO reqVO) {
+        if (!PatrolPlannedRouteSupport.hasSavedRoute(draft.plannedRoute())) {
+            return false;
+        }
+        if (reqVO == null || CollectionUtils.isEmpty(reqVO.getLiveCheckItemStopIds())) {
+            return false;
+        }
+        Map<String, Object> planned = PatrolPlannedRouteSupport.asPlannedMap(draft.plannedRoute());
+        if (planned == null) {
+            return false;
+        }
+        Set<String> live = new LinkedHashSet<>(PatrolPlannedRouteSupport.asStringList(reqVO.getLiveCheckItemStopIds()));
+        Set<String> saved = new LinkedHashSet<>(PatrolPlannedRouteSupport.asStringList(planned.get("stopIds")));
+        String start = PatrolPlannedRouteSupport.asText(planned.get("startStopId"));
+        String end = PatrolPlannedRouteSupport.asText(planned.get("endStopId"));
+        if (StringUtils.hasText(start)) {
+            saved.remove(start);
+        }
+        if (StringUtils.hasText(end)) {
+            saved.remove(end);
+        }
+        return !live.equals(saved);
     }
 
     /**
@@ -87,8 +199,11 @@ public class PatrolTaskCreateProcessServiceImpl implements PatrolTaskCreateProce
             }
             return;
         }
-        if (unlocked == STEP_ROUTE && !skipsRoute(draft) && !hasSavedRoute(draft.plannedRoute())) {
+        if (unlocked == STEP_ROUTE && !skipsRoute(draft) && !PatrolPlannedRouteSupport.hasSavedRoute(draft.plannedRoute())) {
             throw ServiceExceptionUtil.invalidParamException("请先保存路线");
+        }
+        if (unlocked == STEP_SCHEDULE_RESOURCE && !hasOrchestrationPreview(draft)) {
+            throw ServiceExceptionUtil.invalidParamException("还没有试排计划。请在排期与资源选定设备并处理完冲突");
         }
     }
 
@@ -142,12 +257,14 @@ public class PatrolTaskCreateProcessServiceImpl implements PatrolTaskCreateProce
         return MODE_FIXED_CAMERA.equals(draft.patrolExecutionMode());
     }
 
-    private static boolean hasSavedRoute(Object planned) {
-        if (!(planned instanceof Map<?, ?> map)) {
+    private static boolean hasOrchestrationPreview(PatrolTaskDraft draft) {
+        if (draft == null || draft.orchestrationPreviewSlots() == null) {
             return false;
         }
-        Object stops = map.get("stopIds");
-        return stops instanceof Collection<?> collection && !collection.isEmpty();
+        if (draft.orchestrationPreviewSlots() instanceof List<?> list) {
+            return !list.isEmpty();
+        }
+        return true;
     }
 
     private static int requireStep(Integer step, String emptyMessage) {

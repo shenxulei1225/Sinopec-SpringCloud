@@ -29,33 +29,33 @@ FROM (
     -- UAV 原子动作
     (
       'act-arrive', '到达作业位置', 'UAV',
-      '{"version":1,"fields":[{"fieldCode":"location_ref","required":true,"defaultValue":null}]}',
+      '{"version":1,"fields":[{"fieldCode":"location_ref","required":true,"defaultValue":null},{"fieldCode":"action_duration","required":false,"defaultValue":1}]}',
       '[]', false
     ),
     (
       'act-hover', '悬停观察', 'UAV',
-      '{"version":1,"fields":[{"fieldCode":"dwell_duration","required":false,"defaultValue":null}]}',
+      '{"version":1,"fields":[{"fieldCode":"dwell_duration","required":false,"defaultValue":null},{"fieldCode":"action_duration","required":false,"defaultValue":2}]}',
       '[]', false
     ),
     (
       'act-aim', '对准拍摄', 'UAV',
-      '{"version":1,"fields":[{"fieldCode":"yaw","required":false,"defaultValue":null},{"fieldCode":"pitch","required":false,"defaultValue":null},{"fieldCode":"roll","required":false,"defaultValue":null},{"fieldCode":"focal_length","required":false,"defaultValue":null}]}',
+      '{"version":1,"fields":[{"fieldCode":"yaw","required":false,"defaultValue":null},{"fieldCode":"pitch","required":false,"defaultValue":null},{"fieldCode":"roll","required":false,"defaultValue":null},{"fieldCode":"focal_length","required":false,"defaultValue":null},{"fieldCode":"action_duration","required":false,"defaultValue":1}]}',
       '[]', false
     ),
     (
       'act-shoot', '拍摄取证', 'UAV',
-      '{"version":1,"fields":[{"fieldCode":"shot_count","required":false,"defaultValue":null}]}',
+      '{"version":1,"fields":[{"fieldCode":"shot_count","required":false,"defaultValue":null},{"fieldCode":"action_duration","required":false,"defaultValue":1}]}',
       '[]', false
     ),
     -- ROBOT 原子（巡线 / 气体；机器人到达/拍摄等见 10）
     (
       'act-ground-patrol', '沿规划路线行进', 'ROBOT',
-      '{"version":1,"fields":[{"fieldCode":"route_ref","required":false,"defaultValue":null}]}',
+      '{"version":1,"fields":[{"fieldCode":"route_ref","required":false,"defaultValue":null},{"fieldCode":"action_duration","required":false,"defaultValue":5}]}',
       '[]', false
     ),
     (
       'act-gas-detect', '气体检测', 'ROBOT',
-      '{"version":1,"fields":[{"fieldCode":"gas_threshold","required":false,"defaultValue":null}]}',
+      '{"version":1,"fields":[{"fieldCode":"gas_threshold","required":false,"defaultValue":null},{"fieldCode":"action_duration","required":false,"defaultValue":2}]}',
       '[]', false
     ),
     -- 复合：无人机泄漏取证流程块
@@ -63,7 +63,7 @@ FROM (
       'act-uav-leak-inspect',
       '无人机泄漏取证（复合）',
       'UAV',
-      '{"version":1,"fields":[]}',
+      '{"version":1,"fields":[{"fieldCode":"action_duration","required":false,"defaultValue":null}]}',
       '["act-arrive","act-hover","act-aim","act-shoot"]',
       true
     )

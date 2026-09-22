@@ -12,7 +12,7 @@ public class ObjectStationBindingView {
 
     private String stationNodeId;
 
-    private Integer workMinutes;
+    private Integer estimatedActionDuration;
 
     private Integer sortNo;
 }

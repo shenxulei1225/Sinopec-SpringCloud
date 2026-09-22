@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 读总任务上创建时已算好的步骤图 {@code step_tree_json}。
+ * 读总任务上智能编排已写入的步骤图 {@code step_tree_json}。
  * <p>只认步骤节点快照（version + nodes）。空数组、旧动作树数组、非法 JSON → 空树，不猜历史形态。
  * <p>禁止：把检查项方法树当成任务步骤图。
  */

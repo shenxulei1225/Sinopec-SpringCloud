@@ -28,6 +28,12 @@ public class TaskExecutionStartReqDTO {
     /** 待执行壳 / 计划点引用（选项 A：排期产物） */
     private String pendingRef;
 
+    /**
+     * 这笔执行账的所属场站。
+     * 站场级执行账创建时必须带；巡检从总任务已写入的场站带过来，不从请求头猜。
+     */
+    private Long facilityId;
+
     private String name;
 
     @NotNull

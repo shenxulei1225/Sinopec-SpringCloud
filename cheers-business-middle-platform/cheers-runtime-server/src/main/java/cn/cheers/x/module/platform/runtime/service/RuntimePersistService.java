@@ -1,5 +1,6 @@
 package cn.cheers.x.module.platform.runtime.service;
 
+import cn.cheers.x.module.platform.contract.dto.reservation.ResourceReservationDTO;
 import cn.cheers.x.module.platform.contract.dto.runtime.RuntimeJobDTO;
 import cn.cheers.x.module.platform.contract.dto.slot.ScheduleSlotDTO;
 
@@ -11,12 +12,18 @@ import java.util.List;
 public interface RuntimePersistService {
 
     /**
-     * 保存运行作业及其计划点。
+     * @deprecated 使用 {@link #saveJobWithReservations}
      */
+    @Deprecated
     void saveJobWithSlots(RuntimeJobDTO job, List<ScheduleSlotDTO> slots, Long facilityId);
 
+    void saveJobWithReservations(RuntimeJobDTO job, List<ResourceReservationDTO> reservations, Long facilityId);
+
     /**
-     * 向已有运行作业追加计划点（不新建 job）。
+     * @deprecated 使用 {@link #appendReservations}
      */
+    @Deprecated
     void appendSlots(String runtimeJobId, List<ScheduleSlotDTO> slots, Long facilityId);
+
+    void appendReservations(String runtimeJobId, List<ResourceReservationDTO> reservations, Long facilityId);
 }

@@ -138,7 +138,9 @@
 | V131 | `V131__condition_strategy.sql` | 条件策略主表；平台预置「采集结果到了就往执行账里记一条过程」 |
 | V132 | `V132__condition_strategy_inspection.sql` | 巡检开跑三连与采集后更新账/步的平台预置策略 |
 | V133 | `V133__ent_equipment_platform_protocol.sql` | 设备台账 `platform_protocol` 单值列；当前使用的平台对接协议。元数据见 `dynamic_equipment_protocol_versions.sql` |
-> **版本号说明**：本仓库已登记至 **V133**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。
+| V134 | `V134__ent_equipment_execution_means.sql` | 设备台账 `execution_means` 多选 jsonb 列；对齐 seed 15 的 equipment BASE 字段 |
+| V135 | `V135__patrol_task_draft_orchestration_keys.sql` | 总任务草稿袋编排键：`scheduleEnabled`/`arrangePreview*` → `orchestrationCommitted`/`orchestrationPreview*` |
+> **版本号说明**：本仓库已登记至 **V135**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。
 
 
 > **跨机合并说明**：本机布局迁移已占用 V26–V28 且已执行；对方原 `V26__category_*` / `V27__ent_structure` 在合并后改为 V29/V30。若对方库已按旧文件名执行过 V26/V27，需对齐历史表 `version`/`script` 后 `flyway:repair`，再拉本分支。
@@ -204,6 +206,7 @@ PGPASSWORD=Coolhomer psql -h 127.0.0.1 -U postgres -d sinopec -c \
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-18 | V134：设备台账补 `execution_means` jsonb 列，对齐 seed 15 的 BASE 字段，避免查储罐/设备报系统异常 |
 | 2026-09-18 | V132：巡检开跑三连与采集后更新账/步的平台预置策略 |
 | 2026-09-17 | V131：条件策略主表；平台预置「采集结果到了就往执行账里记一条过程」 |
 | 2026-09-16 | V129：布局页编号收口为稳定 `tab-*`；类型写在这一页布局行；边上栏身份跟着改名，不删边 |

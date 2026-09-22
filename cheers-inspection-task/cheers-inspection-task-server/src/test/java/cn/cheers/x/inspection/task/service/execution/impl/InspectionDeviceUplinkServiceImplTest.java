@@ -7,6 +7,7 @@ import cn.cheers.x.device.protocolgateway.api.opcode.DeviceTaskStatusCode;
 import cn.cheers.x.device.protocolgateway.api.opcode.TransportOpcode;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.inspection.task.service.execution.scheduleboard.PatrolScheduleSlotExecutionWritebackService;
 import cn.cheers.x.module.dynamicbusiness.api.strategy.StrategyRuntimeApi;
 import cn.cheers.x.module.dynamicbusiness.api.strategy.dto.StrategyHandleRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.strategy.dto.StrategyTriggerEventDTO;
@@ -30,12 +31,15 @@ import static org.mockito.Mockito.when;
 class InspectionDeviceUplinkServiceImplTest {
 
     private StrategyRuntimeApi strategyRuntimeApi;
+    private PatrolScheduleSlotExecutionWritebackService scheduleSlotExecutionWritebackService;
     private InspectionDeviceUplinkServiceImpl service;
 
     @BeforeEach
     void setUp() {
         strategyRuntimeApi = mock(StrategyRuntimeApi.class);
-        service = new InspectionDeviceUplinkServiceImpl(strategyRuntimeApi, new ObjectMapper());
+        scheduleSlotExecutionWritebackService = mock(PatrolScheduleSlotExecutionWritebackService.class);
+        service = new InspectionDeviceUplinkServiceImpl(
+                strategyRuntimeApi, new ObjectMapper(), scheduleSlotExecutionWritebackService);
         when(strategyRuntimeApi.handle(any())).thenReturn(CommonResult.success(matchedHandle()));
     }
 

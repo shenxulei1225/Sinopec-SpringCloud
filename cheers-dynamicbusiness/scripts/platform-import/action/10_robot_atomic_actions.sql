@@ -28,28 +28,28 @@ FROM (
   VALUES
     (
       'act-robot-arrive', '到达作业位置',
-      '{"version":1,"fields":[{"fieldCode":"location_ref","required":true,"defaultValue":null}]}',
+      '{"version":1,"fields":[{"fieldCode":"location_ref","required":true,"defaultValue":null},{"fieldCode":"action_duration","required":false,"defaultValue":1}]}',
       '[]', false
     ),
     (
       'act-robot-hold', '停留观察',
-      '{"version":1,"fields":[{"fieldCode":"dwell_duration","required":false,"defaultValue":null}]}',
+      '{"version":1,"fields":[{"fieldCode":"dwell_duration","required":false,"defaultValue":null},{"fieldCode":"action_duration","required":false,"defaultValue":2}]}',
       '[]', false
     ),
     (
       'act-robot-aim', '对准拍摄',
-      '{"version":1,"fields":[{"fieldCode":"yaw","required":false,"defaultValue":null},{"fieldCode":"pitch","required":false,"defaultValue":null},{"fieldCode":"roll","required":false,"defaultValue":null},{"fieldCode":"focal_length","required":false,"defaultValue":null}]}',
+      '{"version":1,"fields":[{"fieldCode":"yaw","required":false,"defaultValue":null},{"fieldCode":"pitch","required":false,"defaultValue":null},{"fieldCode":"roll","required":false,"defaultValue":null},{"fieldCode":"focal_length","required":false,"defaultValue":null},{"fieldCode":"action_duration","required":false,"defaultValue":1}]}',
       '[]', false
     ),
     (
       'act-robot-shoot', '拍摄取证',
-      '{"version":1,"fields":[{"fieldCode":"shot_count","required":false,"defaultValue":null}]}',
+      '{"version":1,"fields":[{"fieldCode":"shot_count","required":false,"defaultValue":null},{"fieldCode":"action_duration","required":false,"defaultValue":1}]}',
       '[]', false
     ),
     (
       'act-robot-leak-inspect',
       '机器人泄漏取证（复合）',
-      '{"version":1,"fields":[]}',
+      '{"version":1,"fields":[{"fieldCode":"action_duration","required":false,"defaultValue":null}]}',
       '["act-robot-arrive","act-robot-hold","act-robot-aim","act-robot-shoot","act-gas-detect"]',
       true
     )

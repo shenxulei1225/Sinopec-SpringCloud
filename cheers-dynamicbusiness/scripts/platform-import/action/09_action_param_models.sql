@@ -30,6 +30,10 @@ FROM (
     ('shot_count', '拍摄张数', 'NUMBER', NULL, 1, '拍摄取证张数', NULL),
     ('dwell_duration', '停留时长', 'NUMBER', 's', 1, '悬停/停留观察时长（秒）', NULL),
     (
+      'action_duration', '动作耗时', 'NUMBER', 'min', 1,
+      '排程用的动作耗时（分钟）。不是停留时长秒。', NULL
+    ),
+    (
       'route_ref', '路线引用', 'ENTITY_REF', NULL, 1,
       '沿规划路线行进：路线 REF（route 底座）', 'route'
     ),

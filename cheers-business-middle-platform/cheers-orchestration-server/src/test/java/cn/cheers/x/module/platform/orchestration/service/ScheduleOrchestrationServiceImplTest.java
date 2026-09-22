@@ -7,6 +7,7 @@ import cn.cheers.x.maintenance.api.dto.BindingResolveReqDTO;
 import cn.cheers.x.maintenance.api.dto.BindingResolveRespDTO;
 import cn.cheers.x.module.platform.capability.api.MappingProfileApi;
 import cn.cheers.x.module.platform.capability.api.ProcessCapabilityBindingApi;
+import cn.cheers.x.module.platform.contract.dto.reservation.ResourceReservationDTO;
 import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunRequest;
 import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunResponse;
 import cn.cheers.x.module.platform.contract.dto.schedule.SchedulingSpecDTO;
@@ -110,7 +111,7 @@ class ScheduleOrchestrationServiceImplTest {
         request.setScope("inspection");
 
         when(schedulingEngine.solve(anyList(), any(), anyString(), anyList()))
-                .thenReturn(List.of(ScheduleSlotDTO.builder().slotId("slot-1").workId("work-1").build()));
+                .thenReturn(List.of(ResourceReservationDTO.builder().candidateId("slot-1").workId("work-1").build()));
         when(runtimePersistApi.persist(any(RuntimePersistReqDTO.class))).thenReturn(CommonResult.success(null));
         when(workOrderApi.create(any())).thenReturn(CommonResult.success(100L));
 
@@ -136,7 +137,7 @@ class ScheduleOrchestrationServiceImplTest {
         when(maintenanceApi.resolveBinding(any(BindingResolveReqDTO.class)))
                 .thenReturn(CommonResult.success(BindingResolveRespDTO.builder().fieldStandardId(9L).build()));
         when(schedulingEngine.solve(anyList(), any(), anyString(), anyList()))
-                .thenReturn(List.of(ScheduleSlotDTO.builder().slotId("slot-1").workId("work-1").build()));
+                .thenReturn(List.of(ResourceReservationDTO.builder().candidateId("slot-1").workId("work-1").build()));
         when(runtimePersistApi.persist(any(RuntimePersistReqDTO.class))).thenReturn(CommonResult.success(null));
         when(workOrderApi.create(any())).thenReturn(CommonResult.success(200L));
 
@@ -154,7 +155,7 @@ class ScheduleOrchestrationServiceImplTest {
         request.setDispatchWorkOrders(false);
 
         when(schedulingEngine.solve(anyList(), any(), anyString(), anyList()))
-                .thenReturn(List.of(ScheduleSlotDTO.builder().slotId("slot-1").workId("work-1").build()));
+                .thenReturn(List.of(ResourceReservationDTO.builder().candidateId("slot-1").workId("work-1").build()));
         when(runtimePersistApi.persist(any(RuntimePersistReqDTO.class))).thenReturn(CommonResult.success(null));
 
         ScheduleRunResponse response = scheduleOrchestrationService.runSchedule(request, 1L);
@@ -168,7 +169,7 @@ class ScheduleOrchestrationServiceImplTest {
         return ScheduleRunRequest.builder()
                 .orchestrationRef(OrchestrationRefs.STANDARD_EXPAND_SOLVE_PERSIST_V1)
                 .schedulingSpec(SchedulingSpecDTO.builder().mode("once").conflictStrategy("none").build())
-                .workItems(List.of(WorkItemDTO.builder().workId("work-1").durationEstimateMinutes(30).build()))
+                .workItems(List.of(WorkItemDTO.builder().workId("work-1").estimatedDuration(30).build()))
                 .build();
     }
 }

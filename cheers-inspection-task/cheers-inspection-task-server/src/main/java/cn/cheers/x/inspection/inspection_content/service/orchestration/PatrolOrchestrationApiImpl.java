@@ -2,10 +2,10 @@ package cn.cheers.x.inspection.inspection_content.service.orchestration;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.orchestration.PatrolOrchestrationApi;
-import cn.cheers.x.inspection.orchestration.dto.PatrolConfirmReqDTO;
-import cn.cheers.x.inspection.orchestration.dto.PatrolConfirmRespDTO;
-import cn.cheers.x.inspection.orchestration.dto.PatrolExpandReqDTO;
-import cn.cheers.x.inspection.orchestration.dto.PatrolExpandRespDTO;
+import cn.cheers.x.inspection.orchestration.dto.PatrolSaveRouteReqDTO;
+import cn.cheers.x.inspection.orchestration.dto.PatrolSaveRouteRespDTO;
+import cn.cheers.x.inspection.orchestration.dto.PatrolScheduleMapReqDTO;
+import cn.cheers.x.inspection.orchestration.dto.PatrolScheduleMapRespDTO;
 import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,18 +17,18 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 public class PatrolOrchestrationApiImpl implements PatrolOrchestrationApi {
 
     @Resource
-    private PatrolExpandMapService patrolExpandMapService;
+    private PatrolScheduleMapService patrolScheduleMapService;
 
     @Resource
-    private PatrolConfirmService patrolConfirmService;
+    private PatrolSaveRouteService patrolSaveRouteService;
 
     @Override
-    public CommonResult<PatrolExpandRespDTO> expand(PatrolExpandReqDTO request) {
-        return success(patrolExpandMapService.expand(request));
+    public CommonResult<PatrolScheduleMapRespDTO> expandPatrolWorkItems(PatrolScheduleMapReqDTO request) {
+        return success(patrolScheduleMapService.expandPatrolWorkItems(request));
     }
 
     @Override
-    public CommonResult<PatrolConfirmRespDTO> confirm(PatrolConfirmReqDTO request) {
-        return success(patrolConfirmService.confirm(request));
+    public CommonResult<PatrolSaveRouteRespDTO> saveRoute(PatrolSaveRouteReqDTO request) {
+        return success(patrolSaveRouteService.saveRoute(request));
     }
 }

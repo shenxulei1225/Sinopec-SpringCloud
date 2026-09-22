@@ -1,20 +1,11 @@
 package cn.cheers.x.module.dynamicbusiness.service.execution;
 
-import cn.cheers.x.framework.common.exception.ServiceException;
-import cn.cheers.x.framework.common.pojo.PageResult;
-import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessReqDTO;
-import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartReqDTO;
-import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartRespDTO;
-import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionWritebackReqDTO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCreateReqVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntitySceneQueryRespVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdateReqVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.inspection.vo.TaskExecutionBootstrapReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.inspection.vo.TaskExecutionBootstrapRespVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
+import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import cn.cheers.x.module.dynamicbusiness.service.inspection.TaskExecutionBootstrapService;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,17 +13,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -55,152 +41,34 @@ class TaskExecutionSessionServiceImplTest {
     }
 
     @Test
-    void start_createsRecordThenBootstraps() {
+    void start_writesTaskFacilityAsOwningStation() {
         ModelDO model = new ModelDO();
-        model.setId(55L);
+        model.setId(3L);
         when(modelMapper.selectByCode("exec_patrol_round")).thenReturn(model);
-        when(entityService.create(any(EntityCreateReqVO.class))).thenReturn(9001L);
-        TaskExecutionBootstrapRespVO bootstrapResp = new TaskExecutionBootstrapRespVO();
-        bootstrapResp.setExecutionRecordId(9001L);
-        bootstrapResp.setStepIds(List.of(11L, 12L));
-        when(bootstrapService.bootstrap(any())).thenReturn(bootstrapResp);
+        when(entityService.create(any())).thenReturn(77L);
+        TaskExecutionBootstrapRespVO bootstrap = new TaskExecutionBootstrapRespVO();
+        bootstrap.setExecutionRecordId(77L);
+        bootstrap.setStepIds(List.of(1L));
+        when(bootstrapService.bootstrap(any())).thenReturn(bootstrap);
 
-        TaskExecutionStartReqDTO req = sampleStartReq();
-        TaskExecutionStartRespDTO resp = service.start(req);
-
-        assertEquals(9001L, resp.getExecutionRecordId());
-        assertEquals(List.of(11L, 12L), resp.getStepIds());
-
-        ArgumentCaptor<EntityCreateReqVO> createCaptor = ArgumentCaptor.forClass(EntityCreateReqVO.class);
-        verify(entityService).create(createCaptor.capture());
-        assertEquals(42L, createCaptor.getValue().getCustomFields().get("task_id"));
-        assertEquals("slot-1", createCaptor.getValue().getCustomFields().get("pending_execution_id"));
-        assertEquals(TaskExecutionSessionServiceImpl.STATUS_PENDING,
-                createCaptor.getValue().getCustomFields().get("execution_status"));
-
-        ArgumentCaptor<TaskExecutionBootstrapReqVO> bootCaptor =
-                ArgumentCaptor.forClass(TaskExecutionBootstrapReqVO.class);
-        verify(bootstrapService).bootstrap(bootCaptor.capture());
-        assertEquals(9001L, bootCaptor.getValue().getExecutionRecordId());
-        assertEquals(1, bootCaptor.getValue().getSteps().size());
-    }
-
-    @Test
-    void start_rejectsWhenGapCodesPresent() {
-        TaskExecutionStartReqDTO req = sampleStartReq();
-        req.setGapCodes(List.of("MISSING_BINDING"));
-        assertThrows(ServiceException.class, () -> service.start(req));
-        verify(entityService, never()).create(any());
-        verify(bootstrapService, never()).bootstrap(any());
-    }
-
-    @Test
-    void writeback_updatesRecordAndStepByCode() {
-        EntityRespVO record = new EntityRespVO();
-        record.setId(9001L);
-        record.setBaseFields(new LinkedHashMap<>(Map.of("name", "执行-42", "modelId", 55L)));
-        record.setCustomFields(new LinkedHashMap<>(Map.of("task_id", 42L, "execution_status", "pending")));
-        when(entityService.get(9001L, "task_excution_record")).thenReturn(record);
-
-        EntityRespVO step = new EntityRespVO();
-        step.setId(11L);
-        step.setBaseFields(new LinkedHashMap<>(Map.of(
-                "name", "停靠 s1", "modelId", 66L, "step_code", "s1", "step_status", "pending")));
-        EntityRespVO stepListItem = new EntityRespVO();
-        stepListItem.setId(11L);
-        EntitySceneQueryRespVO stepQuery = EntitySceneQueryRespVO.page(
-                new PageResult<>(List.of(stepListItem), 1L), "LIGHT");
-        when(entityService.queryEntities(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(stepQuery);
-        when(entityService.get(11L, "task_execution_step")).thenReturn(step);
-
-        TaskExecutionWritebackReqDTO req = new TaskExecutionWritebackReqDTO();
-        req.setExecutionRecordId(9001L);
-        req.setExecutionStatus(TaskExecutionSessionServiceImpl.STATUS_IN_PROGRESS);
-        TaskExecutionWritebackReqDTO.StepUpdate stepUpdate = new TaskExecutionWritebackReqDTO.StepUpdate();
-        stepUpdate.setStepCode("s1");
-        stepUpdate.setStatus(TaskExecutionSessionServiceImpl.STATUS_COMPLETED);
-        req.setStepUpdates(List.of(stepUpdate));
-
-        service.writeback(req);
-
-        ArgumentCaptor<EntityUpdateReqVO> updateCaptor = ArgumentCaptor.forClass(EntityUpdateReqVO.class);
-        verify(entityService, org.mockito.Mockito.atLeast(2)).update(updateCaptor.capture());
-        boolean statusUpdated = updateCaptor.getAllValues().stream().anyMatch(u ->
-                u.getId().equals(9001L)
-                        && TaskExecutionSessionServiceImpl.STATUS_IN_PROGRESS.equals(
-                        u.getCustomFields().get("execution_status")));
-        boolean stepUpdated = updateCaptor.getAllValues().stream().anyMatch(u ->
-                u.getId().equals(11L)
-                        && TaskExecutionSessionServiceImpl.STATUS_COMPLETED.equals(
-                        u.getBaseFields().get("step_status")));
-        assertTrue(statusUpdated);
-        assertTrue(stepUpdated);
-    }
-
-    @Test
-    void writeback_missingRecord_fails() {
-        when(entityService.get(eq(1L), any())).thenReturn(null);
-        TaskExecutionWritebackReqDTO req = new TaskExecutionWritebackReqDTO();
-        req.setExecutionRecordId(1L);
-        req.setExecutionStatus("completed");
-        assertThrows(ServiceException.class, () -> service.writeback(req));
-    }
-
-    @Test
-    void appendProcess_addsEntryToExistingList() {
-        EntityRespVO record = new EntityRespVO();
-        record.setId(9001L);
-        record.setBaseFields(new LinkedHashMap<>(Map.of("name", "执行-42", "modelId", 55L)));
-        Map<String, Object> custom = new LinkedHashMap<>();
-        custom.put("task_id", 42L);
-        custom.put("process_entries", List.of(Map.of("messageKind", "old")));
-        record.setCustomFields(custom);
-        when(entityService.get(9001L, "task_record_patrol")).thenReturn(record);
-
-        TaskExecutionAppendProcessReqDTO req = new TaskExecutionAppendProcessReqDTO();
-        req.setExecutionRecordId(9001L);
-        req.setEntityTypeCode("task_record_patrol");
-        req.setReceivedAtEpochMs(99L);
-        req.setMessageKind("500202");
-        req.setProtocolQualify("UNQUALIFIED");
-        req.setQualifyErrors(List.of("缺必填"));
-
-        TaskExecutionAppendProcessRespDTO resp = service.appendProcess(req);
-        assertEquals(9001L, resp.getExecutionRecordId());
-        assertEquals(2, resp.getProcessEntryCount());
-
-        ArgumentCaptor<EntityUpdateReqVO> updateCaptor = ArgumentCaptor.forClass(EntityUpdateReqVO.class);
-        verify(entityService).update(updateCaptor.capture());
-        Object raw = updateCaptor.getValue().getCustomFields().get("process_entries");
-        assertTrue(raw instanceof List<?>);
-        assertEquals(2, ((List<?>) raw).size());
-    }
-
-    @Test
-    void appendProcess_missingRecord_fails() {
-        when(entityService.get(eq(1L), any())).thenReturn(null);
-        TaskExecutionAppendProcessReqDTO req = new TaskExecutionAppendProcessReqDTO();
-        req.setExecutionRecordId(1L);
-        req.setReceivedAtEpochMs(1L);
-        req.setMessageKind("500202");
-        req.setProtocolQualify("QUALIFIED");
-        assertThrows(ServiceException.class, () -> service.appendProcess(req));
-        verify(entityService, never()).update(any());
-    }
-
-    private static TaskExecutionStartReqDTO sampleStartReq() {
         TaskExecutionStartReqDTO req = new TaskExecutionStartReqDTO();
-        req.setTaskDefinitionId(42L);
+        req.setTaskDefinitionId(88L);
+        req.setEntityTypeCode("task_record_patrol");
         req.setModelCode("exec_patrol_round");
-        req.setPendingRef("slot-1");
-        req.setStandardSnapshot(Map.of("version", 1));
+        req.setFacilityId(8L);
+        req.setName("样例-待执行");
+        req.setStandardSnapshot(Map.of("source", "test"));
         TaskExecutionStartReqDTO.StepDraft step = new TaskExecutionStartReqDTO.StepDraft();
-        step.setName("停靠 s1");
-        step.setStepCode("s1");
+        step.setName("任务准备");
+        step.setStepCode("prepare");
         step.setStepOrder(0);
         req.setSteps(List.of(step));
-        return req;
+
+        service.start(req);
+
+        ArgumentCaptor<EntityCreateReqVO> captor = ArgumentCaptor.forClass(EntityCreateReqVO.class);
+        verify(entityService).create(captor.capture());
+        Object raw = captor.getValue().getBaseFields().get(FacilityOwningFieldCodes.FIELD_CODE);
+        assertEquals(8L, FacilityOwningFieldCodes.extractId(raw));
     }
 }

@@ -7,11 +7,8 @@ import cn.cheers.x.inspection.task.model.task.ResourcePolicy;
 /**
  * 总任务上的巡检草稿：名称、勾选对象、巡检方式、执行设备、已生成步骤图、建任务已放到哪一步。
  * <p>权威在底座任务表，不是旧固定表。
- * <p>createUnlockedStep：建任务向导已放行到哪一步（0 选对象 / 1 路线 / 2 排期与资源）。
- * 缺这个键表示还没走过创建流程，就是第 0 步；禁止读路径按「已有路线」反推。
- * 旧草稿若写成 3（曾经把资源单独当最后一步），读时按最后一步 2 处理。
- * <p>startStopId / endStopId：路线规划步下拉选的起点、终点。保存草稿就要落库；
- * 还没确认路线时也要回显。禁止只在确认路线后才有这两点。
+ * <p>orchestrationCommitted：任务已生成并排期（非「排期模板填好」）；对应详情/列表 {@code enabled}。
+ * <p>orchestrationPreview*：试排占窗快照，未 confirm 前不写 runtimeJobId。
  */
 public record PatrolTaskDraft(
         Long id,
@@ -27,6 +24,16 @@ public record PatrolTaskDraft(
         String manageStatus,
         Integer createUnlockedStep,
         String startStopId,
-        String endStopId
+        String endStopId,
+        String runtimeJobId,
+        Boolean orchestrationCommitted,
+        /** FLD-TSK-018 排期模板；与前端 ScheduleConfig 对齐 */
+        Object scheduleConfig,
+        /** 草稿袋 schedulePolicyId */
+        Long schedulePolicyId,
+        /** 草稿袋 orchestrationPreviewSlots：试排计划点 JSON，未确认前不占 runtime */
+        Object orchestrationPreviewSlots,
+        /** 草稿袋 orchestrationPreviewPlainSummary：试排摘要 */
+        String orchestrationPreviewPlainSummary
 ) {
 }

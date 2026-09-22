@@ -4,11 +4,11 @@ import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.cheers.x.inspection.task.dal.dataobject.schedule.InspectionTaskScheduleDO;
 import cn.cheers.x.inspection.task.dal.dataobject.schedule.InspectionTaskSchedulePlanDO;
-import cn.cheers.x.inspection.task.dal.dataobject.task.InspectionTaskDO;
 import cn.cheers.x.inspection.task.dal.mysql.schedule.InspectionTaskScheduleMapper;
 import cn.cheers.x.inspection.task.dal.mysql.schedule.InspectionTaskSchedulePlanMapper;
-import cn.cheers.x.inspection.task.dal.mysql.task.InspectionTaskMapper;
 import cn.cheers.x.inspection.task.service.query.InspectionTaskScheduleQueryService;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
 import cn.cheers.x.inspection.task.service.query.model.InspectionTaskSchedulePlanView;
 import cn.cheers.x.inspection.task.service.query.model.InspectionTaskScheduleView;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +30,7 @@ public class InspectionTaskScheduleQueryServiceImpl implements InspectionTaskSch
 
     private final InspectionTaskSchedulePlanMapper inspectionTaskSchedulePlanMapper;
     private final InspectionTaskScheduleMapper inspectionTaskScheduleMapper;
-    private final InspectionTaskMapper inspectionTaskMapper;
+    private final PatrolTaskEntityStore patrolTaskEntityStore;
 
     @Override
     public InspectionTaskSchedulePlanView getSchedulePlanView(Long planId) {
@@ -93,9 +93,10 @@ public class InspectionTaskScheduleQueryServiceImpl implements InspectionTaskSch
         Map<Long, InspectionTaskSchedulePlanDO> planMap = planIds.isEmpty() ? Map.of()
                 : inspectionTaskSchedulePlanMapper.selectBatchIds(planIds.stream().toList()).stream()
                 .collect(Collectors.toMap(InspectionTaskSchedulePlanDO::getId, Function.identity()));
-        Map<Long, InspectionTaskDO> taskMap = taskIds.isEmpty() ? Map.of()
-                : inspectionTaskMapper.selectByIds(taskIds.stream().toList()).stream()
-                .collect(Collectors.toMap(InspectionTaskDO::getId, Function.identity()));
+        Map<Long, PatrolTaskDraft> taskMap = taskIds.isEmpty() ? Map.of()
+                : patrolTaskEntityStore.listAll().stream()
+                .filter(draft -> taskIds.contains(draft.id()))
+                .collect(Collectors.toMap(PatrolTaskDraft::id, Function.identity(), (left, right) -> left));
 
         return schedules.stream().map(schedule -> {
             InspectionTaskScheduleView view = BeanUtils.toBean(schedule, InspectionTaskScheduleView.class);
@@ -103,10 +104,9 @@ public class InspectionTaskScheduleQueryServiceImpl implements InspectionTaskSch
             if (planDO != null) {
                 view.setPlanCode(planDO.getPlanCode());
             }
-            InspectionTaskDO taskDO = taskMap.get(schedule.getTaskId());
-            if (taskDO != null) {
-                view.setTaskCode(taskDO.getTaskCode());
-                view.setTaskName(taskDO.getTaskName());
+            PatrolTaskDraft task = taskMap.get(schedule.getTaskId());
+            if (task != null) {
+                view.setTaskName(task.name());
             }
             return view;
         }).toList();

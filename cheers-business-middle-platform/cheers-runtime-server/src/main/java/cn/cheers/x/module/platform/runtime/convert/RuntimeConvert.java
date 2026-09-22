@@ -1,14 +1,16 @@
 package cn.cheers.x.module.platform.runtime.convert;
 
 import cn.cheers.x.module.platform.contract.ContractVersions;
+import cn.cheers.x.module.platform.contract.dto.reservation.ResourceReservationDTO;
 import cn.cheers.x.module.platform.contract.dto.runtime.RuntimeJobDTO;
 import cn.cheers.x.module.platform.contract.dto.slot.AssignedResourceDTO;
 import cn.cheers.x.module.platform.contract.dto.slot.ScheduleSlotDTO;
+import cn.cheers.x.module.platform.contract.enums.CandidateType;
 import cn.cheers.x.module.platform.contract.enums.RuntimeJobStatus;
 import cn.cheers.x.module.platform.contract.enums.SlotLockState;
 import cn.cheers.x.module.platform.contract.enums.SlotStatus;
+import cn.cheers.x.module.platform.runtime.dal.dataobject.ResourceReservationDO;
 import cn.cheers.x.module.platform.runtime.dal.dataobject.RuntimeJobDO;
-import cn.cheers.x.module.platform.runtime.dal.dataobject.ScheduleSlotDO;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 
@@ -44,26 +46,35 @@ public final class RuntimeConvert {
                 .build();
     }
 
-    public static ScheduleSlotDTO toSlotDto(ScheduleSlotDO slot) {
-        if (slot == null) {
+    public static ResourceReservationDTO toReservationDto(ResourceReservationDO row) {
+        if (row == null) {
             return null;
         }
-        return ScheduleSlotDTO.builder()
+        return ResourceReservationDTO.builder()
                 .contractVersion(ContractVersions.MVP)
-                .slotId(slot.getId())
-                .runtimeJobId(slot.getRuntimeJobId())
-                .workId(slot.getWorkId())
-                .entityTypeCode(slot.getEntityTypeCode())
-                .plannedStart(formatTime(slot.getPlannedStart()))
-                .plannedEnd(formatTime(slot.getPlannedEnd()))
-                .actualStart(formatTime(slot.getActualStart()))
-                .actualEnd(formatTime(slot.getActualEnd()))
-                .assignedResources(parseAssignedResources(slot.getAssignedResources()))
-                .lockState(parseLockState(slot.getLockState()))
-                .slotStatus(parseSlotStatus(slot.getSlotStatus()))
-                .policySnapshotId(slot.getPolicySnapshotId())
-                .decisionTraceId(slot.getDecisionTraceId())
+                .candidateId(row.getId())
+                .runtimeJobId(row.getRuntimeJobId())
+                .candidateType(parseCandidateType(row.getCandidateType()))
+                .workId(row.getWorkId())
+                .entityTypeCode(row.getEntityTypeCode())
+                .plannedStart(formatTime(row.getPlannedStart()))
+                .plannedEnd(formatTime(row.getPlannedEnd()))
+                .actualStart(formatTime(row.getActualStart()))
+                .actualEnd(formatTime(row.getActualEnd()))
+                .candidateStart(formatTime(row.getCandidateStart()))
+                .candidateEnd(formatTime(row.getCandidateEnd()))
+                .assignedResources(parseAssignedResources(row.getAssignedResources()))
+                .lockState(parseLockState(row.getLockState()))
+                .candidateStatus(parseCandidateStatus(row.getCandidateStatus()))
+                .policySnapshotId(row.getPolicySnapshotId())
+                .decisionTraceId(row.getDecisionTraceId())
                 .build();
+    }
+
+    /** @deprecated 迁移期：{@link ScheduleSlotDTO#from(ResourceReservationDTO)} */
+    @Deprecated
+    public static ScheduleSlotDTO toSlotDto(ResourceReservationDO row) {
+        return ScheduleSlotDTO.from(toReservationDto(row));
     }
 
     public static RuntimeJobDO toJobDo(RuntimeJobDTO dto, Long facilityId) {
@@ -79,20 +90,26 @@ public final class RuntimeConvert {
                 .build();
     }
 
-    public static ScheduleSlotDO toSlotDo(ScheduleSlotDTO dto, Long facilityId) {
-        return ScheduleSlotDO.builder()
-                .id(dto.getSlotId())
+    public static ResourceReservationDO toReservationDo(ResourceReservationDTO dto, Long facilityId) {
+        CandidateType type = dto.getCandidateType() != null
+                ? dto.getCandidateType() : CandidateType.TASK_EXECUTION;
+        return ResourceReservationDO.builder()
+                .id(dto.getCandidateId())
                 .runtimeJobId(dto.getRuntimeJobId())
+                .candidateType(type.name())
                 .workId(dto.getWorkId())
                 .entityTypeCode(dto.getEntityTypeCode())
                 .plannedStart(parseTime(dto.getPlannedStart()))
                 .plannedEnd(parseTime(dto.getPlannedEnd()))
                 .actualStart(parseTime(dto.getActualStart()))
                 .actualEnd(parseTime(dto.getActualEnd()))
+                .candidateStart(parseTime(dto.getCandidateStart()))
+                .candidateEnd(parseTime(dto.getCandidateEnd()))
                 .assignedResources(dto.getAssignedResources() != null
                         ? JSON.toJSONString(dto.getAssignedResources()) : null)
                 .lockState(dto.getLockState() != null ? dto.getLockState().name() : SlotLockState.NONE.name())
-                .slotStatus(dto.getSlotStatus() != null ? dto.getSlotStatus().name() : SlotStatus.PLANNED.name())
+                .candidateStatus(dto.getCandidateStatus() != null
+                        ? dto.getCandidateStatus().name() : SlotStatus.PLANNED.name())
                 .policySnapshotId(dto.getPolicySnapshotId())
                 .decisionTraceId(dto.getDecisionTraceId())
                 .facilityId(facilityId)
@@ -123,8 +140,12 @@ public final class RuntimeConvert {
         return lockState != null ? SlotLockState.valueOf(lockState) : SlotLockState.NONE;
     }
 
-    private static SlotStatus parseSlotStatus(String slotStatus) {
-        return slotStatus != null ? SlotStatus.valueOf(slotStatus) : SlotStatus.PLANNED;
+    private static SlotStatus parseCandidateStatus(String candidateStatus) {
+        return candidateStatus != null ? SlotStatus.valueOf(candidateStatus) : SlotStatus.PLANNED;
+    }
+
+    private static CandidateType parseCandidateType(String candidateType) {
+        return candidateType != null ? CandidateType.valueOf(candidateType) : CandidateType.TASK_EXECUTION;
     }
 
     private static String formatTime(OffsetDateTime time) {

@@ -1,7 +1,6 @@
 package cn.cheers.x.inspection.task.service.task;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import cn.cheers.x.module.platform.orchestration.route.RoutePayloadKeys;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -12,8 +11,9 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * 读总任务 FLD-TSK-027 上的已确认路线；与详情回显口径一致。
- * <p>权威在总任务 plannedRoute，不是旧固定表 routePlanId。
+ * 读总任务 FLD-TSK-027 上的路线快照；与详情回显、编排 expand 口径一致。
+ * <p>第 2 步 saveRoute 只写 stopIds / networkRef / {@link RoutePayloadKeys#ESTIMATED_TRAVEL_DURATION} 等。
+ * 检查项动作耗时不在本快照，见巡检内容 {@code itemActionDurationMinutes}。
  */
 public final class PatrolPlannedRouteSupport {
 
@@ -22,44 +22,60 @@ public final class PatrolPlannedRouteSupport {
             "GROUND_ROBOT", 40,
             "UAV", 80);
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
     private PatrolPlannedRouteSupport() {
     }
 
-    public static boolean hasConfirmedRoute(Object plannedRoute) {
+    public static boolean hasSavedRoute(Object plannedRoute) {
         Map<String, Object> planned = asPlannedMap(plannedRoute);
         if (planned == null || planned.isEmpty()) {
             return false;
         }
-        return !CollectionUtils.isEmpty(asStringList(planned.get("stopIds")));
+        return !CollectionUtils.isEmpty(asStringList(planned.get(RoutePayloadKeys.STOP_IDS)));
+    }
+
+    public static boolean hasEstimatedActionDuration(Object plannedRoute) {
+        Integer value = estimatedActionDuration(plannedRoute);
+        return value != null && value > 0;
     }
 
     public static String networkRef(Object plannedRoute) {
         Map<String, Object> planned = asPlannedMap(plannedRoute);
-        return planned == null ? null : asText(planned.get("networkRef"));
+        return planned == null ? null : asText(planned.get(RoutePayloadKeys.NETWORK_REF));
+    }
+
+    public static Integer estimatedActionDuration(Object plannedRoute) {
+        Map<String, Object> planned = asPlannedMap(plannedRoute);
+        return planned == null ? null : asInteger(planned.get(RoutePayloadKeys.ESTIMATED_ACTION_DURATION));
+    }
+
+    public static Integer estimatedTravelDuration(Object plannedRoute) {
+        Map<String, Object> planned = asPlannedMap(plannedRoute);
+        return planned == null ? null : asInteger(planned.get(RoutePayloadKeys.ESTIMATED_TRAVEL_DURATION));
     }
 
     /**
-     * 确认路线未单独落 duration 时，用距离 + 巡检方式默认速度估算（与 ROUTE 阶段一致）。
+     * 只算路径耗时：已写下的行驶分钟，没有则按距离估。不含检查项动作耗时。
      */
-    public static Integer resolveDurationMinutes(Object plannedRoute, String patrolExecutionMode) {
+    public static Integer resolveTravelMinutesOnly(Object plannedRoute, String patrolExecutionMode) {
+        Integer travel = estimatedTravelDuration(plannedRoute);
+        if (travel != null) {
+            return travel;
+        }
         Map<String, Object> planned = asPlannedMap(plannedRoute);
         if (planned == null || planned.isEmpty()) {
             return null;
         }
-        Integer workMinutes = asInteger(planned.get("workMinutes"));
+        return estimateTravelMinutesFromDistance(planned, patrolExecutionMode);
+    }
+
+    private static Integer estimateTravelMinutesFromDistance(Map<String, Object> planned, String patrolExecutionMode) {
         Long distance = asLong(planned.get("totalDistanceMeters"));
         String inspectionType = normalizeInspectionType(patrolExecutionMode);
         Integer speed = inspectionType == null ? null : DEFAULT_SPEED_M_PER_MIN.get(inspectionType);
-        Integer travelCeil = null;
-        if (distance != null && distance >= 0 && speed != null && speed > 0) {
-            travelCeil = (int) Math.ceil(distance / (double) speed);
+        if (distance == null || distance < 0 || speed == null || speed <= 0) {
+            return null;
         }
-        if (travelCeil == null) {
-            return workMinutes;
-        }
-        return travelCeil + (workMinutes != null ? workMinutes : 0);
+        return (int) Math.ceil(distance / (double) speed);
     }
 
     @SuppressWarnings("unchecked")
@@ -72,8 +88,9 @@ public final class PatrolPlannedRouteSupport {
         }
         if (raw instanceof String json && StringUtils.hasText(json)) {
             try {
-                return OBJECT_MAPPER.readValue(json.trim(), new TypeReference<Map<String, Object>>() {
-                });
+                return new com.fasterxml.jackson.databind.ObjectMapper()
+                        .readValue(json.trim(), new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {
+                        });
             } catch (Exception ignored) {
                 return null;
             }
@@ -81,11 +98,11 @@ public final class PatrolPlannedRouteSupport {
         return null;
     }
 
-    static String asText(Object raw) {
+    public static String asText(Object raw) {
         return raw == null ? null : String.valueOf(raw).trim();
     }
 
-    static String normalizeInspectionType(String raw) {
+    public static String normalizeInspectionType(String raw) {
         if (!StringUtils.hasText(raw)) {
             return null;
         }

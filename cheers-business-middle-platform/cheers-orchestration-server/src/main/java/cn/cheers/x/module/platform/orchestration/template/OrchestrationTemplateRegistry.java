@@ -1,8 +1,8 @@
 package cn.cheers.x.module.platform.orchestration.template;
 
 import cn.cheers.x.module.platform.orchestration.enums.OrchestrationRefs;
-import cn.cheers.x.module.platform.orchestration.handler.patrol.PatrolConfirmHandler;
-import cn.cheers.x.module.platform.orchestration.handler.patrol.PatrolExpandMapHandler;
+import cn.cheers.x.module.platform.orchestration.handler.patrol.PatrolSaveRouteHandler;
+import cn.cheers.x.module.platform.orchestration.handler.patrol.PatrolScheduleMapHandler;
 import cn.cheers.x.module.platform.orchestration.phase.OrchestrationPhase;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -64,26 +64,26 @@ public class OrchestrationTemplateRegistry {
         register(OrchestrationRefs.PATROL_ROUTE_PREVIEW_V1, List.of(
                 OrchestrationPhase.EXPAND,
                 OrchestrationPhase.ROUTE), Map.of(
-                OrchestrationPhase.EXPAND, PatrolExpandMapHandler.ID,
+                OrchestrationPhase.EXPAND, PatrolScheduleMapHandler.ID,
                 OrchestrationPhase.ROUTE, "platform.route.plan_v1"));
-        register(OrchestrationRefs.PATROL_ROUTE_CONFIRM_V1, List.of(
+        register(OrchestrationRefs.PATROL_ROUTE_SAVE_V1, List.of(
                 OrchestrationPhase.EXPAND,
                 OrchestrationPhase.ROUTE,
-                OrchestrationPhase.CONFIRM), Map.of(
-                OrchestrationPhase.EXPAND, PatrolExpandMapHandler.ID,
+                OrchestrationPhase.SAVE_ROUTE), Map.of(
+                OrchestrationPhase.EXPAND, PatrolScheduleMapHandler.ID,
                 OrchestrationPhase.ROUTE, "platform.route.plan_v1",
-                OrchestrationPhase.CONFIRM, PatrolConfirmHandler.ID));
-        register(OrchestrationRefs.PATROL_SCHEDULE_ENABLE_V1, List.of(
+                OrchestrationPhase.SAVE_ROUTE, PatrolSaveRouteHandler.ID));
+        register(OrchestrationRefs.PATROL_ORCHESTRATION_V1, List.of(
                 OrchestrationPhase.EXPAND,
                 OrchestrationPhase.SOLVE,
                 OrchestrationPhase.PERSIST), Map.of(
-                OrchestrationPhase.EXPAND, PatrolExpandMapHandler.ID));
+                OrchestrationPhase.EXPAND, PatrolScheduleMapHandler.ID));
         register(OrchestrationRefs.PATROL_REPLAN_V1, List.of(
                 OrchestrationPhase.EXPAND,
                 OrchestrationPhase.ROUTE,
                 OrchestrationPhase.SOLVE,
                 OrchestrationPhase.PERSIST), Map.of(
-                OrchestrationPhase.EXPAND, PatrolExpandMapHandler.ID,
+                OrchestrationPhase.EXPAND, PatrolScheduleMapHandler.ID,
                 OrchestrationPhase.ROUTE, "platform.route.plan_v1"));
     }
 

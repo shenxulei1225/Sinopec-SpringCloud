@@ -34,4 +34,8 @@ public interface RuntimeQueryApi {
     @GetMapping(PREFIX + "/jobs/{runtimeJobId}/slots")
     @Operation(summary = "按运行作业列出计划点")
     CommonResult<List<ScheduleSlotDTO>> listSlotsByJobId(@PathVariable("runtimeJobId") String runtimeJobId);
+
+    @GetMapping(PREFIX + "/{slotId}")
+    @Operation(summary = "按计划点 id 获取详情")
+    CommonResult<ScheduleSlotDTO> getSlot(@PathVariable("slotId") String slotId);
 }

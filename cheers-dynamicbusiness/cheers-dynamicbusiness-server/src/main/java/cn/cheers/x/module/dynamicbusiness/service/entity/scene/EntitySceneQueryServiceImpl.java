@@ -233,7 +233,7 @@ public class EntitySceneQueryServiceImpl implements EntitySceneQueryService {
             }
             filters = mergeIdInFilter(filters, keepIds);
         }
-        // 站场级列表缺所属场站不得列出其他场站的点（到达位置下拉会据此混进洛阳点）
+        // 站场级列表缺所属场站不得列出其他场站的点
         if (isListScene(scene)) {
             FacilityOwningListQueryGate.assertListHasOwningOrIdPin(
                     requiresFacilityOwning(storageEntityTypeCode), entityId, filters);
@@ -904,17 +904,15 @@ public class EntitySceneQueryServiceImpl implements EntitySceneQueryService {
             }
             return;
         }
-        // 非基础字段 = 型号扩展字段（或未知编码）：列表场景一律拒绝
         FieldDO field = fieldMapper.selectByCode(column);
-        if (field != null) {
-            throw new ServiceException(400,
-                    "列表不支持按扩展字段排序（扩展字段不进实体列表）: " + column);
+        if (field != null && cn.cheers.x.module.dynamicbusiness.service.field.FieldQueryCapability.canSort(field.getType())) {
+            return;
         }
         throw new ServiceException(400, "不支持按该字段排序: " + column);
     }
 
     /**
-     * 分页前按字段重排候选 ID；空列或 sort 原样返回。仅核心列与可排序基础字段（扩展字段已被校验拒绝）。
+     * 分页前按字段重排候选 ID。系统列 / 基础固定列 / 扩展字段都交给字段查询引擎。
      */
     private List<Long> applyFieldOrderToCandidateIds(List<Long> orderedCandidateEntityIds,
                                                      String entityTypeCode,
@@ -927,20 +925,8 @@ public class EntitySceneQueryServiceImpl implements EntitySceneQueryService {
                 || !StringUtils.hasText(entityTypeCode)) {
             return orderedCandidateEntityIds;
         }
-        String column = orderByColumn.trim();
-        String typeCode = entityTypeCode.trim();
-        Map<Long, Comparable<?>> sortValues = resolveSortValues(orderedCandidateEntityIds, typeCode, column);
-        Comparator<Long> byValue = Comparator.comparing(
-                id -> sortValues.get(id),
-                Comparator.nullsLast(this::compareSortValues));
-        if (!orderAsc) {
-            byValue = byValue.reversed();
-        }
-        Comparator<Long> stable = byValue.thenComparing(id -> id, Comparator.nullsLast(Long::compareTo));
-        return orderedCandidateEntityIds.stream()
-                .filter(Objects::nonNull)
-                .sorted(stable)
-                .toList();
+        return entityFieldQueryEngine.sortEntityIds(
+                entityTypeCode.trim(), orderByColumn.trim(), orderAsc, orderedCandidateEntityIds);
     }
 
     private Map<Long, Comparable<?>> resolveSortValues(List<Long> entityIds, String entityTypeCode, String fieldCode) {
@@ -1390,7 +1376,7 @@ public class EntitySceneQueryServiceImpl implements EntitySceneQueryService {
     }
 
     /**
-     * 从 fieldFilters 抽出所属场站 EQ/IN，转为实体表物理条件；其余条件原样留下给索引。
+     * 从 fieldFilters 抽出所属场站 EQ/IN，转为实体表物理条件；其余交给字段查询引擎。
      * 站场级类型若带了 facility_id 却解析不出物理列 → 报错（缺系统基础字段），禁止进索引。
      */
     private FacilityFilterPeel peelFacilityOwningFilter(
@@ -1688,6 +1674,14 @@ public class EntitySceneQueryServiceImpl implements EntitySceneQueryService {
                 return null;
             }
             String fieldCode = filter.getFieldCode().trim();
+            FieldDO typed = fieldMapper.selectByCode(fieldCode);
+            String fieldType = typed == null || typed.getType() == null
+                    ? "" : typed.getType().trim().toUpperCase(Locale.ROOT);
+            if ("ENUM".equals(fieldType) || "SELECT".equals(fieldType)
+                    || "OPTION".equals(fieldType) || "MULTI_SELECT".equals(fieldType)) {
+                // 枚举/多选按 token 筛，不能当标量 EQ/IN 下推；回引擎按实体详情或索引判。
+                return null;
+            }
             String column;
             if (CORE_ORDER_BY_COLUMNS.contains(fieldCode)) {
                 column = fieldCode;

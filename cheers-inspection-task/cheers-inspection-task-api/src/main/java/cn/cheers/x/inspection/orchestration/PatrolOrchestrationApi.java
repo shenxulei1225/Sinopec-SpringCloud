@@ -2,10 +2,10 @@ package cn.cheers.x.inspection.orchestration;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.enums.ApiConstants;
-import cn.cheers.x.inspection.orchestration.dto.PatrolConfirmReqDTO;
-import cn.cheers.x.inspection.orchestration.dto.PatrolConfirmRespDTO;
-import cn.cheers.x.inspection.orchestration.dto.PatrolExpandReqDTO;
-import cn.cheers.x.inspection.orchestration.dto.PatrolExpandRespDTO;
+import cn.cheers.x.inspection.orchestration.dto.PatrolSaveRouteReqDTO;
+import cn.cheers.x.inspection.orchestration.dto.PatrolSaveRouteRespDTO;
+import cn.cheers.x.inspection.orchestration.dto.PatrolScheduleMapReqDTO;
+import cn.cheers.x.inspection.orchestration.dto.PatrolScheduleMapRespDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,11 +16,11 @@ public interface PatrolOrchestrationApi {
 
     String PREFIX = ApiConstants.PREFIX;
 
-    @PostMapping(PREFIX + "/orchestration/patrol/expand")
-    @Operation(summary = "巡检编排 EXPAND：选网取点展开停靠点")
-    CommonResult<PatrolExpandRespDTO> expand(@RequestBody PatrolExpandReqDTO request);
+    @PostMapping(PREFIX + "/orchestration/patrol/map-work-items")
+    @Operation(summary = "巡检智能编排：选网取点并映射排期工作项")
+    CommonResult<PatrolScheduleMapRespDTO> expandPatrolWorkItems(@RequestBody PatrolScheduleMapReqDTO request);
 
-    @PostMapping(PREFIX + "/orchestration/patrol/confirm")
-    @Operation(summary = "巡检编排 CONFIRM：写入路线方案与任务快照")
-    CommonResult<PatrolConfirmRespDTO> confirm(@RequestBody PatrolConfirmReqDTO request);
+    @PostMapping(PREFIX + "/orchestration/patrol/save-route")
+    @Operation(summary = "保存路线：写入总任务 plannedRoute（不写路线方案台账）")
+    CommonResult<PatrolSaveRouteRespDTO> saveRoute(@RequestBody PatrolSaveRouteReqDTO request);
 }

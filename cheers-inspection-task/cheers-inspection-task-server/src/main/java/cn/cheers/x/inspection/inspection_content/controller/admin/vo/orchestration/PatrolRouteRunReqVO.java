@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 组路线预览/确认请求：选对象与设施，触发编排 run。
@@ -21,8 +22,13 @@ public class PatrolRouteRunReqVO {
     /** 多条已发布路网时显式指定 */
     private String preferredNetworkRef;
 
-    /** 确认写入台账时必填，绑定任务路线快照 */
+    /** saveRoute 必填：已创建总任务 id */
     private Long taskId;
+
+    /**
+     * 保存路线：开始规划算出的规划结果。有此字段时直接写入总任务，不再重跑算路。
+     */
+    private Map<String, Object> plannedRoute;
 
     /**
      * 任务创建选定的起点（无人机起飞点），透传到路径引擎。
@@ -41,9 +47,9 @@ public class PatrolRouteRunReqVO {
     private Boolean returnToStart;
 
     /**
-     * 检查项位置展开后的路网点。算路只认这个，不读对象↔停靠点绑定。
+     * 检查项位置展开后的路网点。开始规划必填；保存路线若已带 plannedRoute 则可空。
+     * 算路只认这个，不读对象↔停靠点绑定。
      */
-    @NotEmpty(message = "stopIds 不能为空")
     private List<String> stopIds;
 
     /**

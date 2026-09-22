@@ -11,44 +11,29 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class HostSopParamPackTest {
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    void paramsFor_matchesInspectionItemThenNodeKey() {
-        HostSopParamPack pack = HostSopParamPack.parse(Map.of(
-                "version", 1,
-                "entries", List.of(
-                        Map.of(
-                                "subjectType", "inspection_item",
-                                "subjectId", 7,
-                                "paramsByNode", Map.of(
-                                        "n-move", Map.of("location_ref", "P1"),
-                                        "act-photo", Map.of("shot_count", 2)
-                                )
-                        )
-                )
-        ), mapper);
-
-        assertEquals("P1", pack.paramsFor(7L, "n-move", "act-arrive").get("location_ref"));
-        assertEquals(2, pack.paramsFor(7L, "n-other", "act-photo").get("shot_count"));
+    void paramsFor_readsRobotBagNotEmptyUavEntry() {
+        HostSopParamPack pack = HostSopParamPack.parse(
+                Map.of("version", 1, "entries", List.of(
+                        Map.of("subjectId", 2354, "dimensionValue", "UAV", "paramsByNode", Map.of()),
+                        Map.of("subjectId", 2354, "dimensionValue", "ROBOT", "paramsByNode", Map.of(
+                                "n2", Map.of("yaw", 30, "pitch", -15))))),
+                objectMapper);
+        assertEquals(Map.of("yaw", 30, "pitch", -15), pack.paramsFor(2354L, "n2", "act-robot-aim", "ROBOT"));
+        assertTrue(pack.paramsFor(2354L, "n2", "act-robot-aim", "UAV").isEmpty());
     }
 
     @Test
-    void paramsFor_miss_isEmpty() {
-        HostSopParamPack pack = HostSopParamPack.parse(Map.of("version", 1, "entries", List.of()), mapper);
-        assertTrue(pack.paramsFor(7L, "n-move", "act-arrive").isEmpty());
-    }
-
-    @Test
-    void paramsFor_doesNotStealOtherItem() {
-        HostSopParamPack pack = HostSopParamPack.parse(Map.of(
-                "version", 1,
-                "entries", List.of(Map.of(
-                        "subjectId", 7,
-                        "paramsByNode", Map.of("n-photo", Map.of("shot_count", 3))
-                ))
-        ), mapper);
-
-        assertTrue(pack.paramsFor(8L, "n-photo", "act-photo").isEmpty());
+    void firstLocationRef_readsSelectLocationObject() {
+        HostSopParamPack pack = HostSopParamPack.parse(
+                Map.of("version", 1, "entries", List.of(
+                        Map.of("subjectId", 2354, "dimensionValue", "ROBOT", "paramsByNode", Map.of(
+                                "n1", Map.of(
+                                        "F-e49f76bdca3e4e1393e8e2f1cc0e7867",
+                                        Map.of("code", "tank-north", "name", "北罐区停靠点")))))),
+                objectMapper);
+        assertEquals("tank-north", pack.firstLocationRef(2354L, "ROBOT"));
     }
 }

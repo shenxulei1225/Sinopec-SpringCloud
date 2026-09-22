@@ -43,6 +43,9 @@ public class StrategyTriggerEventDTO {
     /** 是哪条任务；人点了开始时必填 */
     private Long taskDefinitionId;
 
+    /** 本次执行对应的 L4 计划点 id；写入执行账 pending_execution_id */
+    private String scheduleSlotId;
+
     private String modelCode;
 
     private String executionName;

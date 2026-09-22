@@ -28,4 +28,10 @@ public class RuntimeSlotWriteApiImpl implements RuntimeSlotWriteApi {
         runtimeSlotWriteService.releaseUnfinished(request);
         return success(true);
     }
+
+    @Override
+    public CommonResult<Boolean> finalizePlannedSchedule(String runtimeJobId) {
+        runtimeSlotWriteService.finalizePlannedSchedule(runtimeJobId);
+        return success(true);
+    }
 }

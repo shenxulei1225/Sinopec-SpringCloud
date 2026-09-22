@@ -16,6 +16,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.inspection.vo.TaskExe
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.entity.EntityQueryScene;
+import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import cn.cheers.x.module.dynamicbusiness.service.inspection.TaskExecutionBootstrapService;
 import com.alibaba.fastjson2.JSON;
@@ -36,7 +37,8 @@ import java.util.Map;
  * <p><b>负责</b>：新建这次执行的账；更新这次/某一步的状态；往账里记一条过程。</p>
  * <p><b>权威</b>：执行记录与步骤实体；过程写在 custom_fields.process_entries，其它过程字段同袋
  * （task_id / pending_execution_id / execution_status）。</p>
- * <p><b>禁止</b>：写域任务表 device* 列；无执行记录时猜任务或设备；用日志冒充已记过程。</p>
+ * <p><b>禁止</b>：写域任务表 device* 列；无执行记录时猜任务或设备；用日志冒充已记过程；
+ * 站场级执行账缺所属场站时从请求头猜场站。</p>
  */
 @Service
 public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionService {
@@ -82,6 +84,9 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
                 ? req.getName().trim()
                 : "执行-" + req.getTaskDefinitionId());
         base.put("status", 1);
+        if (req.getFacilityId() != null && req.getFacilityId() > 0) {
+            base.put(FacilityOwningFieldCodes.FIELD_CODE, FacilityOwningFieldCodes.toApiRef(req.getFacilityId()));
+        }
         createReq.setBaseFields(base);
 
         Map<String, Object> custom = new LinkedHashMap<>();
@@ -96,6 +101,7 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
 
         TaskExecutionBootstrapReqVO bootstrapReq = new TaskExecutionBootstrapReqVO();
         bootstrapReq.setExecutionRecordId(recordId);
+        bootstrapReq.setEntityTypeCode(entityTypeCode);
         bootstrapReq.setStandardSnapshot(req.getStandardSnapshot());
         bootstrapReq.setParameterSnapshot(req.getParameterSnapshot());
         bootstrapReq.setGapCodes(List.of());

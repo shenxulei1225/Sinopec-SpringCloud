@@ -45,7 +45,7 @@ public class ObjectStationBindingController {
                 reqVO.getFacilityId(),
                 reqVO.getObjectId(),
                 reqVO.getStationNodeIds(),
-                reqVO.getWorkMinutesPerStop());
+                reqVO.getEstimatedActionDurationPerStop());
         return success(true);
     }
 

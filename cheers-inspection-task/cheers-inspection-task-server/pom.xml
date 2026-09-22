@@ -78,6 +78,11 @@
         </dependency>
         <dependency>
             <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-scheduling-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.cheers.x</groupId>
             <artifactId>cheers-device-protocol-gateway-api</artifactId>
             <version>${revision}</version>
         </dependency>
@@ -131,11 +136,19 @@
             <artifactId>cheers-spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
         <finalName>${project.artifactId}</finalName>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

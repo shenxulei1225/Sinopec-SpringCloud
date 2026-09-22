@@ -7,6 +7,7 @@ import cn.cheers.x.inspection.task.controller.admin.vo.task.*;
 import cn.cheers.x.inspection.task.service.execution.InspectionTaskStartExecutionService;
 import cn.cheers.x.inspection.task.service.query.InspectionTaskQueryService;
 import cn.cheers.x.inspection.task.service.task.InspectionTaskService;
+import cn.cheers.x.inspection.task.service.task.CreateWizardInvalidation;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskCreateProcessService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -26,7 +27,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
  *   <li>分页查询 - /page</li>
  *   <li>详情查询 - /get-detail（包含子任务列表）</li>
  *   <li>创建/更新/删除 - /create, /update, /delete</li>
- *   <li>启用/禁用 - /enable, /disable</li>
+ *   <li>启用/停用 - 走 {@code /inspection/orchestration/orchestration/generate-task} 与 {@code abort}，本 Controller 不再暴露 /enable、/disable</li>
  *   <li>开始执行 - /{id}/start-execution（下发地面站；与排程 enable 无关）</li>
  * </ul>
  *
@@ -47,9 +48,6 @@ public class InspectionTaskController {
 
     @Resource
     private InspectionTaskStartExecutionService inspectionTaskStartExecutionService;
-
-    @Resource
-    private cn.cheers.x.inspection.task.service.execution.steptree.TaskStepTreeGenerateService taskStepTreeGenerateService;
 
     @Resource
     private PatrolTaskCreateProcessService patrolTaskCreateProcessService;
@@ -97,42 +95,16 @@ public class InspectionTaskController {
         return success(true);
     }
 
-    // ==================== 状态变更 ====================
-
     /**
-     * 历史接口，待删除：只翻 enabled 标志、不占/不放排程窗，属绕过编排权威的旁路。
-     * 启停请走 /inspection/orchestration/schedule/reserve+enable 与 /inspection/orchestration/task/abort。
-     * 前端已不再调用；确认无外部调用方后删除。
-     */
-    @Deprecated
-    @PutMapping("/enable/{id}")
-    @Operation(summary = "启用任务（已废弃：请走编排 reserve+enable）")
-    @Parameter(name = "id", required = true, description = "任务ID")
-    public CommonResult<Boolean> enableTask(@PathVariable("id") Long id) {
-        inspectionTaskService.enableTask(id);
-        return success(true);
-    }
-
-    /**
-     * 历史接口，待删除：不释放排程占窗。停用请走 /inspection/orchestration/task/abort。
-     */
-    @Deprecated
-    @PutMapping("/disable/{id}")
-    @Operation(summary = "禁用任务（已废弃：请走编排 abort）")
-    @Parameter(name = "id", required = true, description = "任务ID")
-    public CommonResult<Boolean> disableTask(@PathVariable("id") Long id) {
-        inspectionTaskService.disableTask(id);
-        return success(true);
-    }
-
-    /**
-     * 开始执行：向地面站下发指令包并启动。与排程「启用」无关。
+     * 开始执行：向地面站下发指令包并启动。与「生成任务」无关。
      */
     @PostMapping("/{id}/start-execution")
-    @Operation(summary = "开始执行", description = "读任务执行设备绑定与已确认路线，调协议网关下发；不是排程 enable")
+    @Operation(summary = "开始执行", description = "读待执行快照并下发设备；不是生成任务（commitOrchestration）")
     @Parameter(name = "id", required = true, description = "任务ID")
-    public CommonResult<MissionStartRespDTO> startExecution(@PathVariable("id") Long id) {
-        return success(inspectionTaskStartExecutionService.startExecution(id));
+    public CommonResult<MissionStartRespDTO> startExecution(
+            @PathVariable("id") Long id,
+            @RequestParam(value = "slotId", required = false) String slotId) {
+        return success(inspectionTaskStartExecutionService.startExecution(id, slotId));
     }
 
     @GetMapping("/{id}/create-progress")
@@ -159,21 +131,21 @@ public class InspectionTaskController {
             @PathVariable("id") Long id,
             @Valid @RequestBody InspectionTaskCreateInvalidateReqVO reqVO
     ) {
-        return success(patrolTaskCreateProcessService.invalidate(id, reqVO.getKeepThroughStep()));
+        if (reqVO.getReason() != null && !reqVO.getReason().isBlank()) {
+            return success(patrolTaskCreateProcessService.invalidate(
+                    id, CreateWizardInvalidation.require(reqVO.getReason())));
+        }
+        return success(patrolTaskCreateProcessService.invalidate(id, reqVO.getKeepThroughStep(), reqVO.getClearPlannedRoute()));
     }
 
-    @PostMapping("/{id}/generate-step-tree")
-    @Operation(summary = "生成任务步骤图", description = "点路径规划或摄像机按勾选顺序时写入总任务步骤图")
+    @PostMapping("/{id}/refresh-durations")
+    @Operation(summary = "打开任务现算时长", description = "立刻调第 1 步动作耗时和第 2 步路径对比，不依赖用户点到第 2 步")
     @Parameter(name = "id", required = true, description = "任务ID")
-    public CommonResult<Boolean> generateStepTree(
+    public CommonResult<InspectionTaskDurationRefreshRespVO> refreshDurations(
             @PathVariable("id") Long id,
-            @RequestBody(required = false) GenerateStepTreeReqVO reqVO
+            @RequestBody(required = false) InspectionTaskDurationRefreshReqVO reqVO
     ) {
-        taskStepTreeGenerateService.generate(
-                id,
-                reqVO == null ? null : reqVO.getEquipmentOrder(),
-                reqVO == null ? null : reqVO.getStartStopId(),
-                reqVO == null ? null : reqVO.getEndStopId());
-        return success(true);
+        return success(patrolTaskCreateProcessService.refreshDurations(id, reqVO));
     }
+
 }

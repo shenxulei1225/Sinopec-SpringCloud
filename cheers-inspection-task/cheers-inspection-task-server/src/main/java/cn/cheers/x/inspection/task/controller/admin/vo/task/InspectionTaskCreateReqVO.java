@@ -57,11 +57,23 @@ public class InspectionTaskCreateReqVO {
     @Schema(description = "是否继承父任务排期（默认false）")
     private Boolean inheritParentSchedule;
 
-    @Schema(description = "排期要求ID")
-    private Long scheduleRequirementId;
-
     @Schema(description = "排期策略ID")
     private Long schedulePolicyId;
+
+    @Schema(description = "排期策略·冲突处理：defer_slot / reject_batch / priority_preempt")
+    private String conflictStrategy;
+
+    @Schema(description = "排期策略·任务间隔（分钟）")
+    private Integer taskGapMinutes;
+
+    @Schema(description = "空闲不够时是否允许挪动已有任务排期")
+    private Boolean allowShiftExisting;
+
+    @Schema(description = "已有任务单侧最多挪动分钟数")
+    private Integer maxShiftMinutes;
+
+    @Schema(description = "排期模板配置（与前端 ScheduleConfig JSON 对齐，写入 FLD-TSK-018）")
+    private Object scheduleConfig;
 
     // ==================== 资源策略（可选，后续配置） ====================
     @Schema(description = "是否继承父任务资源策略（默认false）")

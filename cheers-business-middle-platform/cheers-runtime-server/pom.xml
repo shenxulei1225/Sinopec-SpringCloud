@@ -149,6 +149,7 @@
                     <url>${flyway.url}</url>
                     <user>${flyway.user}</user>
                     <password>${flyway.password}</password>
+                    <table>flyway_schema_history_platform</table>
                     <locations>filesystem:${project.basedir}/src/main/resources/db/migration</locations>
                 </configuration>
             </plugin>

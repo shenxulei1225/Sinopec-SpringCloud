@@ -5,7 +5,7 @@
 
 ## 前置
 
-1. Flyway 已执行至 **V76**（`ent_action` / `ent_action_t*`）与 **V77**（启用表）
+1. Flyway 已执行至 **V76**（`ent_action` / `ent_action_t*`）与 **V77**（启用表）；设备适用手段列要到 **V134**
 2. 建议与 SOP 种子配合：Flyway **V78–V79** 后 SOP 只认 `action_tree_json`，样例动作 code 与 SOP 模板里的 `actionId`（`act-*`）对齐
 
 ## 新库 / 已有库
@@ -27,6 +27,8 @@
 | `09_action_param_models.sql` | **常用执行参数字段库**（供勾进 param_slots_json）；取消历史 action_param_* 实体必填 |
 | `12_retire_param_models_and_execution_means.sql` | **纠偏**：启用 `action`、停用 `action_param_*`、清表单缓存；适用手段改为隐藏字段而非删除 |
 | `14_restore_execution_means_hidden.sql` | 恢复已软删的隐藏基础字段 `execution_means`（配合 Flyway V126 jsonb 列） |
+| `15_execution_means_category.sql` | **适用手段**字段库枚举是唯一词表；检查项 Tab 写 `tabEnumFieldCode=execution_means`；巡检设备分配同一字段（多选）；不再用执行方式分类当词表 |
+| `16_action_duration.sql` | 字段库 `action_duration`（分钟）；给现网动作补槽；样例原子动作写种子默认值，已填不覆盖 |
 | `05_sample_actions.sql` | 样例 UAV/ROBOT 动作；挂规范型号 `action` + 写 param_slots_json；手段分类写分类–实体 |
 | `06_ensure_data_layout.sql` | 从通用台账模版挂载 `data_layout_id`（关系图 / 数据页必需） |
 | `07_ensure_catalog_orchestration.sql` | 默认目录编排头（与建类型同口径：点列表这一行） |
@@ -40,7 +42,8 @@
 | fieldCode | 显示名 | 说明 |
 |-----------|--------|------|
 | `location_ref` | 到达位置 | 路网点位 REF |
-| `dwell_duration` | 停留时长 | 秒 |
+| `dwell_duration` | 停留时长 | 秒；不是排程动作耗时 |
+| `action_duration` | 动作耗时 | 分钟；排程加总只认本参数默认值 |
 | `yaw` / `pitch` / `roll` / `focal_length` | 摄像机 | 度 / 毫米 |
 | `shot_count` | 拍摄张数 | |
 | `route_ref` | 路线引用 | 路线 REF |

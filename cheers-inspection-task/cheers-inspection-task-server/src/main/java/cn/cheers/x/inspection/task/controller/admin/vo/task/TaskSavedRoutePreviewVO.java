@@ -7,13 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 任务已保存路线读模型（confirm 快照摘要）。
+ * 任务已保存路线读模型（saveRoute 快照）。
  *
- * <p>与编排预览 {@code RoutePreviewDTO} 不同：当前落库的 plannedRoute 含停靠点序与距离摘要，
- * 一般不含路径段折线（segments）；三维免重算折线若依赖 segments，须另补持久化。</p>
+ * <p>与编排当次 live preview 同源：plannedRoute 在 ROUTE 阶段写入 stopIds、visitNodeIds、
+ * visitPositions、segments；详情回显路线示意图只读这些字段，禁止读路径再算一遍冒充已保存折线。</p>
  */
 @Data
-@Schema(description = "已保存路线摘要（confirm 快照）")
+@Schema(description = "已保存路线摘要（saveRoute 快照）")
 public class TaskSavedRoutePreviewVO {
 
     @Schema(description = "路网引用")
@@ -39,4 +39,13 @@ public class TaskSavedRoutePreviewVO {
 
     @Schema(description = "决策追踪 id")
     private String decisionTraceId;
+
+    @Schema(description = "实际经过点位序（含途径点）")
+    private List<String> visitNodeIds = new ArrayList<>();
+
+    @Schema(description = "与 visitNodeIds 对齐的坐标")
+    private List<Object> visitPositions = new ArrayList<>();
+
+    @Schema(description = "路径段折线（含 polyline）")
+    private List<Object> segments = new ArrayList<>();
 }

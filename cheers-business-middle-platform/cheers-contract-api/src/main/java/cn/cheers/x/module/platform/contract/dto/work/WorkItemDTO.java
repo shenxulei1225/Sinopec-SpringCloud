@@ -22,7 +22,8 @@ public class WorkItemDTO {
     private String entityTypeCode;
     private String sourceModelCode;
     private String sourceInstanceId;
-    private Integer durationEstimateMinutes;
+    /** 预估占用时长（单位由排期规格约定，不在字段名写死） */
+    private Integer estimatedDuration;
     private Integer priority;
     private List<ResourceRequirementDTO> resourceRequirements;
     private TimePreferencesDTO timePreferences;

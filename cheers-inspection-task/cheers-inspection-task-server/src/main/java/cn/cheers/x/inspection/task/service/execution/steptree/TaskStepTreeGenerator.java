@@ -9,9 +9,10 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * 点路径规划（或摄像机按勾选顺序）时，把检查项该档手段的步骤串成总任务步骤图。
+ * 智能编排（previewOrchestration）前，把检查项该档手段的步骤串成总任务步骤图。
+ * <p>用户看树的顺序：起点 → 巡检对象（下挂检查项）→ 检查项下挂动作 → 终点。头尾是已拆开的库内子动作。
  * <p>草稿保存不算树。树上不写被巡检设备实参；头尾不挂检查项。
- * <p>禁止：从固定表拼树；开跑时再生成；人工硬挂机器人/无人机头尾。
+ * <p>禁止：saveRoute 写树；从固定表拼树；开跑时再生成；人工硬挂机器人/无人机头尾；用「到达点」冒充巡检对象。
  */
 public final class TaskStepTreeGenerator {
 
@@ -56,53 +57,13 @@ public final class TaskStepTreeGenerator {
             List<MethodAction> tailActions,
             Map<Long, String> itemNames
     ) {
-        if (selected == null || selected.isEmpty()) {
-            throw ServiceExceptionUtil.invalidParamException("任务草稿还没有勾选被巡检设备和检查项");
-        }
-        String mode = requireMeans(means);
-        if ((MEANS_MANUAL.equals(mode) || MEANS_CAMERA.equals(mode))
-                && ((headActions != null && !headActions.isEmpty())
-                || (tailActions != null && !tailActions.isEmpty()))) {
-            throw ServiceExceptionUtil.invalidParamException("人工和摄像机不挂机器人或无人机的头尾动作");
-        }
-        List<Long> order = resolveEquipmentOrder(selected, equipmentOrder);
-        List<Map<String, Object>> nodes = new ArrayList<>();
-        List<String> missingMethods = new ArrayList<>();
-        int seq = 1;
-        int emittedItems = 0;
-        seq = emitActions(nodes, seq, null, defaultList(headActions), "head");
-        for (Long equipmentId : order) {
-            SelectedEquipment equipment = findSelected(selected, equipmentId);
-            if (equipment.itemIds().isEmpty()) {
-                throw ServiceExceptionUtil.invalidParamException("被巡检设备没有勾选检查项");
-            }
-            for (Long itemId : equipment.itemIds()) {
-                List<MethodAction> actions = methodActions == null ? null : methodActions.get(itemId);
-                if (actions == null || actions.isEmpty()) {
-                    missingMethods.add(missingMethodMessage(equipment, itemId, itemNames, mode));
-                    continue;
-                }
-                String itemKey = "item-" + itemId + "-" + equipmentId;
-                nodes.add(node(itemKey, seq++, null, TaskStepNode.HANG_INSPECTION_ITEM, null, itemId, "检查项"));
-                seq = emitActions(nodes, seq, itemKey, actions, "act-" + itemId);
-                emittedItems++;
-            }
-        }
-        if (emittedItems == 0) {
-            throw ServiceExceptionUtil.invalidParamException(
-                    missingMethods.isEmpty()
-                            ? "检查项还没有配置本巡检方式的检查方法"
-                            : String.join("；", missingMethods));
-        }
-        emitActions(nodes, seq, null, defaultList(tailActions), "tail");
-        Map<String, Object> tree = new LinkedHashMap<>();
-        tree.put("version", 1);
-        tree.put("nodes", List.copyOf(nodes));
-        return tree;
+        return generate(
+                means, selected, equipmentOrder, methodActions, headActions, tailActions,
+                null, "起点", null, "终点", itemNames);
     }
 
     /**
-     * 点路径规划后生成步骤图，并把任务创建选定的起终点写到树根。
+     * 智能编排前生成步骤图，并把任务创建选定的起终点写到树根。
      * 无人机起飞/降落、机器人返回充电的点位从这两端来，不从设备检查配置猜。
      */
     public static Map<String, Object> generate(
@@ -131,8 +92,80 @@ public final class TaskStepTreeGenerator {
             String endStopId,
             Map<Long, String> itemNames
     ) {
-        Map<String, Object> tree = generate(
-                means, selected, equipmentOrder, methodActions, headActions, tailActions, itemNames);
+        return generate(
+                means, selected, equipmentOrder, methodActions, headActions, tailActions,
+                startStopId, "起点", endStopId, "终点", itemNames);
+    }
+
+    public static Map<String, Object> generate(
+            String means,
+            List<SelectedEquipment> selected,
+            List<Long> equipmentOrder,
+            Map<Long, List<MethodAction>> methodActions,
+            List<MethodAction> headActions,
+            List<MethodAction> tailActions,
+            String startStopId,
+            String startTitle,
+            String endStopId,
+            String endTitle,
+            Map<Long, String> itemNames
+    ) {
+        if (selected == null || selected.isEmpty()) {
+            throw ServiceExceptionUtil.invalidParamException("任务草稿还没有勾选被巡检设备和检查项");
+        }
+        String mode = requireMeans(means);
+        if ((MEANS_MANUAL.equals(mode) || MEANS_CAMERA.equals(mode))
+                && ((headActions != null && !headActions.isEmpty())
+                || (tailActions != null && !tailActions.isEmpty()))) {
+            throw ServiceExceptionUtil.invalidParamException("人工和摄像机不挂机器人或无人机的头尾动作");
+        }
+        List<Long> order = resolveEquipmentOrder(selected, equipmentOrder);
+        List<Map<String, Object>> nodes = new ArrayList<>();
+        List<String> missingMethods = new ArrayList<>();
+        int seq = 1;
+        int emittedItems = 0;
+        seq = emitAnchor(nodes, seq, "stop-start", startStopId, startTitle, defaultList(headActions), "head");
+        for (Long equipmentId : order) {
+            SelectedEquipment equipment = findSelected(selected, equipmentId);
+            if (equipment.itemIds().isEmpty()) {
+                throw ServiceExceptionUtil.invalidParamException("被巡检设备没有勾选检查项");
+            }
+            boolean anyReady = false;
+            for (Long itemId : equipment.itemIds()) {
+                List<MethodAction> actions = methodActions == null ? null : methodActions.get(itemId);
+                if (actions != null && !actions.isEmpty()) {
+                    anyReady = true;
+                    continue;
+                }
+                missingMethods.add(missingMethodMessage(equipment, itemId, itemNames, mode));
+            }
+            if (!anyReady) {
+                continue;
+            }
+            String objectKey = "stop-" + equipmentId;
+            nodes.add(visitGroupNode(objectKey, seq++, equipment));
+            for (Long itemId : equipment.itemIds()) {
+                List<MethodAction> actions = methodActions == null ? null : methodActions.get(itemId);
+                if (actions == null || actions.isEmpty()) {
+                    continue;
+                }
+                String itemKey = "item-" + itemId + "-" + equipmentId;
+                nodes.add(node(itemKey, seq++, objectKey, TaskStepNode.HANG_INSPECTION_ITEM,
+                        null, itemId, itemTitle(itemId, itemNames)));
+                seq = emitActions(nodes, seq, itemKey, actions, "act-" + itemId);
+                emittedItems++;
+            }
+        }
+        if (emittedItems == 0) {
+            throw ServiceExceptionUtil.invalidParamException(
+                    missingMethods.isEmpty()
+                            ? "检查项还没有配置本巡检方式的检查方法"
+                            : String.join("；", missingMethods));
+        }
+        seq = emitAnchor(nodes, seq, "stop-end", endStopId, endTitle, defaultList(tailActions), "tail");
+        Map<String, Object> tree = new LinkedHashMap<>();
+        tree.put("version", 1);
+        tree.put("nodes", List.copyOf(nodes));
         if (startStopId != null && !startStopId.isBlank()) {
             tree.put("startStopId", startStopId.trim());
         }
@@ -176,6 +209,57 @@ public final class TaskStepTreeGenerator {
         throw ServiceExceptionUtil.invalidParamException("路径上的设备不在本次勾选里");
     }
 
+    private static int emitAnchor(
+            List<Map<String, Object>> nodes,
+            int seq,
+            String key,
+            String stopId,
+            String title,
+            List<MethodAction> actions,
+            String actionPrefix
+    ) {
+        if ((stopId == null || stopId.isBlank()) && actions.isEmpty()) {
+            return seq;
+        }
+        nodes.add(anchorNode(key, seq++, stopId, title));
+        return emitActions(nodes, seq, key, actions, actionPrefix);
+    }
+
+    private static Map<String, Object> anchorNode(String key, int order, String stopId, String title) {
+        if (stopId != null && !stopId.isBlank()) {
+            return node(key, order, null, TaskStepNode.HANG_POINT, stopId.trim(), null,
+                    title == null || title.isBlank() ? stopId.trim() : title);
+        }
+        return node(key, order, null, TaskStepNode.HANG_POINT, key, null,
+                title == null || title.isBlank() ? key : title);
+    }
+
+    /**
+     * 巡检对象成组：挂设备，标题写对象中文名。点位只出现在起点/终点，不顶替对象。
+     */
+    private static Map<String, Object> visitGroupNode(String key, int order, SelectedEquipment equipment) {
+        return node(key, order, null, TaskStepNode.HANG_EQUIPMENT, null, equipment.equipmentId(),
+                objectTitle(equipment));
+    }
+
+    private static String objectTitle(SelectedEquipment equipment) {
+        if (equipment.equipmentName() != null && !equipment.equipmentName().isBlank()) {
+            return equipment.equipmentName().trim();
+        }
+        throw ServiceExceptionUtil.invalidParamException("巡检对象缺少名称");
+    }
+
+    private static String itemTitle(Long itemId, Map<Long, String> itemNames) {
+        if (itemNames != null && itemId != null) {
+            String name = itemNames.get(itemId);
+            if (name != null && !name.isBlank()) {
+                return name.trim();
+            }
+        }
+        throw ServiceExceptionUtil.invalidParamException(
+                itemId == null ? "检查项缺少名称" : "检查项 #" + itemId + " 缺少名称");
+    }
+
     private static int emitActions(
             List<Map<String, Object>> nodes,
             int seq,
@@ -190,8 +274,16 @@ public final class TaskStepTreeGenerator {
                 throw ServiceExceptionUtil.invalidParamException("检查方法步骤对不上动作库");
             }
             String key = keyPrefix + "-" + (i + 1);
-            nodes.add(node(key, next++, parentKey, TaskStepNode.HANG_ACTION,
-                    action.refCode(), action.refId(), action.title(), action.params()));
+            Map<String, Object> seeded = new LinkedHashMap<>(action.params());
+            for (String slot : action.declaredSlots()) {
+                seeded.putIfAbsent(slot, "");
+            }
+            Map<String, Object> row = node(key, next++, parentKey, TaskStepNode.HANG_ACTION,
+                    action.refCode(), action.refId(), action.title(), seeded);
+            if (action.sourceNodeKey() != null) {
+                row.put("sourceNodeKey", action.sourceNodeKey());
+            }
+            nodes.add(row);
         }
         return next;
     }
@@ -223,7 +315,7 @@ public final class TaskStepTreeGenerator {
         }
         row.put("title", title == null ? "" : title);
         if (params != null && !params.isEmpty()) {
-            row.put("params", Map.copyOf(params));
+            row.put("params", new LinkedHashMap<>(params));
         }
         return row;
     }
@@ -267,9 +359,15 @@ public final class TaskStepTreeGenerator {
         return device + "的" + item + "还没有配置「" + meansLabel(means) + "」检查方法";
     }
 
-    public record SelectedEquipment(Long equipmentId, List<Long> itemIds, String equipmentName) {
+    public record SelectedEquipment(
+            Long equipmentId, List<Long> itemIds, String equipmentName, String stopId, String stopTitle
+    ) {
         public SelectedEquipment(Long equipmentId, List<Long> itemIds) {
-            this(equipmentId, itemIds, null);
+            this(equipmentId, itemIds, null, null, null);
+        }
+
+        public SelectedEquipment(Long equipmentId, List<Long> itemIds, String equipmentName) {
+            this(equipmentId, itemIds, equipmentName, null, null);
         }
 
         public SelectedEquipment {
@@ -278,16 +376,35 @@ public final class TaskStepTreeGenerator {
             }
             itemIds = itemIds == null ? List.of() : List.copyOf(itemIds);
             equipmentName = equipmentName == null || equipmentName.isBlank() ? null : equipmentName.trim();
+            stopId = stopId == null || stopId.isBlank() ? null : stopId.trim();
+            stopTitle = stopTitle == null || stopTitle.isBlank() ? equipmentName : stopTitle.trim();
+        }
+
+        public SelectedEquipment withVisit(String nextStopId, String nextTitle) {
+            return new SelectedEquipment(equipmentId, itemIds, equipmentName, nextStopId, nextTitle);
         }
     }
 
-    public record MethodAction(Long refId, String refCode, String title, Map<String, Object> params) {
+    public record MethodAction(
+            Long refId, String refCode, String title, Map<String, Object> params,
+            String sourceNodeKey, List<String> declaredSlots
+    ) {
         public MethodAction(Long refId, String refCode, String title) {
-            this(refId, refCode, title, Map.of());
+            this(refId, refCode, title, Map.of(), null, List.of());
+        }
+
+        public MethodAction(Long refId, String refCode, String title, Map<String, Object> params) {
+            this(refId, refCode, title, params, null, List.of());
+        }
+
+        public MethodAction(Long refId, String refCode, String title, Map<String, Object> params, String sourceNodeKey) {
+            this(refId, refCode, title, params, sourceNodeKey, List.of());
         }
 
         public MethodAction {
             params = params == null ? Map.of() : Map.copyOf(params);
+            sourceNodeKey = sourceNodeKey == null || sourceNodeKey.isBlank() ? null : sourceNodeKey.trim();
+            declaredSlots = declaredSlots == null ? List.of() : List.copyOf(declaredSlots);
         }
     }
 }

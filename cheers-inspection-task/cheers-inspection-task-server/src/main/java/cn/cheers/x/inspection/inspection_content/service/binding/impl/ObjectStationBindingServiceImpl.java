@@ -23,7 +23,7 @@ public class ObjectStationBindingServiceImpl implements ObjectStationBindingServ
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void replaceBindings(Long facilityId, Long objectId, List<String> stationNodeIds, Integer workMinutesPerStop) {
+    public void replaceBindings(Long facilityId, Long objectId, List<String> stationNodeIds, Integer estimatedActionDurationPerStop) {
         validateReplaceArgs(facilityId, objectId, stationNodeIds);
 
         bindingMapper.deleteByFacilityAndObjectId(facilityId, objectId);
@@ -36,7 +36,7 @@ public class ObjectStationBindingServiceImpl implements ObjectStationBindingServ
             binding.setFacilityId(facilityId);
             binding.setObjectId(objectId);
             binding.setStationNodeId(stationNodeIds.get(i));
-            binding.setWorkMinutes(workMinutesPerStop);
+            binding.setEstimatedActionDuration(estimatedActionDurationPerStop);
             binding.setSortNo(i);
             bindingMapper.insert(binding);
         }

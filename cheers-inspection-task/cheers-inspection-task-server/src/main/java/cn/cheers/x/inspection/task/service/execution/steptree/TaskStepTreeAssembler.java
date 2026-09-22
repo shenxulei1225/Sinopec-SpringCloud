@@ -42,7 +42,7 @@ public final class TaskStepTreeAssembler {
     ) {
         if (nodes == null || nodes.isEmpty()) {
             throw ServiceExceptionUtil.invalidParamException(
-                    "任务没有执行步骤图，请先在创建时生成步骤");
+                    "任务没有执行步骤图，请先在排期与资源处理完冲突或完成智能编排");
         }
         Map<String, TaskStepNode> byKey = indexByKey(nodes);
         List<TaskExecutionStartReqDTO.StepDraft> sessionSteps = new ArrayList<>();

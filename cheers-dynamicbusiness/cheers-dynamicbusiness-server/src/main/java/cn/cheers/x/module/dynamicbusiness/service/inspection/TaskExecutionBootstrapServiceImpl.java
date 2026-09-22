@@ -49,7 +49,10 @@ public class TaskExecutionBootstrapServiceImpl implements TaskExecutionBootstrap
         if (req.getGapCodes() != null && !req.getGapCodes().isEmpty()) {
             throw new ServiceException(400, "存在 SOP 解析缺口，禁止开跑：" + req.getGapCodes());
         }
-        EntityRespVO record = entityService.get(req.getExecutionRecordId(), EXECUTION_RECORD_TYPE);
+        String recordType = StringUtils.hasText(req.getEntityTypeCode())
+                ? req.getEntityTypeCode().trim()
+                : EXECUTION_RECORD_TYPE;
+        EntityRespVO record = entityService.get(req.getExecutionRecordId(), recordType);
         if (record == null || record.getId() == null) {
             throw new ServiceException(404, "执行记录不存在：" + req.getExecutionRecordId());
         }
@@ -75,7 +78,7 @@ public class TaskExecutionBootstrapServiceImpl implements TaskExecutionBootstrap
         if (record.getBaseFields() != null) {
             base.putAll(record.getBaseFields());
         }
-        base.put("entityTypeCode", EXECUTION_RECORD_TYPE);
+        base.put("entityTypeCode", recordType);
         base.put("modelId", record.getModelId());
         if (record.getName() != null) {
             base.put("name", record.getName());

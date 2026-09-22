@@ -134,6 +134,11 @@ public class StrategyRuntimeServiceImpl implements StrategyRuntimeService {
     }
 
     private StrategyHandleRespDTO dispatchCreateExecution(ConditionStrategyDO row, StrategyTriggerEventDTO event) {
+        if (event.getExecutionRecordId() != null) {
+            StrategyHandleRespDTO resp = matched(row);
+            resp.setExecutionRecordId(event.getExecutionRecordId());
+            return resp;
+        }
         if (event.getTaskDefinitionId() == null || event.getStandardSnapshot() == null
                 || event.getSteps() == null || event.getSteps().isEmpty()) {
             throw new ServiceException(400, "新建这次执行的账必须带是哪条任务、按什么标准做、步骤清单");
@@ -148,6 +153,9 @@ public class StrategyRuntimeServiceImpl implements StrategyRuntimeService {
         req.setName(event.getExecutionName());
         req.setStandardSnapshot(event.getStandardSnapshot());
         req.setSteps(parseSteps(event.getSteps()));
+        if (StringUtils.hasText(event.getScheduleSlotId())) {
+            req.setPendingRef(event.getScheduleSlotId().trim());
+        }
         TaskExecutionStartRespDTO started = taskExecutionSessionService.start(req);
         if (started == null || started.getExecutionRecordId() == null) {
             throw new ServiceException(500, "新建这次执行的账没有返回账本编号");

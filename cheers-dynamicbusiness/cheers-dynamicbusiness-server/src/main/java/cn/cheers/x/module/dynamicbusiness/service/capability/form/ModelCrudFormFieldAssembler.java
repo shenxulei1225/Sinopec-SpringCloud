@@ -520,6 +520,9 @@ public final class ModelCrudFormFieldAssembler {
         copyBooleanRule(item, config, "createVisible", "create_visible");
         copyBooleanRule(item, config, "editVisible", "edit_visible");
         copyBooleanRule(item, config, "detailVisible", "detail_visible");
+        if (StringUtils.hasText(config.getString("valueShape"))) {
+            item.put("valueShape", config.getString("valueShape").trim());
+        }
         applyStepTreeHang(item, config);
     }
 
@@ -549,6 +552,14 @@ public final class ModelCrudFormFieldAssembler {
         hang.put("allowMixed", config.getBooleanValue("allowMixed"));
         hang.put("editorKind", editorKind);
         hang.put("packMethods", readStepTreePackMethods(config.getJSONArray("packMethods")));
+        String tabEnumFieldCode = config.getString("tabEnumFieldCode");
+        if (StringUtils.hasText(tabEnumFieldCode)) {
+            hang.put("tabEnumFieldCode", tabEnumFieldCode.trim());
+        }
+        String tabCategoryTypeCode = config.getString("tabCategoryTypeCode");
+        if (!StringUtils.hasText(tabEnumFieldCode) && StringUtils.hasText(tabCategoryTypeCode)) {
+            hang.put("tabCategoryTypeCode", tabCategoryTypeCode.trim());
+        }
         item.put("stepTreeHang", hang);
     }
 

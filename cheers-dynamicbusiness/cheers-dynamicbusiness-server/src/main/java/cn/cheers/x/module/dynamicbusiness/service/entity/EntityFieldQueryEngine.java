@@ -34,4 +34,11 @@ public interface EntityFieldQueryEngine {
                                                List<String> searchFieldCodes) {
         return searchAndFilterEntityIds(entityTypeCode, keyword, filters, candidateEntityIds);
     }
+
+    /**
+     * 按已知字段给候选 id 排序。系统列 / 基础固定列读实体表，扩展字段读索引。
+     */
+    default List<Long> sortEntityIds(String entityTypeCode, String fieldCode, boolean asc, List<Long> candidateIds) {
+        return candidateIds == null ? List.of() : List.copyOf(candidateIds);
+    }
 }

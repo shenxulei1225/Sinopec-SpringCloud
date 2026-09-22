@@ -50,7 +50,7 @@ INSERT INTO dynamic_category_type (
   category_mode, entity_association_mode
 )
 SELECT
-  'action', '动作库', '动作库分类（按执行手段）', 1, 1, 'seed',
+  'action', '动作库', '动作内容分类（人员/设备动作等）。执行方式词表见字段库枚举 execution_means。', 1, 1, 'seed',
   'SIMPLE', 'MULTI'
 WHERE NOT EXISTS (
   SELECT 1 FROM dynamic_category_type ct

@@ -24,5 +24,5 @@ public class ObjectStationBindingReplaceReqVO {
     private List<@NotEmpty(message = "stationNodeId 不能为空") String> stationNodeIds;
 
     @Schema(description = "每停靠点默认作业时长（分钟）")
-    private Integer workMinutesPerStop;
+    private Integer estimatedActionDurationPerStop;
 }

@@ -5,6 +5,7 @@ import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.maintenance.api.MaintenanceApi;
 import cn.cheers.x.module.platform.capability.api.MappingProfileApi;
 import cn.cheers.x.module.platform.capability.api.ProcessCapabilityBindingApi;
+import cn.cheers.x.module.platform.contract.dto.reservation.ResourceReservationDTO;
 import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunRequest;
 import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunResponse;
 import cn.cheers.x.module.platform.contract.dto.schedule.SchedulingSpecDTO;
@@ -83,7 +84,7 @@ class OrchestrationRunnerTest {
         when(runtimeQueryApi.listSlots(any(), any(), any(), any(), any(), anyList()))
                 .thenReturn(CommonResult.success(List.of()));
         when(schedulingEngine.solve(anyList(), any(), anyString(), anyList()))
-                .thenReturn(List.of(ScheduleSlotDTO.builder().slotId("slot-1").workId("work-1").build()));
+                .thenReturn(List.of(ResourceReservationDTO.builder().candidateId("slot-1").workId("work-1").build()));
 
         ScheduleRunResponse response = runner.run(request, 1L);
 
@@ -111,7 +112,7 @@ class OrchestrationRunnerTest {
         return ScheduleRunRequest.builder()
                 .orchestrationRef(OrchestrationRefs.STANDARD_EXPAND_SOLVE_PERSIST_V1)
                 .schedulingSpec(SchedulingSpecDTO.builder().mode("once").conflictStrategy("none").build())
-                .workItems(List.of(WorkItemDTO.builder().workId("work-1").durationEstimateMinutes(30).build()))
+                .workItems(List.of(WorkItemDTO.builder().workId("work-1").estimatedDuration(30).build()))
                 .build();
     }
 }

@@ -57,7 +57,7 @@ class BuiltinRoutePhaseHandlerTest {
     }
 
     @Test
-    @DisplayName("有距离与速度则写入 durationEstimateMinutes")
+    @DisplayName("有距离与速度则写入 estimatedDuration")
     void execute_distanceAndSpeed_writesDurationEstimateMinutes() {
         when(routePlanApi.plan(any(RouteRequestDTO.class))).thenReturn(CommonResult.success(
                 RoutePreviewDTO.builder()
@@ -69,14 +69,14 @@ class BuiltinRoutePhaseHandlerTest {
         payload.put(RoutePayloadKeys.NETWORK_REF, "net_1");
         payload.put(RoutePayloadKeys.STOP_IDS, List.of("s1", "s2"));
         payload.put(RoutePayloadKeys.INSPECTION_TYPE, "HUMAN");
-        payload.put(RoutePayloadKeys.WORK_MINUTES, 5);
+        payload.put(RoutePayloadKeys.ESTIMATED_ACTION_DURATION, 5);
         WorkItemDTO item = WorkItemDTO.builder().workId("w1").payload(payload).build();
         PhaseContext context = PhaseContext.builder().workItems(List.of(item)).build();
 
         handler.execute(context);
 
-        // travel = ceil(120/60)=2; + workMinutes 5 => 7
-        assertEquals(7, item.getDurationEstimateMinutes());
+        // travel = ceil(120/60)=2; + estimatedActionDuration 5 => 7
+        assertEquals(7, item.getEstimatedDuration());
         assertEquals("net_1", context.getRoutePreview().getNetworkRef());
         assertTrue(item.getPayload().containsKey(RoutePayloadKeys.PLANNED_ROUTE));
 

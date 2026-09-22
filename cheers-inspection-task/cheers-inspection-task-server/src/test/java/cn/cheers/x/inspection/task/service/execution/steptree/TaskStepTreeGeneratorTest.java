@@ -17,8 +17,8 @@ class TaskStepTreeGeneratorTest {
         Map<String, Object> tree = TaskStepTreeGenerator.generate(
                 TaskStepTreeGenerator.MEANS_ROBOT,
                 List.of(
-                        new TaskStepTreeGenerator.SelectedEquipment(10L, List.of(7L)),
-                        new TaskStepTreeGenerator.SelectedEquipment(20L, List.of(8L))
+                        new TaskStepTreeGenerator.SelectedEquipment(10L, List.of(7L), "1#储罐"),
+                        new TaskStepTreeGenerator.SelectedEquipment(20L, List.of(8L), "2#储罐")
                 ),
                 List.of(20L, 10L),
                 Map.of(
@@ -26,15 +26,19 @@ class TaskStepTreeGeneratorTest {
                         8L, List.of(new TaskStepTreeGenerator.MethodAction(12L, "act-move", "到达"))
                 ),
                 List.of(new TaskStepTreeGenerator.MethodAction(1L, "act-robot-head", "任务头")),
-                List.of(new TaskStepTreeGenerator.MethodAction(2L, "act-robot-tail", "任务尾"))
+                List.of(new TaskStepTreeGenerator.MethodAction(2L, "act-robot-tail", "任务尾")),
+                Map.of(7L, "外观", 8L, "液位")
         );
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> nodes = (List<Map<String, Object>>) tree.get("nodes");
-        assertEquals("act-robot-head", nodes.get(0).get("refCode"));
-        assertEquals(8L, nodes.get(1).get("refId"));
-        assertEquals("item-8-20", nodes.get(2).get("parentNodeKey"));
-        assertEquals(7L, nodes.get(3).get("refId"));
+        assertEquals("stop-start", nodes.get(0).get("nodeKey"));
+        assertEquals("act-robot-head", nodes.get(1).get("refCode"));
+        assertEquals("stop-20", nodes.get(2).get("nodeKey"));
+        assertEquals(8L, nodes.get(3).get("refId"));
+        assertEquals("item-8-20", nodes.get(4).get("parentNodeKey"));
+        assertEquals("stop-10", nodes.get(5).get("nodeKey"));
+        assertEquals(7L, nodes.get(6).get("refId"));
         assertEquals("act-robot-tail", nodes.get(nodes.size() - 1).get("refCode"));
     }
 
@@ -42,11 +46,12 @@ class TaskStepTreeGeneratorTest {
     void generate_manual_rejectsHeadTail() {
         ServiceException ex = assertThrows(ServiceException.class, () -> TaskStepTreeGenerator.generate(
                 TaskStepTreeGenerator.MEANS_MANUAL,
-                List.of(new TaskStepTreeGenerator.SelectedEquipment(10L, List.of(7L))),
+                List.of(new TaskStepTreeGenerator.SelectedEquipment(10L, List.of(7L), "1#储罐")),
                 null,
                 Map.of(7L, List.of(new TaskStepTreeGenerator.MethodAction(11L, "act-walk", "走到点"))),
                 List.of(new TaskStepTreeGenerator.MethodAction(1L, "act-robot-head", "任务头")),
-                List.of()
+                List.of(),
+                Map.of(7L, "外观")
         ));
         assertTrue(ex.getMessage().contains("不挂"));
     }
@@ -56,8 +61,8 @@ class TaskStepTreeGeneratorTest {
         Map<String, Object> tree = TaskStepTreeGenerator.generate(
                 TaskStepTreeGenerator.MEANS_CAMERA,
                 List.of(
-                        new TaskStepTreeGenerator.SelectedEquipment(10L, List.of(7L)),
-                        new TaskStepTreeGenerator.SelectedEquipment(20L, List.of(8L))
+                        new TaskStepTreeGenerator.SelectedEquipment(10L, List.of(7L), "1#储罐"),
+                        new TaskStepTreeGenerator.SelectedEquipment(20L, List.of(8L), "2#储罐")
                 ),
                 null,
                 Map.of(
@@ -65,13 +70,16 @@ class TaskStepTreeGeneratorTest {
                         8L, List.of(new TaskStepTreeGenerator.MethodAction(12L, "act-snap2", "抓拍"))
                 ),
                 List.of(),
-                List.of()
+                List.of(),
+                Map.of(7L, "外观", 8L, "液位")
         );
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> nodes = (List<Map<String, Object>>) tree.get("nodes");
-        assertEquals(7L, nodes.get(0).get("refId"));
-        assertEquals(8L, nodes.get(2).get("refId"));
+        assertEquals("stop-10", nodes.get(0).get("nodeKey"));
+        assertEquals(7L, nodes.get(1).get("refId"));
+        assertEquals("stop-20", nodes.get(3).get("nodeKey"));
+        assertEquals(8L, nodes.get(4).get("refId"));
     }
 
     @Test
@@ -107,16 +115,20 @@ class TaskStepTreeGeneratorTest {
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> nodes = (List<Map<String, Object>>) tree.get("nodes");
-        assertEquals(2, nodes.size());
-        assertEquals(7L, nodes.get(0).get("refId"));
-        assertEquals("item-7-10", nodes.get(1).get("parentNodeKey"));
+        assertEquals(3, nodes.size());
+        assertEquals("stop-10", nodes.get(0).get("nodeKey"));
+        assertEquals("equipment", nodes.get(0).get("hangTypeCode"));
+        assertEquals("北罐区1#储罐", nodes.get(0).get("title"));
+        assertEquals(7L, nodes.get(1).get("refId"));
+        assertEquals("外观", nodes.get(1).get("title"));
+        assertEquals("item-7-10", nodes.get(2).get("parentNodeKey"));
     }
 
     @Test
     void generate_uav_writesTaskStartEndOnHeadTail() {
         Map<String, Object> tree = TaskStepTreeGenerator.generate(
                 TaskStepTreeGenerator.MEANS_UAV,
-                List.of(new TaskStepTreeGenerator.SelectedEquipment(10L, List.of(7L))),
+                List.of(new TaskStepTreeGenerator.SelectedEquipment(10L, List.of(7L), "1#储罐")),
                 List.of(10L),
                 Map.of(7L, List.of(new TaskStepTreeGenerator.MethodAction(11L, "act-photo", "拍照"))),
                 List.of(new TaskStepTreeGenerator.MethodAction(
@@ -124,15 +136,17 @@ class TaskStepTreeGeneratorTest {
                 List.of(new TaskStepTreeGenerator.MethodAction(
                         2L, "act-uav-tail", "任务尾", Map.of("location_ref", "pad-b"))),
                 "pad-a",
-                "pad-b"
+                "pad-b",
+                Map.of(7L, "外观")
         );
 
         assertEquals("pad-a", tree.get("startStopId"));
         assertEquals("pad-b", tree.get("endStopId"));
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> nodes = (List<Map<String, Object>>) tree.get("nodes");
-        assertEquals("act-uav-head", nodes.get(0).get("refCode"));
-        assertEquals(Map.of("location_ref", "pad-a"), nodes.get(0).get("params"));
+        assertEquals("pad-a", nodes.get(0).get("refCode"));
+        assertEquals("act-uav-head", nodes.get(1).get("refCode"));
+        assertEquals(Map.of("location_ref", "pad-a"), nodes.get(1).get("params"));
         assertEquals("act-uav-tail", nodes.get(nodes.size() - 1).get("refCode"));
         assertEquals(Map.of("location_ref", "pad-b"), nodes.get(nodes.size() - 1).get("params"));
     }

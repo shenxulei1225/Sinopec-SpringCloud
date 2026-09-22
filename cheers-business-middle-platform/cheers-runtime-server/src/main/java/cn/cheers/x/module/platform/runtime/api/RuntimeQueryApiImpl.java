@@ -35,4 +35,9 @@ public class RuntimeQueryApiImpl implements RuntimeQueryApi {
     public CommonResult<List<ScheduleSlotDTO>> listSlotsByJobId(String runtimeJobId) {
         return success(runtimeQueryService.listSlotsByJobId(runtimeJobId));
     }
+
+    @Override
+    public CommonResult<ScheduleSlotDTO> getSlot(String slotId) {
+        return success(runtimeQueryService.getSlot(slotId));
+    }
 }

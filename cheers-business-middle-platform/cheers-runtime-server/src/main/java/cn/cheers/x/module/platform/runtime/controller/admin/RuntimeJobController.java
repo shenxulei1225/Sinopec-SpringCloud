@@ -40,6 +40,12 @@ public class RuntimeJobController {
         return success(runtimeQueryService.listSlotsByJobId(runtimeJobId));
     }
 
+    @GetMapping("/slots/{slotId}")
+    @Operation(summary = "按计划点 id 获取详情")
+    public CommonResult<ScheduleSlotDTO> getSlot(@PathVariable("slotId") String slotId) {
+        return success(runtimeQueryService.getSlot(slotId));
+    }
+
     @GetMapping("/slots")
     @Operation(summary = "按计划时间范围查询计划点")
     public CommonResult<List<ScheduleSlotDTO>> listSlots(

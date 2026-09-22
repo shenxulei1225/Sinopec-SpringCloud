@@ -5,11 +5,11 @@ import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.cheers.x.inspection.task.controller.admin.vo.template.InspectionTaskTemplateCreateReqVO;
 import cn.cheers.x.inspection.task.controller.admin.vo.template.InspectionTaskTemplateSaveFromTaskReqVO;
 import cn.cheers.x.inspection.task.controller.admin.vo.template.InspectionTaskTemplateUpdateReqVO;
-import cn.cheers.x.inspection.task.dal.dataobject.task.InspectionTaskDO;
 import cn.cheers.x.inspection.task.dal.dataobject.task.InspectionTaskTemplateDO;
-import cn.cheers.x.inspection.task.dal.mysql.task.InspectionTaskMapper;
 import cn.cheers.x.inspection.task.dal.mysql.task.InspectionTaskTemplateMapper;
 import cn.cheers.x.inspection.task.service.task.InspectionTaskTemplateService;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +23,7 @@ import static cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConsta
 public class InspectionTaskTemplateServiceImpl implements InspectionTaskTemplateService {
 
     private final InspectionTaskTemplateMapper inspectionTaskTemplateMapper;
-    private final InspectionTaskMapper inspectionTaskMapper;
+    private final PatrolTaskEntityStore patrolTaskEntityStore;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -41,13 +41,13 @@ public class InspectionTaskTemplateServiceImpl implements InspectionTaskTemplate
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long saveTemplateFromTask(InspectionTaskTemplateSaveFromTaskReqVO reqVO) {
-        InspectionTaskDO taskDO = validateTaskExists(reqVO.getTaskId());
+        PatrolTaskDraft task = validateTaskExists(reqVO.getTaskId());
         validateTemplateCodeUnique(reqVO.getTemplateCode(), null);
 
         InspectionTaskTemplateDO templateDO = BeanUtils.toBean(reqVO, InspectionTaskTemplateDO.class);
-        templateDO.setTemplateName(taskDO.getTaskName());
-        templateDO.setInspectionContent(taskDO.getInspectionContent());
-        templateDO.setDefaultSchedulePolicyId(taskDO.getSchedulePolicyId());
+        templateDO.setTemplateName(task.name());
+        templateDO.setInspectionContent(task.inspectionContent());
+        templateDO.setDefaultSchedulePolicyId(task.schedulePolicyId());
         // Note: resourcePolicy is not copied because InspectionTaskTemplateDO does not have this field
         templateDO.setEnabled(Boolean.TRUE);
         inspectionTaskTemplateMapper.insert(templateDO);
@@ -107,12 +107,8 @@ public class InspectionTaskTemplateServiceImpl implements InspectionTaskTemplate
         return template;
     }
 
-    private InspectionTaskDO validateTaskExists(Long id) {
-        InspectionTaskDO task = inspectionTaskMapper.selectById(id);
-        if (task == null) {
-            throw ServiceExceptionUtil.exception(BAD_REQUEST, "任务不存在");
-        }
-        return task;
+    private PatrolTaskDraft validateTaskExists(Long id) {
+        return patrolTaskEntityStore.require(id);
     }
 
     private void validateTemplateCodeUnique(String templateCode, Long id) {

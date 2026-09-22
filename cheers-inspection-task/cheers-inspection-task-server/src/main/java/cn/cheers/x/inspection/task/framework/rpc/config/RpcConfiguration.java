@@ -5,6 +5,8 @@ import cn.cheers.x.module.dynamicbusiness.api.entity.EntityRpcApi;
 import cn.cheers.x.module.dynamicbusiness.api.execution.TaskExecutionSessionApi;
 import cn.cheers.x.module.dynamicbusiness.api.strategy.StrategyRuntimeApi;
 import cn.cheers.x.module.platform.orchestration.api.ScheduleRunApi;
+import cn.cheers.x.module.platform.runtime.api.ProcessTimelineApi;
+import cn.cheers.x.module.platform.runtime.api.RuntimePersistApi;
 import cn.cheers.x.module.platform.runtime.api.RuntimeQueryApi;
 import cn.cheers.x.module.platform.runtime.api.RuntimeSlotWriteApi;
 import cn.cheers.x.module.platform.topology.api.PathNetworkApi;
@@ -28,8 +30,10 @@ import org.springframework.context.annotation.Configuration;
                 StrategyRuntimeApi.class,
                 DeviceProtocolMissionApi.class,
                 ScheduleRunApi.class,
+                RuntimePersistApi.class,
                 RuntimeQueryApi.class,
                 RuntimeSlotWriteApi.class,
+                ProcessTimelineApi.class,
                 PathNetworkApi.class
         },
         basePackages = {} // 明确指定空包，避免自动扫描

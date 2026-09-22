@@ -84,7 +84,8 @@ public final class EntityFieldMapsSupport {
 
         Map<String, Object> mergedCustom = new LinkedHashMap<>(custom);
         for (Map.Entry<String, Object> entry : base.entrySet()) {
-            if (!isCoreBaseFieldKey(entry.getKey())) {
+            if (!isCoreBaseFieldKey(entry.getKey()) && !mergedCustom.containsKey(entry.getKey())) {
+                // 本次写入已在 custom 里的键（如步骤图）不得被旧详情里的基础列默认空值盖掉
                 mergedCustom.put(entry.getKey(), entry.getValue());
             }
         }

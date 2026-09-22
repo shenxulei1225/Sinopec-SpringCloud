@@ -115,6 +115,7 @@ cheers:
   tenant: # 多租户相关配置项
     enable: true
     ignore-urls:
+      - /rpc-api/inspection-task/**
   security:
     permit-all_urls:
       - /admin-api/** # 允许所有接口访问（开发环境）

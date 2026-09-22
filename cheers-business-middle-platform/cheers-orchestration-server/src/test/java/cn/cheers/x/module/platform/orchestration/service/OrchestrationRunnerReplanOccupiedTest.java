@@ -3,13 +3,14 @@ package cn.cheers.x.module.platform.orchestration.service;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.orchestration.PatrolOrchestrationApi;
-import cn.cheers.x.inspection.orchestration.dto.PatrolExpandReqDTO;
-import cn.cheers.x.inspection.orchestration.dto.PatrolExpandRespDTO;
+import cn.cheers.x.inspection.orchestration.dto.PatrolScheduleMapReqDTO;
+import cn.cheers.x.inspection.orchestration.dto.PatrolScheduleMapRespDTO;
 import cn.cheers.x.maintenance.api.MaintenanceApi;
 import cn.cheers.x.module.platform.capability.api.MappingProfileApi;
 import cn.cheers.x.module.platform.capability.api.ProcessCapabilityBindingApi;
 import cn.cheers.x.module.platform.contract.dto.route.RoutePreviewDTO;
 import cn.cheers.x.module.platform.contract.dto.route.RouteRequestDTO;
+import cn.cheers.x.module.platform.contract.dto.reservation.ResourceReservationDTO;
 import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunRequest;
 import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunResponse;
 import cn.cheers.x.module.platform.contract.dto.schedule.SchedulingSpecDTO;
@@ -18,7 +19,7 @@ import cn.cheers.x.module.platform.contract.dto.work.WorkItemDTO;
 import cn.cheers.x.module.platform.contract.enums.SlotStatus;
 import cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants;
 import cn.cheers.x.module.platform.orchestration.enums.OrchestrationRefs;
-import cn.cheers.x.module.platform.orchestration.handler.patrol.PatrolExpandMapHandler;
+import cn.cheers.x.module.platform.orchestration.handler.patrol.PatrolScheduleMapHandler;
 import cn.cheers.x.module.platform.orchestration.phase.BuiltinRoutePhaseHandler;
 import cn.cheers.x.module.platform.orchestration.phase.PhaseHandlerRegistry;
 import cn.cheers.x.module.platform.orchestration.route.RoutePayloadKeys;
@@ -84,7 +85,7 @@ class OrchestrationRunnerReplanOccupiedTest {
 
     @BeforeEach
     void setUp() {
-        PatrolExpandMapHandler expandHandler = new PatrolExpandMapHandler();
+        PatrolScheduleMapHandler expandHandler = new PatrolScheduleMapHandler();
         ReflectionTestUtils.setField(expandHandler, "patrolOrchestrationApi", patrolOrchestrationApi);
 
         BuiltinRoutePhaseHandler routeHandler = new BuiltinRoutePhaseHandler();
@@ -118,23 +119,23 @@ class OrchestrationRunnerReplanOccupiedTest {
         when(runtimeQueryApi.listSlots(any(), any(), isNull(), isNull(), eq(1L), anyList()))
                 .thenReturn(CommonResult.success(List.of(foreignOccupied)));
         when(schedulingEngine.solve(anyList(), any(), anyString(), anyList()))
-                .thenReturn(List.of(ScheduleSlotDTO.builder().slotId("slot-new").workId("work-1").build()));
+                .thenReturn(List.of(ResourceReservationDTO.builder().candidateId("slot-new").workId("work-1").build()));
         when(runtimePersistApi.persist(any(RuntimePersistReqDTO.class)))
                 .thenReturn(CommonResult.success(true));
 
         ScheduleRunRequest request = ScheduleRunRequest.builder()
                 .orchestrationRef(OrchestrationRefs.STANDARD_EXPAND_SOLVE_PERSIST_V1)
                 .schedulingSpec(schedulingSpec())
-                .workItems(List.of(WorkItemDTO.builder().workId("work-1").durationEstimateMinutes(30).build()))
+                .workItems(List.of(WorkItemDTO.builder().workId("work-1").estimatedDuration(30).build()))
                 .build();
 
         runner.run(request, 1L);
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<ScheduleSlotDTO>> occupiedCaptor = ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<List<ResourceReservationDTO>> occupiedCaptor = ArgumentCaptor.forClass(List.class);
         verify(schedulingEngine).solve(anyList(), any(), anyString(), occupiedCaptor.capture());
         assertEquals(1, occupiedCaptor.getValue().size());
-        assertEquals("slot-other", occupiedCaptor.getValue().get(0).getSlotId());
+        assertEquals("slot-other", occupiedCaptor.getValue().get(0).getCandidateId());
         verify(runtimeQueryApi).listSlots(eq(FROM), eq(TO), isNull(), isNull(), eq(1L), anyList());
     }
 
@@ -181,8 +182,8 @@ class OrchestrationRunnerReplanOccupiedTest {
         when(runtimeQueryApi.listSlots(any(), any(), isNull(), isNull(), eq(1L), anyList()))
                 .thenReturn(CommonResult.success(List.of(selfUnfinished, selfCompleted, foreignOccupied)));
         when(schedulingEngine.solve(anyList(), any(), eq(SOURCE_JOB), anyList()))
-                .thenReturn(List.of(ScheduleSlotDTO.builder()
-                        .slotId("slot-replan-new")
+                .thenReturn(List.of(ResourceReservationDTO.builder()
+                        .candidateId("slot-replan-new")
                         .runtimeJobId(SOURCE_JOB)
                         .workId("patrol-work-1")
                         .build()));
@@ -196,13 +197,13 @@ class OrchestrationRunnerReplanOccupiedTest {
         assertEquals(SOURCE_JOB, response.getRuntimeJobId());
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<ScheduleSlotDTO>> occupiedCaptor = ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<List<ResourceReservationDTO>> occupiedCaptor = ArgumentCaptor.forClass(List.class);
         verify(schedulingEngine).solve(anyList(), any(), eq(SOURCE_JOB), occupiedCaptor.capture());
-        List<ScheduleSlotDTO> passedOccupied = occupiedCaptor.getValue();
+        List<ResourceReservationDTO> passedOccupied = occupiedCaptor.getValue();
         assertEquals(2, passedOccupied.size());
-        assertTrue(passedOccupied.stream().anyMatch(s -> "slot-self-done".equals(s.getSlotId())));
-        assertTrue(passedOccupied.stream().anyMatch(s -> "slot-foreign".equals(s.getSlotId())));
-        assertFalse(passedOccupied.stream().anyMatch(s -> "slot-self-planned".equals(s.getSlotId())));
+        assertTrue(passedOccupied.stream().anyMatch(s -> "slot-self-done".equals(s.getCandidateId())));
+        assertTrue(passedOccupied.stream().anyMatch(s -> "slot-foreign".equals(s.getCandidateId())));
+        assertFalse(passedOccupied.stream().anyMatch(s -> "slot-self-planned".equals(s.getCandidateId())));
 
         ArgumentCaptor<RuntimeSlotReleaseReqDTO> releaseCaptor = ArgumentCaptor.forClass(RuntimeSlotReleaseReqDTO.class);
         verify(runtimeSlotWriteApi).releaseUnfinished(releaseCaptor.capture());
@@ -220,14 +221,14 @@ class OrchestrationRunnerReplanOccupiedTest {
         expandedPayload.put(RoutePayloadKeys.NETWORK_REF, "net_patrol_1");
         expandedPayload.put(RoutePayloadKeys.STOP_IDS, allStopIds);
         expandedPayload.put(RoutePayloadKeys.INSPECTION_TYPE, "HUMAN");
-        expandedPayload.put(RoutePayloadKeys.WORK_MINUTES, 10);
+        expandedPayload.put(RoutePayloadKeys.ESTIMATED_ACTION_DURATION, 10);
         WorkItemDTO expanded = WorkItemDTO.builder()
                 .workId("patrol-work-1")
-                .durationEstimateMinutes(10)
+                .estimatedDuration(10)
                 .payload(expandedPayload)
                 .build();
-        when(patrolOrchestrationApi.expand(any(PatrolExpandReqDTO.class)))
-                .thenReturn(CommonResult.success(PatrolExpandRespDTO.builder()
+        when(patrolOrchestrationApi.expandPatrolWorkItems(any(PatrolScheduleMapReqDTO.class)))
+                .thenReturn(CommonResult.success(PatrolScheduleMapRespDTO.builder()
                         .workItems(List.of(expanded))
                         .networkRef("net_patrol_1")
                         .stopIds(allStopIds)

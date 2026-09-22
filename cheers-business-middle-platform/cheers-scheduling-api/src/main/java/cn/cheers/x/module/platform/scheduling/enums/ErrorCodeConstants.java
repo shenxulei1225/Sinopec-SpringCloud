@@ -11,5 +11,7 @@ public interface ErrorCodeConstants {
     ErrorCode SCHEDULING_BATCH_REJECTED = new ErrorCode(1_004_057_001, "排程冲突：按策略拒绝本批");
     ErrorCode SCHEDULING_CANNOT_PLACE = new ErrorCode(1_004_057_002, "排程冲突：无法在时间窗内安置工作项");
     ErrorCode SCHEDULING_INVALID_CONFLICT_STRATEGY = new ErrorCode(1_004_057_003, "排程冲突策略无效");
+    ErrorCode SCHEDULING_INVALID_PLACEMENT_PREFERENCE = new ErrorCode(1_004_057_004, "排程安置偏好无效");
+    ErrorCode SCHEDULING_SHIFT_RANGE_REQUIRED = new ErrorCode(1_004_057_005, "允许挪动已有任务排期时必须填写最大挪动范围");
 
 }

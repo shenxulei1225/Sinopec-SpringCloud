@@ -2,8 +2,8 @@ package cn.cheers.x.module.platform.orchestration.service;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.orchestration.PatrolOrchestrationApi;
-import cn.cheers.x.inspection.orchestration.dto.PatrolExpandReqDTO;
-import cn.cheers.x.inspection.orchestration.dto.PatrolExpandRespDTO;
+import cn.cheers.x.inspection.orchestration.dto.PatrolScheduleMapReqDTO;
+import cn.cheers.x.inspection.orchestration.dto.PatrolScheduleMapRespDTO;
 import cn.cheers.x.maintenance.api.MaintenanceApi;
 import cn.cheers.x.module.platform.capability.api.MappingProfileApi;
 import cn.cheers.x.module.platform.capability.api.ProcessCapabilityBindingApi;
@@ -14,7 +14,7 @@ import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunResponse;
 import cn.cheers.x.module.platform.contract.dto.schedule.SchedulingSpecDTO;
 import cn.cheers.x.module.platform.contract.dto.work.WorkItemDTO;
 import cn.cheers.x.module.platform.orchestration.enums.OrchestrationRefs;
-import cn.cheers.x.module.platform.orchestration.handler.patrol.PatrolExpandMapHandler;
+import cn.cheers.x.module.platform.orchestration.handler.patrol.PatrolScheduleMapHandler;
 import cn.cheers.x.module.platform.orchestration.phase.BuiltinRoutePhaseHandler;
 import cn.cheers.x.module.platform.orchestration.phase.PhaseHandlerRegistry;
 import cn.cheers.x.module.platform.orchestration.route.RoutePayloadKeys;
@@ -64,7 +64,7 @@ class PatrolRoutePreviewOrchestrationTest {
 
     @BeforeEach
     void setUp() {
-        PatrolExpandMapHandler expandHandler = new PatrolExpandMapHandler();
+        PatrolScheduleMapHandler expandHandler = new PatrolScheduleMapHandler();
         ReflectionTestUtils.setField(expandHandler, "patrolOrchestrationApi", patrolOrchestrationApi);
 
         BuiltinRoutePhaseHandler routeHandler = new BuiltinRoutePhaseHandler();
@@ -84,19 +84,19 @@ class PatrolRoutePreviewOrchestrationTest {
     }
 
     @Test
-    @DisplayName("orch.patrol.route_preview_v1 dryRun stopAfter ROUTE 返回 routePreview 与 durationEstimateMinutes")
+    @DisplayName("orch.patrol.route_preview_v1 dryRun stopAfter ROUTE 返回 routePreview 与 estimatedDuration")
     void run_routePreviewTemplate_dryRunStopAfterRoute_returnsPreviewAndDuration() {
         Map<String, Object> expandedPayload = new LinkedHashMap<>();
         expandedPayload.put(RoutePayloadKeys.NETWORK_REF, "net_patrol_1");
         expandedPayload.put(RoutePayloadKeys.STOP_IDS, List.of("sta_1", "sta_2"));
         expandedPayload.put(RoutePayloadKeys.INSPECTION_TYPE, "HUMAN");
-        expandedPayload.put(RoutePayloadKeys.WORK_MINUTES, 10);
+        expandedPayload.put(RoutePayloadKeys.ESTIMATED_ACTION_DURATION, 10);
         WorkItemDTO expanded = WorkItemDTO.builder()
                 .workId("patrol-work-1")
                 .payload(expandedPayload)
                 .build();
-        when(patrolOrchestrationApi.expand(any(PatrolExpandReqDTO.class)))
-                .thenReturn(CommonResult.success(PatrolExpandRespDTO.builder()
+        when(patrolOrchestrationApi.expandPatrolWorkItems(any(PatrolScheduleMapReqDTO.class)))
+                .thenReturn(CommonResult.success(PatrolScheduleMapRespDTO.builder()
                         .workItems(List.of(expanded))
                         .networkRef("net_patrol_1")
                         .stopIds(List.of("sta_1", "sta_2"))
@@ -123,11 +123,11 @@ class PatrolRoutePreviewOrchestrationTest {
         assertEquals("net_patrol_1", response.getRoutePreview().getNetworkRef());
         assertNotNull(response.getWorkItems());
         assertEquals(1, response.getWorkItems().size());
-        // travel ceil(180/60)=3 + workMinutes 10 => 13
-        assertEquals(13, response.getWorkItems().get(0).getDurationEstimateMinutes());
+        // travel ceil(180/60)=3 + estimatedActionDuration 10 => 13
+        assertEquals(13, response.getWorkItems().get(0).getEstimatedDuration());
         assertNotNull(response.getWorkItems().get(0).getPayload().get(RoutePayloadKeys.PLANNED_ROUTE));
 
-        verify(patrolOrchestrationApi).expand(any(PatrolExpandReqDTO.class));
+        verify(patrolOrchestrationApi).expandPatrolWorkItems(any(PatrolScheduleMapReqDTO.class));
         verify(routePlanApi).plan(any(RouteRequestDTO.class));
         verify(schedulingEngine, never()).solve(anyList(), any(), anyString(), anyList());
         verify(runtimePersistApi, never()).persist(any(RuntimePersistReqDTO.class));

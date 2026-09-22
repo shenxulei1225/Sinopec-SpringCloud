@@ -9,6 +9,7 @@ import cn.cheers.x.module.platform.capability.api.dto.ProcessCapabilityBindingRe
 import cn.cheers.x.module.platform.capability.api.dto.ResolveWorkItemsReqDTO;
 import cn.cheers.x.module.platform.contract.ContractVersions;
 import cn.cheers.x.module.platform.contract.dto.runtime.RuntimeJobDTO;
+import cn.cheers.x.module.platform.contract.dto.reservation.ResourceReservationDTO;
 import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunRequest;
 import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunResponse;
 import cn.cheers.x.module.platform.contract.dto.schedule.SchedulingSpecDTO;
@@ -233,7 +234,7 @@ public class OrchestrationRunner {
                     runDispatch(context, workOrderIds);
                 }
             }
-            case CONFIRM -> log.debug("CONFIRM phase no-op until business handler, ref={}",
+            case SAVE_ROUTE -> log.debug("SAVE_ROUTE phase no-op until business handler, ref={}",
                     context.getOrchestrationRef());
             default -> log.warn("Unhandled orchestration phase {}, skipped", phase);
         }
@@ -253,22 +254,24 @@ public class OrchestrationRunner {
             workItems = deprioritizeDisabledWorkItems(workItems);
         }
 
-        List<ScheduleSlotDTO> occupiedSlots = List.of();
+        List<ResourceReservationDTO> occupiedReservations = List.of();
         if (usesOccupiedSlots(context.getOrchestrationRef())) {
-            occupiedSlots = loadOccupiedSlots(context);
+            occupiedReservations = loadOccupiedSlots(context).stream()
+                    .map(ScheduleSlotDTO::legacyToReservation)
+                    .toList();
         }
 
-        List<ScheduleSlotDTO> slots = schedulingEngine.solve(
+        List<ResourceReservationDTO> reservations = schedulingEngine.solve(
                 workItems,
                 schedulingSpec,
                 context.getRuntimeJobId(),
-                occupiedSlots);
+                occupiedReservations);
         if (StringUtils.hasText(context.getPolicySnapshotId())) {
-            for (ScheduleSlotDTO slot : slots) {
-                slot.setPolicySnapshotId(context.getPolicySnapshotId());
+            for (ResourceReservationDTO reservation : reservations) {
+                reservation.setPolicySnapshotId(context.getPolicySnapshotId());
             }
         }
-        context.setSlots(slots);
+        context.setSlots(reservations.stream().map(ScheduleSlotDTO::from).toList());
     }
 
     private void runPersist(PhaseContext context) {
@@ -421,7 +424,7 @@ public class OrchestrationRunner {
                 .entityTypeCode(source.getEntityTypeCode())
                 .sourceModelCode(source.getSourceModelCode())
                 .sourceInstanceId(source.getSourceInstanceId())
-                .durationEstimateMinutes(source.getDurationEstimateMinutes())
+                .estimatedDuration(source.getEstimatedDuration())
                 .priority(source.getPriority())
                 .resourceRequirements(source.getResourceRequirements())
                 .timePreferences(source.getTimePreferences())
@@ -493,7 +496,7 @@ public class OrchestrationRunner {
 
     private boolean usesOccupiedSlots(String orchestrationRef) {
         return OrchestrationRefs.STANDARD_EXPAND_SOLVE_PERSIST_V1.equals(orchestrationRef)
-                || OrchestrationRefs.PATROL_SCHEDULE_ENABLE_V1.equals(orchestrationRef)
+                || OrchestrationRefs.PATROL_ORCHESTRATION_V1.equals(orchestrationRef)
                 || OrchestrationRefs.PATROL_REPLAN_V1.equals(orchestrationRef);
     }
 

@@ -18,7 +18,10 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -28,10 +31,11 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Postgres 实体字段查询引擎：
- * - keyword：索引表类型列（value_string / value_number）+ 实体表核心/基础列
- * - filter：relation 走关系表，non-relation 走索引表类型列
- * 不负责：读路径把数值再抄进 value_string，或放宽分类过滤来「搜出结果」。
+ * Postgres 实体字段查询引擎。
+ *
+ * <p>搜索：在配置允许搜的字段里找同一个词（系统列 / 基础固定列 / 扩展索引，OR）。</p>
+ * <p>筛选：针对已知字段收窄。实体表有这一列就按实体详情判；没有才走扩展索引。</p>
+ * <p>不负责：查树组树；把固定列再抄进扩展 JSON / 索引。</p>
  */
 @Service
 @Slf4j
@@ -418,6 +422,121 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
     }
 
     /**
+     * 按已知字段排序：系统列和基础固定列读实体表，扩展字段读索引。
+     */
+    @Override
+    public List<Long> sortEntityIds(String entityTypeCode, String fieldCode, boolean asc, List<Long> candidateIds) {
+        if (candidateIds == null || candidateIds.isEmpty() || !StringUtils.hasText(fieldCode)) {
+            return candidateIds == null ? List.of() : List.copyOf(candidateIds);
+        }
+        Map<Long, Comparable<?>> values = loadSortValues(entityTypeCode, fieldCode.trim(), candidateIds);
+        Comparator<Long> byValue = Comparator.comparing(
+                values::get,
+                Comparator.nullsLast(PostgresEntityFieldQueryEngine::compareSortValues));
+        if (!asc) {
+            byValue = byValue.reversed();
+        }
+        Comparator<Long> stable = byValue.thenComparing(id -> id, Comparator.nullsLast(Long::compareTo));
+        return candidateIds.stream().filter(id -> id != null).sorted(stable).toList();
+    }
+
+    private Map<Long, Comparable<?>> loadSortValues(String entityTypeCode, String fieldCode, List<Long> candidateIds) {
+        if (isCoreSearchField(fieldCode.toLowerCase(Locale.ROOT))) {
+            return loadCoreSortValues(entityTypeCode, fieldCode, candidateIds);
+        }
+        if (StringUtils.hasText(entityDedicatedColumnService.resolvePhysicalColumn(entityTypeCode, fieldCode))) {
+            Map<Long, Object> physical = entityDedicatedColumnService
+                    .loadPhysicalFieldValues(entityTypeCode, fieldCode, candidateIds);
+            Map<Long, Comparable<?>> out = new HashMap<>();
+            for (Map.Entry<Long, Object> e : physical.entrySet()) {
+                out.put(e.getKey(), toComparableSortValue(e.getValue()));
+            }
+            return out;
+        }
+        return loadIndexSortValues(fieldCode, candidateIds);
+    }
+
+    private Map<Long, Comparable<?>> loadCoreSortValues(String entityTypeCode, String fieldCode, List<Long> candidateIds) {
+        List<EntityDO> entities = entityCoreService.listByIds(candidateIds, entityTypeCode);
+        Map<Long, Comparable<?>> out = new HashMap<>();
+        if (entities == null) {
+            return out;
+        }
+        String lower = fieldCode.toLowerCase(Locale.ROOT);
+        for (EntityDO entity : entities) {
+            if (entity == null || entity.getId() == null) {
+                continue;
+            }
+            Comparable<?> value = switch (lower) {
+                case "name" -> entity.getName();
+                case "code" -> entity.getCode();
+                case "status" -> entity.getStatus();
+                case "id" -> entity.getId();
+                default -> null;
+            };
+            out.put(entity.getId(), value);
+        }
+        return out;
+    }
+
+    private Map<Long, Comparable<?>> loadIndexSortValues(String fieldCode, List<Long> candidateIds) {
+        List<EntityFieldIndexDO> rows = entityFieldIndexMapper.selectByFieldCodeAndEntityIds(fieldCode, candidateIds);
+        Map<Long, Comparable<?>> out = new HashMap<>();
+        if (rows == null) {
+            return out;
+        }
+        for (EntityFieldIndexDO row : rows) {
+            if (row == null || row.getEntityId() == null) {
+                continue;
+            }
+            Comparable<?> value = firstNonNull(
+                    row.getValueNumber(), row.getValueDatetime(), row.getValueDate(),
+                    row.getValueBoolean(), row.getValueString());
+            out.put(row.getEntityId(), value);
+        }
+        return out;
+    }
+
+    private static Comparable<?> firstNonNull(Comparable<?>... values) {
+        if (values == null) {
+            return null;
+        }
+        for (Comparable<?> value : values) {
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private static Comparable<?> toComparableSortValue(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        if (raw instanceof Comparable<?> comparable && !(raw instanceof Map)) {
+            return comparable;
+        }
+        return String.valueOf(raw);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static int compareSortValues(Comparable<?> left, Comparable<?> right) {
+        if (left == null && right == null) {
+            return 0;
+        }
+        if (left == null) {
+            return -1;
+        }
+        if (right == null) {
+            return 1;
+        }
+        if (left.getClass().isInstance(right)) {
+            return ((Comparable) left).compareTo(right);
+        }
+        return String.valueOf(left).compareTo(String.valueOf(right));
+    }
+
+    /**
      * 按单个字段筛选条件，命中实体 ID 集合。
      *
      * <p><b>功能定位</b>：</p>
@@ -444,14 +563,28 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
             FieldFilterReqVO filter,
             Map<String, FieldDO> fieldCache,
             Set<Long> candidateIds) {
-        FieldDO field = fieldCache.computeIfAbsent(filter.getFieldCode(), fieldMapper::selectByCode);
+        String fieldCode = filter.getFieldCode();
+        String op = filter.getOp() == null ? "" : filter.getOp().trim().toUpperCase(Locale.ROOT);
+        // 系统列不一定在字段库。已知字段在实体表上就先按实体详情筛。
+        if (isCoreSearchField(fieldCode.trim().toLowerCase(Locale.ROOT))) {
+            Set<Long> coreMatched = matchCoreColumnFilter(
+                    entityTypeCode, fieldCode, op, filter.getValue(), candidateIds);
+            return coreMatched == null ? null : coreMatched;
+        }
+        FieldDO field = fieldCache.computeIfAbsent(fieldCode, fieldMapper::selectByCode);
         if (field == null || field.getType() == null) {
             return null;
         }
         String fieldType = field.getType().trim().toUpperCase(Locale.ROOT);
-        String op = filter.getOp() == null ? "" : filter.getOp().trim().toUpperCase(Locale.ROOT);
 
         Set<Long> matched;
+        if (isEntityTableField(entityTypeCode, fieldCode)) {
+            matched = matchEntityTableFieldFilter(entityTypeCode, filter, op, candidateIds, fieldType);
+            if (matched == null) {
+                return null;
+            }
+            return retainFilterableByField(entityTypeCode, filter.getFieldCode(), matched, candidateIds);
+        }
         if (isNumberType(fieldType)) {
             BigDecimal[] range = normalizeNumberRange(op, filter.getValue());
             if (range == null) {
@@ -486,9 +619,8 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
         } else if (isStringStorageType(fieldType)) {
             if (isTextLikeType(fieldType)) {
                 matched = matchStringWithTextOps(filter, op);
-            } else if (isSingleOptionType(fieldType)) {
-                matched = matchStringExactOnly(filter, op);
-            } else if (isMultiOptionType(fieldType)) {
+            } else if (isSingleOptionType(fieldType) || isMultiOptionType(fieldType)) {
+                // 枚举也可按多选存（设备适用手段）。EQ/IN/CONTAINS 都按 token 命中，不把 JSON 数组当成整段字符串。
                 matched = matchStringWithMultiSelectOps(filter, op, candidateIds);
             } else if (isReferenceType(fieldType)) {
                 matched = matchStringExactOnly(filter, op);
@@ -630,6 +762,223 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
             return matchMultiSelectByExactTokens(fieldCode, tokens, candidateIds);
         }
         return null;
+    }
+
+    /**
+     * 实体表上有这一列：系统列，或类型启用的基础固定列。
+     */
+    private boolean isEntityTableField(String entityTypeCode, String fieldCode) {
+        if (!StringUtils.hasText(fieldCode)) {
+            return false;
+        }
+        if (isCoreSearchField(fieldCode.trim().toLowerCase(Locale.ROOT))) {
+            return true;
+        }
+        return StringUtils.hasText(entityDedicatedColumnService.resolvePhysicalColumn(entityTypeCode, fieldCode));
+    }
+
+    /**
+     * 已知字段筛：读实体详情上的系统列 / 固定列，不打扩展索引。
+     */
+    private Set<Long> matchEntityTableFieldFilter(
+            String entityTypeCode,
+            FieldFilterReqVO filter,
+            String op,
+            Set<Long> candidateIds,
+            String fieldType) {
+        String fieldCode = filter.getFieldCode().trim();
+        if (isCoreSearchField(fieldCode.toLowerCase(Locale.ROOT))) {
+            return matchCoreColumnFilter(entityTypeCode, fieldCode, op, filter.getValue(), candidateIds);
+        }
+        Map<Long, Object> values = entityDedicatedColumnService.loadPhysicalFieldValues(
+                entityTypeCode, fieldCode, candidateIds);
+        if (values == null || values.isEmpty()) {
+            return Collections.emptySet();
+        }
+        if (isSingleOptionType(fieldType) || isMultiOptionType(fieldType)) {
+            return matchDedicatedTokenFilter(values, op, filter.getValue(), candidateIds);
+        }
+        if (isTextLikeType(fieldType)) {
+            return matchDedicatedTextFilter(values, op, filter.getValue(), candidateIds);
+        }
+        if (isNumberType(fieldType) || "DATE".equals(fieldType)
+                || "DATETIME".equals(fieldType) || "TIMESTAMP".equals(fieldType)
+                || "BOOLEAN".equals(fieldType) || "BOOL".equals(fieldType)) {
+            return matchDedicatedScalarFilter(values, op, filter.getValue(), candidateIds, fieldType);
+        }
+        return matchDedicatedTokenFilter(values, op, filter.getValue(), candidateIds);
+    }
+
+    private Set<Long> matchCoreColumnFilter(
+            String entityTypeCode,
+            String fieldCode,
+            String op,
+            Object rawValue,
+            Set<Long> candidateIds) {
+        List<EntityDO> entities = entityCoreService.listByIds(List.copyOf(candidateIds), entityTypeCode);
+        if (entities == null || entities.isEmpty()) {
+            return Collections.emptySet();
+        }
+        Set<Long> matched = new HashSet<>();
+        String lower = fieldCode.toLowerCase(Locale.ROOT);
+        for (EntityDO entity : entities) {
+            if (entity == null || entity.getId() == null || !candidateIds.contains(entity.getId())) {
+                continue;
+            }
+            Object cell = switch (lower) {
+                case "name" -> entity.getName();
+                case "code" -> entity.getCode();
+                case "status" -> entity.getStatus();
+                case "id" -> entity.getId();
+                default -> null;
+            };
+            if (dedicatedValueMatches(cell, op, rawValue, true)) {
+                matched.add(entity.getId());
+            }
+        }
+        return matched;
+    }
+
+    private Set<Long> matchDedicatedTokenFilter(
+            Map<Long, Object> values, String op, Object rawValue, Set<Long> candidateIds) {
+        List<String> expected = expectedTokens(op, rawValue);
+        if (expected == null) {
+            return null;
+        }
+        if (expected.isEmpty()) {
+            return Collections.emptySet();
+        }
+        Set<Long> matched = new HashSet<>();
+        for (Long id : candidateIds) {
+            if (id == null || !values.containsKey(id)) {
+                continue;
+            }
+            Set<String> actual = tokensFromDedicatedValue(values.get(id));
+            if (actual.isEmpty()) {
+                continue;
+            }
+            for (String token : expected) {
+                if (actual.contains(token)) {
+                    matched.add(id);
+                    break;
+                }
+            }
+        }
+        return matched;
+    }
+
+    private Set<Long> matchDedicatedTextFilter(
+            Map<Long, Object> values, String op, Object rawValue, Set<Long> candidateIds) {
+        if ("CONTAINS".equals(op) || "LIKE".equals(op)) {
+            String needle = normalizeSingleString(rawValue);
+            if (needle == null) {
+                return null;
+            }
+            String lower = needle.toLowerCase(Locale.ROOT);
+            Set<Long> matched = new HashSet<>();
+            for (Long id : candidateIds) {
+                if (id == null || !values.containsKey(id)) {
+                    continue;
+                }
+                String text = normalizeKeywordText(values.get(id));
+                if (text != null && text.contains(lower)) {
+                    matched.add(id);
+                }
+            }
+            return matched;
+        }
+        return matchDedicatedTokenFilter(values, op, rawValue, candidateIds);
+    }
+
+    private Set<Long> matchDedicatedScalarFilter(
+            Map<Long, Object> values,
+            String op,
+            Object rawValue,
+            Set<Long> candidateIds,
+            String fieldType) {
+        Set<Long> matched = new HashSet<>();
+        for (Long id : candidateIds) {
+            if (id == null || !values.containsKey(id)) {
+                continue;
+            }
+            if (dedicatedValueMatches(values.get(id), op, rawValue, isTextLikeType(fieldType))) {
+                matched.add(id);
+            }
+        }
+        return matched;
+    }
+
+    private boolean dedicatedValueMatches(Object cell, String op, Object rawValue, boolean textOps) {
+        if ("EQ".equals(op)) {
+            String expected = normalizeSingleString(rawValue);
+            if (expected == null) {
+                return false;
+            }
+            Set<String> actual = tokensFromDedicatedValue(cell);
+            return actual.contains(expected);
+        }
+        if ("IN".equals(op)) {
+            List<String> expected = normalizeStringList(rawValue);
+            if (expected.isEmpty()) {
+                return false;
+            }
+            Set<String> actual = tokensFromDedicatedValue(cell);
+            for (String token : expected) {
+                if (actual.contains(token)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (textOps && ("CONTAINS".equals(op) || "LIKE".equals(op))) {
+            String needle = normalizeSingleString(rawValue);
+            String text = normalizeKeywordText(cell);
+            return needle != null && text != null && text.contains(needle.toLowerCase(Locale.ROOT));
+        }
+        return false;
+    }
+
+    private List<String> expectedTokens(String op, Object rawValue) {
+        if ("EQ".equals(op)) {
+            String token = normalizeSingleString(rawValue);
+            return token == null ? null : List.of(token);
+        }
+        if ("IN".equals(op) || "CONTAINS".equals(op) || "LIKE".equals(op)) {
+            return normalizeStringListOrSingle(rawValue);
+        }
+        return null;
+    }
+
+    /**
+     * 固定列原始值收成筛选 token。JSON 数组、集合、标量都能拆。
+     */
+    static Set<String> tokensFromDedicatedValue(Object raw) {
+        if (raw == null) {
+            return Collections.emptySet();
+        }
+        if (raw instanceof Collection<?> collection) {
+            Set<String> out = new HashSet<>();
+            for (Object item : collection) {
+                String token = item == null ? null : String.valueOf(item).trim();
+                if (token != null && !token.isBlank()) {
+                    out.add(token);
+                }
+            }
+            return out;
+        }
+        if (raw.getClass().isArray()) {
+            int len = java.lang.reflect.Array.getLength(raw);
+            Set<String> out = new HashSet<>();
+            for (int i = 0; i < len; i++) {
+                Object item = java.lang.reflect.Array.get(raw, i);
+                String token = item == null ? null : String.valueOf(item).trim();
+                if (token != null && !token.isBlank()) {
+                    out.add(token);
+                }
+            }
+            return out;
+        }
+        return parseMultiSelectTokens(String.valueOf(raw));
     }
 
     private List<Long> normalizeEntityIds(Object raw) {
@@ -859,7 +1208,7 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
         return matched;
     }
 
-    private Set<String> parseMultiSelectTokens(String raw) {
+    private static Set<String> parseMultiSelectTokens(String raw) {
         String s = raw == null ? "" : raw.trim();
         if (s.isBlank()) {
             return Collections.emptySet();

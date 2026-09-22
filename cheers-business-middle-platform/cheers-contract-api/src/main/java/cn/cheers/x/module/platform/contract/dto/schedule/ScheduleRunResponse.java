@@ -32,4 +32,8 @@ public class ScheduleRunResponse {
     private RoutePreviewDTO routePreview;
     /** 编排阶段后的工作项（含 expand/route 回写字段） */
     private List<WorkItemDTO> workItems;
+    /**
+     * 智能编排试排后总任务步骤图（step_tree_json）；仅 inspection previewOrchestration 回填，供核对计划步展示。
+     */
+    private Object executionStepTree;
 }

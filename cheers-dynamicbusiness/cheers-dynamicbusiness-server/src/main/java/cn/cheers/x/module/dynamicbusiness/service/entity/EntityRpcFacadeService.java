@@ -108,6 +108,7 @@ public class EntityRpcFacadeService {
 
     /**
      * 按字段编码覆盖更新。先读旧值再合并，避免只带部分字段时把未传列抹掉。
+     * 本次请求里的键若已在旧详情的基础列里（如步骤图默认空数组），必须用本次值盖掉，不能让旧空值再写回去。
      */
     public void updateFields(EntityWriteReqDTO req) {
         if (req == null || req.getId() == null) {
@@ -131,7 +132,13 @@ public class EntityRpcFacadeService {
         Map<String, Object> customFields = old.getCustomFields() == null
                 ? new LinkedHashMap<>()
                 : new LinkedHashMap<>(old.getCustomFields());
-        customFields.putAll(copyFields(req.getFields()));
+        Map<String, Object> incoming = copyFields(req.getFields());
+        customFields.putAll(incoming);
+        for (Map.Entry<String, Object> entry : incoming.entrySet()) {
+            if (entry.getKey() != null && baseFields.containsKey(entry.getKey())) {
+                baseFields.put(entry.getKey(), entry.getValue());
+            }
+        }
         EntityUpdateReqVO vo = new EntityUpdateReqVO();
         vo.setId(req.getId());
         vo.setBaseFields(baseFields);

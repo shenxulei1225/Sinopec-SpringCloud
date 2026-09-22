@@ -15,26 +15,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PatrolPlannedRouteSupportTest {
 
     @Test
-    @DisplayName("非空 stopIds 视为已确认路线")
-    void hasConfirmedRoute_withStopIds() {
+    @DisplayName("非空 stopIds 视为已保存路线")
+    void hasSavedRoute_withStopIds() {
         Map<String, Object> planned = new LinkedHashMap<>();
         planned.put("stopIds", List.of("sta-1", "sta-2"));
-        assertTrue(PatrolPlannedRouteSupport.hasConfirmedRoute(planned));
+        assertTrue(PatrolPlannedRouteSupport.hasSavedRoute(planned));
     }
 
     @Test
-    @DisplayName("空对象或无 stopIds 不算已确认")
-    void hasConfirmedRoute_empty() {
-        assertFalse(PatrolPlannedRouteSupport.hasConfirmedRoute(null));
-        assertFalse(PatrolPlannedRouteSupport.hasConfirmedRoute(Map.of()));
-        assertFalse(PatrolPlannedRouteSupport.hasConfirmedRoute(Map.of("stopIds", List.of())));
+    @DisplayName("空对象或无 stopIds 不算已保存路线")
+    void hasSavedRoute_empty() {
+        assertFalse(PatrolPlannedRouteSupport.hasSavedRoute(null));
+        assertFalse(PatrolPlannedRouteSupport.hasSavedRoute(Map.of()));
+        assertFalse(PatrolPlannedRouteSupport.hasSavedRoute(Map.of("stopIds", List.of())));
     }
 
     @Test
-    @DisplayName("可从 plannedRoute 距离估算时长")
-    void resolveDurationMinutes_fromDistance() {
+    @DisplayName("可从 plannedRoute 距离估算路径耗时")
+    void resolveTravelMinutesOnly_fromDistance() {
         Map<String, Object> planned = new LinkedHashMap<>();
         planned.put("totalDistanceMeters", 80L);
-        assertEquals(2, PatrolPlannedRouteSupport.resolveDurationMinutes(planned, "ROBOT"));
+        assertEquals(2, PatrolPlannedRouteSupport.resolveTravelMinutesOnly(planned, "ROBOT"));
     }
 }

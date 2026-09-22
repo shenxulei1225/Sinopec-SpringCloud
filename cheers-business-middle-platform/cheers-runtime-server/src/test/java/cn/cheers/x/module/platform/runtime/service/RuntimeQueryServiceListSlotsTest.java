@@ -3,8 +3,8 @@ package cn.cheers.x.module.platform.runtime.service;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.platform.contract.dto.slot.ScheduleSlotDTO;
 import cn.cheers.x.module.platform.contract.enums.SlotStatus;
-import cn.cheers.x.module.platform.runtime.dal.dataobject.ScheduleSlotDO;
-import cn.cheers.x.module.platform.runtime.dal.mysql.ScheduleSlotMapper;
+import cn.cheers.x.module.platform.runtime.dal.dataobject.ResourceReservationDO;
+import cn.cheers.x.module.platform.runtime.dal.mysql.ResourceReservationMapper;
 import cn.cheers.x.module.platform.runtime.enums.ErrorCodeConstants;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import org.junit.jupiter.api.Test;
@@ -31,7 +31,7 @@ class RuntimeQueryServiceListSlotsTest {
     private static final OffsetDateTime TO = OffsetDateTime.parse("2026-07-21T18:00:00+08:00");
 
     @Mock
-    private ScheduleSlotMapper scheduleSlotMapper;
+    private ResourceReservationMapper resourceReservationMapper;
 
     @InjectMocks
     private RuntimeQueryServiceImpl runtimeQueryService;
@@ -52,27 +52,27 @@ class RuntimeQueryServiceListSlotsTest {
 
     @Test
     void listSlots_filtersBySite_entityType_andStatuses() {
-        ScheduleSlotDO matching = slot("slot-1", "patrol_task", 100L, SlotStatus.PLANNED,
+        ResourceReservationDO matching = reservation("slot-1", "patrol_task", 100L, SlotStatus.PLANNED,
                 "2026-07-21T09:00:00+08:00", "2026-07-21T10:00:00+08:00", null);
-        when(scheduleSlotMapper.selectList(any(LambdaQueryWrapperX.class))).thenReturn(List.of(matching));
+        when(resourceReservationMapper.selectList(any(LambdaQueryWrapperX.class))).thenReturn(List.of(matching));
 
         List<ScheduleSlotDTO> result = runtimeQueryService.listSlots(
                 FROM, TO, null, "patrol_task", 100L, List.of(SlotStatus.PLANNED));
 
         assertEquals(1, result.size());
         assertEquals("slot-1", result.get(0).getSlotId());
-        verify(scheduleSlotMapper).selectList(any(LambdaQueryWrapperX.class));
+        verify(resourceReservationMapper).selectList(any(LambdaQueryWrapperX.class));
     }
 
     @Test
     void listSlots_filtersByResourceId_inApplicationLayer() {
-        ScheduleSlotDO robotSlot = slot("slot-robot", "patrol_task", 100L, SlotStatus.PLANNED,
+        ResourceReservationDO robotSlot = reservation("slot-robot", "patrol_task", 100L, SlotStatus.PLANNED,
                 "2026-07-21T09:00:00+08:00", "2026-07-21T10:00:00+08:00",
                 "[{\"resourceType\":\"GROUND_ROBOT\",\"resourceId\":\"robot-1\"}]");
-        ScheduleSlotDO otherSlot = slot("slot-other", "patrol_task", 100L, SlotStatus.PLANNED,
+        ResourceReservationDO otherSlot = reservation("slot-other", "patrol_task", 100L, SlotStatus.PLANNED,
                 "2026-07-21T11:00:00+08:00", "2026-07-21T12:00:00+08:00",
                 "[{\"resourceType\":\"GROUND_ROBOT\",\"resourceId\":\"robot-2\"}]");
-        when(scheduleSlotMapper.selectList(any(LambdaQueryWrapperX.class)))
+        when(resourceReservationMapper.selectList(any(LambdaQueryWrapperX.class)))
                 .thenReturn(List.of(robotSlot, otherSlot));
 
         List<ScheduleSlotDTO> result = runtimeQueryService.listSlots(
@@ -86,9 +86,9 @@ class RuntimeQueryServiceListSlotsTest {
 
     @Test
     void listSlots_excludesCancelledWhenStatusesProvided() {
-        ScheduleSlotDO planned = slot("slot-planned", "patrol_task", 100L, SlotStatus.PLANNED,
+        ResourceReservationDO planned = reservation("slot-planned", "patrol_task", 100L, SlotStatus.PLANNED,
                 "2026-07-21T09:00:00+08:00", "2026-07-21T10:00:00+08:00", null);
-        when(scheduleSlotMapper.selectList(any(LambdaQueryWrapperX.class))).thenReturn(List.of(planned));
+        when(resourceReservationMapper.selectList(any(LambdaQueryWrapperX.class))).thenReturn(List.of(planned));
 
         List<ScheduleSlotDTO> occupied = runtimeQueryService.listSlots(
                 FROM, TO, null, null, null,
@@ -97,22 +97,27 @@ class RuntimeQueryServiceListSlotsTest {
         assertEquals(1, occupied.size());
         assertEquals(SlotStatus.PLANNED, occupied.get(0).getSlotStatus());
 
-        ArgumentCaptor<LambdaQueryWrapperX<ScheduleSlotDO>> captor =
+        ArgumentCaptor<LambdaQueryWrapperX<ResourceReservationDO>> captor =
                 ArgumentCaptor.forClass(LambdaQueryWrapperX.class);
-        verify(scheduleSlotMapper).selectList(captor.capture());
+        verify(resourceReservationMapper).selectList(captor.capture());
     }
 
-    private static ScheduleSlotDO slot(String id, String entityTypeCode, Long facilityId, SlotStatus status,
-                                       String plannedStart, String plannedEnd, String assignedResources) {
-        return ScheduleSlotDO.builder()
+    private static ResourceReservationDO reservation(String id, String entityTypeCode, Long facilityId,
+                                                     SlotStatus status, String plannedStart, String plannedEnd,
+                                                     String assignedResources) {
+        OffsetDateTime start = OffsetDateTime.parse(plannedStart);
+        OffsetDateTime end = OffsetDateTime.parse(plannedEnd);
+        return ResourceReservationDO.builder()
                 .id(id)
                 .runtimeJobId("job-1")
                 .workId("work-1")
                 .entityTypeCode(entityTypeCode)
                 .facilityId(facilityId)
-                .slotStatus(status.name())
-                .plannedStart(OffsetDateTime.parse(plannedStart))
-                .plannedEnd(OffsetDateTime.parse(plannedEnd))
+                .candidateStatus(status.name())
+                .plannedStart(start)
+                .plannedEnd(end)
+                .candidateStart(start)
+                .candidateEnd(end)
                 .assignedResources(assignedResources)
                 .build();
     }

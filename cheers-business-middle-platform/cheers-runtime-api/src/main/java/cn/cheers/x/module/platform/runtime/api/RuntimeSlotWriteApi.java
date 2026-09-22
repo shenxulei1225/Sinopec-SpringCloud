@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @FeignClient(name = ApiConstants.NAME)
 @Tag(name = "RPC 服务 - 平台 L4 计划点回写")
@@ -24,4 +25,8 @@ public interface RuntimeSlotWriteApi {
     @PostMapping(PREFIX + "/release-unfinished")
     @Operation(summary = "按运行作业释放未执行计划点占用（让路/挂起/中止）")
     CommonResult<Boolean> releaseUnfinished(@Valid @RequestBody RuntimeSlotReleaseReqDTO request);
+
+    @PostMapping(PREFIX + "/finalize-planned")
+    @Operation(summary = "启用排程：候选占窗定稿为计划起止时刻")
+    CommonResult<Boolean> finalizePlannedSchedule(@RequestParam("runtimeJobId") String runtimeJobId);
 }

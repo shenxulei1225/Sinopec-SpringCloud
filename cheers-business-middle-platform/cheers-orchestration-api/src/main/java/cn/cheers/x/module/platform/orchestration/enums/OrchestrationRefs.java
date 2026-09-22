@@ -15,9 +15,10 @@ public interface OrchestrationRefs {
 
     String PATROL_ROUTE_PREVIEW_V1 = "orch.patrol.route_preview_v1";
 
-    String PATROL_ROUTE_CONFIRM_V1 = "orch.patrol.route_confirm_v1";
+    String PATROL_ROUTE_SAVE_V1 = "orch.patrol.route_save_v1";
 
-    String PATROL_SCHEDULE_ENABLE_V1 = "orch.patrol.schedule_enable_v1";
+    /** 智能编排流水线（试排 dryRun / commit persist） */
+    String PATROL_ORCHESTRATION_V1 = "orch.patrol.orchestration_v1";
 
     String PATROL_REPLAN_V1 = "orch.patrol.replan_v1";
 }

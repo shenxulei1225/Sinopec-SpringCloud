@@ -21,6 +21,10 @@ public record TaskStepNode(
 ) {
     public static final String HANG_ACTION = "action";
     public static final String HANG_INSPECTION_ITEM = "inspection_item";
+    /** 起点 / 终点路网点位 */
+    public static final String HANG_POINT = "point";
+    /** 巡检对象成组：对象下挂检查项 */
+    public static final String HANG_EQUIPMENT = "equipment";
 
     public TaskStepNode {
         nodeKey = nodeKey == null ? "" : nodeKey.trim();
@@ -39,5 +43,9 @@ public record TaskStepNode(
 
     public boolean isInspectionItem() {
         return HANG_INSPECTION_ITEM.equals(hangTypeCode);
+    }
+
+    public boolean isStopGroup() {
+        return HANG_POINT.equals(hangTypeCode) || HANG_EQUIPMENT.equals(hangTypeCode);
     }
 }

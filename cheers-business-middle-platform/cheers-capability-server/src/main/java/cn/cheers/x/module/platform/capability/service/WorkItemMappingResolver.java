@@ -20,7 +20,7 @@ public class WorkItemMappingResolver {
         Map<String, Object> customFields = instance.getCustomFields() != null
                 ? instance.getCustomFields() : Map.of();
 
-        int duration = readInt(customFields, fieldMappings.get("durationEstimateMinutes"),
+        int duration = readInt(customFields, fieldMappings.get("estimatedDuration"),
                 profile.getDefaultDurationMinutes());
         int priority = readInt(customFields, fieldMappings.get("priority"),
                 profile.getDefaultPriority());
@@ -34,7 +34,7 @@ public class WorkItemMappingResolver {
                 .entityTypeCode(entityTypeCode)
                 .sourceModelCode(profile.getSourceModelCode())
                 .sourceInstanceId(sourceInstanceId)
-                .durationEstimateMinutes(Math.max(duration, 1))
+                .estimatedDuration(Math.max(duration, 1))
                 .priority(priority)
                 .payload(payload)
                 .build();

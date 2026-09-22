@@ -8,6 +8,7 @@ import cn.cheers.x.device.protocolgateway.api.opcode.TransportOpcode;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.task.service.execution.InspectionDeviceUplinkService;
+import cn.cheers.x.inspection.task.service.execution.scheduleboard.PatrolScheduleSlotExecutionWritebackService;
 import cn.cheers.x.inspection.task.service.execution.steptree.TaskStepTreeAssembler;
 import cn.cheers.x.module.dynamicbusiness.api.strategy.StrategyRuntimeApi;
 import cn.cheers.x.module.dynamicbusiness.api.strategy.dto.StrategyHandleRespDTO;
@@ -39,6 +40,7 @@ public class InspectionDeviceUplinkServiceImpl implements InspectionDeviceUplink
 
     private final StrategyRuntimeApi strategyRuntimeApi;
     private final ObjectMapper objectMapper;
+    private final PatrolScheduleSlotExecutionWritebackService scheduleSlotExecutionWritebackService;
 
     @Override
     public void applyCollection(CollectionSample sample) {
@@ -51,6 +53,7 @@ public class InspectionDeviceUplinkServiceImpl implements InspectionDeviceUplink
             return;
         }
         StrategyTriggerEventDTO event = buildCollectionEvent(sample);
+        final StrategyTriggerEventDTO handledEvent = event;
         CommonResult<StrategyHandleRespDTO> handled = strategyRuntimeApi.handle(event);
         if (handled == null || !handled.isSuccess()) {
             throw new ServiceException(
@@ -63,6 +66,13 @@ public class InspectionDeviceUplinkServiceImpl implements InspectionDeviceUplink
         if (data != null && data.isMatched()) {
             log.info("[patrol-uplink] 策略已处理 executionRecordId={} action={}",
                     sample.executionRecordId(), data.getActionName());
+            try {
+                scheduleSlotExecutionWritebackService.syncAfterStrategyHandle(handledEvent);
+            } catch (Exception ex) {
+                log.error("[patrol-uplink] 计划点写回失败 executionRecordId={} reason={}",
+                        sample.executionRecordId(), ex.getMessage());
+                throw ex;
+            }
         } else {
             log.debug("[patrol-uplink] 策略未命中 skipReason={}",
                     data != null ? data.getSkipReason() : null);

@@ -5,8 +5,8 @@ import cn.cheers.x.module.platform.contract.enums.SlotStatus;
 import cn.cheers.x.module.platform.runtime.api.dto.ProcessTimelineActionAppendReqDTO;
 import cn.cheers.x.module.platform.runtime.api.dto.RuntimeSlotReleaseReqDTO;
 import cn.cheers.x.module.platform.runtime.api.dto.RuntimeSlotStatusUpdateReqDTO;
-import cn.cheers.x.module.platform.runtime.dal.dataobject.ScheduleSlotDO;
-import cn.cheers.x.module.platform.runtime.dal.mysql.ScheduleSlotMapper;
+import cn.cheers.x.module.platform.runtime.dal.dataobject.ResourceReservationDO;
+import cn.cheers.x.module.platform.runtime.dal.mysql.ResourceReservationMapper;
 import cn.cheers.x.module.platform.runtime.enums.ErrorCodeConstants;
 import cn.cheers.x.module.platform.runtime.enums.RuntimeSlotReleaseMode;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
@@ -32,7 +32,7 @@ import static org.mockito.Mockito.when;
 class RuntimeSlotWriteServiceTest {
 
     @Mock
-    private ScheduleSlotMapper scheduleSlotMapper;
+    private ResourceReservationMapper resourceReservationMapper;
     @Mock
     private ProcessTimelineService processTimelineService;
 
@@ -41,7 +41,7 @@ class RuntimeSlotWriteServiceTest {
 
     @Test
     void update_missingSlot_throws() {
-        when(scheduleSlotMapper.selectById("missing-slot")).thenReturn(null);
+        when(resourceReservationMapper.selectById("missing-slot")).thenReturn(null);
 
         RuntimeSlotStatusUpdateReqDTO req = RuntimeSlotStatusUpdateReqDTO.builder()
                 .slotId("missing-slot")
@@ -51,22 +51,22 @@ class RuntimeSlotWriteServiceTest {
         ServiceException ex = assertThrows(ServiceException.class,
                 () -> runtimeSlotWriteService.updateSlotStatus(req));
         assertEquals(ErrorCodeConstants.SCHEDULE_SLOT_NOT_EXISTS.getCode(), ex.getCode());
-        verify(scheduleSlotMapper, never()).updateById(any(ScheduleSlotDO.class));
+        verify(resourceReservationMapper, never()).updateById(any(ResourceReservationDO.class));
         verify(processTimelineService, never()).append(any(ProcessTimelineActionAppendReqDTO.class));
     }
 
     @Test
     void update_completed_appendsTimeline() {
         OffsetDateTime actualEnd = OffsetDateTime.parse("2026-07-21T10:00:00+08:00");
-        ScheduleSlotDO existing = ScheduleSlotDO.builder()
+        ResourceReservationDO existing = ResourceReservationDO.builder()
                 .id("slot-1")
                 .runtimeJobId("job-1")
                 .workId("work-1")
                 .entityTypeCode("patrol_task")
-                .slotStatus(SlotStatus.PLANNED.name())
+                .candidateStatus(SlotStatus.PLANNED.name())
                 .facilityId(100L)
                 .build();
-        when(scheduleSlotMapper.selectById("slot-1")).thenReturn(existing);
+        when(resourceReservationMapper.selectById("slot-1")).thenReturn(existing);
         when(processTimelineService.append(any(ProcessTimelineActionAppendReqDTO.class))).thenReturn(42L);
 
         RuntimeSlotStatusUpdateReqDTO req = RuntimeSlotStatusUpdateReqDTO.builder()
@@ -78,9 +78,9 @@ class RuntimeSlotWriteServiceTest {
 
         runtimeSlotWriteService.updateSlotStatus(req);
 
-        ArgumentCaptor<ScheduleSlotDO> slotCaptor = ArgumentCaptor.forClass(ScheduleSlotDO.class);
-        verify(scheduleSlotMapper).updateById(slotCaptor.capture());
-        assertEquals(SlotStatus.COMPLETED.name(), slotCaptor.getValue().getSlotStatus());
+        ArgumentCaptor<ResourceReservationDO> slotCaptor = ArgumentCaptor.forClass(ResourceReservationDO.class);
+        verify(resourceReservationMapper).updateById(slotCaptor.capture());
+        assertEquals(SlotStatus.COMPLETED.name(), slotCaptor.getValue().getCandidateStatus());
         assertEquals(actualEnd, slotCaptor.getValue().getActualEnd());
 
         ArgumentCaptor<ProcessTimelineActionAppendReqDTO> timelineCaptor =
@@ -96,28 +96,28 @@ class RuntimeSlotWriteServiceTest {
 
     @Test
     void release_yield_keepsCompleted_cancelsPlanned() {
-        ScheduleSlotDO completed = ScheduleSlotDO.builder()
+        ResourceReservationDO completed = ResourceReservationDO.builder()
                 .id("slot-done")
                 .runtimeJobId("job-1")
                 .workId("work-1")
-                .slotStatus(SlotStatus.COMPLETED.name())
+                .candidateStatus(SlotStatus.COMPLETED.name())
                 .facilityId(100L)
                 .build();
-        ScheduleSlotDO planned = ScheduleSlotDO.builder()
+        ResourceReservationDO planned = ResourceReservationDO.builder()
                 .id("slot-planned")
                 .runtimeJobId("job-1")
                 .workId("work-1")
-                .slotStatus(SlotStatus.PLANNED.name())
+                .candidateStatus(SlotStatus.PLANNED.name())
                 .facilityId(100L)
                 .build();
-        ScheduleSlotDO inProgress = ScheduleSlotDO.builder()
+        ResourceReservationDO inProgress = ResourceReservationDO.builder()
                 .id("slot-running")
                 .runtimeJobId("job-1")
                 .workId("work-1")
-                .slotStatus(SlotStatus.IN_PROGRESS.name())
+                .candidateStatus(SlotStatus.IN_PROGRESS.name())
                 .facilityId(100L)
                 .build();
-        when(scheduleSlotMapper.selectList(any(LambdaQueryWrapperX.class)))
+        when(resourceReservationMapper.selectList(any(LambdaQueryWrapperX.class)))
                 .thenReturn(List.of(completed, planned, inProgress));
 
         RuntimeSlotReleaseReqDTO req = RuntimeSlotReleaseReqDTO.builder()
@@ -128,11 +128,11 @@ class RuntimeSlotWriteServiceTest {
 
         runtimeSlotWriteService.releaseUnfinished(req);
 
-        ArgumentCaptor<ScheduleSlotDO> slotCaptor = ArgumentCaptor.forClass(ScheduleSlotDO.class);
-        verify(scheduleSlotMapper, times(2)).updateById(slotCaptor.capture());
-        List<ScheduleSlotDO> updated = slotCaptor.getAllValues();
-        assertEquals(SlotStatus.CANCELLED.name(), updated.get(0).getSlotStatus());
-        assertEquals(SlotStatus.CANCELLED.name(), updated.get(1).getSlotStatus());
+        ArgumentCaptor<ResourceReservationDO> slotCaptor = ArgumentCaptor.forClass(ResourceReservationDO.class);
+        verify(resourceReservationMapper, times(2)).updateById(slotCaptor.capture());
+        List<ResourceReservationDO> updated = slotCaptor.getAllValues();
+        assertEquals(SlotStatus.CANCELLED.name(), updated.get(0).getCandidateStatus());
+        assertEquals(SlotStatus.CANCELLED.name(), updated.get(1).getCandidateStatus());
 
         ArgumentCaptor<ProcessTimelineActionAppendReqDTO> timelineCaptor =
                 ArgumentCaptor.forClass(ProcessTimelineActionAppendReqDTO.class);

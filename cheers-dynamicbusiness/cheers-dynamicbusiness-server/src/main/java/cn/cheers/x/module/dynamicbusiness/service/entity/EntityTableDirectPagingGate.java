@@ -11,7 +11,7 @@ import org.springframework.util.StringUtils;
  * <p>不管什么：场景 scene、分类/型号连线、具体 SQL、场站字段 ensure、扩展字段索引怎么查。</p>
  *
  * <p>禁止：再把 {@code sort} 当成不准表内分页的开关；{@code sort} 只出现在「排序列解析结果」里。
- * 列表禁止按扩展字段排序，故本门不提供 EVA 序路径。</p>
+ * 扩展字段排序走慢路径引擎，本门只判断能不能实体表直分页。</p>
  */
 public final class EntityTableDirectPagingGate {
 

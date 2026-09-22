@@ -35,6 +35,12 @@ public class InspectionContent {
      */
     private List<ObjectContent> customObjects = new ArrayList<>();
 
+    /**
+     * 检查项动作耗时（分钟）。第 1 步从动作库按已勾选检查项加总后写入。
+     * 不写入已保存路线；排期总时长 = 本字段 + 路径耗时。
+     */
+    private Integer itemActionDurationMinutes;
+
     // ==================== 内部类 ====================
 
     /**

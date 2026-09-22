@@ -16,4 +16,9 @@ public interface InspectionTaskStartExecutionService {
      * @return 网关下行结果。设备离线或答卷失败时 {@code success=false}，不假装成功。
      */
     MissionStartRespDTO startExecution(Long taskId);
+
+    /**
+     * 指定计划点开跑；{@code scheduleSlotId} 为空时自动解析 runtimeJob 下最早未完成计划点。
+     */
+    MissionStartRespDTO startExecution(Long taskId, String scheduleSlotId);
 }

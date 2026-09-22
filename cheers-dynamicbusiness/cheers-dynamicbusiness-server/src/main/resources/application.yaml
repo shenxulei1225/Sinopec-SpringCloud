@@ -70,6 +70,7 @@ cheers:
       - /admin-api/system/tenant/**
       - /admin-api/system/user/profile/**
       - /admin-api/system/auth/**
+      - /rpc-api/dynamicbusiness/**
     ignore-visit-urls:
       - /admin-api/system/tenant/**
       - /admin-api/system/user/profile/**
@@ -194,6 +195,7 @@ cheers:
       - /admin-api/system/tenant/** # 租户相关接口不需要租户ID
       - /admin-api/system/user/profile/**
       - /admin-api/system/auth/**
+      - /rpc-api/dynamicbusiness/**
     ignore-visit-urls:
       - /admin-api/system/tenant/**
       - /admin-api/system/user/profile/**

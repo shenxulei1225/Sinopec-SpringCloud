@@ -20,7 +20,7 @@ public interface InspectionTaskQueryService {
     PageResult<InspectionTaskSimpleRespVO> getTaskPage(InspectionTaskPageReqVO pageReqVO);
 
     /**
-     * 获取任务详情（包含子任务列表）。
+     * 获取任务详情（含已保存路线与已占窗计划点查询增强）。
      *
      * @param id 任务ID
      * @return 任务详情
