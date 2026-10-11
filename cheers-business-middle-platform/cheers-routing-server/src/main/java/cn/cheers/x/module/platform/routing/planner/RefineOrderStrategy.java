@@ -6,6 +6,9 @@ import org.springframework.util.CollectionUtils;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 段内 2-opt，仅供 {@link OptimizeOrderStrategy} 在启发式阶段收短顺序；不对外暴露为独立站序策略。
+ */
 @Component
 public class RefineOrderStrategy implements StopOrderStrategy {
 

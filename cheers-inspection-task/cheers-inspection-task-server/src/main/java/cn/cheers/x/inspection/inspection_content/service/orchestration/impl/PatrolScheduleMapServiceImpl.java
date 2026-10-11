@@ -6,6 +6,7 @@ import cn.cheers.x.inspection.inspection_content.service.orchestration.PatrolSch
 import cn.cheers.x.inspection.orchestration.dto.PatrolScheduleMapReqDTO;
 import cn.cheers.x.inspection.orchestration.dto.PatrolScheduleMapRespDTO;
 import cn.cheers.x.inspection.task.model.task.ExecutionDeviceBinding;
+import cn.cheers.x.inspection.task.service.task.PatrolItemActionDurationCalculator;
 import cn.cheers.x.inspection.task.service.task.PatrolItemActionDurationSupport;
 import cn.cheers.x.inspection.task.service.task.PatrolPlannedRouteSupport;
 import cn.cheers.x.inspection.task.service.task.PatrolScheduleOccurrenceSupport;
@@ -19,24 +20,24 @@ import cn.cheers.x.module.platform.contract.dto.work.WorkItemDTO;
 import cn.cheers.x.module.platform.orchestration.route.RoutePayloadKeys;
 import cn.cheers.x.module.platform.topology.api.PathNetworkApi;
 import cn.cheers.x.module.platform.topology.api.dto.PathNetworkSummaryDTO;
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-
 /**
  * 选网取点展开服务实现（键名与 {@code RoutePayloadKeys} 一致）。
  * <p>路线预览路径（fromSavedRouteSnapshot=false）：须选网 + stopIds，供 ROUTE 阶段算路。
  * <p>智能编排路径（fromSavedRouteSnapshot=true）：只消费已保存 plannedRoute 的 stopIds 与时长；
- * networkRef 若快照里有则附带，不作独立硬门槛（路线已在 saveRoute 阶段算好）。
+ * networkRef 若页面路线里有则附带，不作独立硬门槛（路线已在路径规划阶段算好）。
  * <p>previewOrchestration（expandWorkItemsFromScheduleTemplate=true）再按已保存排期模板复制工作项，每个计划时刻一条。
  * 不负责冲突求解；缺模板或展不开计划时刻必须失败，禁止再按「一次」猜一条。
  */
@@ -56,6 +57,10 @@ public class PatrolScheduleMapServiceImpl implements PatrolScheduleMapService {
     private final PatrolTaskEntityStore patrolTaskEntityStore;
     private final PathNetworkApi pathNetworkApi;
 
+    /** 向导这一页没写检查项动作耗时时，按勾选现算分钟数。单元测试不注入时，缺耗时仍按原错误抛出。 */
+    @Resource
+    private PatrolItemActionDurationCalculator itemActionDurationCalculator;
+
     @Override
     public PatrolScheduleMapRespDTO expandPatrolWorkItems(PatrolScheduleMapReqDTO request) {
         if (request == null) {
@@ -67,19 +72,42 @@ public class PatrolScheduleMapServiceImpl implements PatrolScheduleMapService {
         return expandFromInspectionStops(request);
     }
 
+    @Override
+    public PatrolScheduleMapRespDTO expandFromPageDraft(PatrolTaskDraft draft) {
+        if (draft == null || draft.id() == null) {
+            throw ServiceExceptionUtil.invalidParamException("任务 id 不能为空");
+        }
+        PatrolScheduleMapReqDTO request = PatrolScheduleMapReqDTO.builder()
+                .taskId(draft.id())
+                .fromSavedRouteSnapshot(true)
+                .expandWorkItemsFromScheduleTemplate(true)
+                .startStopId(draft.startStopId())
+                .endStopId(draft.endStopId())
+                .build();
+        return expandFromDraft(request, draft);
+    }
+
     /**
-     * 智能编排专用：从总任务 FLD-TSK-027 读已保存路线，展开 stopIds + 时长供 SOLVE。
+     * 智能编排专用：向导这一页带了刚重算的路线时用这一页；没带时读已保存路线。展开 stopIds + 时长供 SOLVE。
      * 固定摄像机跳过算路时无 stopIds，只认 estimatedActionDuration。
      */
     private PatrolScheduleMapRespDTO expandFromSavedRouteSnapshot(PatrolScheduleMapReqDTO request) {
-        PatrolTaskDraft draft = patrolTaskEntityStore.require(request.getTaskId());
+        PatrolTaskDraft stored = patrolTaskEntityStore.require(request.getTaskId());
+        PatrolTaskDraft draft = PatrolWizardPageDraft.overlay(stored, request, itemActionDurationCalculator);
+        return expandFromDraft(request, draft);
+    }
+
+    /**
+     * 用已经确定的那份任务内容展开。向导传入的是这一页，列表启用来的是已发布字段。
+     */
+    private PatrolScheduleMapRespDTO expandFromDraft(PatrolScheduleMapReqDTO request, PatrolTaskDraft draft) {
         if (skipsRoutePlanning(draft)) {
             return expandFromSkipRouteSchedule(request, draft);
         }
 
         Map<String, Object> planned = PatrolPlannedRouteSupport.asPlannedMap(draft.plannedRoute());
         if (planned == null || planned.isEmpty()) {
-            throw ServiceExceptionUtil.invalidParamException("任务缺少已保存路线快照");
+            throw ServiceExceptionUtil.invalidParamException("还没有路线结果，请先开始规划");
         }
 
         List<String> stopIds = PatrolPlannedRouteSupport.asStringList(planned.get(STOP_IDS));
@@ -107,7 +135,7 @@ public class PatrolScheduleMapServiceImpl implements PatrolScheduleMapService {
         payload.put(STOP_IDS, stopIds);
         payload.put(INSPECTION_TYPE, inspectionType);
         payload.put(PLANNED_ROUTE, planned);
-        Integer itemActionDuration = PatrolItemActionDurationSupport.minutesOf(draft.inspectionContent());
+        BigDecimal itemActionDuration = PatrolItemActionDurationSupport.minutesOf(draft.inspectionContent());
         if (itemActionDuration != null) {
             payload.put(ESTIMATED_ACTION_DURATION, itemActionDuration);
         }
@@ -190,12 +218,15 @@ public class PatrolScheduleMapServiceImpl implements PatrolScheduleMapService {
         if (!StringUtils.hasText(inspectionType)) {
             throw ServiceExceptionUtil.invalidParamException("请先选择巡检方式");
         }
-        String networkRef = selectNetworkRef(facilityId, inspectionType, request.getPreferredNetworkRef());
+        String networkRef = selectNetworkRef(facilityId, request.getPreferredNetworkRef());
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put(NETWORK_REF, networkRef);
         payload.put(STOP_IDS, stopIds);
         payload.put(INSPECTION_TYPE, inspectionType);
+        if (StringUtils.hasText(request.getStrategy())) {
+            payload.put(RoutePayloadKeys.STRATEGY, request.getStrategy().trim());
+        }
         putRouteAnchors(payload, request, null);
 
         WorkItemDTO workItem = WorkItemDTO.builder()
@@ -321,41 +352,33 @@ public class PatrolScheduleMapServiceImpl implements PatrolScheduleMapService {
         return raw == null ? null : String.valueOf(raw);
     }
 
-    private String selectNetworkRef(Long facilityId, String inspectionType, String preferredNetworkRef) {
+    /**
+     * 本厂只有一条路网时用它。巡检方式不拿来挑路网，人和机器人、无人机的差别在点的归属网上。
+     */
+    private String selectNetworkRef(Long facilityId, String preferredNetworkRef) {
         CommonResult<List<PathNetworkSummaryDTO>> result = pathNetworkApi.listPublished(facilityId);
-        List<PathNetworkSummaryDTO> published = result != null ? result.getCheckedData() : List.of();
-        if (published == null) {
-            published = List.of();
+        List<PathNetworkSummaryDTO> networks = result != null && result.getCheckedData() != null
+                ? result.getCheckedData()
+                : List.of();
+        List<PathNetworkSummaryDTO> withRef = networks.stream()
+                .filter(network -> network != null && StringUtils.hasText(network.getNetworkRef()))
+                .toList();
+        if (withRef.isEmpty()) {
+            throw ServiceExceptionUtil.invalidParamException("本厂没有路网");
         }
-
-        List<PathNetworkSummaryDTO> matched = published.stream()
-                .filter(network -> applicableForInspectionType(network, inspectionType))
-                .collect(Collectors.toList());
-
-        if (matched.isEmpty()) {
-            throw ServiceExceptionUtil.invalidParamException("无已发布匹配路网");
-        }
-        if (matched.size() == 1) {
-            return matched.get(0).getNetworkRef();
+        if (withRef.size() == 1) {
+            return withRef.get(0).getNetworkRef();
         }
         if (!StringUtils.hasText(preferredNetworkRef)) {
             throw ServiceExceptionUtil.invalidParamException(
-                    "本设施有多条已发布路网，请先在路网管理确认当前用哪一条");
+                    "本厂有多条路网，请先在路网管理确认用哪一条");
         }
-        return matched.stream()
+        return withRef.stream()
                 .map(PathNetworkSummaryDTO::getNetworkRef)
-                .filter(ref -> preferredNetworkRef.equals(ref))
+                .filter(preferredNetworkRef::equals)
                 .findFirst()
                 .orElseThrow(() -> ServiceExceptionUtil.invalidParamException(
-                        "指定的路网不在本设施已发布且匹配当前巡检方式的路网中"));
-    }
-
-    private static boolean applicableForInspectionType(PathNetworkSummaryDTO network, String inspectionType) {
-        if (network == null || !StringUtils.hasText(inspectionType)) {
-            return false;
-        }
-        List<String> types = network.getApplicableEquipmentTypes();
-        return types != null && types.contains(inspectionType);
+                        "指定的路网不在本厂路网中"));
     }
 
     private static boolean skipsRoutePlanning(PatrolTaskDraft draft) {
@@ -366,8 +389,8 @@ public class PatrolScheduleMapServiceImpl implements PatrolScheduleMapService {
      * 固定摄像机跳过算路：无停靠点，时长只认巡检内容上的检查项动作耗时。
      */
     private PatrolScheduleMapRespDTO expandFromSkipRouteSchedule(PatrolScheduleMapReqDTO request, PatrolTaskDraft draft) {
-        Integer itemActionDuration = PatrolItemActionDurationSupport.minutesOf(draft.inspectionContent());
-        if (itemActionDuration == null || itemActionDuration <= 0) {
+        BigDecimal itemActionDuration = PatrolItemActionDurationSupport.minutesOf(draft.inspectionContent());
+        if (itemActionDuration == null || itemActionDuration.signum() <= 0) {
             throw ServiceExceptionUtil.invalidParamException("任务缺少检查项动作耗时");
         }
 
@@ -379,7 +402,7 @@ public class PatrolScheduleMapServiceImpl implements PatrolScheduleMapService {
                 .entityTypeCode(PatrolTaskEntityStore.TASK_TYPE)
                 .sourceModelCode(PatrolTaskEntityStore.MODEL_PATROL)
                 .sourceInstanceId(String.valueOf(draft.id()))
-                .estimatedDuration(itemActionDuration)
+                .estimatedDuration(PatrolTaskDurationSupport.occupancyMinutes(itemActionDuration))
                 .resourceRequirements(resolveResourceRequirements(draft))
                 .payload(payload)
                 .build();

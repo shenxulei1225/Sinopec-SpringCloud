@@ -3,14 +3,15 @@ package cn.cheers.x.module.dynamicbusiness.service.entity.sync;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * Entity 变更监听器
  * 
- * <p>监听 Entity 的保存、更新、删除事件，触发异步同步到查询索引。</p>
+ * <p>监听 Entity 的保存、更新、删除事件，事务提交后再异步同步到查询索引。</p>
  * 
  * <h3>业务规则</h3>
  * <ul>
@@ -40,7 +41,7 @@ public class EntitySyncListener {
      * 
      * @param event Entity 保存事件
      */
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     @Async("entitySyncExecutor")
     public void onEntitySaved(EntitySavedEvent event) {
         EntityDO entity = event.getEntity();
@@ -60,7 +61,7 @@ public class EntitySyncListener {
      * 
      * @param event Entity 更新事件
      */
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     @Async("entitySyncExecutor")
     public void onEntityUpdated(EntityUpdatedEvent event) {
         EntityDO entity = event.getEntity();
@@ -79,7 +80,7 @@ public class EntitySyncListener {
      * 
      * @param event Entity 删除事件
      */
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     @Async("entitySyncExecutor")
     public void onEntityDeleted(EntityDeletedEvent event) {
         Long entityId = event.getEntityId();

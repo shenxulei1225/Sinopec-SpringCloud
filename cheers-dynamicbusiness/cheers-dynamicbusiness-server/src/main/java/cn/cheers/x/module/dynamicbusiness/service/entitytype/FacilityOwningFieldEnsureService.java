@@ -81,9 +81,7 @@ public class FacilityOwningFieldEnsureService {
                 baseFieldMapper.selectByEntityTypeCodeAndFieldCode(code, FacilityOwningFieldCodes.FIELD_CODE);
         FieldDO libraryField = fieldMapper.selectByCode(FacilityOwningFieldCodes.FIELD_CODE);
         if (existing != null) {
-            if (libraryField != null) {
-                baseFieldLibrarySyncService.assignLibraryFieldToAllModels(code, libraryField, existing);
-            }
+            // 这一类型上所属场站已经在。型号创建时会把基础字段分到型号，实体创建不再扫全部型号。
             return;
         }
 

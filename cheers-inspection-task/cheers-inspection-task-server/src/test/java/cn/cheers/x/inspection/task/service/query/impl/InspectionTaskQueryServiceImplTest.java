@@ -1,8 +1,8 @@
 package cn.cheers.x.inspection.task.service.query.impl;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
-import cn.cheers.x.inspection.inspection_content.service.enhance.ContentEnhancementService;
 import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskRespVO;
+import cn.cheers.x.inspection.task.service.task.GeneratedCheckInputReviewService;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
 import cn.cheers.x.module.platform.contract.dto.slot.ScheduleSlotDTO;
@@ -34,8 +34,12 @@ class InspectionTaskQueryServiceImplTest {
     void setUp() {
         store = mock(PatrolTaskEntityStore.class);
         runtimeQueryApi = mock(RuntimeQueryApi.class);
+        when(store.readArrangePolicy(1L)).thenReturn(new PatrolTaskEntityStore.ArrangePolicy(null, null, null, null));
         service = new InspectionTaskQueryServiceImpl(
-                mock(ContentEnhancementService.class), store, runtimeQueryApi, new ObjectMapper());
+                store,
+                runtimeQueryApi,
+                new ObjectMapper(),
+                mock(GeneratedCheckInputReviewService.class));
     }
 
     @Test
@@ -71,6 +75,6 @@ class InspectionTaskQueryServiceImplTest {
         return new PatrolTaskDraft(
                 1L, "1-5# 储罐每周巡检", "巡检", 1L, "UAV",
                 null, null, null, null, null,
-                "draft", 3, null, null, runtimeJobId, Boolean.FALSE, null, null, null, null);
+                "draft", 3, null, null, runtimeJobId, Boolean.FALSE, null, null, null, null, null);
     }
 }

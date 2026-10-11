@@ -133,7 +133,12 @@ public class ModelDO extends TenantBaseDO {
      */
     private String fieldGroupsConfig;
 
-    
+    /**
+     * 这一型号的自动模式。键是动作参数编码，值是检查项没填时用的默认值。
+     * 检查项选定这个型号后读这里。不负责动作有哪些参数，也不负责某一台设备上改过的数。
+     */
+    private String autoParamDefaults;
+
 }
 
 

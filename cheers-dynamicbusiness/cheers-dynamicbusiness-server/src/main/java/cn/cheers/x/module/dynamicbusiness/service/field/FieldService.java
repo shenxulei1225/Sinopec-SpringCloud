@@ -18,6 +18,9 @@ public interface FieldService {
 
     FieldRespVO getField(Long id);
 
+    /** 按字段编号取一条。动作参数上记的是这个编号，不走全量列表。 */
+    FieldRespVO getFieldByCode(String code);
+
     List<FieldRespVO> search(String keyword, String type, String source, Integer status,
                              Long effectiveFacilityId);
 

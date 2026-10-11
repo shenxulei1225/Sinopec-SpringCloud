@@ -49,8 +49,7 @@ class StopOrderStrategyTest {
         ReflectionTestUtils.setField(routePlanService, "stopOrderStrategyRegistry",
                 new StopOrderStrategyRegistry(
                         new AsGivenOrderStrategy(),
-                        new OptimizeOrderStrategy(refineOrderStrategy),
-                        refineOrderStrategy));
+                        new OptimizeOrderStrategy(refineOrderStrategy)));
     }
 
     @Test
@@ -85,38 +84,6 @@ class StopOrderStrategyTest {
         assertEquals(5L, asGivenPreview.getTotalDistanceMeters());
         assertEquals(3L, optimizePreview.getTotalDistanceMeters());
         assertTrue(optimizePreview.getTotalDistanceMeters() <= asGivenPreview.getTotalDistanceMeters());
-    }
-
-    @Test
-    void refineOrderDoesNotIncreaseCostVersusAsGiven() {
-        PathNetworkDTO network = linearNetwork();
-        when(pathNetworkApi.getNetwork("net_site")).thenReturn(CommonResult.success(network));
-        when(mobilityProfileApi.getProfile("person_walk")).thenReturn(CommonResult.success(
-                cn.cheers.x.module.platform.contract.dto.network.MobilityProfileDTO.builder()
-                        .profileId("person_walk")
-                        .allowedNetworkKinds(List.of(NetworkKind.FACILITY))
-                        .layer(NetworkLayer.GROUND)
-                        .respectDoors(true)
-                        .build()));
-
-        RouteRequestDTO asGivenRequest = RouteRequestDTO.builder()
-                .networkRef("net_site")
-                .stopIds(List.of("w", "y", "x", "z"))
-                .mobilityProfileId("person_walk")
-                .strategy("as_given")
-                .build();
-
-        RouteRequestDTO refineRequest = RouteRequestDTO.builder()
-                .networkRef("net_site")
-                .stopIds(List.of("w", "y", "x", "z"))
-                .mobilityProfileId("person_walk")
-                .strategy("refine_order")
-                .build();
-
-        RoutePreviewDTO asGivenPreview = routePlanService.plan(asGivenRequest);
-        RoutePreviewDTO refinePreview = routePlanService.plan(refineRequest);
-
-        assertTrue(refinePreview.getTotalDistanceMeters() <= asGivenPreview.getTotalDistanceMeters());
     }
 
     @Test
@@ -175,6 +142,142 @@ class StopOrderStrategyTest {
     }
 
     @Test
+    void optimizeOrderDepotPrefersSpatialTourWhenGraphCostsTie() {
+        List<PathNodeDTO> nodes = List.of(
+                positionedRobot("H", 0, 0, 1L),
+                positionedRobot("p10", 20, 0, 1L),
+                positionedRobot("p11", 35, 15, 1L),
+                positionedRobot("p12", 25, 5, 1L),
+                positionedRobot("p13", 40, 10, 1L)
+        );
+        List<String> ids = List.of("H", "p10", "p11", "p12", "p13");
+        List<PathEdgeDTO> edges = new ArrayList<>();
+        for (String from : ids) {
+            for (String to : ids) {
+                if (!from.equals(to)) {
+                    edges.add(edgeRobot("e_" + from + "_" + to, from, to, 1D));
+                }
+            }
+        }
+        PathNetworkDTO network = PathNetworkDTO.builder()
+                .networkRef("net_mesh")
+                .networkKind(NetworkKind.FACILITY)
+                .nodes(nodes)
+                .edges(edges)
+                .build();
+        when(pathNetworkApi.getNetwork("net_mesh")).thenReturn(CommonResult.success(network));
+        when(mobilityProfileApi.getProfile("ground_robot")).thenReturn(CommonResult.success(
+                cn.cheers.x.module.platform.contract.dto.network.MobilityProfileDTO.builder()
+                        .profileId("ground_robot")
+                        .allowedNetworkKinds(List.of(NetworkKind.FACILITY))
+                        .layer(NetworkLayer.GROUND)
+                        .respectDoors(true)
+                        .build()));
+
+        RoutePreviewDTO preview = routePlanService.plan(RouteRequestDTO.builder()
+                .networkRef("net_mesh")
+                .stopIds(List.of("p10", "p11", "p12", "p13"))
+                .startStopId("H")
+                .endStopId("H")
+                .returnToStart(true)
+                .mobilityProfileId("ground_robot")
+                .strategy("optimize_order")
+                .build());
+
+        List<String> ordered = preview.getOrderedStopIds();
+        GraphView view = GraphView.from(network, "ground_robot");
+        CostMatrix matrix = CostMatrix.forOrdering(ids, view, new DijkstraPlanner());
+        List<String> expansionOrderTour = List.of("H", "p10", "p11", "p12", "p13", "H");
+        double optimizedCost = matrix.totalPathCost(ordered);
+        double expansionCost = matrix.totalPathCost(expansionOrderTour);
+        assertTrue(optimizedCost + 1e-6 <= expansionCost,
+                "自动规划应不劣于勾选展开顺序 10→11→12→13");
+    }
+
+    @Test
+    void optimizeOrderDepotUsesShortestRoadTour() {
+        PathNetworkDTO network = PathNetworkDTO.builder()
+                .networkRef("net_depot")
+                .networkKind(NetworkKind.FACILITY)
+                .nodes(List.of(node("H"), node("a"), node("c"), node("b")))
+                .edges(List.of(
+                        edge("e_Ha", "H", "a", 1D),
+                        edge("e_aH", "a", "H", 1D),
+                        edge("e_ac", "a", "c", 1D),
+                        edge("e_ca", "c", "a", 1D),
+                        edge("e_cb", "c", "b", 1D),
+                        edge("e_bc", "b", "c", 1D),
+                        edge("e_bH", "b", "H", 1D),
+                        edge("e_Hb", "H", "b", 1D)
+                ))
+                .build();
+        when(pathNetworkApi.getNetwork("net_depot")).thenReturn(CommonResult.success(network));
+        when(mobilityProfileApi.getProfile("person_walk")).thenReturn(CommonResult.success(
+                cn.cheers.x.module.platform.contract.dto.network.MobilityProfileDTO.builder()
+                        .profileId("person_walk")
+                        .allowedNetworkKinds(List.of(NetworkKind.FACILITY))
+                        .layer(NetworkLayer.GROUND)
+                        .respectDoors(true)
+                        .build()));
+
+        RoutePreviewDTO preview = routePlanService.plan(RouteRequestDTO.builder()
+                .networkRef("net_depot")
+                .stopIds(List.of("a", "b", "c"))
+                .startStopId("H")
+                .endStopId("H")
+                .returnToStart(true)
+                .mobilityProfileId("person_walk")
+                .strategy("optimize_order")
+                .build());
+
+        assertEquals(4L, preview.getTotalDistanceMeters());
+        List<String> ordered = preview.getOrderedStopIds();
+        assertEquals("H", ordered.get(0));
+        assertEquals("H", ordered.get(ordered.size() - 1));
+        int atA = ordered.indexOf("a");
+        int atB = ordered.indexOf("b");
+        int atC = ordered.indexOf("c");
+        assertTrue((atA < atC && atC < atB) || (atB < atC && atC < atA));
+    }
+
+    @Test
+    void optimizeOrderReversesSmallZoneClusterWithoutThrowing() {
+        List<PathNodeDTO> nodes = List.of(
+                positioned("a", 0, 0, 1L),
+                positioned("b", 10, 0, 1L),
+                positioned("c", 100, 0, 2L),
+                positioned("d", 110, 0, 2L)
+        );
+        List<String> ids = List.of("a", "b", "c", "d");
+        List<PathEdgeDTO> edges = new ArrayList<>();
+        for (int i = 0; i < ids.size(); i++) {
+            for (int j = 0; j < ids.size(); j++) {
+                if (i == j) {
+                    continue;
+                }
+                String from = ids.get(i);
+                String to = ids.get(j);
+                edges.add(edge("e_" + from + "_" + to, from, to, Math.abs(i - j)));
+            }
+        }
+        PathNetworkDTO network = PathNetworkDTO.builder()
+                .networkRef("net_zones")
+                .networkKind(NetworkKind.FACILITY)
+                .nodes(nodes)
+                .edges(edges)
+                .build();
+        GraphView view = GraphView.from(network, "person_walk");
+        List<String> stops = List.of("a", "b", "c", "d");
+        CostMatrix matrix = CostMatrix.from(stops, view, new DijkstraPlanner());
+        OptimizeOrderStrategy strategy = new OptimizeOrderStrategy(new RefineOrderStrategy());
+
+        List<String> ordered = strategy.order(stops, matrix, view);
+
+        assertEquals(4, ordered.size());
+        assertTrue(new java.util.HashSet<>(ordered).containsAll(stops));
+    }
+
+    @Test
     void spatialOrderingAvoidsHopCostZigzagInsideCluster() {
         // 区内四点成矩形；图上两两代价=1（跳数无区分度）；空间上应走不交叉周界
         List<PathNodeDTO> nodes = List.of(
@@ -188,7 +291,18 @@ class StopOrderStrategyTest {
         for (String from : ids) {
             for (String to : ids) {
                 if (!from.equals(to)) {
-                    edges.add(edge("e_" + from + "_" + to, from, to, 1D));
+                    edges.add(PathEdgeDTO.builder()
+                            .edgeId("e_" + from + "_" + to)
+                            .fromNodeId(from)
+                            .toNodeId(to)
+                            .layer(NetworkLayer.GROUND)
+                            .impedanceByProfile(Map.of("person_walk", 1D))
+                            .waypoints(List.of(
+                                    cn.cheers.x.module.platform.contract.dto.topology.TopologyPointDTO.builder()
+                                            .x(0D).y(0D).z(0D).build(),
+                                    cn.cheers.x.module.platform.contract.dto.topology.TopologyPointDTO.builder()
+                                            .x(1D).y(0D).z(0D).build()))
+                            .build());
                 }
             }
         }
@@ -239,6 +353,7 @@ class StopOrderStrategyTest {
                 .nodeId(nodeId)
                 .nodeType(NodeType.STATION)
                 .layer(NetworkLayer.GROUND)
+                .memberships(List.of("HUMAN"))
                 .build();
     }
 
@@ -248,6 +363,22 @@ class StopOrderStrategyTest {
                 .nodeType(NodeType.STATION)
                 .layer(NetworkLayer.GROUND)
                 .zoneId(zoneId)
+                .memberships(List.of("HUMAN"))
+                .position(cn.cheers.x.module.platform.contract.dto.topology.TopologyPointDTO.builder()
+                        .x(x)
+                        .y(0D)
+                        .z(z)
+                        .build())
+                .build();
+    }
+
+    private static PathNodeDTO positionedRobot(String nodeId, double x, double z, Long zoneId) {
+        return PathNodeDTO.builder()
+                .nodeId(nodeId)
+                .nodeType(NodeType.STATION)
+                .layer(NetworkLayer.GROUND)
+                .zoneId(zoneId)
+                .memberships(List.of("GROUND_ROBOT"))
                 .position(cn.cheers.x.module.platform.contract.dto.topology.TopologyPointDTO.builder()
                         .x(x)
                         .y(0D)
@@ -263,6 +394,16 @@ class StopOrderStrategyTest {
                 .toNodeId(to)
                 .layer(NetworkLayer.GROUND)
                 .impedanceByProfile(Map.of("person_walk", impedance))
+                .build();
+    }
+
+    private static PathEdgeDTO edgeRobot(String edgeId, String from, String to, double impedance) {
+        return PathEdgeDTO.builder()
+                .edgeId(edgeId)
+                .fromNodeId(from)
+                .toNodeId(to)
+                .layer(NetworkLayer.GROUND)
+                .impedanceByProfile(Map.of("ground_robot", impedance))
                 .build();
     }
 

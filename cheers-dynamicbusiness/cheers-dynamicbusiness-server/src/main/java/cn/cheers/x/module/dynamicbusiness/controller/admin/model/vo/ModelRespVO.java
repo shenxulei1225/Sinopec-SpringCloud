@@ -42,6 +42,9 @@ public class ModelRespVO {
     @Schema(description = "模型描述", example = "适用于消防设备的9kg泡沫灭火器A型号")
     private String description;
 
+    @Schema(description = "这一型号的自动模式。键是动作参数编码，值是检查项没填时用的默认值")
+    private String autoParamDefaults;
+
     @Schema(description = "模型状态（1-启用，0-禁用）", example = "1")
     private Integer status;
 

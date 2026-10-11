@@ -25,4 +25,7 @@ public class ModelFieldGroupUpdateReqVO extends ModelFieldGroupBaseVO {
     @Schema(description = "分组名称", example = "基础字段", required = true)
     @NotBlank(message = "分组名称不能为空")
     private String name;
+
+    @Schema(description = "为 true 时按 parentId 改上级。parentId 为空则放到最外层。改名称时不要带这个标记。")
+    private Boolean parentSpecified;
 }

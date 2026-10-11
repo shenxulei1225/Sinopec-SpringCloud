@@ -39,8 +39,30 @@ public class PatrolScheduleMapReqDTO {
 
     private String inspectionType;
 
+    /** 路径引擎站序策略（optimize_order / as_given）。 */
+    private String strategy;
+
     /**
      * previewOrchestration 试排时为 true：按排期模板复制多条作业项（每个计划时刻一条）。
      */
     private Boolean expandWorkItemsFromScheduleTemplate;
+
+    /**
+     * 建任务向导这一页上的路线、排期、勾选、执行设备。
+     * 有这些字段时，展开计划点只认这一页，不读任务上已发布的那一份，也不把这一页写回去。
+     * 列表里启用已经生成的任务时不带这些字段，展开仍读已发布字段。
+     */
+    private Object pagePlannedRoute;
+
+    private Object pageScheduleConfig;
+
+    private Object pageInspectionContent;
+
+    private Object pageExecutionDeviceBinding;
+
+    private String pagePatrolExecutionMode;
+
+    private String pageStartStopId;
+
+    private String pageEndStopId;
 }

@@ -1,21 +1,25 @@
 package cn.cheers.x.inspection.inspection_content.service.orchestration.impl;
 
+import cn.cheers.x.inspection.inspection_content.controller.admin.vo.orchestration.PatrolOrchestrationRunReqVO.WizardPage;
 import cn.cheers.x.inspection.inspection_content.controller.admin.vo.orchestration.PatrolRouteRunReqVO;
+import cn.cheers.x.inspection.orchestration.dto.PatrolScheduleMapReqDTO;
+import cn.cheers.x.inspection.task.model.task.InspectionContent;
+import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskUpdateReqVO;
+import cn.cheers.x.inspection.task.service.task.PatrolItemActionDurationCalculator;
 import cn.cheers.x.inspection.inspection_content.controller.admin.vo.orchestration.PatrolOrchestrationRunReqVO;
 import cn.cheers.x.inspection.inspection_content.controller.admin.vo.orchestration.PatrolSlotWritebackReqVO;
 import cn.cheers.x.inspection.inspection_content.controller.admin.vo.orchestration.PatrolTaskPauseReqVO;
 import cn.cheers.x.inspection.inspection_content.service.orchestration.PatrolRouteFacadeService;
-import cn.cheers.x.inspection.inspection_content.service.orchestration.PatrolSaveRouteService;
-import cn.cheers.x.inspection.orchestration.dto.PatrolSaveRouteReqDTO;
+import cn.cheers.x.inspection.task.service.execution.openrun.PatrolMissionTranslateService;
 import cn.cheers.x.inspection.task.service.execution.openrun.PatrolOpenRunMaterializeService;
 import cn.cheers.x.inspection.task.service.execution.scheduleboard.PatrolReservationAutoStartScheduler;
+import cn.cheers.x.inspection.inspection_content.controller.admin.vo.orchestration.PatrolInspectionConfigReadinessRespVO;
+import cn.cheers.x.inspection.task.service.execution.steptree.PatrolInspectionConfigReadinessService;
 import cn.cheers.x.inspection.task.service.execution.steptree.TaskStepTreeGenerateService;
 import cn.cheers.x.module.platform.contract.dto.reservation.ResourceReservationDTO;
 import cn.cheers.x.module.platform.contract.dto.runtime.RuntimeJobDTO;
 import cn.cheers.x.module.platform.contract.enums.RuntimeJobStatus;
-import cn.cheers.x.inspection.task.service.task.CreateWizardInvalidation;
 import cn.cheers.x.inspection.task.service.task.PatrolPlannedRouteSupport;
-import cn.cheers.x.inspection.task.service.task.PatrolTaskCreateProcessService;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
 import cn.cheers.x.module.platform.contract.ContractVersions;
@@ -31,6 +35,8 @@ import cn.cheers.x.module.platform.contract.dto.slot.AssignedResourceDTO;
 import cn.cheers.x.module.platform.contract.dto.slot.ScheduleSlotDTO;
 import cn.cheers.x.module.platform.contract.dto.work.WorkItemDTO;
 import cn.cheers.x.module.platform.contract.enums.SlotStatus;
+import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.exception.enums.GlobalErrorCodeConstants;
 import cn.cheers.x.module.platform.orchestration.api.ScheduleRunApi;
 import cn.cheers.x.module.platform.orchestration.enums.OrchestrationRefs;
 import cn.cheers.x.module.platform.orchestration.phase.OrchestrationPhase;
@@ -44,6 +50,8 @@ import cn.cheers.x.module.platform.runtime.api.dto.RuntimeSlotStatusUpdateReqDTO
 import cn.cheers.x.module.platform.runtime.enums.RuntimeSlotReleaseMode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -60,28 +68,35 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.invalidParamException;
-import static cn.cheers.x.inspection.inspection_content.enums.ErrorCodeConstants.PATROL_SAVE_ROUTE_PLANNED_ROUTE_REQUIRED;
-import static cn.cheers.x.inspection.inspection_content.enums.ErrorCodeConstants.PATROL_SAVE_ROUTE_TASK_ID_REQUIRED;
 import static cn.cheers.x.inspection.inspection_content.enums.ErrorCodeConstants.PATROL_FACADE_NO_ACTIVE_SLOTS;
 import static cn.cheers.x.inspection.inspection_content.enums.ErrorCodeConstants.PATROL_FACADE_NOT_ARRANGED;
-import static cn.cheers.x.inspection.inspection_content.enums.ErrorCodeConstants.PATROL_FACADE_SCHEDULE_STILL_CONFLICTS;
 import static cn.cheers.x.inspection.inspection_content.enums.ErrorCodeConstants.PATROL_FACADE_OCCUPANCY_CONFLICT;
 import static cn.cheers.x.inspection.inspection_content.enums.ErrorCodeConstants.PATROL_FACADE_ROUTE_NOT_SAVED;
+import static cn.cheers.x.inspection.inspection_content.enums.ErrorCodeConstants.PATROL_FACADE_ROUTE_PLAN_UNUSABLE;
 import static cn.cheers.x.inspection.inspection_content.enums.ErrorCodeConstants.PATROL_FACADE_RUNTIME_JOB_REQUIRED;
 
 /**
- * 巡检组路线门面：路径规划、冲突检测、第 3 步无冲突写试排、智能编排解冲突。
- * <p>权威：总任务 plannedRoute（saveRoute 快照）；试排计划点 orchestrationPreview*；
- * 生成任务后写入 runtimeJobId / orchestrationCommitted。
+ * 巡检组路线门面：路径规划、冲突检测、步骤图生成、智能编排解冲突。
+ * <p>权威：页面路线随保存修改稿或更新任务写入；试排计划点 orchestrationPreview*；
+ * 生成任务整段成功后才写入 runtimeJobId / orchestrationCommitted。中途失败收掉生成标记。
+ * 向导上的开始编排先按这一页停靠点重算路径，再排计划点，路线只回到这一页。列表启用不带这一页，仍只读已保存路线。
  * <p>不负责：冲突算法本身（标准检测在 ScheduleConflictReporter）；读写旧固定表 inspection_task。
+ * 不写已保存路线。已保存路线要等更新任务。
  */
 @Service
 @Validated
 public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
+
+    private static final Logger log = LoggerFactory.getLogger(PatrolRouteFacadeServiceImpl.class);
+
+    /** 路径规划服务 ErrorCodeConstants 里 1_004_056_000 到 1_004_056_007 这一段。 */
+    private static final int ROUTE_PLAN_ERROR_CODE_START = 1_004_056_000;
+    private static final int ROUTE_PLAN_ERROR_CODE_END = 1_004_056_100;
 
     static final String FACILITY_ID = "facilityId";
     static final String OBJECT_IDS = "objectIds";
@@ -94,6 +109,9 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
     static final String RETURN_TO_START = "returnToStart";
     static final String STOP_IDS = "stopIds";
     static final String INSPECTION_TYPE = "inspectionType";
+
+    /** 自动：优化检查点先后。手工、以及按已保存顺序重算走线：不改先后。 */
+    private static final String STRATEGY_AS_GIVEN = "as_given";
 
     private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Shanghai");
 
@@ -121,7 +139,13 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
     private PatrolOpenRunMaterializeService patrolOpenRunMaterializeService;
 
     @Resource
+    private PatrolMissionTranslateService patrolMissionTranslateService;
+
+    @Resource
     private TaskStepTreeGenerateService taskStepTreeGenerateService;
+
+    @Resource
+    private PatrolInspectionConfigReadinessService patrolInspectionConfigReadinessService;
 
     @Resource
     private PatrolReservationAutoStartScheduler patrolReservationAutoStartScheduler;
@@ -130,85 +154,142 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
     private ObjectMapper objectMapper;
 
     @Resource
-    private PatrolSaveRouteService patrolSaveRouteService;
-
-    @Resource
     private PatrolScheduleConflictDetectService patrolScheduleConflictDetectService;
 
     @Resource
-    private PatrolTaskCreateProcessService patrolTaskCreateProcessService;
+    private PatrolItemActionDurationCalculator itemActionDurationCalculator;
 
     @Override
     public ScheduleConflictReportDTO detectScheduleConflicts(PatrolOrchestrationRunReqVO reqVO) {
-        requireTaskReadyForOrchestration(reqVO.getTaskId());
-        return patrolScheduleConflictDetectService.detect(reqVO.getTaskId(), reqVO.getSchedulingSpec()).report();
+        PatrolTaskDraft working = resolveWorkingDraft(reqVO);
+        PatrolScheduleConflictDetectService.DetectedPlan detected =
+                patrolScheduleConflictDetectService.detect(working, reqVO.getSchedulingSpec());
+        ScheduleConflictReportDTO report = detected.report();
+        if (report != null && !Boolean.TRUE.equals(report.getHasConflict())) {
+            report.setSlots(collectPlanTimeSlots(detected.workItems()));
+        }
+        return report;
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public ScheduleRunResponse prepareConfirmPreview(PatrolOrchestrationRunReqVO reqVO) {
-        PatrolTaskDraft draft = requireTaskReadyForOrchestration(reqVO.getTaskId());
-        PatrolScheduleConflictDetectService.DetectedPlan detected =
-                patrolScheduleConflictDetectService.detect(reqVO.getTaskId(), reqVO.getSchedulingSpec());
-        if (Boolean.TRUE.equals(detected.report().getHasConflict())) {
-            throw exception(PATROL_FACADE_SCHEDULE_STILL_CONFLICTS);
-        }
-        Object executionStepTree = generateExecutionSteps(detected.draft());
-        List<ScheduleSlotDTO> slots = slotsFromTemplate(detected.workItems());
-        patrolTaskEntityStore.writeOrchestrationPreview(
-                reqVO.getTaskId(), slots, "按排期模板时间点写入试排，无冲突。");
+    public PatrolInspectionConfigReadinessRespVO validateInspectionConfig(PatrolOrchestrationRunReqVO reqVO) {
+        PatrolTaskDraft working = resolveWorkingDraft(reqVO);
+        return patrolInspectionConfigReadinessService.evaluate(working);
+    }
+
+    @Override
+    public ScheduleRunResponse composeExecutionStepTree(PatrolOrchestrationRunReqVO reqVO) {
+        PatrolTaskDraft working = resolveWorkingDraft(reqVO);
+        requireConfigReady(working);
+        Object executionStepTree = composeExecutionSteps(working);
         return ScheduleRunResponse.builder()
                 .contractVersion(ContractVersions.MVP)
-                .slots(slots)
-                .plainSummary("按排期模板时间点写入试排，无冲突。")
-                .workItems(detected.workItems())
                 .executionStepTree(executionStepTree)
                 .build();
     }
 
     @Override
+    public ScheduleRunResponse previewPageInstructions(PatrolOrchestrationRunReqVO reqVO) {
+        // 指令只读页面上已经生成的步骤图，试译一次。不重新编树，不写出计划点，不写草稿，不替换已发布步骤图。
+        // 时间重叠不参与这一步。页面上已有计划点时，只用第一个点分配收流地址，各点指令相同。
+        Map<String, Object> executionStepTree = reqVO.getExecutionStepTree();
+        if (executionStepTree == null || executionStepTree.isEmpty()) {
+            throw invalidParamException("还没有步骤图，不能生成指令");
+        }
+        PatrolTaskDraft working = resolveWorkingDraft(reqVO);
+        requireConfigReady(working);
+        List<String> slotIds = reqVO.getSlots() == null ? List.of() : reqVO.getSlots().stream()
+                .map(ScheduleSlotDTO::getSlotId)
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .toList();
+        patrolMissionTranslateService.assertPreviewTranslate(working, executionStepTree, slotIds);
+        return ScheduleRunResponse.builder()
+                .contractVersion(ContractVersions.MVP)
+                .plainSummary("指令已按这一页的步骤图生成，没有写入任务。")
+                .executionStepTree(executionStepTree)
+                .build();
+    }
+
+    /**
+     * 按停靠点算一条路线。算出可用路线就返回。
+     * 规划服务拒绝停靠点、路网走不到，或没有返回路线时，交回「路线不可用」。
+     * 其它失败原样抛出。不改写成向导步骤的提示。
+     */
+    @Override
     public ScheduleRunResponse previewRoute(PatrolRouteRunReqVO reqVO) {
         if (CollectionUtils.isEmpty(reqVO.getStopIds())) {
             throw invalidParamException("开始规划缺少停靠点");
         }
-        return scheduleRunApi.run(ScheduleRunRequest.builder()
-                .contractVersion(ContractVersions.MVP)
-                .orchestrationRef(OrchestrationRefs.PATROL_ROUTE_PREVIEW_V1)
-                .dryRun(true)
-                .stopAfterPhase(OrchestrationPhase.ROUTE.name())
-                .schedulingSpec(PLACEHOLDER_SCHEDULING_SPEC)
-                .workItems(List.of(buildRoutePlanningWorkItem(reqVO, reqVO.getTaskId(), false)))
-                .build()).getCheckedData();
+        ScheduleRunResponse routed;
+        try {
+            routed = scheduleRunApi.run(ScheduleRunRequest.builder()
+                    .contractVersion(ContractVersions.MVP)
+                    .orchestrationRef(OrchestrationRefs.PATROL_ROUTE_PREVIEW_V1)
+                    .dryRun(true)
+                    .stopAfterPhase(OrchestrationPhase.ROUTE.name())
+                    .schedulingSpec(PLACEHOLDER_SCHEDULING_SPEC)
+                    .workItems(List.of(buildRoutePlanningWorkItem(reqVO, reqVO.getTaskId(), false)))
+                    .build()).getCheckedData();
+        } catch (ServiceException ex) {
+            if (!isRouteCalculationFailure(ex)) {
+                throw ex;
+            }
+            log.warn("路径没有算出可用路线: {}", ex.getMessage());
+            throw exception(PATROL_FACADE_ROUTE_PLAN_UNUSABLE);
+        }
+        Map<String, Object> planned = plannedRouteOf(routed);
+        if (planned == null || planned.isEmpty()) {
+            log.warn("路径没有算出可用路线");
+            throw exception(PATROL_FACADE_ROUTE_PLAN_UNUSABLE);
+        }
+        return routed;
     }
 
-    @Override
-    public ScheduleRunResponse saveRoute(PatrolRouteRunReqVO reqVO) {
-        if (reqVO.getTaskId() == null) {
-            throw exception(PATROL_SAVE_ROUTE_TASK_ID_REQUIRED);
+    /**
+     * 这次失败是路径没有算出可用路线。
+     * 只认规划服务那一段错误码，以及规划时的参数不正确（停靠点对不上当前方式、路网走不到）。
+     */
+    private static boolean isRouteCalculationFailure(ServiceException ex) {
+        Integer code = ex.getCode();
+        if (code == null) {
+            return false;
         }
-        Map<String, Object> planned = reqVO.getPlannedRoute();
-        if (planned == null || planned.isEmpty() || !PatrolPlannedRouteSupport.hasSavedRoute(planned)) {
-            throw exception(PATROL_SAVE_ROUTE_PLANNED_ROUTE_REQUIRED);
+        // 错误码是 Integer。400 超出缓存，先取出数值再比。
+        int value = code;
+        if (value == GlobalErrorCodeConstants.BAD_REQUEST.getCode()) {
+            return true;
         }
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put(RoutePayloadKeys.PLANNED_ROUTE, planned);
-        patrolSaveRouteService.saveRoute(PatrolSaveRouteReqDTO.builder()
-                .taskId(reqVO.getTaskId())
-                .facilityId(reqVO.getFacilityId())
-                .workItems(List.of(WorkItemDTO.builder().payload(payload).build()))
-                .dryRun(false)
-                .build());
-        patrolTaskCreateProcessService.invalidate(reqVO.getTaskId(), CreateWizardInvalidation.ROUTE_SAVED);
-        return ScheduleRunResponse.builder()
-                .contractVersion(ContractVersions.MVP)
-                .workItems(List.of(WorkItemDTO.builder().payload(payload).build()))
-                .build();
+        return value >= ROUTE_PLAN_ERROR_CODE_START && value < ROUTE_PLAN_ERROR_CODE_END;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ScheduleRunResponse previewOrchestration(PatrolOrchestrationRunReqVO reqVO) {
+        if (reqVO.getPage() != null) {
+            // 向导上的开始编排：先按这一页的停靠点重算路径，再用新的路径耗时排计划。不写已保存路线，不释放占用。
+            ScheduleRunResponse routed = refreshWizardRoute(reqVO);
+            PatrolTaskDraft working = resolveWorkingDraft(reqVO);
+            requireConfigReady(working);
+            ScheduleRunResponse response = scheduleRunApi.run(
+                    buildOrchestrationRunRequest(reqVO, working, working.runtimeJobId(), true)).getCheckedData();
+            if (CollectionUtils.isEmpty(response.getSlots())) {
+                throw exception(PATROL_FACADE_NO_ACTIVE_SLOTS);
+            }
+            // 开始编排只把计划点和重算后的路线放回这一页。指令由单独一步试译。
+            return ScheduleRunResponse.builder()
+                    .contractVersion(response.getContractVersion())
+                    .slots(response.getSlots())
+                    .shiftedSlots(response.getShiftedSlots())
+                    .plainSummary(response.getPlainSummary())
+                    .workItems(response.getWorkItems())
+                    .routePreview(routed == null ? response.getRoutePreview() : routed.getRoutePreview())
+                    .plannedRoute(reqVO.getPage().getPlannedRoute())
+                    .executionStepTree(providedStepTree(reqVO))
+                    .build();
+        }
         PatrolTaskDraft draft = requireTaskReadyForOrchestration(reqVO.getTaskId());
+        requireConfigReady(draft);
         String previousRuntimeJobId = draft.runtimeJobId();
         if (!Boolean.TRUE.equals(draft.orchestrationCommitted())) {
             // 未生成任务：智能编排前先让开本任务留下的未执行占窗，不能只认草稿上那一个作业号。
@@ -216,18 +297,21 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
                     reqVO.getTaskId(),
                     previousRuntimeJobId,
                     draft.facilityId(),
-                    resolveSchedulingSpec(reqVO.getTaskId(), reqVO.getSchedulingSpec()),
+                    resolveSchedulingSpec(reqVO),
                     "previewOrchestration: replace previous trial for same task");
             if (StringUtils.hasText(previousRuntimeJobId)) {
                 patrolTaskEntityStore.clearOrchestrationTrialState(reqVO.getTaskId());
             }
         }
-        Object executionStepTree = generateExecutionSteps(draft);
         ScheduleRunResponse response = scheduleRunApi.run(
                 buildOrchestrationRunRequest(reqVO, draft, previousRuntimeJobId, true)).getCheckedData();
         if (CollectionUtils.isEmpty(response.getSlots())) {
             throw exception(PATROL_FACADE_NO_ACTIVE_SLOTS);
         }
+        Object executionStepTree = generateExecutionSteps(draft);
+        PatrolTaskDraft draftWithTree = PatrolMissionTranslateService.withStepTree(draft, executionStepTree);
+        patrolMissionTranslateService.assertPreviewTranslate(
+                draftWithTree, executionStepTree, slotIdsOf(response.getSlots()));
         patrolTaskEntityStore.writeOrchestrationPreview(
                 reqVO.getTaskId(), response.getSlots(), response.getPlainSummary());
         return ScheduleRunResponse.builder()
@@ -247,32 +331,55 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ScheduleRunResponse commitOrchestration(PatrolOrchestrationRunReqVO reqVO) {
-        PatrolTaskDraft draft = requireTaskReadyForOrchestration(reqVO.getTaskId());
-        String previousJobId = draft.runtimeJobId();
-        // 本任务未执行占窗先让开：草稿上的作业号，以及失败留下、作业号没写回草稿的同任务窗口。
-        releaseOwnUnexecutedOccupancy(
-                reqVO.getTaskId(),
-                previousJobId,
-                draft.facilityId(),
-                resolveSchedulingSpec(reqVO.getTaskId(), reqVO.getSchedulingSpec()),
-                "generateTask: replace unexecuted windows of the same task");
+        Long taskId = reqVO.getTaskId();
+        // 先记下是不是已经发布。后面成功才把当前方式写进草稿。第一次生成不写草稿。
+        boolean updatingPublished = taskId != null
+                && Boolean.TRUE.equals(patrolTaskEntityStore.require(taskId).orchestrationCommitted());
+        if (reqVO.getPage() != null) {
+            // 生成任务 / 更新任务：把这一页当前方式写入已发布字段，占用的是页面上已经算出的计划点。
+            writePublishedFromPage(reqVO);
+        }
+        boolean replacing = false;
+        try {
+            PatrolTaskDraft draft = requireTaskReadyForOrchestration(taskId);
+            // 计划点必须已经在这一页上，并由写入已发布时放进试排。这里不再检测、不再重算。
+            draft = ensurePreviewBeforeRelease(draft);
+            String previousJobId = draft.runtimeJobId();
+            replacing = true;
+            // 本任务未执行占窗先让开：草稿上的作业号，以及失败留下、作业号没写回草稿的同任务窗口。
+            releaseOwnUnexecutedOccupancy(
+                    taskId,
+                    previousJobId,
+                    draft.facilityId(),
+                    resolveSchedulingSpec(reqVO),
+                    "generateTask: replace unexecuted windows of the same task");
 
-        if (!hasOrchestrationPreview(draft)) {
-            throw exception(PATROL_FACADE_NOT_ARRANGED);
+            String runtimeJobId = commitArrangePreviewSnapshot(reqVO, draft, previousJobId);
+            List<ScheduleSlotDTO> slots = runtimeQueryApi.listSlotsByJobId(runtimeJobId).getCheckedData();
+            if (CollectionUtils.isEmpty(slots)) {
+                throw exception(PATROL_FACADE_NOT_ARRANGED);
+            }
+            finishGenerateTaskCommit(taskId, slots, true);
+            registerAutoStart(taskId, slots);
+            patrolTaskEntityStore.writeOrchestrationCommittedState(taskId, runtimeJobId, Boolean.TRUE);
+            if (updatingPublished) {
+                syncSavedDraft(reqVO);
+            }
+            return ScheduleRunResponse.builder()
+                    .contractVersion(ContractVersions.MVP)
+                    .runtimeJobId(runtimeJobId)
+                    .slots(slots)
+                    .build();
+        } catch (RuntimeException ex) {
+            if (replacing && taskId != null) {
+                try {
+                    patrolTaskEntityStore.clearGeneratedMark(taskId);
+                } catch (RuntimeException clearEx) {
+                    ex.addSuppressed(clearEx);
+                }
+            }
+            throw ex;
         }
-        String runtimeJobId = commitArrangePreviewSnapshot(reqVO, draft, previousJobId);
-        List<ScheduleSlotDTO> slots = runtimeQueryApi.listSlotsByJobId(runtimeJobId).getCheckedData();
-        boolean clearPreviewAfterCommit = true;
-        if (CollectionUtils.isEmpty(slots)) {
-            throw exception(PATROL_FACADE_NOT_ARRANGED);
-        }
-        finishGenerateTaskCommit(reqVO.getTaskId(), runtimeJobId, slots, clearPreviewAfterCommit);
-        registerAutoStart(reqVO.getTaskId(), slots);
-        return ScheduleRunResponse.builder()
-                .contractVersion(ContractVersions.MVP)
-                .runtimeJobId(runtimeJobId)
-                .slots(slots)
-                .build();
     }
 
     @Override
@@ -314,8 +421,10 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
             verifyCommitWindow(
                     reqVO.getTaskId(),
                     runtimeJobId,
-                    resolveSchedulingSpec(reqVO.getTaskId(), reqVO.getSchedulingSpec()),
-                    previousJobId);
+                    resolveSchedulingSpec(reqVO),
+                    previousJobId,
+                    reqVO.getShiftedSlots());
+            writeShiftedOccupancy(reqVO.getShiftedSlots(), draft.facilityId());
             runtimeSlotWriteApi.finalizePlannedSchedule(runtimeJobId).checkError();
             return runtimeJobId;
         } catch (RuntimeException ex) {
@@ -330,17 +439,17 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
     }
 
     /**
-     * 生成任务（commitOrchestration）固定顺序：占窗已定稿后 → 写每计划点待执行 → 标记任务已生成并排期 → 由调用方登记到点开跑。
-     * <p>不负责：试排预览、开跑下发；禁止在物化/调度模块内互相调用，只在本门面按序编排。
+     * 生成任务（commitOrchestration）固定顺序：占窗已定稿后 → 写每计划点待执行 → 登记到点 → 才标记已生成。
+     * 标记若写在登记之前，后面失败时远程写入收不回，列表会留下已启用。
+     * <p>不负责：试排预览、执行任务下发；禁止在物化/调度模块内互相调用，只在本门面按序编排。
      */
     private void finishGenerateTaskCommit(
-            Long taskId, String runtimeJobId, List<ScheduleSlotDTO> slots, boolean clearPreview) {
+            Long taskId, List<ScheduleSlotDTO> slots, boolean clearPreview) {
         PatrolTaskDraft task = patrolTaskEntityStore.require(taskId);
         patrolOpenRunMaterializeService.materializeAllSlots(task, slots);
         if (clearPreview) {
             patrolTaskEntityStore.clearOrchestrationPreview(taskId);
         }
-        patrolTaskEntityStore.writeOrchestrationCommittedState(taskId, runtimeJobId, Boolean.TRUE);
     }
 
     private static RuntimeJobDTO buildPatrolOrchestrationRuntimeJob(String runtimeJobId) {
@@ -397,6 +506,16 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
         payload.put(TASK_ID, reqVO.getTaskId());
         payload.put(FROM_SAVED_ROUTE_SNAPSHOT, true);
         payload.put(TASK_ENABLED, Boolean.FALSE);
+        WizardPage page = reqVO.getPage();
+        if (page != null) {
+            payload.put("pagePlannedRoute", page.getPlannedRoute());
+            payload.put("pageScheduleConfig", page.getScheduleConfig());
+            payload.put("pageInspectionContent", page.getInspectionContent());
+            payload.put("pageExecutionDeviceBinding", page.getExecutionDeviceBinding());
+            payload.put("pagePatrolExecutionMode", page.getPatrolExecutionMode());
+            payload.put("pageStartStopId", page.getStartStopId());
+            payload.put("pageEndStopId", page.getEndStopId());
+        }
         if (draft.facilityId() != null) {
             payload.put(FACILITY_ID, draft.facilityId());
         }
@@ -415,7 +534,7 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
                 .entityTypeCode(PatrolTaskEntityStore.TASK_TYPE)
                 .orchestrationRef(OrchestrationRefs.PATROL_ORCHESTRATION_V1)
                 .dryRun(previewOnly)
-                .schedulingSpec(resolveSchedulingSpec(reqVO.getTaskId(), reqVO.getSchedulingSpec()))
+                .schedulingSpec(resolveSchedulingSpec(reqVO))
                 .workItems(List.of(seed));
         if (StringUtils.hasText(previousRuntimeJobId)) {
             // 存量试排曾落 runtime：重排时 SOLVE 不把本任务上一轮占窗当作外部冲突
@@ -432,6 +551,17 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
             return !list.isEmpty();
         }
         return true;
+    }
+
+    /**
+     * 写入之前，这一页的计划点必须已经在试排里。
+     * 没有试排就拒绝，并且此时还没有释放占窗。不在这里再做冲突检测，也不按原时间重算计划点。
+     */
+    private PatrolTaskDraft ensurePreviewBeforeRelease(PatrolTaskDraft draft) {
+        if (hasOrchestrationPreview(draft)) {
+            return draft;
+        }
+        throw exception(PATROL_FACADE_NOT_ARRANGED);
     }
 
     /**
@@ -493,8 +623,45 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
         return draft.runtimeJobId();
     }
 
+    /**
+     * 生成任务时，把页面上已经算出的已确认任务新时间写回原占窗。不新建一条，也不改它们的作业号。
+     */
+    private void writeShiftedOccupancy(List<ScheduleSlotDTO> shiftedSlots, Long facilityId) {
+        if (CollectionUtils.isEmpty(shiftedSlots)) {
+            return;
+        }
+        Map<String, List<ScheduleSlotDTO>> byJob = new LinkedHashMap<>();
+        for (ScheduleSlotDTO slot : shiftedSlots) {
+            if (slot == null || !StringUtils.hasText(slot.getRuntimeJobId()) || !StringUtils.hasText(slot.getSlotId())) {
+                continue;
+            }
+            byJob.computeIfAbsent(slot.getRuntimeJobId().trim(), key -> new ArrayList<>()).add(slot);
+        }
+        for (Map.Entry<String, List<ScheduleSlotDTO>> entry : byJob.entrySet()) {
+            runtimePersistApi.persist(RuntimePersistReqDTO.builder()
+                    .appendSlotsOnly(true)
+                    .job(RuntimeJobDTO.builder().runtimeJobId(entry.getKey()).build())
+                    .slots(entry.getValue())
+                    .facilityId(facilityId)
+                    .build()).checkError();
+        }
+    }
+
+    private static ScheduleSlotDTO overlayShift(ScheduleSlotDTO stored, List<ScheduleSlotDTO> shiftedSlots) {
+        if (stored == null || CollectionUtils.isEmpty(shiftedSlots) || !StringUtils.hasText(stored.getSlotId())) {
+            return stored;
+        }
+        for (ScheduleSlotDTO shifted : shiftedSlots) {
+            if (shifted != null && stored.getSlotId().equals(shifted.getSlotId())) {
+                return shifted;
+            }
+        }
+        return stored;
+    }
+
     private void verifyCommitWindow(
-            Long taskId, String runtimeJobId, SchedulingSpecDTO schedulingSpec, String previousJobId) {
+            Long taskId, String runtimeJobId, SchedulingSpecDTO schedulingSpec, String previousJobId,
+            List<ScheduleSlotDTO> shiftedSlots) {
         List<ScheduleSlotDTO> ownSlots = runtimeQueryApi.listSlotsByJobId(runtimeJobId).getCheckedData();
         if (CollectionUtils.isEmpty(ownSlots)) {
             throw exception(PATROL_FACADE_NO_ACTIVE_SLOTS);
@@ -527,7 +694,7 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
                 if (!isActiveSlot(other)) {
                     continue;
                 }
-                if (slotsOverlapOnSharedResource(own, other)) {
+                if (slotsOverlapOnSharedResource(own, overlayShift(other, shiftedSlots))) {
                     throw exception(PATROL_FACADE_OCCUPANCY_CONFLICT);
                 }
             }
@@ -611,23 +778,40 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
     }
 
     /**
-     * 智能编排前置条件：普通方式须已 saveRoute；固定摄像机跳过算路则不要求 stopIds。
+     * 向导带了这一页：挪动策略认这一页上刚填的。没带这一页（列表启用）才认已发布字段上的策略。
+     * 窗口日期始终认请求里的排期范围。
      */
-    /**
-     * 智能编排处理方法只认总任务上已保存的排期策略；窗口日期仍可用请求里的排期模板范围。
-     */
-    private SchedulingSpecDTO resolveSchedulingSpec(Long taskId, SchedulingSpecDTO incoming) {
-        PatrolTaskEntityStore.ArrangePolicy policy = patrolTaskEntityStore.readArrangePolicy(taskId);
-        if (Boolean.TRUE.equals(policy.allowShiftExisting()) && policy.maxShiftMinutes() == null) {
+    private SchedulingSpecDTO resolveSchedulingSpec(PatrolOrchestrationRunReqVO reqVO) {
+        Boolean allowShift;
+        Integer maxShiftMinutes;
+        Integer taskGapMinutes;
+        String conflictStrategy;
+        WizardPage page = reqVO.getPage();
+        if (page != null) {
+            allowShift = page.getAllowShiftExisting();
+            maxShiftMinutes = page.getMaxShiftMinutes();
+            taskGapMinutes = page.getTaskGapMinutes();
+            conflictStrategy = page.getConflictStrategy();
+        } else {
+            PatrolTaskEntityStore.ArrangePolicy policy = patrolTaskEntityStore.readArrangePolicy(reqVO.getTaskId());
+            allowShift = policy.allowShiftExisting();
+            maxShiftMinutes = policy.maxShiftMinutes();
+            taskGapMinutes = policy.taskGapMinutes();
+            conflictStrategy = policy.conflictStrategy();
+        }
+        if (Boolean.TRUE.equals(allowShift) && maxShiftMinutes == null) {
             throw invalidParamException("允许挪动已有任务排期时，请填写最大挪动范围");
         }
+        SchedulingSpecDTO incoming = reqVO.getSchedulingSpec();
+        // 向导这一页没再带旧的「允许挪动」开关。填了单侧分钟数就按空窗口顺序编排，不能因开关缺失写成拒绝本批。
+        String resolvedStrategy = StringUtils.hasText(conflictStrategy)
+                ? conflictStrategy.trim()
+                : (page != null || Boolean.TRUE.equals(allowShift) ? "defer_slot" : "reject_batch");
         SchedulingSpecDTO.SchedulingSpecDTOBuilder builder = SchedulingSpecDTO.builder()
-                .conflictStrategy(StringUtils.hasText(policy.conflictStrategy())
-                        ? policy.conflictStrategy().trim()
-                        : (Boolean.TRUE.equals(policy.allowShiftExisting()) ? "defer_slot" : "reject_batch"))
-                .allowShiftExisting(Boolean.TRUE.equals(policy.allowShiftExisting()))
-                .maxShiftMinutes(policy.maxShiftMinutes())
-                .taskGapMinutes(policy.taskGapMinutes());
+                .conflictStrategy(resolvedStrategy)
+                .allowShiftExisting(page != null || Boolean.TRUE.equals(allowShift))
+                .maxShiftMinutes(maxShiftMinutes)
+                .taskGapMinutes(taskGapMinutes);
         if (incoming != null) {
             builder.mode(incoming.getMode())
                     .horizonStart(incoming.getHorizonStart())
@@ -637,7 +821,161 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
     }
 
     private PatrolTaskDraft requireTaskReadyForOrchestration(Long taskId) {
-        PatrolTaskDraft draft = patrolTaskEntityStore.require(taskId);
+        return requireRouteReady(patrolTaskEntityStore.require(taskId));
+    }
+
+    /**
+     * 开始编排前按这一页已经选中的停靠点重算路径，把新的路径耗时放回这一页。
+     * 固定摄像机不算路。不调用保存路线，已保存路线要等更新任务才写。
+     * 没有停靠点或起终点时直接失败，不沿用上一次的路径耗时。
+     * 路径结果只转交。路线不可用由路径规划交回，这里不改写原文，也不把其它失败收成同一种。
+     */
+    private ScheduleRunResponse refreshWizardRoute(PatrolOrchestrationRunReqVO reqVO) {
+        WizardPage page = reqVO.getPage();
+        PatrolTaskDraft stored = patrolTaskEntityStore.require(reqVO.getTaskId());
+        String mode = StringUtils.hasText(page.getPatrolExecutionMode())
+                ? page.getPatrolExecutionMode().trim()
+                : stored.patrolExecutionMode();
+        if ("FIXED_CAMERA".equals(mode)) {
+            return null;
+        }
+        Map<String, Object> current = page.getPlannedRoute();
+        if (current == null || current.isEmpty()) {
+            current = PatrolPlannedRouteSupport.asPlannedMap(stored.plannedRoute());
+        }
+        List<String> stopIds = stringList(current == null ? null : current.get("stopIds"));
+        if (stopIds.isEmpty()) {
+            throw invalidParamException("请先开始规划");
+        }
+        String start = firstText(page.getStartStopId(), textOf(current, RoutePayloadKeys.START_STOP_ID), stored.startStopId());
+        String end = firstText(page.getEndStopId(), textOf(current, RoutePayloadKeys.END_STOP_ID), stored.endStopId());
+        if (!StringUtils.hasText(start) || !StringUtils.hasText(end)) {
+            throw invalidParamException("请先在任务中设置起点和终点");
+        }
+        InspectionContent content = page.getInspectionContent() != null
+                ? page.getInspectionContent() : stored.inspectionContent();
+        List<Long> objectIds = objectIdsOf(content);
+        if (objectIds.isEmpty()) {
+            throw invalidParamException("请先选择巡检对象");
+        }
+        PatrolRouteRunReqVO routeReq = new PatrolRouteRunReqVO();
+        routeReq.setTaskId(reqVO.getTaskId());
+        routeReq.setFacilityId(page.getFacilityId() != null ? page.getFacilityId() : stored.facilityId());
+        routeReq.setObjectIds(objectIds);
+        routeReq.setStopIds(stopIds);
+        routeReq.setStartStopId(start);
+        routeReq.setEndStopId(end);
+        routeReq.setReturnToStart(start.equals(end));
+        routeReq.setInspectionType(PatrolScheduleMapServiceImpl.normalizeInspectionType(mode));
+        if (current != null && current.get("networkRef") != null) {
+            routeReq.setPreferredNetworkRef(String.valueOf(current.get("networkRef")));
+        }
+        routeReq.setStrategy(STRATEGY_AS_GIVEN);
+        ScheduleRunResponse routed = previewRoute(routeReq);
+        page.setPlannedRoute(plannedRouteOf(routed));
+        return routed;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> plannedRouteOf(ScheduleRunResponse routed) {
+        if (routed == null || CollectionUtils.isEmpty(routed.getWorkItems())) {
+            return null;
+        }
+        Map<String, Object> payload = routed.getWorkItems().get(0).getPayload();
+        if (payload == null) {
+            return null;
+        }
+        Object raw = payload.get(RoutePayloadKeys.PLANNED_ROUTE);
+        if (raw instanceof Map<?, ?> map) {
+            return new LinkedHashMap<>((Map<String, Object>) map);
+        }
+        return null;
+    }
+
+    private static List<Long> objectIdsOf(InspectionContent content) {
+        List<Long> ids = new ArrayList<>();
+        if (content == null) {
+            return ids;
+        }
+        collectObjectIds(content.getCustomObjects(), ids);
+        if (content.getGroups() != null) {
+            for (InspectionContent.ObjectGroup group : content.getGroups()) {
+                collectObjectIds(group.getObjects(), ids);
+            }
+        }
+        return ids;
+    }
+
+    private static void collectObjectIds(List<InspectionContent.ObjectContent> objects, List<Long> ids) {
+        if (objects == null) {
+            return;
+        }
+        for (InspectionContent.ObjectContent object : objects) {
+            if (object != null && object.getObjectId() != null) {
+                ids.add(object.getObjectId());
+            }
+        }
+    }
+
+    private static List<String> stringList(Object raw) {
+        if (!(raw instanceof List<?> list)) {
+            return List.of();
+        }
+        List<String> values = new ArrayList<>();
+        for (Object row : list) {
+            if (row != null && StringUtils.hasText(String.valueOf(row))) {
+                values.add(String.valueOf(row).trim());
+            }
+        }
+        return values;
+    }
+
+    private static String textOf(Map<String, Object> map, String key) {
+        if (map == null || key == null) {
+            return null;
+        }
+        Object raw = map.get(key);
+        if (raw == null) {
+            return null;
+        }
+        String text = String.valueOf(raw).trim();
+        return text.isEmpty() ? null : text;
+    }
+
+    private static String firstText(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value.trim();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 向导请求带这一页时，计划点按这一页算。不带时读已发布字段（列表启用）。
+     * 普通方式必须已经有路线结果；固定摄像机不要求路线。
+     */
+    private PatrolTaskDraft resolveWorkingDraft(PatrolOrchestrationRunReqVO reqVO) {
+        PatrolTaskDraft stored = patrolTaskEntityStore.require(reqVO.getTaskId());
+        if (reqVO.getPage() == null) {
+            return requireRouteReady(stored);
+        }
+        WizardPage page = reqVO.getPage();
+        PatrolScheduleMapReqDTO pageReq = new PatrolScheduleMapReqDTO();
+        pageReq.setPageInspectionContent(page.getInspectionContent());
+        pageReq.setPagePlannedRoute(page.getPlannedRoute());
+        pageReq.setPageScheduleConfig(page.getScheduleConfig());
+        pageReq.setPageExecutionDeviceBinding(page.getExecutionDeviceBinding());
+        pageReq.setPagePatrolExecutionMode(page.getPatrolExecutionMode());
+        pageReq.setPageStartStopId(page.getStartStopId());
+        pageReq.setPageEndStopId(page.getEndStopId());
+        return requireRouteReady(PatrolWizardPageDraft.overlay(stored, pageReq, itemActionDurationCalculator));
+    }
+
+    private PatrolTaskDraft requireRouteReady(PatrolTaskDraft draft) {
         if ("FIXED_CAMERA".equals(draft.patrolExecutionMode())) {
             return draft;
         }
@@ -647,6 +985,151 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
         return draft;
     }
 
+    /**
+     * 生成任务或更新任务：当前方式从这一页写入已发布字段，并记下页面上已经生成的计划点和步骤图。
+     * 本方法不写草稿。更新任务在整段成功后再把当前方式写入已保存草稿。
+     */
+    private void writePublishedFromPage(PatrolOrchestrationRunReqVO reqVO) {
+        if (CollectionUtils.isEmpty(reqVO.getSlots())) {
+            throw exception(PATROL_FACADE_NOT_ARRANGED);
+        }
+        WizardPage page = reqVO.getPage();
+        Long taskId = reqVO.getTaskId();
+        InspectionTaskUpdateReqVO update = new InspectionTaskUpdateReqVO();
+        update.setId(taskId);
+        update.setTaskName(page.getTaskName());
+        // 所属设施在这一页上。不带上的话，任务更新会因必填的所属设施为空被拒绝。
+        update.setFacilityId(page.getFacilityId());
+        update.setPatrolExecutionMode(page.getPatrolExecutionMode());
+        update.setInspectionContent(page.getInspectionContent());
+        update.setExecutionDeviceBinding(page.getExecutionDeviceBinding());
+        update.setScheduleConfig(page.getScheduleConfig());
+        update.setStartStopId(page.getStartStopId());
+        update.setEndStopId(page.getEndStopId());
+        update.setApplyToPublished(Boolean.TRUE);
+        // 检查项动作耗时合计写动作库现在算出的分钟。算不出来就不写，不用步骤上已有的分钟顶上。
+        if (page.getInspectionContent() != null
+                && itemActionDurationCalculator != null
+                && StringUtils.hasText(page.getPatrolExecutionMode())) {
+            Long executionEquipmentId = page.getExecutionDeviceBinding() == null
+                    ? null
+                    : page.getExecutionDeviceBinding().getEquipmentId();
+            itemActionDurationCalculator
+                    .computeLiveSecondsForEquipment(
+                            page.getInspectionContent(),
+                            page.getPatrolExecutionMode().trim(),
+                            executionEquipmentId)
+                    .ifPresent(page.getInspectionContent()::setItemActionDurationMinutes);
+        }
+        patrolTaskEntityStore.updateDraft(update);
+        if (page.getPlannedRoute() != null && !page.getPlannedRoute().isEmpty()) {
+            patrolTaskEntityStore.writePlannedRoute(taskId, page.getPlannedRoute());
+        }
+        if (reqVO.getExecutionStepTree() != null && !reqVO.getExecutionStepTree().isEmpty()) {
+            patrolTaskEntityStore.writeStepTree(taskId, reqVO.getExecutionStepTree());
+        }
+        patrolTaskEntityStore.writeOrchestrationPreview(
+                taskId, reqVO.getSlots(), "按这一页已生成的计划点写入。");
+    }
+
+    /**
+     * 更新任务成功后：已保存草稿里当前这一种巡检方式换成刚发布的这一页。
+     * 草稿里其他巡检方式留下。第一次生成任务不调用本方法。
+     */
+    private void syncSavedDraft(PatrolOrchestrationRunReqVO reqVO) {
+        Map<String, Object> incoming = reqVO.getSavedDraft();
+        if (incoming == null || incoming.isEmpty()) {
+            incoming = snapshotFromPublishedPage(reqVO);
+        }
+        Map<String, Object> existing = patrolTaskEntityStore.readUnpublishedModification(reqVO.getTaskId());
+        Map<String, Object> merged = new LinkedHashMap<>();
+        if (existing != null) {
+            merged.putAll(existing);
+        }
+        merged.putAll(incoming);
+        merged.put("modes", mergeDraftModes(existing, incoming, currentMode(reqVO)));
+        patrolTaskEntityStore.saveUnpublishedModification(reqVO.getTaskId(), merged);
+    }
+
+    /**
+     * 页面没带草稿快照时，用刚写入已发布的这一页拼一份。
+     * 只含当前方式。其他方式由合并时从原草稿留下。
+     */
+    private static Map<String, Object> snapshotFromPublishedPage(PatrolOrchestrationRunReqVO reqVO) {
+        WizardPage page = reqVO.getPage();
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        if (page == null) {
+            return snapshot;
+        }
+        if (StringUtils.hasText(page.getTaskName())) {
+            snapshot.put("taskName", page.getTaskName());
+        }
+        if (page.getFacilityId() != null) {
+            snapshot.put("facilityId", page.getFacilityId());
+        }
+        if (StringUtils.hasText(page.getPatrolExecutionMode())) {
+            snapshot.put("patrolExecutionMode", page.getPatrolExecutionMode());
+        }
+        if (page.getInspectionContent() != null) {
+            snapshot.put("inspectionContent", page.getInspectionContent());
+        }
+        if (page.getExecutionDeviceBinding() != null) {
+            snapshot.put("executionDeviceBinding", page.getExecutionDeviceBinding());
+        }
+        if (page.getScheduleConfig() != null) {
+            snapshot.put("scheduleConfig", page.getScheduleConfig());
+        }
+        if (page.getPlannedRoute() != null && !page.getPlannedRoute().isEmpty()) {
+            snapshot.put("plannedRoute", page.getPlannedRoute());
+        }
+        if (StringUtils.hasText(page.getStartStopId())) {
+            snapshot.put("startStopId", page.getStartStopId());
+        }
+        if (StringUtils.hasText(page.getEndStopId())) {
+            snapshot.put("endStopId", page.getEndStopId());
+        }
+        if (reqVO.getExecutionStepTree() != null && !reqVO.getExecutionStepTree().isEmpty()) {
+            snapshot.put("executionStepTree", reqVO.getExecutionStepTree());
+        }
+        if (reqVO.getSlots() != null && !reqVO.getSlots().isEmpty()) {
+            snapshot.put("slots", reqVO.getSlots());
+        }
+        return snapshot;
+    }
+
+    /**
+     * 当前方式用这一页的切片盖掉。其他方式留在原草稿里。
+     * 页面没带各种方式时，去掉当前方式的旧切片，打开草稿就用刚写入的这一页。
+     */
+    private static Map<String, Object> mergeDraftModes(
+            Map<String, Object> existing, Map<String, Object> incoming, String currentMode) {
+        Map<String, Object> modes = new LinkedHashMap<>();
+        copyModeMap(modes, existing == null ? null : existing.get("modes"));
+        Object incomingModes = incoming.get("modes");
+        if (incomingModes instanceof Map<?, ?>) {
+            copyModeMap(modes, incomingModes);
+        } else if (StringUtils.hasText(currentMode)) {
+            modes.remove(currentMode.trim());
+        }
+        return modes;
+    }
+
+    private static void copyModeMap(Map<String, Object> target, Object raw) {
+        if (!(raw instanceof Map<?, ?> source)) {
+            return;
+        }
+        source.forEach((key, value) -> {
+            if (key != null) {
+                target.put(String.valueOf(key), value);
+            }
+        });
+    }
+
+    private static String currentMode(PatrolOrchestrationRunReqVO reqVO) {
+        WizardPage page = reqVO.getPage();
+        return page == null ? null : page.getPatrolExecutionMode();
+    }
+
     private PatrolTaskDraft requireTask(Long taskId) {
         return patrolTaskEntityStore.require(taskId);
     }
@@ -654,6 +1137,31 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
     /**
      * 第 3 步无冲突或智能编排时调用步骤图生成；本门面不编树。
      */
+    /** 页面已经生成的步骤图。没有则空，调用方再编。禁止在这里重新编一棵。 */
+    private static Map<String, Object> providedStepTree(PatrolOrchestrationRunReqVO reqVO) {
+        Map<String, Object> tree = reqVO.getExecutionStepTree();
+        if (tree == null || tree.isEmpty()) {
+            return null;
+        }
+        return tree;
+    }
+
+    /** 编出步骤图放进响应，不写任务。向导排期和向导上的智能编排用这个。 */
+    private Object composeExecutionSteps(PatrolTaskDraft draft) {
+        Map<String, Object> planned = PatrolPlannedRouteSupport.asPlannedMap(draft.plannedRoute());
+        String startStopId = firstStopId(
+                planned != null ? PatrolPlannedRouteSupport.asText(planned.get(RoutePayloadKeys.START_STOP_ID)) : null,
+                draft.startStopId());
+        String endStopId = firstStopId(
+                planned != null ? PatrolPlannedRouteSupport.asText(planned.get(RoutePayloadKeys.END_STOP_ID)) : null,
+                draft.endStopId());
+        if (!StringUtils.hasText(endStopId) && StringUtils.hasText(startStopId)
+                && planned != null && Boolean.TRUE.equals(planned.get(RoutePayloadKeys.RETURN_TO_START))) {
+            endStopId = startStopId;
+        }
+        return taskStepTreeGenerateService.compose(draft, null, startStopId, endStopId);
+    }
+
     private Object generateExecutionSteps(PatrolTaskDraft draft) {
         Map<String, Object> planned = PatrolPlannedRouteSupport.asPlannedMap(draft.plannedRoute());
         String startStopId = firstStopId(
@@ -677,7 +1185,19 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
      * 无冲突时按作业项已带的计划时刻落试排快照，不再进引擎求解。
      */
     private static List<ScheduleSlotDTO> slotsFromTemplate(List<WorkItemDTO> workItems) {
+        List<ScheduleSlotDTO> slots = collectPlanTimeSlots(workItems);
+        if (slots.isEmpty()) {
+            throw exception(PATROL_FACADE_NO_ACTIVE_SLOTS);
+        }
+        return slots;
+    }
+
+    /** 按排期模板上的时间窗收集计划点。没有时间窗时为空，不抛错。 */
+    private static List<ScheduleSlotDTO> collectPlanTimeSlots(List<WorkItemDTO> workItems) {
         List<ScheduleSlotDTO> slots = new ArrayList<>();
+        if (workItems == null) {
+            return slots;
+        }
         for (WorkItemDTO item : workItems) {
             if (item == null) {
                 continue;
@@ -692,7 +1212,7 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
             }
             slots.add(ScheduleSlotDTO.builder()
                     .contractVersion(ContractVersions.MVP)
-                    .slotId(UUID.randomUUID().toString())
+                    .slotId(stableSlotId(item, window))
                     .workId(item.getWorkId())
                     .entityTypeCode(item.getEntityTypeCode())
                     .candidateStart(window.getStart())
@@ -702,10 +1222,48 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
                     .slotStatus(SlotStatus.PLANNED)
                     .build());
         }
-        if (slots.isEmpty()) {
-            throw exception(PATROL_FACADE_NO_ACTIVE_SLOTS);
-        }
         return slots;
+    }
+
+    private void requireConfigReady(PatrolTaskDraft draft) {
+        PatrolInspectionConfigReadinessRespVO readiness = patrolInspectionConfigReadinessService.evaluate(draft);
+        if (readiness.isReady()) {
+            return;
+        }
+        String message = readiness.getGaps().isEmpty()
+                ? "步骤参数还没填完"
+                : readiness.getGaps().get(0).getMessage();
+        throw invalidParamException(message);
+    }
+
+    private static List<String> slotIdsOf(List<ScheduleSlotDTO> slots) {
+        if (CollectionUtils.isEmpty(slots)) {
+            return List.of();
+        }
+        List<String> ids = new ArrayList<>();
+        for (ScheduleSlotDTO slot : slots) {
+            if (slot != null && StringUtils.hasText(slot.getSlotId())) {
+                ids.add(slot.getSlotId().trim());
+            }
+        }
+        return List.copyOf(ids);
+    }
+
+    /**
+     * 试排计划点 id 须与生成任务物化收流一致：优先 workId，否则由作业项与窗口确定性生成。
+     */
+    private static String stableSlotId(WorkItemDTO item, TimeWindowDTO window) {
+        if (item != null && StringUtils.hasText(item.getWorkId())) {
+            return item.getWorkId().trim();
+        }
+        String seed = (item != null && StringUtils.hasText(item.getEntityTypeCode())
+                ? item.getEntityTypeCode().trim()
+                : "work")
+                + "|"
+                + window.getStart()
+                + "|"
+                + window.getEnd();
+        return UUID.nameUUIDFromBytes(seed.getBytes(StandardCharsets.UTF_8)).toString();
     }
 
     private static List<AssignedResourceDTO> assignedFrom(WorkItemDTO item) {
@@ -760,6 +1318,14 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
         return OffsetDateTime.parse(text, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
     }
 
+    /** 排序方法必须由调用方带上。自动是优化先后，手工是按给定顺序。缺了就报错。 */
+    private static String requireRouteStrategy(PatrolRouteRunReqVO reqVO) {
+        if (reqVO == null || !StringUtils.hasText(reqVO.getStrategy())) {
+            throw invalidParamException("请选择规划模式：自动或手工");
+        }
+        return reqVO.getStrategy().trim();
+    }
+
     private WorkItemDTO buildRoutePlanningWorkItem(PatrolRouteRunReqVO reqVO, Long taskId, boolean fromSavedRouteSnapshot) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put(FACILITY_ID, reqVO.getFacilityId());
@@ -785,6 +1351,7 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
         if (StringUtils.hasText(reqVO.getInspectionType())) {
             payload.put(INSPECTION_TYPE, reqVO.getInspectionType().trim());
         }
+        payload.put(RoutePayloadKeys.STRATEGY, requireRouteStrategy(reqVO));
         payload.put(FROM_SAVED_ROUTE_SNAPSHOT, fromSavedRouteSnapshot);
 
         return WorkItemDTO.builder()

@@ -11,6 +11,7 @@ import cn.cheers.x.inspection.task.service.execution.openrun.PatrolOpenRunMateri
 import cn.cheers.x.inspection.task.service.execution.scheduleboard.PatrolScheduleSlotExecutionWritebackService;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskExecutionRecordMediaBinder;
 import cn.cheers.x.module.dynamicbusiness.api.strategy.StrategyRuntimeApi;
 import cn.cheers.x.module.dynamicbusiness.api.strategy.dto.StrategyHandleRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.strategy.dto.StrategyTriggerEventDTO;
@@ -38,6 +39,7 @@ class InspectionTaskStartExecutionServiceImplTest {
     private StrategyRuntimeApi strategyRuntimeApi;
     private PatrolOpenRunMaterializeService openRunMaterializeService;
     private PatrolScheduleSlotExecutionWritebackService scheduleSlotExecutionWritebackService;
+    private PatrolTaskExecutionRecordMediaBinder patrolTaskExecutionRecordMediaBinder;
     private InspectionTaskStartExecutionServiceImpl service;
 
     @BeforeEach
@@ -46,15 +48,20 @@ class InspectionTaskStartExecutionServiceImplTest {
         strategyRuntimeApi = mock(StrategyRuntimeApi.class);
         openRunMaterializeService = mock(PatrolOpenRunMaterializeService.class);
         scheduleSlotExecutionWritebackService = mock(PatrolScheduleSlotExecutionWritebackService.class);
+        patrolTaskExecutionRecordMediaBinder = mock(PatrolTaskExecutionRecordMediaBinder.class);
         service = new InspectionTaskStartExecutionServiceImpl(
-                store, strategyRuntimeApi, openRunMaterializeService, scheduleSlotExecutionWritebackService);
+                store,
+                strategyRuntimeApi,
+                openRunMaterializeService,
+                scheduleSlotExecutionWritebackService,
+                patrolTaskExecutionRecordMediaBinder);
         when(scheduleSlotExecutionWritebackService.resolveScheduleSlotId(any(), any())).thenReturn("slot-1");
     }
 
     @Test
     void missingBinding_throws() {
         when(store.require(1L)).thenReturn(new PatrolTaskDraft(
-                1L, "样例", "巡检", 1L, "ROBOT", null, null, null, null, null, "draft", 0, null, null, null, null, null, null, null, null));
+                1L, "样例", "巡检", 1L, "ROBOT", null, null, null, null, null, "draft", 0, null, null, null, null, null, null, null, null, null));
         when(openRunMaterializeService.requireFrozen(any(), eq("slot-1")))
                 .thenThrow(new ServiceException(400, "任务未绑定执行设备（须含 equipmentId、protocolCode、logicalDeviceId）"));
 
@@ -143,6 +150,6 @@ class InspectionTaskStartExecutionServiceImplTest {
         object.setItems(List.of(item));
         content.setCustomObjects(List.of(object));
         return new PatrolTaskDraft(
-                1L, "样例", "巡检", 8L, "ROBOT", content, binding, null, null, null, "draft", 2, null, null, null, null, null, null, null, null);
+                1L, "样例", "巡检", 8L, "ROBOT", content, binding, null, null, null, "draft", 2, null, null, null, null, null, null, null, null, null);
     }
 }

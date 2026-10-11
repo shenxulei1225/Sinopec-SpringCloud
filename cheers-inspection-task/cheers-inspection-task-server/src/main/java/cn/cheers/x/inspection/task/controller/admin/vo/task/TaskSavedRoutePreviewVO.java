@@ -7,13 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 任务已保存路线读模型（saveRoute 快照）。
+ * 任务路线读模型。修改稿和已发布内容都使用这一结构回显路线。
  *
  * <p>与编排当次 live preview 同源：plannedRoute 在 ROUTE 阶段写入 stopIds、visitNodeIds、
  * visitPositions、segments；详情回显路线示意图只读这些字段，禁止读路径再算一遍冒充已保存折线。</p>
  */
 @Data
-@Schema(description = "已保存路线摘要（saveRoute 快照）")
+@Schema(description = "任务路线摘要")
 public class TaskSavedRoutePreviewVO {
 
     @Schema(description = "路网引用")
@@ -24,6 +24,9 @@ public class TaskSavedRoutePreviewVO {
 
     @Schema(description = "总距离（米）")
     private Long totalDistanceMeters;
+
+    @Schema(description = "路径耗时（秒）。只含行驶，不含检查动作。不是排期占窗的分钟数。")
+    private Integer estimatedTravelDuration;
 
     @Schema(description = "机动剖面 id")
     private String mobilityProfileId;

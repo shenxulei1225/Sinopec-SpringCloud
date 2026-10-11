@@ -140,7 +140,27 @@
 | V133 | `V133__ent_equipment_platform_protocol.sql` | 设备台账 `platform_protocol` 单值列；当前使用的平台对接协议。元数据见 `dynamic_equipment_protocol_versions.sql` |
 | V134 | `V134__ent_equipment_execution_means.sql` | 设备台账 `execution_means` 多选 jsonb 列；对齐 seed 15 的 equipment BASE 字段 |
 | V135 | `V135__patrol_task_draft_orchestration_keys.sql` | 总任务草稿袋编排键：`scheduleEnabled`/`arrangePreview*` → `orchestrationCommitted`/`orchestrationPreview*` |
-> **版本号说明**：本仓库已登记至 **V135**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。
+| V136 | `V136__ent_anomaly.sql` | 异常记录专用表 `ent_anomaly`；巡检异常型号与样例行从任务执行记录挪到这本账 |
+| V137 | `V137__device_collection_anomaly_model.sql` | 异常记录上的型号「设备采集异常」，所属设备引用由采集写入 |
+| V138 | `V138__action_duration_store_seconds.sql` | 动作耗时数字按秒存；已按分写下的默认值换成整数秒 |
+| V139 | `V139__action_duration_keep_display_unit.sql` | 动作耗时已是秒；没选过单位的参数把显示单位记为分 |
+| V140 | `V140__ent_equipment_dji_cloud_access.sql` | 设备台账补大疆上云接入方式、网关序列号、飞机序列号。设备行见 `dynamic_equipment_dji_cloud.sql` |
+| V141 | `V141__ent_data_protocol_version_and_communication.sql` | 数据协议「协议版本」「通讯方式」升成类型基础字段物理列 |
+| V142 | `V142__model_auto_param_defaults.sql` | 设备型号增加自动模式 `auto_param_defaults` |
+| V143 | `V143__equipment_protocol_fields_on_drone_models.sql` | 设备默认协议、支持的协议改为机场、飞机、东古无人机、机器人的型号扩展字段，并去掉设备表上的这两列 |
+| V144 | `V144__equipment_payload_mounts.sql` | 飞机、机场、东古无人机、机器人增加挂载点扩展字段；摄像机型号去掉负载位置，已填的编号收到上级的挂载点 |
+| V145 | `V145__model_model_relation.sql` | 模型—模型多对多先建同类型、异类型两张租户表 |
+| V146 | `V146__model_model_relation_one_table.sql` | 把这两张表收成一张，用来源类型和目标类型区分同类型、异类型 |
+| V147 | `V147__equipment_model_relation_fields.sql` | 摄像机型号分配适用机型，无人机型号分配可挂载设备类型；值在型号关联表 |
+| V148 | `V148__equipment_means_and_cloud_fields_on_models.sql` | 设备适用手段和大疆上云字段归入对应设备型号 |
+| V149 | `V149__equipment_check_param_base_field.sql` | 设备检查参数收口为设备类型基础字段 |
+| V150 | `V150__rename_execution_means_to_execution_mode.sql` | 动作侧执行方式字段改名并收敛词表说明 |
+| V151 | `V151__equipment_check_means_base_field.sql` | 检查方式回到设备类型基础字段 |
+| V152 | `V152__model_field_assignment_alias.sql` | 型号字段分配增加显示别名 |
+| V153 | `V153__intelligent_analysis_and_action_authority.sql` | 建立智能分析能力、服务接入、分析任务及动作类型投影 |
+| V154 | `V154__bind_verified_analysis_capability.sql` | 只绑定经资料确认的存量智能分析动作 |
+| V155 | `V155__action_models_and_groups.sql` | 动作目录改为五种模型；迁移动作组成员；协议配置退出动作库 |
+> **版本号说明**：本仓库已登记至 **V155**。若本地另有未入库的脚本，不得在本节写成已登记版本；补齐或占用空号须另任务提交后再更新本节。
 
 
 > **跨机合并说明**：本机布局迁移已占用 V26–V28 且已执行；对方原 `V26__category_*` / `V27__ent_structure` 在合并后改为 V29/V30。若对方库已按旧文件名执行过 V26/V27，需对齐历史表 `version`/`script` 后 `flyway:repair`，再拉本分支。
@@ -206,6 +226,7 @@ PGPASSWORD=Coolhomer psql -h 127.0.0.1 -U postgres -d sinopec -c \
 
 | 日期 | 说明 |
 |------|------|
+| 2026-10-11 | V155：动作目录按五种标准模型迁移；正式动作组成员替代复合布尔；动作侧协议角色退出运行时 |
 | 2026-09-18 | V134：设备台账补 `execution_means` jsonb 列，对齐 seed 15 的 BASE 字段，避免查储罐/设备报系统异常 |
 | 2026-09-18 | V132：巡检开跑三连与采集后更新账/步的平台预置策略 |
 | 2026-09-17 | V131：条件策略主表；平台预置「采集结果到了就往执行账里记一条过程」 |

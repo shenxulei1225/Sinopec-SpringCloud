@@ -35,10 +35,9 @@ class PathStationPointSyncServiceTest {
     }
 
     @Test
-    void normalizeMemberships_defaultsAndDedups() {
-        assertEquals(
-                List.of("HUMAN", "GROUND_ROBOT", "UAV"),
-                PathStationPointSyncService.normalizeMemberships(null));
+    void normalizeMemberships_emptyStaysEmptyAndDedups() {
+        assertEquals(List.of(), PathStationPointSyncService.normalizeMemberships(null));
+        assertEquals(List.of(), PathStationPointSyncService.normalizeMemberships(List.of()));
         assertEquals(
                 List.of("UAV", "HUMAN"),
                 PathStationPointSyncService.normalizeMemberships(List.of("uav", "HUMAN", "UAV")));

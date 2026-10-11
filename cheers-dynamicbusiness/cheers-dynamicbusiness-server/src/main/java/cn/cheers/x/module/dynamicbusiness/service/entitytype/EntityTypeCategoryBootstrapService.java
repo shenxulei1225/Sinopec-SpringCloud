@@ -3,6 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.service.entitytype;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.CategoryTypeCreateReqVO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryMapper;
@@ -151,6 +152,10 @@ public class EntityTypeCategoryBootstrapService {
         }
     }
 
+    /**
+     * 业务域分组只挂在分类种类登记的那一个顶层节点下。
+     * 未登记、或登记的节点已经不在：直接失败。禁止改挂到别的分类树，也禁止跳过分组假装门已建好。
+     */
     private void ensureDomainCategoryFolder(EntityTypeDO domainType, EntityTypeDO baseType) {
         String baseCategoryTypeCode = baseType.getCode().trim();
         String folderCode = domainType.getCode().trim() + "_dir";
@@ -162,9 +167,13 @@ public class EntityTypeCategoryBootstrapService {
 
         CategoryTypeDO categoryType = categoryTypeMapper.selectByCategoryTypeCode(baseCategoryTypeCode);
         if (categoryType == null || categoryType.getTopLevelCategoryId() == null) {
-            log.warn("DOMAIN 数据类型 {} 的基础分类 {} 未配置顶层节点，跳过域分组创建",
-                    domainType.getCode(), baseCategoryTypeCode);
-            return;
+            throw new ServiceException(400,
+                    "分类种类「" + baseCategoryTypeCode + "」未登记顶层节点，不能创建业务域分组");
+        }
+        CategoryDO registeredTop = categoryMapper.selectById(categoryType.getTopLevelCategoryId());
+        if (registeredTop == null) {
+            throw new ServiceException(400,
+                    "分类种类「" + baseCategoryTypeCode + "」登记的顶层节点已不存在，不能改挂到别的分类树上");
         }
 
         CategoryCreateReqVO req = new CategoryCreateReqVO();

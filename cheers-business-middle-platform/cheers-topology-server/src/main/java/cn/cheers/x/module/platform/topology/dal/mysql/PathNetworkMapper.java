@@ -42,35 +42,11 @@ public interface PathNetworkMapper extends BaseMapperX<PathNetworkDO> {
         return n + e;
     }
 
-    default PathNetworkDO selectLatestPublishedByFacilityIdAndKind(Long facilityId, String networkKind) {
-        return selectOne(new LambdaQueryWrapperX<PathNetworkDO>()
-                .eq(PathNetworkDO::getFacilityId, facilityId)
-                .eq(PathNetworkDO::getNetworkKind, networkKind)
-                .eq(PathNetworkDO::getStatus, "PUBLISHED")
-                .orderByDesc(PathNetworkDO::getVersion)
-                .last("LIMIT 1"));
-    }
-
-    default List<PathNetworkDO> selectPublishedByFacilityIdAndKind(Long facilityId, String networkKind) {
-        return selectList(new LambdaQueryWrapperX<PathNetworkDO>()
-                .eq(PathNetworkDO::getFacilityId, facilityId)
-                .eq(PathNetworkDO::getNetworkKind, networkKind)
-                .eq(PathNetworkDO::getStatus, "PUBLISHED"));
-    }
-
-    /** 设施下全部路网实例（草稿 + 已发布正式版） */
+    /** 本厂全部路网。 */
     default List<PathNetworkDO> selectAllByFacilityId(Long facilityId) {
         return selectList(new LambdaQueryWrapperX<PathNetworkDO>()
                 .eq(PathNetworkDO::getFacilityId, facilityId)
                 .in(PathNetworkDO::getStatus, "DRAFT", "PUBLISHED")
                 .last("ORDER BY CASE WHEN status = 'DRAFT' THEN 0 ELSE 1 END, update_time DESC NULLS LAST, id DESC"));
-    }
-
-    /** 设施下全部草稿路网实例（多实例列表） */
-    default List<PathNetworkDO> selectDraftsByFacilityId(Long facilityId) {
-        return selectList(new LambdaQueryWrapperX<PathNetworkDO>()
-                .eq(PathNetworkDO::getFacilityId, facilityId)
-                .eq(PathNetworkDO::getStatus, "DRAFT")
-                .last("ORDER BY update_time DESC NULLS LAST, id DESC"));
     }
 }

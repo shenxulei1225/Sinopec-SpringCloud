@@ -44,6 +44,7 @@ public interface ModelConvert {
         vo.setName(bean.getName());
         vo.setEntityTypeCode(bean.getEntityTypeCode());
         vo.setDescription(bean.getDescription());
+        vo.setAutoParamDefaults(bean.getAutoParamDefaults());
         vo.setStatus(bean.getStatus());
         vo.setSort(bean.getSort());
         vo.setDomain(bean.getDomain());

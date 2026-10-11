@@ -17,13 +17,16 @@ public record TaskStepNode(
         String refCode,
         Long refId,
         String title,
-        Map<String, Object> params
+        Map<String, Object> params,
+        String actionDomain,
+        Long analysisCapabilityId,
+        boolean required
 ) {
     public static final String HANG_ACTION = "action";
     public static final String HANG_INSPECTION_ITEM = "inspection_item";
-    /** 起点 / 终点路网点位 */
+    /** 起点、终点，以及检查途经的点位。途经点下挂一次到达和该点上的检查项。 */
     public static final String HANG_POINT = "point";
-    /** 巡检对象成组：对象下挂检查项 */
+    /** 没有点位时按设备成组：设备下挂检查项。 */
     public static final String HANG_EQUIPMENT = "equipment";
 
     public TaskStepNode {
@@ -32,9 +35,39 @@ public record TaskStepNode(
         refCode = refCode == null || refCode.isBlank() ? null : refCode.trim();
         title = title == null ? "" : title.trim();
         parentNodeKey = parentNodeKey == null || parentNodeKey.isBlank() ? null : parentNodeKey.trim();
+        actionDomain = trimToNull(actionDomain);
         params = params == null
                 ? Map.of()
                 : Collections.unmodifiableMap(new LinkedHashMap<>(params));
+    }
+
+    public TaskStepNode(
+            String nodeKey,
+            int order,
+            String parentNodeKey,
+            String hangTypeCode,
+            String refCode,
+            Long refId,
+            String title,
+            Map<String, Object> params
+    ) {
+        this(nodeKey, order, parentNodeKey, hangTypeCode, refCode, refId, title, params, null, null, true);
+    }
+
+    public TaskStepNode(
+            String nodeKey,
+            int order,
+            String parentNodeKey,
+            String hangTypeCode,
+            String refCode,
+            Long refId,
+            String title,
+            Map<String, Object> params,
+            String actionDomain,
+            Long analysisCapabilityId
+    ) {
+        this(nodeKey, order, parentNodeKey, hangTypeCode, refCode, refId, title, params,
+                actionDomain, analysisCapabilityId, true);
     }
 
     public boolean isAction() {
@@ -47,5 +80,9 @@ public record TaskStepNode(
 
     public boolean isStopGroup() {
         return HANG_POINT.equals(hangTypeCode) || HANG_EQUIPMENT.equals(hangTypeCode);
+    }
+
+    private static String trimToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

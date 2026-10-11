@@ -8,9 +8,25 @@ package cn.cheers.x.device.protocolgateway.datacollection;
  */
 public interface ProtocolInstructionCatalog {
 
+    /** 下发或上报正文这一卷。目录键，不进设备报文。 */
+    String VOLUME_OUTBOUND = "outbound";
+    /** 正常响应这一卷。报文带返回码 200 时用。 */
+    String VOLUME_INBOUND_SUCCESS = "inboundSuccess";
+    /** 异常响应这一卷。报文带了返回码且不是 200 时用。 */
+    String VOLUME_INBOUND_FAILURE = "inboundFailure";
+
     /**
-     * 取该操作码主包字段说明。
+     * 取该操作码主包字段说明。主包只认下发卷。
      * {@code protocolVersion} 有值时只认该版本；空则同一操作码多份不同说明书必须失败。
      */
     CatalogLookup findMainPacket(int opcode, String protocolVersion);
+
+    /**
+     * 取字段说明里的一卷，给监控页把值对上中文名。
+     * 卷名只用上面三个常量。版本规则与主包相同，不猜一份。
+     * 只实现了主包的调用方走默认失败，不把主包行冒充响应卷。
+     */
+    default CatalogLookup findVolume(int opcode, String protocolVersion, String volume) {
+        return CatalogLookup.failed("未提供这一卷字段说明");
+    }
 }

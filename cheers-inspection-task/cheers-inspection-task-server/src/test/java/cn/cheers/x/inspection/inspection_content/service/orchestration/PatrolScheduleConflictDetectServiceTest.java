@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -60,7 +61,7 @@ class PatrolScheduleConflictDetectServiceTest {
     @DisplayName("本任务留下的占窗不报重叠")
     void detect_skipsOwnLeftoverOccupancy() {
         stubReadyDraftAndPlan();
-        when(runtimeQueryApi.listSlots(any(), any(), eq(String.valueOf(EQUIPMENT_ID)), any(), any(), any()))
+        when(runtimeQueryApi.listSlots(any(), any(), isNull(), eq(PatrolTaskEntityStore.TASK_TYPE), any(), any()))
                 .thenReturn(CommonResult.success(List.of(
                         leftover("patrol-reserve-1-0", "job-old"),
                         leftover("patrol-task-1-0", "job-failed"))));
@@ -76,7 +77,7 @@ class PatrolScheduleConflictDetectServiceTest {
     void detect_keepsForeignOccupancy() {
         stubReadyDraftAndPlan();
         ScheduleSlotDTO foreign = leftover("other-task-9-0", "job-other");
-        when(runtimeQueryApi.listSlots(any(), any(), eq(String.valueOf(EQUIPMENT_ID)), any(), any(), any()))
+        when(runtimeQueryApi.listSlots(any(), any(), isNull(), eq(PatrolTaskEntityStore.TASK_TYPE), any(), any()))
                 .thenReturn(CommonResult.success(List.of(foreign)));
 
         ScheduleConflictReportDTO report = detectService.detect(TASK_ID, horizon()).report();
@@ -89,7 +90,7 @@ class PatrolScheduleConflictDetectServiceTest {
         when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draft());
         when(patrolTaskEntityStore.readArrangePolicy(TASK_ID))
                 .thenReturn(new PatrolTaskEntityStore.ArrangePolicy(null, 0, null, null));
-        when(patrolScheduleMapService.expandPatrolWorkItems(any()))
+        when(patrolScheduleMapService.expandFromPageDraft(any()))
                 .thenReturn(PatrolScheduleMapRespDTO.builder()
                         .workItems(List.of(plannedItem()))
                         .build());
@@ -100,7 +101,7 @@ class PatrolScheduleConflictDetectServiceTest {
         binding.setEquipmentId(EQUIPMENT_ID);
         return new PatrolTaskDraft(
                 TASK_ID, "草稿", "巡检", 7L, "ROBOT", null, binding, null,
-                null, null, "draft", 3, null, null, null, Boolean.FALSE, null, null, null, null);
+                null, null, "draft", 3, null, null, null, Boolean.FALSE, null, null, null, null, null);
     }
 
     private static WorkItemDTO plannedItem() {

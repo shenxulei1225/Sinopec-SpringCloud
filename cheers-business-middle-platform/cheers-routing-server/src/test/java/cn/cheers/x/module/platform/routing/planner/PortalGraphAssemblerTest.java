@@ -124,6 +124,7 @@ class PortalGraphAssemblerTest {
                 .nodeId(nodeId)
                 .nodeType(NodeType.STATION)
                 .layer(NetworkLayer.GROUND)
+                .memberships(List.of("HUMAN"))
                 .build();
     }
 

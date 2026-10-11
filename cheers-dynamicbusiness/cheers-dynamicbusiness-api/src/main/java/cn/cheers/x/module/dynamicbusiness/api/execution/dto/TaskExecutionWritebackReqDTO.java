@@ -19,7 +19,7 @@ public class TaskExecutionWritebackReqDTO {
     /** 执行记录入口类型；默认 task_excution_record */
     private String entityTypeCode;
 
-    /** pending / in_progress / completed / fault */
+    /** pending / in_progress / completed / fault / cancelled（更新任务取消的未执行计划点） */
     private String executionStatus;
 
     @Valid

@@ -3,9 +3,14 @@ package cn.cheers.x.module.dynamicbusiness.api.execution;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchReqDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStepSnapshotDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionWritebackReqDTO;
+
+import java.util.List;
 import cn.cheers.x.module.dynamicbusiness.service.execution.TaskExecutionSessionService;
 import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
@@ -30,6 +35,11 @@ public class TaskExecutionSessionApiImpl implements TaskExecutionSessionApi {
     }
 
     @Override
+    public CommonResult<TaskExecutionStartBatchRespDTO> startBatch(TaskExecutionStartBatchReqDTO req) {
+        return success(taskExecutionSessionService.startBatch(req));
+    }
+
+    @Override
     public CommonResult<Boolean> writeback(TaskExecutionWritebackReqDTO req) {
         taskExecutionSessionService.writeback(req);
         return success(true);
@@ -39,5 +49,10 @@ public class TaskExecutionSessionApiImpl implements TaskExecutionSessionApi {
     public CommonResult<TaskExecutionAppendProcessRespDTO> appendProcess(
             TaskExecutionAppendProcessReqDTO req) {
         return success(taskExecutionSessionService.appendProcess(req));
+    }
+
+    @Override
+    public CommonResult<List<TaskExecutionStepSnapshotDTO>> listSteps(Long executionRecordId) {
+        return success(taskExecutionSessionService.listSteps(executionRecordId));
     }
 }

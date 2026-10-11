@@ -1,6 +1,9 @@
 package cn.cheers.x.device.protocolgateway.api;
 
 import cn.cheers.x.device.protocolgateway.api.dto.MissionStartRespDTO;
+import cn.cheers.x.device.protocolgateway.api.dto.MissionTranslateCommitRespDTO;
+import cn.cheers.x.device.protocolgateway.api.dto.MissionTranslatePreviewRespDTO;
+import cn.cheers.x.device.protocolgateway.api.dto.MissionTranslatedDispatchReqDTO;
 import cn.cheers.x.device.protocolgateway.api.mission.DeviceMissionPlan;
 import cn.cheers.x.device.protocolgateway.enums.ApiConstants;
 import cn.cheers.x.framework.common.pojo.CommonResult;
@@ -28,4 +31,16 @@ public interface DeviceProtocolMissionApi {
     @PostMapping(PREFIX + "/dispatch-and-startup")
     @Operation(summary = "翻译并下发指令包后启动执行")
     CommonResult<MissionStartRespDTO> dispatchAndStartup(@Valid @RequestBody DeviceMissionPlan plan);
+
+    @PostMapping(PREFIX + "/preview-translate")
+    @Operation(summary = "试译：校验对照与航线，不落盘、不下发")
+    CommonResult<MissionTranslatePreviewRespDTO> previewTranslate(@Valid @RequestBody DeviceMissionPlan plan);
+
+    @PostMapping(PREFIX + "/commit-translate")
+    @Operation(summary = "正式翻译：航线落盘，返回可写入待执行快照的下行报文")
+    CommonResult<MissionTranslateCommitRespDTO> commitTranslate(@Valid @RequestBody DeviceMissionPlan plan);
+
+    @PostMapping(PREFIX + "/dispatch-translated")
+    @Operation(summary = "按已翻译快照下发，不再 translate")
+    CommonResult<MissionStartRespDTO> dispatchTranslated(@Valid @RequestBody MissionTranslatedDispatchReqDTO req);
 }

@@ -300,7 +300,7 @@ class StrategyRuntimeServiceImplTest {
         event.setEventType(StrategyTriggerEventDTO.EVENT_EXECUTION_START);
         event.setEntityTypeCode("task_record_patrol");
         event.setTaskDefinitionId(1L);
-        event.setModelCode("exec_patrol_round");
+        event.setModelCode("exec_patrol_record");
         event.setExecutionName("样例-执行");
         event.setStandardSnapshot(Map.of("source", "test"));
         event.setSteps(List.of(Map.of("name", "任务准备", "stepCode", "prepare", "stepOrder", 0)));

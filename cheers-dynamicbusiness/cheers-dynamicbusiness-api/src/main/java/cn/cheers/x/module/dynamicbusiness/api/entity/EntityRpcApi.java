@@ -56,6 +56,13 @@ public interface EntityRpcApi {
             @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam(value = "modelId", required = false) Long modelId);
 
+    @GetMapping(PREFIX + "/deleted-by-code")
+    @Operation(summary = "编码是否只剩已删除行")
+    CommonResult<Boolean> isDeletedByCode(
+            @RequestParam("code") String code,
+            @Parameter(description = "实体类型编码", required = true, example = "action")
+            @RequestParam("entityTypeCode") String entityTypeCode);
+
     @GetMapping(PREFIX + "/get-by-code")
     @Operation(summary = "按业务编码获取实体")
     CommonResult<EntityRespDTO> getEntityByCode(
@@ -87,5 +94,16 @@ public interface EntityRpcApi {
     CommonResult<Boolean> deleteEntity(
             @RequestParam("id") Long id,
             @RequestParam("entityTypeCode") String entityTypeCode);
+
+    /**
+     * 实体—实体适用关联：按关联表双向取对端 id，不按字段码过滤。
+     * 与数据页「相关实体」筛选同一条读法。任一侧空则空列表。
+     */
+    @GetMapping(PREFIX + "/counterpart-ids")
+    @Operation(summary = "按关联取对端实体 id")
+    CommonResult<List<Long>> listCounterpartEntityIds(
+            @RequestParam("relatedEntityIds") List<Long> relatedEntityIds,
+            @RequestParam("relatedEntityTypeCode") String relatedEntityTypeCode,
+            @RequestParam("listEntityTypeCode") String listEntityTypeCode);
 
 }

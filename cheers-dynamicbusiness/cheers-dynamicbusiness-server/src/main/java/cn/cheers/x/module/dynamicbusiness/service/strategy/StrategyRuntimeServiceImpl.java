@@ -7,7 +7,10 @@ import cn.cheers.x.alarm.api.dto.AlarmNotifyRespDTO;
 import cn.cheers.x.alarm.api.dto.AlarmTriggerReqDTO;
 import cn.cheers.x.alarm.api.dto.AlarmTriggerRespDTO;
 import cn.cheers.x.device.protocolgateway.api.DeviceProtocolMissionApi;
+import cn.cheers.x.device.protocolgateway.api.dto.MissionDownlinkSnapshotMaps;
 import cn.cheers.x.device.protocolgateway.api.dto.MissionStartRespDTO;
+import cn.cheers.x.device.protocolgateway.api.dto.MissionTranslatedDispatchReqDTO;
+import cn.cheers.x.device.protocolgateway.api.dto.PatrolOpenRunSnapshotKeys;
 import cn.cheers.x.device.protocolgateway.api.mission.DeviceMissionPlan;
 import cn.cheers.x.device.protocolgateway.api.mission.DispatchAction;
 import cn.cheers.x.framework.common.exception.ServiceException;
@@ -176,14 +179,7 @@ public class StrategyRuntimeServiceImpl implements StrategyRuntimeService {
             throw new ServiceException(400, "把任务发给设备必须带已排好的动作清单");
         }
         String recordId = String.valueOf(event.getExecutionRecordId());
-        DeviceMissionPlan plan = new DeviceMissionPlan(
-                event.getProtocolVersion().trim(),
-                event.getLogicalDeviceId().trim(),
-                recordId,
-                recordId,
-                parseDispatchActions(event.getDispatchActions())
-        );
-        CommonResult<MissionStartRespDTO> rpc = deviceProtocolMissionApi.dispatchAndStartup(plan);
+        CommonResult<MissionStartRespDTO> rpc = dispatchMission(event, recordId);
         if (rpc == null || !rpc.isSuccess() || rpc.getData() == null) {
             throw new ServiceException(
                     rpc != null ? rpc.getCode() : 500,
@@ -198,7 +194,69 @@ public class StrategyRuntimeServiceImpl implements StrategyRuntimeService {
         resp.setDispatchCommandSent(dispatched.commandSent());
         resp.setDispatchStartupSent(dispatched.startupSent());
         resp.setDispatchCommandWireJson(dispatched.commandWireJson());
+        resp.setWaylineFileId(dispatched.waylineFileId());
+        resp.setWaylineFingerprint(dispatched.waylineFingerprint());
         return resp;
+    }
+
+    private CommonResult<MissionStartRespDTO> dispatchMission(StrategyTriggerEventDTO event, String recordId) {
+        List<Map<String, Object>> committedPieces =
+                MissionDownlinkSnapshotMaps.readPieces(event.getStandardSnapshot());
+        if (!committedPieces.isEmpty()) {
+            String waylineFileId = snapshotText(event.getStandardSnapshot(), PatrolOpenRunSnapshotKeys.WAYLINE_FILE_ID);
+            String waylineFingerprint =
+                    snapshotText(event.getStandardSnapshot(), PatrolOpenRunSnapshotKeys.WAYLINE_FINGERPRINT);
+            MissionTranslatedDispatchReqDTO req = new MissionTranslatedDispatchReqDTO(
+                    event.getProtocolVersion().trim(),
+                    event.getLogicalDeviceId().trim(),
+                    recordId,
+                    recordId,
+                    toDownlinkPieceDtos(committedPieces),
+                    waylineFileId,
+                    waylineFingerprint);
+            return deviceProtocolMissionApi.dispatchTranslated(req);
+        }
+        DeviceMissionPlan plan = new DeviceMissionPlan(
+                event.getProtocolVersion().trim(),
+                event.getLogicalDeviceId().trim(),
+                recordId,
+                recordId,
+                parseDispatchActions(event.getDispatchActions()));
+        return deviceProtocolMissionApi.dispatchAndStartup(plan);
+    }
+
+    private static String snapshotText(Object standardSnapshot, String key) {
+        if (!(standardSnapshot instanceof Map<?, ?> snapshot)) {
+            return null;
+        }
+        Object raw = snapshot.get(key);
+        return raw == null || !StringUtils.hasText(String.valueOf(raw)) ? null : String.valueOf(raw).trim();
+    }
+
+    private static List<cn.cheers.x.device.protocolgateway.api.dto.MissionDownlinkPieceDTO> toDownlinkPieceDtos(
+            List<Map<String, Object>> maps
+    ) {
+        List<cn.cheers.x.device.protocolgateway.api.dto.MissionDownlinkPieceDTO> pieces = new ArrayList<>();
+        for (Map<String, Object> map : maps) {
+            if (map == null || map.isEmpty()) {
+                continue;
+            }
+            Object opcode = map.get("opcode");
+            pieces.add(new cn.cheers.x.device.protocolgateway.api.dto.MissionDownlinkPieceDTO(
+                    text(map.get("kind")),
+                    opcode instanceof Number number ? number.intValue() : null,
+                    text(map.get("msgId")),
+                    text(map.get("wireJson")),
+                    text(map.get("mqttTopic")),
+                    text(map.get("deviceId")),
+                    text(map.get("templateId")),
+                    text(map.get("packagesJson"))));
+        }
+        return pieces;
+    }
+
+    private static String text(Object value) {
+        return value == null ? null : String.valueOf(value);
     }
 
     private StrategyHandleRespDTO dispatchUpdateExecutionStatus(ConditionStrategyDO row, StrategyTriggerEventDTO event) {
@@ -352,7 +410,11 @@ public class StrategyRuntimeServiceImpl implements StrategyRuntimeService {
             Map<String, Object> params = item.get("params") instanceof Map<?, ?> map
                     ? new LinkedHashMap<>((Map<String, Object>) map)
                     : Map.of();
-            actions.add(new DispatchAction(actionId, params));
+            Object actionCode = item.get("actionCode");
+            actions.add(new DispatchAction(
+                    actionId,
+                    params,
+                    actionCode == null ? null : String.valueOf(actionCode)));
         }
         return actions;
     }

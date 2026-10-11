@@ -80,6 +80,11 @@ public class ModelFieldAssignmentDO extends TenantBaseDO {
     private String defaultValue;
 
     /**
+     * 这个型号上该字段的显示别名。空则用字段库名称。
+     */
+    private String alias;
+
+    /**
      * 业务规则（JSON格式）
      */
     private String validationRules;

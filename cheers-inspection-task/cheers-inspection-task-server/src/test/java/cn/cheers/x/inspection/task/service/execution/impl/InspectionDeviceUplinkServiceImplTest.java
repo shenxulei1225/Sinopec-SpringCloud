@@ -7,6 +7,7 @@ import cn.cheers.x.device.protocolgateway.api.opcode.DeviceTaskStatusCode;
 import cn.cheers.x.device.protocolgateway.api.opcode.TransportOpcode;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.inspection.task.service.execution.analysis.PatrolPhotoAnalysisService;
 import cn.cheers.x.inspection.task.service.execution.scheduleboard.PatrolScheduleSlotExecutionWritebackService;
 import cn.cheers.x.module.dynamicbusiness.api.strategy.StrategyRuntimeApi;
 import cn.cheers.x.module.dynamicbusiness.api.strategy.dto.StrategyHandleRespDTO;
@@ -32,14 +33,20 @@ class InspectionDeviceUplinkServiceImplTest {
 
     private StrategyRuntimeApi strategyRuntimeApi;
     private PatrolScheduleSlotExecutionWritebackService scheduleSlotExecutionWritebackService;
+    private PatrolPhotoAnalysisService patrolPhotoAnalysisService;
     private InspectionDeviceUplinkServiceImpl service;
 
     @BeforeEach
     void setUp() {
         strategyRuntimeApi = mock(StrategyRuntimeApi.class);
         scheduleSlotExecutionWritebackService = mock(PatrolScheduleSlotExecutionWritebackService.class);
+        patrolPhotoAnalysisService = mock(PatrolPhotoAnalysisService.class);
         service = new InspectionDeviceUplinkServiceImpl(
-                strategyRuntimeApi, new ObjectMapper(), scheduleSlotExecutionWritebackService);
+                strategyRuntimeApi,
+                new ObjectMapper(),
+                scheduleSlotExecutionWritebackService,
+                mock(DeviceCollectionAnomalyRecorder.class),
+                patrolPhotoAnalysisService);
         when(strategyRuntimeApi.handle(any())).thenReturn(CommonResult.success(matchedHandle()));
     }
 
@@ -64,12 +71,21 @@ class InspectionDeviceUplinkServiceImplTest {
                 AccessChannelCodes.INSPECTION,
                 TransportOpcode.COMMAND_RESULT.code(),
                 9001L,
-                Map.of("packages", Map.of("sequence", 3, "opcode", 200301, "result", Map.of())),
+                Map.of("packages", Map.of(
+                        "sequence", 3,
+                        "opcode", 200301,
+                        "result", Map.of("electricity", "82.9"))),
                 ProtocolQualifyStatus.UNCHECKED));
 
         StrategyTriggerEventDTO event = captureEvent();
         assertEquals("seq-3", event.getStepUpdates().get(0).get("stepCode"));
         assertEquals("completed", event.getStepUpdates().get(0).get("status"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> payload = (Map<String, Object>) event.getStepUpdates().get(0).get("resultPayload");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> result = (Map<String, Object>) payload.get("result");
+        assertEquals("82.9", result.get("electricity"));
+        verify(patrolPhotoAnalysisService).submitAfterReported(event);
     }
 
     @Test
@@ -107,6 +123,7 @@ class InspectionDeviceUplinkServiceImplTest {
                 Map.of("status", DeviceTaskStatusCode.START_SUCCESS),
                 ProtocolQualifyStatus.UNCHECKED));
         verify(strategyRuntimeApi, never()).handle(any());
+        verify(patrolPhotoAnalysisService, never()).submitAfterReported(any());
     }
 
     @Test

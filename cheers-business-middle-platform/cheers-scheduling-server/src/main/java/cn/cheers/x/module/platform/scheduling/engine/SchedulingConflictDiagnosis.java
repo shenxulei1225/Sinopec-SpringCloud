@@ -117,7 +117,7 @@ final class SchedulingConflictDiagnosis {
         return side;
     }
 
-    TimelineBlock previousOf(TimelineBlock target, List<TimelineBlock> busy) {
+    static TimelineBlock previousOf(TimelineBlock target, List<TimelineBlock> busy) {
         TimelineBlock found = null;
         for (TimelineBlock block : busy) {
             if (block == target) {
@@ -133,7 +133,7 @@ final class SchedulingConflictDiagnosis {
         return found;
     }
 
-    TimelineBlock nextOf(TimelineBlock target, List<TimelineBlock> busy) {
+    static TimelineBlock nextOf(TimelineBlock target, List<TimelineBlock> busy) {
         TimelineBlock found = null;
         for (TimelineBlock block : busy) {
             if (block == target) {

@@ -10,6 +10,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignm
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.relation.RelationFieldLibraryDO;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.framework.field.RefModelFieldConfig;
 import cn.cheers.x.module.dynamicbusiness.service.capability.BusinessCategoryConstants;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
@@ -391,13 +392,27 @@ public final class ModelCrudFormFieldAssembler {
             RefResolveContext refResolveContext) {
         String code = field.getCode().trim();
         String fieldType = normalizeFieldType(resolveFieldType(field, baseField));
+        String libraryName = StringUtils.hasText(field.getName()) ? field.getName().trim() : code;
+        String label = libraryName;
+        if (StringUtils.hasText(assign.getAlias())) {
+            label = assign.getAlias().trim();
+        } else if (baseField != null && StringUtils.hasText(baseField.getFieldName())
+                && !baseField.getFieldName().trim().equals(libraryName)) {
+            label = baseField.getFieldName().trim();
+        }
         Map<String, Object> item = baseFieldItem(
                 code,
-                StringUtils.hasText(field.getName()) ? field.getName() : code,
+                label,
                 fieldType,
                 mapControl(fieldType));
 
         item.put("fieldId", field.getId());
+        if ("RANGED_NUMBER".equalsIgnoreCase(fieldType)) {
+            item.put("displayAs", readRangedNumberDisplay(field.getOptions()));
+        }
+        if (StringUtils.hasText(field.getUnit())) {
+            item.put("unit", field.getUnit().trim());
+        }
         item.put("required", Boolean.TRUE.equals(assign.getRequired()));
         item.put("sort", assign.getSort() != null ? assign.getSort() : 0);
         item.put("baseField", baseField != null);
@@ -419,13 +434,11 @@ public final class ModelCrudFormFieldAssembler {
         }
         applyFieldTypeExtensions(item, entityTypeCode, field, fieldType, assign, refResolveContext);
 
-        // 类型基础字段固定「基础信息」；型号本地分组只排扩展/关联字段
-        if (baseField != null) {
+        // 展示分组不改变基础字段或自定义字段。没被移走的基础字段仍归在基本信息。
+        applyGroupMeta(item, field.getId(), groups);
+        if (baseField != null && item.get("panelId") == null) {
             item.put("groupName", "基础信息");
             item.put("groupSortOrder", 0);
-            item.remove("panelId");
-        } else {
-            applyGroupMeta(item, field.getId(), groups);
         }
         String defaultValue = assign.getDefaultValue();
         if (!StringUtils.hasText(defaultValue) && baseField != null) {
@@ -433,6 +446,18 @@ public final class ModelCrudFormFieldAssembler {
         }
         applyDefaultValue(item, defaultValue);
         applySameTypeTreeRender(item, code, fieldType, field.getSemanticType(), entityTypeCode);
+        if ("payload_mounts".equals(code)) {
+            item.put("renderAs", "payload-mounts");
+            item.put("targetEntityTypeCode", entityTypeCode);
+        }
+        if ("MODEL_RELATION".equalsIgnoreCase(fieldType)) {
+            // 控件按字段类型画型号多选。方向在字段上，不从中文名猜。
+            item.put("renderAs", "model-relation");
+            item.put("targetEntityTypeCode", entityTypeCode);
+            if (StringUtils.hasText(field.getSemanticType())) {
+                item.put("relationDirection", field.getSemanticType().trim());
+            }
+        }
         return item;
     }
 
@@ -446,6 +471,22 @@ public final class ModelCrudFormFieldAssembler {
         item.put("fieldType", fieldType);
         item.put("renderAs", renderAs);
         return item;
+    }
+
+    /** 字段上的展示标识。没写时按填数字。 */
+    private static String readRangedNumberDisplay(String options) {
+        if (!StringUtils.hasText(options)) {
+            return "value";
+        }
+        try {
+            JSONObject object = JSON.parseObject(options);
+            if (object != null && "range".equals(object.getString("display"))) {
+                return "range";
+            }
+        } catch (RuntimeException ignored) {
+            return "value";
+        }
+        return "value";
     }
 
     private static String resolveFieldType(FieldDO field, EntityTypeBaseFieldDO baseField) {
@@ -484,6 +525,10 @@ public final class ModelCrudFormFieldAssembler {
             case "ENTITY_REF_MULTI" -> "ref-picker-multi";
             case "ENTITY_SELF_REF" -> "entity-parent-tree";
             case "COORDINATE" -> "coordinate";
+            case "RANGE" -> "number-range";
+            case "RANGED_NUMBER" -> "ranged-number";
+            case "MODEL_RELATION" -> "model-relation";
+            case "REF_MODEL" -> "ref-model";
             default -> "input";
         };
     }
@@ -499,6 +544,10 @@ public final class ModelCrudFormFieldAssembler {
         copyNumberRule(item, rules, "max");
         if (rules.containsKey("pattern")) {
             item.put("pattern", rules.getString("pattern"));
+        }
+        // 检查方式是设备类型基础字段，多选外形写在类型配置上。分配上若也写了外形，表单仍认。
+        if (StringUtils.hasText(rules.getString("valueShape"))) {
+            item.put("valueShape", rules.getString("valueShape").trim());
         }
     }
 
@@ -625,6 +674,23 @@ public final class ModelCrudFormFieldAssembler {
                     field != null ? field.getCode() : null);
         }
 
+        if (FieldTypeEnum.isRefModel(normalizedType)) {
+            // 这一项不往设备上写数。新建和编辑弹窗不出现，详情按字段名画一块。
+            item.put("renderAs", "ref-model");
+            item.put("readOnly", true);
+            item.put("createVisible", false);
+            item.put("editVisible", false);
+            item.put("detailVisible", true);
+            RefModelFieldConfig.Value config = RefModelFieldConfig.parse(field.getOptions());
+            if (config != null) {
+                Map<String, Object> refModel = new LinkedHashMap<>();
+                refModel.put("entityTypeCode", config.entityTypeCode());
+                refModel.put("sourceModelId", config.sourceModelId());
+                refModel.put("sourceFieldIds", List.of());
+                item.put("refModel", refModel);
+                item.put("targetEntityTypeCode", config.entityTypeCode());
+            }
+        }
         if ("ENUM".equals(normalizedType) && field.getOptions() != null) {
             putStaticOptions(item, field.getOptions());
         }
@@ -826,6 +892,8 @@ public final class ModelCrudFormFieldAssembler {
                     if (StringUtils.hasText(group.getName())) {
                         item.put("groupName", group.getName());
                     }
+                    List<Long> shown = longIds(ref.getExtra() == null ? null : ref.getExtra().get("displayFieldIds"));
+                    item.put("refDisplayFieldIds", shown);
                     return;
                 }
             }
@@ -854,13 +922,22 @@ public final class ModelCrudFormFieldAssembler {
                             }
                         });
             }
-            if (fieldKeys.isEmpty()) {
+            boolean hasChild = groups.stream().anyMatch(item -> group.getId().equals(item.getParentId()));
+            // 最外层的空组不下发。有上级或有下级的空组仍下发，详情自己决定画不画。
+            if (fieldKeys.isEmpty() && !hasChild && group.getParentId() == null) {
                 continue;
             }
-            panels.add(Map.of(
-                    "id", "group-" + group.getId(),
-                    "label", group.getName(),
-                    "fieldKeys", fieldKeys));
+            Map<String, Object> panel = new LinkedHashMap<>();
+            panel.put("id", "group-" + group.getId());
+            panel.put("label", group.getName());
+            panel.put("fieldKeys", fieldKeys);
+            if (group.getParentId() != null) {
+                panel.put("parentId", "group-" + group.getParentId());
+            }
+            if (group.getDisplayFieldIds() != null) {
+                panel.put("displayFieldIds", group.getDisplayFieldIds());
+            }
+            panels.add(panel);
         }
         if (panels.isEmpty()) {
             return null;
@@ -903,6 +980,19 @@ public final class ModelCrudFormFieldAssembler {
             return;
         }
         item.put("defaultValue", defaultValue.trim());
+    }
+
+    private static List<Long> longIds(Object raw) {
+        if (!(raw instanceof Iterable<?> iterable)) {
+            return List.of();
+        }
+        List<Long> ids = new ArrayList<>();
+        for (Object item : iterable) {
+            if (item instanceof Number number && number.longValue() > 0 && !ids.contains(number.longValue())) {
+                ids.add(number.longValue());
+            }
+        }
+        return ids;
     }
 
     private static JSONObject parseJsonObject(String json) {

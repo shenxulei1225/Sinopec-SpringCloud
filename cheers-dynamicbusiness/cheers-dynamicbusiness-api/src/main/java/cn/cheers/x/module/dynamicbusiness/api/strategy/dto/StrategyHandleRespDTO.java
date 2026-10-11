@@ -37,6 +37,12 @@ public class StrategyHandleRespDTO {
 
     private String dispatchCommandWireJson;
 
+    /** 大疆这一次航线文件的编号；东古和机器人没有 */
+    private String waylineFileId;
+
+    /** 航线文件内容 MD5 */
+    private String waylineFingerprint;
+
     /** 未命中时写原因，不假装已记账 */
     private String skipReason;
 }

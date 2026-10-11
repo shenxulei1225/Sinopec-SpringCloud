@@ -12,7 +12,8 @@ import java.util.Map;
 
 /**
  * 读总任务 FLD-TSK-027 上的路线快照；与详情回显、编排 expand 口径一致。
- * <p>第 2 步 saveRoute 只写 stopIds / networkRef / {@link RoutePayloadKeys#ESTIMATED_TRAVEL_DURATION} 等。
+ * <p>第 2 步只在页面生成 stopIds / networkRef / {@link RoutePayloadKeys#ESTIMATED_TRAVEL_DURATION} 等，
+ * 保存草稿或生成/更新任务时再随整份页面内容写入。
  * 检查项动作耗时不在本快照，见巡检内容 {@code itemActionDurationMinutes}。
  */
 public final class PatrolPlannedRouteSupport {
@@ -54,7 +55,7 @@ public final class PatrolPlannedRouteSupport {
     }
 
     /**
-     * 只算路径耗时：已写下的行驶分钟，没有则按距离估。不含检查项动作耗时。
+     * 只算路径耗时，单位秒。已写下的就是秒。没写下时按距离估出分钟，再换成秒。不含检查项动作耗时。
      */
     public static Integer resolveTravelMinutesOnly(Object plannedRoute, String patrolExecutionMode) {
         Integer travel = estimatedTravelDuration(plannedRoute);
@@ -65,7 +66,8 @@ public final class PatrolPlannedRouteSupport {
         if (planned == null || planned.isEmpty()) {
             return null;
         }
-        return estimateTravelMinutesFromDistance(planned, patrolExecutionMode);
+        Integer minutes = estimateTravelMinutesFromDistance(planned, patrolExecutionMode);
+        return minutes == null ? null : Math.multiplyExact(minutes, 60);
     }
 
     private static Integer estimateTravelMinutesFromDistance(Map<String, Object> planned, String patrolExecutionMode) {

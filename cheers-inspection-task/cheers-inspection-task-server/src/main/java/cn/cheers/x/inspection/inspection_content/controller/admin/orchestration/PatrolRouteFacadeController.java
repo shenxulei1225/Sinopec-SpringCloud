@@ -1,6 +1,7 @@
 package cn.cheers.x.inspection.inspection_content.controller.admin.orchestration;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.inspection.inspection_content.controller.admin.vo.orchestration.PatrolInspectionConfigReadinessRespVO;
 import cn.cheers.x.inspection.inspection_content.controller.admin.vo.orchestration.PatrolOrchestrationRunReqVO;
 import cn.cheers.x.inspection.inspection_content.controller.admin.vo.orchestration.PatrolRouteRunReqVO;
 import cn.cheers.x.inspection.inspection_content.controller.admin.vo.orchestration.PatrolSlotWritebackReqVO;
@@ -40,28 +41,40 @@ public class PatrolRouteFacadeController {
         return success(patrolRouteFacadeService.previewRoute(reqVO));
     }
 
-    @PostMapping("/route/save")
-    @Operation(operationId = "savePatrolRoute", summary = "路径规划·保存路线：算路并写入 plannedRoute")
-    public CommonResult<ScheduleRunResponse> saveRoute(@Valid @RequestBody PatrolRouteRunReqVO reqVO) {
-        return success(patrolRouteFacadeService.saveRoute(reqVO));
-    }
-
     @PostMapping("/orchestration/detect-conflicts")
     @Operation(
             operationId = "detectPatrolScheduleConflicts",
-            summary = "冲突检测：查指定设备已有占窗是否重叠，只出报告")
+            summary = "冲突检测：没有重叠时带上计划时间点，有重叠时不带计划点")
     public CommonResult<ScheduleConflictReportDTO> detectScheduleConflicts(
             @Valid @RequestBody PatrolOrchestrationRunReqVO reqVO) {
         return success(patrolRouteFacadeService.detectScheduleConflicts(reqVO));
     }
 
-    @PostMapping("/orchestration/prepare-confirm")
+    @PostMapping("/orchestration/validate-inspection-config")
     @Operation(
-            operationId = "preparePatrolConfirmPreview",
-            summary = "第 3 步无冲突写试排：按模板时间点写试排快照并生成步骤图")
-    public CommonResult<ScheduleRunResponse> prepareConfirmPreview(
+            operationId = "validatePatrolInspectionConfig",
+            summary = "第 3 步·只查配置：检查项方法与执行设备是否齐全，不生成步骤图")
+    public CommonResult<PatrolInspectionConfigReadinessRespVO> validateInspectionConfig(
             @Valid @RequestBody PatrolOrchestrationRunReqVO reqVO) {
-        return success(patrolRouteFacadeService.prepareConfirmPreview(reqVO));
+        return success(patrolRouteFacadeService.validateInspectionConfig(reqVO));
+    }
+
+    @PostMapping("/orchestration/compose-execution-step-tree")
+    @Operation(
+            operationId = "composePatrolExecutionStepTree",
+            summary = "第 3 步·只生成步骤图：不写试排、不试译")
+    public CommonResult<ScheduleRunResponse> composeExecutionStepTree(
+            @Valid @RequestBody PatrolOrchestrationRunReqVO reqVO) {
+        return success(patrolRouteFacadeService.composeExecutionStepTree(reqVO));
+    }
+
+    @PostMapping("/orchestration/preview-instructions")
+    @Operation(
+            operationId = "previewPatrolPageInstructions",
+            summary = "第 3 步·只生成指令：用页面上已有的步骤图试译一次，不写出计划点")
+    public CommonResult<ScheduleRunResponse> previewPageInstructions(
+            @Valid @RequestBody PatrolOrchestrationRunReqVO reqVO) {
+        return success(patrolRouteFacadeService.previewPageInstructions(reqVO));
     }
 
     @PostMapping("/orchestration/preview")

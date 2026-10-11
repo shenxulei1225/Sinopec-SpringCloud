@@ -95,6 +95,9 @@ public class ModelFieldRulesServiceImpl implements ModelFieldRulesService {
         if (reqVO.getDefaultValue() != null) {
             assignment.setDefaultValue(reqVO.getDefaultValue());
         }
+        if (reqVO.getAlias() != null) {
+            assignment.setAlias(reqVO.getAlias());
+        }
         if (reqVO.getValidationRules() != null) {
             assignment.setValidationRules(reqVO.getValidationRules());
         }
@@ -151,6 +154,7 @@ public class ModelFieldRulesServiceImpl implements ModelFieldRulesService {
         reqVO.setIsSortable(assignment.getIsSortable());
         reqVO.setIsFilterable(assignment.getIsFilterable());
         reqVO.setDefaultValue(assignment.getDefaultValue());
+        reqVO.setAlias(assignment.getAlias());
         reqVO.setValidationRules(assignment.getValidationRules());
 
         return reqVO;

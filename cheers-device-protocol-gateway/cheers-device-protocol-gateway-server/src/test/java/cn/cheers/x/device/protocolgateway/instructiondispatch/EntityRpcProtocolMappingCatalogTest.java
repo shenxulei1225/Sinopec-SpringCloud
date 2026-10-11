@@ -46,6 +46,43 @@ class EntityRpcProtocolMappingCatalogTest {
     }
 
     @Test
+    void find_unsupportedDecision_isNotDispatchMapping() {
+        EntityRpcApi api = mock(EntityRpcApi.class);
+        EntityRespDTO unsupported = new EntityRespDTO();
+        unsupported.setCustomFields(Map.of(
+                "action_ref", Map.of("id", 11L),
+                "mapped_protocol_version", "robot-ws",
+                "protocol_mapping_status", "UNSUPPORTED"
+        ));
+        when(api.listEntities(eq("protocol_mapping"), isNull()))
+                .thenReturn(CommonResult.success(List.of(unsupported)));
+        EntityRpcProtocolMappingCatalog catalog = new EntityRpcProtocolMappingCatalog(api, new ObjectMapper());
+
+        assertTrue(catalog.find(11L, "robot-ws").isEmpty());
+    }
+
+    @Test
+    void find_configuredMappingWithoutInstruction_exposesGap() {
+        EntityRpcApi api = mock(EntityRpcApi.class);
+        EntityRespDTO incomplete = new EntityRespDTO();
+        incomplete.setId(77L);
+        incomplete.setCustomFields(Map.of(
+                "action_ref", Map.of("id", 11L),
+                "mapped_protocol_version", "robot-ws",
+                "protocol_mapping_status", "CONFIGURED"
+        ));
+        when(api.listEntities(eq("protocol_mapping"), isNull()))
+                .thenReturn(CommonResult.success(List.of(incomplete)));
+        EntityRpcProtocolMappingCatalog catalog = new EntityRpcProtocolMappingCatalog(api, new ObjectMapper());
+
+        IllegalStateException error = assertThrows(
+                IllegalStateException.class,
+                () -> catalog.find(11L, "robot-ws")
+        );
+        assertTrue(error.getCause().getMessage().contains("77"));
+    }
+
+    @Test
     void loadInstruction_readsOutboundEmptyPacket() {
         EntityRpcApi api = mock(EntityRpcApi.class);
         when(api.getEntity(eq(501L), eq("data_protocol")))
@@ -72,6 +109,7 @@ class EntityRpcProtocolMappingCatalogTest {
         dto.setCustomFields(Map.of(
                 "action_ref", Map.of("id", 11L),
                 "mapped_protocol_version", "robot-ws",
+                "protocol_mapping_status", "CONFIGURED",
                 "protocol_instruction_ref", Map.of("id", 501L),
                 "param_slot_mapping_json", List.of(Map.of(
                         "slot", "location_ref",

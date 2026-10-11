@@ -130,6 +130,16 @@ public class EntityCoreServiceImpl implements EntityCoreService {
     }
 
     @Override
+    public EntityDO findByExactCode(String entityTypeCode, String code) {
+        return entityRepository.findByExactCode(entityTypeCode, code);
+    }
+
+    @Override
+    public boolean isDeletedByCode(String entityTypeCode, String code) {
+        return entityRepository.isDeletedByCode(entityTypeCode, code);
+    }
+
+    @Override
     public List<EntityDO> listEntities(String entityTypeCode, Long modelId, Integer status) {
         EntityRepository.EntityQuery query = EntityRepository.EntityQuery.builder()
                 .entityTypeCode(entityTypeCode)

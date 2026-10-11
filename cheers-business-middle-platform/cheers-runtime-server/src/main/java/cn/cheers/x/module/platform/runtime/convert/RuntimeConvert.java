@@ -15,6 +15,7 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
@@ -24,7 +25,10 @@ import java.util.List;
  */
 public final class RuntimeConvert {
 
-    private static final DateTimeFormatter ISO_OFFSET = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    /** 占窗时刻写成文字时用北京时间，与业务表上的钟点一致，不保留世界时间的 Z。 */
+    private static final ZoneId PLAN_ZONE = ZoneId.of("Asia/Shanghai");
+    private static final DateTimeFormatter ISO_OFFSET =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
 
     private RuntimeConvert() {
     }
@@ -149,11 +153,11 @@ public final class RuntimeConvert {
     }
 
     private static String formatTime(OffsetDateTime time) {
-        return time != null ? ISO_OFFSET.format(time) : null;
+        return time != null ? ISO_OFFSET.format(time.atZoneSameInstant(PLAN_ZONE)) : null;
     }
 
     private static String formatTime(java.time.LocalDateTime time) {
-        return time != null ? time.atZone(java.time.ZoneId.systemDefault()).format(ISO_OFFSET) : null;
+        return time != null ? time.atZone(PLAN_ZONE).format(ISO_OFFSET) : null;
     }
 
     private static OffsetDateTime parseTime(String text) {

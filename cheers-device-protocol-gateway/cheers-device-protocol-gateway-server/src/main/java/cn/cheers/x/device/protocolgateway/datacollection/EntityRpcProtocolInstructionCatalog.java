@@ -36,12 +36,70 @@ public class EntityRpcProtocolInstructionCatalog implements ProtocolInstructionC
 
     @Override
     public CatalogLookup findMainPacket(int opcode, String protocolVersion) {
+        List<InstructionSpec> matched = matchOpcode(opcode, protocolVersion);
+        if (matched == null) {
+            return CatalogLookup.failed("读不到指令字段说明");
+        }
+        List<InstructionSpec> withOutbound = new ArrayList<>();
+        for (InstructionSpec spec : matched) {
+            if (!spec.rows.isEmpty()) {
+                withOutbound.add(spec);
+            }
+        }
+        if (withOutbound.isEmpty()) {
+            return missing(protocolVersion);
+        }
+        String fingerprint = withOutbound.get(0).fingerprint;
+        for (InstructionSpec spec : withOutbound) {
+            if (!Objects.equals(fingerprint, spec.fingerprint)) {
+                return ambiguous(protocolVersion);
+            }
+        }
+        return CatalogLookup.found(withOutbound.get(0).rows);
+    }
+
+    @Override
+    public CatalogLookup findVolume(int opcode, String protocolVersion, String volume) {
+        String key = volume == null ? "" : volume.trim();
+        if (key.isBlank()) {
+            return CatalogLookup.failed("未指定字段说明分卷");
+        }
+        List<InstructionSpec> matched = matchOpcode(opcode, protocolVersion);
+        if (matched == null) {
+            return CatalogLookup.failed("读不到指令字段说明");
+        }
+        if (matched.isEmpty()) {
+            return missing(protocolVersion);
+        }
+        List<InstructionSpec> withVolume = new ArrayList<>();
+        for (InstructionSpec spec : matched) {
+            List<FieldDescriptionRow> rows = spec.volumes.getOrDefault(key, List.of());
+            if (!rows.isEmpty()) {
+                withVolume.add(spec);
+            }
+        }
+        if (withVolume.isEmpty()) {
+            return CatalogLookup.failed("字段说明里没有这一卷");
+        }
+        String fingerprint = labeledFingerprint(withVolume.get(0).volumes.get(key));
+        for (InstructionSpec spec : withVolume) {
+            if (!Objects.equals(fingerprint, labeledFingerprint(spec.volumes.get(key)))) {
+                return ambiguous(protocolVersion);
+            }
+        }
+        return CatalogLookup.found(withVolume.get(0).volumes.get(key));
+    }
+
+    /**
+     * 按操作码和协议版本筛说明书。读目录失败返回 null，调用方报「读不到」。
+     */
+    private List<InstructionSpec> matchOpcode(int opcode, String protocolVersion) {
         List<InstructionSpec> specs;
         try {
             specs = cache.getOrLoad(this::loadSpecs);
         } catch (Exception ex) {
             log.error("[device-protocol] 读不到指令字段说明 opcode={}", opcode, ex);
-            return CatalogLookup.failed("读不到指令字段说明");
+            return null;
         }
         List<InstructionSpec> matched = new ArrayList<>();
         String version = protocolVersion == null ? "" : protocolVersion.trim();
@@ -54,20 +112,21 @@ public class EntityRpcProtocolInstructionCatalog implements ProtocolInstructionC
             }
             matched.add(spec);
         }
-        if (matched.isEmpty()) {
-            return CatalogLookup.failed(version.isBlank()
-                    ? "找不到该指令的字段说明"
-                    : "找不到该协议版本的字段说明");
-        }
-        String fingerprint = matched.get(0).fingerprint;
-        for (InstructionSpec spec : matched) {
-            if (!Objects.equals(fingerprint, spec.fingerprint)) {
-                return CatalogLookup.failed(version.isBlank()
-                        ? "同一操作码有多份不同说明书，设备未标明协议版本"
-                        : "同一协议版本下该操作码有多份不同说明书");
-            }
-        }
-        return CatalogLookup.found(matched.get(0).rows);
+        return matched;
+    }
+
+    private static CatalogLookup missing(String protocolVersion) {
+        String version = protocolVersion == null ? "" : protocolVersion.trim();
+        return CatalogLookup.failed(version.isBlank()
+                ? "找不到该指令的字段说明"
+                : "找不到该协议版本的字段说明");
+    }
+
+    private static CatalogLookup ambiguous(String protocolVersion) {
+        String version = protocolVersion == null ? "" : protocolVersion.trim();
+        return CatalogLookup.failed(version.isBlank()
+                ? "同一操作码有多份不同说明书，设备未标明协议版本"
+                : "同一协议版本下该操作码有多份不同说明书");
     }
 
     private List<InstructionSpec> loadSpecs() {
@@ -100,19 +159,48 @@ public class EntityRpcProtocolInstructionCatalog implements ProtocolInstructionC
         if (opcode == null) {
             return null;
         }
-        List<FieldDescriptionRow> rows = readMainPacketRows(bag.get(FIELD_DESCRIPTION));
-        if (rows.isEmpty()) {
+        Map<String, List<FieldDescriptionRow>> volumes = readVolumes(bag.get(FIELD_DESCRIPTION));
+        if (volumes.isEmpty()) {
             return null;
         }
-        return new InstructionSpec(opcode, rows, fingerprint(rows), readVersions(bag.get("protocol_version")));
+        List<FieldDescriptionRow> outbound = volumes.getOrDefault(MAIN_VOLUME, List.of());
+        return new InstructionSpec(
+                opcode,
+                outbound,
+                fingerprint(outbound),
+                readVersions(bag.get("protocol_version")),
+                volumes
+        );
     }
 
     static List<String> readVersions(Object raw) {
         return EntityRpcDeviceProtocolVersionCatalog.readVersions(raw);
     }
 
-    private List<FieldDescriptionRow> readMainPacketRows(Object raw) {
-        Object volume = readVolume(raw);
+    private Map<String, List<FieldDescriptionRow>> readVolumes(Object raw) {
+        Object parsed = raw;
+        if (raw instanceof String text && !text.isBlank()) {
+            try {
+                parsed = objectMapper.readValue(text, new TypeReference<Map<String, Object>>() {
+                });
+            } catch (Exception ex) {
+                return Map.of();
+            }
+        }
+        if (!(parsed instanceof Map<?, ?> map)) {
+            return Map.of();
+        }
+        Map<String, List<FieldDescriptionRow>> volumes = new LinkedHashMap<>();
+        for (String key : List.of(VOLUME_OUTBOUND, VOLUME_INBOUND_SUCCESS, VOLUME_INBOUND_FAILURE)) {
+            List<FieldDescriptionRow> rows = readRows(map.get(key));
+            if (!rows.isEmpty()) {
+                volumes.put(key, rows);
+            }
+        }
+        return volumes;
+    }
+
+    private static List<FieldDescriptionRow> readRows(Object volume) {
         if (!(volume instanceof List<?> list)) {
             return List.of();
         }
@@ -134,22 +222,6 @@ public class EntityRpcProtocolInstructionCatalog implements ProtocolInstructionC
         return rows;
     }
 
-    private Object readVolume(Object raw) {
-        Object parsed = raw;
-        if (raw instanceof String text && !text.isBlank()) {
-            try {
-                parsed = objectMapper.readValue(text, new TypeReference<Map<String, Object>>() {
-                });
-            } catch (Exception ex) {
-                return null;
-            }
-        }
-        if (parsed instanceof Map<?, ?> map) {
-            return map.get(MAIN_VOLUME);
-        }
-        return null;
-    }
-
     private static Integer readOpcode(Object raw) {
         if (raw instanceof Number number) {
             return number.intValue();
@@ -165,9 +237,20 @@ public class EntityRpcProtocolInstructionCatalog implements ProtocolInstructionC
     }
 
     private static String fingerprint(List<FieldDescriptionRow> rows) {
+        return fingerprint(rows, false);
+    }
+
+    /** 监控对名字敏感：中文名不同也算两份说明书，不能拿其中一份的名字去标另一份的值。 */
+    private static String labeledFingerprint(List<FieldDescriptionRow> rows) {
+        return fingerprint(rows, true);
+    }
+
+    private static String fingerprint(List<FieldDescriptionRow> rows, boolean includeLabel) {
         StringBuilder builder = new StringBuilder();
         rows.stream()
-                .map(row -> row.path() + "|" + row.type() + "|" + row.required())
+                .map(row -> includeLabel
+                        ? row.path() + "|" + row.type() + "|" + row.label() + "|" + row.required()
+                        : row.path() + "|" + row.type() + "|" + row.required())
                 .sorted()
                 .forEach(item -> builder.append(item).append(';'));
         return builder.toString();
@@ -191,10 +274,12 @@ public class EntityRpcProtocolInstructionCatalog implements ProtocolInstructionC
             int opcode,
             List<FieldDescriptionRow> rows,
             String fingerprint,
-            List<String> protocolVersions
+            List<String> protocolVersions,
+            Map<String, List<FieldDescriptionRow>> volumes
     ) {
         InstructionSpec {
             protocolVersions = protocolVersions == null ? List.of() : List.copyOf(protocolVersions);
+            volumes = volumes == null ? Map.of() : Map.copyOf(volumes);
         }
     }
 }

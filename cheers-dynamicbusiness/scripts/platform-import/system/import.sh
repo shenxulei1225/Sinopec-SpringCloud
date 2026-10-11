@@ -23,17 +23,35 @@ run "${SCRIPT_DIR}/seed/dynamic_seed_base_field_schema.sql"
 run "${SCRIPT_DIR}/seed/dynamic_entity_type_base_field.sql"
 run "${SCRIPT_DIR}/seed/dynamic_base_field_library_fields.sql"
 run "${SCRIPT_DIR}/seed/dynamic_field.sql"
+# 字段库单位下拉。须在字段之后，才能按已有字段的租户补单位。
+run "${SCRIPT_DIR}/seed/dynamic_unit.sql"
 # 设备宿主 SOP 参数包（字段库 + equipment 基础字段；前置 Flyway V91）
 run "${SCRIPT_DIR}/seed/dynamic_equipment_host_sop_param_pack.sql"
 # 设备协议版本（字段库 + equipment 基础字段；前置 Flyway V128）
 run "${SCRIPT_DIR}/seed/dynamic_equipment_protocol_versions.sql"
+# 大疆上云设备：接入方式、网关序列号、飞机序列号；金桥机场 / Pilot 各一台（前置 Flyway V140）
+run "${SCRIPT_DIR}/seed/dynamic_equipment_dji_cloud.sql"
+# 定向拍照：云台偏航角、拍照模式（动作须已存在）
+run "${SCRIPT_DIR}/seed/dynamic_action_oriented_shoot_params.sql"
+# 定向拍照：云台偏航角、拍照模式（动作须已存在）
+run "${SCRIPT_DIR}/seed/dynamic_action_oriented_shoot_params.sql"
 run "${SCRIPT_DIR}/seed/dynamic_group.sql"
 run "${SCRIPT_DIR}/seed/dynamic_protocol_management.sql"
 run "${SCRIPT_DIR}/seed/dynamic_protocol_ground_station.sql"
 run "${SCRIPT_DIR}/seed/dynamic_protocol_ground_station_tabs.sql"
+# 大疆上报主题。型号须已存在；没有型号时这一段不插入，不报错。
+run "${SCRIPT_DIR}/seed/dynamic_protocol_dji_uplink.sql"
 # 指令协议对接：目录本体须已由创建接口建出；本文件只补型号、字段和对照行
 run "${SCRIPT_DIR}/seed/dynamic_protocol_mapping.sql"
+# 对接协议 + 通讯协议各一本型号。须在指令种子之后，把写错型号的指令挪过去。
+run "${SCRIPT_DIR}/seed/dynamic_protocol_communication_models.sql"
+# 协议版本、通讯方式升成基础字段并搬进列。须在指令种子之后，前置 Flyway V141。
+run "${SCRIPT_DIR}/seed/dynamic_protocol_field_layers.sql"
+# 航线字段说明的类型和枚举取值跟字段库对齐。指令须已存在；没有航线指令时这一段不改行。
+run "${SCRIPT_DIR}/seed/dynamic_protocol_dji_wayline_field_types.sql"
 run "${SCRIPT_DIR}/seed/dynamic_group_relation.sql"
+# 未分组字段按无人机、机器人、摄像机等使用习惯归组。须在字段和原分组关系之后。
+run "${SCRIPT_DIR}/seed/dynamic_group_device_means.sql"
 run "${SCRIPT_DIR}/seed/retire_split_location_decimals.sql"
 run "${SCRIPT_DIR}/seed/repair_equipment_coordinate_type.sql"
 run "${SCRIPT_DIR}/seed/dynamic_model.sql"

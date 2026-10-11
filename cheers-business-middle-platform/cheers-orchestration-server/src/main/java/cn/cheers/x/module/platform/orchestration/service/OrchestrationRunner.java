@@ -56,6 +56,7 @@ import java.util.HashMap;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -199,6 +200,7 @@ public class OrchestrationRunner {
                 .runtimeJobId(runtimeJobId)
                 .status(RuntimeJobStatus.SCHEDULED)
                 .slots(context.getSlots())
+                .shiftedSlots(context.getAttr("shiftedSlots"))
                 .decisionTraceId(null)
                 .plainSummary(buildSummary(context.getSlots(), resolved.schedulingSpec()))
                 .workOrderIds(workOrderIds.isEmpty() ? null : workOrderIds)
@@ -234,8 +236,6 @@ public class OrchestrationRunner {
                     runDispatch(context, workOrderIds);
                 }
             }
-            case SAVE_ROUTE -> log.debug("SAVE_ROUTE phase no-op until business handler, ref={}",
-                    context.getOrchestrationRef());
             default -> log.warn("Unhandled orchestration phase {}, skipped", phase);
         }
     }
@@ -271,7 +271,24 @@ public class OrchestrationRunner {
                 reservation.setPolicySnapshotId(context.getPolicySnapshotId());
             }
         }
-        context.setSlots(reservations.stream().map(ScheduleSlotDTO::from).toList());
+        java.util.Set<String> occupiedIds = new java.util.HashSet<>();
+        for (ResourceReservationDTO occupied : occupiedReservations) {
+            if (occupied != null && StringUtils.hasText(occupied.getCandidateId())) {
+                occupiedIds.add(occupied.getCandidateId());
+            }
+        }
+        List<ScheduleSlotDTO> fresh = new ArrayList<>();
+        List<ScheduleSlotDTO> shifted = new ArrayList<>();
+        for (ResourceReservationDTO reservation : reservations) {
+            ScheduleSlotDTO slot = ScheduleSlotDTO.from(reservation);
+            if (slot != null && slot.getSlotId() != null && occupiedIds.contains(slot.getSlotId())) {
+                shifted.add(slot);
+            } else if (slot != null) {
+                fresh.add(slot);
+            }
+        }
+        context.setSlots(fresh);
+        context.putAttr("shiftedSlots", shifted);
     }
 
     private void runPersist(PhaseContext context) {
@@ -301,6 +318,29 @@ public class OrchestrationRunner {
                 .slots(context.getSlots())
                 .facilityId(context.getFacilityId())
                 .build()).checkError();
+        persistShiftedSlots(context);
+    }
+
+    private void persistShiftedSlots(PhaseContext context) {
+        List<ScheduleSlotDTO> shifted = context.getAttr("shiftedSlots");
+        if (shifted == null || shifted.isEmpty()) {
+            return;
+        }
+        Map<String, List<ScheduleSlotDTO>> byJob = new LinkedHashMap<>();
+        for (ScheduleSlotDTO slot : shifted) {
+            if (slot == null || !StringUtils.hasText(slot.getRuntimeJobId())) {
+                continue;
+            }
+            byJob.computeIfAbsent(slot.getRuntimeJobId().trim(), key -> new ArrayList<>()).add(slot);
+        }
+        for (Map.Entry<String, List<ScheduleSlotDTO>> entry : byJob.entrySet()) {
+            runtimePersistApi.persist(RuntimePersistReqDTO.builder()
+                    .appendSlotsOnly(true)
+                    .job(RuntimeJobDTO.builder().runtimeJobId(entry.getKey()).build())
+                    .slots(entry.getValue())
+                    .facilityId(context.getFacilityId())
+                    .build()).checkError();
+        }
     }
 
     private void runReplanPersist(PhaseContext context) {
@@ -437,12 +477,48 @@ public class OrchestrationRunner {
         SchedulingSpecDTO spec = context.getSchedulingSpec();
         OffsetDateTime from = horizonStart(spec);
         OffsetDateTime to = horizonEnd(spec);
-        List<SlotStatus> statuses = List.of(
-                SlotStatus.PLANNED, SlotStatus.IN_PROGRESS, SlotStatus.COMPLETED);
+        List<SlotStatus> statuses = List.of(SlotStatus.PLANNED, SlotStatus.IN_PROGRESS);
         List<ScheduleSlotDTO> occupied = runtimeQueryApi.listSlots(
                 from, to, null, context.getRequest().getEntityTypeCode(), context.getFacilityId(), statuses)
                 .getCheckedData();
-        return excludeReplanUnfinishedSelf(context, occupied);
+        return excludeOwnTask(context, excludeReplanUnfinishedSelf(context, occupied));
+    }
+
+    /**
+     * 本任务自己展开出来的占窗不当成别人。已执行完的不在查询结果里。
+     */
+    private List<ScheduleSlotDTO> excludeOwnTask(PhaseContext context, List<ScheduleSlotDTO> occupied) {
+        if (occupied == null || occupied.isEmpty() || context.getWorkItems() == null) {
+            return occupied == null ? List.of() : occupied;
+        }
+        java.util.Set<String> instanceIds = new java.util.HashSet<>();
+        for (WorkItemDTO item : context.getWorkItems()) {
+            if (item != null && StringUtils.hasText(item.getSourceInstanceId())) {
+                instanceIds.add(item.getSourceInstanceId().trim());
+            }
+        }
+        if (instanceIds.isEmpty()) {
+            return occupied;
+        }
+        return occupied.stream()
+                .filter(slot -> slot == null || !isOwnWork(instanceIds, slot.getWorkId()))
+                .collect(Collectors.toList());
+    }
+
+    private static boolean isOwnWork(java.util.Set<String> instanceIds, String workId) {
+        if (!StringUtils.hasText(workId)) {
+            return false;
+        }
+        String trimmed = workId.trim();
+        for (String instanceId : instanceIds) {
+            if (trimmed.equals("patrol-task-" + instanceId) || trimmed.startsWith("patrol-task-" + instanceId + "-")
+                    || trimmed.equals("patrol-reserve-" + instanceId) || trimmed.startsWith("patrol-reserve-" + instanceId + "-")
+                    || trimmed.equals("patrol-arrange-" + instanceId) || trimmed.startsWith("patrol-arrange-" + instanceId + "-")
+                    || trimmed.equals("patrol-" + instanceId) || trimmed.startsWith("patrol-" + instanceId + "-")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

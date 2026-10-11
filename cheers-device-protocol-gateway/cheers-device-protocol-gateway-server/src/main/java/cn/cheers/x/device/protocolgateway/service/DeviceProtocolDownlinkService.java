@@ -30,6 +30,14 @@ public class DeviceProtocolDownlinkService {
     private final DeviceProtocolGatewayProperties properties;
 
     /**
+     * 下发一条对照选中的完整指令（空包里没有 request 的那种）。成功只表示同号答卷 code=200。
+     */
+    public SyncDownlinkResult sendSyncCommand(String deviceId, String wireJson, int opcode, String msgId) {
+        requireDeviceId(deviceId);
+        return sendAndAwait(deviceId, wireJson, opcode, msgId);
+    }
+
+    /**
      * 下发指令包（外层 500104）。成功只表示对端同号答卷 code=200（包收下了），不是步骤做完。
      */
     public SyncDownlinkResult sendCommandPackage(CommandSendEnvelope envelope) {

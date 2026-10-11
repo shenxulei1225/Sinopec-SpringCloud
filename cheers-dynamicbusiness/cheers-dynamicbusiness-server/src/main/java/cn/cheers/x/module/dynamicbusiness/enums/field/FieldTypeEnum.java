@@ -11,6 +11,7 @@ import java.util.Arrays;
  * 定义系统支持的所有字段类型，包括：
  * - 基础类型：TEXT, NUMBER, DATE, DATETIME, BOOLEAN, ENUM, JSON, COORDINATE
  * - 关联类型：ENTITY_REF（单选关联字段）、ENTITY_REF_MULTI（多选关联字段）
+ * - 引用型号字段：REF_MODEL（读某一个型号上点名的字段）
  * - 引用类型：REFERENCE（固定列字段使用，引用系统表）
  * 
  * @author yudao
@@ -74,6 +75,32 @@ public enum FieldTypeEnum {
     COORDINATE("COORDINATE", "地理坐标", false),
 
     /**
+     * 数值范围（值类型）。
+     *
+     * <p>一份结构化值，固定子项：最小值 min、最大值 max。单位写在字段上，不写进每一份值。
+     * 俯仰角、电压、工作温度、湿度都用这个类型。禁止用一段文字冒充范围。</p>
+     */
+    RANGE("RANGE", "范围", false),
+
+    /**
+     * 带范围的数值（值类型）。
+     *
+     * <p>一份值里有两组：要填的数字 value，以及范围 min、max。
+     * 展示方式写在字段 options.display。value 是填数字，range 是看范围。
+     * 页面按这个标识画。填数字时人填这个数。看范围时画出最小和最大。</p>
+     */
+    RANGED_NUMBER("RANGED_NUMBER", "带范围的数值", false),
+
+    /**
+     * 模型关联。
+     *
+     * <p>详情上选的是型号，不是某一台设备。名单写在型号—型号关联表。
+     * 方向记在字段的 semanticType：向外列目标型号，向内反查来源型号。
+     * 不写入这台设备的自定义字段。</p>
+     */
+    MODEL_RELATION("MODEL_RELATION", "模型关联", true),
+
+    /**
  * 引用数据（单选）
  *
  * <p>用户在字段库只选「引用数据」并指定目标数据类型；挂到型号后由系统判定：</p>
@@ -84,6 +111,14 @@ public enum FieldTypeEnum {
  * <p>组织树上级不走本类型用户配置，见系统字段 {@link #ENTITY_SELF_REF}（TREE_PARENT）。</p>
  */
 ENTITY_REF("ENTITY_REF", "引用数据", true),
+
+    /**
+     * 引用型号字段。
+     *
+     * <p>读某一个型号上点名的字段。配置记在字段 options 里，一份给详情、实时控制和生成航线指令参数共用。
+     * 值留在被点名的型号上，不抄到每一台设备。</p>
+     */
+    REF_MODEL("REF_MODEL", "引用型号字段", false),
 
 /**
  * 引用数据（多选）
@@ -154,6 +189,11 @@ ENTITY_SELF_REF("ENTITY_SELF_REF", "系统组织上级", true),
         return type != null && type.isRelationType();
     }
 
+    /** 引用型号字段。读型号上点名的字段，不读某一条记录。 */
+    public static boolean isRefModel(String code) {
+        return REF_MODEL.getCode().equalsIgnoreCase(code);
+    }
+
     /**
      * 判断是否为引用数据（ENTITY_REF 族，含单选/多选/批量）。不含系统组织上级。
      */
@@ -200,5 +240,15 @@ ENTITY_SELF_REF("ENTITY_SELF_REF", "系统组织上级", true),
      */
     public static boolean isCoordinate(String code) {
         return COORDINATE.getCode().equalsIgnoreCase(code);
+    }
+
+    /** 数值范围。空对象或最小、最大都没填视为未填。 */
+    public static boolean isRange(String code) {
+        return RANGE.getCode().equalsIgnoreCase(code);
+    }
+
+    /** 带范围的数值。数字和范围都空视为未填。 */
+    public static boolean isRangedNumber(String code) {
+        return RANGED_NUMBER.getCode().equalsIgnoreCase(code);
     }
 }

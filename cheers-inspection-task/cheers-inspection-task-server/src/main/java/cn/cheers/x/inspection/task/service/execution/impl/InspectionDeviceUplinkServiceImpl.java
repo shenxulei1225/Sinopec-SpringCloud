@@ -8,6 +8,7 @@ import cn.cheers.x.device.protocolgateway.api.opcode.TransportOpcode;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.task.service.execution.InspectionDeviceUplinkService;
+import cn.cheers.x.inspection.task.service.execution.analysis.PatrolPhotoAnalysisService;
 import cn.cheers.x.inspection.task.service.execution.scheduleboard.PatrolScheduleSlotExecutionWritebackService;
 import cn.cheers.x.inspection.task.service.execution.steptree.TaskStepTreeAssembler;
 import cn.cheers.x.module.dynamicbusiness.api.strategy.StrategyRuntimeApi;
@@ -27,7 +28,9 @@ import java.util.Map;
 
 /**
  * 巡检采集适配：把样本收成「采集结果到了」，并组好要对回的步/整次状态。
- * <p>记过程、改某一步、改整次状态都由条件策略做。本方法不对账写。
+ * <p>记过程、改某一步、改整次状态都由条件策略做。本方法不对执行账写。
+ * 拍照步写上之后，跑冒滴漏检查项若配了视频智能分析，交给分析提交去送图；送图失败不回滚这次上报。
+ * 设备故障上报另外记一条异常，挂在对上的那台设备上，不进分类。
  * <p>不负责：拆原始报文、按字段说明核对、工业通道。
  * <p>禁止：执行记录 id 空了猜设备；不合格还把某一步标成完成；用上报点位对步骤。
  */
@@ -41,6 +44,8 @@ public class InspectionDeviceUplinkServiceImpl implements InspectionDeviceUplink
     private final StrategyRuntimeApi strategyRuntimeApi;
     private final ObjectMapper objectMapper;
     private final PatrolScheduleSlotExecutionWritebackService scheduleSlotExecutionWritebackService;
+    private final DeviceCollectionAnomalyRecorder deviceCollectionAnomalyRecorder;
+    private final PatrolPhotoAnalysisService patrolPhotoAnalysisService;
 
     @Override
     public void applyCollection(CollectionSample sample) {
@@ -73,10 +78,17 @@ public class InspectionDeviceUplinkServiceImpl implements InspectionDeviceUplink
                         sample.executionRecordId(), ex.getMessage());
                 throw ex;
             }
+            try {
+                patrolPhotoAnalysisService.submitAfterReported(handledEvent);
+            } catch (RuntimeException ex) {
+                log.error("[patrol-uplink] 跑冒滴漏分析提交失败 executionRecordId={} reason={}",
+                        sample.executionRecordId(), ex.getMessage());
+            }
         } else {
             log.debug("[patrol-uplink] 策略未命中 skipReason={}",
                     data != null ? data.getSkipReason() : null);
         }
+        deviceCollectionAnomalyRecorder.record(sample);
     }
 
     /**
@@ -172,17 +184,29 @@ public class InspectionDeviceUplinkServiceImpl implements InspectionDeviceUplink
             Map<String, Object> update = new LinkedHashMap<>();
             update.put("stepCode", TaskStepTreeAssembler.sequenceStepCode(sequence));
             update.put("status", isFailedResult(pkg.path("result")) ? "failed" : "completed");
-            update.put("resultPayload", receivedSnapshot(sample));
+            update.put("resultPayload", receivedSnapshot(sample, pkg));
             updates.add(update);
         }
         return updates;
     }
 
-    private static Map<String, Object> receivedSnapshot(CollectionSample sample) {
+    /**
+     * 步骤结果留下上报时刻，并带上这一步自己的 result。
+     * 电量、照片、视频都在 result 里，执行记录按步骤标题展示，不在这里猜是哪一种动作。
+     */
+    private Map<String, Object> receivedSnapshot(CollectionSample sample, JsonNode pkg) {
         Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.put("receivedAtEpochMs", sample.receivedAtEpochMs());
         snapshot.put("messageKind", sample.messageKind());
         snapshot.put("protocolQualify", sample.protocolQualify().name());
+        Integer opcode = intOrNull(pkg, "opcode");
+        if (opcode != null) {
+            snapshot.put("opcode", opcode);
+        }
+        JsonNode result = pkg == null ? null : pkg.get("result");
+        if (result != null && !result.isNull() && !result.isMissingNode()) {
+            snapshot.put("result", objectMapper.convertValue(result, Object.class));
+        }
         return snapshot;
     }
 

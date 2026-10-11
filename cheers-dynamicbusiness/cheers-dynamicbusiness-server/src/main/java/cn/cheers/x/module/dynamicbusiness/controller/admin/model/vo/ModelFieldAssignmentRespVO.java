@@ -43,6 +43,9 @@ public class ModelFieldAssignmentRespVO {
     @Schema(description = "默认值", example = "默认值")
     private String defaultValue;
 
+    @Schema(description = "这个型号上的显示别名。空则用字段库名称", example = "俯仰角")
+    private String alias;
+
     @Schema(description = "业务规则（JSON格式）", example = "{\"min\": 0, \"max\": 100}")
     private String validationRules;
 

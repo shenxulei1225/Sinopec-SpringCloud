@@ -12,8 +12,11 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFilterF
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldBatchOperationRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldAssignReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldRulesUpdateReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.RefModelFieldValueReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.RefModelFieldValueRespVO;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelFieldAssignmentService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelFieldRulesService;
+import cn.cheers.x.module.dynamicbusiness.service.model.RefModelFieldValueQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -49,6 +52,9 @@ public class ModelFieldAssignmentController {
 
     @Resource
     private ModelFieldRulesService modelFieldRulesService;
+
+    @Resource
+    private RefModelFieldValueQueryService refModelFieldValueQueryService;
 
     @PostMapping("/fields/assign")
     @Operation(
@@ -131,6 +137,17 @@ public class ModelFieldAssignmentController {
         return success(modelFieldAssignmentService.getModelFields(modelId));
     }
 
+    @PostMapping("/ref-field-values")
+    @Operation(
+        summary = "读取引用型号字段的取值",
+        description = "按点名的字段返回型号上已经存的值。值已收成可显示的一句。型号留空时，用当前设备主云台挂着的那台设备的型号。"
+    )
+    @PreAuthorize("@ss.hasPermission('system:model-field-assignment:query')")
+    public CommonResult<RefModelFieldValueRespVO> readRefModelFieldValues(
+            @Valid @RequestBody RefModelFieldValueReqVO reqVO) {
+        return success(refModelFieldValueQueryService.read(reqVO));
+    }
+
     @GetMapping("/fields/filter-meta")
     @Operation(
         summary = "获取模型筛选字段元信息",
@@ -160,6 +177,7 @@ public class ModelFieldAssignmentController {
         rulesReqVO.setIsSortable(reqVO.getIsSortable());
         rulesReqVO.setIsFilterable(reqVO.getIsFilterable());
         rulesReqVO.setDefaultValue(reqVO.getDefaultValue());
+        rulesReqVO.setAlias(reqVO.getAlias());
         rulesReqVO.setValidationRules(reqVO.getValidationRules());
         // 注意：fieldGroupId 已移除，分组关联应通过 ModelFieldGroupAssignmentController 管理
         modelFieldRulesService.updateFieldRules(reqVO.getModelId(), reqVO.getFieldId(), rulesReqVO);

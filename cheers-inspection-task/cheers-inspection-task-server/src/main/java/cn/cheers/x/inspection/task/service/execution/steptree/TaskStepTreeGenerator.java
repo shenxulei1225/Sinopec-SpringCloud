@@ -7,12 +7,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * 智能编排（previewOrchestration）前，把检查项该档手段的步骤串成总任务步骤图。
- * <p>用户看树的顺序：起点 → 巡检对象（下挂检查项）→ 检查项下挂动作 → 终点。头尾是已拆开的库内子动作。
- * <p>草稿保存不算树。树上不写被巡检设备实参；头尾不挂检查项。
- * <p>禁止：saveRoute 写树；从固定表拼树；开跑时再生成；人工硬挂机器人/无人机头尾；用「到达点」冒充巡检对象。
+ * <p>用户看树的顺序：起点 → 点位（其下一次到达，再挂这个点上的检查项和动作）→ 终点。
+ * 没有点位的检查项仍按设备串。头尾是已拆开的库内子动作。
+ * <p>草稿保存不算树。树上不写被巡检设备实参；头尾不挂检查项。同一点只放一次带位置参数的到达动作。
+ * <p>禁止：路径预览写树；从固定表拼树；开跑时再生成；人工硬挂机器人/无人机头尾；按指令编号把拍照并成一条。
  */
 public final class TaskStepTreeGenerator {
 
@@ -59,12 +61,12 @@ public final class TaskStepTreeGenerator {
     ) {
         return generate(
                 means, selected, equipmentOrder, methodActions, headActions, tailActions,
-                null, "起点", null, "终点", itemNames);
+                null, "起点", null, "终点", itemNames, Map.of(), Set.of());
     }
 
     /**
      * 智能编排前生成步骤图，并把任务创建选定的起终点写到树根。
-     * 无人机起飞/降落、机器人返回充电的点位从这两端来，不从设备检查配置猜。
+     * 起点和终点写在树根上，给算路和标题用。返回充电、降落点不从这两端猜。
      */
     public static Map<String, Object> generate(
             String means,
@@ -94,9 +96,13 @@ public final class TaskStepTreeGenerator {
     ) {
         return generate(
                 means, selected, equipmentOrder, methodActions, headActions, tailActions,
-                startStopId, "起点", endStopId, "终点", itemNames);
+                startStopId, "起点", endStopId, "终点", itemNames, Map.of(), Set.of());
     }
 
+    /**
+     * @param itemStops     键是「设备编号:检查项编号」，值是该检查项要去的点位编号或业务编码。空则仍按设备串检查项
+     * @param locationSlots 动作参数里表示要去的点的槽。带这些槽的动作是到达，同一点只留第一次
+     */
     public static Map<String, Object> generate(
             String means,
             List<SelectedEquipment> selected,
@@ -108,7 +114,9 @@ public final class TaskStepTreeGenerator {
             String startTitle,
             String endStopId,
             String endTitle,
-            Map<Long, String> itemNames
+            Map<Long, String> itemNames,
+            Map<String, String> itemStops,
+            Set<String> locationSlots
     ) {
         if (selected == null || selected.isEmpty()) {
             throw ServiceExceptionUtil.invalidParamException("任务草稿还没有勾选被巡检设备和检查项");
@@ -125,6 +133,7 @@ public final class TaskStepTreeGenerator {
         int seq = 1;
         int emittedItems = 0;
         seq = emitAnchor(nodes, seq, "stop-start", startStopId, startTitle, defaultList(headActions), "head");
+        List<ItemPlacement> placements = new ArrayList<>();
         for (Long equipmentId : order) {
             SelectedEquipment equipment = findSelected(selected, equipmentId);
             if (equipment.itemIds().isEmpty()) {
@@ -135,6 +144,8 @@ public final class TaskStepTreeGenerator {
                 List<MethodAction> actions = methodActions == null ? null : methodActions.get(itemId);
                 if (actions != null && !actions.isEmpty()) {
                     anyReady = true;
+                    placements.add(new ItemPlacement(
+                            equipment, itemId, stopOf(itemStops, equipmentId, itemId), actions));
                     continue;
                 }
                 missingMethods.add(missingMethodMessage(equipment, itemId, itemNames, mode));
@@ -142,19 +153,12 @@ public final class TaskStepTreeGenerator {
             if (!anyReady) {
                 continue;
             }
-            String objectKey = "stop-" + equipmentId;
-            nodes.add(visitGroupNode(objectKey, seq++, equipment));
-            for (Long itemId : equipment.itemIds()) {
-                List<MethodAction> actions = methodActions == null ? null : methodActions.get(itemId);
-                if (actions == null || actions.isEmpty()) {
-                    continue;
-                }
-                String itemKey = "item-" + itemId + "-" + equipmentId;
-                nodes.add(node(itemKey, seq++, objectKey, TaskStepNode.HANG_INSPECTION_ITEM,
-                        null, itemId, itemTitle(itemId, itemNames)));
-                seq = emitActions(nodes, seq, itemKey, actions, "act-" + itemId);
-                emittedItems++;
-            }
+        }
+        emittedItems = placements.size();
+        if (hasStop(placements)) {
+            seq = emitByPoint(nodes, seq, placements, itemNames, locationSlots);
+        } else {
+            seq = emitByEquipment(nodes, seq, placements, itemNames);
         }
         if (emittedItems == 0) {
             throw ServiceExceptionUtil.invalidParamException(
@@ -207,6 +211,227 @@ public final class TaskStepTreeGenerator {
             }
         }
         throw ServiceExceptionUtil.invalidParamException("路径上的设备不在本次勾选里");
+    }
+
+    static String itemStopKey(long equipmentId, long itemId) {
+        return equipmentId + ":" + itemId;
+    }
+
+    private static String stopOf(Map<String, String> itemStops, Long equipmentId, Long itemId) {
+        if (itemStops == null || equipmentId == null || itemId == null) {
+            return null;
+        }
+        String stop = itemStops.get(itemStopKey(equipmentId, itemId));
+        return stop == null || stop.isBlank() ? null : stop.trim();
+    }
+
+    private static boolean hasStop(List<ItemPlacement> placements) {
+        for (ItemPlacement placement : placements) {
+            if (placement.stopId() != null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 沿路径第一次见到的点位排在前面。同一个点上的检查项挂在一起，到达动作只留第一次。
+     */
+    private static int emitByPoint(
+            List<Map<String, Object>> nodes,
+            int seq,
+            List<ItemPlacement> placements,
+            Map<Long, String> itemNames,
+            Set<String> locationSlots
+    ) {
+        Map<String, List<ItemPlacement>> byStop = new LinkedHashMap<>();
+        List<ItemPlacement> withoutStop = new ArrayList<>();
+        for (ItemPlacement placement : placements) {
+            if (placement.stopId() == null) {
+                withoutStop.add(placement);
+            } else {
+                byStop.computeIfAbsent(placement.stopId(), key -> new ArrayList<>()).add(placement);
+            }
+        }
+        for (Map.Entry<String, List<ItemPlacement>> entry : byStop.entrySet()) {
+            String pointKey = pointKey(entry.getKey());
+            nodes.add(node(pointKey, seq++, null, TaskStepNode.HANG_POINT,
+                    entry.getKey(), null, entry.getKey()));
+            seq = emitPointGroup(nodes, seq, pointKey, entry.getValue(), itemNames, locationSlots);
+        }
+        return emitByEquipment(nodes, seq, withoutStop, itemNames);
+    }
+
+    private static int emitPointGroup(
+            List<Map<String, Object>> nodes,
+            int seq,
+            String pointKey,
+            List<ItemPlacement> group,
+            Map<Long, String> itemNames,
+            Set<String> locationSlots
+    ) {
+        MethodAction move = null;
+        Long moveEquipmentId = null;
+        Long moveItemId = null;
+        int moveIndex = 0;
+        List<ItemRest> rests = new ArrayList<>();
+        for (ItemPlacement placement : group) {
+            List<MethodAction> rest = new ArrayList<>();
+            List<Integer> indexes = new ArrayList<>();
+            List<MethodAction> actions = placement.actions();
+            for (int i = 0; i < actions.size(); i++) {
+                MethodAction action = actions.get(i);
+                if (isLocationAction(action, locationSlots)) {
+                    if (move == null) {
+                        move = action;
+                        moveEquipmentId = placement.equipment().equipmentId();
+                        moveItemId = placement.itemId();
+                        moveIndex = i + 1;
+                    }
+                    continue;
+                }
+                rest.add(action);
+                indexes.add(i + 1);
+            }
+            rests.add(new ItemRest(placement, rest, indexes));
+        }
+        if (move != null) {
+            seq = emitOneAction(nodes, seq, pointKey, move, actionKeyPrefix(moveItemId, moveEquipmentId), moveIndex,
+                    moveEquipmentId, moveItemId);
+        }
+        for (ItemRest rest : rests) {
+            SelectedEquipment equipment = rest.placement().equipment();
+            String itemKey = "item-" + rest.placement().itemId() + "-" + equipment.equipmentId();
+            Map<String, Object> item = node(itemKey, seq++, pointKey, TaskStepNode.HANG_INSPECTION_ITEM,
+                    null, rest.placement().itemId(), itemTitle(rest.placement().itemId(), itemNames));
+            item.put("equipmentId", equipment.equipmentId());
+            nodes.add(item);
+            seq = emitIndexedActions(nodes, seq, itemKey, rest.actions(), rest.indexes(),
+                    actionKeyPrefix(rest.placement().itemId(), equipment.equipmentId()),
+                    equipment.equipmentId(), rest.placement().itemId());
+        }
+        return seq;
+    }
+
+    private static int emitByEquipment(
+            List<Map<String, Object>> nodes,
+            int seq,
+            List<ItemPlacement> placements,
+            Map<Long, String> itemNames
+    ) {
+        Long currentEquipment = null;
+        String objectKey = null;
+        for (ItemPlacement placement : placements) {
+            SelectedEquipment equipment = placement.equipment();
+            if (!Objects.equals(currentEquipment, equipment.equipmentId())) {
+                currentEquipment = equipment.equipmentId();
+                objectKey = "stop-" + equipment.equipmentId();
+                nodes.add(visitGroupNode(objectKey, seq++, equipment));
+            }
+            String itemKey = "item-" + placement.itemId() + "-" + equipment.equipmentId();
+            Map<String, Object> item = node(itemKey, seq++, objectKey, TaskStepNode.HANG_INSPECTION_ITEM,
+                    null, placement.itemId(), itemTitle(placement.itemId(), itemNames));
+            item.put("equipmentId", equipment.equipmentId());
+            nodes.add(item);
+            List<Integer> indexes = new ArrayList<>();
+            for (int i = 0; i < placement.actions().size(); i++) {
+                indexes.add(i + 1);
+            }
+            seq = emitIndexedActions(nodes, seq, itemKey, placement.actions(), indexes,
+                    actionKeyPrefix(placement.itemId(), equipment.equipmentId()),
+                    equipment.equipmentId(), placement.itemId());
+        }
+        return seq;
+    }
+
+    /**
+     * 同一检查项挂在多台设备上时，步骤编号带上设备编号。
+     * 只写检查项编号会在更新任务时撞成同一个步骤编号。
+     */
+    private static String actionKeyPrefix(Long itemId, Long equipmentId) {
+        if (equipmentId == null) {
+            return "act-" + itemId;
+        }
+        return "act-" + itemId + "-" + equipmentId;
+    }
+
+    private static String pointKey(String stopId) {
+        String safe = stopId.replaceAll("[^A-Za-z0-9._-]", "-");
+        return "point-" + safe;
+    }
+
+    private static boolean isLocationAction(MethodAction action, Set<String> locationSlots) {
+        if (locationSlots == null || locationSlots.isEmpty() || action.declaredSlots() == null) {
+            return false;
+        }
+        for (String slot : action.declaredSlots()) {
+            if (locationSlots.contains(slot)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static int emitOneAction(
+            List<Map<String, Object>> nodes,
+            int seq,
+            String parentKey,
+            MethodAction action,
+            String keyPrefix,
+            int index,
+            Long equipmentId,
+            Long hostItemId
+    ) {
+        if (action.refId() == null && (action.refCode() == null || action.refCode().isBlank())) {
+            throw ServiceExceptionUtil.invalidParamException("检查方法步骤对不上动作库");
+        }
+        String key = keyPrefix + "-" + index;
+        Map<String, Object> seeded = new LinkedHashMap<>(action.params());
+        for (String slot : action.declaredSlots()) {
+            seeded.putIfAbsent(slot, "");
+        }
+        Map<String, Object> row = node(key, seq++, parentKey, TaskStepNode.HANG_ACTION,
+                action.refCode(), action.refId(), action.title(), seeded);
+        if (action.sourceNodeKey() != null) {
+            row.put("sourceNodeKey", action.sourceNodeKey());
+        }
+        if (!action.declaredSlots().isEmpty()) {
+            row.put("declaredSlots", List.copyOf(action.declaredSlots()));
+        }
+        writeActionOwnership(row, action);
+        if (equipmentId != null) {
+            row.put("equipmentId", equipmentId);
+        }
+        if (hostItemId != null) {
+            row.put("hostItemId", hostItemId);
+        }
+        nodes.add(row);
+        return seq;
+    }
+
+    private static int emitIndexedActions(
+            List<Map<String, Object>> nodes,
+            int seq,
+            String parentKey,
+            List<MethodAction> actions,
+            List<Integer> indexes,
+            String keyPrefix,
+            Long equipmentId,
+            Long hostItemId
+    ) {
+        for (int i = 0; i < actions.size(); i++) {
+            seq = emitOneAction(nodes, seq, parentKey, actions.get(i), keyPrefix, indexes.get(i),
+                    equipmentId, hostItemId);
+        }
+        return seq;
+    }
+
+    private record ItemPlacement(
+            SelectedEquipment equipment, Long itemId, String stopId, List<MethodAction> actions
+    ) {
+    }
+
+    private record ItemRest(ItemPlacement placement, List<MethodAction> actions, List<Integer> indexes) {
     }
 
     private static int emitAnchor(
@@ -283,9 +508,26 @@ public final class TaskStepTreeGenerator {
             if (action.sourceNodeKey() != null) {
                 row.put("sourceNodeKey", action.sourceNodeKey());
             }
+            if (!action.declaredSlots().isEmpty()) {
+                row.put("declaredSlots", List.copyOf(action.declaredSlots()));
+            }
+            writeActionOwnership(row, action);
             nodes.add(row);
         }
         return next;
+    }
+
+    /**
+     * 动作归属在生成任务时冻结。执行、会话和分析分流只读这份快照，不按标题重新判断。
+     */
+    private static void writeActionOwnership(Map<String, Object> row, MethodAction action) {
+        if (action.actionDomain() != null) {
+            row.put("actionDomain", action.actionDomain());
+        }
+        if (action.analysisCapabilityId() != null) {
+            row.put("analysisCapabilityId", action.analysisCapabilityId());
+        }
+        row.put("required", action.required());
     }
 
     private static Map<String, Object> node(
@@ -387,24 +629,43 @@ public final class TaskStepTreeGenerator {
 
     public record MethodAction(
             Long refId, String refCode, String title, Map<String, Object> params,
-            String sourceNodeKey, List<String> declaredSlots
+            String sourceNodeKey, List<String> declaredSlots,
+            String actionDomain, Long analysisCapabilityId,
+            boolean required
     ) {
         public MethodAction(Long refId, String refCode, String title) {
-            this(refId, refCode, title, Map.of(), null, List.of());
+            this(refId, refCode, title, Map.of(), null, List.of(), null, null, true);
         }
 
         public MethodAction(Long refId, String refCode, String title, Map<String, Object> params) {
-            this(refId, refCode, title, params, null, List.of());
+            this(refId, refCode, title, params, null, List.of(), null, null, true);
         }
 
         public MethodAction(Long refId, String refCode, String title, Map<String, Object> params, String sourceNodeKey) {
-            this(refId, refCode, title, params, sourceNodeKey, List.of());
+            this(refId, refCode, title, params, sourceNodeKey, List.of(), null, null, true);
+        }
+
+        public MethodAction(
+                Long refId, String refCode, String title, Map<String, Object> params,
+                String sourceNodeKey, List<String> declaredSlots
+        ) {
+            this(refId, refCode, title, params, sourceNodeKey, declaredSlots, null, null, true);
+        }
+
+        public MethodAction(
+                Long refId, String refCode, String title, Map<String, Object> params,
+                String sourceNodeKey, List<String> declaredSlots,
+                String actionDomain, Long analysisCapabilityId
+        ) {
+            this(refId, refCode, title, params, sourceNodeKey, declaredSlots,
+                    actionDomain, analysisCapabilityId, true);
         }
 
         public MethodAction {
             params = params == null ? Map.of() : Map.copyOf(params);
             sourceNodeKey = sourceNodeKey == null || sourceNodeKey.isBlank() ? null : sourceNodeKey.trim();
             declaredSlots = declaredSlots == null ? List.of() : List.copyOf(declaredSlots);
+            actionDomain = actionDomain == null || actionDomain.isBlank() ? null : actionDomain.trim();
         }
     }
 }

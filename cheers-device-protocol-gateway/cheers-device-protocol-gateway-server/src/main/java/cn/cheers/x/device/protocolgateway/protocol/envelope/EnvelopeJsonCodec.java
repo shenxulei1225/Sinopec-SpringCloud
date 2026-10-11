@@ -35,6 +35,10 @@ public class EnvelopeJsonCodec {
         }
     }
 
+    public String encodeObject(Map<String, Object> root) {
+        return write(root, "序列化指令失败");
+    }
+
     public String encodeCommandSend(CommandSendEnvelope envelope) {
         Map<String, Object> root = new LinkedHashMap<>();
         root.put("msgId", envelope.msgId());
@@ -43,7 +47,8 @@ public class EnvelopeJsonCodec {
             root.put("deviceId", envelope.deviceId());
         }
         root.put("templateId", envelope.templateId());
-        root.put("packages", envelope.packagesJson());
+        // 字段说明里这是列表。写成一段文字时，页面标类型不对，序号和操作码也读不出来。
+        root.put("packages", decodePackagesJson(envelope.packagesJson()));
         return write(root, "序列化指令下发信封失败");
     }
 

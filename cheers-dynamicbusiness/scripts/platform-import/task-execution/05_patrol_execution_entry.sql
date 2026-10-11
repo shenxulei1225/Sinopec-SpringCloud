@@ -11,7 +11,7 @@ INSERT INTO dynamic_entity_type (
 )
 SELECT
   'task_record_patrol', '巡检任务执行记录', NULL,
-  '任务执行记录 · 巡检业务域；storage=task_excution_record；型号 exec_patrol_round',
+  '任务执行记录 · 巡检业务域；storage=task_excution_record；型号 exec_patrol_record',
   COALESCE(b.icon, 'fa:check-square-o'), '巡检执行记录', 40, 'active', 'USER',
   '{}', b.storage_type, b.dedicated_table_name, COALESCE(b.enable_rule_engine, FALSE),
   b.physical_column_mapping, COALESCE(b.model_workbench_mode, 'SINGLE'),
@@ -29,12 +29,12 @@ ON CONFLICT (code, tenant_id) WHERE deleted = false DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
--- 巡检轮次记录型号：作为巡检执行记录默认型号（已有则补说明）
+-- 巡检执行记录型号：界面名称「巡检记录」。写入按编码 exec_patrol_record 查找，不按名称。
 UPDATE dynamic_model
 SET
-  name = '巡检轮次记录',
+  name = '巡检记录',
   description = '一次巡检开跑产生的执行记录；domain=巡检；步骤挂 task_execution_step',
   domain = '巡检',
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP
-WHERE deleted = false AND tenant_id = 1 AND code = 'exec_patrol_round';
+WHERE deleted = false AND tenant_id = 1 AND code = 'exec_patrol_record';

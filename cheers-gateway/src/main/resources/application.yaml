@@ -245,6 +245,13 @@ spring:
                 - Path=/admin-api/inspection/**
               filters:
                 - RewritePath=/admin-api/inspection/v3/api-docs, /v3/api-docs
+            ## 协议网关：实时监控页。设备对接口不走这条，设备直连协议网关端口。
+            - id: device-protocol-admin-api
+              uri: grayLb://cheers-device-protocol-gateway-server
+              predicates:
+                - Path=/admin-api/device-protocol/**
+              filters:
+                - RewritePath=/admin-api/device-protocol/v3/api-docs, /v3/api-docs
             ## emergency-server 服务
             - id: emergency-admin-api
               uri: grayLb://emergency-server

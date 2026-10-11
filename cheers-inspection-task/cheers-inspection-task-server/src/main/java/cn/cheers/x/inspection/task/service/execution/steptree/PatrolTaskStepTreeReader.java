@@ -19,7 +19,7 @@ import java.util.Optional;
 /**
  * 从总任务读智能编排已写入的步骤图；从被检查设备读检查参数包。
  * <p>步骤图只按总任务 id 读 {@code step_tree_json}，不用任务编码去撞另一本账。
- * <p>禁止：开跑时挖台账补绑定上的协议版本；用执行设备参数包冒充被检设备；在路径规划 saveRoute 阶段生成步骤图。
+ * <p>禁止：开跑时挖台账补绑定上的协议版本；用执行设备参数包冒充被检设备；在路径预览阶段生成步骤图。
  */
 @Component
 @RequiredArgsConstructor
@@ -101,6 +101,17 @@ public class PatrolTaskStepTreeReader {
             return Optional.empty();
         }
         return Optional.of(result.getData().getId());
+    }
+
+    /**
+     * 这个动作编号是否只剩已删除行。编码根本不存在时返回 false，生成步骤仍要报缺口。
+     */
+    public boolean isDeletedAction(String actionCode) {
+        if (!StringUtils.hasText(actionCode)) {
+            return false;
+        }
+        CommonResult<Boolean> result = entityRpcApi.isDeletedByCode(actionCode.trim(), ACTION_TYPE);
+        return result != null && result.isSuccess() && Boolean.TRUE.equals(result.getData());
     }
 
     private static EntityRespDTO requireEntity(CommonResult<EntityRespDTO> result, String gapMessage) {

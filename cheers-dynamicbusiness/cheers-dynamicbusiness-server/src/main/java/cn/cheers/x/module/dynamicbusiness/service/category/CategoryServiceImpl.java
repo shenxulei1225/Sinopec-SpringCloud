@@ -672,7 +672,12 @@ public class CategoryServiceImpl implements CategoryService {
         }
         CategoryTypeDO type = requireCategoryType(categoryTypeCode);
         String mode = CategoryModeSupport.resolveFromType(type);
-        
+        // 顶层节点只认分类种类上登记的那一个。删掉它之后，业务域分组没有挂载点，不能改挂到别的树。
+        if (type.getTopLevelCategoryId() != null && Objects.equals(type.getTopLevelCategoryId(), id)) {
+            throw new ServiceException(400,
+                    "这是分类种类登记的顶层节点，不能删除。业务域分组都挂在这个节点下。");
+        }
+
         // 收集要删除的分类ID（包括子分类，如果是级联删除）
         List<Long> categoryIdsToDelete = new ArrayList<>();
         categoryIdsToDelete.add(id);
@@ -1277,6 +1282,14 @@ public class CategoryServiceImpl implements CategoryService {
                     : (target != null ? target.getId() : null);
         } else {
             throw new ServiceException(400, "不支持的拖拽位置");
+        }
+
+        CategoryTypeDO type = requireCategoryType(categoryTypeCode);
+        if (type.getTopLevelCategoryId() != null
+                && Objects.equals(type.getTopLevelCategoryId(), drag.getId())
+                && resolvedParentId != null) {
+            throw new ServiceException(400,
+                    "这是分类种类登记的顶层节点，不能拖到别的分类下面。");
         }
 
         List<CategoryDO> all = categoryMapper.selectByCategoryTypeCode(categoryTypeCode);

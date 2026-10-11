@@ -69,4 +69,7 @@ public class InspectionTaskSimpleRespVO {
     // ==================== 时间信息 ====================
     @Schema(description = "创建时间")
     private LocalDateTime createTime;
+
+    @Schema(description = "已生成任务的步骤、参数或动作耗时与生成时不一致时的说明。空表示不用更新")
+    private String updateHint;
 }

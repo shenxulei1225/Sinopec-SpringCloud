@@ -3,6 +3,7 @@
 -- 前置：01_fields、04_model、system/seed dynamic_entity_point_route_scope（路网点位 DOMAIN）
 -- 历史：曾建 action_param_* 型号并挂 LIBRARY；现网动作应挂规范型号 action，参数写在 param_slots_json。
 -- 本脚本仍幂等写入字段库；旧参数型号若存在则取消实体必填，避免挡住保存参数清单。
+-- 到达位置（location_ref）不再使用，不在这里重建。到达指定位置的参数是「选择位置」。
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;
@@ -19,10 +20,6 @@ SELECT
   'NONE', NULL, NULL, v.semantic_type, 1, 'seed'
 FROM (
   VALUES
-    (
-      'location_ref', '到达位置', 'ENTITY_REF', NULL, 1,
-      '到指定位置：路网点位 REF（route_network_point Domain）', 'route_network_point'
-    ),
     ('yaw', '偏航角', 'NUMBER', 'deg', 1, '调整摄像机：偏航角（度）', NULL),
     ('pitch', '俯仰角', 'NUMBER', 'deg', 1, '调整摄像机：俯仰角（度）', NULL),
     ('roll', '横滚角', 'NUMBER', 'deg', 1, '调整摄像机：横滚角（度）', NULL),
@@ -30,8 +27,8 @@ FROM (
     ('shot_count', '拍摄张数', 'NUMBER', NULL, 1, '拍摄取证张数', NULL),
     ('dwell_duration', '停留时长', 'NUMBER', 's', 1, '悬停/停留观察时长（秒）', NULL),
     (
-      'action_duration', '动作耗时', 'NUMBER', 'min', 1,
-      '排程用的动作耗时（分钟）。不是停留时长秒。', NULL
+      'action_duration', '动作耗时', 'NUMBER', NULL, 1,
+      '排程用的动作耗时。写下的数字是秒。秒、分、小时在配置时选择，只用于显示。', NULL
     ),
     (
       'route_ref', '路线引用', 'ENTITY_REF', NULL, 1,

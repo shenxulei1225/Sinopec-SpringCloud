@@ -11,8 +11,9 @@ public final class ActionFieldCodes {
 
     public static final String EXECUTION_MEANS = "execution_means";
     public static final String PARAM_SLOTS_JSON = "param_slots_json";
-    public static final String CHILD_ACTION_IDS_JSON = "child_action_ids_json";
-    public static final String IS_COMPOSITE = "is_composite";
+    public static final String ACTION_TREE_JSON = "action_tree_json";
+    public static final String ACTION_DOMAIN = "action_domain";
+    public static final String ANALYSIS_CAPABILITY_ID = "analysis_capability_id";
 
     private ActionFieldCodes() {
     }

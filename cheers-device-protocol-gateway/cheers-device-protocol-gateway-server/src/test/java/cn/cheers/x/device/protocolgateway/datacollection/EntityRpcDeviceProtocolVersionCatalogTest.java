@@ -43,6 +43,22 @@ class EntityRpcDeviceProtocolVersionCatalogTest {
     }
 
     @Test
+    void registeredProtocol_usesDefaultNotSupportList() {
+        EntityRespDTO row = equipment("SN-001", "EQ-1", List.of("robot-ws"));
+        row.setCustomFields(Map.of("platform_protocol", "uav-ws"));
+        EntityRpcDeviceProtocolVersionCatalog catalog = catalogWith(row);
+        assertEquals("uav-ws", catalog.registrationOf("SN-001").protocol());
+        assertEquals("robot-ws", catalog.firstVersion("SN-001").orElseThrow());
+    }
+
+    @Test
+    void missingDefaultProtocol_explains() {
+        EntityRpcDeviceProtocolVersionCatalog catalog = catalogWith(equipment(
+                "SN-001", "EQ-1", List.of("robot-ws")));
+        assertEquals("这台设备没有登记默认使用的协议", catalog.registrationOf("SN-001").reason());
+    }
+
+    @Test
     void duplicateLogicalId_isEmpty() {
         EntityRpcDeviceProtocolVersionCatalog catalog = catalogWith(
                 equipment("SN-001", "A", List.of("robot-ws")),

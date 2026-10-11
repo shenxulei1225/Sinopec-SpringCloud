@@ -34,7 +34,9 @@ import java.util.Set;
  * Postgres 实体字段查询引擎。
  *
  * <p>搜索：在配置允许搜的字段里找同一个词（系统列 / 基础固定列 / 扩展索引，OR）。</p>
- * <p>筛选：针对已知字段收窄。实体表有这一列就按实体详情判；没有才走扩展索引。</p>
+ * <p>筛选：针对已知字段收窄。实体表有这一列就按实体详情判。
+ * 多选、枚举按这条数据扩展字段里写下的值判。
+ * 字段不在字段库时，按扩展字段原文做等于、包含、多选，不把这道筛当成没带。</p>
  * <p>不负责：查树组树；把固定列再抄进扩展 JSON / 索引。</p>
  */
 @Service
@@ -573,7 +575,8 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
         }
         FieldDO field = fieldCache.computeIfAbsent(fieldCode, fieldMapper::selectByCode);
         if (field == null || field.getType() == null) {
-            return null;
+            // 计划时刻、执行状态写在扩展字段，不进字段库。不能把这道筛当成没带，否则当天名单是空的。
+            return matchCustomFieldStoredText(entityTypeCode, fieldCode, op, filter.getValue(), candidateIds);
         }
         String fieldType = field.getType().trim().toUpperCase(Locale.ROOT);
 
@@ -621,7 +624,7 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
                 matched = matchStringWithTextOps(filter, op);
             } else if (isSingleOptionType(fieldType) || isMultiOptionType(fieldType)) {
                 // 枚举也可按多选存（设备适用手段）。EQ/IN/CONTAINS 都按 token 命中，不把 JSON 数组当成整段字符串。
-                matched = matchStringWithMultiSelectOps(filter, op, candidateIds);
+                matched = matchStringWithMultiSelectOps(entityTypeCode, filter, op, candidateIds);
             } else if (isReferenceType(fieldType)) {
                 matched = matchStringExactOnly(filter, op);
             } else {
@@ -737,21 +740,22 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
         return matchStringExactOnly(filter, op);
     }
 
-    private Set<Long> matchStringWithMultiSelectOps(FieldFilterReqVO filter, String op, Set<Long> candidateIds) {
+    private Set<Long> matchStringWithMultiSelectOps(
+            String entityTypeCode, FieldFilterReqVO filter, String op, Set<Long> candidateIds) {
         String fieldCode = filter.getFieldCode();
         if ("EQ".equals(op)) {
             String token = normalizeSingleString(filter.getValue());
             if (token == null) {
                 return null;
             }
-            return matchMultiSelectByExactTokens(fieldCode, List.of(token), candidateIds);
+            return matchCustomFieldTokens(entityTypeCode, fieldCode, List.of(token), candidateIds);
         }
         if ("IN".equals(op)) {
             List<String> tokens = normalizeStringList(filter.getValue());
             if (tokens.isEmpty()) {
                 return Collections.emptySet();
             }
-            return matchMultiSelectByExactTokens(fieldCode, tokens, candidateIds);
+            return matchCustomFieldTokens(entityTypeCode, fieldCode, tokens, candidateIds);
         }
         if ("CONTAINS".equals(op) || "LIKE".equals(op)) {
             // contains/like 对多选语义定义为“包含任一 token”
@@ -759,7 +763,7 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
             if (tokens.isEmpty()) {
                 return Collections.emptySet();
             }
-            return matchMultiSelectByExactTokens(fieldCode, tokens, candidateIds);
+            return matchCustomFieldTokens(entityTypeCode, fieldCode, tokens, candidateIds);
         }
         return null;
     }
@@ -981,6 +985,96 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
         return parseMultiSelectTokens(String.valueOf(raw));
     }
 
+    /**
+     * 字段不在字段库：按扩展字段原文做等于、包含、多选。
+     * 操作符不是这几种时返回 null，上层仍跳过这道筛。
+     */
+    private Set<Long> matchCustomFieldStoredText(
+            String entityTypeCode,
+            String fieldCode,
+            String op,
+            Object rawValue,
+            Set<Long> candidateIds) {
+        if (!"EQ".equals(op) && !"IN".equals(op) && !"CONTAINS".equals(op) && !"LIKE".equals(op)) {
+            return null;
+        }
+        if (!StringUtils.hasText(fieldCode) || !StringUtils.hasText(entityTypeCode)
+                || candidateIds == null || candidateIds.isEmpty()) {
+            return Collections.emptySet();
+        }
+        List<EntityDO> entities = entityCoreService.listByIds(List.copyOf(candidateIds), entityTypeCode);
+        if (entities == null || entities.isEmpty()) {
+            return Collections.emptySet();
+        }
+        Set<Long> matched = new HashSet<>();
+        for (EntityDO entity : entities) {
+            if (entity == null || entity.getId() == null || entity.getCustomFields() == null) {
+                continue;
+            }
+            if (!candidateIds.contains(entity.getId())) {
+                continue;
+            }
+            Object stored = entity.getCustomFields().get(fieldCode.trim());
+            if (storedCustomTextMatches(stored, op, rawValue)) {
+                matched.add(entity.getId());
+            }
+        }
+        return matched;
+    }
+
+    /**
+     * 扩展字段原文是否命中。字段不在字段库时用这份比对，不把条件当成没带。
+     * 不支持的操作返回 false，调用方对整道筛仍可选择跳过。
+     */
+    static boolean storedCustomTextMatches(Object stored, String op, Object expectedRaw) {
+        if (stored == null || op == null) {
+            return false;
+        }
+        String text = String.valueOf(stored).trim();
+        if (text.isEmpty()) {
+            return false;
+        }
+        String normalizedOp = op.trim().toUpperCase(Locale.ROOT);
+        if ("EQ".equals(normalizedOp)) {
+            String expected = expectedRaw == null ? "" : String.valueOf(expectedRaw).trim();
+            return !expected.isEmpty() && text.equals(expected);
+        }
+        if ("IN".equals(normalizedOp)) {
+            for (String token : expectedTokensOf(expectedRaw)) {
+                if (text.equals(token)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if ("CONTAINS".equals(normalizedOp) || "LIKE".equals(normalizedOp)) {
+            String needle = expectedRaw == null ? "" : String.valueOf(expectedRaw).trim().toLowerCase(Locale.ROOT);
+            return !needle.isEmpty() && text.toLowerCase(Locale.ROOT).contains(needle);
+        }
+        return false;
+    }
+
+    private static List<String> expectedTokensOf(Object raw) {
+        if (raw instanceof Collection<?> collection) {
+            List<String> tokens = new ArrayList<>();
+            for (Object item : collection) {
+                if (item == null) {
+                    continue;
+                }
+                String token = String.valueOf(item).trim();
+                if (!token.isEmpty()) {
+                    tokens.add(token);
+                }
+            }
+            return tokens;
+        }
+        if (raw == null) {
+            return List.of();
+        }
+        String single = String.valueOf(raw).trim();
+        return single.isEmpty() ? List.of() : List.of(single);
+    }
+
     private List<Long> normalizeEntityIds(Object raw) {
         if (raw == null) {
             return Collections.emptyList();
@@ -1165,47 +1259,33 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
     }
 
     /**
-     * MULTI_SELECT token 精确匹配：
-     * - 把 value_string 解析为 token 集合（支持 JSON 数组 / 逗号分隔 / 分号分隔）
-     * - 仅当 token 完整相等时命中，避免 "1" 误命中 "11"
+     * 多选、枚举按这条数据扩展字段里写下的值匹配。
+     * 选择位置看点位上勾的归属网。
+     * token 必须整段相等，避免 "1" 命中 "11"。
      */
-    private Set<Long> matchMultiSelectByExactTokens(String fieldCode, List<String> expectedTokens, Set<Long> candidateIds) {
+    private Set<Long> matchCustomFieldTokens(
+            String entityTypeCode, String fieldCode, List<String> expectedTokens, Set<Long> candidateIds) {
         if (fieldCode == null || fieldCode.isBlank() || expectedTokens == null || expectedTokens.isEmpty()
-                || candidateIds == null || candidateIds.isEmpty()) {
+                || candidateIds == null || candidateIds.isEmpty()
+                || entityTypeCode == null || entityTypeCode.isBlank()) {
             return Collections.emptySet();
         }
-
-        Set<String> expected = new HashSet<>(expectedTokens);
-        List<EntityFieldIndexDO> rows = entityFieldIndexMapper.selectByFieldCodeAndEntityIds(fieldCode, candidateIds);
-        if (rows == null || rows.isEmpty()) {
+        List<EntityDO> entities = entityCoreService.listByIds(List.copyOf(candidateIds), entityTypeCode);
+        if (entities == null || entities.isEmpty()) {
             return Collections.emptySet();
         }
-
-        Set<Long> matched = new HashSet<>();
-        for (EntityFieldIndexDO row : rows) {
-            if (row == null || row.getEntityId() == null) {
+        Map<Long, Object> values = new HashMap<>();
+        for (EntityDO entity : entities) {
+            if (entity == null || entity.getId() == null || entity.getCustomFields() == null) {
                 continue;
             }
-            String raw = row.getValueString();
-            if (raw == null || raw.isBlank()) {
+            if (!entity.getCustomFields().containsKey(fieldCode)) {
                 continue;
             }
-            Set<String> tokens = parseMultiSelectTokens(raw);
-            if (tokens.isEmpty()) {
-                continue;
-            }
-            boolean hit = false;
-            for (String token : expected) {
-                if (tokens.contains(token)) {
-                    hit = true;
-                    break;
-                }
-            }
-            if (hit) {
-                matched.add(row.getEntityId());
-            }
+            values.put(entity.getId(), entity.getCustomFields().get(fieldCode));
         }
-        return matched;
+        Set<Long> matched = matchDedicatedTokenFilter(values, "IN", expectedTokens, candidateIds);
+        return matched == null ? Collections.emptySet() : matched;
     }
 
     private static Set<String> parseMultiSelectTokens(String raw) {

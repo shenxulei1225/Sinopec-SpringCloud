@@ -12,6 +12,7 @@
     <modules>
         <module>cheers-device-protocol-gateway-api</module>
         <module>cheers-device-protocol-gateway-server</module>
+        <module>cheers-device-protocol-simulator</module>
     </modules>
 
     <artifactId>cheers-device-protocol-gateway</artifactId>

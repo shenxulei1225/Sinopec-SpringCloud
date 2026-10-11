@@ -689,6 +689,27 @@ public class EntityRepositoryImpl implements EntityRepository {
     }
 
     @Override
+    public boolean isDeletedByCode(String entityTypeCode, String code) {
+        if (!org.springframework.util.StringUtils.hasText(entityTypeCode)
+                || !org.springframework.util.StringUtils.hasText(code)) {
+            return false;
+        }
+        return withTableName(entityTypeCode, () -> {
+            EntityDO live = entityMapper.selectOne(new LambdaQueryWrapperX<EntityDO>()
+                    .eq(EntityDO::getCode, code.trim())
+                    .eq(EntityDO::getDeleted, false)
+                    .last("LIMIT 1"));
+            if (live != null) {
+                return false;
+            }
+            return entityMapper.selectOne(new LambdaQueryWrapperX<EntityDO>()
+                    .eq(EntityDO::getCode, code.trim())
+                    .eq(EntityDO::getDeleted, true)
+                    .last("LIMIT 1")) != null;
+        });
+    }
+
+    @Override
     public boolean existsByModelId(Long modelId, String entityTypeCode) {
         if (modelId == null || !org.springframework.util.StringUtils.hasText(entityTypeCode)) {
             return false;

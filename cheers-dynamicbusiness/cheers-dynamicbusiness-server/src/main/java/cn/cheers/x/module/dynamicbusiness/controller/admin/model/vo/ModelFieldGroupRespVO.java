@@ -31,6 +31,9 @@ public class ModelFieldGroupRespVO extends ModelFieldGroupBaseVO {
     @Schema(description = "分组下字段引用列表（按 sort 排序）")
     private List<FieldRefVO> fields;
 
+    @Schema(description = "这一详情页勾选要显示的型号字段")
+    private List<Long> displayFieldIds;
+
     @Data
     public static class FieldRefVO {
 

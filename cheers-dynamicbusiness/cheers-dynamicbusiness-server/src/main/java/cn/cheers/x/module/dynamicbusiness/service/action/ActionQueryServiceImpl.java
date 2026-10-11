@@ -6,7 +6,9 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.action.vo.ActionListI
 import cn.cheers.x.module.dynamicbusiness.controller.admin.action.vo.ActionListReqVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.action.ActionEnablementDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.action.ActionEnablementMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.PhysicalColumnFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -27,7 +30,8 @@ import java.util.Set;
  *
  * <p><b>权威</b>：动作行来自 {@code ent_action*}；启用集来自 V77 {@code dynamic_action_enablement}；
  * 参数槽列表来自 {@code param_slots_json}（定稿外形 methods[].fields[].fieldCode，也认旧版顶层 fields）。</p>
- * <p><b>禁止</b>：owner 过滤下启用为空时改拉全库；依赖 inspection 包；按型号 LIBRARY 分配拼参数槽。</p>
+ * <p><b>禁止</b>：owner 过滤下启用为空时改拉全库；依赖 inspection 包；按型号 LIBRARY 分配拼参数槽；
+ * 把已删除动作补进列表。子动作编码里已删除的，查询时丢掉，不改父动作已保存内容。</p>
  */
 @Service
 public class ActionQueryServiceImpl implements ActionQueryService {
@@ -42,6 +46,12 @@ public class ActionQueryServiceImpl implements ActionQueryService {
 
     @Resource
     private EntityRepository entityRepository;
+
+    @Resource
+    private ModelMapper modelMapper;
+
+    @Resource
+    private ActionDeletedChildQueryFilter actionDeletedChildQueryFilter;
 
     @Override
     public List<ActionListItemRespVO> listActions(ActionListReqVO reqVO) {
@@ -65,9 +75,24 @@ public class ActionQueryServiceImpl implements ActionQueryService {
 
         List<EntityDO> entities = entityRepository.findByIdsWithDedicatedBaseFields(
                 orderedIds, ActionFieldCodes.ENTITY_TYPE_CODE);
+        Map<Long, String> modelCodes = new LinkedHashMap<>();
+        List<Long> modelIds = entities.stream()
+                .map(EntityDO::getModelId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (!modelIds.isEmpty()) {
+            for (ModelDO model : modelMapper.selectByIds(modelIds)) {
+                modelCodes.put(model.getId(), model.getCode());
+            }
+        }
+        Set<String> deletedChildCodes = actionDeletedChildQueryFilter.deletedCodes();
         List<ActionListItemRespVO> out = new ArrayList<>(entities.size());
         for (EntityDO entity : entities) {
             ActionListItemRespVO item = toItem(entity);
+            item.setModelCode(modelCodes.get(entity.getModelId()));
+            item.setActionTree(ActionDeletedChildQueryFilter.omitValue(
+                    item.getActionTree(), deletedChildCodes));
             if (means != null && !means.equalsIgnoreCase(nullToEmpty(item.getExecutionMeans()))) {
                 continue;
             }
@@ -127,11 +152,33 @@ public class ActionQueryServiceImpl implements ActionQueryService {
             base = Map.of();
         }
         vo.setExecutionMeans(meansToApiString(resolveExecutionMeans(entity, base)));
+        // 动作归属与分析能力引用由动作专用表持有。列表只透传，不按名称或执行手段猜值。
+        vo.setActionDomain(asString(base.get(ActionFieldCodes.ACTION_DOMAIN)));
+        vo.setAnalysisCapabilityId(asLong(base.get(ActionFieldCodes.ANALYSIS_CAPABILITY_ID)));
         ActionParamSlotsParser.Snapshot slots = ActionParamSlotsParser.parse(base.get(ActionFieldCodes.PARAM_SLOTS_JSON));
         vo.setParamSlots(slots.paramSlots());
         vo.setParamSlotsByMeans(slots.paramSlotsByMeans());
-        vo.setChildActionIds(parseStringList(base.get(ActionFieldCodes.CHILD_ACTION_IDS_JSON)));
-        vo.setComposite(readBool(base.get(ActionFieldCodes.IS_COMPOSITE)));
+        vo.setParamSources(slots.paramSources().stream()
+                .map(ActionQueryServiceImpl::toParamSourceVO)
+                .toList());
+        Map<String, List<ActionListItemRespVO.ParamSourceVO>> sourcesByMeans = new LinkedHashMap<>();
+        slots.paramSourcesByMeans().forEach((means, sources) ->
+                sourcesByMeans.put(means, sources.stream()
+                        .map(ActionQueryServiceImpl::toParamSourceVO)
+                        .toList()));
+        vo.setParamSourcesByMeans(sourcesByMeans);
+        vo.setActionTree(base.get(ActionFieldCodes.ACTION_TREE_JSON));
+        return vo;
+    }
+
+    private static ActionListItemRespVO.ParamSourceVO toParamSourceVO(
+            ActionParamSlotsParser.SourceField source
+    ) {
+        ActionListItemRespVO.ParamSourceVO vo = new ActionListItemRespVO.ParamSourceVO();
+        vo.setFieldCode(source.fieldCode());
+        vo.setSourceKind(source.sourceKind());
+        vo.setDefaultValue(source.defaultValue());
+        vo.setGenerator(source.generator());
         return vo;
     }
 
@@ -175,81 +222,18 @@ public class ActionQueryServiceImpl implements ActionQueryService {
         return s == null ? "" : s;
     }
 
-    private static boolean readBool(Object raw) {
-        if (raw instanceof Boolean b) {
-            return b;
+    private static Long asLong(Object raw) {
+        if (raw instanceof Number number) {
+            return number.longValue();
         }
-        if (raw instanceof Number n) {
-            return n.intValue() != 0;
-        }
-        if (raw instanceof String s) {
-            String t = s.trim().toLowerCase(Locale.ROOT);
-            return "true".equals(t) || "1".equals(t);
-        }
-        return false;
-    }
-
-    private static List<String> parseStringList(Object raw) {
-        if (raw == null) {
-            return List.of();
-        }
-        // 定稿外形：{ version, fields: [{ fieldCode, required, defaultValue }, ...] }
-        if (raw instanceof Map<?, ?> root) {
-            Object fields = root.get("fields");
-            if (fields != null) {
-                return parseStringList(fields);
+        if (raw instanceof String text && StringUtils.hasText(text)) {
+            try {
+                return Long.parseLong(text.trim());
+            } catch (NumberFormatException ignored) {
+                return null;
             }
-            String single = firstFieldCode(root);
-            return single != null ? List.of(single) : List.of();
         }
-        if (raw instanceof List<?> list) {
-            List<String> out = new ArrayList<>(list.size());
-            for (Object item : list) {
-                if (item == null) {
-                    continue;
-                }
-                if (item instanceof Map<?, ?> map) {
-                    String code = firstFieldCode(map);
-                    if (code != null) {
-                        out.add(code);
-                    }
-                    continue;
-                }
-                out.add(String.valueOf(item));
-            }
-            return List.copyOf(out);
-        }
-        if (raw instanceof String s) {
-            String trimmed = s.trim();
-            if (trimmed.isEmpty()) {
-                return List.of();
-            }
-            if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
-                try {
-                    return parseStringList(JSON.readValue(trimmed, Object.class));
-                } catch (Exception ignored) {
-                    return List.of();
-                }
-            }
-            return List.of(trimmed);
-        }
-        return List.of(Objects.toString(raw));
-    }
-
-    /** 从参数槽对象取 fieldCode（定稿）或历史 slotKey/code */
-    private static String firstFieldCode(Map<?, ?> map) {
-        Object slot = map.get("fieldCode");
-        if (slot == null) {
-            slot = map.get("slotKey");
-        }
-        if (slot == null) {
-            slot = map.get("code");
-        }
-        if (slot == null) {
-            return null;
-        }
-        String text = String.valueOf(slot).trim();
-        return text.isEmpty() ? null : text;
+        return null;
     }
 
     private record OwnerFilter(String kind, Long id) {

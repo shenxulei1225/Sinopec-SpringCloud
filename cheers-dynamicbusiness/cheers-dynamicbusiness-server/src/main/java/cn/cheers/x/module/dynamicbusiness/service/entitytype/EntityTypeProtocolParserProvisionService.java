@@ -15,8 +15,10 @@ import java.util.List;
 /**
  * 目录协议解析能力写入。
  *
- * 负责：开能力时补字段说明 / 指令 JSON / 样例三列，并写正式用途。
- * 不负责：报文解析算法；把样例升成第四个用户可见用途。
+ * 负责：开能力时补字段说明 / 指令 JSON / 样例，并写正式用途。
+ * 这三列是型号扩展字段：只挂在报文本身是 JSON 的型号上，不进业务类型基础字段表，
+ * 也不随类型继承到每一本型号。航线文件、JSBridge 不分配。
+ * 不负责：报文解析算法；把样例升成第四个用户可见用途；把这三列登记成类型基础字段。
  * 认表只问 {@link EntityRepository}，不拼 {@code ent_*}。
  */
 @Service
@@ -31,6 +33,15 @@ public class EntityTypeProtocolParserProvisionService {
             new ProtocolSlot("sample_json", "样例", StructuredFieldSemantics.SAMPLE_JSON, 952)
     );
 
+    /**
+     * 官网正文不是 JSON 报文的型号。扩展字段不挂到这些型号上。
+     */
+    private static final List<String> MODELS_WITHOUT_JSON_EXTENSION = List.of(
+            "data_protocol_dji_dock_wayline",
+            "data_protocol_dji_pilot_wayline",
+            "data_protocol_dji_pilot_jsbridge"
+    );
+
     @Resource
     private JdbcTemplate jdbcTemplate;
     @Resource
@@ -42,8 +53,9 @@ public class EntityTypeProtocolParserProvisionService {
         ensureEntityTypeExists(tenantId, normalizedTypeCode);
         for (ProtocolSlot slot : SLOTS) {
             ensureFieldLibrary(tenantId, slot);
-            upsertEntityTypeBaseField(tenantId, normalizedTypeCode, slot);
-            upsertModelFieldAssignments(tenantId, normalizedTypeCode, slot);
+            retireTypeBaseField(tenantId, normalizedTypeCode, slot);
+            upsertExtensionAssignments(tenantId, normalizedTypeCode, slot);
+            retireAssignmentsOnNonJsonModels(tenantId, slot);
         }
         ensurePhysicalColumns(normalizedTypeCode);
         evictCrudCache(normalizedTypeCode);
@@ -57,11 +69,12 @@ public class EntityTypeProtocolParserProvisionService {
                   index_strategy, options, provider_code, semantic_type, tenant_id, creator
                 )
                 VALUES (?, ?, 'TEXT', NULL, ?,
-                        'BASE', 1, 1, 'NONE', NULL, NULL, ?, ?, 'capability-protocol-parser')
+                        'USER', 1, 1, 'NONE', NULL, NULL, ?, ?, 'capability-protocol-parser')
                 ON CONFLICT (code, tenant_id) WHERE deleted = false
                 DO UPDATE SET
                   name = EXCLUDED.name,
                   description = EXCLUDED.description,
+                  source = EXCLUDED.source,
                   semantic_type = EXCLUDED.semantic_type,
                   updater = 'capability-protocol-parser',
                   update_time = NOW()
@@ -74,39 +87,32 @@ public class EntityTypeProtocolParserProvisionService {
         );
     }
 
-    private void upsertEntityTypeBaseField(Long tenantId, String entityTypeCode, ProtocolSlot slot) {
+    /**
+     * 从业务类型基础字段表拿掉。留在这张表里就会被全部型号继承，界面归到基础信息。
+     * 不改专用表列名，已写入的 JSON 仍留在列上和扩展数据里。
+     */
+    private void retireTypeBaseField(Long tenantId, String entityTypeCode, ProtocolSlot slot) {
         jdbcTemplate.update(
                 """
-                INSERT INTO dynamic_entity_type_base_field (
-                  entity_type_code, library_field_id, field_code, field_name, data_type,
-                  required, default_value, description, type_config, sort_order,
-                  status, tenant_id, creator
-                )
-                SELECT
-                  ?, f.id, ?, ?, f.type,
-                  false, '{}', ?,
-                  '{"createVisible":false,"editVisible":false,"detailVisible":false}',
-                  ?, 1, ?, 'capability-protocol-parser'
-                FROM dynamic_field f
-                WHERE f.deleted = false AND f.tenant_id = ? AND f.code = ?
-                ON CONFLICT (entity_type_code, field_code, tenant_id) WHERE deleted = false
-                DO UPDATE SET
-                  library_field_id = EXCLUDED.library_field_id,
-                  field_name = EXCLUDED.field_name,
-                  data_type = EXCLUDED.data_type,
-                  description = EXCLUDED.description,
-                  type_config = EXCLUDED.type_config,
-                  sort_order = EXCLUDED.sort_order,
-                  status = EXCLUDED.status,
-                  updater = 'capability-protocol-parser',
-                  update_time = NOW()
+                UPDATE dynamic_entity_type_base_field
+                SET status = 0,
+                    deleted = true,
+                    updater = 'capability-protocol-parser',
+                    update_time = NOW()
+                WHERE tenant_id = ?
+                  AND entity_type_code = ?
+                  AND field_code = ?
+                  AND deleted = false
                 """,
-                entityTypeCode, slot.fieldCode(), slot.name(), slot.name(),
-                slot.sort(), tenantId, tenantId, slot.fieldCode()
+                tenantId, entityTypeCode, slot.fieldCode()
         );
     }
 
-    private void upsertModelFieldAssignments(Long tenantId, String entityTypeCode, ProtocolSlot slot) {
+    /**
+     * 扩展字段只挂在具体型号上，来源是扩展，不进基础字段表。
+     * JSON 不能搜索、筛选、排序，所以三个开关都关着，不写索引。
+     */
+    private void upsertExtensionAssignments(Long tenantId, String entityTypeCode, ProtocolSlot slot) {
         jdbcTemplate.update(
                 """
                 INSERT INTO dynamic_model_field_assignment (
@@ -116,20 +122,47 @@ public class EntityTypeProtocolParserProvisionService {
                 )
                 SELECT
                   m.id, f.id, m.code, ?, false, false, false, false, ?,
-                  '{}', NULL, 'BASE', m.tenant_id, 'capability-protocol-parser'
+                  '{}', NULL, 'CUSTOM', m.tenant_id, 'capability-protocol-parser'
                 FROM dynamic_model m
                 JOIN dynamic_field f
                   ON f.deleted = false AND f.tenant_id = m.tenant_id AND f.code = ?
                 WHERE m.deleted = false AND m.tenant_id = ? AND m.entity_type_code = ?
+                  AND m.code NOT IN (?, ?, ?)
                 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
                 DO UPDATE SET
                   model_id = EXCLUDED.model_id,
                   field_id = EXCLUDED.field_id,
                   field_source = EXCLUDED.field_source,
+                  is_searchable = false,
+                  is_filterable = false,
+                  is_sortable = false,
                   updater = 'capability-protocol-parser',
                   update_time = NOW()
                 """,
-                slot.fieldCode(), slot.sort(), slot.fieldCode(), tenantId, entityTypeCode
+                slot.fieldCode(), slot.sort(), slot.fieldCode(), tenantId, entityTypeCode,
+                MODELS_WITHOUT_JSON_EXTENSION.get(0),
+                MODELS_WITHOUT_JSON_EXTENSION.get(1),
+                MODELS_WITHOUT_JSON_EXTENSION.get(2)
+        );
+    }
+
+    /** 航线文件和 JSBridge 不是 JSON 报文，卸掉这三列的型号分配。不删指令上已经写下的正文。 */
+    private void retireAssignmentsOnNonJsonModels(Long tenantId, ProtocolSlot slot) {
+        jdbcTemplate.update(
+                """
+                UPDATE dynamic_model_field_assignment
+                SET deleted = true,
+                    updater = 'capability-protocol-parser',
+                    update_time = NOW()
+                WHERE tenant_id = ?
+                  AND field_code = ?
+                  AND deleted = false
+                  AND model_code IN (?, ?, ?)
+                """,
+                tenantId, slot.fieldCode(),
+                MODELS_WITHOUT_JSON_EXTENSION.get(0),
+                MODELS_WITHOUT_JSON_EXTENSION.get(1),
+                MODELS_WITHOUT_JSON_EXTENSION.get(2)
         );
     }
 

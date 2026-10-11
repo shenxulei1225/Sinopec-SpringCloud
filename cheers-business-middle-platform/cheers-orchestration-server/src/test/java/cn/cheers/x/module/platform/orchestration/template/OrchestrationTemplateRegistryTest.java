@@ -73,19 +73,6 @@ class OrchestrationTemplateRegistryTest {
     }
 
     @Test
-    @DisplayName("巡检保存路线模板 EXPAND→ROUTE→SAVE_ROUTE")
-    void patrolRouteConfirm_phaseOrder() {
-        OrchestrationTemplate t = registry.require(OrchestrationRefs.PATROL_ROUTE_SAVE_V1);
-        assertEquals(List.of(
-                OrchestrationPhase.EXPAND,
-                OrchestrationPhase.ROUTE,
-                OrchestrationPhase.SAVE_ROUTE), t.getPhases());
-        assertEquals("patrol.expand_map_v1", t.getHandlerIds().get(OrchestrationPhase.EXPAND));
-        assertEquals("platform.route.plan_v1", t.getHandlerIds().get(OrchestrationPhase.ROUTE));
-        assertEquals("patrol.save_route_v1", t.getHandlerIds().get(OrchestrationPhase.SAVE_ROUTE));
-    }
-
-    @Test
     @DisplayName("巡检启用模板阶段顺序 EXPAND→SOLVE→PERSIST")
     void patrolScheduleEnable_phaseOrder() {
         OrchestrationTemplate t = registry.require(OrchestrationRefs.PATROL_ORCHESTRATION_V1);

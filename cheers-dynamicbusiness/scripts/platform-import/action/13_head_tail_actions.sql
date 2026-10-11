@@ -29,17 +29,17 @@ FROM (
   VALUES
     (
       'act-robot-self-check', '开机自检', 'ROBOT',
-      '{"version":1,"fields":[{"fieldCode":"action_duration","required":false,"defaultValue":1}]}',
+      '{"version":1,"fields":[{"fieldCode":"action_duration","required":false,"defaultValue":60}]}',
       '[]', false
     ),
     (
       'act-robot-battery-check', '电量检查', 'ROBOT',
-      '{"version":1,"fields":[{"fieldCode":"action_duration","required":false,"defaultValue":1}]}',
+      '{"version":1,"fields":[{"fieldCode":"action_duration","required":false,"defaultValue":60}]}',
       '[]', false
     ),
     (
       'act-robot-return-charge', '返回充电', 'ROBOT',
-      '{"version":1,"fields":[{"fieldCode":"location_ref","required":false,"defaultValue":null},{"fieldCode":"action_duration","required":false,"defaultValue":2}]}',
+      '{"version":1,"fields":[{"fieldCode":"action_duration","required":false,"defaultValue":120}]}',
       '[]', false
     ),
     (
@@ -56,27 +56,27 @@ FROM (
     ),
     (
       'act-uav-self-check', '开机自检', 'UAV',
-      '{"version":1,"fields":[{"fieldCode":"action_duration","required":false,"defaultValue":1}]}',
+      '{"version":1,"fields":[{"fieldCode":"action_duration","required":false,"defaultValue":60}]}',
       '[]', false
     ),
     (
       'act-uav-battery-check', '电量检查', 'UAV',
-      '{"version":1,"fields":[{"fieldCode":"action_duration","required":false,"defaultValue":1}]}',
+      '{"version":1,"fields":[{"fieldCode":"action_duration","required":false,"defaultValue":60}]}',
       '[]', false
     ),
     (
       'act-uav-takeoff', '起飞', 'UAV',
-      '{"version":1,"fields":[{"fieldCode":"action_duration","required":false,"defaultValue":2}]}',
+      '{"version":1,"fields":[{"fieldCode":"action_duration","required":false,"defaultValue":120}]}',
       '[]', false
     ),
     (
       'act-uav-land', '降落', 'UAV',
-      '{"version":1,"fields":[{"fieldCode":"action_duration","required":false,"defaultValue":2}]}',
+      '{"version":1,"fields":[{"fieldCode":"action_duration","required":false,"defaultValue":120}]}',
       '[]', false
     ),
     (
       'act-uav-return-charge', '返回充电', 'UAV',
-      '{"version":1,"fields":[{"fieldCode":"location_ref","required":false,"defaultValue":null},{"fieldCode":"action_duration","required":false,"defaultValue":2}]}',
+      '{"version":1,"fields":[{"fieldCode":"action_duration","required":false,"defaultValue":120}]}',
       '[]', false
     ),
     (

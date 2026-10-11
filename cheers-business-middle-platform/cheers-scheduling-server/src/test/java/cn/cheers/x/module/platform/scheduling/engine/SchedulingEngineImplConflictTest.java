@@ -61,31 +61,34 @@ class SchedulingEngineImplConflictTest {
     }
 
     @Test
-    @DisplayName("空闲不够且不允许挪已有：同资源两项计划窗重叠则失败")
-    void solve_overlap_withoutAllowShift_throws() {
+    @DisplayName("同资源两项都想要原定时刻：先放入的留在原窗，后一条贴进后面的空窗口")
+    void solve_overlap_secondUsesNextWindow() {
         List<WorkItemDTO> works = List.of(
                 work("w1", 60, null, "robot-1"),
                 work("w2", 60, null, "robot-1"));
         SchedulingSpecDTO spec = onceSpec("defer_slot");
 
-        assertThrows(ServiceException.class, () -> engine.solve(works, spec, "job-1"));
+        List<ResourceReservationDTO> slots = engine.solve(works, spec, "job-1");
+
+        Map<String, ResourceReservationDTO> byWork = byWorkId(slots);
+        assertEquals(localDay(9, 0), OffsetDateTime.parse(byWork.get("w1").getCandidateStart()));
+        assertEquals(localDay(10, 0), OffsetDateTime.parse(byWork.get("w2").getCandidateStart()));
     }
 
     @Test
-    @DisplayName("与前面冲突且允许挪已有：前面任务提前，新任务仍在原计划窗")
-    void solve_overlapPrevious_shiftsExistingEarlier() {
+    @DisplayName("与前面冲突：先放入的留在原窗，后一条在最大范围内挪到空档")
+    void solve_overlapPrevious_slidesLaterItem() {
         List<WorkItemDTO> works = List.of(
                 work("w1", 60, null, "robot-1"),
                 work("w2", 60, null, "robot-1"));
         SchedulingSpecDTO spec = onceSpec("defer_slot");
-        spec.setAllowShiftExisting(true);
         spec.setMaxShiftMinutes(60);
 
         List<ResourceReservationDTO> slots = engine.solve(works, spec, "job-1");
 
         Map<String, ResourceReservationDTO> byWork = byWorkId(slots);
-        assertEquals(localDay(8, 0), OffsetDateTime.parse(byWork.get("w1").getCandidateStart()));
-        assertEquals(localDay(9, 0), OffsetDateTime.parse(byWork.get("w2").getCandidateStart()));
+        assertEquals(localDay(9, 0), OffsetDateTime.parse(byWork.get("w1").getCandidateStart()));
+        assertEquals(localDay(10, 0), OffsetDateTime.parse(byWork.get("w2").getCandidateStart()));
         assertAssigned(byWork.get("w1"), "robot-1", "GROUND_ROBOT");
         assertAssigned(byWork.get("w2"), "robot-1", "GROUND_ROBOT");
     }
@@ -103,14 +106,18 @@ class SchedulingEngineImplConflictTest {
     }
 
     @Test
-    @DisplayName("priority_preempt：不允许挪已有时高优先级占原窗，低优先级插不进")
-    void solve_priorityPreempt_highKeepsWindow_lowCannotInsert() {
+    @DisplayName("priority_preempt：高优先级占原窗，低优先级贴进后面的空窗口")
+    void solve_priorityPreempt_highKeepsWindow_lowUsesNextWindow() {
         List<WorkItemDTO> works = List.of(
                 work("w-low", 60, 1, "robot-1"),
                 work("w-high", 60, 10, "robot-1"));
         SchedulingSpecDTO spec = onceSpec("priority_preempt");
 
-        assertThrows(ServiceException.class, () -> engine.solve(works, spec, "job-1"));
+        List<ResourceReservationDTO> slots = engine.solve(works, spec, "job-1");
+
+        Map<String, ResourceReservationDTO> byWork = byWorkId(slots);
+        assertEquals(localDay(9, 0), OffsetDateTime.parse(byWork.get("w-high").getCandidateStart()));
+        assertEquals(localDay(10, 0), OffsetDateTime.parse(byWork.get("w-low").getCandidateStart()));
     }
 
     @Test
@@ -137,8 +144,8 @@ class SchedulingEngineImplConflictTest {
     }
 
     @Test
-    @DisplayName("blank conflictStrategy 仍走插入判断，空闲不够且未允许挪已有则失败")
-    void solve_blankConflictStrategy_overlapWithoutAllow_throws() {
+    @DisplayName("blank conflictStrategy 仍走插入：后一条贴进后面的空窗口")
+    void solve_blankConflictStrategy_secondUsesNextWindow() {
         List<WorkItemDTO> works = List.of(
                 work("w1", 60, null, "robot-1"),
                 work("w2", 60, null, "robot-1"));
@@ -149,7 +156,10 @@ class SchedulingEngineImplConflictTest {
                 .conflictStrategy("  ")
                 .build();
 
-        assertThrows(ServiceException.class, () -> engine.solve(works, spec, "job-1"));
+        List<ResourceReservationDTO> slots = engine.solve(works, spec, "job-1");
+        Map<String, ResourceReservationDTO> byWork = byWorkId(slots);
+        assertEquals(localDay(9, 0), OffsetDateTime.parse(byWork.get("w1").getCandidateStart()));
+        assertEquals(localDay(10, 0), OffsetDateTime.parse(byWork.get("w2").getCandidateStart()));
     }
 
     @Test
@@ -177,15 +187,14 @@ class SchedulingEngineImplConflictTest {
     }
 
     @Test
-    @DisplayName("与后面冲突且允许挪已有：后面任务延后，新任务仍在原计划窗")
-    void solve_overlapNext_shiftsExistingLater() {
+    @DisplayName("与后面冲突：这次这条提前到空档，已占着的任务不动")
+    void solve_overlapNext_slidesNewTaskEarlier() {
         OffsetDateTime preferred = localDay(9, 30);
         WorkItemDTO work = work("w1", 60, null, "robot-1");
         work.setTimePreferences(window(
                 DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(preferred),
                 DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(preferred.plusMinutes(60))));
         SchedulingSpecDTO spec = onceSpec("defer_slot");
-        spec.setAllowShiftExisting(true);
         spec.setMaxShiftMinutes(30);
         ResourceReservationDTO occupied = occupied("robot-1",
                 DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(localDay(10, 0)),
@@ -197,8 +206,8 @@ class SchedulingEngineImplConflictTest {
                 .filter(item -> "w1".equals(item.getWorkId()))
                 .findFirst()
                 .orElseThrow();
-        assertEquals(preferred, OffsetDateTime.parse(inserted.getCandidateStart()));
-        assertEquals(localDay(10, 30), OffsetDateTime.parse(occupied.getCandidateStart()));
+        assertEquals(localDay(9, 0), OffsetDateTime.parse(inserted.getCandidateStart()));
+        assertEquals(localDay(10, 0), OffsetDateTime.parse(occupied.getCandidateStart()));
         assertAssigned(inserted, "robot-1", "GROUND_ROBOT");
     }
 
@@ -238,31 +247,35 @@ class SchedulingEngineImplConflictTest {
     }
 
     @Test
-    @DisplayName("需要挪动超过最大范围则失败")
+    @DisplayName("前后可挪的空间仍不够、后面也没有空窗口则失败")
     void solve_shiftExceedsMax_throws() {
-        WorkItemDTO work = work("w1", 60, null, "robot-1");
+        WorkItemDTO work = work("w1", 180, null, "robot-1");
+        work.setTimePreferences(window(
+                DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(localDay(9, 0)),
+                DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(localDay(12, 0))));
         SchedulingSpecDTO spec = onceSpec("defer_slot");
-        spec.setAllowShiftExisting(true);
         spec.setMaxShiftMinutes(15);
         ResourceReservationDTO occupied = occupied("robot-1",
-                DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(localDay(9, 0)),
-                DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(localDay(10, 0)));
+                DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(localDay(0, 0)),
+                DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(localDay(23, 0)));
 
         assertThrows(ServiceException.class,
                 () -> engine.solve(List.of(work), spec, "job-1", List.of(occupied)));
     }
 
     @Test
-    @DisplayName("允许挪已有但未填最大范围则报缺口")
-    void solve_allowShiftWithoutMax_throws() {
+    @DisplayName("未填可挪动分钟数时不推已有任务，后一条贴进后面的空窗口")
+    void solve_withoutMax_secondUsesNextWindow() {
         List<WorkItemDTO> works = List.of(
                 work("w1", 60, null, "robot-1"),
                 work("w2", 60, null, "robot-1"));
         SchedulingSpecDTO spec = onceSpec("defer_slot");
-        spec.setAllowShiftExisting(true);
 
-        ServiceException ex = assertThrows(ServiceException.class, () -> engine.solve(works, spec, "job-1"));
-        assertEquals(ErrorCodeConstants.SCHEDULING_SHIFT_RANGE_REQUIRED.getCode(), ex.getCode());
+        List<ResourceReservationDTO> slots = engine.solve(works, spec, "job-1");
+
+        Map<String, ResourceReservationDTO> byWork = byWorkId(slots);
+        assertEquals(localDay(9, 0), OffsetDateTime.parse(byWork.get("w1").getCandidateStart()));
+        assertEquals(localDay(10, 0), OffsetDateTime.parse(byWork.get("w2").getCandidateStart()));
     }
 
     @Test
@@ -288,8 +301,8 @@ class SchedulingEngineImplConflictTest {
     }
 
     @Test
-    @DisplayName("resource_first：候选设备计划窗都被占则失败，不改去挪时间")
-    void solve_resourceFirst_allBusy_throws() {
+    @DisplayName("resource_first：候选设备原定时刻都被占，回到第一台贴进后面的空窗口")
+    void solve_resourceFirst_allBusy_usesNextWindowOnFirstDevice() {
         OffsetDateTime preferred = localDay(9, 0);
         WorkItemDTO work = work("w1", 60, null, "robot-1");
         work.getResourceRequirements().get(0).setCandidateResourceIds(List.of("robot-1", "robot-2"));
@@ -304,21 +317,34 @@ class SchedulingEngineImplConflictTest {
                 occupied("robot-1", start, end),
                 occupied("robot-2", start, end));
 
-        assertThrows(ServiceException.class,
-                () -> engine.solve(List.of(work), spec, "job-1", occupied));
+        List<ResourceReservationDTO> slots = engine.solve(List.of(work), spec, "job-1", occupied);
+
+        assertEquals(1, slots.stream().filter(item -> "w1".equals(item.getWorkId())).count());
+        ResourceReservationDTO inserted = slots.stream()
+                .filter(item -> "w1".equals(item.getWorkId()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(localDay(10, 0), OffsetDateTime.parse(inserted.getCandidateStart()));
+        assertAssigned(inserted, "robot-1", "GROUND_ROBOT");
     }
 
     @Test
-    @DisplayName("已占窗挡住计划窗且不允许挪已有：插入失败")
-    void solve_occupiedOverlap_withoutAllow_throws() {
+    @DisplayName("已占窗挡住计划窗：这次这条贴进后面的空窗口，已占的不动")
+    void solve_occupiedOverlap_usesNextWindow() {
         WorkItemDTO work = work("w1", 60, null, "robot-1");
         SchedulingSpecDTO spec = onceSpec("defer_slot");
         ResourceReservationDTO occupied = occupied("robot-1",
                 DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(localDay(9, 0)),
                 DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(localDay(10, 0)));
 
-        assertThrows(ServiceException.class,
-                () -> engine.solve(List.of(work), spec, "job-1", List.of(occupied)));
+        List<ResourceReservationDTO> slots = engine.solve(List.of(work), spec, "job-1", List.of(occupied));
+
+        ResourceReservationDTO inserted = slots.stream()
+                .filter(item -> "w1".equals(item.getWorkId()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(localDay(10, 0), OffsetDateTime.parse(inserted.getCandidateStart()));
+        assertEquals(localDay(9, 0), OffsetDateTime.parse(occupied.getCandidateStart()));
     }
 
     private static SchedulingSpecDTO onceSpec(String strategy) {

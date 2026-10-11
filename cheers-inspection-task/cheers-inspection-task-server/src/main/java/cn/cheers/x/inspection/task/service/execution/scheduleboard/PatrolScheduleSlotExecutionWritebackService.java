@@ -13,6 +13,7 @@ import cn.cheers.x.module.platform.runtime.api.dto.ProcessTimelineActionAppendRe
 import cn.cheers.x.module.platform.runtime.api.dto.RuntimeSlotStatusUpdateReqDTO;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskExecutionRecordMediaBinder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +52,7 @@ public class PatrolScheduleSlotExecutionWritebackService {
     private final EntityRpcApi entityRpcApi;
     private final PatrolTaskEntityStore patrolTaskEntityStore;
     private final ObjectMapper objectMapper;
+    private final PatrolTaskExecutionRecordMediaBinder patrolTaskExecutionRecordMediaBinder;
 
     /**
      * 为总任务解析本次应对回的计划点：显式 slotId 优先，否则取 runtimeJob 下最早未完成的 PLANNED 点。
@@ -124,7 +126,11 @@ public class PatrolScheduleSlotExecutionWritebackService {
             recordStepUpdates(slotId, event.getStepUpdates(), facilityId, slot, event.getTaskDefinitionId());
         }
         if (StringUtils.hasText(event.getExecutionStatus())) {
-            syncExecutionStatus(slotId, event.getExecutionStatus().trim(), facilityId);
+            String status = event.getExecutionStatus().trim();
+            syncExecutionStatus(slotId, status, facilityId);
+            if ("completed".equalsIgnoreCase(status) || "fault".equalsIgnoreCase(status)) {
+                patrolTaskExecutionRecordMediaBinder.refreshRecordFileUrl(event.getExecutionRecordId());
+            }
         }
     }
 

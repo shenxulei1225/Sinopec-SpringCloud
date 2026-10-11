@@ -1,6 +1,8 @@
 package cn.cheers.x.inspection.task.framework.rpc.config;
 
 import cn.cheers.x.device.protocolgateway.api.DeviceProtocolMissionApi;
+import cn.cheers.x.device.protocolgateway.api.DjiCloudAircraftStatusApi;
+import cn.cheers.x.module.dynamicbusiness.api.analysis.IntelligentAnalysisApi;
 import cn.cheers.x.module.dynamicbusiness.api.entity.EntityRpcApi;
 import cn.cheers.x.module.dynamicbusiness.api.execution.TaskExecutionSessionApi;
 import cn.cheers.x.module.dynamicbusiness.api.strategy.StrategyRuntimeApi;
@@ -26,9 +28,11 @@ import org.springframework.context.annotation.Configuration;
                 AdminUserApi.class,
                 FileApi.class,
                 EntityRpcApi.class,
+                IntelligentAnalysisApi.class,
                 TaskExecutionSessionApi.class,
                 StrategyRuntimeApi.class,
                 DeviceProtocolMissionApi.class,
+                DjiCloudAircraftStatusApi.class,
                 ScheduleRunApi.class,
                 RuntimePersistApi.class,
                 RuntimeQueryApi.class,

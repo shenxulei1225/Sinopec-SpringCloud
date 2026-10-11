@@ -531,6 +531,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 respVO.setIsFilterable(assignment.getIsFilterable());
                 respVO.setIsSortable(assignment.getIsSortable());
                 respVO.setDefaultValue(assignment.getDefaultValue());
+                respVO.setAlias(assignment.getAlias());
                 respVO.setValidationRules(assignment.getValidationRules());
                 respVO.setSort(assignment.getSort());
                 // LIBRARY / 已登记为基础字段的分配，均按 BASE 展示（不另读固定列表补行）
@@ -649,16 +650,25 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
      * @param sourceEntityTypeCode 源业务类型编码（用于查询关联关系）
      * @return 模型字段响应 VO
      */
+    /**
+     * 基础字段在数据类型上已有显示名称时，填进型号这一行的别名。
+     * 型号上已经写了别名则不动。不改字段库名称。
+     */
     private void applyBaseFieldDisplayAlias(
             ModelFieldAssignmentRespVO respVO, String entityTypeCode, String physicalFieldCode) {
-        if (respVO == null || respVO.getField() == null || !StringUtils.hasText(entityTypeCode)
-                || !StringUtils.hasText(physicalFieldCode)) {
+        if (respVO == null || respVO.getField() == null || StringUtils.hasText(respVO.getAlias())
+                || !StringUtils.hasText(entityTypeCode) || !StringUtils.hasText(physicalFieldCode)) {
             return;
         }
         EntityTypeBaseFieldDO baseField =
                 entityTypeBaseFieldService.getBaseFieldByCode(entityTypeCode, physicalFieldCode);
-        if (baseField != null && StringUtils.hasText(baseField.getFieldName())) {
-            respVO.getField().setName(baseField.getFieldName());
+        if (baseField == null || !StringUtils.hasText(baseField.getFieldName())) {
+            return;
+        }
+        String display = baseField.getFieldName().trim();
+        String libraryName = respVO.getField().getName() == null ? "" : respVO.getField().getName().trim();
+        if (!display.equals(libraryName)) {
+            respVO.setAlias(display);
         }
     }
 
@@ -724,7 +734,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
             respVO.setFieldId(libraryField.getId());
             if (StringUtils.hasText(baseField.getFieldName())
                     && !Objects.equals(baseField.getFieldName(), libraryField.getName())) {
-                fieldRespVO.setName(baseField.getFieldName());
+                respVO.setAlias(baseField.getFieldName().trim());
             }
         } else {
             // 字段库尚未补齐时保留虚拟字段，避免接口不可用
@@ -932,6 +942,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
             respVO.setField(FieldConvert.INSTANCE.convert(field));
             respVO.setRequired(assignment.getRequired());
             respVO.setDefaultValue(assignment.getDefaultValue());
+            respVO.setAlias(assignment.getAlias());
             respVO.setValidationRules(assignment.getValidationRules());
             respVO.setSort(assignment.getSort());
 

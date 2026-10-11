@@ -23,4 +23,6 @@ public class RoutePreviewSegmentDTO {
     private List<String> edgeIds;
     private List<TopologyPointDTO> polyline;
     private Long distanceMeters;
+    /** 这一段路程的行驶秒数。按这一段的米数和该方式的速度算出，不是把总耗时按比例拆开。 */
+    private Long durationSeconds;
 }

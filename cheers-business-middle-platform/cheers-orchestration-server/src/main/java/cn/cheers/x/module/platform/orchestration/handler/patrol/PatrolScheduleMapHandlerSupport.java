@@ -4,6 +4,7 @@ import cn.cheers.x.inspection.orchestration.dto.PatrolScheduleMapReqDTO;
 import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunRequest;
 import cn.cheers.x.module.platform.contract.dto.work.WorkItemDTO;
 import cn.cheers.x.module.platform.orchestration.phase.PhaseContext;
+import cn.cheers.x.module.platform.orchestration.route.RoutePayloadKeys;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
@@ -50,6 +51,15 @@ final class PatrolScheduleMapHandlerSupport {
         req.setReturnToStart(asBoolean(payload.get(RETURN_TO_START)));
         req.setStopIds(asStringList(payload.get(STOP_IDS)));
         req.setInspectionType(asString(payload.get(INSPECTION_TYPE)));
+        req.setStrategy(asString(payload.get(RoutePayloadKeys.STRATEGY)));
+        // 向导把这一页的路线和排期放在种子里。展开时只认这份，不改已发布字段。
+        req.setPagePlannedRoute(payload.get("pagePlannedRoute"));
+        req.setPageScheduleConfig(payload.get("pageScheduleConfig"));
+        req.setPageInspectionContent(payload.get("pageInspectionContent"));
+        req.setPageExecutionDeviceBinding(payload.get("pageExecutionDeviceBinding"));
+        req.setPagePatrolExecutionMode(asString(payload.get("pagePatrolExecutionMode")));
+        req.setPageStartStopId(asString(payload.get("pageStartStopId")));
+        req.setPageEndStopId(asString(payload.get("pageEndStopId")));
         return req;
     }
 

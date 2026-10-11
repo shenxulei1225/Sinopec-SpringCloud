@@ -2,7 +2,7 @@
 """种「指令协议对接」的型号、对照字段和对照行。
 
 目录本体须已由创建接口建出（编码 protocol_mapping）。
-本脚本只补：唯一型号、四列对照字段、有真实协议指令的对照行。
+本脚本只补：唯一型号、对照字段、有真实协议指令的对照行。
 界面保存只认型号已分配的引用字段，不查旧业务类型关联许可表。
 不负责：拆开跑适配器、改回写、改对端协议、给「调整拍摄角度 / 人工确认 / 智能识别」建对接行。
 禁止：读路径补对照；发明没有协议指令的对接行；把何时返回写进对接表。
@@ -27,7 +27,9 @@ CATEGORY_CODE = "protocol_mapping_root"
 TENANT_ID = 1
 
 # 对照行只覆盖现网有真实协议指令的动作。对准/人工确认/识别不建行。
+# 电量检查对到「获取设备实时状态」。这条指令没有内层 request，下发时按它自己发出。
 # slot 必须是该动作 param_slots_json 里已有的槽；path 必须是对应空包里已有的路径。
+# 到达指定位置的槽是「选择位置」，不是已停用的「到达位置」。
 MAPPINGS = (
     {
         "code": "map-arrive-uav-ws",
@@ -36,47 +38,77 @@ MAPPINGS = (
         "protocol_version": "uav-ws",
         "instruction_code": "proto-uav-200102-move",
         "slots": (
-            {"slot": "location_ref", "sourcePath": "FLD-PNT-002", "path": "request.pointId"},
+            {"slot": "F-e49f76bdca3e4e1393e8e2f1cc0e7867", "sourcePath": "FLD-PNT-002", "path": "request.pointId"},
+            {"slot": "F-e49f76bdca3e4e1393e8e2f1cc0e7867", "sourcePath": "FLD-LOC-014.longitude", "path": "request.lng"},
+            {"slot": "F-e49f76bdca3e4e1393e8e2f1cc0e7867", "sourcePath": "FLD-LOC-014.latitude", "path": "request.lat"},
         ),
     },
     {
         "code": "map-arrive-robot-ws",
         "name": "到达指定位置 · 机器人对接协议",
-        "action_code": "action-065340437bcb46788b7dc261fab81c63",
+        "action_code": "act-robot-arrive",
         "protocol_version": "robot-ws",
         "instruction_code": "proto-robot-200102-move",
         "slots": (
-            {"slot": "location_ref", "sourcePath": "FLD-PNT-002", "path": "request.pointId"},
+            {"slot": "F-e49f76bdca3e4e1393e8e2f1cc0e7867", "sourcePath": "FLD-PNT-002", "path": "request.pointId"},
         ),
     },
     {
         "code": "map-photo-uav-ws",
         "name": "拍照 · 无人机对接协议",
-        "action_code": "act-robot-shoot",
+        "action_code": "takePhoto",
         "protocol_version": "uav-ws",
         "instruction_code": "proto-uav-200301-photo",
-        "slots": ({"slot": "shot_count", "path": "request.number"},),
+        "slots": (
+            {"slot": "shot_count", "path": "request.number"},
+            {"slot": "yaw", "path": "request.angleLevel"},
+            {"slot": "pitch", "path": "request.angleVertical"},
+            {"slot": "focal_length", "path": "request.focuses"},
+            {"slot": "F-2b8fa8bda0b94663979c112af85325dc", "path": "request.parking"},
+            {"slot": "action_duration", "path": "request.time"},
+        ),
     },
     {
         "code": "map-photo-robot-ws",
         "name": "拍照 · 机器人对接协议",
-        "action_code": "act-robot-shoot",
+        "action_code": "takePhoto",
         "protocol_version": "robot-ws",
         "instruction_code": "proto-robot-200301-photo",
-        "slots": ({"slot": "shot_count", "path": "request.number"},),
+        "slots": (
+            {"slot": "shot_count", "path": "request.number"},
+            {"slot": "yaw", "path": "request.angleLevel"},
+            {"slot": "pitch", "path": "request.angleVertical"},
+            {"slot": "focal_length", "path": "request.focuses"},
+            {"slot": "F-2b8fa8bda0b94663979c112af85325dc", "path": "request.parking"},
+            {"slot": "action_duration", "path": "request.time"},
+        ),
     },
     {
-        "code": "map-takeoff-uav-ws",
-        "name": "无人机起飞 · 无人机对接协议",
-        "action_code": "action-2b44a1f882f54438b6a1864e3636c889",
+        "code": "map-return-robot-ws",
+        "name": "返回充电 · 机器人对接协议",
+        "action_code": "act-robot-return-charge",
+        "protocol_version": "robot-ws",
+        "instruction_code": "proto-robot-200102-move",
+        "slots": (
+            {"slot": "F-e49f76bdca3e4e1393e8e2f1cc0e7867", "sourcePath": "FLD-PNT-002", "path": "request.pointId"},
+        ),
+    },
+    {
+        "code": "map-uav-takeoff-uav-ws",
+        "name": "指令起飞 · 无人机对接协议",
+        "action_code": "act-uav-takeoff",
         "protocol_version": "uav-ws",
         "instruction_code": "proto-uav-200101-takeoff",
-        "slots": (),
+        "slots": (
+            {"slot": "FLD-LOC-014", "sourcePath": "longitude", "path": "request.lng"},
+            {"slot": "FLD-LOC-014", "sourcePath": "latitude", "path": "request.lat"},
+            {"slot": "FLD-LOC-014", "sourcePath": "height", "path": "request.height"},
+        ),
     },
     {
-        "code": "map-land-uav-ws",
-        "name": "无人机返航 · 无人机对接协议",
-        "action_code": "action-1022d966da2b45f7b73e776112e6884b",
+        "code": "map-uav-land-uav-ws",
+        "name": "指令降落 · 无人机对接协议",
+        "action_code": "act-uav-land",
         "protocol_version": "uav-ws",
         "instruction_code": "proto-uav-200103-land",
         "slots": (),
@@ -87,7 +119,11 @@ MAPPINGS = (
         "action_code": "action-647f9f172c3b489ea862a29c0e8396a2",
         "protocol_version": "uav-ws",
         "instruction_code": "proto-uav-200401-gas-on",
-        "slots": (),
+        "slots": (
+            {"slot": "gas_frequency", "path": "request.frequency"},
+            {"slot": "F-2b8fa8bda0b94663979c112af85325dc", "path": "request.parking"},
+            {"slot": "action_duration", "path": "request.time"},
+        ),
     },
     {
         "code": "map-gas-off-uav-ws",
@@ -95,9 +131,255 @@ MAPPINGS = (
         "action_code": "action-ab595a61ca164a2c9db74e1311e747a5",
         "protocol_version": "uav-ws",
         "instruction_code": "proto-uav-200402-gas-off",
+        "slots": (
+            {"slot": "F-2b8fa8bda0b94663979c112af85325dc", "path": "request.parking"},
+            {"slot": "action_duration", "path": "request.time"},
+        ),
+    },
+    {
+        "code": "map-battery-uav-ws",
+        "name": "电量检查 · 无人机对接协议",
+        "action_code": "act-robot-battery-check",
+        "protocol_version": "uav-ws",
+        "instruction_code": "proto-uav-500101-status",
+        "slots": (),
+    },
+    {
+        "code": "map-battery-robot-ws",
+        "name": "电量检查 · 机器人对接协议",
+        "action_code": "act-robot-battery-check",
+        "protocol_version": "robot-ws",
+        "instruction_code": "proto-robot-500101-status",
+        "slots": (),
+    },
+    {
+        "code": "map-land-dji-cloud",
+        "name": "无人机返航 · 大疆机场",
+        "action_code": "action-1022d966da2b45f7b73e776112e6884b",
+        "protocol_version": "dji-dock-1.16.1",
+        "instruction_code": "proto-dji-return-home",
         "slots": (),
     },
 )
+
+# 这里只保存协议正文已经明确排除的组合。
+# “另一份协议有指令”不能证明本协议不支持；证据不足的组合必须继续保持待确认。
+# 无人机对接协议 v0.5.2 的动作表只有 200101—200501 系列，不包含下面这些大疆航线和实时控制动作。
+UAV_WS_UNSUPPORTED_DJI_ACTION_CODES = (
+    "action-2b44a1f882f54438b6a1864e3636c889",
+    "action-1022d966da2b45f7b73e776112e6884b",
+    "customDirName",
+    "orientedShoot",
+    "rotateYaw",
+    "searchlightOff",
+    "megaphone",
+    "gimbalEvenlyRotate",
+    "recordPointCloudResume",
+    "searchlightOn",
+    "searchlightStrobe",
+    "recordPointCloudStart",
+    "panoShot",
+    "speakerTtsPlay",
+    "focus",
+    "lightModeOff",
+    "speakerPlayOnce",
+    "speakerPlayLoop",
+    "screenDrag",
+    "lightModeOn",
+    "frameZoom",
+    "cameraMode",
+    "zoom",
+    "focusMode",
+    "focusValue",
+    "screenSplit",
+    "iso",
+    "aperture",
+    "speakerVolumeSet",
+    "speakerTtsSet",
+    "irMeteringPoint",
+    "irMeteringMode",
+    "irMeteringArea",
+    "shutter",
+    "exposureSet",
+    "exposureMode",
+    "videoStorage",
+    "lightBrightnessSet",
+    "photoStorage",
+    "cameraAim",
+    "lightModeStrobe",
+    "lightModeAlternate",
+    "lightModeFastStrobe",
+    "speakerStop",
+    "lightFineRight",
+    "lightFineLeft",
+    "lightCalibrate",
+    "speakerReplay",
+    "gimbalReset",
+    "recordPointCloudStop",
+    "photoStop",
+    "hover",
+    "gimbalRotate",
+    "recordPointCloudPause",
+)
+
+# 大疆 Pilot 官方远程控制清单只列 Pilot DRC 相机和云台能力。
+# 下列机场自动起返航、机场 3 探照灯和喊话方法只见于 Dock DRC / Dock 航线文档。
+# https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/pilot-to-cloud/mqtt/dji-rc-plus-2/remote-control.html
+# https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dock-to-cloud/mqtt/dock/dock2/drc.html
+DJI_PILOT_UNSUPPORTED_DOCK_ACTION_CODES = (
+    "searchlightOff",
+    "searchlightOn",
+    "searchlightStrobe",
+    "lightModeOff",
+    "lightModeOn",
+    "lightModeStrobe",
+    "lightModeFastStrobe",
+    "lightModeAlternate",
+    "lightBrightnessSet",
+    "lightCalibrate",
+    "lightFineLeft",
+    "lightFineRight",
+    "speakerStop",
+    "speakerReplay",
+    "speakerVolumeSet",
+    "speakerPlayOnce",
+    "speakerPlayLoop",
+    "speakerTtsPlay",
+    "speakerTtsSet",
+    "megaphone",
+    "action-2b44a1f882f54438b6a1864e3636c889",
+    "action-1022d966da2b45f7b73e776112e6884b",
+    "action-647f9f172c3b489ea862a29c0e8396a2",
+    "action-ab595a61ca164a2c9db74e1311e747a5",
+    "act-uav-takeoff",
+    "act-uav-land",
+)
+
+# 200101/200103 与 200401/200402 属于东古 WebSocket 协议，不是大疆机场方法。
+DJI_DOCK_UNSUPPORTED_NON_DJI_ACTION_CODES = (
+    "action-647f9f172c3b489ea862a29c0e8396a2",
+    "action-ab595a61ca164a2c9db74e1311e747a5",
+    "act-uav-takeoff",
+    "act-uav-land",
+)
+
+UNSUPPORTED_MAPPINGS = (
+    {
+        "code": "unsupported-fly-to-point-robot-ws",
+        "action_code": "action-065340437bcb46788b7dc261fab81c63",
+        "protocol_version": "robot-ws",
+        "version_label": "机器人对接协议",
+    },
+    {
+        "code": "unsupported-takeoff-robot-ws",
+        "action_code": "action-2b44a1f882f54438b6a1864e3636c889",
+        "protocol_version": "robot-ws",
+        "version_label": "机器人对接协议",
+    },
+    {
+        "code": "unsupported-return-robot-ws",
+        "action_code": "action-1022d966da2b45f7b73e776112e6884b",
+        "protocol_version": "robot-ws",
+        "version_label": "机器人对接协议",
+    },
+    {
+        "code": "unsupported-gas-on-robot-ws",
+        "action_code": "action-647f9f172c3b489ea862a29c0e8396a2",
+        "protocol_version": "robot-ws",
+        "version_label": "机器人对接协议",
+    },
+    {
+        "code": "unsupported-gas-off-robot-ws",
+        "action_code": "action-ab595a61ca164a2c9db74e1311e747a5",
+        "protocol_version": "robot-ws",
+        "version_label": "机器人对接协议",
+    },
+    {
+        "code": "unsupported-gimbalRotate-robot-ws",
+        "action_code": "gimbalRotate",
+        "protocol_version": "robot-ws",
+        "version_label": "机器人对接协议",
+    },
+    {
+        "code": "unsupported-hold-robot-ws",
+        "action_code": "act-robot-hold",
+        "protocol_version": "robot-ws",
+        "version_label": "机器人对接协议",
+    },
+    {
+        "code": "unsupported-hold-uav-ws",
+        "action_code": "act-robot-hold",
+        "protocol_version": "uav-ws",
+        "version_label": "无人机对接协议",
+    },
+) + tuple(
+    {
+        "code": f"unsupported-{action_code}-uav-ws",
+        "action_code": action_code,
+        "protocol_version": "uav-ws",
+        "version_label": "无人机对接协议",
+    }
+    for action_code in UAV_WS_UNSUPPORTED_DJI_ACTION_CODES
+) + tuple(
+    {
+        "code": f"unsupported-{action_code}-dji-pilot-1-16-1",
+        "action_code": action_code,
+        "protocol_version": "dji-pilot-1.16.1",
+        "version_label": "大疆 Pilot 1.16.1",
+    }
+    for action_code in DJI_PILOT_UNSUPPORTED_DOCK_ACTION_CODES
+) + tuple(
+    {
+        "code": f"unsupported-{action_code}-dji-dock-1-16-1",
+        "action_code": action_code,
+        "protocol_version": "dji-dock-1.16.1",
+        "version_label": "大疆机场 1.16.1",
+    }
+    for action_code in DJI_DOCK_UNSUPPORTED_NON_DJI_ACTION_CODES
+)
+
+PROTOCOL_DISPATCH_ROLES = {
+    "act-ground-patrol": {
+        "uav-ws": "WAYLINE_ORCHESTRATION",
+        "robot-ws": "WAYLINE_ORCHESTRATION",
+        "dji-dock-1.16.1": "WAYLINE_ORCHESTRATION",
+        "dji-pilot-1.16.1": "WAYLINE_ORCHESTRATION",
+    },
+    "act-uav-wayline-prepare": {
+        "uav-ws": "WAYLINE_ORCHESTRATION",
+        "robot-ws": "WAYLINE_ORCHESTRATION",
+        "dji-dock-1.16.1": "WAYLINE_ORCHESTRATION",
+        "dji-pilot-1.16.1": "WAYLINE_ORCHESTRATION",
+    },
+    "action-c607b9038479421cadff4bb867205f0e": {
+        "uav-ws": "DEVICE_REPORT",
+        "robot-ws": "DEVICE_REPORT",
+        "dji-dock-1.16.1": "DEVICE_REPORT",
+        "dji-pilot-1.16.1": "DEVICE_REPORT",
+    },
+    "act-robot-self-check": {
+        "uav-ws": "PLATFORM_CHECK",
+        "robot-ws": "PLATFORM_CHECK",
+        "dji-dock-1.16.1": "PLATFORM_CHECK",
+        "dji-pilot-1.16.1": "PLATFORM_CHECK",
+    },
+    "action-4019fb901ff3411f99603b1f5cee5119": {
+        "dji-dock-1.16.1": "PLATFORM_CHECK",
+        "dji-pilot-1.16.1": "PLATFORM_CHECK",
+    },
+    "action-1a0df020d2064b94abd5bad0a6bba0d1": {
+        "dji-dock-1.16.1": "PLATFORM_CHECK",
+        "dji-pilot-1.16.1": "PLATFORM_CHECK",
+    },
+    "action-c6d414f4f24c442eb5947dccdf802b37": {
+        "dji-dock-1.16.1": "PLATFORM_CHECK",
+        "dji-pilot-1.16.1": "PLATFORM_CHECK",
+    },
+    "act-robot-battery-check": {
+        "dji-dock-1.16.1": "PLATFORM_CHECK",
+        "dji-pilot-1.16.1": "PLATFORM_CHECK",
+    },
+}
 
 FIELDS = (
     {
@@ -120,11 +402,25 @@ FIELDS = (
         "type": "ENUM",
         "description": "这条对照适用哪一份对接协议。一条对照只选一种，不要复用指令上的多选协议版本字段。",
         "index_strategy": "BTREE",
-        "options": "'[{\"label\":\"机器人对接协议\",\"value\":\"robot-ws\"},{\"label\":\"无人机对接协议\",\"value\":\"uav-ws\"}]'",
+        "options": "'[{\"label\":\"机器人对接协议\",\"value\":\"robot-ws\"},{\"label\":\"无人机对接协议\",\"value\":\"uav-ws\"},{\"label\":\"大疆机场 1.16.1\",\"value\":\"dji-dock-1.16.1\"},{\"label\":\"大疆 Pilot 1.16.1\",\"value\":\"dji-pilot-1.16.1\"}]'",
         "provider_code": "NULL",
         "semantic_type": "mapped_protocol_version",
         "max_relations": None,
         "sort": 20,
+        "required": True,
+        "searchable": True,
+    },
+    {
+        "code": "protocol_mapping_status",
+        "name": "处理状态",
+        "type": "ENUM",
+        "description": "动作在这份协议下的确认结果。CONFIGURED 表示已配指令；UNSUPPORTED 表示明确不支持。",
+        "index_strategy": "BTREE",
+        "options": "'[{\"label\":\"已配置\",\"value\":\"CONFIGURED\"},{\"label\":\"不支持\",\"value\":\"UNSUPPORTED\"}]'",
+        "provider_code": "NULL",
+        "semantic_type": "protocol_mapping_status",
+        "max_relations": None,
+        "sort": 30,
         "required": True,
         "searchable": True,
     },
@@ -138,8 +434,8 @@ FIELDS = (
         "provider_code": "dynamic-entity:data_protocol",
         "semantic_type": "data_protocol",
         "max_relations": 1,
-        "sort": 30,
-        "required": True,
+        "sort": 40,
+        "required": False,
         "searchable": True,
     },
     {
@@ -152,7 +448,7 @@ FIELDS = (
         "provider_code": "NULL",
         "semantic_type": "PARAM_SLOT_MAPPING",
         "max_relations": None,
-        "sort": 40,
+        "sort": 50,
         "required": False,
         "searchable": False,
     },
@@ -162,6 +458,7 @@ FIELDS = (
 def psql(sql: str) -> str:
     env = os.environ.copy()
     env.setdefault("PGPASSWORD", "Coolhomer")
+    env.setdefault("PGCLIENTENCODING", "UTF8")
     result = subprocess.run(
         [
             "psql",
@@ -180,6 +477,7 @@ def psql(sql: str) -> str:
         check=True,
         capture_output=True,
         text=True,
+        encoding="utf-8",
         env=env,
     )
     return result.stdout
@@ -225,8 +523,26 @@ def write_seed_sql() -> None:
                 slots=slots,
             )
         )
+    unsupported_values = [
+        "  ('{code}', '{action}', '{version}', '{label}')".format(
+            code=item["code"],
+            action=item["action_code"],
+            version=item["protocol_version"],
+            label=item["version_label"],
+        )
+        for item in UNSUPPORTED_MAPPINGS
+    ]
     field_sql = ",\n".join(field_values)
     mapping_sql = ",\n".join(mapping_values)
+    unsupported_sql = ",\n".join(unsupported_values)
+    unsupported_codes_sql = ", ".join(f"'{item['code']}'" for item in UNSUPPORTED_MAPPINGS)
+    dispatch_role_values = ",\n".join(
+        "  ('{code}', $${roles}$$)".format(
+            code=action_code,
+            roles=json.dumps(roles, ensure_ascii=False, separators=(",", ":")),
+        )
+        for action_code, roles in PROTOCOL_DISPATCH_ROLES.items()
+    )
     sql = f"""-- 指令协议对接：型号、对照字段、对照行。目录本体须已由创建接口建出。
 -- 界面保存对照只认型号已分配的引用字段，不查旧业务类型关联许可表。
 -- 不负责：开跑翻译、回写、对端协议。禁止发明没有协议指令的对接行。
@@ -318,6 +634,51 @@ DO UPDATE SET
   model_id = EXCLUDED.model_id, category_id = EXCLUDED.category_id,
   deleted = false, updater = 'seed', update_time = CURRENT_TIMESTAMP;
 
+-- 动作目录明确写出每份协议下由谁执行。页面和任务核对只读该字段，不再按动作名称猜。
+UPDATE ent_action_t1 a
+SET custom_fields = jsonb_set(
+      COALESCE(a.custom_fields, '{{}}'::jsonb) - 'protocol_dispatch_role_by_version',
+      '{{protocol_dispatch_role}}',
+      v.roles::jsonb,
+      true
+    ),
+    updater = 'seed',
+    update_time = CURRENT_TIMESTAMP
+FROM (VALUES
+{dispatch_role_values}
+) AS v(action_code, roles)
+WHERE a.deleted = false
+  AND a.tenant_id = {TENANT_ID}
+  AND a.code = v.action_code;
+
+-- 任务头尾是复合动作。协议页不把容器动作列成待确认。
+UPDATE ent_action_t1
+SET is_composite = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
+WHERE deleted = false
+  AND tenant_id = {TENANT_ID}
+  AND code IN ('act-uav-head', 'act-uav-tail', 'act-robot-head', 'act-robot-tail');
+
+-- 东古协议只接“指令起飞/指令降落”。旧种子误绑到大疆“一键起飞/一键返航”，必须停用。
+UPDATE ent_protocol_mapping_t1
+SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
+WHERE deleted = false
+  AND tenant_id = {TENANT_ID}
+  AND code IN ('map-takeoff-uav-ws', 'map-land-uav-ws');
+
+-- 飞向目标点的旧编码与正式种子重复。保留 map-arrive-uav-ws，避免网关读到同一协议动作两条对照。
+UPDATE ent_protocol_mapping_t1
+SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
+WHERE deleted = false
+  AND tenant_id = {TENANT_ID}
+  AND code = 'map-action-065340437bcb46788b7dc261fab81c63-uav-ws'
+  AND EXISTS (
+    SELECT 1
+    FROM ent_protocol_mapping_t1 canonical
+    WHERE canonical.deleted = false
+      AND canonical.tenant_id = {TENANT_ID}
+      AND canonical.code = 'map-arrive-uav-ws'
+  );
+
 INSERT INTO ent_protocol_mapping_t1 (
   tenant_id, entity_type_code, model_id, name, code, status, custom_fields, creator, deleted
 )
@@ -326,6 +687,7 @@ SELECT
   jsonb_build_object(
     'action_ref', jsonb_build_object('id', a.id, 'entityTypeCode', 'action'),
     'mapped_protocol_version', v.protocol_version,
+    'protocol_mapping_status', 'CONFIGURED',
     'protocol_instruction_ref', jsonb_build_object('id', p.id, 'entityTypeCode', 'data_protocol'),
     'param_slot_mapping_json', v.slots::jsonb
   ),
@@ -347,6 +709,7 @@ SET
   custom_fields = jsonb_build_object(
     'action_ref', jsonb_build_object('id', a.id, 'entityTypeCode', 'action'),
     'mapped_protocol_version', v.protocol_version,
+    'protocol_mapping_status', 'CONFIGURED',
     'protocol_instruction_ref', jsonb_build_object('id', p.id, 'entityTypeCode', 'data_protocol'),
     'param_slot_mapping_json', v.slots::jsonb
   ),
@@ -358,6 +721,68 @@ FROM (VALUES
 JOIN ent_action_t1 a ON a.deleted = false AND a.tenant_id = {TENANT_ID} AND a.code = v.action_code
 JOIN ent_data_protocol_t1 p ON p.deleted = false AND p.tenant_id = {TENANT_ID} AND p.code = v.instruction_code
 WHERE e.deleted = false AND e.tenant_id = {TENANT_ID} AND e.code = v.code;
+
+-- 只有协议资料明确写明不支持的组合才落 UNSUPPORTED。其余缺行仍是待确认。
+-- 种子证据被撤回时同步停用旧结论，禁止让错误的“不支持”继续留在运行时。
+UPDATE ent_protocol_mapping_t1
+SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
+WHERE deleted = false
+  AND tenant_id = {TENANT_ID}
+  AND creator = 'seed'
+  AND code LIKE 'unsupported-%'
+  AND code NOT IN ({unsupported_codes_sql});
+
+-- 协议正文已经明确不支持时，撤销该协议动作上旧的“已配置”结论。
+UPDATE ent_protocol_mapping_t1 e
+SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
+FROM (VALUES
+{unsupported_sql}
+) AS v(code, action_code, protocol_version, version_label)
+JOIN ent_action_t1 a
+  ON a.deleted = false AND a.tenant_id = {TENANT_ID} AND a.code = v.action_code
+WHERE e.deleted = false
+  AND e.tenant_id = {TENANT_ID}
+  AND e.code <> v.code
+  AND e.custom_fields->>'mapped_protocol_version' = v.protocol_version
+  AND (e.custom_fields->'action_ref'->>'id')::bigint = a.id;
+
+INSERT INTO ent_protocol_mapping_t1 (
+  tenant_id, entity_type_code, model_id, name, code, status, custom_fields, creator, deleted
+)
+SELECT
+  {TENANT_ID}, '{ENTITY_TYPE}', m.id, a.name || ' · ' || v.version_label || ' · 不支持',
+  v.code, 1,
+  jsonb_build_object(
+    'action_ref', jsonb_build_object('id', a.id, 'entityTypeCode', 'action'),
+    'mapped_protocol_version', v.protocol_version,
+    'protocol_mapping_status', 'UNSUPPORTED',
+    'protocol_instruction_ref', NULL,
+    'param_slot_mapping_json', '[]'::jsonb
+  ),
+  'seed', false
+FROM (VALUES
+{unsupported_sql}
+) AS v(code, action_code, protocol_version, version_label)
+JOIN dynamic_model m ON m.deleted = false AND m.tenant_id = {TENANT_ID} AND m.code = '{MODEL_CODE}'
+JOIN ent_action_t1 a ON a.deleted = false AND a.tenant_id = {TENANT_ID} AND a.code = v.action_code
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM ent_protocol_mapping_t1 e
+  WHERE e.deleted = false
+    AND e.tenant_id = {TENANT_ID}
+    AND e.custom_fields->>'mapped_protocol_version' = v.protocol_version
+    AND (e.custom_fields->'action_ref'->>'id')::bigint = a.id
+);
+
+-- 现有完整对照一次写明已配置。运行时不再把缺少状态猜成已配置。
+UPDATE ent_protocol_mapping_t1
+SET custom_fields = jsonb_set(custom_fields, '{{protocol_mapping_status}}', '"CONFIGURED"'::jsonb, true),
+    updater = 'seed',
+    update_time = CURRENT_TIMESTAMP
+WHERE deleted = false
+  AND tenant_id = {TENANT_ID}
+  AND custom_fields ? 'protocol_instruction_ref'
+  AND NOT (custom_fields ? 'protocol_mapping_status');
 
 INSERT INTO dynamic_entity_category_relation_t1 (
   tenant_id, category_id, entity_type_code, entity_id, domain, sort, creator, deleted
@@ -556,18 +981,32 @@ def verify() -> None:
     rows = psql(
         "SELECT e.code || '=' || e.name || ' action=' || (e.custom_fields->'action_ref'->>'id') "
         "|| ' version=' || (e.custom_fields->>'mapped_protocol_version') "
-        "|| ' instruction=' || (e.custom_fields->'protocol_instruction_ref'->>'id') "
+        "|| ' status=' || (e.custom_fields->>'protocol_mapping_status') "
+        "|| ' instruction=' || COALESCE(e.custom_fields->'protocol_instruction_ref'->>'id', '-') "
         "FROM dynamicbusiness.ent_protocol_mapping_t1 e "
         f"WHERE e.deleted = false AND e.tenant_id = {TENANT_ID} "
         "ORDER BY e.code;"
     )
     print(rows.rstrip() or "(no mapping rows)")
-    count = psql(
+    expected_codes = ",".join(f"'{item['code']}'" for item in MAPPINGS)
+    seeded_count = psql(
         "SELECT count(*) FROM dynamicbusiness.ent_protocol_mapping_t1 "
-        f"WHERE deleted = false AND tenant_id = {TENANT_ID};"
+        f"WHERE deleted = false AND tenant_id = {TENANT_ID} AND code IN ({expected_codes});"
     ).strip()
-    if int(count) != len(MAPPINGS):
-        raise SystemExit(f"对照行数量不对：期望 {len(MAPPINGS)}，实际 {count}")
+    if int(seeded_count) != len(MAPPINGS):
+        raise SystemExit(f"系统预置对照不完整：期望 {len(MAPPINGS)}，实际 {seeded_count}")
+    unsupported_codes = ",".join(f"'{item['code']}'" for item in UNSUPPORTED_MAPPINGS)
+    unsupported_count = psql(
+        "SELECT count(*) FROM dynamicbusiness.ent_protocol_mapping_t1 "
+        f"WHERE deleted = false AND tenant_id = {TENANT_ID} "
+        f"AND code IN ({unsupported_codes}) "
+        "AND custom_fields->>'protocol_mapping_status' = 'UNSUPPORTED' "
+        "AND custom_fields->'protocol_instruction_ref' = 'null'::jsonb;"
+    ).strip()
+    if int(unsupported_count) != len(UNSUPPORTED_MAPPINGS):
+        raise SystemExit(
+            f"协议不支持对照不完整：期望 {len(UNSUPPORTED_MAPPINGS)}，实际 {unsupported_count}"
+        )
     forbidden = psql(
         "SELECT e.code FROM dynamicbusiness.ent_protocol_mapping_t1 e "
         "JOIN dynamicbusiness.ent_action_t1 a "

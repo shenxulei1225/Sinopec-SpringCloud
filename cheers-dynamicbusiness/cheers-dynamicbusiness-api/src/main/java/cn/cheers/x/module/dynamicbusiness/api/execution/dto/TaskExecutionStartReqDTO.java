@@ -20,7 +20,7 @@ public class TaskExecutionStartReqDTO {
     /** 执行记录入口类型；默认 task_excution_record */
     private String entityTypeCode;
 
-    /** 执行记录型号 code（如 exec_patrol_round）；与 modelId 二选一 */
+    /** 执行记录型号 code（如 exec_patrol_record）；与 modelId 二选一 */
     private String modelCode;
 
     private Long modelId;

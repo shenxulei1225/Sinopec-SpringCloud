@@ -345,37 +345,7 @@ public class EntityDedicatedColumnService {
             throw new ServiceException(500, "专用表名非法");
         }
 
-        LinkedHashMap<String, Object> columns = new LinkedHashMap<>();
-        columns.put("tenant_id", entity.getTenantId() != null ? entity.getTenantId() : 0L);
-        columns.put("entity_type_code", entity.getEntityTypeCode());
-        columns.put("model_id", entity.getModelId());
-        columns.put("name", entity.getName());
-        columns.put("code", entity.getCode());
-        columns.put("status", entity.getStatus() != null ? entity.getStatus() : 1);
-        columns.put("parent_id", entity.getParentId() != null ? entity.getParentId() : 0L);
-        columns.put("sort", entity.getSort() != null ? entity.getSort() : 0);
-        columns.put("domain", entity.getDomain());
-        columns.put("custom_fields", entity.getCustomFields() == null
-                ? "{}"
-                : com.alibaba.fastjson2.JSON.toJSONString(entity.getCustomFields()));
-        columns.put("deleted", false);
-        Long loginUserId = cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId();
-        String operator = loginUserId != null ? String.valueOf(loginUserId) : null;
-        columns.put("creator", operator);
-        columns.put("updater", operator);
-
-        if (physicalColumns != null) {
-            for (Map.Entry<String, Object> e : physicalColumns.entrySet()) {
-                String col = e.getKey() == null ? "" : e.getKey().trim().toLowerCase(Locale.ROOT);
-                if (!SAFE_PHYSICAL_COLUMN.matcher(col).matches()) {
-                    throw new ServiceException(500, "固定列名非法: " + e.getKey());
-                }
-                if (columns.containsKey(col)) {
-                    continue;
-                }
-                columns.put(col, e.getValue());
-            }
-        }
+        LinkedHashMap<String, Object> columns = rowColumns(entity, physicalColumns);
 
         StringBuilder colSql = new StringBuilder();
         StringBuilder valSql = new StringBuilder();
@@ -405,6 +375,148 @@ public class EntityDedicatedColumnService {
         }
         entity.setId(id);
         return id;
+    }
+
+    /**
+     * 同一类型多行一次插入，返回的 id 与入参顺序一致。
+     * 每行都带固定列（例如所属场站）。不管业务关联和分类。
+     */
+    public List<Long> insertEntityRows(List<EntityDO> entities, List<Map<String, Object>> physicalColumnsList) {
+        if (CollectionUtils.isEmpty(entities)) {
+            return List.of();
+        }
+        if (physicalColumnsList == null || physicalColumnsList.size() != entities.size()) {
+            throw new ServiceException(400, "批量写入实体与固定列行数不一致");
+        }
+        String typeCode = entities.get(0).getEntityTypeCode();
+        if (StrUtil.isBlank(typeCode)) {
+            throw new ServiceException(400, "实体数据不能为空");
+        }
+        EntityTypeDO entityType = entityTypeMapper.selectByCode(typeCode.trim());
+        if (!isDedicated(entityType)) {
+            throw new ServiceException(400, "非专用表实体不能走固定列 INSERT");
+        }
+        String table = resolveTableName(entityType);
+        if (!table.matches("^[a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)?$")) {
+            throw new ServiceException(500, "专用表名非法");
+        }
+        List<Long> ids = new ArrayList<>(entities.size());
+        int chunkSize = 80;
+        for (int from = 0; from < entities.size(); from += chunkSize) {
+            int to = Math.min(from + chunkSize, entities.size());
+            ids.addAll(insertEntityRowChunk(
+                    table,
+                    entities.subList(from, to),
+                    physicalColumnsList.subList(from, to)));
+        }
+        return ids;
+    }
+
+    /**
+     * 只改这些行的树路径。插入时还没有主键，路径在插入后补上。
+     */
+    public void updateTreePaths(String entityTypeCode, Map<Long, String> pathById) {
+        if (StrUtil.isBlank(entityTypeCode) || pathById == null || pathById.isEmpty()) {
+            return;
+        }
+        EntityTypeDO entityType = entityTypeMapper.selectByCode(entityTypeCode.trim());
+        if (!isDedicated(entityType)) {
+            throw new ServiceException(400, "非专用表实体不能改树路径");
+        }
+        String table = resolveTableName(entityType);
+        if (!table.matches("^[a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)?$")) {
+            throw new ServiceException(500, "专用表名非法");
+        }
+        String sql = "UPDATE " + table + " SET tree_path = ? WHERE id = ? AND deleted = false";
+        List<Map.Entry<Long, String>> entries = new ArrayList<>(pathById.entrySet());
+        jdbcTemplate.batchUpdate(sql, entries, 200, (ps, entry) -> {
+            ps.setString(1, entry.getValue());
+            ps.setLong(2, entry.getKey());
+        });
+    }
+
+    private List<Long> insertEntityRowChunk(
+            String table,
+            List<EntityDO> entities,
+            List<Map<String, Object>> physicalColumnsList) {
+        List<LinkedHashMap<String, Object>> rows = new ArrayList<>(entities.size());
+        for (int i = 0; i < entities.size(); i++) {
+            rows.add(rowColumns(entities.get(i), physicalColumnsList.get(i)));
+        }
+        List<String> keys = new ArrayList<>(rows.get(0).keySet());
+        StringBuilder sql = new StringBuilder("INSERT INTO ").append(table).append(" (");
+        sql.append(String.join(", ", keys));
+        sql.append(", create_time, update_time) VALUES ");
+        List<Object> args = new ArrayList<>(rows.size() * keys.size());
+        for (int r = 0; r < rows.size(); r++) {
+            if (r > 0) {
+                sql.append(", ");
+            }
+            sql.append("(");
+            LinkedHashMap<String, Object> row = rows.get(r);
+            if (!row.keySet().equals(rows.get(0).keySet())) {
+                throw new ServiceException(500, "批量写入的列不一致");
+            }
+            for (int c = 0; c < keys.size(); c++) {
+                if (c > 0) {
+                    sql.append(", ");
+                }
+                String key = keys.get(c);
+                Object value = row.get(key);
+                boolean jsonb = "custom_fields".equals(key)
+                        || value instanceof Map<?, ?>
+                        || value instanceof List<?>;
+                if (jsonb && !(value instanceof String)) {
+                    value = com.alibaba.fastjson2.JSON.toJSONString(value);
+                }
+                sql.append(jsonb ? "?::jsonb" : "?");
+                args.add(value);
+            }
+            sql.append(", CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)");
+        }
+        sql.append(" RETURNING id");
+        List<Long> ids = jdbcTemplate.query(sql.toString(), (rs, rowNum) -> rs.getLong(1), args.toArray());
+        if (ids.size() != entities.size()) {
+            throw new ServiceException(500, "批量写入实体失败：返回主键数量不对");
+        }
+        for (int i = 0; i < entities.size(); i++) {
+            entities.get(i).setId(ids.get(i));
+        }
+        return ids;
+    }
+
+    private static LinkedHashMap<String, Object> rowColumns(EntityDO entity, Map<String, Object> physicalColumns) {
+        LinkedHashMap<String, Object> columns = new LinkedHashMap<>();
+        columns.put("tenant_id", entity.getTenantId() != null ? entity.getTenantId() : 0L);
+        columns.put("entity_type_code", entity.getEntityTypeCode());
+        columns.put("model_id", entity.getModelId());
+        columns.put("name", entity.getName());
+        columns.put("code", entity.getCode());
+        columns.put("status", entity.getStatus() != null ? entity.getStatus() : 1);
+        columns.put("parent_id", entity.getParentId() != null ? entity.getParentId() : 0L);
+        columns.put("sort", entity.getSort() != null ? entity.getSort() : 0);
+        columns.put("domain", entity.getDomain());
+        columns.put("custom_fields", entity.getCustomFields() == null
+                ? "{}"
+                : com.alibaba.fastjson2.JSON.toJSONString(entity.getCustomFields()));
+        columns.put("deleted", false);
+        Long loginUserId = cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId();
+        String operator = loginUserId != null ? String.valueOf(loginUserId) : null;
+        columns.put("creator", operator);
+        columns.put("updater", operator);
+        if (physicalColumns != null) {
+            for (Map.Entry<String, Object> e : physicalColumns.entrySet()) {
+                String col = e.getKey() == null ? "" : e.getKey().trim().toLowerCase(Locale.ROOT);
+                if (!SAFE_PHYSICAL_COLUMN.matcher(col).matches()) {
+                    throw new ServiceException(500, "固定列名非法: " + e.getKey());
+                }
+                if (columns.containsKey(col)) {
+                    continue;
+                }
+                columns.put(col, e.getValue());
+            }
+        }
+        return columns;
     }
 
     /**

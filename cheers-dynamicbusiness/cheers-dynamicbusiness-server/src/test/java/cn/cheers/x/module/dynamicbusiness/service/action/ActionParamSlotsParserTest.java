@@ -10,6 +10,35 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class ActionParamSlotsParserTest {
 
     @Test
+    void parsesPlatformDefinedSourceGroupsByExecutionMeans() {
+        Map<String, Object> raw = Map.of(
+                "version", 2,
+                "methods", List.of(Map.of(
+                        "executionMeans", "UAV",
+                        "fields", List.of(
+                                Map.of("fieldCode", "photoMode", "valueSource", "USER"),
+                                Map.of("fieldCode", "targetX", "valueSource", "INTERACTION"),
+                                Map.of(
+                                        "fieldCode", "actionUUID",
+                                        "valueSource", "SYSTEM",
+                                        "generator", "UUID_V4")
+                        )
+                ))
+        );
+
+        ActionParamSlotsParser.Snapshot snapshot = ActionParamSlotsParser.parse(raw);
+
+        assertEquals(
+                List.of("USER", "INTERACTION", "SYSTEM"),
+                snapshot.paramSourcesByMeans().get("UAV").stream()
+                        .map(ActionParamSlotsParser.SourceField::sourceKind)
+                        .toList());
+        assertEquals(
+                "UUID_V4",
+                snapshot.paramSourcesByMeans().get("UAV").get(2).generator());
+    }
+
+    @Test
     void methodsShape_keepsUavSlotsAndMergedList() {
         String json = """
                 {
@@ -31,6 +60,26 @@ class ActionParamSlotsParserTest {
     }
 
     @Test
+    void twoUavModels_mergeFieldCodesForTheMeans() {
+        Map<String, Object> raw = Map.of(
+                "version", 2,
+                "methods", List.of(
+                        Map.of(
+                                "executionMeans", "UAV",
+                                "equipmentModelId", 12,
+                                "fields", List.of(Map.of("fieldCode", "gimbalPitchRotateAngle"))),
+                        Map.of(
+                                "executionMeans", "UAV",
+                                "equipmentModelId", 34,
+                                "fields", List.of(Map.of("fieldCode", "angleLevel")))
+                ));
+        ActionParamSlotsParser.Snapshot snapshot = ActionParamSlotsParser.parse(raw);
+        assertEquals(
+                List.of("gimbalPitchRotateAngle", "angleLevel"),
+                snapshot.paramSlotsByMeans().get("UAV"));
+    }
+
+    @Test
     void legacyTopLevelFields_stillWork() {
         ActionParamSlotsParser.Snapshot snapshot = ActionParamSlotsParser.parse(
                 Map.of("version", 1, "fields", List.of(Map.of("fieldCode", "photo_count"))));
@@ -43,5 +92,15 @@ class ActionParamSlotsParserTest {
         ActionParamSlotsParser.Snapshot snapshot = ActionParamSlotsParser.parse(Map.of("version", 2));
         assertEquals(List.of(), snapshot.paramSlots());
         assertEquals(Map.of(), snapshot.paramSlotsByMeans());
+    }
+
+    @Test
+    void unknownSourceGroup_doesNotBecomeRuntimeContract() {
+        ActionParamSlotsParser.Snapshot snapshot = ActionParamSlotsParser.parse(
+                Map.of("fields", List.of(Map.of(
+                        "fieldCode", "photoMode",
+                        "valueSource", "DEVICE_GUESS"))));
+
+        assertEquals("USER", snapshot.paramSources().get(0).sourceKind());
     }
 }

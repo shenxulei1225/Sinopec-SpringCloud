@@ -15,9 +15,9 @@ import java.util.Map;
 
 /**
  * 把结构化上报转成采集样本：打身份、转发字段、有则带执行记录 id。
- * <p>负责：巡检等 JSON 应用报文的核对前转发。
- * <p>不负责：按字段说明做协议合格核对（交给 {@link CollectionQualifyService}）；PLC 点表换算。
- * <p>禁止：执行记录 id 空了用设备编号猜；在本类写成合格。
+ * <p>负责：巡检等 JSON 应用报文的核对前转发。定时状态和步骤结果先认 {@code packages} 与 {@code result} 两个外层名。
+ * <p>不负责：按字段说明做协议合格核对（交给 {@link CollectionQualifyService}）；PLC 点表换算；改模拟器。
+ * <p>禁止：执行记录 id 空了用设备编号猜；在本类写成合格；两个外层字段都有还互相覆盖。
  */
 @Component
 @RequiredArgsConstructor
@@ -27,6 +27,7 @@ public class CollectionSampleAssembler {
 
     /**
      * 结构化上报先解析转发。正文必须是对象；否则不合格。
+     * 定时状态、步骤结果若只带了另一个外层名，先补到下游正在读的字段，原文里的那个键还留着。
      * 解析成功时状态仍是未核，由 {@link CollectionQualifyService} 再按说明书判定。
      */
     public CollectionSample fromStructuredUplink(
@@ -56,6 +57,7 @@ public class CollectionSampleAssembler {
         if (fields == null) {
             fields = new LinkedHashMap<>();
         }
+        fields = UplinkBodyKeyAlias.acceptEitherCarrier(opcode, fields);
         return new CollectionSample(
                 channelCode,
                 deviceId,

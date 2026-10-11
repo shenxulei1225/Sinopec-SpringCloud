@@ -27,6 +27,9 @@ public class FieldRulesUpdateReqVO {
     @Schema(description = "默认值", example = "默认值")
     private String defaultValue;
 
+    @Schema(description = "显示别名。空字符串表示清掉", example = "俯仰角")
+    private String alias;
+
     @Schema(description = "业务规则（JSON格式，包含范围、格式等验证规则）", example = "{\"min\": 0, \"max\": 100}")
     private String validationRules;
 

@@ -2,6 +2,7 @@ package cn.cheers.x.module.dynamicbusiness.service.action;
 
 import cn.cheers.x.module.dynamicbusiness.controller.admin.action.vo.ActionListItemRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.action.vo.ActionListReqVO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.action.ActionEnablementMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
 import org.junit.jupiter.api.Test;
@@ -9,9 +10,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
+import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -48,5 +53,36 @@ class ActionQueryServiceImplTest {
         assertTrue(result.isEmpty());
         verify(entityRepository, never()).findByIdsWithDedicatedBaseFields(anyList(), anyString());
         verify(entityRepository, never()).findPageIds(any());
+    }
+
+    @Test
+    void toItem_returnsActionOwnershipContractFromDedicatedFields() {
+        EntityDO entity = actionEntity(Map.of(
+                ActionFieldCodes.ACTION_DOMAIN, "INTELLIGENT_ANALYSIS",
+                ActionFieldCodes.ANALYSIS_CAPABILITY_ID, 41L));
+
+        ActionListItemRespVO item = ReflectionTestUtils.invokeMethod(
+                ActionQueryServiceImpl.class, "toItem", entity);
+
+        assertEquals("INTELLIGENT_ANALYSIS", item.getActionDomain());
+        assertEquals(41L, item.getAnalysisCapabilityId());
+    }
+
+    @Test
+    void toItem_keepsMissingActionOwnershipContractNull() {
+        ActionListItemRespVO item = ReflectionTestUtils.invokeMethod(
+                ActionQueryServiceImpl.class, "toItem", actionEntity(Map.of()));
+
+        assertNull(item.getActionDomain());
+        assertNull(item.getAnalysisCapabilityId());
+    }
+
+    private static EntityDO actionEntity(Map<String, Object> dedicatedFields) {
+        return EntityDO.builder()
+                .id(1L)
+                .code("act-analysis")
+                .name("智能分析")
+                .dedicatedBaseFieldValues(dedicatedFields)
+                .build();
     }
 }

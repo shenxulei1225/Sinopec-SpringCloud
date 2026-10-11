@@ -10,9 +10,13 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * WebSocket 通讯实现：只负责写出文本，不解析 opcode。
+ * <p>同一台设备的写出排成一队。心跳回显和页面下发不能同时写同一条连接，否则连接会被关掉。
+ * <p>写出失败只返回失败，不在这里关掉连接。
  */
 @Slf4j
 @Component
@@ -21,6 +25,8 @@ public class WebSocketDeviceTransport implements DeviceTransport {
 
     private final DeviceSessionRegistry sessionRegistry;
     private final ProtocolMonitorHub protocolMonitorHub;
+    /** 按设备排队写出。不要锁 WebSocket 会话本身，否则会和收包线程互相等待。 */
+    private final ConcurrentMap<String, Object> writeLocks = new ConcurrentHashMap<>();
 
     @Override
     public boolean sendText(String deviceId, String text) {
@@ -29,11 +35,18 @@ public class WebSocketDeviceTransport implements DeviceTransport {
             log.warn("[device-protocol] 发送失败，设备不在线 deviceId={}", deviceId);
             return false;
         }
+        Object lock = writeLocks.computeIfAbsent(deviceId, ignored -> new Object());
         try {
-            session.sendMessage(new TextMessage(text));
+            synchronized (lock) {
+                if (!session.isOpen()) {
+                    log.warn("[device-protocol] 发送失败，设备不在线 deviceId={}", deviceId);
+                    return false;
+                }
+                session.sendMessage(new TextMessage(text));
+            }
             protocolMonitorHub.copyOutbound(deviceId, text);
             return true;
-        } catch (IOException e) {
+        } catch (IOException | IllegalStateException e) {
             log.warn("[device-protocol] 发送异常 deviceId={}", deviceId, e);
             return false;
         }

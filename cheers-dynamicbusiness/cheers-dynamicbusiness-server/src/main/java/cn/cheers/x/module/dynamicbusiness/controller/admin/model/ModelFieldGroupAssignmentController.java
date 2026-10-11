@@ -4,6 +4,7 @@ import cn.cheers.x.framework.apilog.core.annotation.ApiAccessLog;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldAssignmentRespVO;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelFieldGroupAssignmentService;
+import cn.cheers.x.module.dynamicbusiness.service.model.ModelFieldGroupService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,6 +40,9 @@ public class ModelFieldGroupAssignmentController {
 
     @Resource
     private ModelFieldGroupAssignmentService modelFieldGroupAssignmentService;
+
+    @Resource
+    private ModelFieldGroupService modelFieldGroupService;
 
     @PostMapping("/assign")
     @Operation(
@@ -94,6 +98,28 @@ public class ModelFieldGroupAssignmentController {
             @Parameter(description = "分组ID", required = true) @RequestParam Long groupId,
             @RequestBody List<Long> fieldIds) {
         modelFieldGroupAssignmentService.reorderGroupFields(modelId, groupId, fieldIds);
+        return success(true);
+    }
+
+    @PostMapping("/display-fields")
+    @Operation(summary = "保存这一详情页勾选要显示的型号字段")
+    @ApiAccessLog(operateType = UPDATE)
+    @PreAuthorize("@ss.hasPermission('system:model-field-group-assignment:update')")
+    public CommonResult<Boolean> saveShownSourceFields(
+            @Parameter(description = "当前详情所属型号") @RequestParam Long modelId,
+            @Parameter(description = "详情上的引用项。和分组二选一") @RequestParam(required = false) Long fieldId,
+            @Parameter(description = "详情上的分组。和字段二选一") @RequestParam(required = false) Long groupId,
+            @RequestBody List<Long> sourceFieldIds) {
+        boolean hasField = fieldId != null;
+        boolean hasGroup = groupId != null;
+        if (hasField == hasGroup) {
+            return CommonResult.error(400, "请指定详情上的这一项或这一块");
+        }
+        if (hasField) {
+            modelFieldGroupService.saveShownSourceFields(modelId, fieldId, sourceFieldIds);
+        } else {
+            modelFieldGroupService.saveGroupShownSourceFields(modelId, groupId, sourceFieldIds);
+        }
         return success(true);
     }
 }

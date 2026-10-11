@@ -148,8 +148,9 @@ public class EntitySyncServiceImpl implements EntitySyncService {
             throw new EntitySyncException("Entity 不能为空");
         }
 
-        Long entityId = entity.getId();
-        Long modelId = entity.getModelId();
+        EntityDO persisted = reloadPersistedEntity(entity);
+        Long entityId = persisted.getId();
+        Long modelId = persisted.getModelId() != null ? persisted.getModelId() : entity.getModelId();
 
         log.debug("开始同步 Entity 到索引表: entityId={}, modelId={}", entityId, modelId);
 
@@ -161,12 +162,12 @@ public class EntitySyncServiceImpl implements EntitySyncService {
                 return;
             }
 
-            Map<String, Object> customFieldsMap = entity.getCustomFields() != null
-                    ? entity.getCustomFields() : Map.of();
+            Map<String, Object> customFieldsMap = persisted.getCustomFields() != null
+                    ? persisted.getCustomFields() : Map.of();
 
             entityFieldIndexMapper.deleteByEntityId(entityId);
 
-            List<EntityFieldIndexDO> indexRecords = buildIndexRecords(entity, indexableFields, customFieldsMap);
+            List<EntityFieldIndexDO> indexRecords = buildIndexRecords(persisted, indexableFields, customFieldsMap);
             if (!indexRecords.isEmpty()) {
                 entityFieldIndexMapper.insertBatch(indexRecords, EntityFieldIndexRecordBuilder.INDEX_INSERT_BATCH_SIZE);
                 log.debug("同步 Entity 到索引表成功: entityId={}, fieldCount={}", entityId, indexRecords.size());
@@ -359,6 +360,26 @@ public class EntitySyncServiceImpl implements EntitySyncService {
     }
 
     // ==================== 私有辅助方法 ====================
+
+    /**
+     * 查询索引用已经落库的扩展字段写。读不到已保存的行时才用事件里的对象。
+     */
+    private EntityDO reloadPersistedEntity(EntityDO eventEntity) {
+        if (eventEntity == null || eventEntity.getId() == null
+                || eventEntity.getEntityTypeCode() == null
+                || eventEntity.getEntityTypeCode().isBlank()) {
+            return eventEntity;
+        }
+        EntityDO loaded = entityRepository.findById(
+                eventEntity.getId(), eventEntity.getEntityTypeCode().trim());
+        if (loaded == null) {
+            return eventEntity;
+        }
+        if (loaded.getModelId() == null) {
+            loaded.setModelId(eventEntity.getModelId());
+        }
+        return loaded;
+    }
 
     /**
      * 该型号应写入索引表的扩展字段：可搜索、可筛选、可排序任一为真。

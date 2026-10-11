@@ -30,7 +30,7 @@ public class DeviceProtocolCapabilityController {
     }
 
     /**
-     * 翻译后若设备在线则下发 500104。
+     * 翻译后若设备在线则按对照顺序下发。不发启动执行。
      */
     @PostMapping("/dispatch")
     public CapabilityDispatchResult dispatch(@RequestBody DeviceMissionPlan plan) {

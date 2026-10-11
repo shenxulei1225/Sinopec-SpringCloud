@@ -137,6 +137,8 @@ get_service_path() {
         twin|cheers-twin) echo "cheers-twin/cheers-twin-server" ;;
         inspection) echo "cheers-inspection-task/cheers-inspection-task-server" ;;
         protocol|device-protocol|protocol-gateway|cheers-device-protocol-gateway) echo "cheers-device-protocol-gateway/cheers-device-protocol-gateway-server" ;;
+        simulator|protocol-simulator) echo "cheers-device-protocol-gateway/cheers-device-protocol-simulator" ;;
+        robot) echo "cheers-device-protocol-gateway/cheers-device-protocol-simulator" ;;
         dynamic) echo "cheers-dynamicbusiness/cheers-dynamicbusiness-server" ;;
         resource|platform|bmp-resource) echo "cheers-business-middle-platform/cheers-resource-server" ;;
         runtime|platform-runtime|runtime-l4|bmp-runtime) echo "cheers-business-middle-platform/cheers-runtime-server" ;;
@@ -176,6 +178,8 @@ get_service_port() {
         twin|cheers-twin) echo "15094" ;;
         inspection) echo "15095" ;;
         protocol|device-protocol|protocol-gateway|cheers-device-protocol-gateway) echo "8095" ;;
+        simulator|protocol-simulator) echo "8301" ;;
+        robot) echo "8302" ;;
         dynamic) echo "15096" ;;
         resource|platform|bmp-resource) echo "15098" ;;
         runtime|platform-runtime|runtime-l4|bmp-runtime) echo "15099" ;;
@@ -203,6 +207,8 @@ canonical_service_name() {
         twin|cheers-twin) echo "twin" ;;
         inspection) echo "inspection" ;;
         protocol|device-protocol|protocol-gateway|cheers-device-protocol-gateway) echo "protocol" ;;
+        simulator|protocol-simulator) echo "simulator" ;;
+        robot) echo "robot" ;;
         dynamic) echo "dynamic" ;;
         resource|platform|bmp-resource) echo "resource" ;;
         runtime|platform-runtime|runtime-l4|bmp-runtime) echo "runtime" ;;
@@ -229,12 +235,12 @@ BMP_SERVICES=(
 BMP_PROCESS_SERVICES=(resource policy capability runtime orchestration)
 BMP_PATH_SERVICES=(topology routing)
 ALL_DUTY_SERVICES=("${BASE_SERVICES[@]}" "${WORKFLOW_SERVICES[@]}" "${BIZ_SERVICES[@]}" "${BMP_SERVICES[@]}")
-KNOWN_SERVICES=("${ALL_DUTY_SERVICES[@]}")
+KNOWN_SERVICES=("${ALL_DUTY_SERVICES[@]}" simulator robot)
 CORE_START_SERVICES=("${ALL_DUTY_SERVICES[@]}")
 ALL_START_SERVICES=("${ALL_DUTY_SERVICES[@]}")
 STOP_SERVICES=(
     gateway infra system bpm
-    dynamic inspection twin protocol
+    dynamic inspection twin protocol simulator robot
     routing topology orchestration runtime policy capability resource
     alarm work-order maintenance scene-3d gis
 )
@@ -306,7 +312,7 @@ start_service() {
     # 一律从仓库根 -pl <相对路径> -am，才能拉到跨父工程依赖（如 orchestration → emergency-api）
     case "$service_name" in
         resource|runtime|orchestration|policy|capability|topology|routing|\
-        alarm|work-order|maintenance|scene-3d|gis|twin|dynamic|inspection|protocol|bpm|system)
+        alarm|work-order|maintenance|scene-3d|gis|twin|dynamic|inspection|protocol|simulator|robot|bpm|system)
             echo -e "${BLUE}   安装 ${service_path} 及依赖到 ${MAVEN_REPO_LOCAL}（-am install -DskipTests）...${NC}"
             (
                 cd "$SCRIPT_DIR" || exit 1
@@ -333,7 +339,14 @@ start_service() {
     # 后台启动；disown 避免启动脚本 shell 退出时 SIGHUP 带走 Maven/Spring Boot
     # nohup 不能调用 shell 函数，须直接写 mvn + -Dmaven.repo.local（所有服务共用）
     # maven.test.skip：本地启动不编/不跑测试，避免测试缺类挡住 spring-boot:run
-    nohup mvn -Dmaven.repo.local="$MAVEN_REPO_LOCAL" spring-boot:run -Dspring-boot.run.profiles=local -Dmaven.test.skip=true > "$log_file" 2>&1 &
+    # 机器人与无人机共用同一模块，编译目录分开，两个进程可以同时开着
+    local run_profiles="local"
+    local extra_mvn=()
+    if [ "$service_name" = "robot" ]; then
+        run_profiles="robot"
+        extra_mvn+=(-Dproject.build.directory=target/robot)
+    fi
+    nohup mvn -Dmaven.repo.local="$MAVEN_REPO_LOCAL" spring-boot:run "${extra_mvn[@]}" -Dspring-boot.run.profiles="$run_profiles" -Dmaven.test.skip=true > "$log_file" 2>&1 &
     local pid=$!
     disown -h "$pid" 2>/dev/null || true
     
@@ -572,6 +585,8 @@ show_services() {
     echo "  ./start-microservices.sh bmp        # 中台全部"
     echo "  ./start-microservices.sh all        # 底盘 + 工作流 + 动态业务 + 中台"
     echo "  ./start-microservices.sh resource   # 只开组件配置（改配置表用这个）"
+    echo "  ./start-microservices.sh simulator  # 无人机协议模拟器，连协议网关 8095"
+    echo "  ./start-microservices.sh robot      # 机器人协议模拟器，连协议网关 8095"
     echo "  ./start-microservices.sh stop-base|stop-biz|stop-bmp|stop-all"
     echo "  ./start-microservices.sh status"
     echo "  ./start-microservices.sh logs resource"
@@ -593,6 +608,8 @@ show_services() {
     printf "%-16s %-58s %-8s\n" "inspection" "巡检任务" "15095"
     printf "%-16s %-58s %-8s\n" "twin" "孪生" "15094"
     printf "%-16s %-58s %-8s\n" "protocol" "设备协议网关    cheers-device-protocol-gateway-server" "8095"
+    printf "%-16s %-58s %-8s\n" "simulator" "无人机协议模拟器 cheers-device-protocol-simulator" "8301"
+    printf "%-16s %-58s %-8s\n" "robot" "机器人协议模拟器  cheers-device-protocol-simulator" "8302"
     printf "%-16s %-58s %-8s\n" "resource" "中台·组件配置   cheers-resource-server" "15098"
     printf "%-16s %-58s %-8s\n" "policy" "中台·过程策略" "15105"
     printf "%-16s %-58s %-8s\n" "capability" "中台·过程能力" "15106"

@@ -95,6 +95,19 @@ public interface EntityCoreService {
     EntityDO get(Long id, String entityTypeCode);
 
     /**
+     * 按业务编码精确取一条未删除实体（只含本体列）。
+     * 参数清单等固定列不在这一行里；要完整档案走详情装配。
+     *
+     * @return 命中行；编码为空或不存在返回 null
+     */
+    EntityDO findByExactCode(String entityTypeCode, String code);
+
+    /**
+     * 这个编码是否只剩已删除行。还有未删除的同编码时返回 false。
+     */
+    boolean isDeletedByCode(String entityTypeCode, String code);
+
+    /**
      * 按条件查询实体列表（本体）。
      *
      * @param entityTypeCode 业务类型编码

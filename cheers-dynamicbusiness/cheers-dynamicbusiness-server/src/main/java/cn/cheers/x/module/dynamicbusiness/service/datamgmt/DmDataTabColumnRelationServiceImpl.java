@@ -68,12 +68,15 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
 
     /**
      * 筛选边空选模式（互斥，落在 enabledInteractions）：
-     * filterEmptySkip = 上游未点则本维不参与；filterEmptyVisible = 未点则按上游可见项 id 参与。
+     * filterEmptySkip = 上游未点则本维不参与；
+     * filterEmptyVisible = 未点则按上游可见项 id 参与；
+     * filterEmptyBlank = 上游未点则下游列表为空，点中一行后才按这一行收窄。
      * 旧数据空数组与 skip 同语义；前端新边默认写 skip。
      */
     private static final Set<String> FILTER_EMPTY_SELECTION_MODES = Set.of(
             "filterEmptySkip",
-            "filterEmptyVisible"
+            "filterEmptyVisible",
+            "filterEmptyBlank"
     );
 
     private static final Set<String> ALLOWED_EDGE_ACTIONS = Set.of("filter", "write", "detail_follow");
@@ -464,7 +467,7 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
     }
 
     /**
-     * 筛选边空选模式归一：互斥只留一项；visible 优先于 skip；无有效项则空数组。
+     * 筛选边空选模式归一：互斥只留一项；blank 优先于 visible，visible 优先于 skip；无有效项则空数组。
      */
     private List<String> normalizeFilterEmptySelectionMode(List<String> raw) {
         if (raw == null || raw.isEmpty()) {
@@ -472,6 +475,7 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
         }
         boolean wantSkip = false;
         boolean wantVisible = false;
+        boolean wantBlank = false;
         for (String item : raw) {
             if (!StringUtils.hasText(item)) {
                 continue;
@@ -485,10 +489,17 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
                 wantVisible = true;
                 continue;
             }
+            if ("filterEmptyBlank".equals(code)) {
+                wantBlank = true;
+                continue;
+            }
             if (ALLOWED_WRITE_INTERACTIONS.contains(code)) {
                 throw new ServiceException(400, "筛选边不可配置写关联交互: " + code);
             }
             throw new ServiceException(400, "无效的筛选边空选模式: " + code);
+        }
+        if (wantBlank) {
+            return List.of("filterEmptyBlank");
         }
         if (wantVisible) {
             return List.of("filterEmptyVisible");

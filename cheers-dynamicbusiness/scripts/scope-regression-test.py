@@ -37,15 +37,15 @@ TENANT_ID = os.environ.get("SCOPE_TEST_TENANT_ID", "1")
 
 # 与 dynamic_entity_task_scope_regression.sql（油库样例）对齐的期望值
 EXPECT = {
-    # task storage
-    "models_all": 8,
-    "models_patrol_scope": 5,
-    "models_maint_scope": 2,
+    # task storage：只保留 patrol_task（界面名称「巡检任务」）
+    "models_all": 1,
+    "models_patrol_scope": 1,
+    "models_maint_scope": 0,
     "entities_all": 22,
-    "entities_patrol_scope": 15,  # 5+3+3+2+2
-    "entities_maint_scope": 5,
+    "entities_patrol_scope": 22,
+    "entities_maint_scope": 0,
     "entities_empty_scope": 0,
-    "entities_general_model": 2,
+    "entities_general_model": 0,
     # task_excution_record storage
     "record_models_all": 3,
     "record_models_patrol_scope": 2,
@@ -168,7 +168,6 @@ def main() -> int:
         return 1
 
     patrol_model = next((m for m in list_models("task", "巡检") if m.get("code") == "patrol_task"), None)
-    general_model = next((m for m in list_models("task") if m.get("code") == "general_station_task"), None)
 
     cases: list[Case] = []
 
@@ -265,7 +264,7 @@ def main() -> int:
                 "resultShape": "PAGE",
             }
         )
-        return assert_eq(total, 5, "显式 modelIds 优先于 domain")
+        return assert_eq(total, EXPECT["entities_all"], "显式 modelIds 优先于 domain")
 
     def p0_dm_category_scope():
         total = query_total(
@@ -280,7 +279,7 @@ def main() -> int:
                 "resultShape": "PAGE",
             }
         )
-        # 日常分类 + 巡检 Scope：分类挂接 8 条 + patrol_task 未挂分类 910004/910005
+        # 日常分类挂接 10 条，业务域都是巡检
         return assert_eq(total, 10, "DATA_MGMT 分类∩Scope")
 
     def p0_dm_uncategorized_scope():
@@ -295,8 +294,8 @@ def main() -> int:
                 "resultShape": "PAGE",
             }
         )
-        # 未挂分类 + 巡检 Scope：仅 patrol_adhoc 2 条（910106/910107）
-        return assert_eq(total, 2, "DATA_MGMT 未分类+巡检")
+        # 未挂分类：910004、910005、910106、910107、910204、910205
+        return assert_eq(total, 6, "DATA_MGMT 未分类+巡检")
 
     def p0_pattern_ac_category_scope():
         total = query_total(
@@ -327,8 +326,8 @@ def main() -> int:
                 "resultShape": "PAGE",
             }
         )
-        # Pattern B 按分类下模型汇总，当前未应用 Scope 过滤 → 含 general 共 12 条
-        return assert_eq(total, 12, "PATTERN_B 分类+巡检（当前未过滤 Scope）")
+        # 日常分类下只有 patrol_task，该型号上的任务都会被算进来
+        return assert_eq(total, EXPECT["entities_all"], "PATTERN_B 分类+巡检（当前未过滤 Scope）")
 
     cases += [
         Case("P0", "PATTERN_ABC_ALL + 巡检", p0_abc_all_patrol),
@@ -483,7 +482,7 @@ def main() -> int:
             params={"categoryTypeCode": "task", "entityTypeCode": "task", "domain": "巡检"},
         ).get("data") or []
         codes = {m.get("code") for m in lst}
-        ok = "patrol_adhoc" in codes and "patrol_task" not in codes
+        ok = "patrol_task" not in codes and "patrol_adhoc" not in codes
         return ok, f"uncategorized patrol models={codes}"
 
     def p1_maint_category_entities():
@@ -499,7 +498,7 @@ def main() -> int:
                 "resultShape": "PAGE",
             }
         )
-        return assert_eq(total, 3, "维修分类实体数")
+        return assert_eq(total, 0, "维修分类实体数")
 
     cases += [
         Case("P1", "DOMAIN 域入口注册", p1_scoped_type_registry),
@@ -530,10 +529,7 @@ def main() -> int:
                 "resultShape": "PAGE",
             }
         )
-        if not general_model:
-            return False, "general_station_task missing"
-        # 全 patrol scope 不应含 general 的 2 条
-        return assert_eq(total, EXPECT["entities_patrol_scope"], "general 不在巡检 Scope")
+        return assert_eq(total, EXPECT["entities_patrol_scope"], "巡检 Scope 即全部任务")
 
     def p2_task_scope_isolation():
         patrol_total = query_total(

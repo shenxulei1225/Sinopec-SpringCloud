@@ -38,7 +38,6 @@ import java.util.UUID;
 
 import static cn.cheers.x.module.platform.topology.enums.ErrorCodeConstants.NETWORK_DRAFT_INVALID;
 import static cn.cheers.x.module.platform.topology.enums.ErrorCodeConstants.NETWORK_NOT_FOUND;
-import static cn.cheers.x.module.platform.topology.enums.ErrorCodeConstants.NETWORK_VALIDATE_FAILED;
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 
 @Service
@@ -88,17 +87,29 @@ public class PathNetworkServiceImpl implements PathNetworkService {
         String networkId = StringUtils.hasText(request.getNetworkRef())
                 ? request.getNetworkRef()
                 : draftId(facilityId, networkKind);
-        PathNetworkDO existing = pathNetworkMapper.selectById(networkId);
-        // isDraft=true → 草稿；false/空 → 正式保存（名称无草稿后缀）
-        boolean asDraft = Boolean.TRUE.equals(request.getIsDraft());
-        String status = asDraft ? GraphStatus.DRAFT : GraphStatus.PUBLISHED;
+        // 保存写回当前这一条路网，并把点写入点位数据目录。不另开一条。
+        writeNetworkRow(request, networkId, pathNetworkMapper.selectById(networkId));
+        PathNetworkDTO saved = toDto(pathNetworkMapper.selectById(networkId));
+        syncStationPointsBestEffort(saved);
+        return saved;
+    }
+
+    /**
+     * 把当前几何写入指定路网编号。点位目录由保存之后的同步写入，这里不另开一条路网。
+     */
+    private void writeNetworkRow(
+            PathNetworkDTO request, String networkId, PathNetworkDO existing) {
+        Long facilityId = request.getFacilityId();
+        NetworkKind networkKind = request.getNetworkKind() != null
+                ? request.getNetworkKind() : NetworkKind.FACILITY;
+        String status = GraphStatus.PUBLISHED;
         PathNetworkDO network = PathNetworkDO.builder()
                 .id(networkId)
                 .facilityId(facilityId)
                 .networkKind(networkKind.name())
                 .scopeId(request.getScopeId() != null ? String.valueOf(request.getScopeId()) : null)
                 .status(status)
-                .version(existing != null ? existing.getVersion() : 0)
+                .version(existing != null && existing.getVersion() != null ? existing.getVersion() : 0)
                 .displayName(resolveDisplayName(request.getDisplayName(), existing))
                 .description(request.getDescription() != null
                         ? request.getDescription()
@@ -117,70 +128,11 @@ public class PathNetworkServiceImpl implements PathNetworkService {
         } else {
             pathNetworkMapper.updateById(network);
         }
-        PathNetworkDTO saved = toDto(pathNetworkMapper.selectById(networkId));
-        syncStationPointsBestEffort(saved);
-        return saved;
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public PathNetworkDTO saveAsDraft(PathNetworkDTO request) {
-        if (request == null || request.getFacilityId() == null) {
-            throw exception(NETWORK_DRAFT_INVALID);
-        }
-        if (!StringUtils.hasText(request.getDisplayName())) {
-            throw exception(NETWORK_DRAFT_INVALID);
-        }
-        NetworkKind networkKind = request.getNetworkKind() != null
-                ? request.getNetworkKind() : NetworkKind.FACILITY;
-        String id = "net_" + request.getFacilityId() + "_"
-                + UUID.randomUUID().toString().replace("-", "").substring(0, 12) + "_draft";
-        PathNetworkDO network = PathNetworkDO.builder()
-                .id(id)
-                .facilityId(request.getFacilityId())
-                .networkKind(networkKind.name())
-                .scopeId(request.getScopeId() != null ? String.valueOf(request.getScopeId()) : null)
-                .status(GraphStatus.DRAFT)
-                .version(0)
-                .displayName(request.getDisplayName().trim())
-                .description(request.getDescription())
-                .applicableEquipmentTypes(toJson(
-                        request.getApplicableEquipmentTypes() != null
-                                ? request.getApplicableEquipmentTypes()
-                                : List.of()))
-                .nodes(toJson(request.getNodes() != null ? request.getNodes() : List.of()))
-                .edges(toJson(request.getEdges() != null ? request.getEdges() : List.of()))
-                .build();
-        pathNetworkMapper.insert(network);
-        PathNetworkDTO saved = toDto(pathNetworkMapper.selectById(id));
-        syncStationPointsBestEffort(saved);
-        return saved;
     }
 
     @Override
     public TopologyValidateRespDTO validate(PathNetworkDTO request) {
         return doValidate(request);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public PathNetworkDTO publish(Long facilityId, NetworkKind networkKind) {
-        PathNetworkDO draft = pathNetworkMapper.selectDraftByFacilityIdAndKind(
-                facilityId, networkKind.name());
-        if (draft == null) {
-            throw exception(NETWORK_NOT_FOUND);
-        }
-        return publishDraftRow(draft);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public PathNetworkDTO publishByRef(String networkRef) {
-        PathNetworkDO draft = pathNetworkMapper.selectById(networkRef);
-        if (draft == null || !GraphStatus.DRAFT.equals(draft.getStatus())) {
-            throw exception(NETWORK_NOT_FOUND);
-        }
-        return publishDraftRow(draft);
     }
 
     @Override
@@ -209,15 +161,8 @@ public class PathNetworkServiceImpl implements PathNetworkService {
 
     @Override
     public List<PathNetworkSummaryDTO> listPublished(Long facilityId) {
-        if (facilityId == null) {
-            return List.of();
-        }
-        // 算路选网与编辑列表同一口径：历史发布副本不算当前已发布路网
-        return pathNetworkMapper.selectAllByFacilityId(facilityId).stream()
-                .filter(row -> GraphStatus.PUBLISHED.equals(row.getStatus()))
-                .filter(row -> !isHistoricalPublishedCompanion(row.getId()))
-                .map(PathNetworkServiceImpl::toSummary)
-                .toList();
+        // 排期读的就是路网管理这一份，不再按发布状态或 _draft 后缀另筛一份。
+        return listDrafts(facilityId);
     }
 
     /**
@@ -238,7 +183,7 @@ public class PathNetworkServiceImpl implements PathNetworkService {
                 || !StringUtils.hasText(request.getDisplayName())) {
             throw exception(NETWORK_DRAFT_INVALID);
         }
-        // 新建即为正式记录（无草稿后缀）；另存为草稿才产生 DRAFT
+        // 新建就是这一条路网，编号不带草稿后缀。点在保存时写入点位数据目录。
         String id = "net_" + request.getFacilityId() + "_"
                 + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
         PathNetworkDO network = PathNetworkDO.builder()
@@ -290,50 +235,10 @@ public class PathNetworkServiceImpl implements PathNetworkService {
         pathNetworkMapper.deleteById(networkRef);
     }
 
-    private PathNetworkDTO publishDraftRow(PathNetworkDO draft) {
-        TopologyValidateRespDTO validation = doValidate(toDto(draft));
-        if (!Boolean.TRUE.equals(validation.getPassed())) {
-            throw exception(NETWORK_VALIDATE_FAILED);
-        }
-        NetworkKind networkKind = parseNetworkKind(draft.getNetworkKind());
-        if (networkKind == null) {
-            networkKind = NetworkKind.FACILITY;
-        }
-        // 一条草稿对应唯一一条已发布：反复发布只覆盖更新，不新增版本行
-        String publishedId = publishedCompanionId(draft.getId());
-        removeObsoleteVersionedPublished(draft.getFacilityId(), networkKind.name(), publishedId);
-
-        PathNetworkDO existing = pathNetworkMapper.selectById(publishedId);
-        int nextVersion = existing != null && existing.getVersion() != null
-                ? existing.getVersion() + 1
-                : 1;
-        PathNetworkDO published = PathNetworkDO.builder()
-                .id(publishedId)
-                .facilityId(draft.getFacilityId())
-                .networkKind(networkKind.name())
-                .scopeId(draft.getScopeId())
-                .status(GraphStatus.PUBLISHED)
-                .version(nextVersion)
-                .displayName(draft.getDisplayName())
-                .description(draft.getDescription())
-                .applicableEquipmentTypes(draft.getApplicableEquipmentTypes())
-                .nodes(draft.getNodes())
-                .edges(draft.getEdges())
-                .build();
-        if (existing == null) {
-            pathNetworkMapper.insert(published);
-        } else {
-            pathNetworkMapper.updateById(published);
-        }
-        PathNetworkDTO saved = toDto(pathNetworkMapper.selectById(publishedId));
-        syncStationPointsBestEffort(saved);
-        return saved;
-    }
-
     /**
-     * 路网保存后：停靠站 / 途径点 / 门点同步到数据管理点位台账。
-     * 带上节点已有经度 / 纬度（payload 原键），目录才能看见 GPS、对照才能取值。
-     * 失败只记日志，不回滚路网几何（几何权威仍在路网节点）。
+     * 保存这一条路网之后：停靠站 / 途径点 / 门点写入点位数据目录，归属网写在点上。
+     * 带上节点已有经度、纬度、椭球高。椭球高没填就不写，不用离地高度代替。
+     * 写入失败则这次保存失败，不假装点位目录已经跟上。
      */
     private void syncStationPointsBestEffort(PathNetworkDTO network) {
         if (network == null || network.getFacilityId() == null) {
@@ -361,7 +266,7 @@ public class PathNetworkServiceImpl implements PathNetworkService {
                     .memberships(node.getMemberships())
                     .longitude(readPayloadDouble(node.getPayload(), "longitude", "lng", "lon"))
                     .latitude(readPayloadDouble(node.getPayload(), "latitude", "lat"))
-                    .height(readPayloadDouble(node.getPayload(), "height"))
+                    .height(readPayloadDouble(node.getPayload(), "ellipsoidHeight"))
                     .build());
         }
         PathStationPointSyncReqDTO req = PathStationPointSyncReqDTO.builder()
@@ -371,42 +276,14 @@ public class PathNetworkServiceImpl implements PathNetworkService {
         try {
             CommonResult<?> result = pathStationPointSyncApi.syncFromPathNetwork(req);
             if (result == null || result.isError()) {
+                String msg = result != null ? result.getMsg() : "没有返回";
                 log.error("[syncStationPoints] 点位同步失败 facilityId={} msg={}",
-                        network.getFacilityId(),
-                        result != null ? result.getMsg() : "null result");
+                        network.getFacilityId(), msg);
+                throw new IllegalStateException("点位数据目录没有写上：" + msg);
             }
-        } catch (Exception ex) {
+        } catch (RuntimeException ex) {
             log.error("[syncStationPoints] 点位同步异常 facilityId={}", network.getFacilityId(), ex);
-        }
-    }
-
-    /** 草稿 net_xxx_draft → 已发布 net_xxx_published（固定一对一） */
-    static String publishedCompanionId(String draftId) {
-        if (!StringUtils.hasText(draftId)) {
-            throw exception(NETWORK_DRAFT_INVALID);
-        }
-        if (draftId.endsWith("_draft")) {
-            return draftId.substring(0, draftId.length() - "_draft".length()) + "_published";
-        }
-        return draftId + "_published";
-    }
-
-    /** 清掉历史错误产生的 net_*_v1 / v2… 版本行，只保留当前这条已发布 */
-    private void removeObsoleteVersionedPublished(
-            Long facilityId, String networkKind, String keepPublishedId) {
-        List<PathNetworkDO> published = pathNetworkMapper.selectPublishedByFacilityIdAndKind(
-                facilityId, networkKind);
-        if (published == null || published.isEmpty()) {
-            return;
-        }
-        for (PathNetworkDO row : published) {
-            if (row.getId() == null || row.getId().equals(keepPublishedId)) {
-                continue;
-            }
-            // 仅删除旧版号命名（…_v数字），避免误删其它草稿配套的 _published
-            if (row.getId().matches(".*_v\\d+$")) {
-                pathNetworkMapper.deleteById(row.getId());
-            }
+            throw ex;
         }
     }
 
@@ -535,7 +412,8 @@ public class PathNetworkServiceImpl implements PathNetworkService {
                 .networkRef(draftId(facilityId, networkKind))
                 .networkKind(networkKind)
                 .facilityId(facilityId)
-                .status(GraphStatus.DRAFT)
+                .status(GraphStatus.PUBLISHED)
+                .isDraft(false)
                 .version(0)
                 .displayName("默认路网")
                 .applicableEquipmentTypes(List.of())
@@ -554,24 +432,19 @@ public class PathNetworkServiceImpl implements PathNetworkService {
         return "默认路网";
     }
 
+    /** 这次保存还没有路网编号时用。不另开带草稿后缀的编号。 */
     static String draftId(Long facilityId, NetworkKind networkKind) {
-        return "net_" + facilityId + "_" + networkKind.name().toLowerCase() + "_draft";
-    }
-
-    /** @deprecated 旧版按 vN 递增插行；已改为 publishedCompanionId 覆盖更新 */
-    static String publishedId(Long facilityId, NetworkKind networkKind, int version) {
-        return "net_" + facilityId + "_" + networkKind.name().toLowerCase() + "_v" + version;
+        return "net_" + facilityId + "_" + networkKind.name().toLowerCase();
     }
 
     static PathNetworkDTO toDto(PathNetworkDO network) {
-        boolean draft = isDraftStatus(network.getStatus());
         return PathNetworkDTO.builder()
                 .networkRef(network.getId())
                 .networkKind(parseNetworkKind(network.getNetworkKind()))
                 .facilityId(network.getFacilityId())
                 .scopeId(parseScopeId(network.getScopeId()))
                 .status(network.getStatus())
-                .isDraft(draft)
+                .isDraft(false)
                 .version(network.getVersion())
                 .displayName(StringUtils.hasText(network.getDisplayName())
                         ? network.getDisplayName() : "默认路网")
@@ -591,20 +464,12 @@ public class PathNetworkServiceImpl implements PathNetworkService {
                 .displayName(resolveListDisplayName(network))
                 .description(network.getDescription())
                 .status(network.getStatus())
-                .isDraft(isDraftStatus(network.getStatus()))
+                .isDraft(false)
                 .version(network.getVersion())
                 .applicableEquipmentTypes(parseStringList(network.getApplicableEquipmentTypes()))
                 .nodeCount(nodes.size())
                 .edgeCount(edges.size())
                 .build();
-    }
-
-    /** status=DRAFT（或空）视为草稿 */
-    private static boolean isDraftStatus(String status) {
-        if (!StringUtils.hasText(status)) {
-            return true;
-        }
-        return GraphStatus.DRAFT.equalsIgnoreCase(status.trim());
     }
 
     /** 列表展示名：有名称用名称；旧槽位无名称时按种类给可读默认名 */

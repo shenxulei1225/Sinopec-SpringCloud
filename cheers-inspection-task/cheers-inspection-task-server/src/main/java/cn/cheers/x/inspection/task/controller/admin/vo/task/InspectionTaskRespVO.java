@@ -36,6 +36,9 @@ public class InspectionTaskRespVO {
     @Schema(description = "任务名称")
     private String taskName;
 
+    @Schema(description = "所属设施。查看任务时用它读起飞点、降落点的中文名")
+    private Long facilityId;
+
     @Schema(description = "业务域（任务分池）")
     private String domain;
 
@@ -99,7 +102,7 @@ public class InspectionTaskRespVO {
     @Schema(description = "历史编排批次ID列表")
     private List<Long> planIds = new ArrayList<>();
 
-    // ==================== 已保存路线读模型（saveRoute 写入总任务 plannedRoute 后） ====================
+    // ==================== 路线读模型（修改稿或已发布内容中的 plannedRoute） ====================
 
     @Schema(description = "已保存路网引用")
     private String networkRef;
@@ -124,6 +127,9 @@ public class InspectionTaskRespVO {
 
     @Schema(description = "第 3 步无冲突或智能编排写入的执行步骤图（step_tree_json）；核对计划步展示动作与参数")
     private Object executionStepTree;
+
+    @Schema(description = "已发布任务上还没更新上去的修改。详情不把它当成正在跑的任务")
+    private Object unpublishedModification;
 
     // ==================== 子任务列表（轻量级） ====================
     @Schema(description = "直接子任务列表（轻量级，不含 inspectionContent）")

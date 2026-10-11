@@ -6,6 +6,8 @@
 #   .\start-microservices.ps1 bmp        # 中台全部
 #   .\start-microservices.ps1 all        # 底盘 + 工作流 + 动态业务 + 中台
 #   .\start-microservices.ps1 resource   # 只开组件配置
+#   .\start-microservices.ps1 simulator  # 无人机协议模拟器（连 8095）
+#   .\start-microservices.ps1 robot      # 机器人协议模拟器（连 8095）
 # ============================================================================
 
 param(
@@ -66,6 +68,9 @@ $ServiceConfig = @{
     "cheers-twin"= @{ Path = "cheers-twin\cheers-twin-server"; Port = 15094 }
     "inspection" = @{ Path = "cheers-inspection-task\cheers-inspection-task-server"; Port = 15095 }
     "protocol"   = @{ Path = "cheers-device-protocol-gateway\cheers-device-protocol-gateway-server"; Port = 8095 }
+    "simulator"  = @{ Path = "cheers-device-protocol-gateway\cheers-device-protocol-simulator"; Port = 8301 }
+    "protocol-simulator" = @{ Path = "cheers-device-protocol-gateway\cheers-device-protocol-simulator"; Port = 8301 }
+    "robot"      = @{ Path = "cheers-device-protocol-gateway\cheers-device-protocol-simulator"; Port = 8302 }
     "device-protocol" = @{ Path = "cheers-device-protocol-gateway\cheers-device-protocol-gateway-server"; Port = 8095 }
     "protocol-gateway" = @{ Path = "cheers-device-protocol-gateway\cheers-device-protocol-gateway-server"; Port = 8095 }
     "cheers-device-protocol-gateway" = @{ Path = "cheers-device-protocol-gateway\cheers-device-protocol-gateway-server"; Port = 8095 }
@@ -108,12 +113,12 @@ $BmpServices = @(
 $BmpProcessServices = @("resource", "policy", "capability", "runtime", "orchestration")
 $BmpPathServices = @("topology", "routing")
 $AllDutyServices = $BaseServices + $WorkflowServices + $BizServices + $BmpServices
-$KnownServices = $AllDutyServices
+$KnownServices = $AllDutyServices + @("simulator", "robot")
 $CoreServices = $AllDutyServices
 $AllServices = $AllDutyServices
 $StopServices = @(
     "gateway", "infra", "system", "bpm",
-    "dynamic", "inspection", "twin", "protocol",
+    "dynamic", "inspection", "twin", "protocol", "simulator", "robot",
     "routing", "topology", "orchestration", "runtime", "policy", "capability", "resource",
     "alarm", "work-order", "maintenance", "scene-3d", "gis"
 )
@@ -423,19 +428,36 @@ function Start-SingleService {
     Write-ColorOutput "" "White"
 
     # 本仓 SNAPSHOT API 需先 install 到本地仓库；否则 spring-boot:run 会去远程找 jar 并立刻失败（日志里像“没起来”）
+    # 名单与 start-microservices.sh 的 install 分支对齐（含 inspection / twin）
     if ($ServiceName -in @(
             "topology", "platform-topology", "routing", "platform-routing",
             "maintenance", "bmp-maintenance",
             "work-order", "bmp-work-order",
             "bpm", "dynamic", "system",
+            "inspection", "twin", "cheers-twin",
             "protocol", "device-protocol", "protocol-gateway", "cheers-device-protocol-gateway",
-            "platform", "resource", "bmp-resource"
+            "simulator", "protocol-simulator", "robot",
+            "platform", "resource", "bmp-resource",
+            "runtime", "platform-runtime", "runtime-l4", "bmp-runtime",
+            "orchestration", "platform-orchestration", "bmp-orchestration",
+            "policy", "platform-policy", "bmp-policy",
+            "capability", "platform-capability", "bmp-capability",
+            "alarm", "bmp-alarm",
+            "scene", "scene-3d", "bmp-scene-3d",
+            "gis", "bmp-gis"
         )) {
         $needsPlatformRoot = $ServiceName -in @(
             "topology", "platform-topology", "routing", "platform-routing",
             "maintenance", "bmp-maintenance",
             "work-order", "bmp-work-order",
-            "platform", "resource", "bmp-resource"
+            "platform", "resource", "bmp-resource",
+            "runtime", "platform-runtime", "runtime-l4", "bmp-runtime",
+            "orchestration", "platform-orchestration", "bmp-orchestration",
+            "policy", "platform-policy", "bmp-policy",
+            "capability", "platform-capability", "bmp-capability",
+            "alarm", "bmp-alarm",
+            "scene", "scene-3d", "bmp-scene-3d",
+            "gis", "bmp-gis"
         )
         $installRoot = if ($needsPlatformRoot) {
             Join-Path $ScriptDir "cheers-business-middle-platform"
@@ -465,7 +487,13 @@ function Start-SingleService {
     
     $logFile = Join-Path $LogDir "$ServiceName-server.log"
     # maven.test.skip：本地启动不编/不跑测试，避免测试缺类挡住 spring-boot:run
-    $mavenCommand = "mvn spring-boot:run `"-Dspring-boot.run.profiles=local`" `"-Dmaven.test.skip=true`" `"-Dfile.encoding=UTF-8`" `"-Dsun.jnu.encoding=UTF-8`""
+    $profiles = "local"
+    $buildDirArg = ""
+    if ($ServiceName -eq "robot") {
+        $profiles = "robot"
+        $buildDirArg = "-Dproject.build.directory=target/robot "
+    }
+    $mavenCommand = "mvn spring-boot:run $buildDirArg`"-Dspring-boot.run.profiles=$profiles`" `"-Dmaven.test.skip=true`" `"-Dfile.encoding=UTF-8`" `"-Dsun.jnu.encoding=UTF-8`""
     $workingDirectory = $servicePath
 
     # 启动前校验 pom，避免落到已迁走/空壳目录时只看到健康检查超时
@@ -491,15 +519,13 @@ function Start-SingleService {
         return $true
     }
 
-    # 使用 Maven 启动（后台运行，输出重定向到日志文件）
-    $startInfo = New-Object System.Diagnostics.ProcessStartInfo
-    $startInfo.FileName = "cmd.exe"
-    $startInfo.Arguments = "/c $mavenCommand > `"$logFile`" 2>&1"
-    $startInfo.WorkingDirectory = $workingDirectory
-    $startInfo.UseShellExecute = $true
-    $startInfo.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden
-    
-    [void][System.Diagnostics.Process]::Start($startInfo)
+    # 后台启动：用 Start-Process 脱离当前 PowerShell 进程树。
+    # 不要用会挂在调用方 job 下的方式，否则「嵌套 powershell -File … 退出」会把刚起来的 JVM 带走
+    # （Mac 侧对应 nohup + disown）。日志仍落到 logs/<服务>-server.log。
+    Start-Process -FilePath "cmd.exe" `
+        -ArgumentList "/c", "$mavenCommand > `"$logFile`" 2>&1" `
+        -WorkingDirectory $workingDirectory `
+        -WindowStyle Hidden | Out-Null
     
     Write-Info "已在后台发起启动，等待服务通过健康检查..."
     Write-Info "日志文件: $logFile"
@@ -679,6 +705,8 @@ function Show-Services {
     Write-ColorOutput "  .\start-microservices.ps1 bmp        # 中台全部" "White"
     Write-ColorOutput "  .\start-microservices.ps1 all        # 底盘 + 工作流 + 动态业务 + 中台" "White"
     Write-ColorOutput "  .\start-microservices.ps1 resource   # 只开组件配置" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 simulator  # 无人机协议模拟器，连协议网关 8095" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 robot      # 机器人协议模拟器，连协议网关 8095" "White"
     Write-ColorOutput "  .\start-microservices.ps1 stop-base|stop-biz|stop-bmp|stop-all" "White"
     Write-ColorOutput "  .\start-microservices.ps1 status" "White"
     Write-ColorOutput "" "White"
@@ -1033,7 +1061,7 @@ switch ($Command.ToLower()) {
     "biz" {
         if (-not (Start-Nacos)) { Write-Error "Nacos 启动失败,无法继续"; exit 1 }
         Check-Redis
-        Write-ColorOutput "[START] 动态业务 + 巡检 + 孪生" "Cyan"
+        Write-ColorOutput "[START] 动态业务 + 巡检 + 孪生 + 协议网关" "Cyan"
         Start-SuiteServices -Services $BizServices -ShowLogs $f.IsPresent
     }
     "stop-biz" {

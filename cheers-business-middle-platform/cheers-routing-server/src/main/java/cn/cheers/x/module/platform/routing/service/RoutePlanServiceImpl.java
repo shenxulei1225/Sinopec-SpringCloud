@@ -18,6 +18,7 @@ import cn.cheers.x.module.platform.routing.planner.DepotTourSupport;
 import cn.cheers.x.module.platform.routing.planner.DijkstraPlanner;
 import cn.cheers.x.module.platform.routing.planner.DoorConstraintFilter;
 import cn.cheers.x.module.platform.routing.planner.GraphView;
+import cn.cheers.x.module.platform.routing.planner.OptimizeOrderStrategy;
 import cn.cheers.x.module.platform.routing.planner.PortalGraphAssembler;
 import cn.cheers.x.module.platform.routing.planner.ProfileGate;
 import cn.cheers.x.module.platform.routing.planner.ShortestPathResult;
@@ -44,6 +45,7 @@ import java.util.stream.Collectors;
 import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_MOBILITY_PROFILE_NOT_FOUND;
 import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_NETWORK_NOT_FOUND;
 import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_REQUEST_INVALID;
+import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_STRATEGY_UNSUPPORTED;
 import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_UNREACHABLE;
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.invalidParamException;
@@ -52,7 +54,6 @@ import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.i
 public class RoutePlanServiceImpl implements RoutePlanService {
 
     private static final String DEFAULT_PROFILE_ID = "person_walk";
-    private static final String DEFAULT_STRATEGY = "as_given";
 
     @Resource
     private PathNetworkApi pathNetworkApi;
@@ -99,6 +100,7 @@ public class RoutePlanServiceImpl implements RoutePlanService {
 
         PathNetworkDTO routableNetwork = withFilteredEdges(network, doorConstraintFilter.filter(network, profile));
         GraphView view = GraphView.from(routableNetwork, profileId);
+        assertStopsBelongToProfile(network, request, view);
         List<String> stops = orderStops(request, strategy, view);
         List<RoutePreviewSegmentDTO> segments = new ArrayList<>();
         double totalCost = 0D;
@@ -321,8 +323,12 @@ public class RoutePlanServiceImpl implements RoutePlanService {
         return DEFAULT_PROFILE_ID;
     }
 
+    /** 排序方法由调用方选定：optimize_order 或 as_given。没选就报错，不另猜一种。 */
     private static String resolveStrategy(RouteRequestDTO request) {
-        return StringUtils.hasText(request.getStrategy()) ? request.getStrategy() : DEFAULT_STRATEGY;
+        if (request == null || !StringUtils.hasText(request.getStrategy())) {
+            throw exception(ROUTE_STRATEGY_UNSUPPORTED);
+        }
+        return request.getStrategy().trim();
     }
 
     private List<String> orderStops(RouteRequestDTO request, String strategy, GraphView view) {
@@ -348,7 +354,8 @@ public class RoutePlanServiceImpl implements RoutePlanService {
                 && (request.getReturnToStart() == null || Boolean.TRUE.equals(request.getReturnToStart()));
 
         StopOrderStrategy stopOrderStrategy = stopOrderStrategyRegistry.resolve(strategy);
-        // 排顺序用场景平面距离（图可达前提下），避免区内按跳数来回穿梭
+        // 排站序：图不可达仍 +∞；有场景坐标时用水平面距离拉开「跳数相同却来回穿」的平局，各段几何仍走 Dijkstra。
+        boolean optimize = "optimize_order".equals(strategy);
         CostMatrix matrix = CostMatrix.forOrdering(stopIds, view, dijkstraPlanner);
 
         if (home == null) {
@@ -365,8 +372,50 @@ public class RoutePlanServiceImpl implements RoutePlanService {
             }
             return returnToStart ? List.of(home, home) : List.of(home);
         }
+        if (optimize && stopOrderStrategy instanceof OptimizeOrderStrategy optimizeOrder) {
+            return optimizeOrder.orderDepot(home, others, distinctEnd ? end : null, returnToStart, matrix);
+        }
         List<String> middle = stopOrderStrategy.order(others, matrix.submatrix(others), view);
         return DepotTourSupport.assemble(home, middle, matrix, returnToStart, distinctEnd ? end : null);
+    }
+
+    /**
+     * 停靠点在这张路上，但没勾当前巡检方式的归属网时，直接说明，不把它当成路网里没有这个点。
+     */
+    private static void assertStopsBelongToProfile(PathNetworkDTO network, RouteRequestDTO request, GraphView view) {
+        List<String> ids = new ArrayList<>();
+        if (request.getStopIds() != null) {
+            ids.addAll(request.getStopIds());
+        }
+        if (StringUtils.hasText(request.getStartStopId())) {
+            ids.add(request.getStartStopId());
+        }
+        if (StringUtils.hasText(request.getEndStopId())) {
+            ids.add(request.getEndStopId());
+        }
+        Map<String, PathNodeDTO> byId = new HashMap<>();
+        if (network.getNodes() != null) {
+            for (PathNodeDTO node : network.getNodes()) {
+                if (node != null && StringUtils.hasText(node.getNodeId())) {
+                    byId.put(node.getNodeId(), node);
+                }
+            }
+        }
+        for (String raw : ids) {
+            if (!StringUtils.hasText(raw)) {
+                continue;
+            }
+            String stopId = raw.trim();
+            if (view.getNode(stopId) != null) {
+                continue;
+            }
+            PathNodeDTO node = byId.get(stopId);
+            if (node == null) {
+                continue;
+            }
+            String name = StringUtils.hasText(node.getDisplayName()) ? node.getDisplayName().trim() : stopId;
+            throw invalidParamException("「{}」不属于当前巡检方式的归属网", name);
+        }
     }
 
     private static Map<NetworkKind, String> buildProfileIdByKind(RouteRequestDTO request, String defaultProfileId) {
@@ -463,7 +512,10 @@ public class RoutePlanServiceImpl implements RoutePlanService {
                 PathEdgeDTO edge = assembled.view().getEdge(edgeId);
                 runEdges.add(edgeId);
                 if (edge != null) {
-                    runCost += GraphView.resolveWeight(edge, profileId);
+                    var meters = assembled.view().edgeDistanceMeters(edge);
+                    if (meters.isPresent()) {
+                        runCost += meters.getAsDouble();
+                    }
                 }
             }
             segments.add(buildMultimodalSubSegment(fromStopIndex, runNodes, runEdges, runCost, assembled));

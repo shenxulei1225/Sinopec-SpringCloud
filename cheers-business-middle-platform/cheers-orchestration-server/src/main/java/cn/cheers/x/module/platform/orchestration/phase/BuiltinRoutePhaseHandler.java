@@ -1,6 +1,7 @@
 package cn.cheers.x.module.platform.orchestration.phase;
 
 import cn.cheers.x.module.platform.contract.dto.route.RoutePreviewDTO;
+import cn.cheers.x.module.platform.contract.dto.route.RoutePreviewSegmentDTO;
 import cn.cheers.x.module.platform.contract.dto.route.RouteRequestDTO;
 import cn.cheers.x.module.platform.contract.dto.work.WorkItemDTO;
 import cn.cheers.x.module.platform.orchestration.route.RoutePayloadKeys;
@@ -10,6 +11,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,12 +26,14 @@ import static cn.cheers.x.module.platform.orchestration.enums.ErrorCodeConstants
 
 /**
  * 内建 ROUTE 阶段：调用路径规划，回写预览与工作项时长。
+ * 动作耗时和路径耗时按秒写入路线。占窗把秒合计除以 60，向上取整到整分钟。
  */
 @Component
 public class BuiltinRoutePhaseHandler implements PhaseHandler {
 
     public static final String HANDLER_ID = "platform.route.plan_v1";
 
+    /** 路径耗时 = 各边几何距离之和 / 这种设备的速度。人、地面机器人、无人机各用各的。 */
     private static final Map<String, Integer> DEFAULT_SPEED_M_PER_MIN = Map.of(
             "HUMAN", 60,
             "GROUND_ROBOT", 40,
@@ -90,9 +95,10 @@ public class BuiltinRoutePhaseHandler implements PhaseHandler {
             throw exception(ORCHESTRATION_PAYLOAD_INVALID);
         }
 
-        Integer estimatedActionDuration = asInteger(payload.get(RoutePayloadKeys.ESTIMATED_ACTION_DURATION));
+        BigDecimal actionSeconds = asSeconds(payload.get(RoutePayloadKeys.ESTIMATED_ACTION_DURATION));
         Integer speed = resolveSpeedMetersPerMinute(payload, inspectionType);
-        int totalMinutes = estimateDurationMinutes(preview.getTotalDistanceMeters(), speed, estimatedActionDuration);
+        Integer travelSeconds = writeSegmentTravelSeconds(preview, speed);
+        int totalMinutes = estimateDurationMinutes(travelSeconds, actionSeconds);
         item.setEstimatedDuration(totalMinutes);
 
         Map<String, Object> planned = new LinkedHashMap<>();
@@ -127,36 +133,81 @@ public class BuiltinRoutePhaseHandler implements PhaseHandler {
         if (preview.getDecisionTraceId() != null) {
             planned.put("decisionTraceId", preview.getDecisionTraceId());
         }
-        if (estimatedActionDuration != null) {
-            planned.put(RoutePayloadKeys.ESTIMATED_ACTION_DURATION, estimatedActionDuration);
+        if (actionSeconds != null) {
+            planned.put(RoutePayloadKeys.ESTIMATED_ACTION_DURATION, actionSeconds);
         }
-        Integer travelMinutes = estimateTravelMinutes(preview.getTotalDistanceMeters(), speed);
-        if (travelMinutes != null) {
-            planned.put(RoutePayloadKeys.ESTIMATED_TRAVEL_DURATION, travelMinutes);
+        if (travelSeconds != null) {
+            planned.put(RoutePayloadKeys.ESTIMATED_TRAVEL_DURATION, travelSeconds);
         }
         payload.put(RoutePayloadKeys.PLANNED_ROUTE, planned);
         item.setPayload(payload);
         return preview;
     }
 
-    static Integer estimateTravelMinutes(Long totalDistanceMeters, Integer speedMetersPerMinute) {
-        if (totalDistanceMeters == null || totalDistanceMeters < 0
-                || speedMetersPerMinute == null || speedMetersPerMinute <= 0) {
+    /**
+     * 每一段路程单独算秒数，路径耗时是各段之和。
+     * 没有分段时才用总米数算一次。速度没有时不写路径耗时。
+     */
+    static Integer writeSegmentTravelSeconds(RoutePreviewDTO preview, Integer speedMetersPerMinute) {
+        if (speedMetersPerMinute == null || speedMetersPerMinute <= 0) {
             return null;
         }
-        return (int) Math.ceil(totalDistanceMeters / (double) speedMetersPerMinute);
+        List<RoutePreviewSegmentDTO> segments = preview.getSegments();
+        if (!CollectionUtils.isEmpty(segments)) {
+            int sum = 0;
+            boolean any = false;
+            for (RoutePreviewSegmentDTO segment : segments) {
+                if (segment == null || segment.getDistanceMeters() == null || segment.getDistanceMeters() < 0) {
+                    continue;
+                }
+                int seconds = travelSeconds(segment.getDistanceMeters(), speedMetersPerMinute);
+                segment.setDurationSeconds((long) seconds);
+                sum += seconds;
+                any = true;
+            }
+            if (any) {
+                return sum;
+            }
+        }
+        if (preview.getTotalDistanceMeters() == null || preview.getTotalDistanceMeters() < 0) {
+            return null;
+        }
+        return travelSeconds(preview.getTotalDistanceMeters(), speedMetersPerMinute);
     }
 
-    static int estimateDurationMinutes(Long totalDistanceMeters, Integer speedMetersPerMinute,
-                                       Integer estimatedActionDuration) {
-        Integer travelCeil = estimateTravelMinutes(totalDistanceMeters, speedMetersPerMinute);
-        if (travelCeil == null) {
-            if (estimatedActionDuration == null) {
-                throw exception(ORCHESTRATION_ROUTE_DURATION_UNAVAILABLE);
-            }
-            return estimatedActionDuration;
+    /** 秒 = 米 /（米/分钟）× 60，不足 1 秒进 1。 */
+    static int travelSeconds(long meters, int speedMetersPerMinute) {
+        return (int) Math.ceil(meters * 60.0 / speedMetersPerMinute);
+    }
+
+    static int estimateDurationMinutes(Integer travelSeconds, BigDecimal actionSeconds) {
+        if (travelSeconds == null && actionSeconds == null) {
+            throw exception(ORCHESTRATION_ROUTE_DURATION_UNAVAILABLE);
         }
-        return travelCeil + (estimatedActionDuration != null ? estimatedActionDuration : 0);
+        BigDecimal totalSeconds = BigDecimal.valueOf(travelSeconds == null ? 0L : travelSeconds.longValue())
+                .add(actionSeconds == null ? BigDecimal.ZERO : actionSeconds);
+        return occupancyMinutes(totalSeconds.divide(BigDecimal.valueOf(60), 4, RoundingMode.HALF_UP));
+    }
+
+    /** 占窗按整分钟。合计有零头时向上取整，不足 1 分钟不截成 0。 */
+    static int occupancyMinutes(BigDecimal exact) {
+        if (exact == null || exact.signum() <= 0) {
+            return 0;
+        }
+        return exact.setScale(0, RoundingMode.CEILING).intValue();
+    }
+
+    /** 路线上的动作耗时，单位秒。负数和认不出的数不当秒数。 */
+    private static BigDecimal asSeconds(Object v) {
+        if (v == null) {
+            return null;
+        }
+        try {
+            BigDecimal seconds = v instanceof BigDecimal decimal ? decimal : new BigDecimal(v.toString());
+            return seconds.signum() < 0 ? null : seconds;
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 
     private static Integer resolveSpeedMetersPerMinute(Map<String, Object> payload, String inspectionType) {

@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
  * - 格式验证（来自字段定义和 ModelFieldAssignment.validation_rules）
  * - 多选关联字段验证（ENTITY_REF_MULTI）：格式、数量限制、目标实体存在性
  * - 地理坐标：未填经纬度视为空；控件占位对象不得当已填坐标报缺项
+ * - 枚举多选（如适用手段一次勾选人工、无人机、机器人）：按列表里的每一项对照选项，不把整段列表当成一个枚举值
  * 
  * 不负责：在读路径补坐标；用 0,0 冒充空值
  * 
@@ -184,6 +185,12 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
         if (field != null && FieldTypeEnum.isCoordinate(field.getType())) {
             return isEmptyCoordinateValue(value);
         }
+        if (field != null && FieldTypeEnum.isRange(field.getType())) {
+            return isEmptyRangeValue(value);
+        }
+        if (field != null && FieldTypeEnum.isRangedNumber(field.getType())) {
+            return isEmptyRangedNumberValue(value);
+        }
         if (field != null && FieldTypeEnum.isMultiEntityRef(field.getType())) {
             List<Long> ids = parseEntityIdList(value);
             return CollectionUtils.isEmpty(ids);
@@ -208,7 +215,16 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
         if (value == null || (value instanceof String && ((String) value).isEmpty())) {
             return false;
         }
-        return field == null || !FieldTypeEnum.isCoordinate(field.getType()) || !isEmptyCoordinateValue(value);
+        if (field != null && FieldTypeEnum.isCoordinate(field.getType()) && isEmptyCoordinateValue(value)) {
+            return false;
+        }
+        if (field != null && FieldTypeEnum.isRange(field.getType()) && isEmptyRangeValue(value)) {
+            return false;
+        }
+        if (field != null && FieldTypeEnum.isRangedNumber(field.getType()) && isEmptyRangedNumberValue(value)) {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -508,6 +524,12 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
             case "COORDINATE":
                 validateCoordinateType(field, value);
                 break;
+            case "RANGE":
+                validateRangeType(field, value);
+                break;
+            case "RANGED_NUMBER":
+                validateRangedNumberType(field, value);
+                break;
             case "ENTITY_REF_MULTI":
                 validateEntityRefMultiType(field, value);
                 break;
@@ -583,44 +605,92 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
     }
 
     /**
-     * 验证枚举类型
-     * 
-     * 需求：FR-015-A, BR-VAL-016
-     * 验证枚举字段值是否在选项列表的 value 范围内
+     * 验证枚举类型。
+     *
+     * 单选仍对照一个选项值。适用手段这类字段一次可以勾选多项，详情读出来就是列表，
+     * 保存原样提交。列表里的每一项都要在选项里；不能把整段列表的文本当成一个选项。
      */
     private void validateEnumType(FieldDO field, Object value) {
-        String strValue = value.toString();
-        
-        // 优先从 options 字段获取枚举选项（新方式）
+        Set<String> allowedValues = readAllowedEnumValues(field);
+        if (allowedValues.isEmpty()) {
+            return;
+        }
+        for (String token : enumTokens(value)) {
+            if (!allowedValues.contains(token)) {
+                throw new ServiceException(400,
+                        String.format("字段[%s]值不在允许的枚举范围内，允许值：%s", field.getName(), allowedValues));
+            }
+        }
+    }
+
+    /** 选项来自字段库 options；旧数据仍认描述里的 enumValues。 */
+    private Set<String> readAllowedEnumValues(FieldDO field) {
+        Set<String> allowedValues = new HashSet<>();
         String options = field.getOptions();
         if (options != null && !options.isEmpty() && JSONUtil.isTypeJSONArray(options)) {
             JSONArray optionsArray = JSONUtil.parseArray(options);
-            Set<String> allowedValues = new HashSet<>();
             for (int i = 0; i < optionsArray.size(); i++) {
                 cn.hutool.json.JSONObject option = optionsArray.getJSONObject(i);
                 if (option != null && option.containsKey("value")) {
-                    allowedValues.add(option.getStr("value"));
+                    String token = option.getStr("value");
+                    if (StringUtils.hasText(token)) {
+                        allowedValues.add(token.trim());
+                    }
                 }
             }
-            
-            if (!allowedValues.isEmpty() && !allowedValues.contains(strValue)) {
-                throw new ServiceException(400, 
-                    String.format("字段[%s]值不在允许的枚举范围内，允许值：%s", field.getName(), allowedValues));
+            if (!allowedValues.isEmpty()) {
+                return allowedValues;
             }
-            return;
         }
-        
-        // 兼容旧方式：从字段描述中获取枚举值列表
         JSONObject descJson = parseDescription(field);
         if (descJson != null && descJson.containsKey("enumValues")) {
             List<String> enumValues = descJson.getList("enumValues", String.class);
-            if (enumValues != null && !enumValues.isEmpty()) {
-                if (!enumValues.contains(strValue)) {
-                    throw new ServiceException(400, 
-                        String.format("字段[%s]值不在允许的枚举范围内，允许值：%s", field.getName(), enumValues));
+            if (enumValues != null) {
+                for (String token : enumValues) {
+                    if (StringUtils.hasText(token)) {
+                        allowedValues.add(token.trim());
+                    }
                 }
             }
         }
+        return allowedValues;
+    }
+
+    /**
+     * 单选是一个字符串。多选是列表，或一段 JSON 数组文本。
+     * 空列表表示这次没勾选，交给必填校验，这里不另报枚举错误。
+     */
+    private List<String> enumTokens(Object value) {
+        if (value instanceof Collection<?> collection) {
+            List<String> tokens = new ArrayList<>();
+            for (Object item : collection) {
+                if (item == null) {
+                    continue;
+                }
+                String text = String.valueOf(item).trim();
+                if (!text.isEmpty()) {
+                    tokens.add(text);
+                }
+            }
+            return tokens;
+        }
+        String text = value == null ? "" : value.toString().trim();
+        if (text.startsWith("[") && JSONUtil.isTypeJSONArray(text)) {
+            JSONArray array = JSONUtil.parseArray(text);
+            List<String> tokens = new ArrayList<>();
+            for (int i = 0; i < array.size(); i++) {
+                Object item = array.get(i);
+                if (item == null) {
+                    continue;
+                }
+                String token = String.valueOf(item).trim();
+                if (!token.isEmpty()) {
+                    tokens.add(token);
+                }
+            }
+            return tokens;
+        }
+        return text.isEmpty() ? List.of() : List.of(text);
     }
 
     /**
@@ -650,6 +720,135 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
         if (object.containsKey("height") && object.get("height") != null && !hasFiniteCoordinate(object.get("height"))) {
             throw new ServiceException(400, String.format("字段[%s]的高程不是数字", field.getName()));
         }
+    }
+
+    /**
+     * 数值范围：必须同时有最小值和最大值，而且都是数字。最小值不能大于最大值。
+     * 禁止用一段文字冒充。
+     */
+    private void validateRangeType(FieldDO field, Object value) {
+        JSONObject object = readRangeObject(field, value);
+        Double min = finiteNumber(object.get("min"));
+        Double max = finiteNumber(object.get("max"));
+        if (min == null || max == null) {
+            throw new ServiceException(400, String.format("字段[%s]要填写最小值和最大值", field.getName()));
+        }
+        if (min > max) {
+            throw new ServiceException(400, String.format("字段[%s]的最小值不能大于最大值", field.getName()));
+        }
+    }
+
+    private JSONObject readRangeObject(FieldDO field, Object value) {
+        if (value instanceof Map<?, ?> map) {
+            JSONObject object = new JSONObject();
+            map.forEach((key, item) -> {
+                if (key != null) {
+                    object.put(String.valueOf(key), item);
+                }
+            });
+            return object;
+        }
+        if (value instanceof String text && !text.isBlank()) {
+            try {
+                JSONObject object = JSON.parseObject(text);
+                if (object != null) {
+                    return object;
+                }
+            } catch (Exception ignored) {
+                throw new ServiceException(400, String.format("字段[%s]不是有效的范围", field.getName()));
+            }
+        }
+        throw new ServiceException(400, String.format("字段[%s]类型错误，期望范围（最小值/最大值）", field.getName()));
+    }
+
+    /**
+     * 带范围的数值。人填的数字，或最小、最大，有一项就算已填。
+     * 纯数字是人填的那一组。对象里的 min、max 是范围那一组。
+     */
+    private void validateRangedNumberType(FieldDO field, Object value) {
+        if (value instanceof Number || (value instanceof String text && finiteNumber(text) != null)) {
+            return;
+        }
+        JSONObject object = readRangeObject(field, value);
+        Object range = object.get("range");
+        Double min = finiteNumber(object.get("min"));
+        Double max = finiteNumber(object.get("max"));
+        if (range instanceof Map<?, ?> rangeMap) {
+            if (min == null) {
+                min = finiteNumber(rangeMap.get("min"));
+            }
+            if (max == null) {
+                max = finiteNumber(rangeMap.get("max"));
+            }
+        }
+        Double filled = finiteNumber(object.get("value"));
+        if (filled == null && min == null && max == null) {
+            throw new ServiceException(400, String.format("字段[%s]要填写数字，或最小值和最大值", field.getName()));
+        }
+        if (min != null && max != null && min > max) {
+            throw new ServiceException(400, String.format("字段[%s]的最小值不能大于最大值", field.getName()));
+        }
+    }
+
+    /** 数字、最小、最大都没填才算空。 */
+    private boolean isEmptyRangedNumberValue(Object value) {
+        if (value == null) {
+            return true;
+        }
+        if (value instanceof Number) {
+            return false;
+        }
+        if (value instanceof String text) {
+            return text.isBlank();
+        }
+        if (!(value instanceof Map<?, ?> map)) {
+            return false;
+        }
+        Object range = map.get("range");
+        Double min = finiteNumber(map.get("min"));
+        Double max = finiteNumber(map.get("max"));
+        if (range instanceof Map<?, ?> rangeMap) {
+            if (min == null) {
+                min = finiteNumber(rangeMap.get("min"));
+            }
+            if (max == null) {
+                max = finiteNumber(rangeMap.get("max"));
+            }
+        }
+        return finiteNumber(map.get("value")) == null && min == null && max == null;
+    }
+
+    /** 最小、最大都没填才算空。只填一边交给类型校验。 */
+    private boolean isEmptyRangeValue(Object value) {
+        if (value == null) {
+            return true;
+        }
+        if (value instanceof String text) {
+            return text.isBlank();
+        }
+        if (!(value instanceof Map<?, ?> map)) {
+            return false;
+        }
+        return finiteNumber(map.get("min")) == null && finiteNumber(map.get("max")) == null;
+    }
+
+    private static Double finiteNumber(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        if (raw instanceof Number number) {
+            double value = number.doubleValue();
+            return Double.isFinite(value) ? value : null;
+        }
+        if (raw instanceof String text && !text.isBlank()) {
+            try {
+                double value = Double.parseDouble(text.trim());
+                return Double.isFinite(value) ? value : null;
+            } catch (NumberFormatException ex) {
+                return null;
+            }
+        }
+        return null;
     }
 
     private static boolean hasFiniteCoordinate(Object raw) {

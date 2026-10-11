@@ -109,6 +109,14 @@ public class FieldController {
         return success(fieldService.getField(id));
     }
 
+    @GetMapping("/get-by-code")
+    @Operation(summary = "按字段编号获取字段", description = "动作参数上记的是字段编号。按编号取这一条的名称和类型，不返回字段库全量。")
+    @Parameter(name = "code", description = "字段编号", required = true)
+    @PreAuthorize("@ss.hasPermission('system:field:query')")
+    public CommonResult<FieldRespVO> getFieldByCode(@RequestParam("code") String code) {
+        return success(fieldService.getFieldByCode(code));
+    }
+
     @GetMapping("/search")
     @Operation(
         summary = "搜索字段(不分页)",

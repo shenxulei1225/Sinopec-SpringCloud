@@ -2,7 +2,6 @@ package cn.cheers.x.module.dynamicbusiness.service.entity;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
-import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRpcDtoSupport;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityWriteReqDTO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityDeleteReqVO;
@@ -13,6 +12,7 @@ import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityDtoConvert;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
+import cn.cheers.x.module.dynamicbusiness.service.entity.EntityDedicatedColumnService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
 import cn.hutool.core.collection.CollUtil;
@@ -20,12 +20,12 @@ import cn.hutool.core.util.StrUtil;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -42,6 +42,8 @@ public class EntityRpcFacadeService {
     private CustomFieldValidationService customFieldValidationService;
     @Resource
     private ModelMapper modelMapper;
+    @Resource
+    private EntityDedicatedColumnService entityDedicatedColumnService;
 
     public EntityRespDTO get(Long id, String entityTypeCode) {
         EntityRespVO vo = entityService.get(id, entityTypeCode);
@@ -61,30 +63,69 @@ public class EntityRpcFacadeService {
         return entityCoreService.existsById(id, entityTypeCode);
     }
 
+    /**
+     * 列表带回类型基础字段。协议指令的方向和协议版本写在专用列上，不在扩展字段里。
+     */
     public List<EntityRespDTO> list(String entityTypeCode, Long modelId) {
         List<EntityDO> entities = entityCoreService.listEntities(entityTypeCode, modelId, null);
-        List<EntityRespVO> vos = EntityDoVoHelper.toRespVOList(entities, customFieldValidationService);
+        if (entities == null || entities.isEmpty()) {
+            return List.of();
+        }
+        List<Long> ids = new ArrayList<>();
+        for (EntityDO entity : entities) {
+            if (entity != null && entity.getId() != null) {
+                ids.add(entity.getId());
+            }
+        }
+        List<EntityDO> loaded = entityCoreService.listByIdsWithDedicatedBaseFields(ids, entityTypeCode);
+        List<EntityRespVO> vos = EntityDoVoHelper.toRespVOList(
+                loaded, customFieldValidationService, entityDedicatedColumnService);
         return EntityDtoConvert.toDtoList(vos);
     }
 
-    public EntityRespDTO getByCode(String code, String entityTypeCode) {
-        if (StrUtil.isBlank(code)) {
-            return null;
-        }
-        return list(entityTypeCode, null).stream()
-                .filter(dto -> Objects.equals(code, EntityRpcDtoSupport.readCode(dto)))
-                .findFirst()
-                .orElse(null);
+    /**
+     * 按业务编码读这一条的完整档案（含参数清单、步骤图）。
+     * 编码只定位这一行，返回和按编号打开详情同一套装配。
+     * 不扫该类型的列表。列表行没有这些固定列。
+     */
+    /**
+     * 这个编码是否只剩已删除行。还有未删除的同编码时为 false。
+     * 生成任务用来跳过已删除动作，不把编码不存在当成已删除。
+     */
+    public boolean isDeletedByCode(String code, String entityTypeCode) {
+        return entityCoreService.isDeletedByCode(entityTypeCode, code);
     }
 
+    public EntityRespDTO getByCode(String code, String entityTypeCode) {
+        if (StrUtil.isBlank(code) || StrUtil.isBlank(entityTypeCode)) {
+            return null;
+        }
+        EntityDO row = entityCoreService.findByExactCode(entityTypeCode, code.trim());
+        if (row == null || row.getId() == null) {
+            return null;
+        }
+        return get(row.getId(), entityTypeCode);
+    }
+
+    /**
+     * 按编码批量读完整档案。每条都走 {@link #getByCode}，不扫列表。
+     */
     public List<EntityRespDTO> listByCodes(List<String> codes, String entityTypeCode) {
         if (CollUtil.isEmpty(codes)) {
             return Collections.emptyList();
         }
-        Set<String> codeSet = new HashSet<>(codes);
-        return list(entityTypeCode, null).stream()
-                .filter(dto -> codeSet.contains(EntityRpcDtoSupport.readCode(dto)))
-                .toList();
+        List<EntityRespDTO> details = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (String code : codes) {
+            if (StrUtil.isBlank(code) || !seen.add(code.trim())) {
+                continue;
+            }
+            EntityRespDTO detail = getByCode(code, entityTypeCode);
+            if (detail != null) {
+                details.add(detail);
+            }
+        }
+        return details;
     }
 
     /**

@@ -23,7 +23,7 @@ public interface PathNetworkApi {
     CommonResult<PathNetworkDTO> getNetwork(@PathVariable("networkRef") String networkRef);
 
     @GetMapping(PREFIX + "/networks/by-facility")
-    @Operation(summary = "列出设施下已发布路径网络摘要（不含草稿）")
+    @Operation(summary = "列出本厂路网（与路网管理同一份）")
     CommonResult<List<PathNetworkSummaryDTO>> listPublished(@RequestParam("facilityId") Long facilityId);
 
     @GetMapping(PREFIX + "/portals")

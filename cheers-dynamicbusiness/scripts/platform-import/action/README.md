@@ -20,7 +20,7 @@
 
 | 文件 | 职责 |
 |------|------|
-| `01_fields.sql` | 字段库：`param_slots_json` / `child_action_ids_json` / `is_composite` / 隐藏 `execution_means` |
+| `01_fields.sql` | 字段库：动作结构、隐藏 `execution_means`、`action_domain` 与 `analysis_capability_id` |
 | `02_entity_type.sql` | 类型 `action`（动作库），知识库 · 全网 · SINGLE |
 | `03_base_fields.sql` | 基础字段挂载（仅结构列；通过 `type_config.createVisible=false` 控制新建不展示） |
 | `04_model.sql` | 规范型号 `action`（目录）+ 字段分配；**必须 status=1** |
@@ -36,6 +36,7 @@
 | `11_ensure_model_tab_list_props.sql` | 模型管理 Tab：`模型管理列表-action` + `dm_model_tab_category.model_list_props_id`（与 `ensureModelTabListPropsId` 同口径） |
 | `10_robot_atomic_actions.sql` | 地面机器人原子动作；现网纠偏挂回规范型号 `action` |
 | `13_head_tail_actions.sql` | 任务头尾：机器人/无人机复合头尾 + 开机自检/电量检查/返回充电/起飞/降落 |
+| `17_action_domain.sql` | 将动作归入设备、智能分析、人工或平台；智能分析能力只保存能力目录编号 |
 
 ## 常用参数字段（勾进动作参数定义）
 

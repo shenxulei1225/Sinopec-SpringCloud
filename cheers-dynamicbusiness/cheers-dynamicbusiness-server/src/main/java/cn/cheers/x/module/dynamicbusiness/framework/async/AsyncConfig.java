@@ -1,5 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.framework.async;
 
+import com.alibaba.ttl.TtlRunnable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -95,6 +96,8 @@ public class AsyncConfig {
         executor.setQueueCapacity(500);
         // 线程名前缀
         executor.setThreadNamePrefix("entity-sync-");
+        // 租户编号在 TransmittableThreadLocal 里。线程池不包装的话，异步任务会丢租户。
+        executor.setTaskDecorator(TtlRunnable::get);
         // 拒绝策略：调用者运行策略（确保同步任务不会丢失）
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         // 等待所有任务结束后再关闭线程池

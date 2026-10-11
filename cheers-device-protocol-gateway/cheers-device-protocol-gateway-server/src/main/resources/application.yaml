@@ -44,6 +44,20 @@ cheers:
       - "*"
     # 上行回写巡检任务；本地直连 inspection-task 端口（Nacos 可用后可改为服务发现 URL）
     uplink-notify-url: ${DEVICE_PROTOCOL_UPLINK_NOTIFY_URL:http://127.0.0.1:15095/rpc-api/inspection-task/device-uplink/notify}
+    # 大疆上云：默认关。打开后只应答设备上线（拓扑 + 许可），不下发航线。
+    dji-cloud:
+      enabled: ${DJI_CLOUD_ENABLED:false}
+      broker-url: ${DJI_CLOUD_BROKER_URL:}
+      username: ${DJI_CLOUD_MQTT_USERNAME:}
+      password: ${DJI_CLOUD_MQTT_PASSWORD:}
+      client-id: ${DJI_CLOUD_CLIENT_ID:cheers-dji-cloud}
+      app-id: ${DJI_CLOUD_APP_ID:}
+      app-key: ${DJI_CLOUD_APP_KEY:}
+      app-license: ${DJI_CLOUD_APP_LICENSE:}
+      ntp-server-host: ${DJI_CLOUD_NTP_HOST:ntp.aliyun.com}
+      ntp-server-port: ${DJI_CLOUD_NTP_PORT:123}
+      organization-id: ${DJI_CLOUD_ORGANIZATION_ID:}
+      organization-name: ${DJI_CLOUD_ORGANIZATION_NAME:}
   info:
     version: 1.0.0
     base-package: cn.cheers.x.device.protocolgateway

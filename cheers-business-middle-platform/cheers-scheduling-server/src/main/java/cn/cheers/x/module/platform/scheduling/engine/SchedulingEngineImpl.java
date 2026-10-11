@@ -25,8 +25,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -37,7 +40,7 @@ import static cn.cheers.x.module.platform.scheduling.enums.ErrorCodeConstants.SC
 
 /**
  * 排程引擎：工作项已带计划时刻则只做资源冲突求解；否则按 mode 展开后再求解。
- * <p>先判断空闲够不够插入、冲突在前面还是后面；策略只决定能否挪已有任务、最多挪多久。
+ * <p>同一原定时刻先试一次平移，只挪这次这条。剩下的再逐个贴进空窗口，窗口不够才推后面、拉前面。
  * <p>不负责：从业务排期模板发明执行点；从设备台账拉候选名单。
  */
 @Service
@@ -83,7 +86,6 @@ public class SchedulingEngineImpl implements SchedulingEngine {
         String strategy = normalizeStrategy(schedulingSpec != null ? schedulingSpec.getConflictStrategy() : null);
         String placementPreference = SchedulingConflictPlacer.normalizePreference(
                 schedulingSpec != null ? schedulingSpec.getPlacementPreference() : null);
-        boolean allowShiftExisting = schedulingSpec != null && Boolean.TRUE.equals(schedulingSpec.getAllowShiftExisting());
         Integer maxShiftMinutes = schedulingSpec != null ? schedulingSpec.getMaxShiftMinutes() : null;
         Map<String, List<TimelineBlock>> timelines = seedTimelines(occupiedReservations, taskGapMinutes);
         OffsetDateTime earliestStart = horizonStart.atStartOfDay(DEFAULT_ZONE).toOffsetDateTime();
@@ -96,13 +98,18 @@ public class SchedulingEngineImpl implements SchedulingEngine {
                     .thenComparing(Candidate::preferredStart));
         }
 
+        if (!STRATEGY_REJECT.equals(strategy)
+                && SchedulingConflictPlacer.PREFERENCE_WINDOW.equals(placementPreference)) {
+            candidates = alignSameClock(candidates, timelines, earliestStart, horizonLimit);
+        }
+
         List<ResourceReservationDTO> resolved = new ArrayList<>();
         for (Candidate candidate : candidates) {
             List<String> resourceIds = SchedulingConflictPlacer.candidateIds(candidate.workItem().getResourceRequirements());
             OffsetDateTime preferred = candidate.preferredStart();
             int minutes = candidate.workItem().getEstimatedDuration();
             SchedulingConflictPlacer.Placement placement = SchedulingConflictPlacer.place(
-                    strategy, placementPreference, allowShiftExisting, maxShiftMinutes,
+                    strategy, placementPreference, maxShiftMinutes,
                     preferred, minutes, resourceIds, timelines, earliestStart, horizonLimit);
             OffsetDateTime placedStart = placement.start();
             OffsetDateTime placedEnd = placedStart.plusMinutes(minutes);
@@ -150,6 +157,169 @@ public class SchedulingEngineImpl implements SchedulingEngine {
         return solve(workItems, schedulingSpec, runtimeJobId,
                 occupiedSlots == null ? List.of() : occupiedSlots.stream().map(ScheduleSlotDTO::legacyToReservation).toList())
                 .stream().map(ScheduleSlotDTO::from).toList();
+    }
+
+    /**
+     * 同一台设备、同一个原定时刻的多天：试一个平移分钟数。
+     * 一次平移加上剩下要单独处理的次数更少，才改这些天的原定时刻。本来能放下的不挪。
+     */
+    private List<Candidate> alignSameClock(List<Candidate> candidates,
+                                            Map<String, List<TimelineBlock>> timelines,
+                                            OffsetDateTime earliestStart, OffsetDateTime horizonLimit) {
+        Map<String, List<Integer>> groups = new LinkedHashMap<>();
+        for (int index = 0; index < candidates.size(); index++) {
+            Candidate candidate = candidates.get(index);
+            String resourceId = SchedulingConflictPlacer.candidateIds(
+                    candidate.workItem().getResourceRequirements()).stream().findFirst().orElse("__unassigned__");
+            String clock = candidate.preferredStart().atZoneSameInstant(DEFAULT_ZONE).toLocalTime().toString();
+            groups.computeIfAbsent(resourceId + "|" + clock, key -> new ArrayList<>()).add(index);
+        }
+        List<Candidate> aligned = new ArrayList<>(candidates);
+        for (List<Integer> indexes : groups.values()) {
+            if (indexes.size() < 2) {
+                continue;
+            }
+            int conflictCount = 0;
+            for (int index : indexes) {
+                if (!fitsExternal(aligned.get(index), 0, timelines, earliestStart, horizonLimit)) {
+                    conflictCount++;
+                }
+            }
+            if (conflictCount < 2) {
+                continue;
+            }
+            Set<Integer> deltas = new LinkedHashSet<>();
+            for (int index : indexes) {
+                collectSelfDeltas(aligned.get(index), timelines, earliestStart, horizonLimit, deltas);
+            }
+            int bestCost = conflictCount;
+            int bestDelta = 0;
+            for (int delta : deltas) {
+                int cost = bulkCost(aligned, indexes, delta, timelines, earliestStart, horizonLimit, conflictCount);
+                if (cost < bestCost) {
+                    bestCost = cost;
+                    bestDelta = delta;
+                }
+            }
+            if (bestDelta == 0) {
+                continue;
+            }
+            applyDelta(aligned, indexes, bestDelta, timelines, earliestStart, horizonLimit);
+        }
+        return aligned;
+    }
+
+    private int bulkCost(List<Candidate> candidates, List<Integer> indexes, int delta,
+                          Map<String, List<TimelineBlock>> timelines,
+                          OffsetDateTime earliestStart, OffsetDateTime horizonLimit, int conflictCount) {
+        int moved = 0;
+        int leftovers = 0;
+        List<Span> taken = new ArrayList<>();
+        for (int index : indexes) {
+            Candidate candidate = candidates.get(index);
+            int minutes = candidate.workItem().getEstimatedDuration();
+            if (fitsExternal(candidate, 0, timelines, earliestStart, horizonLimit)) {
+                taken.add(new Span(candidate.preferredStart(), minutes));
+                continue;
+            }
+            OffsetDateTime start = candidate.preferredStart().plusMinutes(delta);
+            if (fitsExternal(candidate, delta, timelines, earliestStart, horizonLimit)
+                    && !overlaps(start, minutes, taken)) {
+                moved++;
+                taken.add(new Span(start, minutes));
+            } else {
+                leftovers++;
+            }
+        }
+        return moved == 0 ? conflictCount : 1 + leftovers;
+    }
+
+    private void applyDelta(List<Candidate> candidates, List<Integer> indexes, int delta,
+                             Map<String, List<TimelineBlock>> timelines,
+                             OffsetDateTime earliestStart, OffsetDateTime horizonLimit) {
+        List<Span> taken = new ArrayList<>();
+        for (int index : indexes) {
+            Candidate candidate = candidates.get(index);
+            int minutes = candidate.workItem().getEstimatedDuration();
+            if (fitsExternal(candidate, 0, timelines, earliestStart, horizonLimit)) {
+                taken.add(new Span(candidate.preferredStart(), minutes));
+                continue;
+            }
+            OffsetDateTime start = candidate.preferredStart().plusMinutes(delta);
+            if (!fitsExternal(candidate, delta, timelines, earliestStart, horizonLimit)
+                    || overlaps(start, minutes, taken)) {
+                continue;
+            }
+            candidates.set(index, new Candidate(candidate.workItem(), candidate.runtimeJobId(), start));
+            taken.add(new Span(start, minutes));
+        }
+    }
+
+    private void collectSelfDeltas(Candidate candidate, Map<String, List<TimelineBlock>> timelines,
+                                    OffsetDateTime earliestStart, OffsetDateTime horizonLimit,
+                                    Set<Integer> deltas) {
+        int minutes = candidate.workItem().getEstimatedDuration();
+        String resourceId = SchedulingConflictPlacer.candidateIds(
+                candidate.workItem().getResourceRequirements()).stream().findFirst().orElse("__unassigned__");
+        List<TimelineBlock> busy = timelines.getOrDefault(resourceId, List.of());
+        OffsetDateTime preferred = candidate.preferredStart();
+        SchedulingConflictDiagnosis diagnosis = SchedulingConflictDiagnosis.diagnose(
+                preferred, preferred.plusMinutes(minutes), busy, earliestStart, horizonLimit);
+        OffsetDateTime idleStart = diagnosis.previous() == null ? earliestStart : diagnosis.previous().blockedEnd();
+        OffsetDateTime idleEnd = diagnosis.next() == null ? horizonLimit : diagnosis.next().start();
+        addGapDelta(deltas, preferred, minutes, idleStart, idleEnd, horizonLimit);
+        if (diagnosis.next() != null) {
+            TimelineBlock later = SchedulingConflictDiagnosis.nextOf(diagnosis.next(), busy);
+            OffsetDateTime nextStart = diagnosis.next().blockedEnd();
+            OffsetDateTime nextEnd = later == null ? horizonLimit : later.start();
+            addGapDelta(deltas, preferred, minutes, nextStart, nextEnd, horizonLimit);
+        }
+    }
+
+    private static void addGapDelta(Set<Integer> deltas, OffsetDateTime preferred, int minutes,
+                                     OffsetDateTime gapStart, OffsetDateTime gapEnd, OffsetDateTime horizonLimit) {
+        if (gapEnd.isBefore(gapStart) || java.time.Duration.between(gapStart, gapEnd).toMinutes() < minutes) {
+            return;
+        }
+        OffsetDateTime latest = gapEnd.minusMinutes(minutes);
+        if (!latest.plusMinutes(minutes).isBefore(horizonLimit)) {
+            return;
+        }
+        OffsetDateTime start = preferred;
+        if (start.isBefore(gapStart)) {
+            start = gapStart;
+        }
+        if (start.isAfter(latest)) {
+            start = latest;
+        }
+        deltas.add((int) java.time.Duration.between(preferred, start).toMinutes());
+    }
+
+    private boolean fitsExternal(Candidate candidate, int deltaMinutes,
+                                  Map<String, List<TimelineBlock>> timelines,
+                                  OffsetDateTime earliestStart, OffsetDateTime horizonLimit) {
+        int minutes = candidate.workItem().getEstimatedDuration();
+        String resourceId = SchedulingConflictPlacer.candidateIds(
+                candidate.workItem().getResourceRequirements()).stream().findFirst().orElse("__unassigned__");
+        List<TimelineBlock> busy = timelines.getOrDefault(resourceId, List.of());
+        return SchedulingConflictPlacer.selfFits(
+                candidate.preferredStart().plusMinutes(deltaMinutes), minutes, busy, earliestStart, horizonLimit);
+    }
+
+    private static boolean overlaps(OffsetDateTime start, int minutes, List<Span> taken) {
+        OffsetDateTime end = start.plusMinutes(minutes);
+        for (Span span : taken) {
+            if (start.isBefore(span.end()) && span.start().isBefore(end)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private record Span(OffsetDateTime start, int minutes) {
+        OffsetDateTime end() {
+            return start.plusMinutes(minutes);
+        }
     }
 
     private List<Candidate> expandCandidates(List<WorkItemDTO> workItems, String mode,

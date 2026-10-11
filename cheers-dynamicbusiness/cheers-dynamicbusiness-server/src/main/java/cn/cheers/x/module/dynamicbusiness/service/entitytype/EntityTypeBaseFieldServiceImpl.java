@@ -223,6 +223,10 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
         if (reqVO.getStatus() != null) {
             field.setStatus(reqVO.getStatus());
         }
+        // 介绍区是否可见、一次勾多档写在类型配置上。拖动顺序会把原配置带回，按带回的内容保存，不用字段库选项名单覆盖。
+        if (reqVO.getTypeConfig() != null) {
+            field.setTypeConfig(reqVO.getTypeConfig());
+        }
         baseFieldMapper.updateById(field);
 
         if (libraryField != null) {
@@ -600,6 +604,7 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
         EntityTypeBaseFieldDO field = new EntityTypeBaseFieldDO();
         field.setEntityTypeCode(reqVO.getEntityTypeCode());
         applyLibraryMetadata(field, libraryField);
+        field.setTypeConfig(reqVO.getTypeConfig() != null ? reqVO.getTypeConfig() : libraryField.getOptions());
         field.setRequired(reqVO.getRequired());
         field.setIsSearchable(defaultRuleFlag(reqVO.getIsSearchable()));
         field.setIsFilterable(defaultRuleFlag(reqVO.getIsFilterable()));
@@ -628,7 +633,6 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
         if (field.getDescription() == null) {
             field.setDescription(libraryField.getDescription());
         }
-        field.setTypeConfig(libraryField.getOptions());
     }
 
     private void assertMetadataReadonly(
@@ -638,9 +642,9 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
         }
         String expectedFieldCode = libraryField.getCode();
         String expectedDataType = toBaseDataType(libraryField.getType());
+        // 类型配置（介绍区是否可见、一次勾多档）不是字段库选项名单。排序保存会原样带回，不能当成改了编码或类型。
         boolean metadataChanged = (reqVO.getFieldCode() != null && !Objects.equals(reqVO.getFieldCode(), expectedFieldCode))
-                || (reqVO.getDataType() != null && !Objects.equals(reqVO.getDataType(), expectedDataType))
-                || (reqVO.getTypeConfig() != null && !Objects.equals(reqVO.getTypeConfig(), libraryField.getOptions()));
+                || (reqVO.getDataType() != null && !Objects.equals(reqVO.getDataType(), expectedDataType));
         if (metadataChanged) {
             throw exception(BASE_FIELD_LIBRARY_METADATA_READONLY);
         }

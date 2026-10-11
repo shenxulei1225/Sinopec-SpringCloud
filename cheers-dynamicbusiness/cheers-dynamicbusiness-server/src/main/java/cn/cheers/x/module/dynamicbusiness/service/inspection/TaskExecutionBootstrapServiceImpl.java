@@ -8,6 +8,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.inspection.vo.TaskExe
 import cn.cheers.x.module.dynamicbusiness.controller.admin.inspection.vo.TaskExecutionBootstrapRespVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
+import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import com.alibaba.fastjson2.JSON;
 import jakarta.annotation.Resource;
@@ -28,7 +29,8 @@ import java.util.Map;
  * （{@code standard_snapshot}/{@code parameter_snapshot}/{@code gap_codes}）；
  * 父子关系以 draft.parentStepCode → 已创建步骤 id 写入实体 {@code parentId}。</p>
  * <p><b>不负责</b>：复合动作展开、SOP merge（调用方先展开再传 steps）。</p>
- * <p><b>禁止</b>：在此调用路径/算路服务；有 gapCodes 时拒绝开跑；父 stepCode 缺失时静默当根。</p>
+ * <p><b>禁止</b>：在此调用路径/算路服务；有 gapCodes 时拒绝开跑；父 stepCode 缺失时静默当根；
+ * 步骤缺场站时从请求头猜。步骤的所属场站只抄这次执行账上已经写下的那一个。</p>
  */
 @Service
 public class TaskExecutionBootstrapServiceImpl implements TaskExecutionBootstrapService {
@@ -42,6 +44,9 @@ public class TaskExecutionBootstrapServiceImpl implements TaskExecutionBootstrap
 
     @Resource
     private ModelMapper modelMapper;
+
+    @Resource
+    private TaskExecutionStepBatchWriter taskExecutionStepBatchWriter;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -87,6 +92,9 @@ public class TaskExecutionBootstrapServiceImpl implements TaskExecutionBootstrap
         updateReq.setCustomFields(custom);
         entityService.update(updateReq);
 
+        // 步骤和这次执行是同一场站。只抄执行账上已有的所属场站，不从请求头猜。
+        Long facilityId = facilityIdOf(record);
+
         // 按列表顺序创建：父须出现在子之前；stepCode → id 映射后写 parentId
         List<Long> stepIds = new ArrayList<>();
         Map<String, Long> stepCodeToId = new LinkedHashMap<>();
@@ -114,13 +122,20 @@ public class TaskExecutionBootstrapServiceImpl implements TaskExecutionBootstrap
             stepBase.put("modelId", stepModel.getId());
             stepBase.put("name", draft.getName());
             stepBase.put("status", 1);
-            stepBase.put("execution_record_id", req.getExecutionRecordId());
+            // 执行记录是关联字段，只收 {类型, 编号}。类型用这次执行账已经落下的存储类型。
+            Map<String, Object> recordRef = new LinkedHashMap<>(2);
+            recordRef.put("entityTypeCode", recordType);
+            recordRef.put("id", req.getExecutionRecordId());
+            stepBase.put("execution_record_id", recordRef);
             stepBase.put("step_code", draft.getStepCode());
             stepBase.put("step_order", draft.getStepOrder());
             stepBase.put("step_title", draft.getStepTitle() != null ? draft.getStepTitle() : draft.getName());
             stepBase.put("step_type", draft.getStepType() != null ? draft.getStepType() : "sop_step");
             stepBase.put("step_required", draft.getStepRequired() == null || draft.getStepRequired());
             stepBase.put("step_status", "pending");
+            if (facilityId != null) {
+                stepBase.put(FacilityOwningFieldCodes.FIELD_CODE, FacilityOwningFieldCodes.toApiRef(facilityId));
+            }
             if (parentId != null) {
                 stepBase.put("parentId", parentId);
             }
@@ -137,5 +152,45 @@ public class TaskExecutionBootstrapServiceImpl implements TaskExecutionBootstrap
         resp.setExecutionRecordId(req.getExecutionRecordId());
         resp.setStepIds(stepIds);
         return resp;
+    }
+
+    @Override
+    public void writeSameStepsOntoRecords(
+            String recordType,
+            String recordModelCode,
+            Long facilityId,
+            List<Long> executionRecordIds,
+            List<TaskExecutionBootstrapReqVO.TaskExecutionStepDraftVO> steps) {
+        taskExecutionStepBatchWriter.write(
+                recordType, recordModelCode, facilityId, executionRecordIds, steps);
+    }
+
+    @Override
+    public List<Long> insertPendingRecords(
+            String recordType,
+            Long modelId,
+            Long facilityId,
+            Long taskDefinitionId,
+            Object standardSnapshot,
+            Object parameterSnapshot,
+            List<PendingAccount> accounts) {
+        return taskExecutionStepBatchWriter.insertPendingRecords(
+                recordType, modelId, facilityId, taskDefinitionId,
+                standardSnapshot, parameterSnapshot, accounts);
+    }
+
+    /** 执行账上的所属场站。没有则 null，交给步骤创建按站场级规则报缺场站。 */
+    private static Long facilityIdOf(EntityRespVO record) {
+        Long fromBase = FacilityOwningFieldCodes.extractId(
+                record.getBaseFields() == null
+                        ? null
+                        : record.getBaseFields().get(FacilityOwningFieldCodes.FIELD_CODE));
+        if (fromBase != null) {
+            return fromBase;
+        }
+        return FacilityOwningFieldCodes.extractId(
+                record.getCustomFields() == null
+                        ? null
+                        : record.getCustomFields().get(FacilityOwningFieldCodes.FIELD_CODE));
     }
 }

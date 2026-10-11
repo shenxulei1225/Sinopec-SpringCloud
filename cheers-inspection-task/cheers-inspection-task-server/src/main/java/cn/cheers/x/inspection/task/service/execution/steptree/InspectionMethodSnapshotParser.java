@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -12,7 +13,9 @@ import java.util.Map;
  * <p>与任务页同一条读法：正式包是 { methods: [{ methodKey, stepTree }] }；
  * 历史包仍可读 { executionMeans, actionTree }。
  * <p>树上的 actionId 是动作库编码，不是数字主键。
- * <p>禁止：只认已退役的旧列旧形状；缺档时猜别的手段；把整棵任务步骤图当成检查方法。
+ * <p>同级顺序认每一步上的 order。画面拖动只改这个数，数组下标仍是当初添加的先后。
+ * <p>步骤上的 paramSlots 不是参数名单。要哪些参数由调用方读动作库。
+ * <p>禁止：只认已退役的旧列旧形状；缺档时猜别的手段；把整棵任务步骤图当成检查方法；按数组下标当步骤顺序；把步骤上抄下的参数名单当成还要填的槽。
  */
 public final class InspectionMethodSnapshotParser {
 
@@ -50,17 +53,13 @@ public final class InspectionMethodSnapshotParser {
         return List.of();
     }
 
-    @SuppressWarnings("unchecked")
     private static List<TaskStepTreeGenerator.MethodAction> parseTree(Object raw) {
         if (!(raw instanceof List<?> nodes)) {
             return List.of();
         }
         List<TaskStepTreeGenerator.MethodAction> actions = new ArrayList<>();
-        for (Object node : nodes) {
-            if (!(node instanceof Map<?, ?> row)) {
-                continue;
-            }
-            collectActions((Map<String, Object>) row, actions);
+        for (Map<String, Object> row : sortedByOrder(nodes)) {
+            collectActions(row, actions);
         }
         return actions;
     }
@@ -74,22 +73,60 @@ public final class InspectionMethodSnapshotParser {
             if (refCode.isBlank() && actionRef instanceof String && refId == null) {
                 refCode = text(actionRef);
             }
-            String title = text(first(row, "stepTitle", "title", "name", "label"));
+            // 步骤不另存名称。生成任务时按动作库里这个动作现在的名称来写。
+            String title = "";
             String sourceNodeKey = text(first(row, "nodeKey", "key"));
             if (refId != null || !refCode.isBlank()) {
                 actions.add(new TaskStepTreeGenerator.MethodAction(
                         refId, refCode.isBlank() ? null : refCode, title, Map.of(),
-                        sourceNodeKey.isBlank() ? null : sourceNodeKey, slotsOf(row.get("paramSlots"))));
+                        sourceNodeKey.isBlank() ? null : sourceNodeKey, List.of()));
             }
         }
         Object children = first(row, "children", "nodes");
         if (children instanceof List<?> list) {
-            for (Object child : list) {
-                if (child instanceof Map<?, ?> childRow) {
-                    collectActions((Map<String, Object>) childRow, actions);
-                }
+            for (Map<String, Object> childRow : sortedByOrder(list)) {
+                collectActions(childRow, actions);
             }
         }
+    }
+
+    /**
+     * 同级按 order 从小到大。没有 order 的留在原数组位置的相对先后。
+     */
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> sortedByOrder(List<?> nodes) {
+        record Ranked(int index, Map<String, Object> row) {
+        }
+        List<Ranked> ranked = new ArrayList<>();
+        int index = 0;
+        for (Object node : nodes) {
+            if (node instanceof Map<?, ?> row) {
+                ranked.add(new Ranked(index, (Map<String, Object>) row));
+            }
+            index++;
+        }
+        ranked.sort(Comparator.comparingInt((Ranked rankedRow) -> orderOf(rankedRow.row()))
+                .thenComparingInt(Ranked::index));
+        List<Map<String, Object>> sorted = new ArrayList<>(ranked.size());
+        for (Ranked rankedRow : ranked) {
+            sorted.add(rankedRow.row());
+        }
+        return sorted;
+    }
+
+    private static int orderOf(Map<String, Object> row) {
+        Object raw = row.get("order");
+        if (raw instanceof Number number) {
+            return number.intValue();
+        }
+        if (raw instanceof String text && !text.isBlank()) {
+            try {
+                return Integer.parseInt(text.trim());
+            } catch (NumberFormatException ignored) {
+                return Integer.MAX_VALUE;
+            }
+        }
+        return Integer.MAX_VALUE;
     }
 
     private static boolean isExecutableStep(Map<String, Object> row) {
@@ -142,22 +179,5 @@ public final class InspectionMethodSnapshotParser {
             }
         }
         return null;
-    }
-
-    /**
-     * 检查方法步骤上声明的参数槽。到达位置可能是 location_ref，也可能是选择位置字段编码。
-     */
-    private static List<String> slotsOf(Object raw) {
-        if (!(raw instanceof List<?> list)) {
-            return List.of();
-        }
-        List<String> slots = new ArrayList<>();
-        for (Object row : list) {
-            String slot = text(row);
-            if (!slot.isBlank()) {
-                slots.add(slot);
-            }
-        }
-        return slots;
     }
 }

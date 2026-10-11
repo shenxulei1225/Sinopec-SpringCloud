@@ -10,37 +10,31 @@
 | 域入口（SCOPED） | `task_patrol`、`task_maintenance`、`task_record_patrol`、`task_record_maintenance` |
 | 已删除旧法 | `patrol` 类型上的任务模型、`task_patrol_smoke`、`general_admin_task` |
 | 分类树 | `task`：日常/专项/维修；`task_excution_record`：巡检记录/维修记录 |
-| Scope 隔离 | `general_station_task`（无 scope）用于验证巡检/维修 Scope 不串域 |
+| 任务型号 | 只保留 `patrol_task`，界面名称「巡检任务」 |
 
-### 任务模型（storage=`task`，8 个）
+### 任务模型（storage=`task`，1 个）
 
-| code | 业务域 | 实体数 |
-|------|--------|--------|
-| `patrol_task` | 巡检 | 5 |
-| `patrol_pipeline` | 巡检 | 3 |
-| `patrol_fire_facility` | 巡检 | 3 |
-| `patrol_valve_special` | 巡检 | 2 |
-| `patrol_adhoc` | 巡检 | 2（未挂分类） |
-| `maint_work_order` | 维修 | 3 |
-| `maint_emergency` | 维修 | 2 |
-| `general_station_task` | 无 | 2 |
+| code | 业务域 | 说明 |
+|------|--------|------|
+| `patrol_task` | 巡检 | 界面名称「巡检任务」。管廊、消防、阀门、临时、维修、综合不再另建型号 |
 
-### 执行记录模型（storage=`task_excution_record`，3 个）
+### 执行记录模型（storage=`task_excution_record`，2 个）
 
 | code | 业务域 | 实体数 |
 |------|--------|--------|
-| `exec_patrol_round` | 巡检 | 4 |
-| `exec_patrol_issue` | 巡检 | 4 |
-| `exec_maint_log` | 维修 | 5 |
+| `exec_patrol_record`（界面名称「巡检记录」） | 巡检 | 0（执行记录由生成任务写入，脚本不再造样例） |
+| `exec_maint_log`（界面名称「维修记录」） | 维修 | 0（同上） |
+
+巡检异常型号 `exec_patrol_issue` 在底座 `anomaly`（异常记录），不在执行记录里。
 
 ### 关键断言基数
 
 | 对象 | 全量 | 巡检 Scope | 维修 Scope |
 |------|------|------------|------------|
-| 任务模型 | 8 | 5 | 2 |
-| 任务实体 | 22 | 15 | 5 |
-| 执行记录模型 | 3 | 2 | 1 |
-| 执行记录实体 | 13 | 8 | 5 |
+| 任务模型 | 1（`patrol_task`） | 1 | 0 |
+| 任务实体 | 22 | 22 | 0 |
+| 执行记录模型 | 2 | 1 | 1 |
+| 执行记录实体 | 0 | 0 | 0 |
 | 空域 Scope | — | 0 | — |
 
 ## 准备数据

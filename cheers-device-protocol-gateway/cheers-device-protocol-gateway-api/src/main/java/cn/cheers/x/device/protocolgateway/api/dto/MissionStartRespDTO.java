@@ -10,6 +10,8 @@ package cn.cheers.x.device.protocolgateway.api.dto;
  * @param startupSent       500201 是否已写出
  * @param failureReason     失败原因；成功时为 null
  * @param commandWireJson   已编码的 500104 报文（便于联调核对）
+ * @param waylineFileId     大疆航线文件编号；东古和机器人没有这份文件
+ * @param waylineFingerprint 航线文件内容的 MD5，对应下发任务里的 fingerprint
  */
 public record MissionStartRespDTO(
         boolean success,
@@ -17,6 +19,18 @@ public record MissionStartRespDTO(
         boolean commandSent,
         boolean startupSent,
         String failureReason,
-        String commandWireJson
+        String commandWireJson,
+        String waylineFileId,
+        String waylineFingerprint
 ) {
+    public MissionStartRespDTO(
+            boolean success,
+            boolean online,
+            boolean commandSent,
+            boolean startupSent,
+            String failureReason,
+            String commandWireJson
+    ) {
+        this(success, online, commandSent, startupSent, failureReason, commandWireJson, null, null);
+    }
 }

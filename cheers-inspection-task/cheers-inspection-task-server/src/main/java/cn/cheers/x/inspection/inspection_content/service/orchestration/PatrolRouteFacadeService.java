@@ -1,5 +1,6 @@
 package cn.cheers.x.inspection.inspection_content.service.orchestration;
 
+import cn.cheers.x.inspection.inspection_content.controller.admin.vo.orchestration.PatrolInspectionConfigReadinessRespVO;
 import cn.cheers.x.inspection.inspection_content.controller.admin.vo.orchestration.PatrolOrchestrationRunReqVO;
 import cn.cheers.x.inspection.inspection_content.controller.admin.vo.orchestration.PatrolRouteRunReqVO;
 import cn.cheers.x.inspection.inspection_content.controller.admin.vo.orchestration.PatrolSlotWritebackReqVO;
@@ -19,19 +20,27 @@ public interface PatrolRouteFacadeService {
     ScheduleRunResponse previewRoute(PatrolRouteRunReqVO reqVO);
 
     /**
-     * 路径规划步·保存路线：展开作业项 + 算路，落库 plannedRoute 与预估行驶时长；不写步骤图、不做占窗编排。
-     */
-    ScheduleRunResponse saveRoute(PatrolRouteRunReqVO reqVO);
-
-    /**
-     * 冲突检测：按已保存排期模板与指定设备对照已有占窗，只出报告。不写快照、不生成步骤图。
+     * 冲突检测：按这一页的排期模板与指定设备对照已有占窗。
+     * 没有重叠时带上计划时间点。有重叠时不带计划点。不写快照、不生成步骤图、不生成指令。
      */
     ScheduleConflictReportDTO detectScheduleConflicts(PatrolOrchestrationRunReqVO reqVO);
 
     /**
-     * 第 3 步无冲突写试排：按模板时间点写试排快照，并生成步骤图。不求解、不挪已有。
+     * 第 3 步·只查配置：执行设备、协议、路线端点、检查项方法是否齐全；不生成步骤图、不试译。
      */
-    ScheduleRunResponse prepareConfirmPreview(PatrolOrchestrationRunReqVO reqVO);
+    PatrolInspectionConfigReadinessRespVO validateInspectionConfig(PatrolOrchestrationRunReqVO reqVO);
+
+    /**
+     * 第 3 步·只生成步骤图：不写试排、不试译、不写任务。须先 {@link #validateInspectionConfig} 无缺口。
+     */
+    ScheduleRunResponse composeExecutionStepTree(PatrolOrchestrationRunReqVO reqVO);
+
+    /**
+     * 第 3 步·只生成指令：用页面上已经生成的步骤图试译一次。
+     * 各计划点用同一份指令。时间重叠不参与这一步。
+     * 不重新编步骤图，不写出计划点，不写草稿，不替换已发布步骤图。
+     */
+    ScheduleRunResponse previewPageInstructions(PatrolOrchestrationRunReqVO reqVO);
 
     /**
      * 智能编排·试排：冲突解决 + 调用步骤图生成，结果写草稿 orchestrationPreview*；不写 runtimeJobId、不物化待执行账。

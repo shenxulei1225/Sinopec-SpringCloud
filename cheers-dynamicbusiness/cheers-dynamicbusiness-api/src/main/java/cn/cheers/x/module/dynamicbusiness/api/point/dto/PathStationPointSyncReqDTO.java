@@ -64,7 +64,7 @@ public class PathStationPointSyncReqDTO {
 
         /**
          * 地理坐标，从路网节点 payload 原样带过来。
-         * 键名跟节点一致：longitude / latitude；高程有才带，不用场景 y 冒充。
+         * 键名跟节点一致：longitude / latitude / ellipsoidHeight。椭球高没填就不带，不用离地高度代替。
          */
         @Schema(description = "经度（节点 payload.longitude）")
         private Double longitude;
@@ -72,7 +72,7 @@ public class PathStationPointSyncReqDTO {
         @Schema(description = "纬度（节点 payload.latitude）")
         private Double latitude;
 
-        @Schema(description = "高程（节点 payload.height，可空）")
+        @Schema(description = "椭球高（节点 payload.ellipsoidHeight，可空）")
         private Double height;
     }
 }

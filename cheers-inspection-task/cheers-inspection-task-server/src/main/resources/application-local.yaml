@@ -131,6 +131,18 @@ logging:
 
 --- #################### Cheers 相关配置 ####################
 
+# 第 3 步试译 Feign 调 cheers-device-protocol-gateway-server（默认 8095）。
+# 报 preview-translate 不存在：查 Nacos 是否注册该服务、8095 进程是否为本仓库编译、Feign 是否打到别的实例。
+# 本地：.\start-microservices.ps1 restart protocol（改网关代码后 mvn install 再重启）。
+
+# 任务级录像（本地默认对接 media-gateway/go2rtc，先 .\setup-local-patrol-media.ps1 启动网关）
+# 基址 = RTSP 前缀；完整推流地址 = {基址}/patrol-{任务id}-{计划点id}
+# 设备在别的机器上时，把 127.0.0.1 改成与 ecs-react NEXT_PUBLIC_MEDIA_GATEWAY_* 同一台机 LAN IP
+patrol:
+  media:
+    record-ingest-base-url: ${PATROL_RECORD_INGEST_BASE_URL:rtsp://127.0.0.1:8554}
+    record-file-url-template: ${PATROL_RECORD_FILE_URL_TEMPLATE:http://127.0.0.1:1984/api/stream.mp4?src={streamName}}
+
 cheers:
   env:
     tag: ${HOSTNAME}

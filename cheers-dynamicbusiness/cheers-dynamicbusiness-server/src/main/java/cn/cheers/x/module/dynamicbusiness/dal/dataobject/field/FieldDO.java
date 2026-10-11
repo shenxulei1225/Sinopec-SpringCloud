@@ -101,10 +101,11 @@ public class FieldDO extends TenantBaseDO {
     private String indexStrategy;
 
     /**
-     * 枚举选项列表（ENUM 类型专用）
+     * 类型自己的 JSON。
      *
-     * JSON 数组格式，如：[{"label":"待处理","value":"pending"},{"label":"已完成","value":"completed"}]
-     * 每个选项包含 label（显示名称）和 value（存储值）
+     * ENUM：选项数组，每项含 label 和 value。
+     * REF_MODEL：一份配置，含 entityTypeCode、sourceModelId、sourceFieldIds。
+     * 不是业务校验规则。同一字段只存一种。
      */
     private String options;
 

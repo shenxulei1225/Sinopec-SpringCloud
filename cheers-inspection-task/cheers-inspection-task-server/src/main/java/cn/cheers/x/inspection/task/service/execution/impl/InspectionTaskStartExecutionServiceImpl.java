@@ -12,6 +12,7 @@ import cn.cheers.x.inspection.task.service.execution.openrun.PatrolOpenRunSnapsh
 import cn.cheers.x.inspection.task.service.execution.scheduleboard.PatrolScheduleSlotExecutionWritebackService;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
+import cn.cheers.x.inspection.task.service.task.PatrolTaskExecutionRecordMediaBinder;
 import cn.cheers.x.module.dynamicbusiness.api.strategy.StrategyRuntimeApi;
 import cn.cheers.x.module.dynamicbusiness.api.strategy.dto.StrategyHandleRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.strategy.dto.StrategyTriggerEventDTO;
@@ -24,22 +25,23 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 巡检「开始执行」：读待执行已冻结的动作参数快照，发出开跑事件；协议翻译由网关做。
- * <p>新建账在排期物化阶段已完成；本方法触发下发与标进行中。不负责 assemble、不读 host pack。
- * <p>禁止：开跑时再解析被检参数；在巡检模块做 protocol_mapping。
+ * 巡检「开始执行」：读生成任务时已物化的待执行账与已翻译下行，再下发；不再首次 translate。
+ * <p>新建账在生成任务时已经完成。本方法只触发下发并把这一次标成进行中。不负责现算步骤，不读设备上的当前参数。
+ * <p>禁止：执行任务时再解析设备参数；在巡检模块做 protocol_mapping。
  */
 @Service
 @RequiredArgsConstructor
 public class InspectionTaskStartExecutionServiceImpl implements InspectionTaskStartExecutionService {
 
-    /** 巡检域执行记录型号（seed：exec_patrol_round） */
-    public static final String PATROL_EXEC_MODEL_CODE = "exec_patrol_round";
+    /** 巡检执行记录型号。界面名称是「巡检记录」，生成任务按这个编码写入。 */
+    public static final String PATROL_EXEC_MODEL_CODE = "exec_patrol_record";
     public static final String PATROL_RECORD_TYPE = "task_record_patrol";
 
     private final PatrolTaskEntityStore patrolTaskEntityStore;
     private final StrategyRuntimeApi strategyRuntimeApi;
     private final PatrolOpenRunMaterializeService openRunMaterializeService;
     private final PatrolScheduleSlotExecutionWritebackService scheduleSlotExecutionWritebackService;
+    private final PatrolTaskExecutionRecordMediaBinder patrolTaskExecutionRecordMediaBinder;
 
     @Override
     public MissionStartRespDTO startExecution(Long taskId) {
@@ -72,13 +74,23 @@ public class InspectionTaskStartExecutionServiceImpl implements InspectionTaskSt
         }
         scheduleSlotExecutionWritebackService.markStarted(
                 resolvedSlotId, task.id(), handled.getExecutionRecordId(), task.facilityId());
+        patrolTaskExecutionRecordMediaBinder.bindFromSnapshot(
+                handled.getExecutionRecordId(), frozen.standardSnapshot());
+        if (StringUtils.hasText(handled.getWaylineFileId())) {
+            openRunMaterializeService.rememberWaylineFile(
+                    handled.getExecutionRecordId(),
+                    handled.getWaylineFileId(),
+                    handled.getWaylineFingerprint());
+        }
         return new MissionStartRespDTO(
                 true,
                 handled.getDispatchOnline() == null || handled.getDispatchOnline(),
                 handled.getDispatchCommandSent() == null || handled.getDispatchCommandSent(),
                 handled.getDispatchStartupSent() == null || handled.getDispatchStartupSent(),
                 null,
-                handled.getDispatchCommandWireJson());
+                handled.getDispatchCommandWireJson(),
+                handled.getWaylineFileId(),
+                handled.getWaylineFingerprint());
     }
 
     private StrategyHandleRespDTO publishStart(

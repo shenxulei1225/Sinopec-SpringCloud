@@ -59,8 +59,7 @@ class MultilegPlanTest {
         ReflectionTestUtils.setField(routePlanService, "stopOrderStrategyRegistry",
                 new StopOrderStrategyRegistry(
                         new AsGivenOrderStrategy(),
-                        new OptimizeOrderStrategy(refineOrderStrategy),
-                        refineOrderStrategy));
+                        new OptimizeOrderStrategy(refineOrderStrategy)));
         PortalGraphAssembler portalGraphAssembler = new PortalGraphAssembler();
         ReflectionTestUtils.setField(portalGraphAssembler, "doorConstraintFilter", new DoorConstraintFilter());
         ReflectionTestUtils.setField(routePlanService, "portalGraphAssembler", portalGraphAssembler);
@@ -209,6 +208,7 @@ class MultilegPlanTest {
                 .nodeId(nodeId)
                 .nodeType(NodeType.STATION)
                 .layer(NetworkLayer.GROUND)
+                .memberships(List.of("HUMAN"))
                 .build();
     }
 

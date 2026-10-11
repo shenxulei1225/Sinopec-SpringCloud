@@ -1,10 +1,10 @@
 package cn.cheers.x.inspection.task.service.query.impl;
 
 import cn.cheers.x.framework.common.pojo.PageResult;
-import cn.cheers.x.inspection.inspection_content.service.enhance.ContentEnhancementService;
 import cn.cheers.x.inspection.task.controller.admin.vo.task.*;
 import cn.cheers.x.inspection.task.model.task.InspectionContent;
 import cn.cheers.x.inspection.task.service.query.InspectionTaskQueryService;
+import cn.cheers.x.inspection.task.service.task.GeneratedCheckInputReviewService;
 import cn.cheers.x.inspection.task.service.task.PatrolPlannedRouteSupport;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskDurationSupport;
@@ -13,7 +13,6 @@ import cn.cheers.x.module.platform.contract.dto.slot.ScheduleSlotDTO;
 import cn.cheers.x.module.platform.runtime.api.RuntimeQueryApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -27,16 +26,18 @@ import java.util.stream.Collectors;
  * 巡检任务查询服务实现类。
  * <p>权威：总任务实体 plannedRoute + 草稿袋；不读旧固定表 inspection_task。
  * <p>已占窗：当前方式自己的试排优先；只有正在看的就是生成时那种方式才读 runtime 占窗。
+ * 列表这一页上的已生成任务，用和打开这一条相同的对照。记下的说明是空的，不能当成已经更新过。
+ * <p>详情返回任务上已经写下的名称、巡检方式、对象、路线、计划点和步骤图。
+ * 不在返回前补对象名称、耗时单位或动作参数。没写下的不在这里补，免得整页等这一遍。
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class InspectionTaskQueryServiceImpl implements InspectionTaskQueryService {
 
-    private final ContentEnhancementService contentEnhancementService;
     private final PatrolTaskEntityStore patrolTaskEntityStore;
     private final RuntimeQueryApi runtimeQueryApi;
     private final ObjectMapper objectMapper;
+    private final GeneratedCheckInputReviewService generatedCheckInputReviewService;
 
     @Override
     public PageResult<InspectionTaskSimpleRespVO> getTaskPage(InspectionTaskPageReqVO pageReqVO) {
@@ -65,7 +66,33 @@ public class InspectionTaskQueryServiceImpl implements InspectionTaskQueryServic
         vo.setEnabled(Boolean.TRUE.equals(draft.orchestrationCommitted()));
         vo.setRuntimeJobId(draft.runtimeJobId());
         vo.setSubTaskCount(0);
+        vo.setUpdateHint(liveUpdateHint(draft));
         return vo;
+    }
+
+    /**
+     * 已生成任务用和打开详情相同的对照。有差异才显示需要更新。
+     * 草稿不对照。记下的说明为空时，不再把这一条当成已经更新过。
+     */
+    private String liveUpdateHint(PatrolTaskDraft draft) {
+        if (!Boolean.TRUE.equals(draft.orchestrationCommitted())) {
+            return null;
+        }
+        InspectionTaskGeneratedInputReviewRespVO review = generatedCheckInputReviewService.review(draft.id());
+        if (review.getChanges() == null || review.getChanges().isEmpty()) {
+            return null;
+        }
+        List<String> lines = new ArrayList<>();
+        for (InspectionTaskGeneratedInputReviewRespVO.Change change : review.getChanges()) {
+            String device = change.getEquipmentName() == null ? "" : change.getEquipmentName().trim();
+            String item = change.getInspectionItemName() == null ? "" : change.getInspectionItemName().trim();
+            String detail = change.getDetail() == null ? "" : change.getDetail().trim();
+            String who = device.isEmpty() ? item : (item.isEmpty() ? device : device + " 的 " + item);
+            if (!detail.isEmpty()) {
+                lines.add(who.isEmpty() ? detail : who + "：" + detail);
+            }
+        }
+        return lines.isEmpty() ? null : String.join("\n", lines);
     }
 
     @Override
@@ -74,6 +101,7 @@ public class InspectionTaskQueryServiceImpl implements InspectionTaskQueryServic
         InspectionTaskRespVO respVO = new InspectionTaskRespVO();
         respVO.setId(draft.id());
         respVO.setTaskName(draft.name());
+        respVO.setFacilityId(draft.facilityId());
         respVO.setDomain(draft.domain());
         respVO.setStatus(deriveDisplayStatus(draft));
         respVO.setEnabled(Boolean.TRUE.equals(draft.orchestrationCommitted()));
@@ -89,10 +117,13 @@ public class InspectionTaskQueryServiceImpl implements InspectionTaskQueryServic
         respVO.setScheduleConfig(draft.scheduleConfig());
         respVO.setPatrolExecutionMode(draft.patrolExecutionMode());
         respVO.setCreateUnlockedStep(draft.createUnlockedStep());
+        java.util.Map<String, Object> unpublished = patrolTaskEntityStore.readUnpublishedModification(id);
+        if (unpublished != null && !unpublished.isEmpty()) {
+            respVO.setUnpublishedModification(unpublished);
+        }
 
         InspectionContent content = draft.inspectionContent();
         if (content != null) {
-            content = contentEnhancementService.enhanceContent(content, true);
             respVO.setInspectionContent(content);
         }
 
@@ -194,6 +225,8 @@ public class InspectionTaskQueryServiceImpl implements InspectionTaskQueryServic
         preview.setNetworkRef(respVO.getNetworkRef());
         preview.setStopIds(new ArrayList<>(stopSequence));
         preview.setTotalDistanceMeters(asLong(planned.get("totalDistanceMeters")));
+        preview.setEstimatedTravelDuration(
+                PatrolPlannedRouteSupport.estimatedTravelDuration(draft.plannedRoute()));
         preview.setMobilityProfileId(asString(planned.get("mobilityProfileId")));
         preview.setStartStopId(asString(planned.get("startStopId")));
         preview.setEndStopId(asString(planned.get("endStopId")));

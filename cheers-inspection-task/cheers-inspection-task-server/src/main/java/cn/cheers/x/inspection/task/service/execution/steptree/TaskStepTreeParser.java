@@ -50,7 +50,10 @@ public final class TaskStepTreeParser {
                     node.refCode(),
                     node.refId(),
                     node.title(),
-                    node.params()
+                    node.params(),
+                    node.actionDomain(),
+                    node.analysisCapabilityId(),
+                    node.required()
             ));
         }
         return List.copyOf(ordered);
@@ -99,7 +102,10 @@ public final class TaskStepTreeParser {
                 refCode.isBlank() ? null : refCode,
                 refId,
                 textOf(row.get("title")),
-                paramsOf(row.get("params"))
+                paramsOf(row.get("params")),
+                nullIfBlank(row.get("actionDomain")),
+                idOf(row.get("analysisCapabilityId")),
+                !Boolean.FALSE.equals(row.get("required"))
         );
     }
 
@@ -113,6 +119,11 @@ public final class TaskStepTreeParser {
 
     private static String textOf(Object raw) {
         return raw == null ? "" : String.valueOf(raw).trim();
+    }
+
+    private static String nullIfBlank(Object raw) {
+        String value = textOf(raw);
+        return value.isBlank() ? null : value;
     }
 
     private static Long idOf(Object raw) {

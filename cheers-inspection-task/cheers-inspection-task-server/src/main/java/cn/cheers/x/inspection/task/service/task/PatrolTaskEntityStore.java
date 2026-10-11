@@ -54,7 +54,7 @@ public class PatrolTaskEntityStore {
     public static final String DRAFT_KEY_END = "endStopId";
     /** previewOrchestration 试排草稿；generateTask 确认后写入 runtimeJobId。 */
     public static final String DRAFT_KEY_RUNTIME_JOB = "runtimeJobId";
-    /** generateTask（生成任务）成功后为 true：任务已生成并排期（非排期模板是否填好）。 */
+    /** 生成任务整段走完才为 true。中途失败必须收成 false，不能留在列表上显示已启用。 */
     public static final String DRAFT_KEY_ORCHESTRATION_COMMITTED = "orchestrationCommitted";
     /**
      * 生成任务时用的那种巡检方式。详情和已占窗只认它。
@@ -77,6 +77,17 @@ public class PatrolTaskEntityStore {
     public static final String DRAFT_KEY_MAX_SHIFT_MINUTES = "maxShiftMinutes";
     /** 计划点 id → pending 执行账 id；排期物化后写入，开跑只读。 */
     public static final String DRAFT_KEY_PENDING_EXECUTION_BY_SLOT = "pendingExecutionBySlot";
+    /**
+     * 已发布任务上还没点「更新任务」的修改。
+     * 只由修改页保存草稿写入、由修改页读取。详情和开跑不读。
+     * 里面的步骤图仍是 {version, nodes}，不改 step_tree_json 这一栏的格式。
+     */
+    public static final String DRAFT_KEY_UNPUBLISHED_MODIFICATION = "unpublishedModification";
+    /**
+     * 已生成任务需要更新的说明。动作库或检查项保存时写入，列表只读。
+     * 不按巡检方式分格。点更新任务成功后清掉。
+     */
+    public static final String DRAFT_KEY_UPDATE_HINT = "updateHint";
     public static final String FIELD_STEP_TREE = "step_tree_json";
     public static final String EMPTY_SCHEDULE = "{\"items\":[],\"version\":1}";
 
@@ -123,6 +134,11 @@ public class PatrolTaskEntityStore {
             write.setName(req.getTaskName().trim());
         }
         Map<String, Object> existingBag = bagOf(existing);
+        Map<String, Object> committedDraft = asMap(existingBag.get(FIELD_DRAFT));
+        if (Boolean.TRUE.equals(readOrchestrationCommittedFromDraft(committedDraft))
+                && !Boolean.TRUE.equals(req.getApplyToPublished())) {
+            throw ServiceExceptionUtil.invalidParamException("已发布的任务请点保存草稿留下修改，或在最后一步更新任务");
+        }
         Object scheduleToWrite = req.getScheduleConfig() != null
                 ? req.getScheduleConfig()
                 : existingBag.get(FIELD_SCHEDULE);
@@ -152,15 +168,15 @@ public class PatrolTaskEntityStore {
     }
 
     /**
-     * 写入 generateTask / abortOrchestration 后的草稿编排状态。
-     * <p>{@code runtimeJobId == null} 表示不修改作业号，仅更新 orchestrationCommitted。
+     * 写入生成任务 / 更新任务完成后的作业号和已生成标记。
+     * <p>{@code runtimeJobId == null} 表示不修改作业号，仅更新已生成标记。
      * 生成成功时同时记下当前巡检方式：详情和已占窗只认这一套，换顶栏方式不能把占窗带到另一套。
+     * <p>不在这里清空计划点对照。对照由落账在取消旧计划点之后写下；这里再清空，下一次更新就找不到要取消的旧计划点。
      */
     public void writeOrchestrationCommittedState(Long taskId, String runtimeJobId, Boolean orchestrationCommitted) {
         Map<String, Object> patch = new LinkedHashMap<>();
         if (runtimeJobId != null) {
             patch.put(DRAFT_KEY_RUNTIME_JOB, runtimeJobId);
-            patch.put(DRAFT_KEY_PENDING_EXECUTION_BY_SLOT, new LinkedHashMap<>());
             String means = currentMeansOf(taskId);
             if (StringUtils.hasText(means)) {
                 patch.put(DRAFT_KEY_COMMITTED_MEANS, means);
@@ -169,9 +185,26 @@ public class PatrolTaskEntityStore {
         if (orchestrationCommitted != null) {
             patch.put(DRAFT_KEY_ORCHESTRATION_COMMITTED, orchestrationCommitted);
         }
+        if (Boolean.TRUE.equals(orchestrationCommitted)) {
+            patch.put(DRAFT_KEY_UPDATE_HINT, null);
+        }
+        // 生成任务只写已发布字段。草稿里其他巡检方式留下，不在这里清掉。
         if (patch.isEmpty()) {
             throw ServiceExceptionUtil.invalidParamException("编排状态补丁不能为空");
         }
+        mergeDraftFields(taskId, patch);
+    }
+
+    /**
+     * 这次生成没有走完：收掉已生成标记和作业号，列表回到草稿。
+     * 试排、路线、步骤图留下，用户可以再点生成。不把「有作业号但标记为 false」显示成已停用。
+     */
+    public void clearGeneratedMark(Long taskId) {
+        Map<String, Object> patch = new LinkedHashMap<>();
+        patch.put(DRAFT_KEY_ORCHESTRATION_COMMITTED, Boolean.FALSE);
+        patch.put(DRAFT_KEY_RUNTIME_JOB, null);
+        patch.put(DRAFT_KEY_COMMITTED_MEANS, null);
+        patch.put(DRAFT_KEY_PENDING_EXECUTION_BY_SLOT, new LinkedHashMap<>());
         mergeDraftFields(taskId, patch);
     }
 
@@ -277,9 +310,73 @@ public class PatrolTaskEntityStore {
         if (taskId == null || !StringUtils.hasText(slotId) || executionRecordId == null) {
             throw ServiceExceptionUtil.invalidParamException("写入待执行映射参数不完整");
         }
+        putPendingExecutionRecordIds(taskId, Map.of(slotId.trim(), executionRecordId));
+    }
+
+    /**
+     * 这一批计划点都建完后，一次把时刻和执行账的对照写回任务。
+     * 只追加这一批，不在这里删掉以前的计划点。
+     */
+    public void putPendingExecutionRecordIds(Long taskId, Map<String, Long> slotToRecordId) {
+        if (taskId == null || slotToRecordId == null || slotToRecordId.isEmpty()) {
+            throw ServiceExceptionUtil.invalidParamException("写入待执行映射参数不完整");
+        }
         Map<String, Object> map = new LinkedHashMap<>(pendingExecutionBySlot(taskId));
-        map.put(slotId.trim(), executionRecordId);
+        for (Map.Entry<String, Long> entry : slotToRecordId.entrySet()) {
+            if (!StringUtils.hasText(entry.getKey()) || entry.getValue() == null) {
+                throw ServiceExceptionUtil.invalidParamException("写入待执行映射参数不完整");
+            }
+            map.put(entry.getKey().trim(), entry.getValue());
+        }
         mergeDraftFields(taskId, Map.of(DRAFT_KEY_PENDING_EXECUTION_BY_SLOT, map));
+    }
+
+    /**
+     * 这条任务上还没被替换掉的计划点：计划点编号 → 待执行账编号。
+     */
+    public Map<String, Long> pendingExecutionRecordIds(Long taskId) {
+        Map<String, Long> ids = new LinkedHashMap<>();
+        if (taskId == null) {
+            return ids;
+        }
+        for (Map.Entry<String, Object> entry : pendingExecutionBySlot(taskId).entrySet()) {
+            Long recordId = longOf(entry.getValue());
+            if (recordId != null) {
+                ids.put(entry.getKey(), recordId);
+            }
+        }
+        return ids;
+    }
+
+    /**
+     * 更新任务取消了这些还没执行的计划点之后，从对照里拿掉。
+     * 已经开始或已经执行的不从这里删。
+     */
+    public void dropPendingExecutionSlots(Long taskId, java.util.Collection<String> slotIds) {
+        if (taskId == null || slotIds == null || slotIds.isEmpty()) {
+            return;
+        }
+        Map<String, Object> map = new LinkedHashMap<>(pendingExecutionBySlot(taskId));
+        for (String slotId : slotIds) {
+            if (StringUtils.hasText(slotId)) {
+                map.remove(slotId.trim());
+            }
+        }
+        mergeDraftFields(taskId, Map.of(DRAFT_KEY_PENDING_EXECUTION_BY_SLOT, map));
+    }
+
+    private static Long longOf(Object raw) {
+        if (raw instanceof Number number) {
+            return number.longValue();
+        }
+        if (raw instanceof String text && StringUtils.hasText(text)) {
+            try {
+                return Long.parseLong(text.trim());
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
     }
 
     private Map<String, Object> pendingExecutionBySlot(Long taskId) {
@@ -331,6 +428,33 @@ public class PatrolTaskEntityStore {
         write.setModelCode(MODEL_PATROL);
         write.setFields(Map.of(FIELD_DRAFT, draft));
         requireOk(entityRpcApi.updateEntityFields(write), "写入建任务进度失败");
+    }
+
+    /**
+     * 「保存草稿」：把这一页上已经填过的巡检方式写入草稿。
+     * 还没生成和已经生成都写这一份。不改已发布字段。
+     */
+    public void saveUnpublishedModification(Long taskId, Map<String, Object> snapshot) {
+        if (snapshot == null || snapshot.isEmpty()) {
+            throw ServiceExceptionUtil.invalidParamException("没有可保存的修改");
+        }
+        require(taskId);
+        mergeDraftFields(taskId, Map.of(DRAFT_KEY_UNPUBLISHED_MODIFICATION, snapshot));
+    }
+
+    /**
+     * 修改页回显用。没有未发布的修改时返回空 map。详情和开跑不要拿这份当正在跑的任务。
+     */
+    public Map<String, Object> readUnpublishedModification(Long taskId) {
+        EntityRespDTO existing = optional(entityRpcApi.getEntity(taskId, TASK_TYPE));
+        if (existing == null || existing.getId() == null) {
+            return Map.of();
+        }
+        Object raw = asMap(bagOf(existing).get(FIELD_DRAFT)).get(DRAFT_KEY_UNPUBLISHED_MODIFICATION);
+        if (!(raw instanceof Map<?, ?>)) {
+            return Map.of();
+        }
+        return asMap(raw);
     }
 
     /**
@@ -590,7 +714,8 @@ public class PatrolTaskEntityStore {
                 asLong(draft.get(DRAFT_KEY_SCHEDULE_POLICY)),
                 previewSlice,
                 firstText(PatrolMeansKeyedSupport.readSlice(
-                        readOrchestrationPreviewSummaryFromDraft(draft), means, unwrappedOwner))
+                        readOrchestrationPreviewSummaryFromDraft(draft), means, unwrappedOwner)),
+                firstText(draft.get(DRAFT_KEY_UPDATE_HINT))
         );
     }
 

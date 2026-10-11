@@ -19,6 +19,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.framework.field.RefModelFieldConfig;
 import cn.cheers.x.module.dynamicbusiness.event.FieldDefinitionChangedEvent;
 import cn.cheers.x.module.dynamicbusiness.service.model.governance.MasterDataCapabilityChecker;
 import lombok.extern.slf4j.Slf4j;
@@ -68,6 +69,7 @@ public class FieldServiceImpl implements FieldService {
         validateUnit(reqVO.getType(), reqVO.getUnit());
         validateEnumOptions(reqVO.getType(), reqVO.getOptions());
         FieldDO field = FieldConvert.INSTANCE.convert(reqVO);
+        applyRefModelConfig(field, reqVO.getType(), reqVO.getOptions(), reqVO.getTargetEntityType());
         applyEntityRefProvider(field, reqVO.getTargetEntityType());
         applyGovernanceForCreate(field, reqVO.getModelId());
         Long tenantId = getTenantId();
@@ -108,6 +110,7 @@ public class FieldServiceImpl implements FieldService {
         Long tenantId = getTenantId();
         String oldType = db.getType();
         FieldDO update = FieldConvert.INSTANCE.convert(reqVO);
+        applyRefModelConfig(update, reqVO.getType(), reqVO.getOptions(), reqVO.getTargetEntityType());
         applyEntityRefProvider(update, reqVO.getTargetEntityType());
         update.setTenantId(tenantId);
         fieldMapper.updateById(update);
@@ -150,6 +153,21 @@ public class FieldServiceImpl implements FieldService {
         // 缓存未命中，从数据库获取
         FieldDO db = getFieldDO(id);
         // 写入缓存
+        FieldCacheHelper.cacheField(stringRedisTemplate, db);
+        FieldRespVO vo = FieldConvert.INSTANCE.convert(db);
+        enrichEntityRefTarget(vo, db);
+        return vo;
+    }
+
+    @Override
+    public FieldRespVO getFieldByCode(String code) {
+        if (code == null || code.isBlank()) {
+            throw new ServiceException(400, "字段编号不能为空");
+        }
+        FieldDO db = fieldMapper.selectByCode(code.trim());
+        if (db == null) {
+            throw new ServiceException(404, "字段不存在");
+        }
         FieldCacheHelper.cacheField(stringRedisTemplate, db);
         FieldRespVO vo = FieldConvert.INSTANCE.convert(db);
         enrichEntityRefTarget(vo, db);
@@ -452,6 +470,21 @@ public class FieldServiceImpl implements FieldService {
         }
     }
 
+    /**
+     * 引用型号字段把目录、型号和点名字段收成一份，写回 options。
+     * 数据目录同时写入 providerCode，和引用数据同一条读法。
+     * 不是这个类型时不动 options。
+     */
+    private void applyRefModelConfig(FieldDO field, String fieldType, String options, String targetEntityType) {
+        if (field == null || !FieldTypeEnum.isRefModel(fieldType)) {
+            return;
+        }
+        RefModelFieldConfig.Value config = RefModelFieldConfig.require(options, targetEntityType);
+        field.setOptions(RefModelFieldConfig.write(config));
+        field.setType(FieldTypeEnum.REF_MODEL.getCode());
+        applyEntityRefProvider(field, config.entityTypeCode());
+    }
+
     // ================= ENTITY_REF 关联目标 =================
 
     private void applyEntityRefProvider(FieldDO field, String targetEntityType) {
@@ -466,7 +499,8 @@ public class FieldServiceImpl implements FieldService {
             return;
         }
         boolean relation = FieldTypeEnum.isEntityRef(fieldType)
-                || FieldTypeEnum.isEntitySelfRef(fieldType);
+                || FieldTypeEnum.isEntitySelfRef(fieldType)
+                || FieldTypeEnum.isRefModel(fieldType);
         if (!relation) {
             return;
         }
@@ -479,7 +513,9 @@ public class FieldServiceImpl implements FieldService {
         if (vo == null || field == null || StringUtils.isNotBlank(vo.getTargetEntityType())) {
             return;
         }
-        if (!FieldTypeEnum.isEntityRef(field.getType()) && !FieldTypeEnum.isEntitySelfRef(field.getType())) {
+        if (!FieldTypeEnum.isEntityRef(field.getType())
+                && !FieldTypeEnum.isEntitySelfRef(field.getType())
+                && !FieldTypeEnum.isRefModel(field.getType())) {
             return;
         }
         String providerCode = field.getProviderCode();

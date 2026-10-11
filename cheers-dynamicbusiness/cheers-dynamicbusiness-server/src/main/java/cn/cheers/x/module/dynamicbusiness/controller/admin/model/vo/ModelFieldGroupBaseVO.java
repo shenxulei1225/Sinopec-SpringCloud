@@ -17,4 +17,7 @@ public class ModelFieldGroupBaseVO {
 
     @Schema(description = "排序顺序", example = "1")
     private Integer sort;
+
+    @Schema(description = "上级分组编号。空表示放在最外层。")
+    private Long parentId;
 }

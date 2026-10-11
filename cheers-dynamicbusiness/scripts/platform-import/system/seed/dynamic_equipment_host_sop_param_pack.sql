@@ -3,8 +3,7 @@
 -- 前置：Flyway V91（ent_equipment* 已有 host_sop_param_pack 列）；dynamic_field / base_field 表已存在
 -- 定稿：docs/动态业务/宿主SOP参数包与动作参数定稿.md
 --
--- 字段编码 host_sop_param_pack = 物理列名；平台语义是「宿主 SOP 参数包」
--- 检查配方界面显示名可用「设备检查参数」（仅显示别名，不是平台专名）
+-- 字段编码 host_sop_param_pack。显示名是「设备检查参数」，设备类型基础字段。
 -- ============================================================================
 
 SET search_path TO dynamicbusiness;
@@ -19,8 +18,7 @@ VALUES (
   '设备检查参数',
   'JSON',
   NULL,
-  '平台语义：宿主 SOP 参数包（host SOP param pack）。检查配方界面显示名可用「设备检查参数」。'
-    || '外形 {version,entries[{subjectType,subjectId,sopTemplateId,dimensionKey,dimensionValue,paramsByNode}]}',
+  '每台设备上的检查参数。一条是一个检查项加一种执行方式，步骤上填的数写在这一条里。',
   'BASE',
   1,
   1,
@@ -43,7 +41,8 @@ DO UPDATE SET
 -- 2) 挂到 equipment 基础字段（增量；与既有 FLD-BASE-* 并存）
 INSERT INTO dynamic_entity_type_base_field (
   entity_type_code, library_field_id, field_code, field_name, data_type, required, default_value,
-  description, type_config, sort_order, status, tenant_id, creator
+  description, type_config, sort_order, status, is_searchable, is_filterable, is_sortable,
+  tenant_id, creator
 )
 SELECT
   'equipment',
@@ -53,10 +52,13 @@ SELECT
   'JSON',
   false,
   '{"version":1,"entries":[]}',
-  '平台语义：宿主 SOP 参数包。按对象×标准 SOP（及维度）打包步骤填值；开任务按宿主读取。',
-  NULL,
+  '每台设备上的检查参数。一条是一个检查项加一种执行方式，步骤上填的数写在这一条里。',
+  '{"createVisible":false,"editVisible":false,"detailVisible":false}'::jsonb,
   200,
   1,
+  false,
+  false,
+  false,
   1,
   'seed'
 FROM dynamic_field f
@@ -71,6 +73,10 @@ DO UPDATE SET
   required = EXCLUDED.required,
   default_value = EXCLUDED.default_value,
   description = EXCLUDED.description,
+  type_config = EXCLUDED.type_config,
+  is_searchable = false,
+  is_filterable = false,
+  is_sortable = false,
   sort_order = EXCLUDED.sort_order,
   status = EXCLUDED.status,
   updater = 'seed',

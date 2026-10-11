@@ -3,6 +3,8 @@ package cn.cheers.x.inspection.task.controller.admin.vo.task;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 /**
  * 打开任务现算结果。未生成则直接收回后续步；已生成由页面确认是否重排。
  */
@@ -10,8 +12,8 @@ import lombok.Data;
 @Schema(description = "打开任务现算时长结果")
 public class InspectionTaskDurationRefreshRespVO {
 
-    @Schema(description = "检查项动作耗时（分钟）")
-    private Integer itemActionDurationMinutes;
+    @Schema(description = "检查项动作耗时（分钟，可含小数）")
+    private BigDecimal itemActionDurationMinutes;
 
     @Schema(description = "路径耗时（分钟）")
     private Integer travelDurationMinutes;

@@ -2,6 +2,7 @@ package cn.cheers.x.inspection.task.model.task;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,10 +37,11 @@ public class InspectionContent {
     private List<ObjectContent> customObjects = new ArrayList<>();
 
     /**
-     * 检查项动作耗时（分钟）。第 1 步从动作库按已勾选检查项加总后写入。
-     * 不写入已保存路线；排期总时长 = 本字段 + 路径耗时。
+     * 检查项动作耗时，单位秒。第 1 步从动作库按已勾选检查项加总后写入。
+     * 字段名仍是 itemActionDurationMinutes，写下的数字是秒。不写入已保存路线。
+     * 排期把本字段的秒数加上路径耗时的秒数，再换算占窗分钟。
      */
-    private Integer itemActionDurationMinutes;
+    private BigDecimal itemActionDurationMinutes;
 
     // ==================== 内部类 ====================
 

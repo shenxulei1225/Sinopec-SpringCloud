@@ -36,14 +36,14 @@ public class PathNetworkController {
     private PathNetworkService pathNetworkService;
 
     @GetMapping("/networks")
-    @Operation(summary = "列出设施下路网（含正式与另存草稿）")
+    @Operation(summary = "列出本厂路网")
     public CommonResult<List<PathNetworkSummaryDTO>> listDrafts(
             @RequestParam("facilityId") Long facilityId) {
         return success(pathNetworkService.listDrafts(facilityId));
     }
 
     @GetMapping("/networks/published")
-    @Operation(summary = "列出设施下已发布路网摘要（不含草稿）")
+    @Operation(summary = "列出本厂路网（与路网管理同一份，排期仍走此地址）")
     public CommonResult<List<PathNetworkSummaryDTO>> listPublished(
             @RequestParam("facilityId") Long facilityId) {
         return success(pathNetworkService.listPublished(facilityId));
@@ -65,7 +65,7 @@ public class PathNetworkController {
 
     // 固定路径须写在 /networks/{networkRef} 之前，避免 draft 被当成 networkRef
     @GetMapping("/networks/draft")
-    @Operation(summary = "读取设施草稿路径网络（兼容旧种类槽位）")
+    @Operation(summary = "按种类读取本厂路网")
     public CommonResult<PathNetworkDTO> getDraft(
             @RequestParam("facilityId") Long facilityId,
             @RequestParam("networkKind") NetworkKind networkKind) {
@@ -73,33 +73,19 @@ public class PathNetworkController {
     }
 
     @PutMapping("/networks/draft")
-    @Operation(summary = "保存路网（body.isDraft=false 正式保存；true 则写为草稿状态）")
+    @Operation(summary = "保存当前路网，并把点写入点位数据目录")
     public CommonResult<PathNetworkDTO> saveDraft(@RequestBody PathNetworkDTO request) {
         return success(pathNetworkService.saveDraft(request));
     }
 
-    @PostMapping("/networks/save-as-draft")
-    @Operation(summary = "另存为草稿（新开一条带草稿标记的副本）")
-    public CommonResult<PathNetworkDTO> saveAsDraft(@RequestBody PathNetworkDTO request) {
-        return success(pathNetworkService.saveAsDraft(request));
-    }
-
     @PostMapping("/networks/draft/validate")
-    @Operation(summary = "校验路径网络草稿")
+    @Operation(summary = "校验路网")
     public CommonResult<TopologyValidateRespDTO> validate(@RequestBody PathNetworkDTO request) {
         return success(pathNetworkService.validate(request));
     }
 
-    @PostMapping("/networks/draft/publish")
-    @Operation(summary = "发布设施草稿路径网络（兼容旧种类槽位）")
-    public CommonResult<PathNetworkDTO> publish(
-            @RequestParam("facilityId") Long facilityId,
-            @RequestParam("networkKind") NetworkKind networkKind) {
-        return success(pathNetworkService.publish(facilityId, networkKind));
-    }
-
     @DeleteMapping("/networks/{networkRef}")
-    @Operation(summary = "删除草稿路网（仅草稿）")
+    @Operation(summary = "删除路网")
     public CommonResult<Boolean> deleteDraft(@PathVariable("networkRef") String networkRef) {
         pathNetworkService.deleteDraft(networkRef);
         return success(true);
@@ -109,12 +95,6 @@ public class PathNetworkController {
     @Operation(summary = "按 networkRef 读取路径网络")
     public CommonResult<PathNetworkDTO> getNetwork(@PathVariable("networkRef") String networkRef) {
         return success(pathNetworkService.getNetwork(networkRef));
-    }
-
-    @PostMapping("/networks/{networkRef}/publish")
-    @Operation(summary = "按 networkRef 发布草稿路网")
-    public CommonResult<PathNetworkDTO> publishByRef(@PathVariable("networkRef") String networkRef) {
-        return success(pathNetworkService.publishByRef(networkRef));
     }
 
     @GetMapping("/portals")

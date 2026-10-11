@@ -1106,7 +1106,6 @@ def build_catalog() -> dict[str, dict]:
     return catalog
 
 
-SHARED = ["robot-ws", "uav-ws"]
 ROBOT = ["robot-ws"]
 UAV = ["uav-ws"]
 
@@ -1122,22 +1121,22 @@ def protocol_version_index(value) -> str | None:
 
 # 名称、方向、交互方式、协议版本。交互方式不是 sync_wait_result 时只留主包。
 IDENTITIES = {
-    "proto-gs-500101-status": ("获取设备实时状态", "downlink", "sync_wait_result", SHARED),
-    "proto-gs-500102-report-switch": ("启动或关闭定时上报", "downlink", "sync_wait_result", SHARED),
-    "proto-gs-500103-report-push": ("定时上报设备状态", "uplink", "active_uplink", SHARED),
-    "proto-gs-500105-heartbeat": ("心跳", "downlink", "heartbeat", SHARED),
-    "proto-gs-500106-ack": ("回执", "ack", "", SHARED),
-    "proto-gs-500201-start": ("启动已下发任务", "downlink", "sync_wait_result", SHARED),
-    "proto-gs-500202-action-result": ("单条指令操作结果", "uplink", "async_result", SHARED),
-    "proto-gs-500203-task-status": ("任务状态", "uplink", "active_uplink", SHARED),
-    "proto-gs-500204-fault": ("设备故障", "uplink", "active_uplink", SHARED),
-    "proto-gs-500205-stop": ("终止任务", "downlink", "sync_wait_result", SHARED),
-    "proto-gs-500301-get-package": ("获取指令包", "downlink", "sync_wait_result", SHARED),
-    "proto-gs-500302-delete-package": ("删除指令包", "downlink", "sync_wait_result", SHARED),
-    "proto-gs-500303-list-templates": ("列出任务模板", "downlink", "sync_wait_result", SHARED),
-    "proto-gs-500401-stream-on": ("启动推流", "downlink", "sync_wait_result", SHARED),
-    "proto-gs-500402-stream-off": ("停止推流", "downlink", "sync_wait_result", SHARED),
-    "proto-gs-500403-online-event": ("在线或掉线", "uplink", "active_uplink", SHARED),
+    "proto-gs-500101-status": ("获取设备实时状态", "downlink", "sync_wait_result", []),
+    "proto-gs-500102-report-switch": ("启动或关闭定时上报", "downlink", "sync_wait_result", []),
+    "proto-gs-500103-report-push": ("定时上报设备状态", "uplink", "active_uplink", []),
+    "proto-gs-500105-heartbeat": ("心跳", "downlink", "heartbeat", []),
+    "proto-gs-500106-ack": ("回执", "ack", "", []),
+    "proto-gs-500201-start": ("启动已下发任务", "downlink", "sync_wait_result", []),
+    "proto-gs-500202-action-result": ("单条指令操作结果", "uplink", "async_result", []),
+    "proto-gs-500203-task-status": ("任务状态", "uplink", "active_uplink", []),
+    "proto-gs-500204-fault": ("设备故障", "uplink", "active_uplink", []),
+    "proto-gs-500205-stop": ("终止任务", "downlink", "sync_wait_result", []),
+    "proto-gs-500301-get-package": ("获取指令包", "downlink", "sync_wait_result", []),
+    "proto-gs-500302-delete-package": ("删除指令包", "downlink", "sync_wait_result", []),
+    "proto-gs-500303-list-templates": ("列出任务模板", "downlink", "sync_wait_result", []),
+    "proto-gs-500401-stream-on": ("启动推流", "downlink", "sync_wait_result", []),
+    "proto-gs-500402-stream-off": ("停止推流", "downlink", "sync_wait_result", []),
+    "proto-gs-500403-online-event": ("在线或掉线", "uplink", "active_uplink", []),
     "proto-robot-200102-move": ("移动", "downlink", "", ROBOT),
     "proto-robot-200301-photo": ("拍照", "downlink", "", ROBOT),
     "proto-robot-200501-status-report": ("定时上报设备状态", "uplink", "active_uplink", ROBOT),
@@ -1287,7 +1286,7 @@ def apply_identity_schema() -> None:
            NULL, 'exchange_mode', 1, 'seed'),
           ('protocol_version', '协议版本', 'MULTI_SELECT', NULL, '这条指令适用哪几份对接协议。生成指令时按设备选中的协议版本来找。',
            'SYSTEM', 1, NULL, 'BTREE',
-           '[{"label":"机器人对接协议","value":"robot-ws"},{"label":"无人机对接协议","value":"uav-ws"}]',
+           '[{"label":"机器人对接协议","value":"robot-ws"},{"label":"无人机对接协议","value":"uav-ws"},{"label":"大疆机场","value":"dji-dock"},{"label":"大疆 Pilot","value":"dji-pilot"}]',
            NULL, 'protocol_version', 1, 'seed')
         ON CONFLICT (code, tenant_id) WHERE deleted = false
         DO UPDATE SET

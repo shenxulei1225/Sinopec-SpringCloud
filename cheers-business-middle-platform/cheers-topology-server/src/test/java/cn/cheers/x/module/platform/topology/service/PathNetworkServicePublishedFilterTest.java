@@ -29,7 +29,7 @@ class PathNetworkServicePublishedFilterTest {
     private PathPortalMapper pathPortalMapper;
 
     @Test
-    void listPublished_excludesDraft() {
+    void listPublished_includesFacilityNetworksRegardlessOfStatus() {
         Long facilityId = 7L;
         PathNetworkDO draft = PathNetworkDO.builder()
                 .id("net_7_site_draft")
@@ -52,13 +52,13 @@ class PathNetworkServicePublishedFilterTest {
 
         List<PathNetworkSummaryDTO> list = pathNetworkService.listPublished(facilityId);
 
-        assertEquals(1, list.size());
-        assertEquals(GraphStatus.PUBLISHED, list.get(0).getStatus());
-        assertEquals("net_7_abc123", list.get(0).getNetworkRef());
+        assertEquals(2, list.size());
+        assertEquals("net_7_site_draft", list.get(0).getNetworkRef());
+        assertEquals("net_7_abc123", list.get(1).getNetworkRef());
     }
 
     @Test
-    void listPublished_includesPublishedCompanionRows() {
+    void listPublished_excludesHistoricalCompanionRows() {
         Long facilityId = 7L;
         PathNetworkDO draft = PathNetworkDO.builder()
                 .id("net_7_site_draft")
@@ -83,7 +83,7 @@ class PathNetworkServicePublishedFilterTest {
         List<PathNetworkSummaryDTO> list = pathNetworkService.listPublished(facilityId);
 
         assertEquals(1, list.size());
-        assertEquals("net_7_site_published", list.get(0).getNetworkRef());
+        assertEquals("net_7_site_draft", list.get(0).getNetworkRef());
     }
 
     @Test

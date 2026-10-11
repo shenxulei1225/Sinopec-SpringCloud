@@ -10,7 +10,6 @@ public enum OrchestrationPhase {
     ROUTE,
     SOLVE,
     PERSIST,
-    DISPATCH,
-    SAVE_ROUTE
+    DISPATCH
 
 }

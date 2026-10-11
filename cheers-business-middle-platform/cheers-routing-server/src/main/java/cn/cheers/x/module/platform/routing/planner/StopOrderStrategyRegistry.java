@@ -13,12 +13,10 @@ public class StopOrderStrategyRegistry {
     private final Map<String, StopOrderStrategy> strategies;
 
     public StopOrderStrategyRegistry(AsGivenOrderStrategy asGivenOrderStrategy,
-                                       OptimizeOrderStrategy optimizeOrderStrategy,
-                                       RefineOrderStrategy refineOrderStrategy) {
+                                       OptimizeOrderStrategy optimizeOrderStrategy) {
         this.strategies = Map.of(
                 "as_given", asGivenOrderStrategy,
-                "optimize_order", optimizeOrderStrategy,
-                "refine_order", refineOrderStrategy
+                "optimize_order", optimizeOrderStrategy
         );
     }
 

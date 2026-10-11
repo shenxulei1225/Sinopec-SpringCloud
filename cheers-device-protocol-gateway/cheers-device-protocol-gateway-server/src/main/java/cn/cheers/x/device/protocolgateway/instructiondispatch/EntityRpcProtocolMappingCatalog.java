@@ -1,5 +1,6 @@
 package cn.cheers.x.device.protocolgateway.instructiondispatch;
 
+import cn.cheers.x.device.protocolgateway.api.mission.DispatchAction;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.api.entity.EntityRpcApi;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
@@ -25,9 +26,12 @@ import java.util.Optional;
 public class EntityRpcProtocolMappingCatalog implements ProtocolMappingCatalog {
 
     static final String MAPPING_TYPE = "protocol_mapping";
+    static final String ACTION_TYPE = "action";
     static final String PROTOCOL_TYPE = "data_protocol";
     static final String ACTION_REF = "action_ref";
     static final String PROTOCOL_VERSION = "mapped_protocol_version";
+    static final String MAPPING_STATUS = "protocol_mapping_status";
+    static final String STATUS_CONFIGURED = "CONFIGURED";
     static final String INSTRUCTION_REF = "protocol_instruction_ref";
     static final String SLOT_MAPPING = "param_slot_mapping_json";
     static final String COMMAND_JSON = "command_json";
@@ -43,17 +47,74 @@ public class EntityRpcProtocolMappingCatalog implements ProtocolMappingCatalog {
             return Optional.empty();
         }
         String version = protocolVersion.trim();
+        List<MappingRow> rows;
         try {
-            for (MappingRow row : cache.getOrLoad(this::loadRows)) {
-                if (row.actionId() == actionId && row.protocolVersion().equals(version)) {
-                    return Optional.of(row);
-                }
-            }
-            return Optional.empty();
+            rows = cache.getOrLoad(this::loadRows);
         } catch (Exception ex) {
             log.error("[device-protocol] 读不到指令对照 actionId={} version={}", actionId, version, ex);
             throw new IllegalStateException("读不到指令对照", ex);
         }
+        return selectUnique(rows, actionId, version);
+    }
+
+    /**
+     * 一个动作在一个协议版本下只能对上一条指令。对上多条时无法确定下发用哪条，直接拒绝。
+     */
+    static Optional<MappingRow> selectUnique(List<MappingRow> rows, long actionId, String version) {
+        MappingRow found = null;
+        if (rows != null) {
+            for (MappingRow row : rows) {
+                if (row.actionId() != actionId || !version.equals(row.protocolVersion())) {
+                    continue;
+                }
+                if (found != null) {
+                    throw new IllegalStateException(
+                            "动作库编号 " + actionId + " 在"
+                                    + cn.cheers.x.device.protocolgateway.api.protocol.ProtocolCodes.label(version)
+                                    + "下有多条指令对照，无法确定用哪一条");
+                }
+                found = row;
+            }
+        }
+        return Optional.ofNullable(found);
+    }
+
+    @Override
+    public String describeActionForMessage(DispatchAction action) {
+        if (action == null) {
+            return "未知动作";
+        }
+        String code = action.actionCode();
+        String name = resolveActionDisplayName(action.actionId(), code);
+        if (name != null && !name.isBlank()) {
+            if (code != null && !code.isBlank()) {
+                return "「" + name.trim() + "」（" + code.trim() + "，动作库编号 " + action.actionId() + "）";
+            }
+            return "「" + name.trim() + "」（动作库编号 " + action.actionId() + "）";
+        }
+        return ProtocolMappingCatalog.super.describeActionForMessage(action);
+    }
+
+    private String resolveActionDisplayName(long actionId, String actionCode) {
+        EntityRespDTO entity = null;
+        if (actionCode != null && !actionCode.isBlank()) {
+            entity = optionalEntity(entityRpcApi.getEntityByCode(actionCode.trim(), ACTION_TYPE));
+        }
+        if (entity == null) {
+            entity = optionalEntity(entityRpcApi.getEntity(actionId, ACTION_TYPE));
+        }
+        if (entity == null) {
+            return null;
+        }
+        Object name = bagOf(entity).get("name");
+        return name == null ? null : String.valueOf(name).trim();
+    }
+
+    private static EntityRespDTO optionalEntity(CommonResult<EntityRespDTO> result) {
+        if (result == null || !result.isSuccess() || result.getData() == null) {
+            return null;
+        }
+        return result.getData();
     }
 
     @Override
@@ -85,11 +146,18 @@ public class EntityRpcProtocolMappingCatalog implements ProtocolMappingCatalog {
             return null;
         }
         Map<String, Object> bag = bagOf(entity);
+        String status = stringOf(bag.get(MAPPING_STATUS));
+        if ("UNSUPPORTED".equalsIgnoreCase(status)) {
+            return null;
+        }
+        if (!STATUS_CONFIGURED.equalsIgnoreCase(status)) {
+            throw new IllegalStateException("指令协议对照没有处理状态：" + entity.getId());
+        }
         Long actionId = readRefId(bag.get(ACTION_REF));
         Long instructionId = readRefId(bag.get(INSTRUCTION_REF));
         String version = stringOf(bag.get(PROTOCOL_VERSION));
         if (actionId == null || instructionId == null || version.isBlank()) {
-            return null;
+            throw new IllegalStateException("已配置的指令协议对照不完整：" + entity.getId());
         }
         return new MappingRow(actionId, version, instructionId, readSlots(bag.get(SLOT_MAPPING)));
     }
@@ -102,9 +170,12 @@ public class EntityRpcProtocolMappingCatalog implements ProtocolMappingCatalog {
             opcode = number.intValue();
         }
         if (opcode == null) {
+            if (hasDispatchIdentity(outbound)) {
+                return new InstructionTemplate(0, outbound, communicationOf(bag), topicOf(bag));
+            }
             throw new IllegalStateException("协议指令没有操作码");
         }
-        return new InstructionTemplate(opcode, outbound);
+        return new InstructionTemplate(opcode, outbound, communicationOf(bag), topicOf(bag));
     }
 
     private Map<String, Object> readOutbound(Object raw) {
@@ -139,10 +210,19 @@ public class EntityRpcProtocolMappingCatalog implements ProtocolMappingCatalog {
         List<SlotMapping> slots = new ArrayList<>();
         for (Object item : list) {
             if (item instanceof Map<?, ?> map) {
+                String idFrom = stringOf(map.get("idFrom"));
+                // 旧对照里按业务记录来源写的行不是动作参数。协议不再保存这种行，残留的也不拿去填包。
+                if (!idFrom.isBlank()) {
+                    continue;
+                }
                 String slot = stringOf(map.get("slot"));
                 String path = stringOf(map.get("path"));
                 if (!slot.isBlank() && !path.isBlank()) {
-                    slots.add(new SlotMapping(slot, stringOf(map.get("sourcePath")), path));
+                    slots.add(new SlotMapping(
+                            slot,
+                            stringOf(map.get("sourcePath")),
+                            path,
+                            stringOf(map.get("sourceKind"))));
                 }
             }
         }
@@ -171,6 +251,25 @@ public class EntityRpcProtocolMappingCatalog implements ProtocolMappingCatalog {
             }
         }
         return null;
+    }
+
+    private static boolean hasDispatchIdentity(Map<String, Object> outbound) {
+        return textOf(outbound.get("method"))
+                || textOf(outbound.get("httpMethod"))
+                || textOf(outbound.get("bridge"))
+                || textOf(outbound.get("biz_code"));
+    }
+
+    private static boolean textOf(Object raw) {
+        return raw instanceof String text && !text.isBlank();
+    }
+
+    private static String communicationOf(Map<String, Object> bag) {
+        return stringOf(bag.get("communication_protocol"));
+    }
+
+    private static String topicOf(Map<String, Object> bag) {
+        return stringOf(bag.get("mqtt_topic"));
     }
 
     private static Integer readOpcode(Object raw) {

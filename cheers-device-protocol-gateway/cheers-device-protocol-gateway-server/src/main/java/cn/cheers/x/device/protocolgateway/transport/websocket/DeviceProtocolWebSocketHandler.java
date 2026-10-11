@@ -21,12 +21,19 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 @RequiredArgsConstructor
 public class DeviceProtocolWebSocketHandler extends TextWebSocketHandler {
 
+    /**
+     * 获取指令包时设备要把整包报上来。容器默认 8KB 只能放下回执，整包一到连接就被关掉。
+     */
+    public static final int TEXT_MESSAGE_LIMIT = 1024 * 1024;
+
     private final DeviceSessionRegistry sessionRegistry;
     private final UplinkIngressService uplinkIngressService;
     private final ProtocolMonitorHub protocolMonitorHub;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
+        session.setTextMessageSizeLimit(TEXT_MESSAGE_LIMIT);
+        session.setBinaryMessageSizeLimit(TEXT_MESSAGE_LIMIT);
         String deviceId = extractDeviceId(session);
         sessionRegistry.bind(deviceId, session);
         protocolMonitorHub.copySession(deviceId, "设备已连接");

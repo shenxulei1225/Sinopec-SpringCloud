@@ -45,4 +45,44 @@ public class DeviceProtocolGatewayProperties {
      * 读哪一份租户下的协议说明书。设备口没有登录租户，不猜设备身份。
      */
     private long protocolCatalogTenantId = 1L;
+
+    /**
+     * 大疆上云（机场 1/2/3 与 Pilot 2 共用）。默认关闭，不连 MQTT，也不改地面站 WebSocket。
+     */
+    private DjiCloud djiCloud = new DjiCloud();
+
+    /**
+     * 上云通道配置。许可三项来自环境变量，不写进源码。
+     * <p>航线文件不在这里配置。生成任务时交给文件存储服务保存。
+     */
+    @Data
+    public static class DjiCloud {
+
+        /** 打开后本进程连接上云 MQTT。关闭时不建连接。 */
+        private boolean enabled = false;
+
+        /** 例如 tcp://127.0.0.1:1883。打开开关但地址为空则不连接，并记下缺口。 */
+        private String brokerUrl = "";
+
+        private String username = "";
+
+        private String password = "";
+
+        private String clientId = "cheers-dji-cloud";
+
+        private String appId = "";
+
+        private String appKey = "";
+
+        private String appLicense = "";
+
+        private String ntpServerHost = "ntp.aliyun.com";
+
+        private int ntpServerPort = 123;
+
+        /** 机场或 Pilot 绑定用的组织编号。空着则只回答「尚未绑定」，不编组织名。 */
+        private String organizationId = "";
+
+        private String organizationName = "";
+    }
 }

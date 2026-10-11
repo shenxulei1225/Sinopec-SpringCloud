@@ -130,6 +130,7 @@ class DoorConstraintFilterTest {
                 .nodeType(nodeType)
                 .layer(layer)
                 .zoneId(zoneId)
+                .memberships(List.of("HUMAN", "UAV"))
                 .build();
     }
 

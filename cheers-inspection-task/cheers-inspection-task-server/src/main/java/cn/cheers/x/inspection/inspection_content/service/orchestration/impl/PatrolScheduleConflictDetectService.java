@@ -28,7 +28,7 @@ import java.util.List;
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.invalidParamException;
 
 /**
- * 冲突检测：按已保存排期模板展开计划点，查指定设备已有占窗是否重叠，只出报告。
+ * 冲突检测：按这一页展开计划点，对照各台设备已有占窗，报告只留选定的这一台。
  * <p>「已有」只认别人的占窗。本任务历次试排/生成留下的窗口（工作项号或作业号对得上）必须排除。
  * <p>不管：挪已有、换设备、写试排快照、生成步骤图、释放残留占窗。设备只认执行设备绑定。
  */
@@ -43,19 +43,20 @@ public class PatrolScheduleConflictDetectService {
     private final RuntimeQueryApi runtimeQueryApi;
 
     public DetectedPlan detect(Long taskId, SchedulingSpecDTO incoming) {
-        PatrolTaskDraft draft = patrolTaskEntityStore.require(taskId);
+        return detect(patrolTaskEntityStore.require(taskId), incoming);
+    }
+
+    /**
+     * 按传入的任务内容展开计划点并查占用。向导传入的是这一页，不写任务。
+     */
+    public DetectedPlan detect(PatrolTaskDraft draft, SchedulingSpecDTO incoming) {
         requireSpecifiedDevice(draft);
-        PatrolScheduleMapRespDTO expanded = patrolScheduleMapService.expandPatrolWorkItems(
-                PatrolScheduleMapReqDTO.builder()
-                        .taskId(taskId)
-                        .fromSavedRouteSnapshot(true)
-                        .expandWorkItemsFromScheduleTemplate(true)
-                        .build());
+        PatrolScheduleMapRespDTO expanded = patrolScheduleMapService.expandFromPageDraft(draft);
         List<WorkItemDTO> workItems = expanded == null ? List.of() : expanded.getWorkItems();
         if (CollectionUtils.isEmpty(workItems)) {
             throw invalidParamException("排期模板没有展开出计划时刻");
         }
-        PatrolTaskEntityStore.ArrangePolicy policy = patrolTaskEntityStore.readArrangePolicy(taskId);
+        PatrolTaskEntityStore.ArrangePolicy policy = patrolTaskEntityStore.readArrangePolicy(draft.id());
         int gap = policy.taskGapMinutes() == null ? 0 : Math.max(0, policy.taskGapMinutes());
         List<ResourceReservationDTO> occupied = loadOccupied(incoming, draft);
         ScheduleConflictReportDTO report = ScheduleConflictReporter.report(workItems, occupied, gap);
@@ -77,9 +78,9 @@ public class PatrolScheduleConflictDetectService {
     private List<ResourceReservationDTO> loadOccupied(SchedulingSpecDTO incoming, PatrolTaskDraft draft) {
         OffsetDateTime from = horizonStart(incoming);
         OffsetDateTime to = horizonEnd(incoming);
-        String resourceId = String.valueOf(requireEquipmentId(draft));
+        String equipmentId = String.valueOf(requireEquipmentId(draft));
         List<ScheduleSlotDTO> slots = runtimeQueryApi.listSlots(
-                from, to, resourceId, null, draft.facilityId(),
+                from, to, null, PatrolTaskEntityStore.TASK_TYPE, draft.facilityId(),
                 List.of(SlotStatus.PLANNED, SlotStatus.IN_PROGRESS)).getCheckedData();
         if (CollectionUtils.isEmpty(slots)) {
             return List.of();
@@ -87,7 +88,7 @@ public class PatrolScheduleConflictDetectService {
         String ownJobId = draft.runtimeJobId();
         List<ResourceReservationDTO> occupied = new ArrayList<>(slots.size());
         for (ScheduleSlotDTO slot : slots) {
-            if (slot == null) {
+            if (slot == null || !occupiesEquipment(slot, equipmentId)) {
                 continue;
             }
             // 本草稿自己写下的占窗不是「已有任务」，作业号被清掉时仍按工作项号认。
@@ -97,6 +98,14 @@ public class PatrolScheduleConflictDetectService {
             occupied.add(slot.toReservation());
         }
         return occupied;
+    }
+
+    private static boolean occupiesEquipment(ScheduleSlotDTO slot, String equipmentId) {
+        if (slot.getAssignedResources() == null) {
+            return false;
+        }
+        return slot.getAssignedResources().stream()
+                .anyMatch(resource -> resource != null && equipmentId.equals(resource.getResourceId()));
     }
 
     private static OffsetDateTime horizonStart(SchedulingSpecDTO spec) {

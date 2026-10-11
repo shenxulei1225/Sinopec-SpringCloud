@@ -53,14 +53,45 @@ class MissionTranslationServiceTest {
                 )))
         );
 
-        CommandSendEnvelope envelope = translationService.translate(plan);
+        CommandSendEnvelope envelope = translationService.translate(plan).pieces().get(0).commandPackage();
         List<Map<String, Object>> packages = codec.decodePackagesJson(envelope.packagesJson());
         assertEquals(1, packages.size());
         assertEquals(200102, ((Number) packages.get(0).get("opcode")).intValue());
+        assertEquals(0, ((Number) packages.get(0).get("sequence")).intValue());
         assertEquals("p2", ((Map<?, ?>) packages.get(0).get("request")).get("pointId"));
 
         JsonNode root = objectMapper.readTree(codec.encodeCommandSend(envelope));
         assertEquals(TransportOpcode.COMMAND_SEND.code(), root.get("opcode").asInt());
+        assertTrue(root.get("packages").isArray());
+        assertEquals(200102, root.get("packages").get(0).get("opcode").asInt());
+    }
+
+    @Test
+    void packageSequence_followsActionOrderAndKeepsANumberForADirectCommand() throws Exception {
+        DeviceMissionPlan plan = new DeviceMissionPlan(
+                ProtocolCodes.ROBOT_WS,
+                "device-1",
+                "922577",
+                "922577",
+                List.of(
+                        new DispatchAction(11L, Map.of("location_ref", Map.of("FLD-PNT-002", "p1"))),
+                        new DispatchAction(13L, Map.of()),
+                        new DispatchAction(12L, Map.of("location_ref", Map.of("FLD-PNT-002", "p2")))
+                )
+        );
+
+        List<CommandSendEnvelope> packages = translationService.translate(plan).pieces().stream()
+                .filter(piece -> piece.commandPackage() != null)
+                .map(piece -> piece.commandPackage())
+                .toList();
+
+        assertEquals(2, packages.size());
+        assertEquals("922577", packages.get(0).templateId());
+        List<Map<String, Object>> first = codec.decodePackagesJson(packages.get(0).packagesJson());
+        List<Map<String, Object>> second = codec.decodePackagesJson(packages.get(1).packagesJson());
+        assertEquals(0, ((Number) first.get(0).get("sequence")).intValue());
+        assertEquals(2, ((Number) second.get(0).get("sequence")).intValue());
+        assertEquals(200102, ((Number) second.get(0).get("opcode")).intValue());
     }
 
     @Test
@@ -97,19 +128,29 @@ class MissionTranslationServiceTest {
     private static final class FakeCatalog implements ProtocolMappingCatalog {
         @Override
         public Optional<MappingRow> find(long actionId, String protocolVersion) {
-            if (actionId == 11L && ProtocolCodes.ROBOT_WS.equals(protocolVersion)) {
+            if ((actionId == 11L || actionId == 12L) && ProtocolCodes.ROBOT_WS.equals(protocolVersion)) {
                 return Optional.of(new MappingRow(
-                        11L,
+                        actionId,
                         ProtocolCodes.ROBOT_WS,
                         501L,
                         List.of(new SlotMapping("location_ref", "FLD-PNT-002", "request.pointId"))
                 ));
+            }
+            if (actionId == 13L && ProtocolCodes.ROBOT_WS.equals(protocolVersion)) {
+                return Optional.of(new MappingRow(13L, ProtocolCodes.ROBOT_WS, 502L, List.of()));
             }
             return Optional.empty();
         }
 
         @Override
         public InstructionTemplate loadInstruction(long instructionId) {
+            if (instructionId == 502L) {
+                Map<String, Object> outbound = new LinkedHashMap<>();
+                outbound.put("opcode", 200105);
+                outbound.put("deviceId", "");
+                outbound.put("msgId", "");
+                return new InstructionTemplate(200105, outbound);
+            }
             Map<String, Object> request = new LinkedHashMap<>();
             request.put("pointId", "");
             request.put("lat", "");

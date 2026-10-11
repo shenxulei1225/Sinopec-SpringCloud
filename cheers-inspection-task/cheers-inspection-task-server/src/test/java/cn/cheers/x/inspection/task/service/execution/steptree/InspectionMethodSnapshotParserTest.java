@@ -54,7 +54,28 @@ class InspectionMethodSnapshotParserTest {
 
         assertEquals(1, robot.size());
         assertEquals("act-photo", robot.get(0).refCode());
-        assertEquals("拍照", robot.get(0).title());
+        assertEquals("", robot.get(0).title());
         assertTrue(InspectionMethodSnapshotParser.actionsForMeans(raw, "UAV", mapper).isEmpty());
+    }
+
+    @Test
+    void actionsForMeans_followsOrderFieldNotArrayIndex() {
+        Map<String, Object> raw = Map.of(
+                "version", 1,
+                "methods", List.of(
+                        Map.of("methodKey", "ROBOT", "stepTree", List.of(
+                                Map.of("nodeKey", "shoot", "actionId", "act-robot-shoot", "stepTitle", "拍照", "order", 4),
+                                Map.of("nodeKey", "arrive", "actionId", "act-arrive", "stepTitle", "到达指定位置", "order", 1),
+                                Map.of("nodeKey", "hold", "actionId", "act-robot-hold", "stepTitle", "停留观察", "order", 2),
+                                Map.of("nodeKey", "aim", "actionId", "act-robot-aim", "stepTitle", "调整拍摄角度", "order", 3)
+                        ))
+                )
+        );
+
+        List<String> codes = InspectionMethodSnapshotParser.actionsForMeans(raw, "ROBOT", mapper).stream()
+                .map(TaskStepTreeGenerator.MethodAction::refCode)
+                .toList();
+
+        assertEquals(List.of("act-arrive", "act-robot-hold", "act-robot-aim", "act-robot-shoot"), codes);
     }
 }

@@ -47,19 +47,20 @@ class PatrolScheduleMapServiceTest {
     }
 
     @Test
-    @DisplayName("0 条匹配路网 → 显式失败")
+    @DisplayName("本厂没有路网 → 显式失败")
     void expand_zeroMatchingNetworks_fails() {
-        when(pathNetworkApi.listPublished(FACILITY_ID)).thenReturn(CommonResult.success(List.of(
-                network("net-uav", List.of("UAV"), "PUBLISHED"))));
+        when(pathNetworkApi.listPublished(FACILITY_ID)).thenReturn(CommonResult.success(List.of()));
 
-        assertThrows(ServiceException.class, () -> service.expandPatrolWorkItems(req(List.of(10L), List.of("sta-1"), null)));
+        ServiceException ex = assertThrows(ServiceException.class,
+                () -> service.expandPatrolWorkItems(req(List.of(10L), List.of("sta-1"), null)));
+        assertTrue(ex.getMessage() != null && ex.getMessage().contains("没有路网"));
     }
 
     @Test
-    @DisplayName("1 条匹配路网 → 选用并展开请求里的 stopIds")
+    @DisplayName("本厂一条路网 → 选用并展开请求里的 stopIds，不按适用设备再筛")
     void expand_oneMatchingNetwork_succeeds() {
         when(pathNetworkApi.listPublished(FACILITY_ID)).thenReturn(CommonResult.success(List.of(
-                network("net-a", List.of("HUMAN"), "PUBLISHED"))));
+                network("net-a", List.of("UAV"), "PUBLISHED"))));
 
         PatrolScheduleMapRespDTO resp = service.expandPatrolWorkItems(req(List.of(10L), List.of("sta-1"), null));
 
@@ -81,6 +82,20 @@ class PatrolScheduleMapServiceTest {
 
         assertEquals("HUMAN", resp.getInspectionType());
         assertEquals("net-a", resp.getNetworkRef());
+    }
+
+    @Test
+    @DisplayName("expand：透传 strategy 到工作项 payload")
+    void expand_forwardsStrategy() {
+        when(pathNetworkApi.listPublished(FACILITY_ID)).thenReturn(CommonResult.success(List.of(
+                network("net-a", List.of("HUMAN"), "PUBLISHED"))));
+
+        PatrolScheduleMapReqDTO request = req(List.of(10L), List.of("sta-1"), null);
+        request.setStrategy("optimize_order");
+
+        PatrolScheduleMapRespDTO resp = service.expandPatrolWorkItems(request);
+
+        assertEquals("optimize_order", resp.getWorkItems().get(0).getPayload().get(RoutePayloadKeys.STRATEGY));
     }
 
     @Test
@@ -111,7 +126,7 @@ class PatrolScheduleMapServiceTest {
 
         ServiceException ex = assertThrows(ServiceException.class,
                 () -> service.expandPatrolWorkItems(req(List.of(10L), List.of("sta-1"), null)));
-        assertTrue(ex.getMessage() != null && ex.getMessage().contains("多条已发布路网"));
+        assertTrue(ex.getMessage() != null && ex.getMessage().contains("多条路网"));
     }
 
     @Test
@@ -143,7 +158,7 @@ class PatrolScheduleMapServiceTest {
         planned.put("totalDistanceMeters", 80L);
         when(patrolTaskEntityStore.require(9L)).thenReturn(new PatrolTaskDraft(
                 9L, "task", "巡检", 1L, "ROBOT", null, null, null,
-                null, planned, "draft", 2, "sta-start", "sta-end", null, null, null, null, null, null));
+                null, planned, "draft", 2, "sta-start", "sta-end", null, null, null, null, null, null, null));
 
         PatrolScheduleMapReqDTO request = PatrolScheduleMapReqDTO.builder()
                 .taskId(9L)
@@ -171,7 +186,7 @@ class PatrolScheduleMapServiceTest {
         planned.put("totalDistanceMeters", 80L);
         when(patrolTaskEntityStore.require(9L)).thenReturn(new PatrolTaskDraft(
                 9L, "task", "巡检", 1L, "ROBOT", null, binding, null,
-                null, planned, "draft", 2, "sta-start", "sta-end", null, null, null, null, null, null));
+                null, planned, "draft", 2, "sta-start", "sta-end", null, null, null, null, null, null, null));
 
         PatrolScheduleMapRespDTO resp = service.expandPatrolWorkItems(PatrolScheduleMapReqDTO.builder()
                 .taskId(9L)
@@ -193,7 +208,7 @@ class PatrolScheduleMapServiceTest {
         when(patrolTaskEntityStore.require(9L)).thenReturn(new PatrolTaskDraft(
                 9L, "task", "巡检", 1L, "ROBOT", null, null, null,
                 null, planned, "draft", 2, "sta-start", "sta-end", null, null,
-                dailySchedule("2026-09-01", "2026-09-02", List.of("09:00", "18:00")), null, null, null));
+                dailySchedule("2026-09-01", "2026-09-02", List.of("09:00", "18:00")), null, null, null, null));
 
         PatrolScheduleMapRespDTO resp = service.expandPatrolWorkItems(PatrolScheduleMapReqDTO.builder()
                 .taskId(9L)
@@ -217,7 +232,7 @@ class PatrolScheduleMapServiceTest {
         planned.put("totalDistanceMeters", 80L);
         when(patrolTaskEntityStore.require(9L)).thenReturn(new PatrolTaskDraft(
                 9L, "task", "巡检", 1L, "ROBOT", null, null, null,
-                null, planned, "draft", 2, "sta-start", "sta-end", null, null, null, null, null, null));
+                null, planned, "draft", 2, "sta-start", "sta-end", null, null, null, null, null, null, null));
 
         ServiceException ex = assertThrows(ServiceException.class, () -> service.expandPatrolWorkItems(
                 PatrolScheduleMapReqDTO.builder()
@@ -236,7 +251,7 @@ class PatrolScheduleMapServiceTest {
         planned.put("totalDistanceMeters", 80L);
         when(patrolTaskEntityStore.require(9L)).thenReturn(new PatrolTaskDraft(
                 9L, "task", "巡检", 1L, "ROBOT", null, null, null,
-                null, planned, "draft", 2, "sta-start", "sta-end", null, null, null, null, null, null));
+                null, planned, "draft", 2, "sta-start", "sta-end", null, null, null, null, null, null, null));
 
         PatrolScheduleMapReqDTO request = PatrolScheduleMapReqDTO.builder()
                 .taskId(9L)

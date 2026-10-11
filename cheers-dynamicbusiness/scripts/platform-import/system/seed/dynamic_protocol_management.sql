@@ -198,7 +198,39 @@ INSERT INTO dynamic_field (
     1,
     'seed'
   ),
-  ('mqtt_topic', 'MQTT主题', 'STRING', NULL, 'MQTT 发布/订阅主题', 'SYSTEM', 1, NULL, 'BTREE', NULL, NULL, 'mqtt_topic', 1, 'seed'),
+  ('mqtt_topic', 'MQTT主题', 'STRING', NULL, 'MQTT 发布/订阅主题。只写在走 MQTT 的那条指令上，不代表整个型号。', 'SYSTEM', 1, NULL, 'BTREE', NULL, NULL, 'mqtt_topic', 1, 'seed'),
+  (
+    'communication_protocol',
+    '通讯方式',
+    'ENUM',
+    NULL,
+    '这条指令走哪种通讯，必须和它所属型号一致。一本型号只有一种。',
+    'SYSTEM',
+    1,
+    NULL,
+    'BTREE',
+    '[{"label":"MQTT","value":"mqtt"},{"label":"HTTPS","value":"https"},{"label":"WebSocket","value":"websocket"},{"label":"JSBridge","value":"jsbridge"},{"label":"航线文件","value":"wayline"}]',
+    NULL,
+    'communication_protocol',
+    1,
+    'seed'
+  ),
+  (
+    'protocol_channel',
+    '通道',
+    'ENUM',
+    NULL,
+    '大疆上云里这条 MQTT 指令发到哪个主题。服务下发、指令飞行下行、属性设置、设备请求、事件上报不是同一种下发。',
+    'SYSTEM',
+    1,
+    NULL,
+    'BTREE',
+    '[{"label":"服务下发","value":"services"},{"label":"指令飞行下行","value":"drc_down"},{"label":"属性设置","value":"property_set"},{"label":"设备请求","value":"requests"},{"label":"事件上报","value":"events"}]',
+    NULL,
+    'protocol_channel',
+    1,
+    'seed'
+  ),
   ('protocol_qos_level', 'QoS级别', 'INTEGER', NULL, 'MQTT 的 QoS 等级', 'SYSTEM', 1, NULL, 'BTREE', NULL, NULL, 'protocol_qos_level', 1, 'seed'),
   ('opcua_node_id', 'OPC UA节点ID', 'STRING', NULL, 'OPC UA NodeId', 'SYSTEM', 1, NULL, 'BTREE', NULL, NULL, 'opcua_node_id', 1, 'seed'),
   ('opcua_namespace', 'OPC UA命名空间', 'STRING', NULL, 'OPC UA NamespaceIndex 或 URI', 'SYSTEM', 1, NULL, 'BTREE', NULL, NULL, 'opcua_namespace', 1, 'seed'),
@@ -290,7 +322,7 @@ INSERT INTO dynamic_entity_type (
   'DEDICATED',
   'ent_data_protocol_t1',
   false,
-  '{"fieldLabels":{"name":"指令名称","code":"识别码","command_direction":"方向"},"command_direction":{"column":"command_direction","type":"VARCHAR","length":32}}',
+  '{"fieldLabels":{"name":"指令名称","code":"识别码","command_direction":"方向","protocol_version":"协议版本","communication_protocol":"通讯方式"},"command_direction":{"column":"command_direction","type":"VARCHAR","length":32},"protocol_version":{"column":"protocol_version","type":"JSONB"},"communication_protocol":{"column":"communication_protocol","type":"VARCHAR","length":32}}',
   'NETWORK',
   1,
   'seed',
@@ -349,8 +381,9 @@ DO UPDATE SET
 
 -- ---------------------------------------------------------------------------
 -- 4. 类型基础字段只挂专用表真实物理列
---    方向是全型号同一套台账列（下发/上报/回执），工业型号可空，必须走 BASE + ALTER。
---    字段说明 / 指令 JSON / 样例、以及 opcode 等协议原名字段仍走型号分配。
+--    方向、协议版本、通讯方式是全型号同一套台账列，必须走 BASE + 专用表列。
+--    字段说明 / 指令 JSON / 样例、以及 opcode、交互方式仍走型号分配。
+--    航线文件和 JSBridge 不分配这三份 JSON。
 --    全网目录不挂 facility_id（表上没有该列；工作范围已是 NETWORK）。
 -- ---------------------------------------------------------------------------
 UPDATE dynamic_entity_type_base_field
@@ -374,7 +407,10 @@ WHERE entity_type_code = 'data_protocol'
     'protocol_command_schema_json',
     'protocol_field_translation_rules_json',
     'protocol_step_signal_mapping_rules_json',
-    'protocol_sample_messages_json'
+    'protocol_sample_messages_json',
+    'command_json',
+    'field_description_json',
+    'sample_json'
   );
 
 INSERT INTO dynamic_entity_type_base_field (
@@ -417,25 +453,61 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
+INSERT INTO dynamic_entity_type_base_field (
+  entity_type_code, library_field_id, field_code, field_name, data_type, required,
+  description, type_config, sort_order, status, is_searchable, is_filterable, is_sortable,
+  tenant_id, creator
+)
+SELECT
+  'data_protocol',
+  f.id,
+  v.field_code,
+  v.field_name,
+  v.data_type,
+  false,
+  v.description,
+  NULL,
+  v.sort_order,
+  1,
+  true,
+  true,
+  v.is_sortable,
+  1,
+  'seed'
+FROM (
+  VALUES
+    ('protocol_version', '协议版本', 'STRING', '对接协议。对象栏按此列筛选。值是数组，如 ["dji-dock-1.16.1"]。', 16, false),
+    ('communication_protocol', '通讯方式', 'ENUM', '这条指令走 MQTT、HTTPS、WebSocket、JSBridge 或航线文件。对象栏按此列筛选。', 18, true)
+) AS v(field_code, field_name, data_type, description, sort_order, is_sortable)
+JOIN dynamic_field f
+  ON f.code = v.field_code
+ AND f.deleted = false
+ AND f.tenant_id = 1
+ON CONFLICT (entity_type_code, field_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  library_field_id = EXCLUDED.library_field_id,
+  field_name = EXCLUDED.field_name,
+  data_type = EXCLUDED.data_type,
+  description = EXCLUDED.description,
+  sort_order = EXCLUDED.sort_order,
+  status = 1,
+  deleted = false,
+  is_searchable = true,
+  is_filterable = true,
+  is_sortable = EXCLUDED.is_sortable,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
 -- ---------------------------------------------------------------------------
 -- 5. 默认型号 + 模型字段
 -- ---------------------------------------------------------------------------
 INSERT INTO dynamic_model (
   code, name, entity_type_code, domain, description, status, sort, tenant_id, creator
 ) VALUES
-  ('data_protocol_standard', '通用协议', 'data_protocol', NULL, '通用协议型号', 1, 1, 1, 'seed'),
-  ('data_protocol_ws', '无人机协议', 'data_protocol', NULL, '无人机对接协议', 1, 10, 1, 'seed'),
-  ('data_protocol_robot', '机器人协议', 'data_protocol', NULL, '机器人对接协议', 1, 11, 1, 'seed'),
-  ('data_protocol_mqtt', 'MQTT 协议', 'data_protocol', NULL, 'MQTT 协议', 1, 20, 1, 'seed'),
-  ('data_protocol_http', 'HTTP 协议', 'data_protocol', NULL, 'HTTP 协议', 1, 30, 1, 'seed'),
-  ('data_protocol_opcua', 'OPC UA 协议', 'data_protocol', NULL, 'OPC UA 协议', 1, 40, 1, 'seed'),
-  ('data_protocol_opcda', 'OPC DA 协议', 'data_protocol', NULL, 'OPC DA 协议', 1, 50, 1, 'seed'),
-  ('data_protocol_modbus', 'Modbus 协议', 'data_protocol', NULL, 'Modbus 协议', 1, 60, 1, 'seed'),
-  ('data_protocol_bacnet', 'BACnet 协议', 'data_protocol', NULL, 'BACnet 协议', 1, 70, 1, 'seed'),
-  ('data_protocol_iec104', 'IEC104 协议', 'data_protocol', NULL, 'IEC 60870-5-104 协议', 1, 80, 1, 'seed'),
-  ('data_protocol_iec61850', 'IEC61850 协议', 'data_protocol', NULL, 'IEC 61850 协议', 1, 90, 1, 'seed'),
-  ('data_protocol_dnp3', 'DNP3 协议', 'data_protocol', NULL, 'DNP3 协议', 1, 100, 1, 'seed'),
-  ('data_protocol_dlt645', 'DL/T645 协议', 'data_protocol', NULL, 'DL/T 645 协议', 1, 110, 1, 'seed')
+  ('data_protocol_ws', '无人机协议 WebSocket', 'data_protocol', NULL, '无人机对接协议的 WebSocket 指令', 1, 10, 1, 'seed'),
+  ('data_protocol_robot', '机器人协议 WebSocket', 'data_protocol', NULL, '机器人对接协议的 WebSocket 指令', 1, 11, 1, 'seed'),
+  ('data_protocol_dji_dock', '大疆机场 MQTT', 'data_protocol', NULL, '大疆机场走 MQTT 的指令', 1, 12, 1, 'seed'),
+  ('data_protocol_dji_pilot', '大疆 Pilot MQTT', 'data_protocol', NULL, '大疆 Pilot 走 MQTT 的指令', 1, 13, 1, 'seed')
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   name = EXCLUDED.name,
@@ -478,19 +550,10 @@ JOIN dynamic_field f
 WHERE m.deleted = false
   AND m.tenant_id = 1
   AND m.code IN (
-    'data_protocol_standard',
     'data_protocol_ws',
     'data_protocol_robot',
-    'data_protocol_mqtt',
-    'data_protocol_http',
-    'data_protocol_opcua',
-    'data_protocol_opcda',
-    'data_protocol_modbus',
-    'data_protocol_bacnet',
-    'data_protocol_iec104',
-    'data_protocol_iec61850',
-    'data_protocol_dnp3',
-    'data_protocol_dlt645'
+    'data_protocol_dji_dock',
+    'data_protocol_dji_pilot'
   )
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
@@ -522,28 +585,16 @@ FROM (
   VALUES
     ('data_protocol_ws', 'opcode', 10),
     ('data_protocol_ws', 'exchange_mode', 14),
-    ('data_protocol_ws', 'protocol_version', 16),
-    ('data_protocol_ws', 'http_path', 20),
     ('data_protocol_robot', 'opcode', 10),
     ('data_protocol_robot', 'exchange_mode', 14),
-    ('data_protocol_robot', 'protocol_version', 16),
-    ('data_protocol_robot', 'http_path', 20),
-    ('data_protocol_mqtt', 'mqtt_topic', 10),
-    ('data_protocol_mqtt', 'protocol_qos_level', 20),
-    ('data_protocol_http', 'http_method', 10),
-    ('data_protocol_http', 'http_path', 20),
-    ('data_protocol_opcua', 'opcua_node_id', 10),
-    ('data_protocol_opcua', 'opcua_namespace', 20),
-    ('data_protocol_opcda', 'opcda_item_id', 10),
-    ('data_protocol_modbus', 'modbus_slave_id', 10),
-    ('data_protocol_modbus', 'function_code', 20),
-    ('data_protocol_modbus', 'modbus_register_address', 30),
-    ('data_protocol_bacnet', 'bacnet_object_type', 10),
-    ('data_protocol_bacnet', 'bacnet_instance_number', 20),
-    ('data_protocol_iec104', 'asdu_type', 10),
-    ('data_protocol_iec61850', 'iec61850_ln_ref', 10),
-    ('data_protocol_dnp3', 'dnp3_point_index', 10),
-    ('data_protocol_dlt645', 'dlt645_data_identifier', 10)
+    ('data_protocol_dji_dock', 'opcode', 10),
+    ('data_protocol_dji_dock', 'exchange_mode', 14),
+    ('data_protocol_dji_dock', 'protocol_channel', 19),
+    ('data_protocol_dji_dock', 'mqtt_topic', 21),
+    ('data_protocol_dji_pilot', 'opcode', 10),
+    ('data_protocol_dji_pilot', 'exchange_mode', 14),
+    ('data_protocol_dji_pilot', 'protocol_channel', 19),
+    ('data_protocol_dji_pilot', 'mqtt_topic', 21)
 ) AS mapping(model_code, field_code, sort_order)
 JOIN dynamic_model m
   ON m.deleted = false
@@ -602,6 +653,50 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
+-- 协议版本、通讯方式：全型号同一套台账列，对象栏要展示和筛选。
+INSERT INTO dynamic_model_field_assignment (
+  model_id, field_id, model_code, field_code, required, is_searchable, is_filterable, is_sortable,
+  sort, field_source, tenant_id, creator
+)
+SELECT
+  m.id,
+  f.id,
+  m.code,
+  v.field_code,
+  false,
+  true,
+  true,
+  v.is_sortable,
+  v.sort_order,
+  'BASE',
+  1,
+  'seed'
+FROM dynamic_model m
+JOIN (
+  VALUES
+    ('protocol_version', 16, false),
+    ('communication_protocol', 18, true)
+) AS v(field_code, sort_order, is_sortable)
+  ON 1 = 1
+JOIN dynamic_field f
+  ON f.deleted = false
+ AND f.tenant_id = 1
+ AND f.code = v.field_code
+WHERE m.deleted = false
+  AND m.tenant_id = 1
+  AND m.code LIKE 'data_protocol%'
+ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  field_id = EXCLUDED.field_id,
+  is_searchable = true,
+  is_filterable = true,
+  is_sortable = EXCLUDED.is_sortable,
+  sort = EXCLUDED.sort,
+  field_source = 'BASE',
+  deleted = false,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
 -- 收回误挂到所有型号的旧检索字段
 UPDATE dynamic_model_field_assignment
 SET
@@ -630,10 +725,6 @@ WHERE tenant_id = 1
     'command_schema_json',
     'field_translation_rules_json',
     'step_signal_mapping_rules_json'
-  )
-  AND NOT (
-    model_code = 'data_protocol_mqtt'
-    AND field_code = 'protocol_qos_level'
   );
 
 UPDATE dynamic_field
@@ -900,22 +991,43 @@ SELECT
 FROM dynamic_category p
 JOIN (
   VALUES
-    ('cat-protocol-generic', '通用协议', 10, '通用协议定义入口'),
-    ('cat-protocol-iot', '物联网消息', 20, 'WebSocket / MQTT / HTTP'),
-    ('cat-protocol-industrial', '工业', 30, 'OPC / Modbus / BACnet'),
-    ('cat-protocol-power', '电力规约', 40, 'IEC104 / IEC61850 / DNP3'),
-    ('cat-protocol-metering', '计量抄表', 50, 'DL/T 645')
+    ('cat-protocol-dji-uav', '大疆无人机', 10, '大疆机场与大疆 Pilot'),
+    ('cat-protocol-donggu-uav', '东古无人机', 20, '无人机对接协议')
 ) AS v(code, name, sort, description)
   ON p.deleted = false
  AND p.tenant_id = 1
- AND p.code = 'data_protocol_root'
+ AND p.code = 'cat-protocol-uav'
 WHERE NOT EXISTS (
   SELECT 1
   FROM dynamic_category c
   WHERE c.deleted = false
     AND c.tenant_id = 1
-    AND c.code = v.code
+    AND c.category_type_code = 'data_protocol'
+    AND (c.code = v.code OR c.name = v.name)
 );
+
+-- 界面上已经建过的同名分类，收成稳定编码，避免再插一份。
+UPDATE dynamic_category c
+SET code = v.code,
+    updater = 'seed',
+    update_time = CURRENT_TIMESTAMP
+FROM (
+  VALUES
+    ('cat-protocol-dji-uav', '大疆无人机'),
+    ('cat-protocol-donggu-uav', '东古无人机')
+) AS v(code, name)
+WHERE c.deleted = false
+  AND c.tenant_id = 1
+  AND c.category_type_code = 'data_protocol'
+  AND c.name = v.name
+  AND c.code <> v.code
+  AND NOT EXISTS (
+    SELECT 1
+    FROM dynamic_category other
+    WHERE other.deleted = false
+      AND other.tenant_id = 1
+      AND other.code = v.code
+  );
 
 UPDATE dynamic_category c
 SET tree_path = p.tree_path || c.id || '/',
@@ -933,6 +1045,27 @@ WHERE c.deleted = false
   AND p.id = c.parent_id
   AND (c.tree_path IS NULL OR c.tree_path = p.tree_path OR c.tree_path NOT LIKE p.tree_path || c.id || '/%');
 
+UPDATE dynamic_model_category_relation_t1 r
+SET category_code = c.code,
+    updater = 'seed',
+    update_time = CURRENT_TIMESTAMP
+FROM dynamic_category c
+WHERE r.deleted = false
+  AND r.tenant_id = 1
+  AND r.entity_type_code = 'data_protocol'
+  AND r.category_id = c.id
+  AND r.category_code IS DISTINCT FROM c.code
+  AND NOT EXISTS (
+    SELECT 1
+    FROM dynamic_model_category_relation_t1 other
+    WHERE other.deleted = false
+      AND other.tenant_id = r.tenant_id
+      AND other.entity_type_code = r.entity_type_code
+      AND other.model_code = r.model_code
+      AND other.category_code = c.code
+      AND other.id <> r.id
+  );
+
 INSERT INTO dynamic_model_category_relation_t1 (
   model_id, category_id, entity_type_code, sort, creator, tenant_id, model_code, category_code, deleted
 )
@@ -949,20 +1082,10 @@ SELECT
 FROM dynamic_model m
 JOIN (
   VALUES
-    ('data_protocol_standard', 'cat-protocol-generic'),
-    ('data_protocol_ws', 'cat-protocol-uav'),
-    ('data_protocol_ws', 'cat-protocol-gs'),
+    ('data_protocol_ws', 'cat-protocol-donggu-uav'),
     ('data_protocol_robot', 'cat-protocol-robot'),
-    ('data_protocol_mqtt', 'cat-protocol-iot'),
-    ('data_protocol_http', 'cat-protocol-iot'),
-    ('data_protocol_opcua', 'cat-protocol-industrial'),
-    ('data_protocol_opcda', 'cat-protocol-industrial'),
-    ('data_protocol_modbus', 'cat-protocol-industrial'),
-    ('data_protocol_bacnet', 'cat-protocol-industrial'),
-    ('data_protocol_iec104', 'cat-protocol-power'),
-    ('data_protocol_iec61850', 'cat-protocol-power'),
-    ('data_protocol_dnp3', 'cat-protocol-power'),
-    ('data_protocol_dlt645', 'cat-protocol-metering')
+    ('data_protocol_dji_dock', 'cat-protocol-dji-uav'),
+    ('data_protocol_dji_pilot', 'cat-protocol-dji-uav')
 ) AS map(model_code, category_code)
   ON m.deleted = false
  AND m.tenant_id = 1
@@ -1002,31 +1125,7 @@ JOIN (
       'data_protocol_ws',
       'proto-sample-ws-heartbeat',
       '示例·WebSocket心跳指令',
-      '{"opcode":1,"http_path":"/ws/device","command_schema_json":{"type":"object","properties":{"type":{"type":"string"},"ts":{"type":"number"}}},"field_translation_rules_json":[{"from":"type","label":"消息类型"},{"from":"ts","label":"时间戳"}],"step_signal_mapping_rules_json":[{"when":{"type":"heartbeat"},"stepRefType":"NODE_KEY","stepRef":"n-connect","status":"RUNNING"}],"sample_messages_json":[{"type":"heartbeat","ts":1710000000}]}'
-    ),
-    (
-      'data_protocol_mqtt',
-      'proto-sample-mqtt-telemetry',
-      '示例·MQTT遥测指令',
-      '{"mqtt_topic":"plant/tank/telemetry","protocol_qos_level":1,"command_schema_json":{"type":"object","properties":{"level":{"type":"number"},"temp":{"type":"number"}}},"field_translation_rules_json":[{"from":"level","label":"液位"},{"from":"temp","label":"温度"}],"step_signal_mapping_rules_json":[{"when":{"level":{"gte":0}},"stepRefType":"NODE_KEY","stepRef":"n-read","status":"DONE"}],"sample_messages_json":[{"level":12.5,"temp":28.1}]}'
-    ),
-    (
-      'data_protocol_modbus',
-      'proto-sample-modbus-hr',
-      '示例·Modbus读保持寄存器指令',
-      '{"modbus_slave_id":1,"function_code":3,"modbus_register_address":40001,"command_schema_json":{"type":"object","properties":{"value":{"type":"number"}}},"field_translation_rules_json":[{"from":"value","label":"寄存器值"}],"step_signal_mapping_rules_json":[{"when":{"value":{"exists":true}},"stepRefType":"NODE_KEY","stepRef":"n-read","status":"DONE"}],"sample_messages_json":[{"value":128}]}'
-    ),
-    (
-      'data_protocol_iec104',
-      'proto-sample-iec104-yx',
-      '示例·IEC104遥信指令',
-      '{"asdu_type":1,"command_schema_json":{"type":"object","properties":{"ioa":{"type":"number"},"on":{"type":"boolean"}}},"field_translation_rules_json":[{"from":"ioa","label":"信息体地址"},{"from":"on","label":"合位"}],"step_signal_mapping_rules_json":[{"when":{"on":true},"stepRefType":"NODE_KEY","stepRef":"n-signal","status":"RUNNING"}],"sample_messages_json":[{"ioa":1001,"on":true}]}'
-    ),
-    (
-      'data_protocol_dlt645',
-      'proto-sample-dlt645-energy',
-      '示例·DL/T645正向有功指令',
-      '{"dlt645_data_identifier":"00000000","command_schema_json":{"type":"object","properties":{"kwh":{"type":"number"}}},"field_translation_rules_json":[{"from":"kwh","label":"正向有功电能"}],"step_signal_mapping_rules_json":[{"when":{"kwh":{"exists":true}},"stepRefType":"NODE_KEY","stepRef":"n-read","status":"DONE"}],"sample_messages_json":[{"kwh":1024.6}]}'
+      '{"opcode":1,"communication_protocol":"websocket","command_schema_json":{"type":"object","properties":{"type":{"type":"string"},"ts":{"type":"number"}}},"field_translation_rules_json":[{"from":"type","label":"消息类型"},{"from":"ts","label":"时间戳"}],"step_signal_mapping_rules_json":[{"when":{"type":"heartbeat"},"stepRefType":"NODE_KEY","stepRef":"n-connect","status":"RUNNING"}],"sample_messages_json":[{"type":"heartbeat","ts":1710000000}]}'
     )
 ) AS v(model_code, code, name, custom_fields)
   ON m.deleted = false
@@ -1048,11 +1147,7 @@ SET
   update_time = CURRENT_TIMESTAMP
 FROM (
   VALUES
-    ('proto-sample-ws-heartbeat', '示例·WebSocket心跳指令', '{"opcode":1,"http_path":"/ws/device","command_schema_json":{"type":"object","properties":{"type":{"type":"string"},"ts":{"type":"number"}}},"field_translation_rules_json":[{"from":"type","label":"消息类型"},{"from":"ts","label":"时间戳"}],"step_signal_mapping_rules_json":[{"when":{"type":"heartbeat"},"stepRefType":"NODE_KEY","stepRef":"n-connect","status":"RUNNING"}],"sample_messages_json":[{"type":"heartbeat","ts":1710000000}]}'),
-    ('proto-sample-mqtt-telemetry', '示例·MQTT遥测指令', '{"mqtt_topic":"plant/tank/telemetry","protocol_qos_level":1,"command_schema_json":{"type":"object","properties":{"level":{"type":"number"},"temp":{"type":"number"}}},"field_translation_rules_json":[{"from":"level","label":"液位"},{"from":"temp","label":"温度"}],"step_signal_mapping_rules_json":[{"when":{"level":{"gte":0}},"stepRefType":"NODE_KEY","stepRef":"n-read","status":"DONE"}],"sample_messages_json":[{"level":12.5,"temp":28.1}]}'),
-    ('proto-sample-modbus-hr', '示例·Modbus读保持寄存器指令', '{"modbus_slave_id":1,"function_code":3,"modbus_register_address":40001,"command_schema_json":{"type":"object","properties":{"value":{"type":"number"}}},"field_translation_rules_json":[{"from":"value","label":"寄存器值"}],"step_signal_mapping_rules_json":[{"when":{"value":{"exists":true}},"stepRefType":"NODE_KEY","stepRef":"n-read","status":"DONE"}],"sample_messages_json":[{"value":128}]}'),
-    ('proto-sample-iec104-yx', '示例·IEC104遥信指令', '{"asdu_type":1,"command_schema_json":{"type":"object","properties":{"ioa":{"type":"number"},"on":{"type":"boolean"}}},"field_translation_rules_json":[{"from":"ioa","label":"信息体地址"},{"from":"on","label":"合位"}],"step_signal_mapping_rules_json":[{"when":{"on":true},"stepRefType":"NODE_KEY","stepRef":"n-signal","status":"RUNNING"}],"sample_messages_json":[{"ioa":1001,"on":true}]}'),
-    ('proto-sample-dlt645-energy', '示例·DL/T645正向有功指令', '{"dlt645_data_identifier":"00000000","command_schema_json":{"type":"object","properties":{"kwh":{"type":"number"}}},"field_translation_rules_json":[{"from":"kwh","label":"正向有功电能"}],"step_signal_mapping_rules_json":[{"when":{"kwh":{"exists":true}},"stepRefType":"NODE_KEY","stepRef":"n-read","status":"DONE"}],"sample_messages_json":[{"kwh":1024.6}]}')
+    ('proto-sample-ws-heartbeat', '示例·WebSocket心跳指令', '{"opcode":1,"communication_protocol":"websocket","command_schema_json":{"type":"object","properties":{"type":{"type":"string"},"ts":{"type":"number"}}},"field_translation_rules_json":[{"from":"type","label":"消息类型"},{"from":"ts","label":"时间戳"}],"step_signal_mapping_rules_json":[{"when":{"type":"heartbeat"},"stepRefType":"NODE_KEY","stepRef":"n-connect","status":"RUNNING"}],"sample_messages_json":[{"type":"heartbeat","ts":1710000000}]}')
 ) AS v(code, name, custom_fields)
 WHERE e.deleted = false
   AND e.tenant_id = 1
@@ -1073,11 +1168,7 @@ SELECT
 FROM ent_data_protocol_t1 e
 JOIN (
   VALUES
-    ('proto-sample-ws-heartbeat', 'cat-protocol-iot'),
-    ('proto-sample-mqtt-telemetry', 'cat-protocol-iot'),
-    ('proto-sample-modbus-hr', 'cat-protocol-industrial'),
-    ('proto-sample-iec104-yx', 'cat-protocol-power'),
-    ('proto-sample-dlt645-energy', 'cat-protocol-metering')
+    ('proto-sample-ws-heartbeat', 'cat-protocol-donggu-uav')
 ) AS map(entity_code, category_code)
   ON e.deleted = false
  AND e.tenant_id = 1
@@ -1113,14 +1204,7 @@ FROM ent_data_protocol_t1 e
 JOIN (
   VALUES
     ('proto-sample-ws-heartbeat', 'opcode', NULL, 1::numeric),
-    ('proto-sample-ws-heartbeat', 'http_path', '/ws/device', NULL::numeric),
-    ('proto-sample-mqtt-telemetry', 'mqtt_topic', 'plant/tank/telemetry', NULL::numeric),
-    ('proto-sample-mqtt-telemetry', 'protocol_qos_level', NULL, 1::numeric),
-    ('proto-sample-modbus-hr', 'modbus_slave_id', NULL, 1::numeric),
-    ('proto-sample-modbus-hr', 'function_code', NULL, 3::numeric),
-    ('proto-sample-modbus-hr', 'modbus_register_address', NULL, 40001::numeric),
-    ('proto-sample-iec104-yx', 'asdu_type', NULL, 1::numeric),
-    ('proto-sample-dlt645-energy', 'dlt645_data_identifier', '00000000', NULL::numeric)
+    ('proto-sample-ws-heartbeat', 'communication_protocol', 'websocket', NULL::numeric)
 ) AS f(entity_code, field_code, value_string, value_number)
   ON e.deleted = false
  AND e.tenant_id = 1
@@ -1152,7 +1236,95 @@ WHERE idx.deleted = false
     'protocol_type_code',
     'ws_opcode',
     'modbus_function_code',
-    'iec104_asdu_type'
+    'iec104_asdu_type',
+    'http_path'
+  );
+
+-- 通讯协议不再单独占型号。重跑本文件不得把这些型号和空分类加回来。
+UPDATE dynamic_model
+SET deleted = true,
+    updater = 'seed',
+    update_time = CURRENT_TIMESTAMP
+WHERE tenant_id = 1
+  AND deleted = false
+  AND code IN (
+    'data_protocol_standard',
+    'data_protocol_mqtt',
+    'data_protocol_http',
+    'data_protocol_opcua',
+    'data_protocol_opcda',
+    'data_protocol_modbus',
+    'data_protocol_bacnet',
+    'data_protocol_iec104',
+    'data_protocol_iec61850',
+    'data_protocol_dnp3',
+    'data_protocol_dlt645'
+  );
+
+UPDATE ent_data_protocol_t1 e
+SET deleted = true,
+    updater = 'seed',
+    update_time = CURRENT_TIMESTAMP
+FROM dynamic_model m
+WHERE e.deleted = false
+  AND e.tenant_id = 1
+  AND e.model_id = m.id
+  AND m.tenant_id = 1
+  AND m.code IN (
+    'data_protocol_standard',
+    'data_protocol_mqtt',
+    'data_protocol_http',
+    'data_protocol_opcua',
+    'data_protocol_opcda',
+    'data_protocol_modbus',
+    'data_protocol_bacnet',
+    'data_protocol_iec104',
+    'data_protocol_iec61850',
+    'data_protocol_dnp3',
+    'data_protocol_dlt645'
+  );
+
+UPDATE dynamic_model_category_relation_t1
+SET deleted = true,
+    updater = 'seed',
+    update_time = CURRENT_TIMESTAMP
+WHERE tenant_id = 1
+  AND deleted = false
+  AND entity_type_code = 'data_protocol'
+  AND (
+    model_code IN (
+      'data_protocol_standard',
+      'data_protocol_mqtt',
+      'data_protocol_http',
+      'data_protocol_opcua',
+      'data_protocol_opcda',
+      'data_protocol_modbus',
+      'data_protocol_bacnet',
+      'data_protocol_iec104',
+      'data_protocol_iec61850',
+      'data_protocol_dnp3',
+      'data_protocol_dlt645'
+    )
+    OR (
+      model_code IN ('data_protocol_dji_dock', 'data_protocol_dji_pilot', 'data_protocol_ws')
+      AND category_code = 'cat-protocol-uav'
+    )
+    OR (model_code = 'data_protocol_ws' AND category_code = 'cat-protocol-gs')
+  );
+
+UPDATE dynamic_category
+SET deleted = true,
+    updater = 'seed',
+    update_time = CURRENT_TIMESTAMP
+WHERE tenant_id = 1
+  AND deleted = false
+  AND category_type_code = 'data_protocol'
+  AND code IN (
+    'cat-protocol-generic',
+    'cat-protocol-iot',
+    'cat-protocol-industrial',
+    'cat-protocol-power',
+    'cat-protocol-metering'
   );
 
 -- 对象栏列表：默认展示名称+方向，并打开方向筛选（展示列只认系统+类型基础字段）
@@ -1164,7 +1336,7 @@ SET
         jsonb_set(
           COALESCE(NULLIF(btrim(p.props), '')::jsonb, '{}'::jsonb),
           '{displayContent}',
-          '["name","command_direction"]'::jsonb,
+          '["name","command_direction","protocol_version","communication_protocol"]'::jsonb,
           true
         ),
         '{filter,externalFilterEnabled}',
@@ -1172,7 +1344,7 @@ SET
         true
       ),
       '{filter,filterSelectedOptions}',
-      '["command_direction"]'::jsonb,
+      '["command_direction","protocol_version","communication_protocol"]'::jsonb,
       true
     )
   )::text,

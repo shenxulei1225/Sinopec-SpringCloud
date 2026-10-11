@@ -15,7 +15,7 @@ public final class RoutePayloadKeys {
     public static final String SPEED_METERS_PER_MINUTE = "speedMetersPerMinute";
     /** 第 1 步写入：非到达类动作预估时长（分钟） */
     public static final String ESTIMATED_ACTION_DURATION = "estimatedActionDuration";
-    /** 第 2 步 saveRoute 写入：预估行驶时长（分钟） */
+    /** 第 2 步开始规划写入：行驶时长（秒）。不是占窗的分钟数。 */
     public static final String ESTIMATED_TRAVEL_DURATION = "estimatedTravelDuration";
     public static final String PLANNED_ROUTE = "plannedRoute";
     public static final String VISIT_NODE_IDS = "visitNodeIds";

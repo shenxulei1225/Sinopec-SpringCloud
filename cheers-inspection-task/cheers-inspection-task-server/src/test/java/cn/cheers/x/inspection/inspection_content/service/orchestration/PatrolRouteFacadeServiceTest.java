@@ -9,14 +9,13 @@ import cn.cheers.x.inspection.inspection_content.controller.admin.vo.orchestrati
 import cn.cheers.x.inspection.inspection_content.service.orchestration.impl.PatrolRouteFacadeServiceImpl;
 import cn.cheers.x.inspection.inspection_content.service.orchestration.impl.PatrolScheduleConflictDetectService;
 import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleConflictReportDTO;
-import cn.cheers.x.inspection.orchestration.dto.PatrolSaveRouteReqDTO;
-import cn.cheers.x.inspection.orchestration.dto.PatrolSaveRouteRespDTO;
+import cn.cheers.x.inspection.task.service.execution.openrun.PatrolMissionTranslateService;
 import cn.cheers.x.inspection.task.service.execution.openrun.PatrolOpenRunMaterializeService;
 import cn.cheers.x.inspection.task.service.execution.scheduleboard.PatrolReservationAutoStartScheduler;
 import cn.cheers.x.inspection.task.service.execution.steptree.TaskStepTreeGenerateService;
-import cn.cheers.x.inspection.task.service.task.CreateWizardInvalidation;
-import cn.cheers.x.inspection.task.service.task.PatrolTaskCreateProcessService;
+import cn.cheers.x.inspection.task.model.task.InspectionContent;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
+import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskUpdateReqVO;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
 import cn.cheers.x.module.platform.contract.dto.route.RoutePreviewDTO;
 import cn.cheers.x.module.platform.contract.dto.schedule.ScheduleRunRequest;
@@ -54,13 +53,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static cn.cheers.x.inspection.inspection_content.enums.ErrorCodeConstants.PATROL_FACADE_ROUTE_PLAN_UNUSABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -91,19 +94,20 @@ class PatrolRouteFacadeServiceTest {
     private PatrolOpenRunMaterializeService patrolOpenRunMaterializeService;
 
     @Mock
+    private PatrolMissionTranslateService patrolMissionTranslateService;
+
+    @Mock
     private TaskStepTreeGenerateService taskStepTreeGenerateService;
 
     @Mock
     private PatrolReservationAutoStartScheduler patrolReservationAutoStartScheduler;
 
     @Mock
-    private PatrolSaveRouteService patrolSaveRouteService;
-
-    @Mock
     private PatrolScheduleConflictDetectService patrolScheduleConflictDetectService;
 
     @Mock
-    private PatrolTaskCreateProcessService patrolTaskCreateProcessService;
+    private cn.cheers.x.inspection.task.service.execution.steptree.PatrolInspectionConfigReadinessService
+            patrolInspectionConfigReadinessService;
 
     private PatrolRouteFacadeServiceImpl facadeService;
 
@@ -116,24 +120,29 @@ class PatrolRouteFacadeServiceTest {
         ReflectionTestUtils.setField(facadeService, "runtimeSlotWriteApi", runtimeSlotWriteApi);
         ReflectionTestUtils.setField(facadeService, "patrolTaskEntityStore", patrolTaskEntityStore);
         ReflectionTestUtils.setField(facadeService, "patrolOpenRunMaterializeService", patrolOpenRunMaterializeService);
+        ReflectionTestUtils.setField(facadeService, "patrolMissionTranslateService", patrolMissionTranslateService);
         ReflectionTestUtils.setField(facadeService, "taskStepTreeGenerateService", taskStepTreeGenerateService);
         ReflectionTestUtils.setField(facadeService, "patrolReservationAutoStartScheduler", patrolReservationAutoStartScheduler);
-        ReflectionTestUtils.setField(facadeService, "patrolSaveRouteService", patrolSaveRouteService);
         ReflectionTestUtils.setField(facadeService, "patrolScheduleConflictDetectService", patrolScheduleConflictDetectService);
-        ReflectionTestUtils.setField(facadeService, "patrolTaskCreateProcessService", patrolTaskCreateProcessService);
+        ReflectionTestUtils.setField(
+                facadeService, "patrolInspectionConfigReadinessService", patrolInspectionConfigReadinessService);
         ReflectionTestUtils.setField(facadeService, "objectMapper", new ObjectMapper());
+        org.mockito.Mockito.lenient()
+                .when(patrolInspectionConfigReadinessService.evaluate(any()))
+                .thenReturn(
+                        cn.cheers.x.inspection.inspection_content.controller.admin.vo.orchestration
+                                .PatrolInspectionConfigReadinessRespVO.builder()
+                                .ready(true)
+                                .gaps(List.of())
+                                .build());
     }
 
     @Test
     @DisplayName("preview：dryRun + stopAfter ROUTE + 种子 payload 键齐全")
     void previewRoute_buildsScheduleRunRequest() {
         PatrolRouteRunReqVO reqVO = routeReq("net-a", null);
-        when(scheduleRunApi.run(any())).thenReturn(CommonResult.success(
-                ScheduleRunResponse.builder()
-                        .runtimeJobId("job-preview")
-                        .routePreview(RoutePreviewDTO.builder().networkRef("net-a").build())
-                        .workItems(List.of(WorkItemDTO.builder().workId("expanded-1").build()))
-                        .build()));
+        reqVO.setStrategy("optimize_order");
+        when(scheduleRunApi.run(any())).thenReturn(CommonResult.success(routePreviewReady("job-preview", "expanded-1")));
 
         ScheduleRunResponse response = facadeService.previewRoute(reqVO);
 
@@ -148,34 +157,34 @@ class PatrolRouteFacadeServiceTest {
     }
 
     @Test
-    @DisplayName("saveRoute：直接写入请求里的 plannedRoute，不再重跑算路")
-    void saveRoute_persistsPlannedRouteWithoutScheduleRun() {
-        PatrolRouteRunReqVO reqVO = routeReq(null, TASK_ID);
-        Map<String, Object> planned = new LinkedHashMap<>();
-        planned.put("stopIds", List.of("sta-1", "sta-2"));
-        reqVO.setPlannedRoute(planned);
-        when(patrolSaveRouteService.saveRoute(any())).thenReturn(
-                PatrolSaveRouteRespDTO.builder().taskId(TASK_ID).dryRun(false).build());
-
-        facadeService.saveRoute(reqVO);
-
-        ArgumentCaptor<PatrolSaveRouteReqDTO> captor = ArgumentCaptor.forClass(PatrolSaveRouteReqDTO.class);
-        verify(patrolSaveRouteService).saveRoute(captor.capture());
-        verify(patrolTaskCreateProcessService).invalidate(eq(TASK_ID), eq(CreateWizardInvalidation.ROUTE_SAVED));
+    @DisplayName("preview：没选排序方法就报错")
+    void previewRoute_requiresStrategy() {
+        PatrolRouteRunReqVO reqVO = routeReq("net-a", null);
+        assertThrows(ServiceException.class, () -> facadeService.previewRoute(reqVO));
         verify(scheduleRunApi, never()).run(any());
-        assertEquals(TASK_ID, captor.getValue().getTaskId());
-        assertEquals(planned, captor.getValue().getWorkItems().get(0).getPayload().get(RoutePayloadKeys.PLANNED_ROUTE));
+    }
+
+    @Test
+    @DisplayName("preview：透传 strategy 到编排种子 payload")
+    void previewRoute_forwardsStrategy() {
+        PatrolRouteRunReqVO reqVO = routeReq("net-a", null);
+        reqVO.setStrategy("optimize_order");
+        when(scheduleRunApi.run(any())).thenReturn(CommonResult.success(routePreviewReady("job-preview", "expanded-1")));
+
+        facadeService.previewRoute(reqVO);
+
+        assertEquals("optimize_order", captureRunRequest().getWorkItems().get(0).getPayload().get(RoutePayloadKeys.STRATEGY));
     }
 
     @Test
     @DisplayName("preview：透传 startStopId / endStopId / returnToStart 到编排种子 payload")
     void previewRoute_forwardsStartStopId() {
         PatrolRouteRunReqVO reqVO = routeReq("net-a", null);
+        reqVO.setStrategy("as_given");
         reqVO.setStartStopId("sta-depot");
         reqVO.setEndStopId("sta-pad");
         reqVO.setReturnToStart(Boolean.FALSE);
-        when(scheduleRunApi.run(any())).thenReturn(CommonResult.success(
-                ScheduleRunResponse.builder().runtimeJobId("job-preview").build()));
+        when(scheduleRunApi.run(any())).thenReturn(CommonResult.success(routePreviewReady("job-preview", "expanded-1")));
 
         facadeService.previewRoute(reqVO);
 
@@ -184,13 +193,6 @@ class PatrolRouteFacadeServiceTest {
         assertEquals("sta-pad", payload.get("endStopId"));
         assertEquals(Boolean.FALSE, payload.get("returnToStart"));
         assertSeedPayload(payload, reqVO, false);
-    }
-
-    @Test
-    @DisplayName("saveRoute：缺 taskId 显式失败")
-    void saveRoute_missingTaskId_throws() {
-        assertThrows(ServiceException.class, () -> facadeService.saveRoute(routeReq(null, null)));
-        verify(scheduleRunApi, never()).run(any());
     }
 
     @Test
@@ -311,7 +313,7 @@ class PatrolRouteFacadeServiceTest {
         PatrolTaskDraft draft = new PatrolTaskDraft(
                 TASK_ID, "task", "巡检", FACILITY_ID, "UAV", null, null, null,
                 sampleStepTree(), planned, "draft", 2,
-                "sta-start", "sta-end", null, Boolean.FALSE, null, null, previewSlots, null);
+                "sta-start", "sta-end", null, Boolean.FALSE, null, null, previewSlots, null, null);
         when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draft);
         when(patrolTaskEntityStore.readOrchestrationPreviewSlots(TASK_ID)).thenReturn(previewSlots);
         stubArrangePolicy("priority_preempt", 15);
@@ -338,7 +340,74 @@ class PatrolRouteFacadeServiceTest {
         assertEquals(committedJobId, persistCaptor.getValue().getSlots().get(0).getRuntimeJobId());
         verify(patrolTaskEntityStore).clearOrchestrationPreview(TASK_ID);
         verify(patrolTaskEntityStore).writeOrchestrationCommittedState(TASK_ID, committedJobId, Boolean.TRUE);
+        verify(patrolTaskEntityStore, never()).clearGeneratedMark(any());
         verify(patrolOpenRunMaterializeService).materializeAllSlots(any(), any());
+    }
+
+    @Test
+    @DisplayName("commit：这一页带了所属设施时，写入已发布字段")
+    void commitOrchestration_pageFacility_writesFacility() {
+        PatrolOrchestrationRunReqVO reqVO = orchestrationReq();
+        PatrolOrchestrationRunReqVO.WizardPage page = new PatrolOrchestrationRunReqVO.WizardPage();
+        page.setFacilityId(FACILITY_ID);
+        page.setTaskName("进油阀专项巡检");
+        page.setPatrolExecutionMode("ROBOT");
+        reqVO.setPage(page);
+        reqVO.setSlots(List.of(slot("slot-a", "ephemeral", "2026-07-21T08:00:00+08:00",
+                "2026-07-21T09:00:00+08:00", "res-1")));
+        List<ScheduleSlotDTO> previewSlots = List.of(slot("slot-a", "ephemeral", "2026-07-21T08:00:00+08:00",
+                "2026-07-21T09:00:00+08:00", "res-1"));
+        Map<String, Object> planned = new LinkedHashMap<>();
+        planned.put("stopIds", List.of("sta-1", "sta-2"));
+        PatrolTaskDraft draft = new PatrolTaskDraft(
+                TASK_ID, "task", "巡检", FACILITY_ID, "ROBOT", null, null, null,
+                sampleStepTree(), planned, "draft", 2,
+                "sta-start", "sta-end", null, Boolean.FALSE, null, null, previewSlots, null, null);
+        when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draft);
+        when(patrolTaskEntityStore.readOrchestrationPreviewSlots(TASK_ID)).thenReturn(previewSlots);
+        when(runtimePersistApi.persist(any())).thenReturn(CommonResult.success(true));
+        when(runtimeQueryApi.listSlotsByJobId(any())).thenAnswer(invocation -> {
+            String jobId = invocation.getArgument(0);
+            return CommonResult.success(List.of(slot("slot-a", jobId, "2026-07-21T08:00:00+08:00",
+                    "2026-07-21T09:00:00+08:00", "res-1")));
+        });
+        when(runtimeQueryApi.listSlots(any(), any(), any(), any(), any(), any()))
+                .thenReturn(CommonResult.success(List.of()));
+        when(runtimeSlotWriteApi.finalizePlannedSchedule(any())).thenReturn(CommonResult.success(true));
+
+        facadeService.commitOrchestration(reqVO);
+
+        ArgumentCaptor<InspectionTaskUpdateReqVO> updateCaptor =
+                ArgumentCaptor.forClass(InspectionTaskUpdateReqVO.class);
+        verify(patrolTaskEntityStore).updateDraft(updateCaptor.capture());
+        assertEquals(FACILITY_ID, updateCaptor.getValue().getFacilityId());
+        assertEquals(Boolean.TRUE, updateCaptor.getValue().getApplyToPublished());
+    }
+
+    @Test
+    @DisplayName("commit：已生成但没有试排、请求里也没有计划点时直接拒绝，不再按原时间重算")
+    void commitOrchestration_generatedWithoutPreview_rejectsWithoutDetect() {
+        PatrolOrchestrationRunReqVO reqVO = orchestrationReq();
+        when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draftWithConfirmedRoute("job-old", Boolean.TRUE));
+
+        assertThrows(ServiceException.class, () -> facadeService.commitOrchestration(reqVO));
+
+        verifyNoInteractions(patrolScheduleConflictDetectService);
+        verify(patrolTaskEntityStore, never()).writeOrchestrationPreview(any(), any(), any());
+        verify(runtimeSlotWriteApi, never()).releaseUnfinished(any());
+        verify(patrolTaskEntityStore, never()).clearGeneratedMark(any());
+    }
+
+    @Test
+    @DisplayName("commit：还没生成且没有试排时直接拒绝，不释放占窗")
+    void commitOrchestration_withoutPreview_rejectsBeforeRelease() {
+        PatrolOrchestrationRunReqVO reqVO = orchestrationReq();
+        when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draftWithConfirmedRoute(null, Boolean.FALSE));
+
+        assertThrows(ServiceException.class, () -> facadeService.commitOrchestration(reqVO));
+
+        verify(runtimeQueryApi, never()).listSlots(any(), any(), any(), any(), any(), any());
+        verify(patrolTaskEntityStore, never()).clearGeneratedMark(any());
     }
 
     @Test
@@ -352,7 +421,7 @@ class PatrolRouteFacadeServiceTest {
         PatrolTaskDraft draft = new PatrolTaskDraft(
                 TASK_ID, "task", "巡检", FACILITY_ID, "UAV", null, null, null,
                 sampleStepTree(), planned, "draft", 2,
-                "sta-start", "sta-end", null, Boolean.FALSE, null, null, previewSlots, null);
+                "sta-start", "sta-end", null, Boolean.FALSE, null, null, previewSlots, null, null);
         when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draft);
         when(patrolTaskEntityStore.readOrchestrationPreviewSlots(TASK_ID)).thenReturn(previewSlots);
         stubArrangePolicy("priority_preempt", 15);
@@ -370,8 +439,42 @@ class PatrolRouteFacadeServiceTest {
 
         assertThrows(ServiceException.class, () -> facadeService.commitOrchestration(reqVO));
         verify(patrolTaskEntityStore, never()).writeOrchestrationCommittedState(any(), any(), any());
+        verify(patrolTaskEntityStore).clearGeneratedMark(TASK_ID);
         verify(runtimeSlotWriteApi, never()).finalizePlannedSchedule(any());
         verify(runtimeSlotWriteApi).releaseUnfinished(any());
+    }
+
+    @Test
+    @DisplayName("generateTask：待执行没写完时收掉生成标记")
+    void commitOrchestration_materializeFails_clearsGeneratedMark() {
+        PatrolOrchestrationRunReqVO reqVO = orchestrationReq();
+        List<ScheduleSlotDTO> previewSlots = List.of(slot("slot-a", "ephemeral", "2026-07-21T08:00:00+08:00",
+                "2026-07-21T09:00:00+08:00", "res-1"));
+        Map<String, Object> planned = new LinkedHashMap<>();
+        planned.put("stopIds", List.of("sta-1", "sta-2"));
+        PatrolTaskDraft draft = new PatrolTaskDraft(
+                TASK_ID, "task", "巡检", FACILITY_ID, "UAV", null, null, null,
+                sampleStepTree(), planned, "draft", 2,
+                "sta-start", "sta-end", "job-old", Boolean.TRUE, null, null, previewSlots, null, null);
+        when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draft);
+        when(patrolTaskEntityStore.readOrchestrationPreviewSlots(TASK_ID)).thenReturn(previewSlots);
+        stubArrangePolicy("priority_preempt", 15);
+        when(runtimePersistApi.persist(any())).thenReturn(CommonResult.success(true));
+        when(runtimeQueryApi.listSlotsByJobId(any())).thenAnswer(invocation -> {
+            String jobId = invocation.getArgument(0);
+            return CommonResult.success(List.of(slot("slot-a", jobId, "2026-07-21T08:00:00+08:00",
+                    "2026-07-21T09:00:00+08:00", "res-1")));
+        });
+        when(runtimeQueryApi.listSlots(any(), any(), any(), any(), any(), any()))
+                .thenReturn(CommonResult.success(List.of()));
+        when(runtimeSlotWriteApi.finalizePlannedSchedule(any())).thenReturn(CommonResult.success(true));
+        when(runtimeSlotWriteApi.releaseUnfinished(any())).thenReturn(CommonResult.success(true));
+        doThrow(new IllegalStateException("待执行没写完"))
+                .when(patrolOpenRunMaterializeService).materializeAllSlots(any(), any());
+
+        assertThrows(IllegalStateException.class, () -> facadeService.commitOrchestration(reqVO));
+        verify(patrolTaskEntityStore, never()).writeOrchestrationCommittedState(any(), any(), any());
+        verify(patrolTaskEntityStore).clearGeneratedMark(TASK_ID);
     }
 
     @Test
@@ -385,7 +488,7 @@ class PatrolRouteFacadeServiceTest {
         PatrolTaskDraft draft = new PatrolTaskDraft(
                 TASK_ID, "task", "巡检", FACILITY_ID, "UAV", null, null, null,
                 sampleStepTree(), planned, "draft", 2,
-                "sta-start", "sta-end", null, Boolean.FALSE, null, null, previewSlots, null);
+                "sta-start", "sta-end", null, Boolean.FALSE, null, null, previewSlots, null, null);
         when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draft);
         when(patrolTaskEntityStore.readOrchestrationPreviewSlots(TASK_ID)).thenReturn(previewSlots);
         stubArrangePolicy("priority_preempt", 15);
@@ -408,6 +511,7 @@ class PatrolRouteFacadeServiceTest {
         org.junit.jupiter.api.Assertions.assertNotNull(response.getRuntimeJobId());
         verify(runtimeSlotWriteApi).releaseUnfinished(any());
         verify(patrolTaskEntityStore).writeOrchestrationCommittedState(eq(TASK_ID), any(), eq(Boolean.TRUE));
+        verify(patrolTaskEntityStore, never()).clearGeneratedMark(any());
     }
 
     @Test
@@ -423,62 +527,62 @@ class PatrolRouteFacadeServiceTest {
     }
 
     @Test
-    @DisplayName("detectScheduleConflicts：只出报告，不跑智能编排")
+    @DisplayName("detectScheduleConflicts：没有重叠时带上计划时间点，不跑智能编排")
     void detectScheduleConflicts_returnsReportWithoutSolve() {
         PatrolOrchestrationRunReqVO reqVO = orchestrationReq();
         when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draftWithConfirmedRoute(null, Boolean.FALSE));
-        when(patrolScheduleConflictDetectService.detect(eq(TASK_ID), any()))
+        when(patrolScheduleConflictDetectService.detect(any(PatrolTaskDraft.class), any()))
                 .thenReturn(new PatrolScheduleConflictDetectService.DetectedPlan(
                         draftWithConfirmedRoute(null, Boolean.FALSE),
-                        List.of(),
-                        ScheduleConflictReportDTO.builder().hasConflict(false).plannedCount(3).conflictCount(0).devices(List.of()).build()));
+                        List.of(templateWorkItem()),
+                        ScheduleConflictReportDTO.builder().hasConflict(false).plannedCount(1).conflictCount(0).devices(List.of()).build()));
 
         ScheduleConflictReportDTO report = facadeService.detectScheduleConflicts(reqVO);
 
         assertEquals(Boolean.FALSE, report.getHasConflict());
+        assertEquals(1, report.getSlots().size());
         verify(scheduleRunApi, never()).run(any());
         verify(taskStepTreeGenerateService, never()).generate(any(), any(), any(), any());
+        verify(patrolMissionTranslateService, never()).assertPreviewTranslate(
+                any(), any(), org.mockito.ArgumentMatchers.anyList());
     }
 
     @Test
-    @DisplayName("prepareConfirmPreview：仍有冲突则拒绝写快照")
-    void prepareConfirmPreview_whenConflict_throws() {
+    @DisplayName("previewPageInstructions：用页面上的步骤图试译，不重新编树，不写任务")
+    void previewPageInstructions_usesGivenTreeAndDoesNotCompose() {
         PatrolOrchestrationRunReqVO reqVO = orchestrationReq();
-        when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draftWithConfirmedRoute(null, Boolean.FALSE));
-        when(patrolScheduleConflictDetectService.detect(eq(TASK_ID), any()))
-                .thenReturn(new PatrolScheduleConflictDetectService.DetectedPlan(
-                        draftWithConfirmedRoute(null, Boolean.FALSE),
-                        List.of(),
-                        ScheduleConflictReportDTO.builder().hasConflict(true).plannedCount(3).conflictCount(2).devices(List.of()).build()));
-
-        assertThrows(ServiceException.class, () -> facadeService.prepareConfirmPreview(reqVO));
-        verify(patrolTaskEntityStore, never()).writeOrchestrationPreview(any(), any(), any());
-        verify(taskStepTreeGenerateService, never()).generate(any(), any(), any(), any());
-    }
-
-    @Test
-    @DisplayName("prepareConfirmPreview：无冲突时写试排快照并生成步骤图")
-    void prepareConfirmPreview_writesPreviewAndGeneratesStepTree() {
-        PatrolOrchestrationRunReqVO reqVO = orchestrationReq();
-        PatrolTaskDraft ready = draftWithConfirmedRoute(null, Boolean.FALSE, null);
         Map<String, Object> tree = sampleStepTree();
+        reqVO.setExecutionStepTree(tree);
+        PatrolTaskDraft ready = draftWithConfirmedRoute(null, Boolean.FALSE, null);
         when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(ready);
-        when(taskStepTreeGenerateService.generate(eq(TASK_ID), isNull(), eq("sta-start"), eq("sta-end")))
-                .thenReturn(tree);
-        when(patrolScheduleConflictDetectService.detect(eq(TASK_ID), any()))
-                .thenReturn(new PatrolScheduleConflictDetectService.DetectedPlan(
-                        ready,
-                        List.of(templateWorkItem()),
-                        ScheduleConflictReportDTO.builder()
-                                .hasConflict(false).plannedCount(1).conflictCount(0).devices(List.of()).build()));
 
-        ScheduleRunResponse response = facadeService.prepareConfirmPreview(reqVO);
+        ScheduleRunResponse response = facadeService.previewPageInstructions(reqVO);
 
-        assertEquals(1, response.getSlots().size());
         assertEquals(tree, response.getExecutionStepTree());
-        verify(taskStepTreeGenerateService).generate(eq(TASK_ID), isNull(), eq("sta-start"), eq("sta-end"));
-        verify(patrolTaskEntityStore).writeOrchestrationPreview(eq(TASK_ID), any(), any());
-        verify(scheduleRunApi, never()).run(any());
+        assertEquals(null, response.getSlots());
+        verify(taskStepTreeGenerateService, never()).compose(any(), any(), any(), any());
+        verify(taskStepTreeGenerateService, never()).generate(any(), any(), any(), any());
+        verify(patrolScheduleConflictDetectService, never()).detect(any(PatrolTaskDraft.class), any());
+        verify(patrolMissionTranslateService).assertPreviewTranslate(
+                any(PatrolTaskDraft.class), eq(tree), org.mockito.ArgumentMatchers.anyList());
+        verify(patrolTaskEntityStore, never()).writeStepTree(any(), any());
+        verify(patrolTaskEntityStore, never()).saveUnpublishedModification(any(), any());
+    }
+
+    @Test
+    @DisplayName("previewPageInstructions：试译失败时不编树、不写步骤图")
+    void previewPageInstructions_whenTranslateFails_doesNotReplaceTree() {
+        PatrolOrchestrationRunReqVO reqVO = orchestrationReq();
+        reqVO.setExecutionStepTree(sampleStepTree());
+        PatrolTaskDraft ready = draftWithConfirmedRoute(null, Boolean.FALSE, null);
+        when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(ready);
+        doThrow(new ServiceException(400, "这一步缺少动作参数来源字段"))
+                .when(patrolMissionTranslateService)
+                .assertPreviewTranslate(any(PatrolTaskDraft.class), any(), org.mockito.ArgumentMatchers.anyList());
+
+        assertThrows(ServiceException.class, () -> facadeService.previewPageInstructions(reqVO));
+        verify(taskStepTreeGenerateService, never()).compose(any(), any(), any(), any());
+        verify(patrolTaskEntityStore, never()).writeStepTree(any(), any());
     }
 
     @Test
@@ -496,6 +600,137 @@ class PatrolRouteFacadeServiceTest {
         verify(runtimeSlotWriteApi).updateSlotStatus(captor.capture());
         assertEquals("slot-1", captor.getValue().getSlotId());
         assertEquals(SlotStatus.COMPLETED, captor.getValue().getSlotStatus());
+    }
+
+    @Test
+    @DisplayName("previewOrchestration：向导开始编排先重算路径，新路线只回到这一页")
+    void previewOrchestration_wizardReplansRouteBeforeArrange() {
+        PatrolOrchestrationRunReqVO reqVO = orchestrationReq();
+        PatrolOrchestrationRunReqVO.WizardPage page = new PatrolOrchestrationRunReqVO.WizardPage();
+        page.setPatrolExecutionMode("ROBOT");
+        page.setStartStopId("sta-start");
+        page.setEndStopId("sta-end");
+        page.setMaxShiftMinutes(30);
+        InspectionContent content = new InspectionContent();
+        InspectionContent.ObjectContent object = new InspectionContent.ObjectContent();
+        object.setObjectId(10L);
+        content.setCustomObjects(List.of(object));
+        page.setInspectionContent(content);
+        Map<String, Object> current = new LinkedHashMap<>();
+        current.put("stopIds", List.of("sta-1", "sta-2"));
+        current.put(RoutePayloadKeys.ESTIMATED_TRAVEL_DURATION, 1);
+        page.setPlannedRoute(current);
+        reqVO.setPage(page);
+
+        when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draftWithConfirmedRoute(null, Boolean.FALSE));
+        when(scheduleRunApi.run(any())).thenAnswer(invocation -> {
+            ScheduleRunRequest request = invocation.getArgument(0);
+            if (OrchestrationRefs.PATROL_ROUTE_PREVIEW_V1.equals(request.getOrchestrationRef())) {
+                Map<String, Object> fresh = new LinkedHashMap<>();
+                fresh.put(RoutePayloadKeys.STOP_IDS, List.of("sta-1", "sta-2"));
+                fresh.put(RoutePayloadKeys.ESTIMATED_TRAVEL_DURATION, 12);
+                fresh.put("totalDistanceMeters", 400);
+                Map<String, Object> payload = new LinkedHashMap<>();
+                payload.put(RoutePayloadKeys.PLANNED_ROUTE, fresh);
+                return CommonResult.success(ScheduleRunResponse.builder()
+                        .routePreview(RoutePreviewDTO.builder().networkRef("net-a").build())
+                        .workItems(List.of(WorkItemDTO.builder().payload(payload).build()))
+                        .build());
+            }
+            return CommonResult.success(ScheduleRunResponse.builder()
+                    .slots(List.of(slot("slot-a", "ephemeral", "2026-07-21T08:00:00+08:00",
+                            "2026-07-21T09:00:00+08:00", "res-1")))
+                    .build());
+        });
+
+        ScheduleRunResponse response = facadeService.previewOrchestration(reqVO);
+
+        ArgumentCaptor<ScheduleRunRequest> captor = ArgumentCaptor.forClass(ScheduleRunRequest.class);
+        verify(scheduleRunApi, times(2)).run(captor.capture());
+        List<ScheduleRunRequest> runs = captor.getAllValues();
+        assertEquals(OrchestrationRefs.PATROL_ROUTE_PREVIEW_V1, runs.get(0).getOrchestrationRef());
+        assertEquals(Boolean.TRUE, runs.get(0).getDryRun());
+        assertEquals("GROUND_ROBOT", runs.get(0).getWorkItems().get(0).getPayload().get(RoutePayloadKeys.INSPECTION_TYPE));
+        assertEquals(OrchestrationRefs.PATROL_ORCHESTRATION_V1, runs.get(1).getOrchestrationRef());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> arranged = (Map<String, Object>) runs.get(1).getWorkItems().get(0).getPayload().get("pagePlannedRoute");
+        assertEquals(12, arranged.get(RoutePayloadKeys.ESTIMATED_TRAVEL_DURATION));
+        assertEquals(12, response.getPlannedRoute().get(RoutePayloadKeys.ESTIMATED_TRAVEL_DURATION));
+        verify(patrolTaskEntityStore, never()).writePlannedRoute(any(), any());
+    }
+
+    @Test
+    @DisplayName("previewOrchestration：路径没算出可用结果时停住，不继续排计划，也不把规划原话交出去")
+    void previewOrchestration_unusableRouteDoesNotArrange() {
+        PatrolOrchestrationRunReqVO reqVO = wizardArrangeReq();
+        when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draftWithConfirmedRoute(null, Boolean.FALSE));
+        when(scheduleRunApi.run(any())).thenThrow(new ServiceException(400, "路网走不到停靠点"));
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> facadeService.previewOrchestration(reqVO));
+
+        assertEquals(PATROL_FACADE_ROUTE_PLAN_UNUSABLE.getCode(), ex.getCode());
+        assertEquals("路线不可用", ex.getMessage());
+        verify(scheduleRunApi, times(1)).run(any());
+        verify(patrolTaskEntityStore, never()).writePlannedRoute(any(), any());
+    }
+
+    @Test
+    @DisplayName("previewOrchestration：不是路径计算结果的失败原样抛出，不改成路线不可用")
+    void previewOrchestration_otherFailureStaysItself() {
+        PatrolOrchestrationRunReqVO reqVO = wizardArrangeReq();
+        when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draftWithConfirmedRoute(null, Boolean.FALSE));
+        when(scheduleRunApi.run(any())).thenThrow(new ServiceException(1_009_002_002, "任务不存在"));
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> facadeService.previewOrchestration(reqVO));
+
+        assertEquals(1_009_002_002, ex.getCode());
+        assertEquals("任务不存在", ex.getMessage());
+        verify(scheduleRunApi, times(1)).run(any());
+    }
+
+    @Test
+    @DisplayName("previewOrchestration：规划没有返回路线时同样停住，不继续排计划")
+    void previewOrchestration_emptyRouteDoesNotArrange() {
+        PatrolOrchestrationRunReqVO reqVO = wizardArrangeReq();
+        when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draftWithConfirmedRoute(null, Boolean.FALSE));
+        when(scheduleRunApi.run(any())).thenReturn(CommonResult.success(ScheduleRunResponse.builder().build()));
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> facadeService.previewOrchestration(reqVO));
+
+        assertEquals(PATROL_FACADE_ROUTE_PLAN_UNUSABLE.getCode(), ex.getCode());
+        verify(scheduleRunApi, times(1)).run(any());
+    }
+
+    private static ScheduleRunResponse routePreviewReady(String runtimeJobId, String workId) {
+        Map<String, Object> planned = new LinkedHashMap<>();
+        planned.put(RoutePayloadKeys.STOP_IDS, List.of("sta-1"));
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put(RoutePayloadKeys.PLANNED_ROUTE, planned);
+        return ScheduleRunResponse.builder()
+                .runtimeJobId(runtimeJobId)
+                .routePreview(RoutePreviewDTO.builder().networkRef("net-a").build())
+                .workItems(List.of(WorkItemDTO.builder().workId(workId).payload(payload).build()))
+                .build();
+    }
+
+    private static PatrolOrchestrationRunReqVO wizardArrangeReq() {
+        PatrolOrchestrationRunReqVO reqVO = orchestrationReq();
+        PatrolOrchestrationRunReqVO.WizardPage page = new PatrolOrchestrationRunReqVO.WizardPage();
+        page.setPatrolExecutionMode("ROBOT");
+        page.setStartStopId("sta-start");
+        page.setEndStopId("sta-end");
+        page.setMaxShiftMinutes(30);
+        InspectionContent content = new InspectionContent();
+        InspectionContent.ObjectContent object = new InspectionContent.ObjectContent();
+        object.setObjectId(10L);
+        content.setCustomObjects(List.of(object));
+        page.setInspectionContent(content);
+        Map<String, Object> current = new LinkedHashMap<>();
+        current.put("stopIds", List.of("sta-1", "sta-2"));
+        current.put(RoutePayloadKeys.ESTIMATED_TRAVEL_DURATION, 1);
+        page.setPlannedRoute(current);
+        reqVO.setPage(page);
+        return reqVO;
     }
 
     private ScheduleRunRequest captureRunRequest() {
@@ -563,7 +798,7 @@ class PatrolRouteFacadeServiceTest {
         return new PatrolTaskDraft(
                 TASK_ID, "task", "巡检", FACILITY_ID, "UAV", null, null, null,
                 stepTree, planned, "draft", 2, "sta-start", "sta-end", runtimeJobId, orchestrationCommitted, null, null,
-                null, null);
+                null, null, null);
     }
 
     private static WorkItemDTO templateWorkItem() {
@@ -591,7 +826,7 @@ class PatrolRouteFacadeServiceTest {
     private static PatrolTaskDraft draftWithoutRoute() {
         return new PatrolTaskDraft(
                 TASK_ID, "task", "巡检", FACILITY_ID, "UAV", null, null, null,
-                null, Map.of(), "draft", 2, null, null, null, null, null, null, null, null);
+                null, Map.of(), "draft", 2, null, null, null, null, null, null, null, null, null);
     }
 
     private static ScheduleSlotDTO slot(String slotId, String runtimeJobId, String start, String end,
@@ -631,6 +866,7 @@ class PatrolRouteFacadeServiceTest {
         if (reqVO.getStopIds() != null) {
             assertEquals(reqVO.getStopIds(), payload.get("stopIds"));
         }
+        assertEquals(reqVO.getStrategy(), payload.get(RoutePayloadKeys.STRATEGY));
         assertEquals(fromSavedRouteSnapshot, payload.get("fromSavedRouteSnapshot"));
     }
 }

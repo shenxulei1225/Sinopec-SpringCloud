@@ -129,6 +129,11 @@ public class SmartSearchableServiceImpl implements SmartSearchableService {
         addConfig(FieldTypeEnum.JSON.getCode(), FieldTypeEnum.JSON.getName(),
                 false, false, IndexStrategy.NONE, false,
                 "JSON 字段，复杂结构不适合索引");
+
+        // REF_MODEL - 引用型号字段。配置不是设备上的值，不能搜、不能筛、不能排序。
+        addConfig(FieldTypeEnum.REF_MODEL.getCode(), FieldTypeEnum.REF_MODEL.getName(),
+                false, false, IndexStrategy.NONE, false,
+                "引用型号字段，读的是型号上点名的字段，不建索引");
         
         // ========== 文件类型 - 不可查询 ==========
         // 注意：FILE 和 IMAGE 类型在当前枚举中未定义，预留配置

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 设备上的「设备 × 检查项」实参包。
@@ -91,6 +92,122 @@ public final class HostSopParamPack {
     /**
      * 带巡检方式：只读该方式条目。无人机袋不能顶机器人的到达点或拍照角。
      */
+    public Map<String, Object> paramsFor(
+            Long inspectionItemId, String nodeKey, String refCode, String means, Long equipmentModelId) {
+        Map<String, Object> bag = paramsFor(inspectionItemId, nodeKey, refCode, means);
+        Map<String, Object> location = meansLocation(bag);
+        if (equipmentModelId == null) {
+            Map<String, Object> flat = new LinkedHashMap<>(withoutModelNests(bag));
+            flat.putAll(location);
+            return flat;
+        }
+        // 后写的一层覆盖先写的。设备检查现在把分型号的数写在适用型号下。
+        Map<String, Object> copied = new LinkedHashMap<>();
+        copied.putAll(nestSlice(bag, "byCameraModel", equipmentModelId));
+        copied.putAll(nestSlice(bag, "byEquipmentModel", equipmentModelId));
+        copied.putAll(nestSlice(bag, "byApplicableModel", equipmentModelId));
+        copied.putAll(location);
+        return copied;
+    }
+
+    /** 这一型号下已经填的参数整份抬到步骤上，不单留某一个角度。 */
+    private static Map<String, Object> nestSlice(Map<String, Object> bag, String nestKey, Long equipmentModelId) {
+        Map<String, Object> copied = new LinkedHashMap<>();
+        Object nested = bag.get(nestKey);
+        if (!(nested instanceof Map<?, ?> models)) {
+            return copied;
+        }
+        Object slice = models.get(String.valueOf(equipmentModelId));
+        if (!(slice instanceof Map<?, ?> map)) {
+            return copied;
+        }
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            if (entry.getKey() == null) {
+                continue;
+            }
+            String key = String.valueOf(entry.getKey());
+            if (isMeansLocationField(key) || LOCATION_NEST_KEYS.contains(key)) {
+                continue;
+            }
+            copied.put(key, entry.getValue());
+        }
+        return copied;
+    }
+
+    private static final Set<String> MEANS_LOCATION_FIELDS = Set.of(
+            "location_ref",
+            "F-e49f76bdca3e4e1393e8e2f1cc0e7867");
+
+    private static boolean isMeansLocationField(String key) {
+        return MEANS_LOCATION_FIELDS.contains(key);
+    }
+
+    private static final List<String> LOCATION_NEST_KEYS = List.of(
+            "byApplicableModel", "byCameraModel", "byEquipmentModel");
+
+    /** 这一方式的到达位置在步骤根；旧嵌套里各型号同点才抬升。无人机与机器人共用 location_ref / 选择位置。 */
+    private static Map<String, Object> meansLocation(Map<String, Object> bag) {
+        Map<String, Object> location = new LinkedHashMap<>();
+        if (bag == null) {
+            return location;
+        }
+        for (String key : MEANS_LOCATION_FIELDS) {
+            if (present(bag.get(key))) {
+                location.put(key, bag.get(key));
+                continue;
+            }
+            Object agreed = agreedNestedValue(bag, key);
+            if (agreed != null) {
+                location.put(key, agreed);
+            }
+        }
+        return location;
+    }
+
+    private static Object agreedNestedValue(Map<String, Object> bag, String fieldKey) {
+        Object agreed = null;
+        boolean seen = false;
+        for (String nestKey : LOCATION_NEST_KEYS) {
+            Object nested = bag.get(nestKey);
+            if (!(nested instanceof Map<?, ?> models)) {
+                continue;
+            }
+            for (Object slice : models.values()) {
+                if (!(slice instanceof Map<?, ?> map) || !map.containsKey(fieldKey) || !present(map.get(fieldKey))) {
+                    continue;
+                }
+                Object value = map.get(fieldKey);
+                if (!seen) {
+                    agreed = value;
+                    seen = true;
+                } else if (!String.valueOf(agreed).equals(String.valueOf(value))) {
+                    return null;
+                }
+            }
+        }
+        return seen ? agreed : null;
+    }
+
+    private static boolean present(Object value) {
+        if (value == null) {
+            return false;
+        }
+        String text = String.valueOf(value).trim();
+        return !text.isEmpty() && !"null".equalsIgnoreCase(text);
+    }
+
+    /** 没传型号时不把型号表整包当成一个参数。 */
+    private static Map<String, Object> withoutModelNests(Map<String, Object> bag) {
+        if (bag == null) {
+            return Map.of();
+        }
+        Map<String, Object> flat = new LinkedHashMap<>(bag);
+        for (String key : LOCATION_NEST_KEYS) {
+            flat.remove(key);
+        }
+        return flat;
+    }
+
     public Map<String, Object> paramsFor(Long inspectionItemId, String nodeKey, String refCode, String means) {
         if (inspectionItemId == null) {
             return Map.of();

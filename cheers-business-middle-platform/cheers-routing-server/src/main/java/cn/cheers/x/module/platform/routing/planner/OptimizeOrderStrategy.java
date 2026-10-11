@@ -1,22 +1,23 @@
 package cn.cheers.x.module.platform.routing.planner;
 
-import cn.cheers.x.module.platform.contract.dto.network.PathNodeDTO;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_TOO_MANY_STOPS;
+import static cn.cheers.x.module.platform.routing.enums.ErrorCodeConstants.ROUTE_UNREACHABLE;
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 
 /**
- * 优化访问顺序：分区扫完再换区；区内外用场景距离（可达）+ Held-Karp / 最近邻+2-opt。
+ * 自动规划的访问顺序：按路网上的最短路程，求总里程最小的一圈。
+ * 检查点不超过 18 个时用 Held-Karp 精确解；再多则从起点做最近邻，再用 2-opt 收短。
+ * 代价矩阵由 {@link RoutePlanServiceImpl} 提供（forOrdering）；段几何仍由 Dijkstra 决定。
  */
 @Component
 public class OptimizeOrderStrategy implements StopOrderStrategy {
@@ -45,32 +46,50 @@ public class OptimizeOrderStrategy implements StopOrderStrategy {
         if (stopIds.size() <= 2) {
             return List.copyOf(stopIds);
         }
+        return solveOpen(stopIds, matrix);
+    }
 
-        List<List<String>> clusters = clusterByZone(stopIds, view);
-        if (clusters.size() <= 1) {
-            return solveCluster(stopIds, matrix);
+    /**
+     * 从充电桩（或其它固定起点）出发，每个检查点到一次，再回到起点或走到指定终点。
+     * 比较的是路网上的最短路程之和，不是平面直线，也不是先排完检查点再把起点接到两头。
+     */
+    public List<String> orderDepot(String home,
+                                    List<String> stops,
+                                    String fixedEnd,
+                                    boolean returnToStart,
+                                    CostMatrix matrix) {
+        if (!StringUtils.hasText(home)) {
+            return solveOpen(stops, matrix);
         }
-
-        List<List<String>> orderedClusters = orderClusters(clusters, view);
-        List<String> tour = new ArrayList<>();
-        String prevEnd = null;
-        for (List<String> cluster : orderedClusters) {
-            List<String> local = solveCluster(cluster, matrix.submatrix(cluster));
-            if (prevEnd != null && local.size() >= 2) {
-                double head = matrix.cost(prevEnd, local.get(0));
-                double tail = matrix.cost(prevEnd, local.get(local.size() - 1));
-                if (tail + 1e-9 < head) {
-                    Collections.reverse(local);
-                }
+        List<String> middle = new ArrayList<>(stops == null ? List.of() : stops);
+        if (!returnToStart && StringUtils.hasText(fixedEnd)) {
+            middle.removeIf(fixedEnd::equals);
+        }
+        if (middle.isEmpty()) {
+            if (StringUtils.hasText(fixedEnd) && !fixedEnd.equals(home)) {
+                return List.of(home, fixedEnd);
             }
-            tour.addAll(local);
-            prevEnd = tour.get(tour.size() - 1);
+            return returnToStart ? List.of(home, home) : List.of(home);
         }
-        // 多区不再做全局 2-opt，避免把「扫完一区再换区」打散
+        String closeTo = returnToStart ? home : (StringUtils.hasText(fixedEnd) ? fixedEnd : null);
+        List<String> orderedMiddle = middle.size() <= EXACT_MAX_STOPS
+                ? heldKarpFromDepot(home, middle, closeTo, matrix)
+                : improveDepotTour(home, nearestFrom(home, middle, matrix), closeTo, matrix);
+        List<String> tour = new ArrayList<>(orderedMiddle.size() + 2);
+        tour.add(home);
+        tour.addAll(orderedMiddle);
+        if (returnToStart) {
+            tour.add(home);
+        } else if (StringUtils.hasText(fixedEnd) && !fixedEnd.equals(tour.get(tour.size() - 1))) {
+            tour.add(fixedEnd);
+        }
         return List.copyOf(tour);
     }
 
-    private List<String> solveCluster(List<String> stopIds, CostMatrix matrix) {
+    private List<String> solveOpen(List<String> stopIds, CostMatrix matrix) {
+        if (CollectionUtils.isEmpty(stopIds)) {
+            return List.of();
+        }
         if (stopIds.size() <= 2) {
             return List.copyOf(stopIds);
         }
@@ -149,8 +168,7 @@ public class OptimizeOrderStrategy implements StopOrderStrategy {
             }
         }
         if (!Double.isFinite(best)) {
-            // 有不可达时回退启发式，避免空结果
-            return List.copyOf(stopIds);
+            throw exception(ROUTE_UNREACHABLE);
         }
 
         List<Integer> rev = new ArrayList<>(n);
@@ -203,110 +221,161 @@ public class OptimizeOrderStrategy implements StopOrderStrategy {
         return tour;
     }
 
-    private static List<List<String>> clusterByZone(List<String> stopIds, GraphView view) {
-        if (view == null) {
-            return List.of(List.copyOf(stopIds));
-        }
-        Map<String, List<String>> groups = new LinkedHashMap<>();
-        int zoned = 0;
-        for (String stopId : stopIds) {
-            PathNodeDTO node = view.getNode(stopId);
-            Long zoneId = node != null ? node.getZoneId() : null;
-            String key = zoneId != null ? "z:" + zoneId : "id:" + stopId;
-            if (zoneId != null) {
-                zoned++;
-            }
-            groups.computeIfAbsent(key, k -> new ArrayList<>()).add(stopId);
-        }
-        if (zoned < 2 || groups.size() <= 1) {
-            return List.of(List.copyOf(stopIds));
-        }
-        return new ArrayList<>(groups.values());
-    }
-
-    private static List<List<String>> orderClusters(List<List<String>> clusters, GraphView view) {
-        if (clusters.size() <= 1) {
-            return clusters;
-        }
-        List<double[]> centroids = new ArrayList<>(clusters.size());
-        for (List<String> cluster : clusters) {
-            centroids.add(centroidXZ(cluster, view));
-        }
-        // 从离原点最远（或第一个有效质心）的簇开始，最近邻串簇，避免南北来回
-        int start = 0;
-        double bestR = -1;
-        for (int i = 0; i < centroids.size(); i++) {
-            double[] c = centroids.get(i);
-            if (c == null) {
-                continue;
-            }
-            double r = Math.hypot(c[0], c[1]);
-            if (r > bestR) {
-                bestR = r;
-                start = i;
+    /**
+     * 固定起点的 Held-Karp。closeTo 不为空时，最后一段回到起点或指定终点也算进总里程。
+     */
+    static List<String> heldKarpFromDepot(String home, List<String> stops, String closeTo, CostMatrix matrix) {
+        int n = stops.size();
+        double[] fromHome = new double[n];
+        double[][] dist = new double[n][n];
+        double[] toClose = new double[n];
+        for (int i = 0; i < n; i++) {
+            fromHome[i] = matrix.cost(home, stops.get(i));
+            toClose[i] = closeTo == null ? 0D : matrix.cost(stops.get(i), closeTo);
+            for (int j = 0; j < n; j++) {
+                dist[i][j] = i == j ? 0D : matrix.cost(stops.get(i), stops.get(j));
             }
         }
 
-        boolean[] used = new boolean[clusters.size()];
-        List<List<String>> ordered = new ArrayList<>(clusters.size());
-        int current = start;
-        for (int step = 0; step < clusters.size(); step++) {
-            used[current] = true;
-            ordered.add(clusters.get(current));
-            if (step == clusters.size() - 1) {
-                break;
+        int full = 1 << n;
+        double[][] dp = new double[full][n];
+        int[][] parent = new int[full][n];
+        for (int mask = 0; mask < full; mask++) {
+            for (int i = 0; i < n; i++) {
+                dp[mask][i] = Double.POSITIVE_INFINITY;
+                parent[mask][i] = -1;
             }
-            double[] from = centroids.get(current);
-            int next = -1;
-            double best = Double.POSITIVE_INFINITY;
-            for (int i = 0; i < clusters.size(); i++) {
-                if (used[i]) {
+        }
+        for (int i = 0; i < n; i++) {
+            if (Double.isFinite(fromHome[i])) {
+                dp[1 << i][i] = fromHome[i];
+            }
+        }
+
+        for (int mask = 0; mask < full; mask++) {
+            for (int i = 0; i < n; i++) {
+                if ((mask & (1 << i)) == 0 || !Double.isFinite(dp[mask][i])) {
                     continue;
                 }
-                double d = centroidDistance(from, centroids.get(i));
-                if (d < best) {
-                    best = d;
-                    next = i;
+                for (int j = 0; j < n; j++) {
+                    if ((mask & (1 << j)) != 0 || !Double.isFinite(dist[i][j])) {
+                        continue;
+                    }
+                    int next = mask | (1 << j);
+                    double cand = dp[mask][i] + dist[i][j];
+                    if (cand + 1e-12 < dp[next][j]) {
+                        dp[next][j] = cand;
+                        parent[next][j] = i;
+                    }
                 }
             }
-            current = next >= 0 ? next : firstUnused(used);
+        }
+
+        int all = full - 1;
+        int end = -1;
+        double best = Double.POSITIVE_INFINITY;
+        for (int i = 0; i < n; i++) {
+            double cand = dp[all][i] + toClose[i];
+            if (cand + 1e-12 < best) {
+                best = cand;
+                end = i;
+            }
+        }
+        if (end < 0 || !Double.isFinite(best)) {
+            throw exception(ROUTE_UNREACHABLE);
+        }
+
+        List<Integer> rev = new ArrayList<>(n);
+        int mask = all;
+        int cur = end;
+        while (cur >= 0) {
+            rev.add(cur);
+            int prev = parent[mask][cur];
+            if (prev < 0) {
+                break;
+            }
+            mask ^= (1 << cur);
+            cur = prev;
+        }
+        Collections.reverse(rev);
+        List<String> ordered = new ArrayList<>(n);
+        for (int idx : rev) {
+            ordered.add(stops.get(idx));
         }
         return ordered;
     }
 
-    private static int firstUnused(boolean[] used) {
-        for (int i = 0; i < used.length; i++) {
-            if (!used[i]) {
-                return i;
+    private static List<String> nearestFrom(String home, List<String> stops, CostMatrix matrix) {
+        List<String> tour = new ArrayList<>(stops.size());
+        Set<String> remaining = new HashSet<>(stops);
+        String current = home;
+        while (!remaining.isEmpty()) {
+            String next = null;
+            double best = Double.POSITIVE_INFINITY;
+            for (String candidate : remaining) {
+                double cost = matrix.cost(current, candidate);
+                if (cost < best) {
+                    best = cost;
+                    next = candidate;
+                }
             }
+            if (next == null) {
+                next = remaining.iterator().next();
+            }
+            tour.add(next);
+            remaining.remove(next);
+            current = next;
         }
-        return 0;
+        return tour;
     }
 
-    private static double centroidDistance(double[] a, double[] b) {
-        if (a == null || b == null) {
-            return Double.POSITIVE_INFINITY;
+    private List<String> improveDepotTour(String home, List<String> middle, String closeTo, CostMatrix matrix) {
+        List<String> current = new ArrayList<>(middle);
+        double currentCost = depotTourCost(home, current, closeTo, matrix);
+        boolean improved = true;
+        int iterations = 0;
+        while (improved && iterations < 80) {
+            improved = false;
+            iterations++;
+            for (int i = 0; i < current.size() - 1; i++) {
+                for (int j = i + 1; j < current.size(); j++) {
+                    List<String> candidate = reverseRange(current, i, j);
+                    double candidateCost = depotTourCost(home, candidate, closeTo, matrix);
+                    if (candidateCost + 1e-9 < currentCost) {
+                        current = candidate;
+                        currentCost = candidateCost;
+                        improved = true;
+                    }
+                }
+            }
         }
-        return Math.hypot(a[0] - b[0], a[1] - b[1]);
+        return current;
     }
 
-    private static double[] centroidXZ(List<String> cluster, GraphView view) {
-        double sx = 0;
-        double sz = 0;
-        int n = 0;
-        for (String stopId : cluster) {
-            double[] xz = CostMatrix.horizontalXZ(view != null ? view.getNode(stopId) : null);
-            if (xz == null) {
-                continue;
-            }
-            sx += xz[0];
-            sz += xz[1];
-            n++;
+    private static double depotTourCost(String home, List<String> middle, String closeTo, CostMatrix matrix) {
+        if (middle.isEmpty()) {
+            return 0D;
         }
-        if (n == 0) {
-            return null;
+        double cost = matrix.cost(home, middle.get(0));
+        for (int i = 0; i < middle.size() - 1; i++) {
+            cost += matrix.cost(middle.get(i), middle.get(i + 1));
         }
-        return new double[]{sx / n, sz / n};
+        if (closeTo != null) {
+            cost += matrix.cost(middle.get(middle.size() - 1), closeTo);
+        }
+        return cost;
+    }
+
+    private static List<String> reverseRange(List<String> order, int i, int j) {
+        List<String> next = new ArrayList<>(order);
+        while (i < j) {
+            String tmp = next.get(i);
+            next.set(i, next.get(j));
+            next.set(j, tmp);
+            i++;
+            j--;
+        }
+        return next;
     }
 
 }

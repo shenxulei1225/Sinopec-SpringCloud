@@ -1,6 +1,6 @@
 -- ============================================================================
 -- action · 16 动作耗时参数（字段库 + 现网动作槽）
--- 权威：动作库 param_slots_json.action_duration 默认值（分钟）是排程动作耗时。
+-- 权威：动作库 param_slots_json.action_duration 默认值（秒）是排程动作耗时。字段库不指定单位。
 -- 不负责：写进已保存路线；把 dwell_duration（停留秒）当成排程耗时。
 -- 幂等：已有槽不重复追加；已填默认值不覆盖。
 -- ============================================================================
@@ -17,8 +17,8 @@ SELECT
 FROM (
   VALUES
     (
-      'action_duration', '动作耗时', 'NUMBER', 'min', 1,
-      '排程用的动作耗时（分钟）。不是停留时长秒。', NULL
+      'action_duration', '动作耗时', 'NUMBER', NULL::varchar, 1,
+      '排程用的动作耗时。写下的数字是秒。秒、分、小时在配置时选择，只用于显示。', NULL
     )
 ) AS v(code, name, type, unit, max_relations, description, semantic_type)
 ON CONFLICT (code, tenant_id) WHERE deleted = false
@@ -99,28 +99,28 @@ WHERE a.deleted = false
 
 CREATE TEMP TABLE action_duration_seed (
   code text PRIMARY KEY,
-  minutes int NOT NULL
+  seconds int NOT NULL
 );
 
-INSERT INTO action_duration_seed (code, minutes) VALUES
-  ('act-arrive', 1),
-  ('act-hover', 2),
-  ('act-aim', 1),
-  ('act-shoot', 1),
-  ('act-ground-patrol', 5),
-  ('act-gas-detect', 2),
-  ('act-robot-arrive', 1),
-  ('act-robot-hold', 2),
-  ('act-robot-aim', 1),
-  ('act-robot-shoot', 1),
-  ('act-robot-self-check', 1),
-  ('act-robot-battery-check', 1),
-  ('act-robot-return-charge', 2),
-  ('act-uav-self-check', 1),
-  ('act-uav-battery-check', 1),
-  ('act-uav-takeoff', 2),
-  ('act-uav-land', 2),
-  ('act-uav-return-charge', 2);
+INSERT INTO action_duration_seed (code, seconds) VALUES
+  ('act-arrive', 60),
+  ('act-hover', 120),
+  ('act-aim', 60),
+  ('act-shoot', 60),
+  ('act-ground-patrol', 300),
+  ('act-gas-detect', 120),
+  ('act-robot-arrive', 60),
+  ('act-robot-hold', 120),
+  ('act-robot-aim', 60),
+  ('act-robot-shoot', 60),
+  ('act-robot-self-check', 60),
+  ('act-robot-battery-check', 60),
+  ('act-robot-return-charge', 120),
+  ('act-uav-self-check', 60),
+  ('act-uav-battery-check', 60),
+  ('act-uav-takeoff', 120),
+  ('act-uav-land', 120),
+  ('act-uav-return-charge', 120);
 
 UPDATE ent_action_t1 a
 SET
@@ -132,7 +132,7 @@ SET
         CASE
           WHEN e->>'fieldCode' = 'action_duration'
                AND (e->'defaultValue' IS NULL OR jsonb_typeof(e->'defaultValue') = 'null')
-          THEN jsonb_set(e, '{defaultValue}', to_jsonb(s.minutes))
+          THEN jsonb_set(e, '{defaultValue}', to_jsonb(s.seconds))
           ELSE e
         END
       )

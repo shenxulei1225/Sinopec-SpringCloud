@@ -7,6 +7,7 @@ import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningField
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -142,5 +143,52 @@ class CustomFieldValidationServiceImplTest {
                 Map.of(14L, field), Map.of(14L, assignment), Map.of("coordinate_3d", empty), Map.of()));
         org.junit.jupiter.api.Assertions.assertTrue(
                 ex.getMessage() != null && ex.getMessage().contains("以下必填字段未填写"));
+    }
+
+    @Test
+    void validateCustomFields_enumMultiSelect_eachTokenMustBeAnOption() {
+        FieldDO field = enumMeansField();
+        ModelFieldAssignmentDO assignment = enumMeansAssignment();
+        Map<String, Object> base = Map.of("execution_means", List.of("MANUAL", "UAV", "ROBOT"));
+
+        assertDoesNotThrow(() -> service.validateCustomFields(
+                Map.of(16L, field), Map.of(16L, assignment), base, Map.of()));
+    }
+
+    @Test
+    void validateCustomFields_enumMultiSelect_unknownTokenFails() {
+        FieldDO field = enumMeansField();
+        ModelFieldAssignmentDO assignment = enumMeansAssignment();
+        Map<String, Object> base = Map.of("execution_means", List.of("FIXED_CAMERA"));
+
+        assertThrows(ServiceException.class, () -> service.validateCustomFields(
+                Map.of(16L, field), Map.of(16L, assignment), base, Map.of()));
+    }
+
+    @Test
+    void validateCustomFields_enumSingleValue_unknownStillFails() {
+        FieldDO field = enumMeansField();
+        ModelFieldAssignmentDO assignment = enumMeansAssignment();
+
+        assertThrows(ServiceException.class, () -> service.validateCustomFields(
+                Map.of(16L, field), Map.of(16L, assignment), Map.of("execution_means", "WALK"), Map.of()));
+    }
+
+    private static FieldDO enumMeansField() {
+        return FieldDO.builder()
+                .id(16L)
+                .code("execution_means")
+                .name("适用手段")
+                .type("ENUM")
+                .options("[{\"value\":\"MANUAL\"},{\"value\":\"UAV\"},{\"value\":\"ROBOT\"},{\"value\":\"CAMERA\"}]")
+                .build();
+    }
+
+    private static ModelFieldAssignmentDO enumMeansAssignment() {
+        return ModelFieldAssignmentDO.builder()
+                .fieldId(16L)
+                .required(false)
+                .fieldSource("BASE")
+                .build();
     }
 }

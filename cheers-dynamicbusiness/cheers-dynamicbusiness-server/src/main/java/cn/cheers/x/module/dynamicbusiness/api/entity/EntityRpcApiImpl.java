@@ -3,6 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.api.entity;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityWriteReqDTO;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityRpcFacadeService;
+import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityRelationService;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
@@ -22,6 +23,9 @@ public class EntityRpcApiImpl implements EntityRpcApi {
     @Resource
     private EntityRpcFacadeService entityRpcFacadeService;
 
+    @Resource
+    private EntityRelationService entityRelationService;
+
     @Override
     public CommonResult<EntityRespDTO> getEntity(Long id, String entityTypeCode) {
         return success(entityRpcFacadeService.get(id, entityTypeCode));
@@ -40,6 +44,11 @@ public class EntityRpcApiImpl implements EntityRpcApi {
     @Override
     public CommonResult<List<EntityRespDTO>> listEntities(String entityTypeCode, Long modelId) {
         return success(entityRpcFacadeService.list(entityTypeCode, modelId));
+    }
+
+    @Override
+    public CommonResult<Boolean> isDeletedByCode(String code, String entityTypeCode) {
+        return success(entityRpcFacadeService.isDeletedByCode(code, entityTypeCode));
     }
 
     @Override
@@ -72,6 +81,16 @@ public class EntityRpcApiImpl implements EntityRpcApi {
     public CommonResult<Boolean> deleteEntity(Long id, String entityTypeCode) {
         entityRpcFacadeService.delete(id, entityTypeCode);
         return success(true);
+    }
+
+    @Override
+    public CommonResult<List<Long>> listCounterpartEntityIds(
+            List<Long> relatedEntityIds,
+            String relatedEntityTypeCode,
+            String listEntityTypeCode
+    ) {
+        return success(entityRelationService.listCounterpartEntityIds(
+                relatedEntityIds, relatedEntityTypeCode, listEntityTypeCode));
     }
 
 }

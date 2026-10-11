@@ -14,6 +14,7 @@ import java.util.Set;
  * 解析动作实体 {@code param_slots_json}。
  *
  * <p>权威外形是按执行手段拆开的 {@code {version, methods:[{executionMeans, fields:[{fieldCode}]}]} }。
+ * 无人机可以有多行，每行再带 {@code equipmentModelId}。列表按手段合并字段，不丢后写的型号。
  * 旧外形是顶层 {@code fields} 或字符串数组。列表接口必须两种都认，不能只读顶层 fields，
  * 否则「调整拍摄角度」这类只写在手段里的参数会在对接页被当成没有参数。</p>
  *
@@ -22,11 +23,28 @@ import java.util.Set;
 public final class ActionParamSlotsParser {
 
     private static final ObjectMapper JSON = new ObjectMapper();
+    private static final Set<String> SOURCE_KINDS = Set.of(
+            "USER",
+            "INTERACTION",
+            "EXECUTOR_MOUNT",
+            "SYSTEM",
+            "REFERENCE_RESOURCE");
 
     private ActionParamSlotsParser() {
     }
 
-    public record Snapshot(List<String> paramSlots, Map<String, List<String>> paramSlotsByMeans) {
+    /**
+     * 动作需要的来源字段已经由平台定义分组；协议对照只能从这些组里选，不允许页面重新给字段分类。
+     */
+    public record SourceField(String fieldCode, String sourceKind, Object defaultValue, String generator) {
+    }
+
+    public record Snapshot(
+            List<String> paramSlots,
+            Map<String, List<String>> paramSlotsByMeans,
+            List<SourceField> paramSources,
+            Map<String, List<SourceField>> paramSourcesByMeans
+    ) {
     }
 
     public static Snapshot parse(Object raw) {
@@ -35,23 +53,101 @@ public final class ActionParamSlotsParser {
             Object methods = root.get("methods");
             if (methods instanceof List<?> methodRows) {
                 Map<String, List<String>> byMeans = new LinkedHashMap<>();
+                Map<String, List<SourceField>> sourcesByMeans = new LinkedHashMap<>();
                 Set<String> merged = new LinkedHashSet<>();
+                Map<String, SourceField> mergedSources = new LinkedHashMap<>();
                 for (Object rowRaw : methodRows) {
                     if (!(rowRaw instanceof Map<?, ?> row)) {
                         continue;
                     }
                     String means = firstText(row, "executionMeans", "execution_means");
-                    List<String> fields = readFieldCodes(firstPresent(row, "fields", "params", "paramSlots", "param_slots"));
+                    Object fieldsRaw = firstPresent(row, "fields", "params", "paramSlots", "param_slots");
+                    List<String> fields = readFieldCodes(fieldsRaw);
+                    List<SourceField> sources = readSourceFields(fieldsRaw);
                     if (!means.isEmpty()) {
-                        byMeans.put(means.toUpperCase(Locale.ROOT), List.copyOf(fields));
+                        String key = means.toUpperCase(Locale.ROOT);
+                        byMeans.put(key, unionCodes(byMeans.get(key), fields));
+                        sourcesByMeans.put(key, unionSources(sourcesByMeans.get(key), sources));
                     }
                     merged.addAll(fields);
+                    for (SourceField source : sources) {
+                        mergedSources.putIfAbsent(source.fieldCode(), source);
+                    }
                 }
-                merged.addAll(readFieldCodes(root.get("fields")));
-                return new Snapshot(List.copyOf(merged), Map.copyOf(byMeans));
+                Object rootFields = root.get("fields");
+                merged.addAll(readFieldCodes(rootFields));
+                for (SourceField source : readSourceFields(rootFields)) {
+                    mergedSources.putIfAbsent(source.fieldCode(), source);
+                }
+                return new Snapshot(
+                        List.copyOf(merged),
+                        Map.copyOf(byMeans),
+                        List.copyOf(mergedSources.values()),
+                        Map.copyOf(sourcesByMeans));
             }
         }
-        return new Snapshot(readFieldCodes(value), Map.of());
+        List<SourceField> sources = readSourceFields(value);
+        return new Snapshot(readFieldCodes(value), Map.of(), sources, Map.of());
+    }
+
+    private static List<String> unionCodes(List<String> left, List<String> right) {
+        Set<String> merged = new LinkedHashSet<>();
+        if (left != null) {
+            merged.addAll(left);
+        }
+        if (right != null) {
+            merged.addAll(right);
+        }
+        return List.copyOf(merged);
+    }
+
+    private static List<SourceField> unionSources(List<SourceField> left, List<SourceField> right) {
+        Map<String, SourceField> merged = new LinkedHashMap<>();
+        if (left != null) {
+            for (SourceField source : left) {
+                merged.putIfAbsent(source.fieldCode(), source);
+            }
+        }
+        if (right != null) {
+            for (SourceField source : right) {
+                merged.putIfAbsent(source.fieldCode(), source);
+            }
+        }
+        return List.copyOf(merged.values());
+    }
+
+    private static List<SourceField> readSourceFields(Object raw) {
+        Object value = coerce(raw);
+        if (value instanceof Map<?, ?> root && root.get("fields") != null) {
+            return readSourceFields(root.get("fields"));
+        }
+        if (!(value instanceof List<?> list)) {
+            List<String> fields = readFieldCodes(value);
+            return fields.stream().map(code -> new SourceField(code, "USER", null, "")).toList();
+        }
+        List<SourceField> out = new ArrayList<>();
+        for (Object item : list) {
+            if (item instanceof Map<?, ?> row) {
+                String code = firstFieldCode(row);
+                if (code == null) {
+                    continue;
+                }
+                String sourceKind = normalizeSourceKind(firstText(row, "valueSource", "value_source"));
+                Object defaultValue = firstPresent(row, "defaultValue", "default_value", "value");
+                String generator = firstText(row, "generator").toUpperCase(Locale.ROOT);
+                out.add(new SourceField(code, sourceKind, defaultValue, generator));
+                continue;
+            }
+            if (item != null && !String.valueOf(item).trim().isEmpty()) {
+                out.add(new SourceField(String.valueOf(item).trim(), "USER", null, ""));
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    private static String normalizeSourceKind(String raw) {
+        String sourceKind = raw.toUpperCase(Locale.ROOT);
+        return SOURCE_KINDS.contains(sourceKind) ? sourceKind : "USER";
     }
 
     private static Object coerce(Object raw) {

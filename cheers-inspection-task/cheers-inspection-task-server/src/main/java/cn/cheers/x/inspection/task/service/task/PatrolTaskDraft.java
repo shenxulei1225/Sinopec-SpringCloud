@@ -34,6 +34,11 @@ public record PatrolTaskDraft(
         /** 草稿袋 orchestrationPreviewSlots：试排计划点 JSON，未确认前不占 runtime */
         Object orchestrationPreviewSlots,
         /** 草稿袋 orchestrationPreviewPlainSummary：试排摘要 */
-        String orchestrationPreviewPlainSummary
+        String orchestrationPreviewPlainSummary,
+        /**
+         * 已生成任务上的「需要更新」。
+         * 动作库或检查项保存时写下，列表只读这一份。点更新任务成功后清掉。
+         */
+        String updateHint
 ) {
 }

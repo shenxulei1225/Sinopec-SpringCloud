@@ -24,6 +24,8 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeBaseFieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
+import cn.cheers.x.module.dynamicbusiness.service.entity.mount.PayloadMountParentSync;
+import cn.cheers.x.module.dynamicbusiness.service.entity.mount.PayloadMounts;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryService;
 import cn.cheers.x.module.dynamicbusiness.framework.hierarchy.IdTreeHierarchy;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
@@ -41,11 +43,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import jakarta.annotation.Resource;
 import java.util.*;
 import java.util.stream.Collectors;
+import cn.cheers.x.module.dynamicbusiness.service.action.ActionDeletedChildQueryFilter;
+import cn.cheers.x.module.dynamicbusiness.service.action.ActionCreationValidator;
+import cn.cheers.x.module.dynamicbusiness.service.action.ActionFieldCodes;
+import cn.cheers.x.module.dynamicbusiness.service.action.CheckItemDeletedActionRemover;
 import cn.cheers.x.module.dynamicbusiness.service.entity.scene.EntitySceneQueryService;
 
 /**
@@ -83,6 +91,8 @@ public class EntityServiceImpl implements EntityService {
     @Resource
     private EntityLifecycleEventPublisher entityLifecycleEventPublisher;
     @Resource
+    private GeneratedTaskUpdateHintNotifier generatedTaskUpdateHintNotifier;
+    @Resource
     private CategoryMapper categoryMapper;
     @Resource
     private ModelMapper modelMapper;
@@ -106,9 +116,20 @@ public class EntityServiceImpl implements EntityService {
     @Resource
     private EntityRelationSyncService entityRelationSyncService;
     @Resource
+    private PayloadMountParentSync payloadMountParentSync;
+    @Resource
+    private EntityModelRelationSync entityModelRelationSync;
+    @Resource
     private EntityRefCategoryProjectionService entityRefCategoryProjectionService;
     @Resource
     private EntityRefDisplayEnrichService entityRefDisplayEnrichService;
+    @Resource
+    private ActionDeletedChildQueryFilter actionDeletedChildQueryFilter;
+    @Resource
+    private ActionCreationValidator actionCreationValidator;
+
+    @Resource
+    private CheckItemDeletedActionRemover checkItemDeletedActionRemover;
     @Resource
     private EntityDedicatedColumnService entityDedicatedColumnService;
     @Resource
@@ -186,8 +207,12 @@ public class EntityServiceImpl implements EntityService {
         // prepare 后 customFields 已含全部非核心字段（含 REF）；抽固定列前先留下，供写关联表
         Map<String, Object> fieldValues = new LinkedHashMap<>(
                 entityBusinessHelper.emptyIfNull(data.getCustomFields()));
+        // 模型关联的名单在型号—型号表。这里留下提交值，落库的自定义字段不再带这个键。
+        entityModelRelationSync.stripPersisted(data.getModelId(), data.getCustomFields());
         Map<String, Object> physicalColumns = entityDedicatedColumnService.extractPhysicalValuesAndStrip(
                 data.getEntityTypeCode(), data.getCustomFields());
+        // 动作模型是创建权威。保存前由模型生成执行投影，页面不得另传第二份动作类型。
+        actionCreationValidator.validate(data.getEntityTypeCode(), data.getModelId(), physicalColumns);
         Long entityId;
         try {
             // 固定列与核心列同 INSERT，避免专用表 NOT NULL 列在「先插后更」时失败
@@ -196,6 +221,11 @@ public class EntityServiceImpl implements EntityService {
             throw translateDataIntegrityError(ex, data.getEntityTypeCode());
         }
         data.setId(entityId);
+        if (fieldValues.containsKey(PayloadMounts.FIELD_CODE)) {
+            payloadMountParentSync.sync(
+                    data.getEntityTypeCode(), entityId, null, fieldValues.get(PayloadMounts.FIELD_CODE));
+        }
+        entityModelRelationSync.syncSubmitted(data.getEntityTypeCode(), data.getModelId(), fieldValues);
 
         ModelDO model = modelMapper.selectById(EntityFieldMapsSupport.getRequiredModelId(reqVO.getBaseFields()));
         entityRelationSyncService.syncRelationsOnCreate(data, model, fieldValues);
@@ -329,9 +359,18 @@ public class EntityServiceImpl implements EntityService {
         }
         Map<String, Object> fieldValues = new LinkedHashMap<>(
                 entityBusinessHelper.emptyIfNull(data.getCustomFields()));
+        Long relationModelId = data.getModelId() != null ? data.getModelId() : oldEntity.getModelId();
+        // 模型关联的名单在型号—型号表。这里留下提交值，落库的自定义字段不再带这个键。
+        entityModelRelationSync.stripPersisted(relationModelId, data.getCustomFields());
         Map<String, Object> physicalColumns = entityDedicatedColumnService.extractPhysicalValuesAndStrip(
                 data.getEntityTypeCode() != null ? data.getEntityTypeCode() : oldEntity.getEntityTypeCode(),
                 data.getCustomFields());
+        if (allowModelIdChange
+                && requestedModelId != null
+                && !Objects.equals(requestedModelId, oldEntity.getModelId())) {
+            // 动作模型变更必须同步重算执行投影。禁止只换 model_id，留下旧 action_domain。
+            actionCreationValidator.validate(effectiveEntityTypeCode, requestedModelId, physicalColumns);
+        }
         try {
             entityCoreService.update(data);
             if (data.getId() == null) {
@@ -354,6 +393,20 @@ public class EntityServiceImpl implements EntityService {
         Map<String, Object> oldFieldValues = new LinkedHashMap<>(
                 entityBusinessHelper.emptyIfNull(oldEntity.getCustomFields()));
         entityDedicatedColumnService.mergePhysicalColumnsIntoBaseFields(oldEntity, oldFieldValues);
+        if (fieldValues.containsKey(PayloadMounts.FIELD_CODE)) {
+            String mountTypeCode = data.getEntityTypeCode() != null
+                    ? data.getEntityTypeCode()
+                    : oldEntity.getEntityTypeCode();
+            payloadMountParentSync.sync(
+                    mountTypeCode,
+                    data.getId(),
+                    oldFieldValues.get(PayloadMounts.FIELD_CODE),
+                    fieldValues.get(PayloadMounts.FIELD_CODE));
+        }
+        String relationTypeCode = data.getEntityTypeCode() != null
+                ? data.getEntityTypeCode()
+                : oldEntity.getEntityTypeCode();
+        entityModelRelationSync.syncSubmitted(relationTypeCode, relationModelId, fieldValues);
         entityRelationSyncService.syncRelationsOnUpdate(data, model, fieldValues, oldFieldValues);
         // REF 实体–实体同步之后：凡本次请求中的 REF，目标为分类即实体则投影分类–实体
         entityRefCategoryProjectionService.projectOnUpdate(data, fieldValues, oldFieldValues);
@@ -374,6 +427,80 @@ public class EntityServiceImpl implements EntityService {
                 entityTypeCode,
                 changedFields,
                 data);
+        scheduleGeneratedTaskUpdateHint(data, oldFieldValues, fieldValues, reqVO);
+    }
+
+    /**
+     * 动作参数或检查项步骤保存提交之后，通知巡检任务服务记「需要更新」。
+     * 事务还没提交时不通知，避免任务服务回头写任务时和这次保存互相等待。
+     */
+    private void scheduleGeneratedTaskUpdateHint(
+            EntityDO data,
+            Map<String, Object> oldFieldValues,
+            Map<String, Object> newFieldValues,
+            EntityUpdateReqVO reqVO
+    ) {
+        if (generatedTaskUpdateHintNotifier == null || data == null || data.getId() == null) {
+            return;
+        }
+        String type = data.getEntityTypeCode() == null ? "" : data.getEntityTypeCode().trim();
+        String fieldKey = null;
+        if (ActionFieldCodes.ENTITY_TYPE_CODE.equalsIgnoreCase(type)) {
+            fieldKey = ActionFieldCodes.PARAM_SLOTS_JSON;
+        } else if ("inspection_item".equalsIgnoreCase(type)) {
+            fieldKey = "step_tree_json";
+        }
+        if (fieldKey == null || !requestContainsField(reqVO, fieldKey)) {
+            return;
+        }
+        Object before = oldFieldValues == null ? null : oldFieldValues.get(fieldKey);
+        Object after = newFieldValues != null && newFieldValues.containsKey(fieldKey)
+                ? newFieldValues.get(fieldKey)
+                : (reqVO.getBaseFields() == null ? null : reqVO.getBaseFields().get(fieldKey));
+        if (sameJson(before, after)) {
+            return;
+        }
+        String entityTypeCode = type;
+        Long entityId = data.getId();
+        String code = data.getCode();
+        String name = data.getName();
+        Object beforeSnapshot = before;
+        Object afterSnapshot = after;
+        Runnable notify = () -> generatedTaskUpdateHintNotifier.notifySaved(
+                entityTypeCode, entityId, code, name, beforeSnapshot, afterSnapshot);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    notify.run();
+                }
+            });
+            return;
+        }
+        notify.run();
+    }
+
+    private static boolean requestContainsField(EntityUpdateReqVO reqVO, String fieldKey) {
+        if (reqVO == null) {
+            return false;
+        }
+        Map<String, Object> base = reqVO.getBaseFields();
+        Map<String, Object> custom = reqVO.getCustomFields();
+        return (base != null && base.containsKey(fieldKey)) || (custom != null && custom.containsKey(fieldKey));
+    }
+
+    private static boolean sameJson(Object before, Object after) {
+        return jsonText(before).equals(jsonText(after));
+    }
+
+    private static String jsonText(Object raw) {
+        if (raw == null) {
+            return "";
+        }
+        if (raw instanceof String text) {
+            return text.trim();
+        }
+        return JSON.toJSONString(raw);
     }
 
     /**
@@ -501,6 +628,7 @@ public class EntityServiceImpl implements EntityService {
                 && entityCoreService.existsByParentId(reqVO.getId(), reqVO.getEntityTypeCode())) {
             throw new ServiceException(400, "存在子实体，无法删除。请先删除子实体或使用强制删除");
         }
+        removeActionFromCheckItems(existingEntity, reqVO.getEntityTypeCode());
 
         // 分类即实体：删实体 → 断 link → 删分类节点（与从分类侧删除语义对齐）
         CategoryEntityLinkDO boundLink = categoryEntityLinkService.getLinkByEntityIdAndEntityTypeCode(
@@ -531,12 +659,28 @@ public class EntityServiceImpl implements EntityService {
         if (existingEntity == null) {
             return;
         }
+        removeActionFromCheckItems(existingEntity, entityTypeCode);
         cleanupAssociationsOnEntityDelete(id, entityTypeCode.trim(), clearInboundRelations);
         entityCoreService.delete(id, entityTypeCode.trim());
         entityCacheEvictionService.evictEntityCaches(existingEntity.getModelId(), entityTypeCode.trim());
         entityCacheEvictionService.evictEntity(id);
         entityLifecycleEventPublisher.publishEntityDeletedEvent(
                 existingEntity.getModelId(), id, entityTypeCode.trim());
+    }
+
+    /**
+     * 删的是动作时，检查项检查方法里引用这一动作的步骤一并去掉。
+     * 其它实体类型不改检查项。
+     */
+    private void removeActionFromCheckItems(EntityDO entity, String entityTypeCode) {
+        if (entity == null || !StringUtils.hasText(entity.getCode())) {
+            return;
+        }
+        String type = entityTypeCode == null ? "" : entityTypeCode.trim();
+        if (!ActionFieldCodes.ENTITY_TYPE_CODE.equals(type)) {
+            return;
+        }
+        checkItemDeletedActionRemover.remove(entity.getCode());
     }
 
     /**
@@ -550,6 +694,7 @@ public class EntityServiceImpl implements EntityService {
             throw new ServiceException(400, "分类即实体绑定的分类不存在，拒绝删除以免留下脏数据");
         }
         boolean clearInbound = Boolean.TRUE.equals(reqVO.getForceDelete());
+        removeActionFromCheckItems(existingEntity, reqVO.getEntityTypeCode());
         cleanupAssociationsOnEntityDelete(reqVO.getId(), reqVO.getEntityTypeCode(), clearInbound);
         entityCoreService.delete(reqVO.getId(), reqVO.getEntityTypeCode());
         categoryEntityLinkService.unlinkCategoryEntity(boundLink.getCategoryId());
@@ -666,6 +811,24 @@ public class EntityServiceImpl implements EntityService {
                 loaded.get(0), customFieldValidationService, entityDedicatedColumnService);
         // 详情读路径与列表一致：REF 只存 id，展示名在此补齐（不写库）
         entityRefDisplayEnrichService.enrich(Collections.singletonList(vo));
+        if (vo != null) {
+            // 模型关联不在自定义字段里。这里只为详情这一格补上型号编号，不写回设备。
+            Map<String, List<Long>> linkedModels = entityModelRelationSync.readForModel(
+                    vo.getEntityTypeCode(), vo.getModelId());
+            if (!linkedModels.isEmpty()) {
+                Map<String, Object> customFields = vo.getCustomFields();
+                if (customFields == null) {
+                    customFields = new LinkedHashMap<>();
+                    vo.setCustomFields(customFields);
+                }
+                customFields.putAll(linkedModels);
+            }
+        }
+        if (vo != null && ActionFieldCodes.ENTITY_TYPE_CODE.equalsIgnoreCase(entityTypeCode)) {
+            // 动作详情查询：子动作已删除的不出现在这次结果里，不改已保存的父动作。
+            actionDeletedChildQueryFilter.omitFromBaseFields(
+                    vo.getBaseFields(), actionDeletedChildQueryFilter.deletedCodes());
+        }
         if (includeAssociations) {
             fillAssociations(vo, id, associationCategoryViews);
         }

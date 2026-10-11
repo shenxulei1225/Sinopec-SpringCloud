@@ -1,5 +1,6 @@
 package cn.cheers.x.device.protocolgateway.protocol.monitor;
 
+import cn.cheers.x.device.protocolgateway.api.dto.ProtocolMonitorDeviceDTO;
 import cn.cheers.x.device.protocolgateway.api.dto.ProtocolMonitorEventDTO;
 import cn.cheers.x.device.protocolgateway.config.DeviceProtocolGatewayProperties;
 import cn.cheers.x.device.protocolgateway.protocol.envelope.EnvelopeJsonCodec;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -28,7 +30,20 @@ class ProtocolMonitorHubTest {
         hub = new ProtocolMonitorHub(
                 properties,
                 new EnvelopeJsonCodec(new ObjectMapper()),
-                new InMemoryDeviceSessionRegistry());
+                new InMemoryDeviceSessionRegistry(),
+                event -> event);
+    }
+
+    @Test
+    void syncReply_usesResponseName() {
+        hub.copyOutbound("dev-1", "{\"opcode\":500104,\"msgId\":\"m1\"}");
+        hub.copyInbound("dev-1", "{\"opcode\":500104,\"msgId\":\"m1\",\"code\":200,\"msg\":\"操作成功\"}");
+        hub.copyInbound("dev-1", "{\"opcode\":500203,\"msgId\":\"m2\",\"status\":300101}");
+
+        List<ProtocolMonitorEventDTO> rows = hub.snapshot("dev-1");
+        assertEquals("巡检任务指令包下发", rows.get(0).identity());
+        assertEquals("巡检任务指令包的响应", rows.get(1).identity());
+        assertEquals("任务状态", rows.get(2).identity());
     }
 
     @Test
@@ -61,6 +76,32 @@ class ProtocolMonitorHubTest {
         assertEquals(3, rows.size());
         assertEquals("2", rows.get(0).msgId());
         assertEquals("4", rows.get(2).msgId());
+    }
+
+    @Test
+    void clearDropsOnlyTheSelectedDevice() {
+        hub.copyInbound("dev-1", "{\"opcode\":500101,\"msgId\":\"a\"}");
+        hub.copyInbound("dev-2", "{\"opcode\":500101,\"msgId\":\"b\"}");
+
+        hub.clear("dev-1");
+
+        assertEquals(0, hub.snapshot("dev-1").size());
+        assertEquals(1, hub.snapshot("dev-2").size());
+    }
+
+    @Test
+    void disconnectKeepsEachDeviceWindow() {
+        hub.copyInbound("dev-1", "{\"opcode\":500101,\"msgId\":\"a\"}");
+        hub.copyInbound("dev-2", "{\"opcode\":500103,\"msgId\":\"b\"}");
+        hub.copySession("dev-2", "设备已断开");
+
+        assertEquals(1, hub.snapshot("dev-1").size());
+        assertEquals(2, hub.snapshot("dev-2").size());
+        ProtocolMonitorDeviceDTO offline = hub.listDevices().stream()
+                .filter(row -> "dev-2".equals(row.deviceId()))
+                .findFirst()
+                .orElseThrow();
+        assertFalse(offline.online());
     }
 
     @Test

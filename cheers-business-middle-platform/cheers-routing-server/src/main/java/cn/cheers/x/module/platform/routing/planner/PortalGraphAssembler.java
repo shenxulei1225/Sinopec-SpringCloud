@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalDouble;
 import java.util.Set;
 
 /**
@@ -54,7 +55,7 @@ public class PortalGraphAssembler {
             MobilityProfileDTO profile = profilesById.get(profileId);
 
             PathNetworkDTO routable = withFilteredEdges(network, doorConstraintFilter.filter(network, profile));
-            indexPrefixedNodes(routable, networkRef, nodes);
+            indexPrefixedNodes(routable, networkRef, profileId, nodes);
             addNetworkEdges(routable, networkRef, profileId, nodes, edgesById, adjacency);
         }
 
@@ -138,12 +139,18 @@ public class PortalGraphAssembler {
         return allowed.contains(profileId);
     }
 
-    private static void indexPrefixedNodes(PathNetworkDTO network, String networkRef, Map<String, PathNodeDTO> nodes) {
+    private static void indexPrefixedNodes(PathNetworkDTO network,
+                                            String networkRef,
+                                            String profileId,
+                                            Map<String, PathNodeDTO> nodes) {
         if (CollectionUtils.isEmpty(network.getNodes())) {
             return;
         }
         for (PathNodeDTO node : network.getNodes()) {
             if (node == null || !StringUtils.hasText(node.getNodeId())) {
+                continue;
+            }
+            if (!GraphView.nodeBelongsToProfile(node, profileId)) {
                 continue;
             }
             String prefixedId = ShortestPathResult.prefixNodeId(networkRef, node.getNodeId());
@@ -185,10 +192,13 @@ public class PortalGraphAssembler {
                     .allowedProfileIds(edge.getAllowedProfileIds())
                     .waypoints(edge.getWaypoints())
                     .build();
+            OptionalDouble weight = GraphView.resolveWeight(prefixedEdge, nodes);
+            if (weight.isEmpty()) {
+                continue;
+            }
             edgesById.put(edgeId, prefixedEdge);
-            double weight = GraphView.resolveWeight(edge, profileId);
             adjacency.computeIfAbsent(fromPrefixed, k -> new ArrayList<>())
-                    .add(new GraphView.AdjacencyEdge(edgeId, toPrefixed, weight));
+                    .add(new GraphView.AdjacencyEdge(edgeId, toPrefixed, weight.getAsDouble()));
         }
     }
 

@@ -19,7 +19,7 @@ SELECT
   v.required,
   v.default_value,
   v.description,
-  v.type_config,
+  v.type_config::jsonb,
   v.sort_order,
   1,
   1,
@@ -41,13 +41,33 @@ JOIN (
     ('is_composite', '是否复合动作', 'BOOLEAN', false, 'false', 'true=开跑时展开子动作', '{"createVisible":false}', 40),
     (
       'execution_means',
-      '适用手段',
+      '适用检查方式',
       'JSON',
       false,
       '[]',
-      '动作适用的执行手段编码数组。详情勾选；新建/编辑表单不展示。',
+      '动作可以被哪些检查流程选用。它不决定动作交给哪个执行模块。',
       '{"createVisible":false,"editVisible":false,"detailVisible":false}',
       10
+    ),
+    (
+      'action_domain',
+      '动作类型',
+      'STRING',
+      true,
+      NULL,
+      '动作的唯一执行归属。新建时由动作类型卡片写入，普通表单不得另设第二个入口。',
+      '{"createVisible":false,"editVisible":false,"detailVisible":false}',
+      11
+    ),
+    (
+      'analysis_capability_id',
+      '智能分析能力',
+      'NUMBER',
+      false,
+      NULL,
+      '智能分析模块中的能力编号。未接入能力目录时不得填写假值。',
+      '{"createVisible":false,"editVisible":false,"detailVisible":false}',
+      12
     )
 ) AS v(field_code, field_name, data_type, required, default_value, description, type_config, sort_order)
   ON f.code = v.field_code AND f.deleted = false AND f.tenant_id = 1

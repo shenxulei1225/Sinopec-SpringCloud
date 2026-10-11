@@ -1,16 +1,15 @@
 package cn.cheers.x.module.dynamicbusiness.service.model;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldAssignmentRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldGroupCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldGroupRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldGroupUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.util.SparseSortUtils;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -36,7 +35,7 @@ import java.util.stream.Collectors;
  * 2. 分组信息只属于 Model，不依赖任何字段
  * 3. 字段与分组的关联通过 Model.fieldGroupsConfig（JSON）中的 fields 引用列表实现
  * 4. 字段库是全局通用的，不存储任何与 model 相关的内容
- * 5. 类型基础字段不属于型号分组：分组仅排扩展/关联字段；「基础信息」是类型级语义，不是每型号一套
+ * 5. 分组只决定详情怎么分块。基础字段移进某一组后仍是基础字段，查询分组时不得改这份 JSON
  * 
  * 职责：
  * - 只负责管理分组信息（创建、更新、删除、查询）
@@ -47,16 +46,11 @@ import java.util.stream.Collectors;
 @Validated
 public class ModelFieldGroupServiceImpl implements ModelFieldGroupService {
 
-    /** 型号表单默认分组：扩展字段排版用，勿与类型「基础信息」混淆 */
-    private static final String DEFAULT_EXTENSION_GROUP_NAME = "扩展信息";
-
     @Resource
     private ModelMapper modelMapper;
 
-    @Resource
-    private ModelFieldAssignmentMapper modelFieldAssignmentMapper;
-
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     /**
      * 字段分组配置数据结构
@@ -101,6 +95,14 @@ public class ModelFieldGroupServiceImpl implements ModelFieldGroupService {
          */
         private Integer sort;
         /**
+         * 上级分组的字符串编号。空表示这一组在最外层。
+         * 只存在这份型号分组 JSON 里，不另建一套上下级。
+         */
+        private String parentId;
+        /** 这一详情页勾选要显示的型号字段。只用于没有字段行的块，例如云台相机。 */
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private List<Long> displayFieldIds;
+        /**
          * 分组下的字段列表
          */
         private List<FieldRefItem> fields = new ArrayList<>();
@@ -137,6 +139,22 @@ public class ModelFieldGroupServiceImpl implements ModelFieldGroupService {
             this.sort = sort;
         }
 
+        public String getParentId() {
+            return parentId;
+        }
+
+        public void setParentId(String parentId) {
+            this.parentId = parentId;
+        }
+
+        public List<Long> getDisplayFieldIds() {
+            return displayFieldIds;
+        }
+
+        public void setDisplayFieldIds(List<Long> displayFieldIds) {
+            this.displayFieldIds = displayFieldIds;
+        }
+
         public List<FieldRefItem> getFields() {
             return fields;
         }
@@ -152,7 +170,7 @@ public class ModelFieldGroupServiceImpl implements ModelFieldGroupService {
      * 说明：
      * - fieldId：字段ID，可以是基础字段或自定义字段
      * - sort：字段在该分组内的排序
-     * - extra：预留扩展信息（将来可记录更多元数据）
+     * - extra.displayFieldIds：这一详情页勾选要显示的型号字段。不写回字段库。
      */
     private static class FieldRefItem {
         private Long fieldId;
@@ -213,8 +231,8 @@ public class ModelFieldGroupServiceImpl implements ModelFieldGroupService {
             }
             return config;
         } catch (Exception e) {
-            // JSON 解析失败，返回空配置
-            return new FieldGroupsConfig();
+            // 读失败就报错。不能当成空分组再写回，否则打开型号字段页会把已有分组盖成只剩扩展信息。
+            throw new ServiceException(500, "型号字段分组读取失败，未改分组");
         }
     }
 
@@ -329,6 +347,9 @@ public class ModelFieldGroupServiceImpl implements ModelFieldGroupService {
                 .max(Integer::compareTo)
                 .orElse(null);
         newGroup.setSort(SparseSortUtils.next(currentMax));
+        if (reqVO.getParentId() != null) {
+            applyParent(newGroup, reqVO.getParentId(), config);
+        }
 
         // 添加到配置
         config.getGroups().add(newGroup);
@@ -379,6 +400,9 @@ public class ModelFieldGroupServiceImpl implements ModelFieldGroupService {
         if (reqVO.getSort() != null) {
             group.setSort(reqVO.getSort());
         }
+        if (Boolean.TRUE.equals(reqVO.getParentSpecified())) {
+            applyParent(group, reqVO.getParentId(), config);
+        }
 
         // 重新排序
         config.getGroups().sort(Comparator.comparingInt(g -> g.getSort() != null ? g.getSort() : 0));
@@ -398,8 +422,20 @@ public class ModelFieldGroupServiceImpl implements ModelFieldGroupService {
             throw new ServiceException(404, "模型字段分组不存在");
         }
 
+        FieldGroupItem removedGroup = config.getGroups().stream()
+                .filter(g -> g.getId().equals(groupIdStr))
+                .findFirst()
+                .orElse(null);
+        if (removedGroup == null) {
+            throw new ServiceException(404, "模型字段分组不存在");
+        }
+        String removedParentId = removedGroup.getParentId();
+        for (FieldGroupItem child : config.getGroups()) {
+            if (groupIdStr.equals(child.getParentId())) {
+                child.setParentId(removedParentId);
+            }
+        }
         boolean removed = config.getGroups().removeIf(g -> g.getId().equals(groupIdStr));
-
         if (!removed) {
             throw new ServiceException(404, "模型字段分组不存在");
         }
@@ -435,7 +471,9 @@ public class ModelFieldGroupServiceImpl implements ModelFieldGroupService {
         respVO.setName(group.getName());
         respVO.setColor(group.getColor());
         respVO.setSort(group.getSort());
+        respVO.setParentId(stringIdToLong(group.getParentId()));
         respVO.setFields(convertFieldRefs(group.getFields()));
+        respVO.setDisplayFieldIds(group.getDisplayFieldIds());
 
         return respVO;
     }
@@ -444,11 +482,6 @@ public class ModelFieldGroupServiceImpl implements ModelFieldGroupService {
     public List<ModelFieldGroupRespVO> listModelFieldGroupsByModelId(Long modelId) {
         // 读取配置
         FieldGroupsConfig config = readFieldGroupsConfig(modelId);
-
-        // 自动补齐默认「扩展信息」分组（避免扩展字段无处可放）
-        ensureDefaultExtensionGroup(modelId, config);
-        // 历史脏数据：BASE 字段引用不得留在型号分组 JSON 中
-        stripBaseFieldRefsFromGroups(modelId, config);
 
         // 转换为 VO 列表
         return config.getGroups().stream()
@@ -459,10 +492,49 @@ public class ModelFieldGroupServiceImpl implements ModelFieldGroupService {
                     respVO.setName(group.getName());
                     respVO.setColor(group.getColor());
                     respVO.setSort(group.getSort());
+                    respVO.setParentId(stringIdToLong(group.getParentId()));
                     respVO.setFields(convertFieldRefs(group.getFields()));
+                    respVO.setDisplayFieldIds(group.getDisplayFieldIds());
                     return respVO;
                 })
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 把这一组放进上级分组。parentLongId 为空则放到最外层。
+     * 不能放进自己，也不能放进自己的下级。
+     */
+    private void applyParent(FieldGroupItem group, Long parentLongId, FieldGroupsConfig config) {
+        if (parentLongId == null) {
+            group.setParentId(null);
+            return;
+        }
+        String parentId = longIdToString(parentLongId, config.getGroups());
+        if (parentId == null) {
+            throw new ServiceException(400, "上级分组不存在");
+        }
+        if (parentId.equals(group.getId()) || isUnder(config, parentId, group.getId())) {
+            throw new ServiceException(400, "分组不能放到自己或自己的下级里面");
+        }
+        group.setParentId(parentId);
+    }
+
+    /** nodeId 沿上级往上走，能走到 ancestorId 则它在该组里面。 */
+    private boolean isUnder(FieldGroupsConfig config, String nodeId, String ancestorId) {
+        String current = nodeId;
+        Set<String> seen = new HashSet<>();
+        while (current != null && seen.add(current)) {
+            if (current.equals(ancestorId)) {
+                return true;
+            }
+            String cursor = current;
+            FieldGroupItem item = config.getGroups().stream()
+                    .filter(g -> cursor.equals(g.getId()))
+                    .findFirst()
+                    .orElse(null);
+            current = item == null ? null : item.getParentId();
+        }
+        return false;
     }
 
     private List<ModelFieldGroupRespVO.FieldRefVO> convertFieldRefs(List<FieldRefItem> refs) {
@@ -482,87 +554,11 @@ public class ModelFieldGroupServiceImpl implements ModelFieldGroupService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 确保存在默认「扩展信息」分组。
-     * 若已有任意分组（含历史「基础信息」桶）则不追加，避免重复默认组。
-     */
-    private void ensureDefaultExtensionGroup(Long modelId, FieldGroupsConfig config) {
-        if (config == null) {
-            return;
-        }
-        if (config.getGroups() == null) {
-            config.setGroups(new ArrayList<>());
-        }
-        if (!config.getGroups().isEmpty()) {
-            return;
-        }
-
-        FieldGroupItem extensionGroup = new FieldGroupItem();
-        extensionGroup.setId(generateGroupId(config.getGroups()));
-        extensionGroup.setName(DEFAULT_EXTENSION_GROUP_NAME);
-        extensionGroup.setColor("#409eff");
-        extensionGroup.setFields(new ArrayList<>());
-        extensionGroup.setSort(SparseSortUtils.next(null));
-
-        config.getGroups().add(extensionGroup);
-        saveFieldGroupsConfig(modelId, config);
-    }
-
-    /** 从型号分组 JSON 中剔除类型基础字段引用（类型一份基础字段，不进型号分组）。 */
-    private void stripBaseFieldRefsFromGroups(Long modelId, FieldGroupsConfig config) {
-        if (config == null || config.getGroups() == null || config.getGroups().isEmpty()) {
-            return;
-        }
-        Set<Long> baseFieldIds = loadBaseAssignmentFieldIds(modelId);
-        if (baseFieldIds.isEmpty()) {
-            return;
-        }
-        boolean changed = false;
-        for (FieldGroupItem group : config.getGroups()) {
-            if (group.getFields() == null || group.getFields().isEmpty()) {
-                continue;
-            }
-            boolean removed = group.getFields().removeIf(
-                    ref -> ref != null && ref.getFieldId() != null && baseFieldIds.contains(ref.getFieldId()));
-            if (removed) {
-                changed = true;
-            }
-        }
-        if (changed) {
-            saveFieldGroupsConfig(modelId, config);
-        }
-    }
-
-    private Set<Long> loadBaseAssignmentFieldIds(Long modelId) {
-        Set<Long> ids = new HashSet<>();
-        List<ModelFieldAssignmentDO> assigns = modelFieldAssignmentMapper.selectByModelId(modelId);
-        if (assigns == null) {
-            return ids;
-        }
-        for (ModelFieldAssignmentDO assign : assigns) {
-            if (assign == null || assign.getFieldId() == null) {
-                continue;
-            }
-            if (ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE.equals(assign.getFieldSource())
-                    || ModelFieldAssignmentRespVO.FIELD_SOURCE_SYSTEM.equals(assign.getFieldSource())) {
-                ids.add(assign.getFieldId());
-            }
-        }
-        return ids;
-    }
-
     @Override
     public void assignFieldToGroup(Long modelId, Long fieldId, Long groupId) {
         Objects.requireNonNull(modelId, "modelId 不能为空");
         Objects.requireNonNull(fieldId, "fieldId 不能为空");
         Objects.requireNonNull(groupId, "groupId 不能为空");
-
-        ModelFieldAssignmentDO assignment = modelFieldAssignmentMapper.selectByModelIdAndFieldId(modelId, fieldId);
-        if (assignment != null
-                && (ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE.equals(assignment.getFieldSource())
-                        || ModelFieldAssignmentRespVO.FIELD_SOURCE_SYSTEM.equals(assignment.getFieldSource()))) {
-            throw new ServiceException(400, "类型基础字段与系统字段不属于型号分组，请在「基础信息」中维护");
-        }
 
         FieldGroupsConfig config = readFieldGroupsConfig(modelId);
         List<FieldGroupItem> groups = config.getGroups();
@@ -764,5 +760,68 @@ public class ModelFieldGroupServiceImpl implements ModelFieldGroupService {
             }
         }
         return mapping;
+    }
+
+    @Override
+    public void saveShownSourceFields(Long modelId, Long fieldId, List<Long> sourceFieldIds) {
+        if (fieldId == null || fieldId <= 0) {
+            throw new ServiceException(400, "请指定详情上的这一项");
+        }
+        FieldGroupsConfig config = readFieldGroupsConfig(modelId);
+        FieldRefItem target = null;
+        if (config.getGroups() != null) {
+            for (FieldGroupItem group : config.getGroups()) {
+                if (group.getFields() == null) {
+                    continue;
+                }
+                for (FieldRefItem ref : group.getFields()) {
+                    if (fieldId.equals(ref.getFieldId())) {
+                        target = ref;
+                    }
+                }
+            }
+        }
+        if (target == null) {
+            throw new ServiceException(404, "这一项还没放进这个型号的详情");
+        }
+        if (target.getExtra() == null) {
+            target.setExtra(new HashMap<>());
+        }
+        target.getExtra().put("displayFieldIds", normalizeIds(sourceFieldIds));
+        saveFieldGroupsConfig(modelId, config);
+    }
+
+    @Override
+    public void saveGroupShownSourceFields(Long modelId, Long groupId, List<Long> sourceFieldIds) {
+        if (groupId == null || groupId <= 0) {
+            throw new ServiceException(400, "请指定详情上的这一块");
+        }
+        FieldGroupsConfig config = readFieldGroupsConfig(modelId);
+        String groupIdStr = longIdToString(groupId, config.getGroups());
+        if (groupIdStr == null) {
+            throw new ServiceException(404, "模型字段分组不存在");
+        }
+        FieldGroupItem group = config.getGroups().stream()
+                .filter(item -> groupIdStr.equals(item.getId()))
+                .findFirst()
+                .orElse(null);
+        if (group == null) {
+            throw new ServiceException(404, "模型字段分组不存在");
+        }
+        group.setDisplayFieldIds(normalizeIds(sourceFieldIds));
+        saveFieldGroupsConfig(modelId, config);
+    }
+
+    private static List<Long> normalizeIds(List<Long> sourceFieldIds) {
+        List<Long> ids = new ArrayList<>();
+        if (sourceFieldIds == null) {
+            return ids;
+        }
+        for (Long id : sourceFieldIds) {
+            if (id != null && id > 0 && !ids.contains(id)) {
+                ids.add(id);
+            }
+        }
+        return ids;
     }
 }

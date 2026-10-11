@@ -75,8 +75,6 @@ public class PathStationPointSyncService {
 
     private static final Set<String> ALLOWED_POINT_KINDS = Set.of("STATION", "TRAVERSAL", "DOOR");
     private static final Set<String> ALLOWED_MEMBERSHIPS = Set.of("HUMAN", "GROUND_ROBOT", "UAV");
-    private static final List<String> DEFAULT_MEMBERSHIPS =
-            List.of("HUMAN", "GROUND_ROBOT", "UAV");
 
     private final EntityService entityService;
     private final EntityRepository entityRepository;
@@ -168,11 +166,12 @@ public class PathStationPointSyncService {
     }
 
     /**
-     * 归属网：空 → 三网全开（兼容旧数据）；过滤非法码；去重保序。
+     * 归属网：只保留节点上勾过的 HUMAN / GROUND_ROBOT / UAV。
+     * 没勾的保持空。选择位置不列出没写归属网的点。
      */
     public static List<String> normalizeMemberships(List<String> raw) {
         if (raw == null || raw.isEmpty()) {
-            return List.copyOf(DEFAULT_MEMBERSHIPS);
+            return List.of();
         }
         List<String> out = new ArrayList<>();
         for (String item : raw) {
@@ -187,9 +186,6 @@ public class PathStationPointSyncService {
             if (!out.contains(m)) {
                 out.add(m);
             }
-        }
-        if (out.isEmpty()) {
-            return List.copyOf(DEFAULT_MEMBERSHIPS);
         }
         return List.copyOf(out);
     }

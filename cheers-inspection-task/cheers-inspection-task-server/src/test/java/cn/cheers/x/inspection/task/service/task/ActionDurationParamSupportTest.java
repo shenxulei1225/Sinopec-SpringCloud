@@ -3,6 +3,7 @@ package cn.cheers.x.inspection.task.service.task;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -20,7 +21,7 @@ class ActionDurationParamSupportTest {
                 "fields", List.of(
                         Map.of("fieldCode", "dwell_duration", "defaultValue", 30),
                         Map.of("fieldCode", "action_duration", "defaultValue", 2)));
-        assertEquals(2, ActionDurationParamSupport.minutesFromSlots(slots, "ROBOT", objectMapper).orElseThrow());
+        assertEquals(new BigDecimal("2"), ActionDurationParamSupport.secondsFromSlots(slots, "ROBOT", objectMapper).orElseThrow());
     }
 
     @Test
@@ -33,7 +34,7 @@ class ActionDurationParamSupportTest {
                                 Map.of("fieldCode", "action_duration", "defaultValue", 4))),
                         Map.of("methodKey", "ROBOT", "fields", List.of(
                                 Map.of("fieldCode", "action_duration", "defaultValue", 1)))));
-        assertEquals(1, ActionDurationParamSupport.minutesFromSlots(slots, "ROBOT", objectMapper).orElseThrow());
+        assertEquals(new BigDecimal("1"), ActionDurationParamSupport.secondsFromSlots(slots, "ROBOT", objectMapper).orElseThrow());
     }
 
     @Test
@@ -42,7 +43,7 @@ class ActionDurationParamSupportTest {
         field.put("fieldCode", "action_duration");
         field.put("defaultValue", null);
         Map<String, Object> slots = Map.of("version", 1, "fields", List.of(field));
-        assertTrue(ActionDurationParamSupport.minutesFromSlots(slots, "ROBOT", objectMapper).isEmpty());
+        assertTrue(ActionDurationParamSupport.secondsFromSlots(slots, "ROBOT", objectMapper).isEmpty());
     }
 
     @Test
@@ -50,6 +51,47 @@ class ActionDurationParamSupportTest {
         Map<String, Object> slots = Map.of(
                 "version", 1,
                 "fields", List.of(Map.of("fieldCode", "dwell_duration", "defaultValue", 30)));
-        assertTrue(ActionDurationParamSupport.minutesFromSlots(slots, "ROBOT", objectMapper).isEmpty());
+        assertTrue(ActionDurationParamSupport.secondsFromSlots(slots, "ROBOT", objectMapper).isEmpty());
+    }
+
+    @Test
+    void minutesFromSlots_modelSplitWithoutEquipment_isEmpty() {
+        Map<String, Object> slots = Map.of(
+                "version", 2,
+                "methods", List.of(
+                        Map.of("executionMeans", "ROBOT", "equipmentModelId", 1772, "fields", List.of(
+                                Map.of("fieldCode", "action_duration", "defaultValue", 100))),
+                        Map.of("executionMeans", "ROBOT", "equipmentModelId", 1773, "fields", List.of(
+                                Map.of("fieldCode", "action_duration", "defaultValue", 40)))));
+        assertTrue(ActionDurationParamSupport.secondsFromSlots(slots, "ROBOT", objectMapper).isEmpty());
+    }
+
+    @Test
+    void minutesFromSlots_modelSplitUsesSelectedModel() {
+        Map<String, Object> slots = Map.of(
+                "version", 2,
+                "methods", List.of(
+                        Map.of("executionMeans", "ROBOT", "equipmentModelId", 1772, "fields", List.of(
+                                Map.of("fieldCode", "action_duration", "defaultValue", 100))),
+                        Map.of("executionMeans", "ROBOT", "equipmentModelId", 1773, "fields", List.of(
+                                Map.of("fieldCode", "action_duration", "defaultValue", 40)))));
+        assertEquals(
+                new BigDecimal("40"),
+                ActionDurationParamSupport.secondsFromSlots(slots, "ROBOT", 1773L, objectMapper).orElseThrow());
+        assertTrue(ActionDurationParamSupport.secondsFromSlots(slots, "ROBOT", 1867L, objectMapper).isEmpty());
+    }
+
+    @Test
+    void minutesFromSlots_keepsHalfMinute() {
+        Map<String, Object> slots = Map.of(
+                "version", 2,
+                "methods", List.of(Map.of(
+                        "executionMeans", "ROBOT",
+                        "fields", List.of(Map.of(
+                                "fieldCode", "action_duration",
+                                "defaultValue", new BigDecimal("30"))))));
+        assertEquals(
+                new BigDecimal("30"),
+                ActionDurationParamSupport.secondsFromSlots(slots, "ROBOT", objectMapper).orElseThrow());
     }
 }

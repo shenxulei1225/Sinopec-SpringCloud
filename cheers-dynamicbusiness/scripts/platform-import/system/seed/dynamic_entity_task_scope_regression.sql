@@ -49,7 +49,7 @@ ALTER TABLE ent_task_excution_record
 -- 任务执行记录 storage 补全
 UPDATE dynamic_entity_type
 SET dedicated_table_name = 'ent_task_excution_record',
-    description = '任务执行记录（巡检轮次、异常、维修作业日志）；按 DOMAIN 域入口过滤',
+    description = '任务执行记录。巡检与维修靠业务域区分。异常另记在异常记录。',
     updater = 'oil-depot-scope',
     update_time = CURRENT_TIMESTAMP
 WHERE deleted = false AND tenant_id = 1 AND code = 'task_excution_record';
@@ -147,60 +147,33 @@ DO UPDATE SET parent_id = EXCLUDED.parent_id, name = EXCLUDED.name,
   updater = 'oil-depot-scope', update_time = CURRENT_TIMESTAMP;
 
 -- ---------------------------------------------------------------------------
--- 4. 任务模型（storage task，8 个）
+-- 4. 任务模型只保留 patrol_task。界面名称是「巡检任务」。
+-- 管廊、消防、阀门、临时、维修、综合不再各建一个型号。
 -- ---------------------------------------------------------------------------
 INSERT INTO dynamic_model (code, name, entity_type_code, domain, description, status, sort, field_groups_config, tenant_id, creator)
-SELECT v.code, v.name, 'task', v.domain, v.description, 1, v.sort,
+SELECT 'patrol_task', '巡检任务', 'task', '巡检', '巡检任务', 1, 1,
   COALESCE(
     (SELECT field_groups_config FROM dynamic_model WHERE code = 'patrol_task' AND deleted = false AND tenant_id = 1 LIMIT 1),
     '[]'
   ),
   1, 'oil-depot-scope'
-FROM (VALUES
-  ('patrol_task', '储罐日常巡检', '巡检', '油库储罐区日常巡检任务', 1),
-  ('patrol_pipeline', '管廊巡检', '巡检', '输油管廊/栈桥巡检', 2),
-  ('patrol_fire_facility', '消防设施巡检', '巡检', '消防泵房、泡沫站、灭火器巡检', 3),
-  ('patrol_valve_special', '阀门专项巡检', '巡检', '关键阀门密封与泄漏专项', 4),
-  ('patrol_adhoc', '临时巡检', '巡检', '雨前/节假日前临时加巡', 5),
-  ('maint_work_order', '预防性维护工单', '维修', '泵、阀、仪表计划性保养', 10),
-  ('maint_emergency', '抢修任务', '维修', '泄漏/停电等应急抢修', 11),
-  ('general_station_task', '站场综合事务', NULL, '非巡检/维修域（测 Scope 隔离）', 20)
-) AS v(code, name, domain, description, sort)
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, entity_type_code = 'task', domain = EXCLUDED.domain,
   description = EXCLUDED.description, sort = EXCLUDED.sort, deleted = false,
   updater = 'oil-depot-scope', update_time = CURRENT_TIMESTAMP;
 
--- 删除旧 code general_admin_task（合并为 general_station_task）
+UPDATE dynamic_model SET deleted = true, updater = 'oil-depot-scope', update_time = CURRENT_TIMESTAMP
+WHERE deleted = false AND tenant_id = 1 AND entity_type_code = 'task'
+  AND code <> 'patrol_task';
+
+-- 旧的综合事务型号不再使用，保持删除。
 UPDATE dynamic_model SET deleted = true, updater = 'oil-depot-scope', update_time = CURRENT_TIMESTAMP
 WHERE deleted = false AND tenant_id = 1 AND code = 'general_admin_task';
-
-INSERT INTO dynamic_model_field_assignment (
-  model_id, field_id, model_code, field_code,
-  required, is_searchable, is_filterable, is_sortable, sort,
-  default_value, target_entity_type, tenant_id, creator
-)
-SELECT tgt.id, src.field_id, tgt.code, src.field_code,
-  src.required, src.is_searchable, src.is_filterable, src.is_sortable, src.sort,
-  src.default_value, src.target_entity_type, 1, 'oil-depot-scope'
-FROM dynamic_model_field_assignment src
-JOIN dynamic_model src_m ON src_m.id = src.model_id AND src_m.code = 'patrol_task' AND src_m.deleted = false
-JOIN dynamic_model tgt ON tgt.deleted = false AND tgt.tenant_id = 1
-  AND tgt.code IN ('patrol_pipeline', 'patrol_fire_facility', 'patrol_valve_special', 'patrol_adhoc',
-                   'maint_work_order', 'maint_emergency', 'general_station_task')
-WHERE src.deleted = false AND src.tenant_id = 1
-ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
-DO UPDATE SET updater = 'oil-depot-scope', update_time = CURRENT_TIMESTAMP;
 
 INSERT INTO dynamic_model_category_relation_t1 (model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator)
 SELECT m.id, c.id, 'task', m.code, c.code, v.sort, 1, 'oil-depot-scope'
 FROM (VALUES
-  ('patrol_task', 'task_cat_daily', 1),
-  ('patrol_pipeline', 'task_cat_daily', 2),
-  ('patrol_fire_facility', 'task_cat_daily', 3),
-  ('patrol_valve_special', 'task_cat_special', 1),
-  ('maint_work_order', 'task_cat_maintenance', 1),
-  ('general_station_task', 'task_cat_daily', 9)
+  ('patrol_task', 'task_cat_daily', 1)
 ) AS v(model_code, category_code, sort)
 JOIN dynamic_model m ON m.deleted = false AND m.tenant_id = 1 AND m.code = v.model_code
 JOIN dynamic_category c ON c.deleted = false AND c.tenant_id = 1 AND c.code = v.category_code
@@ -209,13 +182,13 @@ DO UPDATE SET model_id = EXCLUDED.model_id, category_id = EXCLUDED.category_id,
   updater = 'oil-depot-scope', update_time = CURRENT_TIMESTAMP;
 
 -- ---------------------------------------------------------------------------
--- 5. 执行记录模型（storage task_excution_record，3 个）
+-- 5. 执行记录模型（storage task_excution_record）。巡检异常不在这本账。
 -- ---------------------------------------------------------------------------
 INSERT INTO dynamic_model (code, name, entity_type_code, domain, description, status, sort, field_groups_config, tenant_id, creator)
 VALUES
-  ('exec_patrol_round', '巡检轮次记录', 'task_excution_record', '巡检', '一次巡检任务的现场轮次/签到记录', 1, 1, '[]', 1, 'oil-depot-scope'),
-  ('exec_patrol_issue', '巡检异常记录', 'task_excution_record', '巡检', '巡检发现的异常/缺陷记录', 1, 2, '[]', 1, 'oil-depot-scope'),
-  ('exec_maint_log', '维修作业记录', 'task_excution_record', '维修', '维修工单的过程与验收记录', 1, 10, '[]', 1, 'oil-depot-scope')
+  ('exec_patrol_record', '巡检记录', 'task_excution_record', '巡检', '一次巡检开跑产生的执行记录；domain=巡检；步骤挂 task_execution_step', 1, 1, '[]', 1, 'oil-depot-scope'),
+  ('exec_maint_log', '维修记录', 'task_excution_record', '维修', '维修工单的过程与验收记录', 1, 10, '[]', 1, 'oil-depot-scope'),
+  ('exec_patrol_issue', '巡检异常记录', 'anomaly', NULL, '巡检检查项发现的异常。与设备采集的异常同属异常记录，不进任务执行记录。', 1, 2, '[]', 1, 'oil-depot-scope')
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, entity_type_code = EXCLUDED.entity_type_code,
   domain = EXCLUDED.domain, description = EXCLUDED.description, deleted = false,
@@ -224,8 +197,7 @@ DO UPDATE SET name = EXCLUDED.name, entity_type_code = EXCLUDED.entity_type_code
 INSERT INTO dynamic_model_category_relation_t1 (model_id, category_id, entity_type_code, model_code, category_code, sort, tenant_id, creator)
 SELECT m.id, c.id, 'task_excution_record', m.code, c.code, 1, 1, 'oil-depot-scope'
 FROM (VALUES
-  ('exec_patrol_round', 'record_cat_patrol'),
-  ('exec_patrol_issue', 'record_cat_patrol'),
+  ('exec_patrol_record', 'record_cat_patrol'),
   ('exec_maint_log', 'record_cat_maint')
 ) AS v(model_code, category_code)
 JOIN dynamic_model m ON m.deleted = false AND m.tenant_id = 1 AND m.code = v.model_code
@@ -241,35 +213,28 @@ INSERT INTO ent_task (id, entity_type_code, model_id, name, code, tenant_id, cre
 OVERRIDING SYSTEM VALUE
 SELECT v.id, 'task', m.id, v.name, v.code, 1, 'oil-depot-scope', v.tree_path, v.sort, 1, false, v.custom_fields::jsonb
 FROM (VALUES
-  -- 储罐日常 5
   (910001, 'patrol_task', 'TK-PAT-001', '储罐A区日常巡检', '/910001/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
   (910002, 'patrol_task', 'TK-PAT-002', '储罐B区日常巡检', '/910002/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"进行中","FLD-TSK-022":"enabled"}'),
   (910003, 'patrol_task', 'TK-PAT-003', '储罐C区专项巡检', '/910003/', 3, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
   (910004, 'patrol_task', 'TK-PAT-004', '夜间储罐巡检', '/910004/', 4, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"已完成","FLD-TSK-022":"enabled"}'),
   (910005, 'patrol_task', 'TK-PAT-005', '周末储罐巡检', '/910005/', 5, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待验收","FLD-TSK-022":"enabled"}'),
-  -- 管廊 3
-  (910101, 'patrol_pipeline', 'PL-PAT-001', '1#输油管廊巡检', '/910101/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
-  (910102, 'patrol_pipeline', 'PL-PAT-002', '2#输油管廊巡检', '/910102/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"进行中","FLD-TSK-022":"enabled"}'),
-  (910103, 'patrol_pipeline', 'PL-PAT-003', '栈桥区管廊巡检', '/910103/', 3, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
-  -- 消防 3
-  (910108, 'patrol_fire_facility', 'FR-PAT-001', '消防泵房巡检', '/910108/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
-  (910109, 'patrol_fire_facility', 'FR-PAT-002', '泡沫站巡检', '/910109/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"进行中","FLD-TSK-022":"enabled"}'),
-  (910110, 'patrol_fire_facility', 'FR-PAT-003', '灭火器月度巡检', '/910110/', 3, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
-  -- 阀门专项 2
-  (910104, 'patrol_valve_special', 'VL-PAT-001', '进油阀专项巡检', '/910104/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
-  (910105, 'patrol_valve_special', 'VL-PAT-002', '出站阀专项巡检', '/910105/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"已完成","FLD-TSK-022":"enabled"}'),
-  -- 临时 2（未挂分类）
-  (910106, 'patrol_adhoc', 'AD-PAT-001', '雨前库内加巡', '/910106/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"草稿","FLD-TSK-022":"draft"}'),
-  (910107, 'patrol_adhoc', 'AD-PAT-002', '节前安全加巡', '/910107/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"草稿","FLD-TSK-022":"draft"}'),
-  -- 维修 5
-  (910201, 'maint_work_order', 'MT-WO-001', '输油泵预防性保养', '/910201/', 1, '{"FLD-TSK-003":"维修","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
-  (910202, 'maint_work_order', 'MT-WO-002', '调节阀计划更换', '/910202/', 2, '{"FLD-TSK-003":"维修","FLD-TSK-004":"进行中","FLD-TSK-022":"enabled"}'),
-  (910203, 'maint_work_order', 'MT-WO-003', '液位仪年度校准', '/910203/', 3, '{"FLD-TSK-003":"维修","FLD-TSK-004":"待验收","FLD-TSK-022":"enabled"}'),
-  (910204, 'maint_emergency', 'MT-EM-001', '管线法兰泄漏抢修', '/910204/', 1, '{"FLD-TSK-003":"维修","FLD-TSK-004":"进行中","FLD-TSK-022":"enabled"}'),
-  (910205, 'maint_emergency', 'MT-EM-002', '配电间故障抢修', '/910205/', 2, '{"FLD-TSK-003":"维修","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
-  -- 站场综合 2
-  (910301, 'general_station_task', 'ST-GEN-001', 'HSE培训计划', '/910301/', 1, '{"FLD-TSK-003":"综合","FLD-TSK-004":"草稿","FLD-TSK-022":"draft"}'),
-  (910302, 'general_station_task', 'ST-GEN-002', '库区卫生大扫除', '/910302/', 2, '{"FLD-TSK-003":"综合","FLD-TSK-004":"已完成","FLD-TSK-022":"enabled"}')
+  (910101, 'patrol_task', 'PL-PAT-001', '1#输油管廊巡检', '/910101/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
+  (910102, 'patrol_task', 'PL-PAT-002', '2#输油管廊巡检', '/910102/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"进行中","FLD-TSK-022":"enabled"}'),
+  (910103, 'patrol_task', 'PL-PAT-003', '栈桥区管廊巡检', '/910103/', 3, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
+  (910108, 'patrol_task', 'FR-PAT-001', '消防泵房巡检', '/910108/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
+  (910109, 'patrol_task', 'FR-PAT-002', '泡沫站巡检', '/910109/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"进行中","FLD-TSK-022":"enabled"}'),
+  (910110, 'patrol_task', 'FR-PAT-003', '灭火器月度巡检', '/910110/', 3, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
+  (910104, 'patrol_task', 'VL-PAT-001', '进油阀专项巡检', '/910104/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
+  (910105, 'patrol_task', 'VL-PAT-002', '出站阀专项巡检', '/910105/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"已完成","FLD-TSK-022":"enabled"}'),
+  (910106, 'patrol_task', 'AD-PAT-001', '雨前库内加巡', '/910106/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"草稿","FLD-TSK-022":"draft"}'),
+  (910107, 'patrol_task', 'AD-PAT-002', '节前安全加巡', '/910107/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"草稿","FLD-TSK-022":"draft"}'),
+  (910201, 'patrol_task', 'MT-WO-001', '输油泵预防性保养', '/910201/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
+  (910202, 'patrol_task', 'MT-WO-002', '调节阀计划更换', '/910202/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"进行中","FLD-TSK-022":"enabled"}'),
+  (910203, 'patrol_task', 'MT-WO-003', '液位仪年度校准', '/910203/', 3, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待验收","FLD-TSK-022":"enabled"}'),
+  (910204, 'patrol_task', 'MT-EM-001', '管线法兰泄漏抢修', '/910204/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"进行中","FLD-TSK-022":"enabled"}'),
+  (910205, 'patrol_task', 'MT-EM-002', '配电间故障抢修', '/910205/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
+  (910301, 'patrol_task', 'ST-GEN-001', 'HSE培训计划', '/910301/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"草稿","FLD-TSK-022":"draft"}'),
+  (910302, 'patrol_task', 'ST-GEN-002', '库区卫生大扫除', '/910302/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"已完成","FLD-TSK-022":"enabled"}')
 ) AS v(id, model_code, code, name, tree_path, sort, custom_fields)
 JOIN dynamic_model m ON m.deleted = false AND m.tenant_id = 1 AND m.code = v.model_code
 ON CONFLICT (id) DO UPDATE SET
@@ -283,33 +248,10 @@ WHERE tenant_id = 1 AND deleted = false
   AND id NOT BETWEEN 910001 AND 910302;
 
 -- ---------------------------------------------------------------------------
--- 7. 执行记录实体 ent_task_excution_record（13 条）
+-- 7. 执行记录不在本脚本里造样例。
+-- 巡检生成任务写入型号 exec_patrol_record（界面名称「巡检记录」）。
+-- 禁止再插入「第N轮签到」这类样例，也禁止按 id 段把已有执行记录删掉。
 -- ---------------------------------------------------------------------------
-INSERT INTO ent_task_excution_record (id, entity_type_code, model_id, name, code, tenant_id, creator, tree_path, sort, status, deleted, custom_fields)
-OVERRIDING SYSTEM VALUE
-SELECT v.id, 'task_excution_record', m.id, v.name, v.code, 1, 'oil-depot-scope', v.tree_path, v.sort, 1, false, v.custom_fields::jsonb
-FROM (VALUES
-  (920001, 'exec_patrol_round', 'REC-PR-001', '储罐A区第1轮签到', '/920001/', 1, '{"sourceTaskId":910001}'),
-  (920002, 'exec_patrol_round', 'REC-PR-002', '储罐A区第2轮签到', '/920002/', 2, '{"sourceTaskId":910001}'),
-  (920003, 'exec_patrol_round', 'REC-PR-003', '1#管廊巡检签到', '/920003/', 3, '{"sourceTaskId":910101}'),
-  (920004, 'exec_patrol_round', 'REC-PR-004', '消防泵房巡检签到', '/920004/', 4, '{"sourceTaskId":910108}'),
-  (920005, 'exec_patrol_issue', 'REC-PI-001', '储罐B区液位计读数异常', '/920005/', 5, '{"sourceTaskId":910002,"severity":"中"}'),
-  (920006, 'exec_patrol_issue', 'REC-PI-002', '2#管廊支架腐蚀', '/920006/', 6, '{"sourceTaskId":910102,"severity":"高"}'),
-  (920007, 'exec_patrol_issue', 'REC-PI-003', '泡沫液液位偏低', '/920007/', 7, '{"sourceTaskId":910109,"severity":"中"}'),
-  (920008, 'exec_patrol_issue', 'REC-PI-004', '进油阀渗油痕迹', '/920008/', 8, '{"sourceTaskId":910104,"severity":"紧急"}'),
-  (920101, 'exec_maint_log', 'REC-ML-001', '输油泵保养-拆检记录', '/920101/', 1, '{"sourceTaskId":910201}'),
-  (920102, 'exec_maint_log', 'REC-ML-002', '调节阀更换-试压记录', '/920102/', 2, '{"sourceTaskId":910202}'),
-  (920103, 'exec_maint_log', 'REC-ML-003', '液位仪校准-验收记录', '/920103/', 3, '{"sourceTaskId":910203}'),
-  (920104, 'exec_maint_log', 'REC-ML-004', '法兰泄漏抢修-封堵记录', '/920104/', 4, '{"sourceTaskId":910204}'),
-  (920105, 'exec_maint_log', 'REC-ML-005', '配电抢修-送电记录', '/920105/', 5, '{"sourceTaskId":910205}')
-) AS v(id, model_code, code, name, tree_path, sort, custom_fields)
-JOIN dynamic_model m ON m.deleted = false AND m.tenant_id = 1 AND m.code = v.model_code
-ON CONFLICT (id) DO UPDATE SET
-  model_id = EXCLUDED.model_id, name = EXCLUDED.name, custom_fields = EXCLUDED.custom_fields,
-  deleted = false, updater = 'oil-depot-scope', update_time = CURRENT_TIMESTAMP;
-
-UPDATE ent_task_excution_record SET deleted = true, updater = 'oil-depot-scope', update_time = CURRENT_TIMESTAMP
-WHERE tenant_id = 1 AND deleted = false AND id NOT BETWEEN 920001 AND 920105;
 
 -- ---------------------------------------------------------------------------
 -- 8. 实体 ↔ 分类
@@ -317,8 +259,8 @@ WHERE tenant_id = 1 AND deleted = false AND id NOT BETWEEN 920001 AND 920105;
 UPDATE dynamic_entity_category_relation_t1
 SET deleted = true, updater = 'oil-depot-scope', update_time = CURRENT_TIMESTAMP
 WHERE deleted = false AND tenant_id = 1
-  AND entity_type_code IN ('task', 'task_excution_record')
-  AND entity_id BETWEEN 910001 AND 920105;
+  AND entity_type_code = 'task'
+  AND entity_id BETWEEN 910001 AND 910302;
 
 INSERT INTO dynamic_entity_category_relation_t1 (entity_id, category_id, entity_type_code, sort, tenant_id, creator)
 SELECT v.entity_id, c.id, v.etc, v.sort, 1, 'oil-depot-scope'
@@ -330,14 +272,7 @@ FROM (VALUES
   (910110, 'task', 'task_cat_daily', 8), (910104, 'task', 'task_cat_special', 2),
   (910105, 'task', 'task_cat_special', 3), (910201, 'task', 'task_cat_maintenance', 1),
   (910202, 'task', 'task_cat_maintenance', 2), (910203, 'task', 'task_cat_maintenance', 3),
-  (910301, 'task', 'task_cat_daily', 9), (910302, 'task', 'task_cat_daily', 10),
-  (920001, 'task_excution_record', 'record_cat_patrol', 1), (920002, 'task_excution_record', 'record_cat_patrol', 2),
-  (920003, 'task_excution_record', 'record_cat_patrol', 3), (920004, 'task_excution_record', 'record_cat_patrol', 4),
-  (920005, 'task_excution_record', 'record_cat_patrol', 5), (920006, 'task_excution_record', 'record_cat_patrol', 6),
-  (920007, 'task_excution_record', 'record_cat_patrol', 7), (920008, 'task_excution_record', 'record_cat_patrol', 8),
-  (920101, 'task_excution_record', 'record_cat_maint', 1), (920102, 'task_excution_record', 'record_cat_maint', 2),
-  (920103, 'task_excution_record', 'record_cat_maint', 3), (920104, 'task_excution_record', 'record_cat_maint', 4),
-  (920105, 'task_excution_record', 'record_cat_maint', 5)
+  (910301, 'task', 'task_cat_daily', 9), (910302, 'task', 'task_cat_daily', 10)
 ) AS v(entity_id, etc, category_code, sort)
 JOIN dynamic_category c ON c.deleted = false AND c.tenant_id = 1 AND c.code = v.category_code;
 

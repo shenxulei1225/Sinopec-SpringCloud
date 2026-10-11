@@ -1,7 +1,6 @@
 package cn.cheers.x.module.platform.orchestration.template;
 
 import cn.cheers.x.module.platform.orchestration.enums.OrchestrationRefs;
-import cn.cheers.x.module.platform.orchestration.handler.patrol.PatrolSaveRouteHandler;
 import cn.cheers.x.module.platform.orchestration.handler.patrol.PatrolScheduleMapHandler;
 import cn.cheers.x.module.platform.orchestration.phase.OrchestrationPhase;
 import org.springframework.stereotype.Component;
@@ -66,13 +65,6 @@ public class OrchestrationTemplateRegistry {
                 OrchestrationPhase.ROUTE), Map.of(
                 OrchestrationPhase.EXPAND, PatrolScheduleMapHandler.ID,
                 OrchestrationPhase.ROUTE, "platform.route.plan_v1"));
-        register(OrchestrationRefs.PATROL_ROUTE_SAVE_V1, List.of(
-                OrchestrationPhase.EXPAND,
-                OrchestrationPhase.ROUTE,
-                OrchestrationPhase.SAVE_ROUTE), Map.of(
-                OrchestrationPhase.EXPAND, PatrolScheduleMapHandler.ID,
-                OrchestrationPhase.ROUTE, "platform.route.plan_v1",
-                OrchestrationPhase.SAVE_ROUTE, PatrolSaveRouteHandler.ID));
         register(OrchestrationRefs.PATROL_ORCHESTRATION_V1, List.of(
                 OrchestrationPhase.EXPAND,
                 OrchestrationPhase.SOLVE,

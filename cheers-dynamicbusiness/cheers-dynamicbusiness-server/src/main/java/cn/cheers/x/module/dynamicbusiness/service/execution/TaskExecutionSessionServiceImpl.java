@@ -3,8 +3,11 @@ package cn.cheers.x.module.dynamicbusiness.service.execution;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchReqDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStepSnapshotDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionWritebackReqDTO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
@@ -16,6 +19,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.inspection.vo.TaskExe
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.entity.EntityQueryScene;
+import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeResolver;
 import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import cn.cheers.x.module.dynamicbusiness.service.inspection.TaskExecutionBootstrapService;
@@ -27,18 +31,24 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 任务模块标准执行会话实现。
  *
  * <p><b>负责</b>：新建这次执行的账；更新这次/某一步的状态；往账里记一条过程。</p>
  * <p><b>权威</b>：执行记录与步骤实体；过程写在 custom_fields.process_entries，其它过程字段同袋
- * （task_id / pending_execution_id / execution_status）。</p>
+ * （task_id / pending_execution_id / execution_status / planned_start）。</p>
+ * <p><b>落账类型</b>：请求可以带数据目录编码（例如巡检执行记录这扇门）。
+ * 新建、回写、记过程都先换成该目录的底座存储类型，再和型号比对、再写入。
+ * 型号挂在底座上，账本行也写底座类型。</p>
  * <p><b>禁止</b>：写域任务表 device* 列；无执行记录时猜任务或设备；用日志冒充已记过程；
- * 站场级执行账缺所属场站时从请求头猜场站。</p>
+ * 站场级执行账缺所属场站时从请求头猜场站；拿目录编码跟型号比对。
+ * 生成多条待执行时，步骤清单只写一次，禁止按计划点再各算一遍、各建一遍。</p>
  */
 @Service
 public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionService {
@@ -61,6 +71,8 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
     private ModelMapper modelMapper;
     @Resource
     private TaskExecutionBootstrapService taskExecutionBootstrapService;
+    @Resource
+    private EntityTypeScopeResolver entityTypeScopeResolver;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -71,9 +83,7 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
         if (req.getTaskDefinitionId() == null) {
             throw new ServiceException(400, "taskDefinitionId 不能为空");
         }
-        String entityTypeCode = StringUtils.hasText(req.getEntityTypeCode())
-                ? req.getEntityTypeCode().trim()
-                : DEFAULT_RECORD_TYPE;
+        String entityTypeCode = resolveRecordType(req.getEntityTypeCode());
         Long modelId = resolveModelId(req);
 
         EntityCreateReqVO createReq = new EntityCreateReqVO();
@@ -116,6 +126,71 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public TaskExecutionStartBatchRespDTO startBatch(TaskExecutionStartBatchReqDTO req) {
+        if (req.getGapCodes() != null && !req.getGapCodes().isEmpty()) {
+            throw new ServiceException(400, "存在 SOP 解析缺口，禁止开跑：" + req.getGapCodes());
+        }
+        if (req.getTaskDefinitionId() == null) {
+            throw new ServiceException(400, "taskDefinitionId 不能为空");
+        }
+        if (CollectionUtils.isEmpty(req.getOccurrences())) {
+            throw new ServiceException(400, "没有待写入的计划点");
+        }
+        String entityTypeCode = resolveRecordType(req.getEntityTypeCode());
+        Long modelId = resolveModelId(req.getModelId(), req.getModelCode());
+        ModelDO recordModel = modelMapper.selectById(modelId);
+        String recordModelCode = recordModel != null && StringUtils.hasText(recordModel.getCode())
+                ? recordModel.getCode()
+                : req.getModelCode();
+
+        List<TaskExecutionBootstrapService.PendingAccount> accounts = new ArrayList<>();
+        Set<String> seenRefs = new HashSet<>();
+        for (TaskExecutionStartBatchReqDTO.Occurrence occurrence : req.getOccurrences()) {
+            if (occurrence == null || !StringUtils.hasText(occurrence.getPendingRef())) {
+                throw new ServiceException(400, "计划点编号不能为空");
+            }
+            String pendingRef = occurrence.getPendingRef().trim();
+            if (!seenRefs.add(pendingRef)) {
+                throw new ServiceException(400, "计划点重复：" + pendingRef);
+            }
+            accounts.add(new TaskExecutionBootstrapService.PendingAccount(
+                    occurrence.getName(),
+                    pendingRef,
+                    StringUtils.hasText(occurrence.getPlannedStart())
+                            ? occurrence.getPlannedStart().trim()
+                            : null));
+        }
+        List<Long> recordIds = taskExecutionBootstrapService.insertPendingRecords(
+                entityTypeCode,
+                modelId,
+                req.getFacilityId(),
+                req.getTaskDefinitionId(),
+                req.getStandardSnapshot(),
+                req.getParameterSnapshot(),
+                accounts);
+        if (recordIds == null || recordIds.size() != accounts.size()) {
+            throw new ServiceException(500, "待执行账写入数量与计划点不一致");
+        }
+        List<TaskExecutionStartBatchRespDTO.RecordRef> refs = new ArrayList<>();
+        for (int i = 0; i < accounts.size(); i++) {
+            TaskExecutionStartBatchRespDTO.RecordRef ref = new TaskExecutionStartBatchRespDTO.RecordRef();
+            ref.setPendingRef(accounts.get(i).pendingRef());
+            ref.setExecutionRecordId(recordIds.get(i));
+            refs.add(ref);
+        }
+        taskExecutionBootstrapService.writeSameStepsOntoRecords(
+                entityTypeCode,
+                recordModelCode,
+                req.getFacilityId(),
+                recordIds,
+                toBootstrapSteps(req.getSteps()));
+        TaskExecutionStartBatchRespDTO resp = new TaskExecutionStartBatchRespDTO();
+        resp.setRecords(refs);
+        return resp;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public void writeback(TaskExecutionWritebackReqDTO req) {
         String entityTypeCode = resolveRecordType(req.getEntityTypeCode());
         EntityRespVO record = entityService.get(req.getExecutionRecordId(), entityTypeCode);
@@ -144,8 +219,9 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
         if (CollectionUtils.isEmpty(req.getStepUpdates())) {
             return;
         }
+        Long facilityId = facilityOf(record);
         for (TaskExecutionWritebackReqDTO.StepUpdate stepUpdate : req.getStepUpdates()) {
-            applyStepUpdate(req.getExecutionRecordId(), stepUpdate);
+            applyStepUpdate(req.getExecutionRecordId(), facilityId, stepUpdate);
         }
     }
 
@@ -186,13 +262,14 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
         return resp;
     }
 
-    private void applyStepUpdate(Long executionRecordId, TaskExecutionWritebackReqDTO.StepUpdate stepUpdate) {
+    private void applyStepUpdate(
+            Long executionRecordId, Long facilityId, TaskExecutionWritebackReqDTO.StepUpdate stepUpdate) {
         Long stepId = stepUpdate.getStepId();
         if (stepId == null) {
             if (!StringUtils.hasText(stepUpdate.getStepCode())) {
                 throw new ServiceException(400, "步骤更新须提供 stepId 或 stepCode");
             }
-            stepId = findStepIdByCode(executionRecordId, stepUpdate.getStepCode().trim());
+            stepId = findStepIdByCode(executionRecordId, facilityId, stepUpdate.getStepCode().trim());
         }
         EntityRespVO step = entityService.get(stepId, STEP_ENTITY_TYPE);
         if (step == null || step.getId() == null) {
@@ -217,13 +294,38 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
         entityService.update(updateReq);
     }
 
-    private Long findStepIdByCode(Long executionRecordId, String stepCode) {
+    /**
+     * 执行步骤是站场级。用这条执行记录上已经写下的所属场站来列，再按步骤编号对上。
+     * 没有所属场站就停下，不扫全租户。
+     */
+    private List<FieldFilterReqVO> stepListFilters(Long executionRecordId, Long facilityId) {
+        if (facilityId == null || facilityId <= 0) {
+            throw new ServiceException(400, "这条执行记录没有所属场站，不能对回步骤");
+        }
         List<FieldFilterReqVO> filters = new ArrayList<>();
+        FieldFilterReqVO byFacility = new FieldFilterReqVO();
+        byFacility.setFieldCode(FacilityOwningFieldCodes.FIELD_CODE);
+        byFacility.setOp("EQ");
+        byFacility.setValue(facilityId);
+        filters.add(byFacility);
         FieldFilterReqVO byRecord = new FieldFilterReqVO();
         byRecord.setFieldCode("execution_record_id");
         byRecord.setOp("EQ");
         byRecord.setValue(executionRecordId);
         filters.add(byRecord);
+        return filters;
+    }
+
+    private static Long facilityOf(EntityRespVO record) {
+        if (record == null || record.getBaseFields() == null) {
+            return null;
+        }
+        return FacilityOwningFieldCodes.extractId(
+                record.getBaseFields().get(FacilityOwningFieldCodes.FIELD_CODE));
+    }
+
+    private Long findStepIdByCode(Long executionRecordId, Long facilityId, String stepCode) {
+        List<FieldFilterReqVO> filters = stepListFilters(executionRecordId, facilityId);
         FieldFilterReqVO byCode = new FieldFilterReqVO();
         byCode.setFieldCode("step_code");
         byCode.setOp("EQ");
@@ -260,8 +362,123 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
         return resp.getPage().getList().get(0).getId();
     }
 
-    private static String resolveRecordType(String entityTypeCode) {
-        return StringUtils.hasText(entityTypeCode) ? entityTypeCode.trim() : DEFAULT_RECORD_TYPE;
+    @Override
+    public List<TaskExecutionStepSnapshotDTO> listSteps(Long executionRecordId) {
+        if (executionRecordId == null) {
+            return List.of();
+        }
+        EntityRespVO record = entityService.get(executionRecordId, DEFAULT_RECORD_TYPE);
+        if (record == null || record.getId() == null) {
+            throw new ServiceException(404, "执行记录不存在：" + executionRecordId);
+        }
+        List<FieldFilterReqVO> filters = stepListFilters(executionRecordId, facilityOf(record));
+        EntitySceneQueryRespVO resp = entityService.queryEntities(
+                EntityQueryScene.ENTITIES_BY_MODEL,
+                "PAGE",
+                "FULL",
+                null,
+                STEP_ENTITY_TYPE,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                1,
+                500,
+                null,
+                null,
+                filters,
+                null,
+                null,
+                null,
+                null,
+                null);
+        if (resp == null || resp.getPage() == null || CollectionUtils.isEmpty(resp.getPage().getList())) {
+            return List.of();
+        }
+        List<TaskExecutionStepSnapshotDTO> steps = new ArrayList<>();
+        for (EntityRespVO row : resp.getPage().getList()) {
+            if (row == null || row.getId() == null) {
+                continue;
+            }
+            steps.add(toStepSnapshot(row));
+        }
+        return steps;
+    }
+
+    private static TaskExecutionStepSnapshotDTO toStepSnapshot(EntityRespVO row) {
+        Map<String, Object> base = row.getBaseFields() == null ? Map.of() : row.getBaseFields();
+        TaskExecutionStepSnapshotDTO snapshot = new TaskExecutionStepSnapshotDTO();
+        snapshot.setId(row.getId());
+        snapshot.setStepCode(textOf(base.get("step_code")));
+        snapshot.setStepTitle(textOf(base.get("step_title")));
+        snapshot.setStepStatus(textOf(base.get("step_status")));
+        Long parentId = longOf(base.get("parentId"));
+        if (parentId == null) {
+            parentId = longOf(base.get("parent_id"));
+        }
+        snapshot.setParentId(parentId);
+        Map<String, Object> resultPayload = payloadOf(base.get("result_payload"));
+        snapshot.setResultPayload(resultPayload);
+        snapshot.setSource(payloadOf(resultPayload.get("source")));
+        return snapshot;
+    }
+
+    private static String textOf(Object raw) {
+        return raw == null ? "" : String.valueOf(raw).trim();
+    }
+
+    private static Long longOf(Object raw) {
+        if (raw instanceof Number number) {
+            return number.longValue();
+        }
+        if (raw instanceof Map<?, ?> map) {
+            return longOf(map.get("id"));
+        }
+        if (raw instanceof String text && StringUtils.hasText(text)) {
+            try {
+                return Long.parseLong(text.trim());
+            } catch (NumberFormatException ex) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private static Map<String, Object> payloadOf(Object raw) {
+        if (raw instanceof Map<?, ?> map) {
+            Map<String, Object> copy = new LinkedHashMap<>();
+            map.forEach((key, value) -> {
+                if (key != null) {
+                    copy.put(String.valueOf(key), value);
+                }
+            });
+            return copy;
+        }
+        if (raw instanceof String text && StringUtils.hasText(text)) {
+            Object parsed = JSON.parse(text);
+            if (parsed instanceof Map<?, ?> map) {
+                return payloadOf(map);
+            }
+        }
+        return Map.of();
+    }
+
+    /**
+     * 执行账落在底座存储类型上。
+     * 传入巡检执行记录这扇门时，换成底座任务执行记录再读写，避免目录编码和型号对不上。
+     */
+    private String resolveRecordType(String entityTypeCode) {
+        String raw = StringUtils.hasText(entityTypeCode) ? entityTypeCode.trim() : DEFAULT_RECORD_TYPE;
+        String storage = entityTypeScopeResolver.resolveStorageEntityTypeCode(raw);
+        if (!StringUtils.hasText(storage)) {
+            throw new ServiceException(400, "执行记录类型无法落到存储类型：" + raw);
+        }
+        return storage.trim();
     }
 
     /**
@@ -308,17 +525,58 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
     }
 
     private Long resolveModelId(TaskExecutionStartReqDTO req) {
-        if (req.getModelId() != null) {
-            return req.getModelId();
+        return resolveModelId(req.getModelId(), req.getModelCode());
+    }
+
+    private Long resolveModelId(Long modelId, String modelCode) {
+        if (modelId != null) {
+            return modelId;
         }
-        if (!StringUtils.hasText(req.getModelCode())) {
+        if (!StringUtils.hasText(modelCode)) {
             throw new ServiceException(400, "须提供 modelId 或 modelCode");
         }
-        ModelDO model = modelMapper.selectByCode(req.getModelCode().trim());
+        ModelDO model = modelMapper.selectByCode(modelCode.trim());
         if (model == null || model.getId() == null) {
-            throw new ServiceException(500, "缺少执行记录型号：" + req.getModelCode());
+            throw new ServiceException(500, "缺少执行记录型号：" + modelCode);
         }
         return model.getId();
+    }
+
+    /**
+     * 新建一条待执行账，并带上这批共用的快照。
+     * 所属场站只收调用方已经写下的场站，不从请求头猜。
+     */
+    private Long createPendingRecord(
+            String entityTypeCode,
+            Long modelId,
+            Long taskDefinitionId,
+            Long facilityId,
+            String name,
+            String pendingRef,
+            Object standardSnapshot,
+            Object parameterSnapshot) {
+        EntityCreateReqVO createReq = new EntityCreateReqVO();
+        Map<String, Object> base = new LinkedHashMap<>();
+        base.put("entityTypeCode", entityTypeCode);
+        base.put("modelId", modelId);
+        base.put("name", StringUtils.hasText(name) ? name.trim() : "执行-" + taskDefinitionId);
+        base.put("status", 1);
+        if (facilityId != null && facilityId > 0) {
+            base.put(FacilityOwningFieldCodes.FIELD_CODE, FacilityOwningFieldCodes.toApiRef(facilityId));
+        }
+        createReq.setBaseFields(base);
+
+        Map<String, Object> custom = new LinkedHashMap<>();
+        custom.put("task_id", taskDefinitionId);
+        custom.put("pending_execution_id", pendingRef);
+        custom.put("execution_status", STATUS_PENDING);
+        custom.put("standard_snapshot", standardSnapshot);
+        if (parameterSnapshot != null) {
+            custom.put("parameter_snapshot", parameterSnapshot);
+        }
+        custom.put("gap_codes", List.of());
+        createReq.setCustomFields(custom);
+        return entityService.create(createReq);
     }
 
     private static List<TaskExecutionBootstrapReqVO.TaskExecutionStepDraftVO> toBootstrapSteps(

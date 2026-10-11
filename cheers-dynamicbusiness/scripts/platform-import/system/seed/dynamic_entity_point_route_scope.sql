@@ -755,6 +755,95 @@ DO UPDATE SET
   update_time = CURRENT_TIMESTAMP;
 
 -- ---------------------------------------------------------------------------
+-- 6c. 路网点位实体栏：同一列表，用「归属网」筛选
+-- ---------------------------------------------------------------------------
+-- 筛选写在 props.filter（打开筛选条，选项为 FLD-PNT-005）。
+-- 禁止按人员/地面机器人/无人机拆三套 data_source，也禁止把锁定条件写进 queryContext。
+
+DO $$
+DECLARE
+  v_layout_id bigint;
+  v_props_id bigint;
+  v_keep_id bigint;
+BEGIN
+  SELECT data_layout_id INTO v_layout_id
+  FROM dynamic_entity_type
+  WHERE deleted = false AND code = 'route_network_point';
+  IF v_layout_id IS NULL THEN
+    RAISE NOTICE '6c skip: route_network_point layout missing';
+    RETURN;
+  END IF;
+
+  SELECT id INTO v_props_id
+  FROM platformresource.pr_component_props
+  WHERE deleted = false AND tenant_id = 1 AND name = '实体列表-route_network_point'
+  ORDER BY id
+  LIMIT 1;
+  IF v_props_id IS NULL THEN
+    RAISE NOTICE '6c skip: entity list props missing';
+    RETURN;
+  END IF;
+
+  UPDATE platformresource.pr_component_props
+  SET data_source = (COALESCE(data_source::jsonb, '{}'::jsonb) - 'queryContext'),
+      props = jsonb_set(
+        COALESCE(props::jsonb, '{}'::jsonb) - 'dataSource',
+        '{filter}',
+        '{"externalFilterEnabled": true, "filterSelectedOptions": ["FLD-PNT-005"]}'::jsonb,
+        true
+      ),
+      updater = 'seed-6c',
+      update_time = CURRENT_TIMESTAMP
+  WHERE id = v_props_id;
+
+  UPDATE platformresource.pr_component_props
+  SET deleted = true,
+      updater = 'seed-6c',
+      update_time = CURRENT_TIMESTAMP
+  WHERE deleted = false AND tenant_id = 1
+    AND name IN (
+      '实体列表-route_network_point-人员',
+      '实体列表-route_network_point-地面机器人',
+      '实体列表-route_network_point-无人机'
+    );
+
+  SELECT d.id INTO v_keep_id
+  FROM dm_data_tab_layout d
+  WHERE d.deleted = false AND d.layout_id = v_layout_id AND d.column_kind = 'ENTITY'
+  ORDER BY CASE WHEN d.tab_id = 'tab-route-human' THEN 0 ELSE 1 END, d.id
+  LIMIT 1;
+
+  IF v_keep_id IS NOT NULL THEN
+    UPDATE dm_data_tab_layout
+    SET props_id = v_props_id,
+        enabled = true,
+        column_meta = jsonb_set(COALESCE(column_meta, '{}'::jsonb), '{label}', '"路网点位"', true),
+        updater = 'seed-6c',
+        update_time = CURRENT_TIMESTAMP
+    WHERE id = v_keep_id;
+  END IF;
+
+  UPDATE dm_data_tab_layout
+  SET deleted = true,
+      updater = 'seed-6c',
+      update_time = CURRENT_TIMESTAMP
+  WHERE deleted = false AND layout_id = v_layout_id AND column_kind = 'ENTITY'
+    AND tab_id IN ('tab-route-ground-robot', 'tab-route-uav');
+
+  UPDATE dm_data_tab_column_relation
+  SET deleted = true,
+      updater = 'seed-6c',
+      update_time = CURRENT_TIMESTAMP
+  WHERE deleted = false AND layout_id = v_layout_id
+    AND (
+      from_column_identity LIKE 'ENTITY:tab-route-ground-robot%'
+      OR to_column_identity LIKE 'ENTITY:tab-route-ground-robot%'
+      OR from_column_identity LIKE 'ENTITY:tab-route-uav%'
+      OR to_column_identity LIKE 'ENTITY:tab-route-uav%'
+    );
+END $$;
+
+-- ---------------------------------------------------------------------------
 -- 7. 废止 DOMAIN「巡检点」（幂等；防旧库残留）
 -- ---------------------------------------------------------------------------
 \ir retire_patrol_point_domain.sql

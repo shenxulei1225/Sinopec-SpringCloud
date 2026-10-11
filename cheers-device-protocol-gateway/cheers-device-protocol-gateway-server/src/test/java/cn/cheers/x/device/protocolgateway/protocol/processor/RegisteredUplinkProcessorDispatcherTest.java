@@ -12,32 +12,30 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
- * 只跑已登记方法：巡检占位认巡检通道；工业通道不走进巡检处理。
+ * 协议书允许之后，才跑对得上的处理。工业通道不走进巡检处理。
  */
 class RegisteredUplinkProcessorDispatcherTest {
 
     @Test
-    void inspectionProcessor_supportsInspectionOnly() {
-        InspectionIdentifyOnlyProcessor processor = new InspectionIdentifyOnlyProcessor();
-        assertTrue(processor.supports(event(AccessChannelCodes.INSPECTION).identity()));
-        assertFalse(processor.supports(event(AccessChannelCodes.INDUSTRIAL).identity()));
-    }
-
-    @Test
     void dispatcher_runsMatchingProcessor_skipsIndustrial() {
         AtomicInteger inspectionCalls = new AtomicInteger();
-        InspectionIdentifyOnlyProcessor inspectionProcessor = new InspectionIdentifyOnlyProcessor() {
+        UplinkProcessor inspectionProcessor = new UplinkProcessor() {
+            @Override
+            public boolean supports(UplinkIdentity identity) {
+                return AccessChannelCodes.INSPECTION.equals(identity.channelCode());
+            }
+
             @Override
             public void process(UplinkIdentity identity, DeviceUplinkEventDTO event) {
                 inspectionCalls.incrementAndGet();
             }
         };
         RegisteredUplinkProcessorDispatcher dispatcher =
-                new RegisteredUplinkProcessorDispatcher(List.of(inspectionProcessor));
+                new RegisteredUplinkProcessorDispatcher(List.of(inspectionProcessor), admitAll());
 
         dispatcher.consume(event(AccessChannelCodes.INSPECTION));
         dispatcher.consume(event(AccessChannelCodes.INDUSTRIAL));
@@ -46,10 +44,42 @@ class RegisteredUplinkProcessorDispatcherTest {
     }
 
     @Test
+    void dispatcher_rejectsBeforeProcessors_whenBookSaysNo() {
+        AtomicInteger calls = new AtomicInteger();
+        UplinkProcessor processor = new UplinkProcessor() {
+            @Override
+            public boolean supports(UplinkIdentity identity) {
+                return true;
+            }
+
+            @Override
+            public void process(UplinkIdentity identity, DeviceUplinkEventDTO event) {
+                calls.incrementAndGet();
+            }
+        };
+        ProtocolBookAdmission admission = mock(ProtocolBookAdmission.class);
+        when(admission.decide(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(ProtocolBookAdmission.Decision.reject("协议书没有操作码 200201，不送给处理模块"));
+        RegisteredUplinkProcessorDispatcher dispatcher =
+                new RegisteredUplinkProcessorDispatcher(List.of(processor), admission);
+
+        dispatcher.consume(event(AccessChannelCodes.INSPECTION));
+
+        assertEquals(0, calls.get());
+    }
+
+    @Test
     void dispatcher_noProcessor_doesNotThrow() {
         RegisteredUplinkProcessorDispatcher dispatcher =
-                new RegisteredUplinkProcessorDispatcher(List.of());
+                new RegisteredUplinkProcessorDispatcher(List.of(), admitAll());
         dispatcher.consume(event(AccessChannelCodes.INSPECTION));
+    }
+
+    private static ProtocolBookAdmission admitAll() {
+        ProtocolBookAdmission admission = mock(ProtocolBookAdmission.class);
+        when(admission.decide(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(ProtocolBookAdmission.Decision.admit("robot-ws"));
+        return admission;
     }
 
     private static DeviceUplinkEventDTO event(String channel) {
@@ -57,7 +87,7 @@ class RegisteredUplinkProcessorDispatcherTest {
                 channel,
                 "d1",
                 "500202",
-                ProtocolQualifyStatus.UNCHECKED,
+                ProtocolQualifyStatus.QUALIFIED,
                 List.of(),
                 Map.of("opcode", 500202),
                 null,

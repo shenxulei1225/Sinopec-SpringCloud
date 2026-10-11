@@ -104,4 +104,16 @@ public interface ModelFieldGroupService {
      * @return 映射：key 为字段ID，value 为分组ID
      */
     Map<Long, Long> getFieldGroupMapping(Long modelId);
+
+    /**
+     * 把这一详情页勾选的型号字段写到字段行上。
+     * 只改这一项的 extra。不改字段库。
+     */
+    void saveShownSourceFields(Long modelId, Long fieldId, List<Long> sourceFieldIds);
+
+    /**
+     * 把这一详情页勾选的型号字段写到分组上。
+     * 用于云台相机这种没有字段行的块。
+     */
+    void saveGroupShownSourceFields(Long modelId, Long groupId, List<Long> sourceFieldIds);
 }

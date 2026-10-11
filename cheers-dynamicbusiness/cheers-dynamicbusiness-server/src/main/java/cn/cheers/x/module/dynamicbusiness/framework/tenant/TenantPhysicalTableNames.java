@@ -26,6 +26,7 @@ public final class TenantPhysicalTableNames {
             "dynamic_entity_field_index",
             "dynamic_model_category_relation",
             "dynamic_model_entity_relation",
+            "dynamic_model_model_relation",
             "dynamic_category_category_relation",
             "dynamic_entity_access_permission",
             "dynamic_entity_field_permission",
@@ -79,11 +80,25 @@ public final class TenantPhysicalTableNames {
         return requirePhysical(entityBaseTable(entityTypeCode), tenantId);
     }
 
+    /**
+     * 这条 SQL 里的名字是不是要按租户拆开的关联表。
+     * 只做判断：SQL 占位符、别名、带点的限定名都不是关联基表，返回 false。
+     * 禁止在这里抛「非法表名」——改业务域时更新语句里的 {@code ?} 会被拦截器当成表名，抛错会把整次下线打回去。
+     * 真正拼物理表名仍走 {@link #requirePhysical(String)}，非法名字在那里失败。
+     */
     public static boolean isIsolatedAssociationBase(String tableName) {
         if (tableName == null || tableName.isBlank()) {
             return false;
         }
-        return ISOLATED_ASSOCIATION_BASE_TABLES.contains(normalizeBase(tableName));
+        String name = tableName.trim().toLowerCase(Locale.ROOT);
+        if (name.matches("^.+_t\\d+$")) {
+            int idx = name.lastIndexOf("_t");
+            name = name.substring(0, idx);
+        }
+        if (!SAFE_BASE.matcher(name).matches()) {
+            return false;
+        }
+        return ISOLATED_ASSOCIATION_BASE_TABLES.contains(name);
     }
 
     /**

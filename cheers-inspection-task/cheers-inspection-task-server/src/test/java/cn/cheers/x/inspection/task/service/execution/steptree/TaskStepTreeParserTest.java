@@ -21,7 +21,10 @@ class TaskStepTreeParserTest {
                         Map.of("nodeKey", "n-photo", "order", 2, "hangTypeCode", "action",
                                 "refId", 20, "title", "拍照"),
                         Map.of("nodeKey", "n-move", "order", 1, "hangTypeCode", "action",
-                                "refCode", "act-arrive", "refId", 10, "title", "到达指定位置")
+                                "refCode", "act-arrive", "refId", 10, "title", "到达指定位置",
+                                "actionDomain", "DEVICE",
+                                "analysisCapabilityId", 41,
+                                "protocolDispatchRole", "WAYLINE_ORCHESTRATION")
                 )
         );
 
@@ -30,6 +33,8 @@ class TaskStepTreeParserTest {
         assertEquals(2, nodes.size());
         assertEquals("n-move", nodes.get(0).nodeKey());
         assertEquals(1, nodes.get(0).order());
+        assertEquals("DEVICE", nodes.get(0).actionDomain());
+        assertEquals(41L, nodes.get(0).analysisCapabilityId());
         assertEquals("n-photo", nodes.get(1).nodeKey());
     }
 

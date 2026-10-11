@@ -40,9 +40,35 @@ public final class FieldDescriptionQualifier {
         return withQualify(sample, ProtocolQualifyStatus.QUALIFIED, List.of());
     }
 
+    /**
+     * 这一行和报文对不上时返回原因。可选字段空着不算错。
+     * 监控页用它把错误标在对应字段上，不另写一套核对。
+     */
+    public static String describeIssue(Map<String, Object> fields, FieldDescriptionRow row) {
+        if (arrayPresentButEmpty(fields, row.path())) {
+            return null;
+        }
+        List<Object> values = valuesAtPath(fields, row.path());
+        if (values.isEmpty()) {
+            return row.required() ? "缺必填" : null;
+        }
+        for (Object value : values) {
+            if (isMissingValue(value, row.type())) {
+                return row.required() ? "缺必填" : null;
+            }
+            if (!typeMatches(value, row.type())) {
+                return "类型不对，应为" + row.type();
+            }
+        }
+        return null;
+    }
+
     static List<String> collectErrors(Map<String, Object> fields, List<FieldDescriptionRow> rows) {
         List<String> errors = new ArrayList<>();
         for (FieldDescriptionRow row : rows) {
+            if (arrayPresentButEmpty(fields, row.path())) {
+                continue;
+            }
             List<Object> values = valuesAtPath(fields, row.path());
             if (values.isEmpty()) {
                 if (row.required()) {
@@ -68,7 +94,7 @@ public final class FieldDescriptionQualifier {
     /**
      * 按路径取出所有命中值。{@code photos[]} 表示数组每一项再往下走。
      */
-    static List<Object> valuesAtPath(Object root, String path) {
+    public static List<Object> valuesAtPath(Object root, String path) {
         List<Object> current = new ArrayList<>();
         current.add(root);
         for (String rawPart : path.split("\\.")) {
@@ -103,18 +129,36 @@ public final class FieldDescriptionQualifier {
         next.add(child);
     }
 
+    /**
+     * 路径里带 {@code []}，且对应列表键已经在、只是还没有行。
+     * 这时行内必填先不标。有行之后，每一行仍按必填核对。
+     */
+    private static boolean arrayPresentButEmpty(Object root, String path) {
+        if (path == null || !path.contains("[]")) {
+            return false;
+        }
+        Object node = root;
+        for (String rawPart : path.split("\\.")) {
+            if (!(node instanceof Map<?, ?> map)) {
+                return false;
+            }
+            boolean each = rawPart.endsWith("[]");
+            String key = each ? rawPart.substring(0, rawPart.length() - 2) : rawPart;
+            Object child = map.get(key);
+            if (each) {
+                return child instanceof Collection<?> collection && collection.isEmpty();
+            }
+            node = child;
+        }
+        return false;
+    }
+
     private static boolean isMissingValue(Object value, String type) {
         if (value == null) {
             return true;
         }
         if ("string".equals(type) && value instanceof CharSequence text) {
             return text.toString().isBlank();
-        }
-        if ("array".equals(type) && value instanceof Collection<?> collection) {
-            return collection.isEmpty();
-        }
-        if ("object".equals(type) && value instanceof Map<?, ?> map) {
-            return map.isEmpty();
         }
         return false;
     }

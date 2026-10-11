@@ -68,6 +68,29 @@ class EntityRpcProtocolInstructionCatalogTest {
     }
 
     @Test
+    void inboundSuccess_isItsOwnVolume() {
+        EntityRespDTO dto = new EntityRespDTO();
+        dto.setCustomFields(Map.of(
+                "opcode", 500101,
+                "protocol_version", List.of("robot-ws"),
+                "field_description_json", Map.of(
+                        "outbound", List.of(row("deviceId", "string", true)),
+                        "inboundSuccess", List.of(Map.of(
+                                "path", "data.electricity",
+                                "type", "string",
+                                "label", "设备电量或电压",
+                                "required", false
+                        ))
+                )
+        ));
+        EntityRpcProtocolInstructionCatalog catalog = catalogWith(dto);
+        CatalogLookup lookup = catalog.findVolume(500101, null, ProtocolInstructionCatalog.VOLUME_INBOUND_SUCCESS);
+        assertTrue(lookup.ok());
+        assertEquals("设备电量或电压", lookup.rows().get(0).label());
+        assertEquals("deviceId", catalog.findMainPacket(500101, null).rows().get(0).path());
+    }
+
+    @Test
     void versionNotOnAnyBook_exposesGap() {
         EntityRpcProtocolInstructionCatalog catalog = catalogWith(
                 entity(200501, List.of("robot-ws"), List.of(row("opcode", "integer", true)))

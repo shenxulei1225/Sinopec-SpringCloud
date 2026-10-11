@@ -2,7 +2,6 @@ package cn.cheers.x.inspection.task.service.task.impl;
 
 import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskCreateReqVO;
-import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskUpdateReqVO;
 import cn.cheers.x.inspection.task.model.task.ExecutionDeviceBinding;
 import cn.cheers.x.inspection.task.service.task.InspectionTaskService;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
@@ -31,9 +30,8 @@ public class InspectionTaskServiceImpl implements InspectionTaskService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateTask(InspectionTaskUpdateReqVO reqVO) {
-        validateExecutionDeviceBinding(reqVO.getExecutionDeviceBinding());
-        patrolTaskEntityStore.updateDraft(reqVO);
+    public void saveUnpublishedModification(Long id, java.util.Map<String, Object> snapshot) {
+        patrolTaskEntityStore.saveUnpublishedModification(id, snapshot);
     }
 
     @Override

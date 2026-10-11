@@ -1,5 +1,8 @@
 package cn.cheers.x.inspection.task.service.execution.openrun;
 
+import cn.cheers.x.device.protocolgateway.api.dto.MissionDownlinkSnapshotMaps;
+import cn.cheers.x.device.protocolgateway.api.dto.MissionTranslateCommitRespDTO;
+import cn.cheers.x.device.protocolgateway.api.dto.PatrolOpenRunSnapshotKeys;
 import cn.cheers.x.device.protocolgateway.api.mission.DispatchAction;
 import cn.cheers.x.inspection.task.model.task.ExecutionDeviceBinding;
 import cn.cheers.x.inspection.task.service.execution.steptree.TaskStepTreeAssembler;
@@ -11,8 +14,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 待执行开跑快照：任务域只存动作 + 已解析参数 + 对步绑定；不含协议线包。
- * <p>协议翻译仍在开跑时由网关做，本类禁止写入 500104 / 内层 opcode。
+ * 待执行开跑快照：动作、参数、对步绑定；生成任务后含已翻译下行与航线编号。
+ * <p>开跑优先读 {@link PatrolOpenRunSnapshotKeys#DISPATCH_DOWNLINK_PIECES} 只下发；缺省时兼容旧账再 translate。
  */
 public final class PatrolOpenRunSnapshotSupport {
 
@@ -27,6 +30,10 @@ public final class PatrolOpenRunSnapshotSupport {
     public static final String KEY_STEP_BINDINGS = "stepBindings";
     public static final String KEY_DISPATCH_ACTIONS = "dispatchActions";
     public static final String KEY_MATERIALIZED_AT = "materializedAtEpochMs";
+    /** 与 {@link PatrolOpenRunSnapshotKeys} 一致，供本模块内引用 */
+    public static final String KEY_DISPATCH_DOWNLINK_PIECES = PatrolOpenRunSnapshotKeys.DISPATCH_DOWNLINK_PIECES;
+    public static final String KEY_WAYLINE_FILE_ID = PatrolOpenRunSnapshotKeys.WAYLINE_FILE_ID;
+    public static final String KEY_WAYLINE_FINGERPRINT = PatrolOpenRunSnapshotKeys.WAYLINE_FINGERPRINT;
 
     private PatrolOpenRunSnapshotSupport() {
     }
@@ -37,16 +44,57 @@ public final class PatrolOpenRunSnapshotSupport {
             TaskStepTreeAssembler.AssembledOpenRun assembled,
             String source
     ) {
+        return buildStandardSnapshot(taskDefinitionId, binding, assembled, source, null);
+    }
+
+    public static Map<String, Object> buildStandardSnapshot(
+            Long taskDefinitionId,
+            ExecutionDeviceBinding binding,
+            TaskStepTreeAssembler.AssembledOpenRun assembled,
+            String source,
+            MissionTranslateCommitRespDTO committedDownlink
+    ) {
+        return buildStandardSnapshot(
+                taskDefinitionId, binding, assembled, assembled.dispatchActions(), source, committedDownlink, null);
+    }
+
+    /**
+     * @param dispatchActions 物化快照里写入的动作（可与步骤图组包结果不同，例如已写入 stream_url）
+     * @param extraSnapshotFields 可选附加字段（如 taskRecordIngestUrl）
+     */
+    public static Map<String, Object> buildStandardSnapshot(
+            Long taskDefinitionId,
+            ExecutionDeviceBinding binding,
+            TaskStepTreeAssembler.AssembledOpenRun assembled,
+            List<DispatchAction> dispatchActions,
+            String source,
+            MissionTranslateCommitRespDTO committedDownlink,
+            Map<String, Object> extraSnapshotFields
+    ) {
+        List<DispatchAction> actions = dispatchActions == null ? assembled.dispatchActions() : dispatchActions;
         Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.put(KEY_SOURCE, source);
         snapshot.put(KEY_TASK_DEFINITION_ID, taskDefinitionId);
         snapshot.put(KEY_PROTOCOL_VERSION, binding.getProtocolCode().trim());
         snapshot.put(KEY_LOGICAL_DEVICE_ID, binding.getLogicalDeviceId().trim());
-        snapshot.put(KEY_DISPATCH_ACTION_COUNT, assembled.dispatchActions().size());
+        snapshot.put(KEY_DISPATCH_ACTION_COUNT, actions.size());
         snapshot.put(KEY_STEP_BINDINGS, bindingsToMaps(assembled.bindings()));
-        snapshot.put(KEY_DISPATCH_ACTIONS, toActionMaps(assembled.dispatchActions()));
+        snapshot.put(KEY_DISPATCH_ACTIONS, toActionMaps(actions));
+        if (extraSnapshotFields != null && !extraSnapshotFields.isEmpty()) {
+            snapshot.putAll(extraSnapshotFields);
+        }
         if (SOURCE_MATERIALIZE.equals(source)) {
             snapshot.put(KEY_MATERIALIZED_AT, System.currentTimeMillis());
+        }
+        if (committedDownlink != null) {
+            snapshot.put(KEY_DISPATCH_DOWNLINK_PIECES,
+                    MissionDownlinkSnapshotMaps.toMaps(committedDownlink.pieces()));
+            if (committedDownlink.waylineFileId() != null && !committedDownlink.waylineFileId().isBlank()) {
+                snapshot.put(KEY_WAYLINE_FILE_ID, committedDownlink.waylineFileId().trim());
+            }
+            if (committedDownlink.waylineFingerprint() != null && !committedDownlink.waylineFingerprint().isBlank()) {
+                snapshot.put(KEY_WAYLINE_FINGERPRINT, committedDownlink.waylineFingerprint().trim());
+            }
         }
         return snapshot;
     }
@@ -72,7 +120,11 @@ public final class PatrolOpenRunSnapshotSupport {
             Map<String, Object> params = map.get("params") instanceof Map<?, ?> paramMap
                     ? copyMap(paramMap)
                     : Map.of();
-            actions.add(new DispatchAction(number.longValue(), params));
+            Object actionCode = map.get("actionCode");
+            actions.add(new DispatchAction(
+                    number.longValue(),
+                    params,
+                    actionCode == null ? null : String.valueOf(actionCode)));
         }
         if (actions.isEmpty()) {
             throw new IllegalArgumentException("待执行快照没有可下发的动作");
@@ -102,6 +154,7 @@ public final class PatrolOpenRunSnapshotSupport {
         for (DispatchAction action : actions) {
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("actionId", action.actionId());
+            item.put("actionCode", action.actionCode());
             item.put("params", action.params() == null ? Map.of() : action.params());
             maps.add(item);
         }

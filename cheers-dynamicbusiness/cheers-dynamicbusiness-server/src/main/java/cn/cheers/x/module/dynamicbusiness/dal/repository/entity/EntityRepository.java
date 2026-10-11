@@ -321,6 +321,11 @@ public interface EntityRepository {
     EntityDO findByExactCode(String entityTypeCode, String code);
 
     /**
+     * 这个编码是否只剩已删除行。还有未删除的同编码时返回 false。
+     */
+    boolean isDeletedByCode(String entityTypeCode, String code);
+
+    /**
      * 型号下是否仍存在未删除实体（删型号前护栏）。
      */
     boolean existsByModelId(Long modelId, String entityTypeCode);

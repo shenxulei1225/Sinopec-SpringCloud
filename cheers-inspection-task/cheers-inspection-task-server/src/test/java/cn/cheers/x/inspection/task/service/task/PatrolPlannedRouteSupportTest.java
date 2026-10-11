@@ -35,6 +35,6 @@ class PatrolPlannedRouteSupportTest {
     void resolveTravelMinutesOnly_fromDistance() {
         Map<String, Object> planned = new LinkedHashMap<>();
         planned.put("totalDistanceMeters", 80L);
-        assertEquals(2, PatrolPlannedRouteSupport.resolveTravelMinutesOnly(planned, "ROBOT"));
+        assertEquals(120, PatrolPlannedRouteSupport.resolveTravelMinutesOnly(planned, "ROBOT"));
     }
 }
