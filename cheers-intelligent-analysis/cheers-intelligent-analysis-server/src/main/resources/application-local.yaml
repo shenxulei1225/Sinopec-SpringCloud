@@ -1,0 +1,50 @@
+spring:
+  cloud:
+    nacos:
+      server-addr: 127.0.0.1:8848
+      username: nacos
+      password: nacos
+      discovery:
+        namespace: dev
+        group: DEFAULT_GROUP
+        ip: 127.0.0.1
+        metadata:
+          version: 1.0.0
+      config:
+        namespace: dev
+        group: DEFAULT_GROUP
+
+  # 分析表已由动态业务已执行的迁移创建。本服务只读写这些表，不另建迁移历史。
+  flyway:
+    enabled: false
+
+  datasource:
+    dynamic:
+      druid:
+        initial-size: 1
+        min-idle: 1
+        max-active: 20
+        max-wait: 60000
+        validation-query: SELECT 1
+        driver-class-name: org.postgresql.Driver
+        test-while-idle: true
+        test-on-borrow: false
+        test-on-return: false
+      primary: master
+      datasource:
+        master:
+          url: jdbc:postgresql://127.0.0.1:5432/sinopec?currentSchema=dynamicbusiness
+          username: postgres
+          password: Coolhomer
+        slave:
+          lazy: true
+          url: jdbc:postgresql://127.0.0.1:5432/sinopec?currentSchema=dynamicbusiness
+          username: postgres
+          password: Coolhomer
+
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      database: 0
+      password: 123456

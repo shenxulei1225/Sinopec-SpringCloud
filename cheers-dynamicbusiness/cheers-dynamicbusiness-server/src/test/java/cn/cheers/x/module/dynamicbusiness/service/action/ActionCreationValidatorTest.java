@@ -1,11 +1,12 @@
 package cn.cheers.x.module.dynamicbusiness.service.action;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.intelligentanalysis.api.IntelligentAnalysisApi;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
-import cn.cheers.x.module.dynamicbusiness.service.analysis.AnalysisCapabilityAvailabilityChecker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -19,18 +20,19 @@ import static org.mockito.Mockito.when;
 
 class ActionCreationValidatorTest {
 
-    private AnalysisCapabilityAvailabilityChecker capabilityAvailabilityChecker;
+    private IntelligentAnalysisApi intelligentAnalysisApi;
     private ModelMapper modelMapper;
     private ModelFieldAssignmentMapper modelFieldAssignmentMapper;
     private ActionCreationValidator validator;
 
     @BeforeEach
     void setUp() {
-        capabilityAvailabilityChecker = mock(AnalysisCapabilityAvailabilityChecker.class);
+        intelligentAnalysisApi = mock(IntelligentAnalysisApi.class);
+        when(intelligentAnalysisApi.requireAvailable(41L)).thenReturn(CommonResult.success(true));
         modelMapper = mock(ModelMapper.class);
         modelFieldAssignmentMapper = mock(ModelFieldAssignmentMapper.class);
         validator = new ActionCreationValidator(
-                capabilityAvailabilityChecker, modelMapper, modelFieldAssignmentMapper);
+                intelligentAnalysisApi, modelMapper, modelFieldAssignmentMapper);
     }
 
     @Test
@@ -44,7 +46,7 @@ class ActionCreationValidatorTest {
         validator.validate("action", 2L, new java.util.HashMap<>(Map.of(
                 ActionFieldCodes.ANALYSIS_CAPABILITY_ID, 41L)));
 
-        verify(capabilityAvailabilityChecker).assertAvailable(41L);
+        verify(intelligentAnalysisApi).requireAvailable(41L);
     }
 
     @Test
@@ -55,7 +57,7 @@ class ActionCreationValidatorTest {
                 .thenReturn(domainAssignment("DEVICE"));
         assertThrows(ServiceException.class, () -> validator.validate("action", 1L, new java.util.HashMap<>(Map.of(
                 ActionFieldCodes.ANALYSIS_CAPABILITY_ID, 41L))));
-        verify(capabilityAvailabilityChecker, never()).assertAvailable(41L);
+        verify(intelligentAnalysisApi, never()).requireAvailable(41L);
     }
 
     @Test

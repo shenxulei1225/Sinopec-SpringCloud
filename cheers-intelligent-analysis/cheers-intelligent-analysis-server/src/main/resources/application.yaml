@@ -1,0 +1,116 @@
+spring:
+  application:
+    name: intelligent-analysis-server
+
+  profiles:
+    active: local
+
+  main:
+    allow-circular-references: true
+    allow-bean-definition-overriding: true
+
+  config:
+    import:
+      - optional:classpath:application-${spring.profiles.active}.yaml
+      - optional:nacos:${spring.application.name}-${spring.profiles.active}.yaml
+
+  servlet:
+    multipart:
+      max-file-size: 16MB
+      max-request-size: 32MB
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: true
+      write-date-timestamps-as-nanoseconds: false
+      write-durations-as-timestamps: true
+      fail-on-empty-beans: false
+
+  cache:
+    type: REDIS
+    redis:
+      time-to-live: 1h
+
+  data:
+    redis:
+      repositories:
+        enabled: false
+
+  flyway:
+    enabled: false
+
+  cloud:
+    nacos:
+      server-addr: 127.0.0.1:8848
+      username: nacos
+      password: nacos
+      discovery:
+        namespace: dev
+        group: DEFAULT_GROUP
+        metadata:
+          version: 1.0.0
+      config:
+        namespace: dev
+        group: DEFAULT_GROUP
+
+server:
+  port: 15112
+
+logging:
+  file:
+    name: ${user.home}/logs/${spring.application.name}.log
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui
+  default-flat-param-object: true
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: NONE
+      logic-delete-value: true
+      logic-not-delete-value: false
+    banner: false
+  type-aliases-package: ${cheers.info.base-package}.dal.dataobject
+  encryptor:
+    password: XDV71a+xqStEA3WH
+
+mybatis-plus-join:
+  banner: false
+
+easy-trans:
+  is-enable-global: false
+
+cheers:
+  info:
+    version: 1.0.0
+    base-package: cn.cheers.x.intelligentanalysis
+  web:
+    admin-ui:
+      url: http://dashboard.local
+  xss:
+    enable: false
+  swagger:
+    title: 智能分析
+    description: 分析能力、服务接入和分析任务
+    version: ${cheers.info.version}
+  tenant:
+    enable: true
+  security:
+    permit-all_urls:
+      - /admin-api/**
+      - /rpc-api/**
+
+debug: false

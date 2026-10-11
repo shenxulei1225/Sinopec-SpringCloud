@@ -1,13 +1,15 @@
 package cn.cheers.x.module.dynamicbusiness.service.action;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.intelligentanalysis.api.IntelligentAnalysisApi;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
-import cn.cheers.x.module.dynamicbusiness.service.analysis.AnalysisCapabilityAvailabilityChecker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.Map;
 
@@ -15,7 +17,8 @@ import java.util.Map;
  * 动作保存的提交校验。
  *
  * <p>动作模型是执行类型权威。本校验把模型对应的执行类型写入物理投影，
- * 供跨模块任务快照使用；不接受页面另传一份动作类型，也不按名称猜类型。</p>
+ * 供跨模块任务快照使用；不接受页面另传一份动作类型，也不按名称猜类型。
+ * 智能分析能力是否可用只问智能分析服务，不读分析表。</p>
  */
 @Component
 @RequiredArgsConstructor
@@ -24,7 +27,7 @@ public class ActionCreationValidator {
     private static final String ACTION_ENTITY_TYPE = "action";
     private static final String INTELLIGENT_ANALYSIS = "INTELLIGENT_ANALYSIS";
 
-    private final AnalysisCapabilityAvailabilityChecker capabilityAvailabilityChecker;
+    private final IntelligentAnalysisApi intelligentAnalysisApi;
     private final ModelMapper modelMapper;
     private final ModelFieldAssignmentMapper modelFieldAssignmentMapper;
 
@@ -50,7 +53,14 @@ public class ActionCreationValidator {
             if (capabilityId == null) {
                 throw new ServiceException(400, "创建智能分析动作时必须选择分析能力");
             }
-            capabilityAvailabilityChecker.assertAvailable(capabilityId);
+            CommonResult<Boolean> available = intelligentAnalysisApi.requireAvailable(capabilityId);
+            if (available == null || !available.isSuccess()) {
+                Integer code = available == null ? null : available.getCode();
+                throw new ServiceException(code == null ? 500 : code,
+                        available != null && StringUtils.hasText(available.getMsg())
+                                ? available.getMsg()
+                                : "分析服务没有确认这项能力可用");
+            }
         } else {
             if (capabilityId != null) {
                 throw new ServiceException(400, "只有智能分析动作可以选择分析能力");

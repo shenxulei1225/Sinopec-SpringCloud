@@ -1,8 +1,8 @@
 package cn.cheers.x.inspection.task.service.execution.analysis;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
-import cn.cheers.x.module.dynamicbusiness.api.analysis.IntelligentAnalysisApi;
-import cn.cheers.x.module.dynamicbusiness.api.analysis.dto.AnalysisJobRespDTO;
+import cn.cheers.x.intelligentanalysis.api.IntelligentAnalysisApi;
+import cn.cheers.x.intelligentanalysis.api.dto.AnalysisJobRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.TaskExecutionSessionApi;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStepSnapshotDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionWritebackReqDTO;

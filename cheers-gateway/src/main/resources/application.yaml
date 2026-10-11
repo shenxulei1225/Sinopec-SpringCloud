@@ -230,6 +230,13 @@ spring:
                 - Path=/admin-api/dynamicbusiness/**
               filters:
                 - RewritePath=/admin-api/dynamicbusiness/v3/api-docs, /v3/api-docs # 配置，保证转发到 /v3/api-docs
+            ## intelligent-analysis-server 服务
+            - id: intelligent-analysis-admin-api
+              uri: grayLb://intelligent-analysis-server
+              predicates:
+                - Path=/admin-api/intelligent-analysis/**
+              filters:
+                - RewritePath=/admin-api/intelligent-analysis/v3/api-docs, /v3/api-docs
             ## inspection-task-server 服务
             ## - /inspection-task/**：任务 CRUD 等历史前缀
             ## - /inspection/**：绑定 / 编排门面等 Controller（@RequestMapping("/inspection/...")）
@@ -403,6 +410,9 @@ knife4j:
       - name: dynamicbusiness-server
         service-name: dynamicbusiness-server
         url: /admin-api/dynamicbusiness/v3/api-docs
+      - name: intelligent-analysis-server
+        service-name: intelligent-analysis-server
+        url: /admin-api/intelligent-analysis/v3/api-docs
       - name: inspection-task-server
         service-name: inspection-task-server
         url: /admin-api/inspection-task/v3/api-docs

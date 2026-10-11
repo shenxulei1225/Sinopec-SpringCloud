@@ -37,6 +37,7 @@
         <!-- <module>cheers-nats</module> -->
         <module>cheers-twin</module>
         <module>cheers-dynamicbusiness</module>
+        <module>cheers-intelligent-analysis</module>
         <!-- 应急指挥 API 须先于业务中台编排（orchestration 依赖 emergency-api） -->
         <module>yudao-module-emergency</module>
         <module>cheers-business-middle-platform</module>

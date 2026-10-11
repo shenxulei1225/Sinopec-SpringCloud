@@ -5,7 +5,7 @@
 # ============================================================================
 # 先看这四档：
 #   ./start-microservices.sh base      # 底盘：登录、网关、文件日志
-#   ./start-microservices.sh biz       # 动态业务 + 巡检 + 孪生 + 协议网关
+#   ./start-microservices.sh biz       # 动态业务 + 智能分析 + 巡检 + 孪生 + 协议网关
 #   ./start-microservices.sh bmp       # 中台全部（配置/过程/路网/告警工单手册/三维地图）
 #   ./start-microservices.sh all       # 底盘 + 工作流 + 动态业务 + 中台
 # 只改组件配置时：
@@ -140,6 +140,7 @@ get_service_path() {
         simulator|protocol-simulator) echo "cheers-device-protocol-gateway/cheers-device-protocol-simulator" ;;
         robot) echo "cheers-device-protocol-gateway/cheers-device-protocol-simulator" ;;
         dynamic) echo "cheers-dynamicbusiness/cheers-dynamicbusiness-server" ;;
+        analysis) echo "cheers-intelligent-analysis/cheers-intelligent-analysis-server" ;;
         resource|platform|bmp-resource) echo "cheers-business-middle-platform/cheers-resource-server" ;;
         runtime|platform-runtime|runtime-l4|bmp-runtime) echo "cheers-business-middle-platform/cheers-runtime-server" ;;
         orchestration|platform-orchestration|bmp-orchestration) echo "cheers-business-middle-platform/cheers-orchestration-server" ;;
@@ -181,6 +182,7 @@ get_service_port() {
         simulator|protocol-simulator) echo "8301" ;;
         robot) echo "8302" ;;
         dynamic) echo "15096" ;;
+        analysis) echo "15112" ;;
         resource|platform|bmp-resource) echo "15098" ;;
         runtime|platform-runtime|runtime-l4|bmp-runtime) echo "15099" ;;
         orchestration|platform-orchestration|bmp-orchestration) echo "15104" ;;
@@ -210,6 +212,7 @@ canonical_service_name() {
         simulator|protocol-simulator) echo "simulator" ;;
         robot) echo "robot" ;;
         dynamic) echo "dynamic" ;;
+        analysis) echo "analysis" ;;
         resource|platform|bmp-resource) echo "resource" ;;
         runtime|platform-runtime|runtime-l4|bmp-runtime) echo "runtime" ;;
         orchestration|platform-orchestration|bmp-orchestration) echo "orchestration" ;;
@@ -224,7 +227,7 @@ canonical_service_name() {
 # 按职责套件（正名）。商城/演示类不进默认列表，路径仍保留可手启。
 BASE_SERVICES=(infra system gateway)
 WORKFLOW_SERVICES=(bpm)
-BIZ_SERVICES=(dynamic inspection twin protocol)
+BIZ_SERVICES=(dynamic analysis inspection twin protocol)
 BMP_SERVICES=(
     resource
     policy capability runtime orchestration
@@ -240,7 +243,7 @@ CORE_START_SERVICES=("${ALL_DUTY_SERVICES[@]}")
 ALL_START_SERVICES=("${ALL_DUTY_SERVICES[@]}")
 STOP_SERVICES=(
     gateway infra system bpm
-    dynamic inspection twin protocol simulator robot
+    dynamic analysis inspection twin protocol simulator robot
     routing topology orchestration runtime policy capability resource
     alarm work-order maintenance scene-3d gis
 )
@@ -312,7 +315,7 @@ start_service() {
     # 一律从仓库根 -pl <相对路径> -am，才能拉到跨父工程依赖（如 orchestration → emergency-api）
     case "$service_name" in
         resource|runtime|orchestration|policy|capability|topology|routing|\
-        alarm|work-order|maintenance|scene-3d|gis|twin|dynamic|inspection|protocol|simulator|robot|bpm|system)
+        alarm|work-order|maintenance|scene-3d|gis|twin|dynamic|analysis|inspection|protocol|simulator|robot|bpm|system)
             echo -e "${BLUE}   安装 ${service_path} 及依赖到 ${MAVEN_REPO_LOCAL}（-am install -DskipTests）...${NC}"
             (
                 cd "$SCRIPT_DIR" || exit 1
@@ -581,7 +584,7 @@ show_services() {
     echo -e "${BLUE}按职责启停（先看这里）${NC}"
     echo ""
     echo "  ./start-microservices.sh base       # 底盘：登录、网关、文件日志"
-    echo "  ./start-microservices.sh biz        # 动态业务 + 巡检 + 孪生 + 协议网关"
+    echo "  ./start-microservices.sh biz        # 动态业务 + 智能分析 + 巡检 + 孪生 + 协议网关"
     echo "  ./start-microservices.sh bmp        # 中台全部"
     echo "  ./start-microservices.sh all        # 底盘 + 工作流 + 动态业务 + 中台"
     echo "  ./start-microservices.sh resource   # 只开组件配置（改配置表用这个）"
@@ -605,6 +608,7 @@ show_services() {
     printf "%-16s %-58s %-8s\n" "gateway" "底盘·网关      cheers-gateway" "15080"
     printf "%-16s %-58s %-8s\n" "bpm" "工作流          cheers-bpm/cheers-bpm-server" "15083"
     printf "%-16s %-58s %-8s\n" "dynamic" "动态业务台账    cheers-dynamicbusiness/...-server" "15096"
+    printf "%-16s %-58s %-8s\n" "analysis" "智能分析        cheers-intelligent-analysis-server" "15112"
     printf "%-16s %-58s %-8s\n" "inspection" "巡检任务" "15095"
     printf "%-16s %-58s %-8s\n" "twin" "孪生" "15094"
     printf "%-16s %-58s %-8s\n" "protocol" "设备协议网关    cheers-device-protocol-gateway-server" "8095"
@@ -876,7 +880,7 @@ main() {
         "biz")
             check_nacos
             check_redis
-            echo -e "${BLUE}🚀 动态业务 + 巡检 + 孪生 + 协议网关${NC}"
+            echo -e "${BLUE}🚀 动态业务 + 智能分析 + 巡检 + 孪生 + 协议网关${NC}"
             echo ""
             start_suite_services "$show_logs" "${BIZ_SERVICES[@]}"
             ;;

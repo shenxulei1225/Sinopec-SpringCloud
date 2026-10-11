@@ -2,7 +2,7 @@
 # 本地微服务启停（Windows）。与 start-microservices.sh 同一套职责套件。
 # ============================================================================
 #   .\start-microservices.ps1 base       # 底盘
-#   .\start-microservices.ps1 biz        # 动态业务 + 巡检 + 孪生 + 协议网关
+#   .\start-microservices.ps1 biz        # 动态业务 + 智能分析 + 巡检 + 孪生 + 协议网关
 #   .\start-microservices.ps1 bmp        # 中台全部
 #   .\start-microservices.ps1 all        # 底盘 + 工作流 + 动态业务 + 中台
 #   .\start-microservices.ps1 resource   # 只开组件配置
@@ -75,6 +75,7 @@ $ServiceConfig = @{
     "protocol-gateway" = @{ Path = "cheers-device-protocol-gateway\cheers-device-protocol-gateway-server"; Port = 8095 }
     "cheers-device-protocol-gateway" = @{ Path = "cheers-device-protocol-gateway\cheers-device-protocol-gateway-server"; Port = 8095 }
     "dynamic"    = @{ Path = "cheers-dynamicbusiness\cheers-dynamicbusiness-server"; Port = 15096 }
+    "analysis"   = @{ Path = "cheers-intelligent-analysis\cheers-intelligent-analysis-server"; Port = 15112 }
     # platform / resource：组件库、视图库
     "platform"   = @{ Path = "cheers-business-middle-platform\cheers-resource-server"; Port = 15098 }
     "resource"   = @{ Path = "cheers-business-middle-platform\cheers-resource-server"; Port = 15098 }
@@ -102,7 +103,7 @@ $ServiceConfig = @{
 
 $BaseServices = @("infra", "system", "gateway")
 $WorkflowServices = @("bpm")
-$BizServices = @("dynamic", "inspection", "twin", "protocol")
+$BizServices = @("dynamic", "analysis", "inspection", "twin", "protocol")
 $BmpServices = @(
     "resource",
     "policy", "capability", "runtime", "orchestration",
@@ -118,7 +119,7 @@ $CoreServices = $AllDutyServices
 $AllServices = $AllDutyServices
 $StopServices = @(
     "gateway", "infra", "system", "bpm",
-    "dynamic", "inspection", "twin", "protocol", "simulator", "robot",
+    "dynamic", "analysis", "inspection", "twin", "protocol", "simulator", "robot",
     "routing", "topology", "orchestration", "runtime", "policy", "capability", "resource",
     "alarm", "work-order", "maintenance", "scene-3d", "gis"
 )
@@ -433,7 +434,7 @@ function Start-SingleService {
             "topology", "platform-topology", "routing", "platform-routing",
             "maintenance", "bmp-maintenance",
             "work-order", "bmp-work-order",
-            "bpm", "dynamic", "system",
+            "bpm", "dynamic", "analysis", "system",
             "inspection", "twin", "cheers-twin",
             "protocol", "device-protocol", "protocol-gateway", "cheers-device-protocol-gateway",
             "simulator", "protocol-simulator", "robot",
@@ -701,7 +702,7 @@ function Show-Services {
     Write-ColorOutput "按职责启停（先看这里）" "Cyan"
     Write-ColorOutput "" "White"
     Write-ColorOutput "  .\start-microservices.ps1 base       # 底盘：登录、网关、文件日志" "White"
-    Write-ColorOutput "  .\start-microservices.ps1 biz        # 动态业务 + 巡检 + 孪生 + 协议网关" "White"
+    Write-ColorOutput "  .\start-microservices.ps1 biz        # 动态业务 + 智能分析 + 巡检 + 孪生 + 协议网关" "White"
     Write-ColorOutput "  .\start-microservices.ps1 bmp        # 中台全部" "White"
     Write-ColorOutput "  .\start-microservices.ps1 all        # 底盘 + 工作流 + 动态业务 + 中台" "White"
     Write-ColorOutput "  .\start-microservices.ps1 resource   # 只开组件配置" "White"
@@ -1061,7 +1062,7 @@ switch ($Command.ToLower()) {
     "biz" {
         if (-not (Start-Nacos)) { Write-Error "Nacos 启动失败,无法继续"; exit 1 }
         Check-Redis
-        Write-ColorOutput "[START] 动态业务 + 巡检 + 孪生 + 协议网关" "Cyan"
+        Write-ColorOutput "[START] 动态业务 + 智能分析 + 巡检 + 孪生 + 协议网关" "Cyan"
         Start-SuiteServices -Services $BizServices -ShowLogs $f.IsPresent
     }
     "stop-biz" {
