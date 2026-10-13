@@ -137,11 +137,11 @@ logging:
 
 # 任务级录像（本地默认对接 media-gateway/go2rtc，先 .\setup-local-patrol-media.ps1 启动网关）
 # 基址 = RTSP 前缀；完整推流地址 = {基址}/patrol-{任务id}-{计划点id}
-# 设备在别的机器上时，把 127.0.0.1 改成与 ecs-react NEXT_PUBLIC_MEDIA_GATEWAY_* 同一台机 LAN IP
+# 设备与浏览器从其他机器访问本机 go2rtc，地址与 ecs-react NEXT_PUBLIC_MEDIA_GATEWAY_* 一致
 patrol:
   media:
-    record-ingest-base-url: ${PATROL_RECORD_INGEST_BASE_URL:rtsp://127.0.0.1:8554}
-    record-file-url-template: ${PATROL_RECORD_FILE_URL_TEMPLATE:http://127.0.0.1:1984/api/stream.mp4?src={streamName}}
+    record-ingest-base-url: ${PATROL_RECORD_INGEST_BASE_URL:rtsp://47.117.153.179:8554}
+    record-file-url-template: ${PATROL_RECORD_FILE_URL_TEMPLATE:http://47.117.153.179:1984/api/stream.mp4?src={streamName}}
 
 cheers:
   env:
