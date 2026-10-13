@@ -19,4 +19,5 @@ public class EntityCategoryQueryReqVO {
     @Schema(description = "实体ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "1001")
     @NotNull(message = "实体ID不能为空")
     private Long entityId;
+
 }

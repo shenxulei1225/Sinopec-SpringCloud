@@ -9,5 +9,5 @@ cheers:
   device-protocol-simulator:
     role: uav
     # 1#东古大型无人机。用台账登记编码，不自编编号。这台的设备编号列是空的。
-    websocket-url: ${SIMULATOR_WEBSOCKET_URL:ws://127.0.0.1:8095/equipment-de6e497903c847d0b2a6803aeaa1136c}
-    device-id: ${SIMULATOR_DEVICE_ID:equipment-de6e497903c847d0b2a6803aeaa1136c}
+    websocket-url: ${SIMULATOR_WEBSOCKET_URL:ws://127.0.0.1:8095/de6e497903c847d0b2a6803aeaa1136c}
+    device-id: ${SIMULATOR_DEVICE_ID:de6e497903c847d0b2a6803aeaa1136c}

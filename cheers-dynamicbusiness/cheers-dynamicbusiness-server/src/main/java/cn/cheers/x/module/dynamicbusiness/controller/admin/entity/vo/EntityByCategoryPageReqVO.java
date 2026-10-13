@@ -26,5 +26,6 @@ public class EntityByCategoryPageReqVO extends PageParam {
     @Schema(description = "Model ID（可选，用于进一步过滤实体）", example = "1")
     private Long modelId;
 
+
 }
 

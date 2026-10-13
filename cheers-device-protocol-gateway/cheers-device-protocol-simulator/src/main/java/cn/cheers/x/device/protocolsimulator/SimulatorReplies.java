@@ -14,6 +14,7 @@ import java.util.List;
  * <p>负责：500101 点名、500102 开关定时状态、500104 收下指令包、500201 启动、500202 步骤结果、500203 任务状态、500205 终止、500301 取包、500302 删包、500303 列出已收下的任务模板。
  * <p>无人机不回心跳。机器人收到 500105 时原包加上时间回 500105。
  * <p>禁止：把无人机步骤结果的外层字段改成 packages。老模拟器写在 result 上，厂商确认前保持这样。机器人按协议书写在 packages 上。
+ * 拍照只填本机图片地址，不编分析结论。
  */
 @RequiredArgsConstructor
 public class SimulatorReplies {
@@ -22,6 +23,12 @@ public class SimulatorReplies {
     private final SimulatorState state;
     private final String deviceId;
     private final String role;
+
+    /**
+     * 拍照步骤回给平台的图片地址。
+     * 主机必须是 127.0.0.1。分析服务只下载这个主机上的图片。
+     */
+    private final String photoUrl;
 
     /**
      * 立刻要发出去的报文。启动任务时，步骤结果不在这个列表里，由 {@link #runTask} 稍后发。
@@ -257,13 +264,14 @@ public class SimulatorReplies {
         operate.put("height", report.path("height").asText("0"));
         operate.put("electric", "100.00");
         operate.put("distance", "0");
+        // 拍照结果的 data 是图片地址。分析按这个地址下载，不在模拟器里写识别结论。
         if (inner == 200301) {
             ArrayNode photos = outcome.putArray("photos");
             ObjectNode photo = photos.addObject();
             photo.put("photoTime", nowMillis / 1000);
             photo.put("type", "jpg");
             photo.put("size", 110102);
-            photo.put("data", "");
+            photo.put("data", photoUrl);
         }
         return root;
     }

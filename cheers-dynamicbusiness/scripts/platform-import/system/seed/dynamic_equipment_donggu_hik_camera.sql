@@ -100,8 +100,8 @@ SELECT
   'seed'
 FROM (
   VALUES
-    ('equipment-25408e8c453544b8b39e6d1dc17bb147', 'EQ-DONGGU-SMALL-HIK-CAM'),
-    ('equipment-de6e497903c847d0b2a6803aeaa1136c', 'EQ-DONGGU-LARGE-HIK-CAM')
+    ('25408e8c453544b8b39e6d1dc17bb147', 'EQ-DONGGU-SMALL-HIK-CAM'),
+    ('de6e497903c847d0b2a6803aeaa1136c', 'EQ-DONGGU-LARGE-HIK-CAM')
 ) AS mount(host_code, child_code)
 JOIN ent_equipment_t1 host
   ON host.code = mount.host_code AND host.tenant_id = 1 AND host.deleted = false

@@ -15,7 +15,8 @@ import java.util.Optional;
 
 /**
  * 从设备台账读协议版本数组，以及这台设备登记的默认协议。
- * <p>禁止：读失败假装有版本；多台设备对上同一逻辑标识还猜一台；默认协议空着时改用支持清单的第一种。
+ * 连接、监控下拉和报文里的设备编号都用设备实例的设备编号（code）。
+ * <p>禁止：用 device_code 当连接编号；读失败假装有版本；多台设备对上同一设备编号还猜一台；默认协议空着时改用支持清单的第一种。
  */
 @Slf4j
 @Component
@@ -24,7 +25,6 @@ public class EntityRpcDeviceProtocolVersionCatalog implements DeviceProtocolVers
 
     static final String EQUIPMENT_TYPE = "equipment";
     static final String FIELD_VERSIONS = "protocol_versions";
-    static final String DEVICE_CODE = "device_code";
     static final String CODE = "code";
 
     private final EntityRpcApi entityRpcApi;
@@ -47,7 +47,7 @@ public class EntityRpcDeviceProtocolVersionCatalog implements DeviceProtocolVers
         for (DeviceRow row : rows) {
             if (row.matches(deviceId)) {
                 if (matched != null) {
-                    log.error("[device-protocol] 多台设备对上同一逻辑标识 deviceId={}", deviceId);
+                    log.error("[device-protocol] 多台设备对上同一设备编号 deviceId={}", deviceId);
                     return Optional.empty();
                 }
                 matched = row;
@@ -81,7 +81,7 @@ public class EntityRpcDeviceProtocolVersionCatalog implements DeviceProtocolVers
                 continue;
             }
             if (matched != null) {
-                return new Registration("", "多台设备对上同一标识");
+                return new Registration("", "多台设备对上同一设备编号");
             }
             matched = row;
         }
@@ -95,21 +95,21 @@ public class EntityRpcDeviceProtocolVersionCatalog implements DeviceProtocolVers
     }
 
     /**
-     * 监控页名单：已登记默认协议的设备。标识优先用设备编号，空了用登记编码。
+     * 监控页名单：已登记默认协议的设备。下拉里的编号就是这台设备实例的设备编号。
      */
     public List<NamedEquipment> equipmentWithProtocol() {
         List<NamedEquipment> rows = new ArrayList<>();
         for (DeviceRow row : loadCached()) {
-            if (row.platformProtocol().isBlank() || row.logicalId().isBlank()) {
+            if (row.platformProtocol().isBlank() || row.code().isBlank()) {
                 continue;
             }
-            rows.add(new NamedEquipment(row.logicalId(), row.name(), row.platformProtocol()));
+            rows.add(new NamedEquipment(row.code(), row.name(), row.platformProtocol()));
         }
         return List.copyOf(rows);
     }
 
     /**
-     * 按连接上的标识找台账名称。对上多台时不挑名称。
+     * 按连接上的设备编号找台账。编号就是设备实例的 code。对上多台时不挑名称。
      */
     public Optional<NamedEquipment> findEquipment(String logicalDeviceId) {
         if (logicalDeviceId == null || logicalDeviceId.isBlank()) {
@@ -123,7 +123,7 @@ public class EntityRpcDeviceProtocolVersionCatalog implements DeviceProtocolVers
             if (matched != null) {
                 return Optional.empty();
             }
-            matched = new NamedEquipment(row.logicalId(), row.name(), row.platformProtocol());
+            matched = new NamedEquipment(row.code(), row.name(), row.platformProtocol());
         }
         return Optional.ofNullable(matched);
     }
@@ -158,7 +158,6 @@ public class EntityRpcDeviceProtocolVersionCatalog implements DeviceProtocolVers
         }
         Map<String, Object> bag = bagOf(entity);
         return new DeviceRow(
-                stringOf(bag.get(DEVICE_CODE)),
                 stringOf(bag.get(CODE)),
                 readVersions(bag.get(FIELD_VERSIONS)),
                 stringOf(bag.get("platform_protocol")),
@@ -209,13 +208,9 @@ public class EntityRpcDeviceProtocolVersionCatalog implements DeviceProtocolVers
         return raw == null ? "" : String.valueOf(raw).trim();
     }
 
-    record DeviceRow(String deviceCode, String code, List<String> versions, String platformProtocol, String name) {
-        boolean matches(String logicalDeviceId) {
-            return logicalDeviceId.equals(deviceCode) || logicalDeviceId.equals(code);
-        }
-
-        String logicalId() {
-            return deviceCode.isBlank() ? code : deviceCode;
+    record DeviceRow(String code, List<String> versions, String platformProtocol, String name) {
+        boolean matches(String deviceId) {
+            return deviceId.equals(code);
         }
     }
 

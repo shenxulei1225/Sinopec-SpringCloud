@@ -198,12 +198,14 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     @Override
     public void updateUserPassword(Long id, UserProfileUpdatePasswordReqVO reqVO) {
-        // 校验旧密码密码
-        validateOldPassword(id, reqVO.getOldPassword());
-        // 执行更新
-        AdminUserDO updateObj = new AdminUserDO().setId(id);
-        updateObj.setPassword(encodePassword(reqVO.getNewPassword())); // 加密密码
-        userMapper.updateById(updateObj);
+        // 登录用户改自己的密码：只按用户编号读写自己的账号。
+        // 不走部门可见范围。否则查自己时会去算部门权限，权限枚举加载失败就会变成「系统异常」。
+        DataPermissionUtils.executeIgnore(() -> {
+            validateOldPassword(id, reqVO.getOldPassword());
+            AdminUserDO updateObj = new AdminUserDO().setId(id);
+            updateObj.setPassword(encodePassword(reqVO.getNewPassword()));
+            userMapper.updateById(updateObj);
+        });
     }
 
     @Override

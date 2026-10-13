@@ -16,6 +16,7 @@ import cn.cheers.x.system.dal.mysql.permission.RoleMenuMapper;
 import cn.cheers.x.system.dal.mysql.permission.UserRoleMapper;
 import cn.cheers.x.system.dal.redis.RedisKeyConstants;
 import cn.cheers.x.system.enums.permission.DataScopeEnum;
+import cn.cheers.x.system.enums.permission.RoleCodeEnum;
 import cn.cheers.x.system.service.dept.DeptService;
 import cn.cheers.x.system.service.user.AdminUserService;
 import com.baomidou.dynamic.datasource.annotation.DSTransactional;
@@ -79,8 +80,42 @@ public class PermissionServiceImpl implements PermissionService {
             }
         }
 
+        // 租户管理员办理本租户业务时放行，不看菜单有没有这项。
+        // 创建租户、修改租户、删除租户、切换到其他租户、租户套餐仍不放行。
+        // 数据写到哪一个租户，仍由当前登录租户决定。
+        if (isTenantAdmin(roles) && hasBusinessPermission(permissions)) {
+            return true;
+        }
+
         // 情况二：如果是超管，也说明有权限
         return roleService.hasAnySuperAdmin(convertSet(roles, RoleDO::getId));
+    }
+
+    private static boolean isTenantAdmin(List<RoleDO> roles) {
+        for (RoleDO role : roles) {
+            if (role != null && RoleCodeEnum.TENANT_ADMIN.getCode().equals(role.getCode())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 这些标识管理的是租户本身，不属于某一个租户里的业务。
+     * 租户管理员不能靠角色编码直接通过。
+     */
+    private static boolean isCrossTenantPermission(String permission) {
+        return permission != null
+                && (permission.startsWith("system:tenant:") || permission.startsWith("system:tenant-package:"));
+    }
+
+    private static boolean hasBusinessPermission(String... permissions) {
+        for (String permission : permissions) {
+            if (!isCrossTenantPermission(permission)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

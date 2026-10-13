@@ -99,4 +99,5 @@ public class BatchPermissionCreateReqVO {
         @Schema(description = "是否可管理", example = "false")
         private Boolean canManage = false;
     }
+
 }

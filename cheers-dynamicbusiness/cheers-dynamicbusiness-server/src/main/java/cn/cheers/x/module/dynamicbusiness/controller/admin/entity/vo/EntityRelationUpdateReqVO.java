@@ -38,4 +38,5 @@ public class EntityRelationUpdateReqVO {
 
     @Schema(description = "状态（1-启用，0-禁用）", example = "1")
     private Integer status;
+
 }

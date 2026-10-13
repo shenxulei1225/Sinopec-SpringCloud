@@ -15,4 +15,5 @@ public class CategoryIdGroupReqVO {
     @Schema(description = "分类节点 ID；全选时传该体系用于求交的节点集（可由前端展开全部节点，或传根由服务端整树展开）",
             example = "[100, 101]")
     private List<Long> categoryIds;
+
 }

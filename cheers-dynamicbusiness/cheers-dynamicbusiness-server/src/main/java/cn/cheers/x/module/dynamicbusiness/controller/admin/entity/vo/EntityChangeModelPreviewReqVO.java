@@ -25,4 +25,8 @@ public class EntityChangeModelPreviewReqVO {
 
     @Schema(description = "当前表单草稿字段（含未保存修改）；有值时覆盖库中快照再计算预览")
     private Map<String, Object> currentFields;
+
+    @Schema(description = "这次打开的数据目录注册编码。缺省时接口不放行。")
+    private String registryCode;
+
 }

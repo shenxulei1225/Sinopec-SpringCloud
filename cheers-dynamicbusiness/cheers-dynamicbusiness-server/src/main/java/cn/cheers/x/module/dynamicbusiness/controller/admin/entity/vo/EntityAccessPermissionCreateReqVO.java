@@ -27,4 +27,5 @@ public class EntityAccessPermissionCreateReqVO {
 
     @Schema(description = "是否可查看", example = "true")
     private Boolean canView = true;
+
 }

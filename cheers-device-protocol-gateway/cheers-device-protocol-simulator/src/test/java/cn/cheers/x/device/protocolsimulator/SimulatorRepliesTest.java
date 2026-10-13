@@ -11,9 +11,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SimulatorRepliesTest {
 
+    private static final String PHOTO_URL = "http://127.0.0.1:8303/simulator/sample-photo.jpg";
+
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final SimulatorState state = new SimulatorState();
-    private final SimulatorReplies replies = new SimulatorReplies(objectMapper, state, "dev-1", "uav");
+    private final SimulatorReplies replies = new SimulatorReplies(
+            objectMapper, state, "dev-1", "uav", PHOTO_URL);
 
     @Test
     void locate_repliesAckThenSameOpcode() throws Exception {
@@ -47,7 +50,8 @@ class SimulatorRepliesTest {
     @Test
     void robot_stepResult_usesPackagesAndEchoesHeartbeat() throws Exception {
         SimulatorState robotState = new SimulatorState();
-        SimulatorReplies robot = new SimulatorReplies(objectMapper, robotState, "robot-sim-001", "robot");
+        SimulatorReplies robot = new SimulatorReplies(
+                objectMapper, robotState, "robot-sim-001", "robot", PHOTO_URL);
         robot.immediate(
                 "{\"opcode\":500104,\"msgId\":\"m2\",\"templateId\":\"t1\",\"packages\":\"[{\\\"opcode\\\":200301,\\\"sequence\\\":1,\\\"request\\\":{\\\"pointId\\\":\\\"p1\\\"}}]\"}",
                 2000L);
@@ -66,6 +70,7 @@ class SimulatorRepliesTest {
         assertEquals(200301, step.path("packages").path("opcode").asInt());
         assertEquals(1, step.path("packages").path("sequence").asInt());
         assertEquals(222222, step.path("packages").path("reportPoint").path("pointId").asInt());
+        assertEquals(PHOTO_URL, step.path("packages").path("result").path("photos").get(0).path("data").asText());
         assertTrue(step.path("result").isMissingNode());
 
         List<String> heartbeat = robot.immediate("{\"opcode\":500105,\"msgId\":\"hb\"}", 4000L);
@@ -100,7 +105,7 @@ class SimulatorRepliesTest {
         assertEquals("5000", listed.path("data").path("templates").get(0).path("lineId").asText());
 
         JsonNode empty = objectMapper.readTree(new SimulatorReplies(
-                objectMapper, new SimulatorState(), "dev-1", "robot")
+                objectMapper, new SimulatorState(), "dev-1", "robot", PHOTO_URL)
                 .immediate("{\"opcode\":500303,\"msgId\":\"m5\"}", 5002L).get(1));
         assertEquals(0, empty.path("data").path("templates").size());
 

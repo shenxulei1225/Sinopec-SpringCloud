@@ -18,5 +18,6 @@ public class EntityVersionUnpublishReqVO {
     @Schema(description = "当前实体 id", requiredMode = Schema.RequiredMode.REQUIRED, example = "1001")
     @NotNull(message = "entityId 不能为空")
     private Long entityId;
+
 }
 

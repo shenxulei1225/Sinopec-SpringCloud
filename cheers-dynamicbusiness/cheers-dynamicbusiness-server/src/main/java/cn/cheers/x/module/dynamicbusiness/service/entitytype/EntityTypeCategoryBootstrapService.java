@@ -227,6 +227,7 @@ public class EntityTypeCategoryBootstrapService {
     /**
      * 从通用台账模版生成「模型管理」页签独立布局，写回 {@code model_layout_id}。
      * 划分（SCOPE）无模型管理页签，跳过。
+     * 分类当实体只关数据页的型号栏，这里不传那个开关。
      */
     private void ensureCatalogModelLayout(EntityTypeDO entityType) {
         EntityTypeEntryKindEnum kind = EntityTypeEntryKindEnum.fromCode(entityType.getEntryKind());
@@ -234,7 +235,6 @@ public class EntityTypeCategoryBootstrapService {
             return;
         }
         String code = entityType.getCode();
-        boolean categoryAsEntity = kind.isCategory() || isCategoryAsEntityType(code);
         String categoryTypeCode = code;
         if (kind.reusesBaseStorage()) {
             String baseCode = entityType.getBaseEntityTypeCode();
@@ -246,7 +246,7 @@ public class EntityTypeCategoryBootstrapService {
             categoryTypeCode = baseCode.trim();
         }
         try {
-            dmWorkbenchLayoutService.ensureCatalogModelLayout(entityType, categoryTypeCode, categoryAsEntity);
+            dmWorkbenchLayoutService.ensureCatalogModelLayout(entityType, categoryTypeCode);
         } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {

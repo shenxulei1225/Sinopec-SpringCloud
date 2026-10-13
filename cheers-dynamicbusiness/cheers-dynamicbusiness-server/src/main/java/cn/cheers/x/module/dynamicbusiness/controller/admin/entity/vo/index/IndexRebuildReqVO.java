@@ -45,4 +45,5 @@ public class IndexRebuildReqVO {
     public void setAsync(Boolean async) {
         this.async = async;
     }
+
 }

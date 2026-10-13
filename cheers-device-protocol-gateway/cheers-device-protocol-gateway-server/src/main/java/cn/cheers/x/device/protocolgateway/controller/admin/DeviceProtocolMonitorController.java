@@ -40,7 +40,7 @@ public class DeviceProtocolMonitorController {
     private final ProtocolMonitorDownlinkService downlinkService;
 
     /**
-     * 当前在线，或窗口里刚出现过的设备。
+     * 台账已登记默认协议的设备，以及当前在线或窗口里刚出现过的设备。
      */
     @GetMapping("/devices")
     public CommonResult<List<ProtocolMonitorDeviceDTO>> devices() {

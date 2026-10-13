@@ -9,6 +9,7 @@ import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_6455;
 import org.java_websocket.handshake.ServerHandshake;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -161,9 +162,16 @@ public class GatewayWebSocketConnector {
 
         @Bean
         SimulatorReplies simulatorReplies(
-                ObjectMapper objectMapper, SimulatorState simulatorState, SimulatorProperties properties) {
+                ObjectMapper objectMapper,
+                SimulatorState simulatorState,
+                SimulatorProperties properties,
+                @Value("${server.port}") int serverPort) {
             return new SimulatorReplies(
-                    objectMapper, simulatorState, properties.getDeviceId(), properties.getRole());
+                    objectMapper,
+                    simulatorState,
+                    properties.getDeviceId(),
+                    properties.getRole(),
+                    "http://127.0.0.1:" + serverPort + "/simulator/sample-photo.jpg");
         }
     }
 }

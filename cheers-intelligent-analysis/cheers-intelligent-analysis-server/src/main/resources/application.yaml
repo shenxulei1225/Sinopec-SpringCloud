@@ -108,6 +108,9 @@ cheers:
     version: ${cheers.info.version}
   tenant:
     enable: true
+    # 算法回调不带租户编号。入口按分析任务编号找到原任务，再使用任务上的租户。
+    ignore-urls:
+      - /admin-api/intelligent-analysis/callbacks/legacy-detection
   security:
     permit-all_urls:
       - /admin-api/**

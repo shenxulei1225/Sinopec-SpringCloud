@@ -14,5 +14,9 @@ public class EntityUpdateReqVO extends EntityBaseVO {
     @Schema(description = "实体ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "1001")
     @NotNull(message = "实体ID不能为空")
     private Long id;
+
+    @Schema(description = "这次打开的数据目录注册编码。缺省时接口不放行。")
+    private String registryCode;
+
 }
 

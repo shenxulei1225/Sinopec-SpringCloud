@@ -21,25 +21,25 @@ import static org.mockito.Mockito.when;
 class EntityRpcDeviceProtocolVersionCatalogTest {
 
     @Test
-    void firstVersion_readsFirstRegistered() {
+    void firstVersion_readsEquipmentCode() {
         EntityRpcDeviceProtocolVersionCatalog catalog = catalogWith(equipment(
                 "SN-001", "EQ-1", List.of("robot-ws", "uav-ws")));
-        assertEquals("robot-ws", catalog.firstVersion("SN-001").orElseThrow());
         assertEquals("robot-ws", catalog.firstVersion("EQ-1").orElseThrow());
+        assertTrue(catalog.firstVersion("SN-001").isEmpty());
     }
 
     @Test
     void missingDevice_isEmpty() {
         EntityRpcDeviceProtocolVersionCatalog catalog = catalogWith(equipment(
                 "SN-001", "EQ-1", List.of("robot-ws")));
-        assertTrue(catalog.firstVersion("SN-999").isEmpty());
+        assertTrue(catalog.firstVersion("EQ-999").isEmpty());
     }
 
     @Test
     void emptyVersions_isEmpty() {
         EntityRpcDeviceProtocolVersionCatalog catalog = catalogWith(equipment(
                 "SN-001", "EQ-1", List.of()));
-        assertTrue(catalog.firstVersion("SN-001").isEmpty());
+        assertTrue(catalog.firstVersion("EQ-1").isEmpty());
     }
 
     @Test
@@ -47,24 +47,34 @@ class EntityRpcDeviceProtocolVersionCatalogTest {
         EntityRespDTO row = equipment("SN-001", "EQ-1", List.of("robot-ws"));
         row.setCustomFields(Map.of("platform_protocol", "uav-ws"));
         EntityRpcDeviceProtocolVersionCatalog catalog = catalogWith(row);
-        assertEquals("uav-ws", catalog.registrationOf("SN-001").protocol());
-        assertEquals("robot-ws", catalog.firstVersion("SN-001").orElseThrow());
+        assertEquals("uav-ws", catalog.registrationOf("EQ-1").protocol());
+        assertEquals("robot-ws", catalog.firstVersion("EQ-1").orElseThrow());
     }
 
     @Test
     void missingDefaultProtocol_explains() {
         EntityRpcDeviceProtocolVersionCatalog catalog = catalogWith(equipment(
                 "SN-001", "EQ-1", List.of("robot-ws")));
-        assertEquals("这台设备没有登记默认使用的协议", catalog.registrationOf("SN-001").reason());
+        assertEquals("这台设备没有登记默认使用的协议", catalog.registrationOf("EQ-1").reason());
     }
 
     @Test
-    void duplicateLogicalId_isEmpty() {
+    void duplicateEquipmentCode_isEmpty() {
         EntityRpcDeviceProtocolVersionCatalog catalog = catalogWith(
-                equipment("SN-001", "A", List.of("robot-ws")),
-                equipment("SN-001", "B", List.of("uav-ws"))
+                equipment("SN-001", "EQ-1", List.of("robot-ws")),
+                equipment("SN-002", "EQ-1", List.of("uav-ws"))
         );
-        assertTrue(catalog.firstVersion("SN-001").isEmpty());
+        assertTrue(catalog.firstVersion("EQ-1").isEmpty());
+    }
+
+    @Test
+    void monitorId_isEquipmentCode() {
+        EntityRespDTO row = equipment("SN-001", "equipment-abc", List.of("uav-ws"));
+        row.setCustomFields(Map.of("platform_protocol", "uav-ws", "name", "1#东古大型无人机"));
+        EntityRpcDeviceProtocolVersionCatalog catalog = catalogWith(row);
+        assertEquals("equipment-abc", catalog.equipmentWithProtocol().get(0).deviceId());
+        assertEquals("1#东古大型无人机", catalog.findEquipment("equipment-abc").orElseThrow().name());
+        assertTrue(catalog.findEquipment("SN-001").isEmpty());
     }
 
     private static EntityRpcDeviceProtocolVersionCatalog catalogWith(EntityRespDTO... entities) {

@@ -43,6 +43,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
  * Entity 通过 modelId 关联到 Model，Model 可以关联多个 Category，因此 Entity 间接关联到 Category。
  * Category 只用于归类与筛选，**不影响字段规则**（字段规则由 modelId 决定）。
  * 
+ * 权限认请求里的数据目录注册编码。选表仍用方法参数里的存数编码。没有目录注册编码时不放行。
  * @author yudao
  */
 @Tag(name = "管理后台 - 实体管理", description = "提供实体的创建、更新、删除、查询、导入导出等功能。实体是业务系统中的具体实例对象，必须归属于一个模型（Model）")
@@ -66,7 +67,7 @@ public class EntityController {
         summary = "变更模型 - 预览字段迁移",
         description = "按 fieldCode 交集计算保留/需补填/归档字段，不写入数据库。"
     )
-    @PreAuthorize("@ss.hasPermission('system:entity:update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
     public CommonResult<EntityChangeModelPreviewRespVO> previewChangeModel(
             @Valid @RequestBody EntityChangeModelPreviewReqVO reqVO) {
         return success(entityModelChangeService.preview(reqVO));
@@ -81,7 +82,7 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:entity:update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
     public CommonResult<EntityChangeModelCommitRespVO> commitChangeModel(
             @Valid @RequestBody EntityChangeModelCommitReqVO reqVO) {
         return success(entityModelChangeService.commit(reqVO));
@@ -92,7 +93,7 @@ public class EntityController {
         summary = "变更模型 - 批量预览",
         description = "按勾选的实体 ID 列表逐条预览，汇总可迁 / 需补填 / 不可迁。不使用当前高亮单行。"
     )
-    @PreAuthorize("@ss.hasPermission('system:entity:update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
     public CommonResult<EntityChangeModelBatchPreviewRespVO> batchPreviewChangeModel(
             @Valid @RequestBody EntityChangeModelBatchPreviewReqVO reqVO) {
         return success(entityModelChangeService.batchPreview(reqVO));
@@ -104,7 +105,7 @@ public class EntityController {
         description = "按实体 ID 列表逐条提交；单条失败不影响其余。入参应为预览中的可迁及已补填项。"
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:entity:update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
     public CommonResult<EntityChangeModelBatchCommitRespVO> batchCommitChangeModel(
             @Valid @RequestBody EntityChangeModelBatchCommitReqVO reqVO) {
         return success(entityModelChangeService.batchCommit(reqVO));
@@ -122,7 +123,7 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = CREATE)
-    @PreAuthorize("@ss.hasPermission('system:entity:create')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'create')")
     public CommonResult<Long> create(@Valid @RequestBody EntityCreateReqVO reqVO) {
         return success(entityService.create(reqVO));
     }
@@ -138,7 +139,7 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = CREATE)
-    @PreAuthorize("@ss.hasPermission('system:entity:create')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'create')")
     public CommonResult<Long> cloneEntity(@Valid @RequestBody EntityCloneReqVO reqVO) {
         return success(entityService.cloneEntity(reqVO));
     }
@@ -154,7 +155,7 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:entity:update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
     public CommonResult<Boolean> update(@Valid @RequestBody EntityUpdateReqVO reqVO) {
         entityService.update(reqVO);
         return success(true);
@@ -176,10 +177,11 @@ public class EntityController {
     @Parameter(name = "entityTypeCode", description = "业务类型编码（必填，用于路由到对应存储策略）", required = true, example = "equipment")
     @Parameter(name = "forceDelete", description = "是否强制删除（同时删除所有关联关系）", example = "false")
     @ApiAccessLog(operateType = DELETE)
-    @PreAuthorize("@ss.hasPermission('system:entity:delete')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, 'delete')")
     public CommonResult<Boolean> delete(@RequestParam("id") Long id,
                                         @RequestParam("entityTypeCode") String entityTypeCode,
-                                        @RequestParam(value = "forceDelete", required = false, defaultValue = "false") Boolean forceDelete) {
+                                        @RequestParam(value = "forceDelete", required = false, defaultValue = "false") Boolean forceDelete,
+            @RequestParam(value = "registryCode", required = false) String registryCode) {
         EntityDeleteReqVO reqVO = new EntityDeleteReqVO();
         reqVO.setId(id);
         reqVO.setEntityTypeCode(entityTypeCode);
@@ -207,11 +209,12 @@ public class EntityController {
     @Parameter(name = "entityTypeCode", description = "业务类型编码（必填，用于路由到对应存储策略）", required = true, example = "equipment")
     @Parameter(name = "includeAssociations", description = "是否包含关联字段展示数据（默认 false）")
     @Parameter(name = "associationCategoryViews", description = "可选，JSON 数组：[{fieldCode,categoryTypeCode},...]")
-    @PreAuthorize("@ss.hasPermission('system:entity:query')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, 'query')")
     public CommonResult<EntityRespVO> get(@RequestParam("id") Long id,
                                           @RequestParam("entityTypeCode") String entityTypeCode,
                                           @RequestParam(value = "includeAssociations", required = false, defaultValue = "false") Boolean includeAssociations,
-                                          @RequestParam(value = "associationCategoryViews", required = false) String associationCategoryViewsJson) {
+                                          @RequestParam(value = "associationCategoryViews", required = false) String associationCategoryViewsJson,
+            @RequestParam(value = "registryCode", required = false) String registryCode) {
         List<AssociationCategoryViewReqVO> views = null;
         if (associationCategoryViewsJson != null && !associationCategoryViewsJson.isBlank()) {
             try {
@@ -232,9 +235,10 @@ public class EntityController {
             - 业务范围：指定业务（必须传 entityTypeCode）
             """
     )
-    @PreAuthorize("@ss.hasPermission('system:entity:query')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, 'query')")
     public CommonResult<Boolean> exists(@RequestParam("id") Long id,
-                                        @RequestParam("entityTypeCode") String entityTypeCode) {
+                                        @RequestParam("entityTypeCode") String entityTypeCode,
+            @RequestParam(value = "registryCode", required = false) String registryCode) {
         return success(entityService.get(id, entityTypeCode) != null);
     }
 
@@ -253,13 +257,14 @@ public class EntityController {
     @Parameter(name = "fieldKey", required = true, example = "name")
     @Parameter(name = "value", required = true, example = "测试设备")
     @Parameter(name = "excludeId", description = "编辑时排除的实体 id")
-    @PreAuthorize("@ss.hasPermission('system:entity:query')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, 'query')")
     public CommonResult<EntityFieldAvailabilityRespVO> checkFieldUnique(
             @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam(value = "modelId", required = false) Long modelId,
             @RequestParam("fieldKey") String fieldKey,
             @RequestParam("value") String value,
-            @RequestParam(value = "excludeId", required = false) Long excludeId) {
+            @RequestParam(value = "excludeId", required = false) Long excludeId,
+            @RequestParam(value = "registryCode", required = false) String registryCode) {
         return success(entityService.checkFieldUnique(entityTypeCode, modelId, fieldKey, value, excludeId));
     }
 
@@ -273,10 +278,11 @@ public class EntityController {
             - 业务范围：指定业务（必须传 entityTypeCode）
             """
     )
-    @PreAuthorize("@ss.hasPermission('system:entity:update')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, 'update')")
     public CommonResult<Boolean> moveEntity(@RequestParam("entityId") Long entityId,
                                             @RequestParam("entityTypeCode") String entityTypeCode,
-                                            @RequestParam(value = "newParentId", required = false) Long newParentId) {
+                                            @RequestParam(value = "newParentId", required = false) Long newParentId,
+            @RequestParam(value = "registryCode", required = false) String registryCode) {
         entityService.moveEntity(entityId, entityTypeCode, newParentId);
         return success(true);
     }
@@ -293,11 +299,12 @@ public class EntityController {
     @Parameter(name = "entityTypeCode", required = true)
     @Parameter(name = "modelId", description = "可选，限定型号")
     @Parameter(name = "facilityId", description = "站场级类型必填所属场站")
-    @PreAuthorize("@ss.hasPermission('system:entity:query')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, 'query')")
     public CommonResult<List<EntityRespVO>> getHierarchyTree(
             @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam(value = "modelId", required = false) Long modelId,
-            @RequestParam(value = "facilityId", required = false) Long facilityId) {
+            @RequestParam(value = "facilityId", required = false) Long facilityId,
+            @RequestParam(value = "registryCode", required = false) String registryCode) {
         return success(entityService.getEntityTreeByModelId(entityTypeCode, modelId, facilityId));
     }
 
@@ -310,9 +317,10 @@ public class EntityController {
             - 业务范围：指定业务（必须传 entityTypeCode）
             """
     )
-    @PreAuthorize("@ss.hasPermission('system:entity:query')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, 'query')")
     public CommonResult<List<String>> getEntityPath(@RequestParam("entityId") Long entityId,
-                                                     @RequestParam("entityTypeCode") String entityTypeCode) {
+                                                     @RequestParam("entityTypeCode") String entityTypeCode,
+            @RequestParam(value = "registryCode", required = false) String registryCode) {
         return success(entityService.getEntityPath(entityId, entityTypeCode));
     }
 
@@ -328,9 +336,10 @@ public class EntityController {
     )
     @Parameter(name = "categoryId", description = "分类ID（必填）", required = true, example = "1")
     @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
-    @PreAuthorize("@ss.hasPermission('system:entity:query')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, 'query')")
     public CommonResult<EntityRespVO> getCategoryLinkedEntity(@RequestParam("categoryId") Long categoryId,
-                                                                @RequestParam("entityTypeCode") String entityTypeCode) {
+                                                                @RequestParam("entityTypeCode") String entityTypeCode,
+            @RequestParam(value = "registryCode", required = false) String registryCode) {
         return success(entityService.getCategoryLinkedEntity(categoryId, entityTypeCode));
     }
 
@@ -352,7 +361,7 @@ public class EntityController {
             - ENTITIES_DETAIL：实体详情
             """
     )
-    @PreAuthorize("@ss.hasPermission('system:entity:query')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, 'query')")
     public CommonResult<EntitySceneQueryRespVO> queryEntities(
             @RequestParam("scene") EntityQueryScene scene,
             @RequestParam(value = "resultShape", required = false, defaultValue = "PAGE") String resultShape,
@@ -376,7 +385,8 @@ public class EntityController {
             @RequestParam(value = "isAsc", required = false) Boolean isAsc,
             @RequestParam(value = "relatedEntityIds", required = false) List<String> relatedEntityIds,
             @RequestParam(value = "relatedEntityTypeCode", required = false) String relatedEntityTypeCode,
-            @RequestBody(required = false) List<FieldFilterReqVO> filters) {
+            @RequestBody(required = false) List<FieldFilterReqVO> filters,
+            @RequestParam(value = "registryCode", required = false) String registryCode) {
         return queryEntitiesInternal(scene, resultShape, resultDetail, categoryTypeCode, entityTypeCode,
                 parseFlexibleIdList(modelIds), modelEntityTypeCode, parseFlexibleIdList(categoryIds),
                 null,
@@ -447,7 +457,7 @@ public class EntityController {
             - 划分数据：entityTypeCode 传 SCOPE 入口编码，后端按成员表收窄，勿再传 scopeEntityTypeCode
             """
     )
-    @PreAuthorize("@ss.hasPermission('system:entity:query')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'query')")
     public CommonResult<EntitySceneQueryRespVO> queryEntitiesByBody(@Valid @RequestBody EntitySceneQueryReqVO reqVO) {
         return queryEntitiesInternal(reqVO.getScene(), reqVO.getResultShape(), reqVO.getResultDetail(),
                 reqVO.getCategoryTypeCode(), reqVO.getEntityTypeCode(),
@@ -499,7 +509,7 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = EXPORT)
-    @PreAuthorize("@ss.hasPermission('system:entity:export')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'query')")
     public void exportExcel(@Valid EntityExportReqVO reqVO, HttpServletResponse response) throws IOException {
         List<EntityExportExcelVO> list = entityDataExportService.exportEntityList(reqVO);
         ExcelUtils.write(response, "业务实体.xls", "数据", EntityExportExcelVO.class, list);
@@ -515,7 +525,7 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = EXPORT)
-    @PreAuthorize("@ss.hasPermission('system:entity:export')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'query')")
     public void exportCsv(@Valid EntityExportReqVO reqVO, HttpServletResponse response) throws IOException {
         String csvContent = entityDataExportService.exportToCsv(reqVO);
         response.setContentType("text/csv;charset=UTF-8");
@@ -532,7 +542,7 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = EXPORT)
-    @PreAuthorize("@ss.hasPermission('system:entity:export')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'query')")
     public void exportJson(@Valid EntityExportReqVO reqVO, HttpServletResponse response) throws IOException {
         String jsonContent = entityDataExportService.exportToJson(reqVO);
         response.setContentType("application/json;charset=UTF-8");
@@ -552,9 +562,10 @@ public class EntityController {
     )
     @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
     @Parameter(name = "modelId", description = "模型ID（可选，用于生成带字段说明的模板）", example = "1")
-    @PreAuthorize("@ss.hasPermission('system:entity:import')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, 'create')")
     public void getImportTemplate(@RequestParam("entityTypeCode") String entityTypeCode,
                                     @RequestParam(value = "modelId", required = false) Long modelId,
+                                    @RequestParam(value = "registryCode", required = false) String registryCode,
                                     HttpServletResponse response) throws IOException {
         List<EntityImportExcelVO> list = entityDataExportService.getImportTemplate(entityTypeCode, modelId);
         ExcelUtils.write(response, "业务实体导入模板.xls", "实体列表", EntityImportExcelVO.class, list);
@@ -573,10 +584,11 @@ public class EntityController {
     @Parameter(name = "file", description = "Excel 文件", required = true)
     @Parameter(name = "updateSupport", description = "是否支持更新已存在的数据", example = "false")
     @ApiAccessLog(operateType = IMPORT)
-    @PreAuthorize("@ss.hasPermission('system:entity:import')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, 'create')")
     public CommonResult<EntityImportRespVO> importExcel(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "updateSupport", required = false, defaultValue = "false") Boolean updateSupport) throws IOException {
+            @RequestParam(value = "updateSupport", required = false, defaultValue = "false") Boolean updateSupport,
+            @RequestParam(value = "registryCode", required = false) String registryCode) throws IOException {
         List<EntityImportExcelVO> list = ExcelUtils.read(file, EntityImportExcelVO.class);
         return success(entityDataExportService.importEntityList(list, updateSupport));
     }
@@ -594,7 +606,7 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:entity:update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
     public CommonResult<EntityBatchOperationRespVO> batchUpdate(@Valid @RequestBody EntityBatchUpdateReqVO reqVO) {
         return success(entityService.batchUpdate(reqVO));
     }
@@ -609,7 +621,7 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = CREATE)
-    @PreAuthorize("@ss.hasPermission('system:entity:create')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'create')")
     public CommonResult<List<Long>> batchCreate(@Valid @RequestBody EntityBatchCreateReqVO reqVO) {
         return success(entityService.batchCreate(reqVO));
     }
@@ -627,7 +639,7 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = DELETE)
-    @PreAuthorize("@ss.hasPermission('system:entity:delete')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'delete')")
     public CommonResult<EntityBatchOperationRespVO> batchDelete(@Valid @RequestBody EntityBatchDeleteReqVO reqVO) {
         return success(entityService.batchDelete(reqVO));
     }
@@ -644,7 +656,7 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:entity:update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
     public CommonResult<EntityBatchOperationRespVO> batchRelocateCategory(@Valid @RequestBody EntityBatchMoveReqVO reqVO) {
         return success(entityService.batchRelocateCategory(reqVO));
     }
@@ -659,7 +671,7 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:entity:update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
     public CommonResult<BatchEntityCategoryAssociationRespVO> batchAppendCategory(
             @Valid @RequestBody EntityBatchCategoryRelationReqVO reqVO) {
         return success(entityService.batchAppendCategory(reqVO));
@@ -675,7 +687,7 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:entity:update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
     public CommonResult<BatchEntityCategoryAssociationRespVO> batchRemoveCategory(
             @Valid @RequestBody EntityBatchCategoryRelationReqVO reqVO) {
         return success(entityService.batchRemoveCategory(reqVO));
@@ -691,7 +703,7 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:entity:update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
     public CommonResult<BatchEntityCategoryAssociationRespVO> batchReplaceCategories(
             @Valid @RequestBody EntityBatchReplaceCategoriesReqVO reqVO) {
         return success(entityService.batchReplaceCategories(reqVO));
@@ -703,7 +715,7 @@ public class EntityController {
         description = "拖拽调整列表顺序后重写排序。有 categoryId 时写分类—实体关联 sort；否则写实体 sort。"
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:entity:update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
     public CommonResult<Boolean> saveEntitySort(@Valid @RequestBody EntitySortSaveReqVO reqVO) {
         entityService.saveEntitySort(reqVO);
         return success(true);
@@ -721,10 +733,11 @@ public class EntityController {
             """
     )
     @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
-    @PreAuthorize("@ss.hasPermission('system:entity:query')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, 'query')")
     public CommonResult<EntityBatchOperationRespVO> batchPreview(
             @RequestParam("entityTypeCode") String entityTypeCode,
-            @RequestBody List<Long> ids) {
+            @RequestBody List<Long> ids,
+            @RequestParam(value = "registryCode", required = false) String registryCode) {
         return success(entityService.getBatchOperationPreview(entityTypeCode, ids));
     }
 

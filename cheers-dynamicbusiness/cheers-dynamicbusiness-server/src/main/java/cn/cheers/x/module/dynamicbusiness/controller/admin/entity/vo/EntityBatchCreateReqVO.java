@@ -90,4 +90,8 @@ public class EntityBatchCreateReqVO {
         @Schema(description = "状态（可选，优先级高于 base.status）", example = "1")
         private Integer status;
     }
+
+    @Schema(description = "这次打开的数据目录注册编码。缺省时接口不放行。")
+    private String registryCode;
+
 }

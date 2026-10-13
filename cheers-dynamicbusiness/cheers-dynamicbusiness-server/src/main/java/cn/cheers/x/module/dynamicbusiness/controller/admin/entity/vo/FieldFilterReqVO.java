@@ -21,4 +21,5 @@ public class FieldFilterReqVO {
 
     @Schema(description = "是否关联字段筛选", example = "false")
     private Boolean relationField;
+
 }

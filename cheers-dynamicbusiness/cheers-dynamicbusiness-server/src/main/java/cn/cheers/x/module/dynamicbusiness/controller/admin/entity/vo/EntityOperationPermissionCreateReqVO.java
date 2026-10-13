@@ -35,4 +35,5 @@ public class EntityOperationPermissionCreateReqVO {
 
     @Schema(description = "是否可删除", example = "true")
     private Boolean canDelete = false;
+
 }

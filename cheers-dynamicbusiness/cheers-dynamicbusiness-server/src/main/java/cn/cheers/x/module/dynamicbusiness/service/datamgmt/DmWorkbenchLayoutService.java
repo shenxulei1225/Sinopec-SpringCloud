@@ -38,7 +38,8 @@ import java.util.UUID;
  * 一次写好同类分类/型号/实体栏、类型码，以及栏所在<strong>区域编号</strong>（本份布局头上的区域清单），禁止半截空壳。
  * <ul>
  *   <li>基础数据（NATIVE）与 REUSE/DOMAIN/SCOPE：四栏全开（列表台账）。</li>
- *   <li>分类绑定实体（CATEGORY）：仍复制四栏，再关掉型号/实体栏（树即对象）。</li>
+ *   <li>分类绑定实体（CATEGORY）：只作用在数据页。仍复制四栏，再关掉型号/实体栏（树即对象）。</li>
+ *   <li>模型管理页是另一份布局：分类栏和型号栏开着，实体栏关掉。不套用数据页那条。</li>
  * </ul>
  * 显示名用底座类型 / 分类种类 / 本目录中文名，不用类型编码冒充 label。
  * 创建时同步写好分类/型号/实体栏默认展示配置 propsId（经资源服务）；不负责打开页现造 props。
@@ -137,7 +138,8 @@ public class DmWorkbenchLayoutService {
                 name,
                 entityType.getCode(),
                 categoryTypeCode,
-                categoryAsEntityLayout);
+                categoryAsEntityLayout,
+                false);
         entityType.setDataLayoutId(layoutId);
         entityTypeMapper.updateById(entityType);
         return layoutId;
@@ -148,11 +150,11 @@ public class DmWorkbenchLayoutService {
      * <p>
      * 与 {@link #ensureCatalogDataLayout} 对称：栏行写真实目录注册编码；禁止伪编码分行；
      * 与数据页 layoutId 不得相同。
+     * 分类当实体只关数据页的型号栏。模型管理页必须留下启用的型号栏。
      */
     @Transactional(rollbackFor = Exception.class)
     public Long ensureCatalogModelLayout(EntityTypeDO entityType,
-                                         String categoryTypeCode,
-                                         boolean categoryAsEntityLayout) {
+                                         String categoryTypeCode) {
         if (entityType.getModelLayoutId() != null) {
             List<DmDataTabLayoutDO> rows =
                     dmDataTabLayoutMapper.selectListByLayoutId(entityType.getModelLayoutId());
@@ -167,7 +169,8 @@ public class DmWorkbenchLayoutService {
                 name,
                 entityType.getCode(),
                 categoryTypeCode,
-                categoryAsEntityLayout);
+                false,
+                true);
         entityType.setModelLayoutId(layoutId);
         entityTypeMapper.updateById(entityType);
         return layoutId;
@@ -215,7 +218,8 @@ public class DmWorkbenchLayoutService {
                                         String instanceName,
                                         String entityTypeCode,
                                         String categoryTypeCode,
-                                        boolean categoryAsEntityLayout) {
+                                        boolean categoryAsEntityLayout,
+                                        boolean modelManagementPage) {
         DmWorkbenchLayoutDO template = requireLayout(templateId);
         if (!Boolean.TRUE.equals(template.getIsTemplate())) {
             throw new ServiceException(400, "只能从模版生成实例：" + templateId);
@@ -376,7 +380,9 @@ public class DmWorkbenchLayoutService {
                 row.setColumnMeta(meta);
             }
 
-            if (categoryAsEntityLayout) {
+            if (modelManagementPage) {
+                applyModelManagementEnables(row);
+            } else if (categoryAsEntityLayout) {
                 applyCategoryAsEntityEnables(row);
             }
             dmDataTabLayoutMapper.insert(row);
@@ -589,6 +595,21 @@ public class DmWorkbenchLayoutService {
         row.setEnabled(enabled);
         row.setColumnMeta(meta == null ? null : new LinkedHashMap<>(meta));
         dmDataTabLayoutMapper.insert(row);
+    }
+
+    /**
+     * 模型管理页这份布局：分类栏、型号栏开着，实体栏关掉。
+     * 数据页「分类即对象」会关掉型号栏，不能套到这里，否则模型管理看不到型号。
+     */
+    private void applyModelManagementEnables(DmDataTabLayoutDO row) {
+        String kind = row.getColumnKind();
+        if (DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(kind)
+                || DmDataTabLayoutKindEnum.MODEL.getCode().equals(kind)
+                || DmDataTabLayoutKindEnum.DETAIL.getCode().equals(kind)) {
+            row.setEnabled(true);
+        } else if (DmDataTabLayoutKindEnum.ENTITY.getCode().equals(kind)) {
+            row.setEnabled(false);
+        }
     }
 
     private void applyCategoryAsEntityEnables(DmDataTabLayoutDO row) {

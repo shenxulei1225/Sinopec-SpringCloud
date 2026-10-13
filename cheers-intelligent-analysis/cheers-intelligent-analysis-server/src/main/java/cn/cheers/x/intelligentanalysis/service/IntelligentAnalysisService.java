@@ -31,5 +31,9 @@ public interface IntelligentAnalysisService {
 
     List<AnalysisJobRespDTO> listRecentJobs(int limit);
 
+    /**
+     * 接收 detection 算法回调。
+     * 回调不带租户编号。按任务编号找到原任务后，用该任务上的租户保存结果并交付。
+     */
     void applyLegacyCallback(String body);
 }

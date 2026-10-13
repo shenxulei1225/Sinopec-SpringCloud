@@ -145,6 +145,7 @@ class IntelligentAnalysisServiceImplTest {
     void callback_normalizesAlarmAndDeliversByBusinessReference() {
         AnalysisJobDO job = new AnalysisJobDO();
         job.setJobNo("AJ-1");
+        job.setTenantId(1L);
         job.setBusinessRefType("TASK_STEP");
         job.setBusinessRefId("9:analysis-step");
         when(jobMapper.selectByJobNo("AJ-1")).thenReturn(job);
@@ -159,6 +160,7 @@ class IntelligentAnalysisServiceImplTest {
         ArgumentCaptor<Map<String, Object>> resultCaptor = ArgumentCaptor.forClass(Map.class);
         verify(resultSink).deliver(any(), resultCaptor.capture());
         assertEquals("ALARM", resultCaptor.getValue().get("verdict"));
+        assertEquals("检测到漏液", resultCaptor.getValue().get("display"));
         assertEquals("COMPLETED", job.getStatus());
     }
 

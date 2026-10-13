@@ -25,4 +25,5 @@ public class EntityCategoryDisassociationReqVO {
     @Schema(description = "分类ID列表", requiredMode = Schema.RequiredMode.REQUIRED, example = "[64, 65]")
     @NotEmpty(message = "分类ID列表不能为空")
     private List<Long> categoryIds;
+
 }

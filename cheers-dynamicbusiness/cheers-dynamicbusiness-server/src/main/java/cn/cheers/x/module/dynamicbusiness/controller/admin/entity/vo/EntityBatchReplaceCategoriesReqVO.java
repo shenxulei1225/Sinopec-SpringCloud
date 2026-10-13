@@ -27,4 +27,8 @@ public class EntityBatchReplaceCategoriesReqVO {
     @Schema(description = "目标分类ID列表", requiredMode = Schema.RequiredMode.REQUIRED, example = "[10,11]")
     @NotEmpty(message = "目标分类ID列表不能为空")
     private List<Long> categoryIds;
+
+    @Schema(description = "这次打开的数据目录注册编码。缺省时接口不放行。")
+    private String registryCode;
+
 }

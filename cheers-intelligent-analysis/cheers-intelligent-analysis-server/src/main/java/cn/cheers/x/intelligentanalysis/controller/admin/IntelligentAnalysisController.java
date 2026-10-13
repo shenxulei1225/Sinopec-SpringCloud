@@ -107,6 +107,10 @@ public class IntelligentAnalysisController {
         return success(intelligentAnalysisService.submitJob(request));
     }
 
+    /**
+     * 接收 detection 算法的结果。请求不带租户编号。
+     * 服务按任务编号找到原任务，再用该任务上的租户保存并交付。
+     */
     @PostMapping("/callbacks/legacy-detection")
     @PermitAll
     @Operation(summary = "接收 detection 服务回调")

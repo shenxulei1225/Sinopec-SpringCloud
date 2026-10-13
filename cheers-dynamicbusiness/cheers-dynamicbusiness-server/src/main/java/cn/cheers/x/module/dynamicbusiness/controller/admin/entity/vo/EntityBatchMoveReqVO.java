@@ -39,4 +39,8 @@ public class EntityBatchMoveReqVO {
 
     @Schema(description = "是否异步执行（当数据量大于100时建议使用异步）", example = "false")
     private Boolean async;
+
+    @Schema(description = "这次打开的数据目录注册编码。缺省时接口不放行。")
+    private String registryCode;
+
 }

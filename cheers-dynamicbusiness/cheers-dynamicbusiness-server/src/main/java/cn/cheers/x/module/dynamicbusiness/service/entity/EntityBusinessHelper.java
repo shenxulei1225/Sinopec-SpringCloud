@@ -360,7 +360,9 @@ public class EntityBusinessHelper {
 
     /**
      * 专用表（ent_*）普遍有 code 列且常为 NOT NULL。
-     * 创建时若未传 code，自动生成，避免 NOT NULL 插入失败。
+     * 设备创建时若未传设备编号，生成一段纯 UUID，不拼类型编码。
+     * 这一列就是协议连接、监控下拉和报文里的设备编号。
+     * 其它专用表仍用「类型编码-UUID」。调用方已经写了编号就保持原值。
      */
     private void ensureDedicatedEntityCode(EntityDO data, String entityTypeCode) {
         if (data == null || StrUtil.isNotBlank(data.getCode())) {
@@ -374,7 +376,18 @@ public class EntityBusinessHelper {
         if (storageType == null || !storageType.isDedicated()) {
             throw new ServiceException(400, "实体类型未使用专用表存储，无法写入实体：" + entityTypeCode);
         }
-        data.setCode(entityTypeCode + "-" + IdUtil.fastSimpleUUID());
+        data.setCode(generatedDedicatedCode(entityTypeCode));
+    }
+
+    /**
+     * 设备编号是纯 UUID。其它专用表编号仍带类型编码，方便从编号看出是哪类账。
+     */
+    static String generatedDedicatedCode(String entityTypeCode) {
+        String uuid = IdUtil.fastSimpleUUID();
+        if ("equipment".equals(entityTypeCode)) {
+            return uuid;
+        }
+        return entityTypeCode + "-" + uuid;
     }
 
     /**

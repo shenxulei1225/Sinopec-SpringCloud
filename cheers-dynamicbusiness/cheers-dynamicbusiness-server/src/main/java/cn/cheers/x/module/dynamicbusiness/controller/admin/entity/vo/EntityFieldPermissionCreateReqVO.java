@@ -29,4 +29,5 @@ public class EntityFieldPermissionCreateReqVO {
 
     @Schema(description = "是否可编辑", example = "false")
     private Boolean canEdit = false;
+
 }

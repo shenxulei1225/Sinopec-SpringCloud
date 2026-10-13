@@ -19,4 +19,5 @@ public class EntityDeleteReqVO {
 
     @Schema(description = "是否强制删除（同时删除所有关联关系）", example = "false")
     private Boolean forceDelete = false;
+
 }

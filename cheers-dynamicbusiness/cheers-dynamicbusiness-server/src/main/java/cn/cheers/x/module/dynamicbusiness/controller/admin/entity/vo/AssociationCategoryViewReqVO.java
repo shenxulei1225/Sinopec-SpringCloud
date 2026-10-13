@@ -16,4 +16,5 @@ public class AssociationCategoryViewReqVO {
 
     @Schema(description = "分类类型编码，对应分类树维度（如任务分类、设备分类）", requiredMode = Schema.RequiredMode.REQUIRED)
     private String categoryTypeCode;
+
 }

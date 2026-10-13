@@ -2,6 +2,7 @@ package cn.cheers.x.intelligentanalysis.service;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
+import cn.cheers.x.framework.tenant.core.util.TenantUtils;
 import cn.cheers.x.intelligentanalysis.api.dto.AnalysisJobRespDTO;
 import cn.cheers.x.intelligentanalysis.api.dto.AnalysisJobSubmitReqDTO;
 import cn.cheers.x.intelligentanalysis.controller.admin.vo.AnalysisCapabilityRespVO;
@@ -28,6 +29,7 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -242,10 +244,21 @@ public class IntelligentAnalysisServiceImpl implements IntelligentAnalysisServic
     public void applyLegacyCallback(String body) {
         JsonNode root = readTree(body);
         String jobNo = root.path("algorithmTempId").asText("").trim();
-        AnalysisJobDO job = jobMapper.selectByJobNo(jobNo);
+        // 算法回调没有租户请求头。先不按租户过滤，只用任务编号找到原任务。
+        AtomicReference<AnalysisJobDO> found = new AtomicReference<>();
+        TenantUtils.executeIgnore(() -> found.set(jobMapper.selectByJobNo(jobNo)));
+        AnalysisJobDO job = found.get();
         if (job == null) {
             throw new ServiceException(404, "回调对不上分析任务");
         }
+        if (job.getTenantId() == null) {
+            throw new ServiceException(400, "分析任务没有租户");
+        }
+        // 保存结果和写回任务步骤都用这条分析任务自己的租户。
+        TenantUtils.execute(job.getTenantId(), () -> completeCallback(job, root));
+    }
+
+    private void completeCallback(AnalysisJobDO job, JsonNode root) {
         if ("COMPLETED".equals(job.getStatus())) {
             return;
         }
@@ -292,7 +305,9 @@ public class IntelligentAnalysisServiceImpl implements IntelligentAnalysisServic
         JsonNode box = boxes.get(0);
         String parameter = box.path("parameter").asText("");
         result.put("verdict", "1".equals(parameter) ? "ALARM" : "0".equals(parameter) ? "NORMAL" : "FAILED");
-        result.put("message", box.path("display").asText(""));
+        String display = box.path("display").asText("");
+        result.put("message", display);
+        result.put("display", display);
         result.put("confidence", decimalOrNull(box.path("scores").asText("")));
         List<Map<String, Object>> detections = new ArrayList<>();
         Map<String, Object> detection = new LinkedHashMap<>();

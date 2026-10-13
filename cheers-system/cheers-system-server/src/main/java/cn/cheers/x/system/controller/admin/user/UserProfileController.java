@@ -71,6 +71,7 @@ public class UserProfileController {
 
     @PutMapping("/update-password")
     @Operation(summary = "修改用户个人密码")
+    @DataPermission(enable = false) // 改自己的密码只按登录用户查自己，不按部门可见范围过滤
     public CommonResult<Boolean> updateUserProfilePassword(@Valid @RequestBody UserProfileUpdatePasswordReqVO reqVO) {
         userService.updateUserPassword(getLoginUserId(), reqVO);
         return success(true);

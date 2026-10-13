@@ -24,5 +24,6 @@ public class EntityVersionPublishReqVO {
     @NotNull(message = "versionNo 不能为空")
     @Min(value = 1, message = "versionNo 必须大于 0")
     private Integer versionNo;
+
 }
 

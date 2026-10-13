@@ -88,4 +88,8 @@ public class EntitySceneQueryReqVO extends PageParam {
     @Schema(description = "字段排序方向；默认 true=升序", example = "true")
     private Boolean isAsc;
 
+
+    @Schema(description = "这次打开的数据目录注册编码。缺省时接口不放行。")
+    private String registryCode;
+
 }

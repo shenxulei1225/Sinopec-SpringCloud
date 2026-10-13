@@ -40,7 +40,8 @@ import java.util.Set;
 /**
  * 任务模块标准执行会话实现。
  *
- * <p><b>负责</b>：新建这次执行的账；更新这次/某一步的状态；往账里记一条过程。</p>
+ * <p><b>负责</b>：新建这次执行的账；更新这次/某一步的状态；往账里记一条过程。
+ * 分析步骤写成告警时，另记一条巡检异常记录并挂到这次任务的执行设备上。</p>
  * <p><b>权威</b>：执行记录与步骤实体；过程写在 custom_fields.process_entries，其它过程字段同袋
  * （task_id / pending_execution_id / execution_status / planned_start）。</p>
  * <p><b>落账类型</b>：请求可以带数据目录编码（例如巡检执行记录这扇门）。
@@ -73,6 +74,8 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
     private TaskExecutionBootstrapService taskExecutionBootstrapService;
     @Resource
     private EntityTypeScopeResolver entityTypeScopeResolver;
+    @Resource
+    private PatrolAnalysisAlarmRecorder patrolAnalysisAlarmRecorder;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -221,7 +224,7 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
         }
         Long facilityId = facilityOf(record);
         for (TaskExecutionWritebackReqDTO.StepUpdate stepUpdate : req.getStepUpdates()) {
-            applyStepUpdate(req.getExecutionRecordId(), facilityId, stepUpdate);
+            applyStepUpdate(record, facilityId, stepUpdate);
         }
     }
 
@@ -263,7 +266,8 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
     }
 
     private void applyStepUpdate(
-            Long executionRecordId, Long facilityId, TaskExecutionWritebackReqDTO.StepUpdate stepUpdate) {
+            EntityRespVO record, Long facilityId, TaskExecutionWritebackReqDTO.StepUpdate stepUpdate) {
+        Long executionRecordId = record.getId();
         Long stepId = stepUpdate.getStepId();
         if (stepId == null) {
             if (!StringUtils.hasText(stepUpdate.getStepCode())) {
@@ -292,6 +296,9 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
         updateReq.setBaseFields(base);
         updateReq.setCustomFields(copyMap(step.getCustomFields()));
         entityService.update(updateReq);
+        if (PatrolAnalysisAlarmRecorder.isAlarm(stepUpdate.getResultPayload())) {
+            patrolAnalysisAlarmRecorder.record(record, step, stepUpdate.getResultPayload());
+        }
     }
 
     /**

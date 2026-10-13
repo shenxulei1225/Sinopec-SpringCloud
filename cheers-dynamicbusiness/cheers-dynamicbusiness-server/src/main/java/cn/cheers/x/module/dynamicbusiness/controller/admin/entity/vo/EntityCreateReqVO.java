@@ -27,4 +27,8 @@ public class EntityCreateReqVO extends EntityBaseVO {
      */
     @Schema(description = "关联型号 ID 列表（创建后按型号类型决定是否写关联表）", example = "[48]")
     private List<Long> relateModelIds;
+
+    @Schema(description = "这次打开的数据目录注册编码。缺省时接口不放行。")
+    private String registryCode;
+
 }

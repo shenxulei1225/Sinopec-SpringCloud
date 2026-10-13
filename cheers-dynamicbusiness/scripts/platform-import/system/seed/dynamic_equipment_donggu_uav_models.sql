@@ -77,7 +77,7 @@ SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP
 FROM dynamic_model m
-WHERE e.code = 'equipment-25408e8c453544b8b39e6d1dc17bb147'
+WHERE e.code = '25408e8c453544b8b39e6d1dc17bb147'
   AND e.deleted = false
   AND e.tenant_id = 1
   AND m.code = 'donggu-uav-small'
@@ -91,7 +91,7 @@ SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP
 FROM dynamic_model m
-WHERE e.code = 'equipment-de6e497903c847d0b2a6803aeaa1136c'
+WHERE e.code = 'de6e497903c847d0b2a6803aeaa1136c'
   AND e.deleted = false
   AND e.tenant_id = 1
   AND m.code = 'donggu-uav-large'

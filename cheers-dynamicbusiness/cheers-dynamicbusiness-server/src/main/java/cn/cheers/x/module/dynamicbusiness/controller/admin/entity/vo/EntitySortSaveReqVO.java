@@ -36,4 +36,8 @@ public class EntitySortSaveReqVO {
         @NotNull(message = "排序位置不能为空")
         private Integer index;
     }
+
+    @Schema(description = "这次打开的数据目录注册编码。缺省时接口不放行。")
+    private String registryCode;
+
 }
