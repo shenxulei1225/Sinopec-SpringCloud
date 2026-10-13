@@ -25,7 +25,8 @@
         <!-- <module>cheers-mall</module> -->
         <!-- <module>cheers-crm</module> -->
         <!-- <module>cheers-erp</module> -->
-        <!-- <module>cheers-iot</module> -->
+        <!-- emergency-biz 编译依赖 cheers-iot-api -->
+        <module>cheers-iot</module>
         <!-- <module>cheers-mes</module> -->
         <!-- <module>cheers-ai</module> -->
         <!-- inspection-task 依赖 device-api，需保留在 reactor -->
@@ -33,8 +34,8 @@
         <!-- 机器人/无人机对接：通讯层 + 协议对接层（不接任务编排） -->
         <module>cheers-device-protocol-gateway</module>
         <module>cheers-inspection-task</module>
-        <!-- 本地日常启动不需要：NATS 独立模块（当前无服务依赖其 reactor 构建） -->
-        <!-- <module>cheers-nats</module> -->
+        <!-- twin-server 编译依赖 cheers-nats-api -->
+        <module>cheers-nats</module>
         <module>cheers-twin</module>
         <module>cheers-dynamicbusiness</module>
         <module>cheers-intelligent-analysis</module>
