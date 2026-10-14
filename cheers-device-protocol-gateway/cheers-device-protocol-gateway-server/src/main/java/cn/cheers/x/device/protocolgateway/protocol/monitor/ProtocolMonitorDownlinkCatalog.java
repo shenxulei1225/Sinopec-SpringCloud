@@ -21,7 +21,7 @@ import java.util.Objects;
 
 /**
  * 从协议指令读下发空包。空包在扩展字段 command_json 里。
- * <p>负责：按设备默认协议列出全部通讯方式上的指令，并取出地面站下发空包。
+ * <p>负责：按设备默认协议列出能下发的指令，并取出地面站下发空包。
  * <p>不负责：填设备编号、写出报文。
  * <p>禁止：物理列是空对象时盖掉扩展字段里的空包；同一操作码有多份不同空包时猜一份。
  */
@@ -44,7 +44,6 @@ public class ProtocolMonitorDownlinkCatalog {
             rows.addAll(cloudInstructions(version));
         } else {
             rows.addAll(assemble(load(version)));
-            rows.addAll(observedOnly(version));
         }
         return rows.stream().map(Prepared::toDto).toList();
     }
@@ -84,14 +83,17 @@ public class ProtocolMonitorDownlinkCatalog {
     }
 
     /**
-     * 大疆机场和 Pilot 的每一种通讯方式、下发和上报都列出。
+     * 大疆机场和 Pilot 只列下发。上报不从这里发出。
      * 操作码都是 0，不能按操作码收成一条。不从地面站连接发出。
      */
     private List<Prepared> cloudInstructions(String protocol) {
         List<Prepared> rows = new ArrayList<>();
         java.util.Set<String> keys = new java.util.HashSet<>();
         for (Spec spec : cachedSpecs()) {
-            if (spec.direction.isBlank() || !spec.versions.contains(protocol) || spec.communication.isBlank()) {
+            if (spec.direction.isBlank() || "uplink".equals(spec.direction) || "ack".equals(spec.direction)) {
+                continue;
+            }
+            if (!spec.versions.contains(protocol) || spec.communication.isBlank()) {
                 continue;
             }
             rows.add(unique(keys, Prepared.cloud(spec)));
@@ -99,25 +101,6 @@ public class ProtocolMonitorDownlinkCatalog {
         rows.sort(Comparator.comparing((Prepared row) -> row.communication)
                 .thenComparing(row -> row.direction)
                 .thenComparing(row -> row.name));
-        return rows;
-    }
-
-    /**
-     * 地面站协议里的上报和回执。只给监控页查看，不能当成下发写出。
-     */
-    private List<Prepared> observedOnly(String protocol) {
-        List<Prepared> rows = new ArrayList<>();
-        java.util.Set<String> keys = new java.util.HashSet<>();
-        for (Spec spec : cachedSpecs()) {
-            if (!spec.versions.contains(protocol)) {
-                continue;
-            }
-            if (!"uplink".equals(spec.direction) && !"ack".equals(spec.direction)) {
-                continue;
-            }
-            rows.add(unique(keys, Prepared.observed(spec)));
-        }
-        rows.sort(Comparator.comparing((Prepared row) -> row.direction).thenComparing(row -> row.name));
         return rows;
     }
 
@@ -302,12 +285,6 @@ public class ProtocolMonitorDownlinkCatalog {
                         "这条要放进巡检任务指令包，不能单独下发", "", key, spec.direction);
             }
             return new Prepared(spec.name, spec.opcode, spec.outbound, true, "", "", key, spec.direction);
-        }
-
-        static Prepared observed(Spec spec) {
-            String reason = "ack".equals(spec.direction) ? "这是回执，不能从这里下发" : "这是上报，不能从这里下发";
-            String key = spec.direction + ":" + spec.opcode + ":" + spec.name;
-            return new Prepared(spec.name, spec.opcode, spec.outbound, false, reason, spec.communication, key, spec.direction);
         }
 
         static Prepared cloud(Spec spec) {

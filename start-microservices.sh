@@ -453,12 +453,12 @@ stop_service() {
     echo -e "${BLUE}🛑 停止服务: $service_name${NC}"
     
     # 查找占用端口的进程（Spring Boot 应用进程）
-    local app_pids=$(lsof -ti:$port)
+    local app_pids=$(lsof -tiTCP:"$port" -sTCP:LISTEN)
     
     if [ -n "$app_pids" ]; then
         for pid in $app_pids; do
             # 验证进程确实在监听目标端口（防止误杀）
-            local pid_port=$(lsof -ti:$port 2>/dev/null | grep "^${pid}$")
+            local pid_port=$(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null | grep "^${pid}$")
             if [ -z "$pid_port" ]; then
                 continue
             fi

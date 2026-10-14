@@ -2,6 +2,8 @@ package cn.cheers.x.device.protocolgateway.protocol.monitor;
 
 import cn.cheers.x.device.protocolgateway.api.dto.ProtocolMonitorEventDTO;
 import cn.cheers.x.device.protocolgateway.api.dto.ProtocolMonitorFieldDTO;
+import cn.cheers.x.device.protocolgateway.api.opcode.InstructionExchangeCatalog;
+import cn.cheers.x.device.protocolgateway.api.opcode.InstructionExchangeMode;
 import cn.cheers.x.device.protocolgateway.datacollection.CatalogLookup;
 import cn.cheers.x.device.protocolgateway.datacollection.DeviceProtocolVersionCatalog;
 import cn.cheers.x.device.protocolgateway.datacollection.FieldDescriptionQualifier;
@@ -46,17 +48,56 @@ public class ProtocolMonitorFieldReader implements ProtocolMonitorFieldPresenter
             return event.withParsed(List.of(), "原文不是对象，对不上字段说明");
         }
         String version = versions.firstVersion(event.deviceId()).orElse(null);
-        CatalogLookup lookup = catalog.findVolume(event.opcode(), version, volumeOf(fields));
+        CatalogLookup lookup = catalog.findVolume(event.opcode(), version, volumeOf(event.opcode(), fields));
         if (!lookup.ok()) {
             return event.withParsed(List.of(), lookup.error());
         }
-        return event.withParsed(project(fields, lookup.rows()), null);
+        return event.withParsed(finish(event.opcode(), fields, project(fields, lookup.rows())), null);
     }
 
     /**
-     * 带返回码的是响应：200 用正常响应卷，其它返回码用异常响应卷。没有返回码的用下发/上报正文卷。
+     * 心跳说明书只有请求卷。设备若在同一操作码上带回返回码，这是答卷，不是缺了请求时间戳。
+     * 返回码两个名字用各指令响应卷里已有的「返回码」「返回码的描述」，不另起中文名。
      */
-    private static String volumeOf(Map<String, Object> fields) {
+    private static List<ProtocolMonitorFieldDTO> finish(
+            int opcode, Map<String, Object> fields, List<ProtocolMonitorFieldDTO> shown) {
+        if (InstructionExchangeCatalog.modeOf(opcode) != InstructionExchangeMode.HEARTBEAT
+                || !fields.containsKey("code")) {
+            return shown;
+        }
+        List<ProtocolMonitorFieldDTO> rows = new ArrayList<>();
+        for (ProtocolMonitorFieldDTO field : shown) {
+            if ("time".equals(field.path()) && !fields.containsKey("time")) {
+                continue;
+            }
+            if ("msgId".equals(field.path()) || "time".equals(field.path())) {
+                rows.add(new ProtocolMonitorFieldDTO(
+                        field.label(), field.path(), field.value(), null, field.type(), field.required()));
+                continue;
+            }
+            rows.add(field);
+        }
+        rows.add(described("返回码", "code", fields.get("code"), "integer"));
+        if (fields.containsKey("msg")) {
+            rows.add(described("返回码的描述", "msg", fields.get("msg"), "string"));
+        }
+        return rows;
+    }
+
+    private static ProtocolMonitorFieldDTO described(String label, String path, Object value, String type) {
+        String text = scalarText(value);
+        return new ProtocolMonitorFieldDTO(label, path, text == null ? "" : text, null, type, false);
+    }
+
+    /**
+     * 要等同步答卷的指令，才按返回码分卷：200 用正常响应，其它返回码用异常响应。
+     * 心跳和回执只有正文卷。报文里就算带了 code，也不去找不存在的响应卷。
+     */
+    private static String volumeOf(int opcode, Map<String, Object> fields) {
+        InstructionExchangeMode mode = InstructionExchangeCatalog.modeOf(opcode);
+        if (mode == InstructionExchangeMode.HEARTBEAT || mode == InstructionExchangeMode.ACK) {
+            return ProtocolInstructionCatalog.VOLUME_OUTBOUND;
+        }
         Object code = fields.get("code");
         if (code instanceof Number number) {
             return number.intValue() == SUCCESS_CODE

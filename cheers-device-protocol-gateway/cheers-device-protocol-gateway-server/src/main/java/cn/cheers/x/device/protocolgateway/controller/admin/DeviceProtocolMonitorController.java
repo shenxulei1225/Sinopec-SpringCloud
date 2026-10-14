@@ -84,7 +84,7 @@ public class DeviceProtocolMonitorController {
     }
 
     /**
-     * 按空包写出一条下发。同步指令等到同号答卷。设备不在线则失败。
+     * 按空包写出一条下发。交出去就返回，不等设备答卷。设备不在线则失败。
      */
     @PostMapping("/downlink")
     public CommonResult<ProtocolMonitorDownlinkResultDTO> downlink(@RequestBody ProtocolMonitorDownlinkRequest request) {

@@ -12,7 +12,7 @@ public interface DeviceTransport {
      *
      * @param deviceId 逻辑设备标识
      * @param text     完整报文文本
-     * @return true 已写出；false 会话不存在或不可写（调用方须显式处理，禁止假装成功）
+     * @return true 已交给这台设备的写出队列；false 会话当时不存在或不可写（调用方须显式处理，禁止假装成功）
      */
     boolean sendText(String deviceId, String text);
 

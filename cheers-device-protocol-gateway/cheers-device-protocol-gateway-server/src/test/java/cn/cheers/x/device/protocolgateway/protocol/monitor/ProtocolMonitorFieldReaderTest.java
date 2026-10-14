@@ -112,6 +112,33 @@ class ProtocolMonitorFieldReaderTest {
     }
 
     @Test
+    void heartbeat_withCode_usesOutboundVolume() {
+        ProtocolMonitorFieldReader reader = reader((opcode, version, volume) -> {
+            assertEquals(500105, opcode);
+            assertEquals(ProtocolInstructionCatalog.VOLUME_OUTBOUND, volume);
+            return CatalogLookup.found(List.of(
+                    new FieldDescriptionRow("opcode", "integer", "指令编码", true),
+                    new FieldDescriptionRow("msgId", "string", "消息编号", true),
+                    new FieldDescriptionRow("time", "integer", "请求时间戳（秒）", true)
+            ));
+        });
+        ProtocolMonitorEventDTO shown = reader.present(new ProtocolMonitorEventDTO(
+                "e-hb", "sim-parse-001", "inbound", 500105, "", "心跳", "",
+                "{\"opcode\":500105,\"msgId\":\"\",\"code\":500102,\"msg\":\"第三方系统无响应\"}",
+                1L, List.of(), null));
+        assertNull(shown.parsedNote());
+        assertEquals("500105", valueOf(shown, "opcode"));
+        assertNull(fieldOf(shown, "opcode").issue());
+        assertNull(fieldOf(shown, "msgId").issue());
+        assertEquals(null, fieldOf(shown, "time"));
+        assertEquals("500102", valueOf(shown, "code"));
+        assertEquals("返回码", fieldOf(shown, "code").label());
+        assertNull(fieldOf(shown, "code").issue());
+        assertEquals("第三方系统无响应", valueOf(shown, "msg"));
+        assertEquals("返回码的描述", fieldOf(shown, "msg").label());
+    }
+
+    @Test
     void commandPackage_hidesFieldsThisStepDoesNotHave() {
         ProtocolMonitorFieldReader reader = reader((opcode, version, volume) -> CatalogLookup.found(List.of(
                 new FieldDescriptionRow("packages", "array", "有序动作集合", true),

@@ -28,6 +28,19 @@ class ProtocolMonitorDownlinkFillerTest {
     }
 
     @Test
+    void fillsHeartbeatTimestampWhenPlaceholderIsZero() {
+        Map<String, Object> outbound = new LinkedHashMap<>();
+        outbound.put("opcode", 500105);
+        outbound.put("msgId", "");
+        outbound.put("time", 0);
+
+        Map<String, Object> filled = ProtocolMonitorDownlinkFiller.fillIdentity(outbound, "dev-1", "hb-1");
+
+        assertEquals("hb-1", filled.get("msgId"));
+        assertEquals(true, ((Number) filled.get("time")).longValue() > 1_000_000_000L);
+    }
+
+    @Test
     void fillsBlankTaskSlotsFromProtocolSample() {
         Map<String, Object> outbound = new LinkedHashMap<>();
         outbound.put("opcode", 500201);

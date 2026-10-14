@@ -7,7 +7,7 @@ import java.util.Map;
 
 /**
  * 把下发空包里已经有、还空着的格子填上。
- * <p>负责：复制空包，再填设备编号、消息编号，以及任务指令里空着的模板编号、任务编号、执行时间。
+ * <p>负责：复制空包，再填设备编号、消息编号、占位时间戳，以及任务指令里空着的模板编号、任务编号、执行时间。
  * <p>不负责：把台账上的其它列抄进报文；给空包补它没有的键。
  * <p>模板编号和任务编号用协议样例里的值，这样巡检指令包、启动、取包、删包、列出模板能对上同一份任务。
  */
@@ -20,6 +20,7 @@ public final class ProtocolMonitorDownlinkFiller {
         Map<String, Object> packet = deepCopy(outbound);
         fillBlank(packet, "deviceId", deviceId);
         fillBlank(packet, "msgId", msgId);
+        fillZero(packet, "time");
         return packet;
     }
 

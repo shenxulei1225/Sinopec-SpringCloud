@@ -4,16 +4,13 @@ import cn.cheers.x.device.protocolgateway.api.dto.ProtocolMonitorDownlinkResultD
 import cn.cheers.x.device.protocolgateway.api.dto.ProtocolMonitorInstructionListDTO;
 import cn.cheers.x.device.protocolgateway.api.mission.DeviceMissionPlan;
 import cn.cheers.x.device.protocolgateway.api.mission.DispatchAction;
-import cn.cheers.x.device.protocolgateway.api.opcode.InstructionExchangeCatalog;
 import cn.cheers.x.device.protocolgateway.api.opcode.TransportOpcode;
 import cn.cheers.x.device.protocolgateway.api.protocol.ProtocolCodes;
 import cn.cheers.x.device.protocolgateway.datacollection.DeviceRegistrationLookup;
 import cn.cheers.x.device.protocolgateway.protocol.envelope.EnvelopeJsonCodec;
 import cn.cheers.x.device.protocolgateway.protocol.exchange.RunningTaskExchangeRecorder;
-import cn.cheers.x.device.protocolgateway.service.DeviceProtocolDownlinkService;
 import cn.cheers.x.device.protocolgateway.service.MissionDownlink;
 import cn.cheers.x.device.protocolgateway.service.MissionTranslationService;
-import cn.cheers.x.device.protocolgateway.service.SyncDownlinkResult;
 import cn.cheers.x.device.protocolgateway.transport.DeviceTransport;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.task.api.InspectionDeviceUplinkApi;
@@ -30,7 +27,7 @@ import java.util.UUID;
 
 /**
  * 监控页模拟下发：按这台设备已登记的默认协议取出下发空包，经现有连接写出。
- * <p>负责：列出可下发指令。任务指令改用这台设备已生成执行记录的编号和翻译出的指令包。其余指令只补空包里已有且还空着的设备编号、消息编号。同步指令等待同号答卷。
+ * <p>负责：列出可下发指令。任务指令改用这台设备已生成执行记录的编号和翻译出的指令包。其余指令只补空包里已有且还空着的设备编号、消息编号。写出后立刻返回，不等同号答卷。答卷随后出现在这台的报文窗口。
  * <p>不负责：另开一条设备连接；在这里自己编包内序号。序号由指令翻译按动作清单从 0 递增，单独发出的指令也占一个号。字段说明不要求必填、这次没有值的项，写进下发说明。
  * <p>禁止：设备没登记默认协议时挑一份说明书；任务指令再填协议样例编号；把大疆指令改从地面站连接发出。
  */
@@ -41,7 +38,6 @@ public class ProtocolMonitorDownlinkService {
     private final DeviceRegistrationLookup registrationLookup;
     private final ProtocolMonitorDownlinkCatalog catalog;
     private final EnvelopeJsonCodec envelopeJsonCodec;
-    private final DeviceProtocolDownlinkService downlinkService;
     private final DeviceTransport deviceTransport;
     private final RunningTaskExchangeRecorder runningTaskExchangeRecorder;
     private final InspectionDeviceUplinkApi inspectionDeviceUplinkApi;
@@ -83,24 +79,7 @@ public class ProtocolMonitorDownlinkService {
             throw new IllegalArgumentException("这条指令空包没有消息编号，无法下发");
         }
         String payloadJson = envelopeJsonCodec.encodeObject(packet);
-        if (InstructionExchangeCatalog.isSyncWaitResult(opcode)) {
-            SyncDownlinkResult result = downlinkService.sendSyncCommand(
-                    deviceId.trim(),
-                    payloadJson,
-                    opcode,
-                    text
-            );
-            return toResult(result, payloadJson);
-        }
-        boolean written = deviceTransport.sendText(deviceId.trim(), payloadJson);
-        String note = written ? "已写出" : "设备当前未连接";
-        if (written) {
-            note = RunningTaskExchangeRecorder.joinNote(
-                    note,
-                    runningTaskExchangeRecorder.recordNow(
-                            deviceId.trim(), TaskExchangeTranscriptReqDTO.OUTBOUND, payloadJson));
-        }
-        return new ProtocolMonitorDownlinkResultDTO(written, false, note, payloadJson);
+        return writeWithoutWaiting(deviceId.trim(), payloadJson, null);
     }
 
     /**
@@ -128,9 +107,12 @@ public class ProtocolMonitorDownlinkService {
         } else {
             payloadJson = payloadForGenerated(deviceId, protocol, opcode, msgId, recordId, task);
         }
-        SyncDownlinkResult result = downlinkService.sendSyncCommand(
-                deviceId, payloadJson, opcode, msgId, task.getExecutionRecordId());
-        ProtocolMonitorDownlinkResultDTO sent = toResult(result, payloadJson);
+        runningTaskExchangeRecorder.remember(deviceId, msgId, task.getExecutionRecordId());
+        ProtocolMonitorDownlinkResultDTO sent = writeWithoutWaiting(
+                deviceId, payloadJson, task.getExecutionRecordId());
+        if (!sent.written()) {
+            runningTaskExchangeRecorder.forget(deviceId, msgId);
+        }
         String name = task.getRecordName() == null ? recordId : task.getRecordName();
         String note = sent.note() + "。任务记录是「" + name + "」";
         if (!notices.isEmpty()) {
@@ -199,18 +181,19 @@ public class ProtocolMonitorDownlinkService {
                 task.getMediaStreamUrl());
     }
 
-    private static ProtocolMonitorDownlinkResultDTO toResult(SyncDownlinkResult result, String payloadJson) {
-        if (!result.written()) {
-            return new ProtocolMonitorDownlinkResultDTO(false, false, result.failureReason(), payloadJson);
+    /**
+     * 写到设备连接上就返回。不等同号答卷，也不在这条请求里等巡检把往来记完。
+     * 答卷由收包路径抄进报文窗口。
+     */
+    private ProtocolMonitorDownlinkResultDTO writeWithoutWaiting(
+            String deviceId, String payloadJson, Long executionRecordId) {
+        boolean written = deviceTransport.sendText(deviceId, payloadJson);
+        if (!written) {
+            return new ProtocolMonitorDownlinkResultDTO(false, false, "设备当前未连接", payloadJson);
         }
-        if (result.accepted()) {
-            return new ProtocolMonitorDownlinkResultDTO(
-                    true,
-                    true,
-                    RunningTaskExchangeRecorder.joinNote("同号答卷已收下", result.failureReason()),
-                    payloadJson);
-        }
-        return new ProtocolMonitorDownlinkResultDTO(true, false, result.failureReason(), payloadJson);
+        runningTaskExchangeRecorder.enqueue(
+                deviceId, TaskExchangeTranscriptReqDTO.OUTBOUND, payloadJson, executionRecordId);
+        return new ProtocolMonitorDownlinkResultDTO(true, false, "已提交下发，可以继续发下一条。设备答卷在左侧报文里看。", payloadJson);
     }
 
     private static String newMsgId() {
