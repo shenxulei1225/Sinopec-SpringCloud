@@ -101,7 +101,7 @@ class PatrolScheduleConflictDetectServiceTest {
         binding.setEquipmentId(EQUIPMENT_ID);
         return new PatrolTaskDraft(
                 TASK_ID, "草稿", "巡检", 7L, "ROBOT", null, binding, null,
-                null, null, "draft", 3, null, null, null, Boolean.FALSE, null, null, null, null, null);
+                null, null, "draft", 3, null, null, null, Boolean.FALSE, null, null, null, null, null, null);
     }
 
     private static WorkItemDTO plannedItem() {

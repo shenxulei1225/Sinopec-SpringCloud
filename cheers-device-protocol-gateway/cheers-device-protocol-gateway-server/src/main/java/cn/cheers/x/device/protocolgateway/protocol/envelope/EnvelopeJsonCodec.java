@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 外层信封编解码：下发信封、回执、心跳回显、读操作码/消息 id/业务 code。
+ * 外层信封编解码：下发信封、回执、心跳、读操作码/消息 id/业务 code。
  * <p>不负责交互方式分流、不等待答卷。禁止把回执编成带业务 code 的成功卷。
  */
 @Component
@@ -135,7 +135,7 @@ public class EnvelopeJsonCodec {
             });
             echo.put("time", epochSeconds);
             echo.put("opcode", TransportOpcode.HEARTBEAT.code());
-            return write(echo, "序列化心跳回显失败");
+            return write(echo, "序列化心跳失败");
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException("解析心跳报文失败", e);
         }

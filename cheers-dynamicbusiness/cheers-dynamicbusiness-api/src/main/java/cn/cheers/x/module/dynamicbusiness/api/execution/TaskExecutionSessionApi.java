@@ -1,6 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.api.execution;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendPoseReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchReqDTO;
@@ -48,6 +49,10 @@ public interface TaskExecutionSessionApi {
     @Operation(summary = "往这次执行的账里记一条过程")
     CommonResult<TaskExecutionAppendProcessRespDTO> appendProcess(
             @Valid @RequestBody TaskExecutionAppendProcessReqDTO req);
+
+    @PostMapping(PREFIX + "/append-pose")
+    @Operation(summary = "往这次执行另存一个回放位置点")
+    CommonResult<Boolean> appendPose(@Valid @RequestBody TaskExecutionAppendPoseReqDTO req);
 
     @GetMapping(PREFIX + "/steps")
     @Operation(summary = "列出这次执行账上的步骤")

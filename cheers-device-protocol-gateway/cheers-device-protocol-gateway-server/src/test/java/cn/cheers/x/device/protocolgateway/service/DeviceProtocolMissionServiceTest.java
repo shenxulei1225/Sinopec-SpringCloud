@@ -10,7 +10,9 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -39,5 +41,12 @@ class DeviceProtocolMissionServiceTest {
         assertTrue(result.failureReason().contains("指令协议对接"));
         verify(transport, never()).isOnline("robot-1");
         verify(downlink, never()).sendCommandPackage(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void executionRecordId_usesDigitsOnly() {
+        assertEquals(88L, DeviceProtocolMissionService.executionRecordId("88"));
+        assertNull(DeviceProtocolMissionService.executionRecordId("tpl"));
+        assertNull(DeviceProtocolMissionService.executionRecordId("0"));
     }
 }

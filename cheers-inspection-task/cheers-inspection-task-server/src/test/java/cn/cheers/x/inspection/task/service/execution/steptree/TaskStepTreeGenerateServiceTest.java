@@ -67,7 +67,7 @@ class TaskStepTreeGenerateServiceTest {
                 1L, "巡检", "patrol", 44L, "ROBOT", content,
                 robotBinding, null, null,
                 Map.of("startStopId", "pad-a", "endStopId", "pad-b"),
-                "draft", 1, "pad-a", "pad-b", null, null, null, null, null, null, null));
+                "draft", 1, "pad-a", "pad-b", null, null, null, null, null, null, null, null));
 
         EntityRespDTO itemEntity = new EntityRespDTO();
         itemEntity.setId(2354L);
@@ -334,7 +334,7 @@ class TaskStepTreeGenerateServiceTest {
         return new PatrolTaskDraft(
                 1L, "巡检", "patrol", 44L, "UAV", content,
                 binding, null, null, route,
-                "draft", 1, "pad-a", "pad-b", null, null, null, null, null, null, null);
+                "draft", 1, "pad-a", "pad-b", null, null, null, null, null, null, null, null);
     }
 
     private PatrolTaskDraft cameraDraft() {
@@ -352,7 +352,7 @@ class TaskStepTreeGenerateServiceTest {
         return new PatrolTaskDraft(
                 1L, "巡检", "patrol", 44L, "FIXED_CAMERA", content,
                 binding, null, null, Map.of(),
-                "draft", 1, null, null, null, null, null, null, null, null, null);
+                "draft", 1, null, null, null, null, null, null, null, null, null, null);
     }
 
     private void stubCameraItem(String actionCode) {

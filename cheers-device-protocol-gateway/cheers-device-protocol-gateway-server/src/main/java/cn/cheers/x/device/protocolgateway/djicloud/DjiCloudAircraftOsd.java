@@ -6,6 +6,7 @@ import cn.cheers.x.device.protocolgateway.api.dto.PayloadGimbalAttitudeDTO;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -87,7 +88,8 @@ final class DjiCloudAircraftOsd {
                 wholeLong(storage, "used"),
                 whole(data, "attitude_head"),
                 cameraExposures(data.get("cameras")),
-                gimbalAttitudes(data));
+                gimbalAttitudes(data),
+                new String(payload, StandardCharsets.UTF_8));
     }
 
     private static boolean isAircraft(JsonNode data) {

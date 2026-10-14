@@ -72,6 +72,47 @@ class FieldDescriptionQualifierTest {
     }
 
     @Test
+    void getPackageResponse_packagesArray_isQualified() {
+        CollectionSample sample = FieldDescriptionQualifier.qualify(
+                sample(Map.of(
+                        "opcode", 500301,
+                        "msgId", "m1",
+                        "code", 200,
+                        "data", Map.of(
+                                "templateId", "T1",
+                                "lineId", "L1",
+                                "packages", List.of(
+                                        Map.of("sequence", 0, "opcode", 200102, "request", Map.of("pointId", "p1"))
+                                )
+                        )
+                )),
+                CatalogLookup.found(List.of(
+                        new FieldDescriptionRow("opcode", "integer", "操作码", true),
+                        new FieldDescriptionRow("data.templateId", "string", "任务模板编号", true),
+                        new FieldDescriptionRow("data.lineId", "string", "指令报文 id", true),
+                        new FieldDescriptionRow("data.packages", "array", "有序动作集合", true),
+                        new FieldDescriptionRow("data.packages[].sequence", "integer", "动作序号", true),
+                        new FieldDescriptionRow("data.packages[].opcode", "integer", "内层动作码", true)
+                )));
+        assertEquals(ProtocolQualifyStatus.QUALIFIED, sample.protocolQualify());
+    }
+
+    @Test
+    void getPackageResponse_packagesAsString_isUnqualified() {
+        CollectionSample sample = FieldDescriptionQualifier.qualify(
+                sample(Map.of(
+                        "opcode", 500301,
+                        "code", 200,
+                        "data", Map.of("templateId", "T1", "lineId", "L1", "packages", "[]")
+                )),
+                CatalogLookup.found(List.of(
+                        new FieldDescriptionRow("data.packages", "array", "有序动作集合", true)
+                )));
+        assertEquals(ProtocolQualifyStatus.UNQUALIFIED, sample.protocolQualify());
+        assertTrue(sample.qualifyErrors().get(0).contains("类型不对"));
+    }
+
+    @Test
     void arrayPath_checksEachItem() {
         CollectionSample sample = FieldDescriptionQualifier.qualify(
                 sample(Map.of(

@@ -21,8 +21,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * 大疆上云 MQTT：机场和 Pilot 2 连到同一个代理后，本类应答上线，并收下飞机定时上报。
- * <p>飞机状态只留在内存里的最新一帧，不写库。不负责地面站 WebSocket，不写下发航线，不写巡检账。
+ * 大疆上云 MQTT：机场和 Pilot 连到同一个代理后，本类应答上线，并订下设备推上来的全部 MQTT 主题。
+ * <p>飞机定时上报解析成飞机状态。状态变更、事件上报、指令飞行上行只留各自主题的最新一帧。都不写巡检账。
+ * <p>不负责地面站 WebSocket，不写下发航线。Pilot 的 HTTPS、WebSocket、JSBridge 不是 MQTT，这里不订。
  * <p>禁止：代理没配上仍标设备在线；许可没配齐仍回 config；把机场报文当成飞机状态。
  */
 @Slf4j
@@ -30,15 +31,12 @@ import java.util.concurrent.Executors;
 @RequiredArgsConstructor
 public class DjiCloudMqttConnector implements MqttCallbackExtended {
 
-    private static final String STATUS_TOPIC = "sys/product/+/status";
-    private static final String REQUESTS_TOPIC = "thing/product/+/requests";
-    private static final String SERVICES_REPLY_TOPIC = "thing/product/+/services_reply";
-    private static final String AIRCRAFT_OSD_TOPIC = "thing/product/+/osd";
-
     private final DeviceProtocolGatewayProperties properties;
     private final DjiCloudOnlineRegistry onlineRegistry;
     private final DjiCloudAircraftStatusRegistry aircraftStatus;
     private final DjiCloudServiceReplyWaiter serviceReplies;
+    private final DjiCloudTopicFrameRegistry topicFrames;
+    private final DjiCloudExchangeJournal exchangeJournal;
     private final DjiCloudUplink uplink = new DjiCloudUplink(new ObjectMapper());
     private final ExecutorService replies = Executors.newSingleThreadExecutor(task -> {
         Thread thread = new Thread(task, "dji-cloud-reply");
@@ -125,22 +123,32 @@ public class DjiCloudMqttConnector implements MqttCallbackExtended {
             return;
         }
         try {
-            client.subscribe(STATUS_TOPIC, 1);
-            client.subscribe(REQUESTS_TOPIC, 1);
-            client.subscribe(SERVICES_REPLY_TOPIC, 1);
-            client.subscribe(AIRCRAFT_OSD_TOPIC, 0);
+            for (DjiCloudInboundTopics.Subscription subscription : DjiCloudInboundTopics.subscriptions()) {
+                client.subscribe(subscription.filter(), subscription.qos());
+            }
         } catch (MqttException ex) {
             log.error("订阅大疆上云主题失败", ex);
         }
     }
 
     private void handle(String topic, byte[] payload) {
+        exchangeJournal.acceptInbound(topic, payload);
         if (topic != null && topic.endsWith("/osd")) {
             aircraftStatus.accept(topic, payload);
             return;
         }
         if (topic != null && topic.endsWith("/services_reply")) {
             serviceReplies.completeFromPayload(payload);
+            return;
+        }
+        DjiCloudTopicFrameRegistry.Reply frameReply = topicFrames.accept(topic, payload);
+        if (frameReply != null) {
+            publish(frameReply.topic(), frameReply.json());
+        }
+        if (topic != null && (topic.endsWith("/state")
+                || topic.endsWith("/events")
+                || topic.endsWith("/drc/up")
+                || topic.endsWith("/property/set_reply"))) {
             return;
         }
         DjiCloudDecision decision = uplink.accept(topic, payload, credentials(), organization());
@@ -170,6 +178,7 @@ public class DjiCloudMqttConnector implements MqttCallbackExtended {
         }
         try {
             client.publish(topic, json.getBytes(StandardCharsets.UTF_8), 1, false);
+            exchangeJournal.acceptOutbound(topic, json);
             return true;
         } catch (MqttException ex) {
             log.error("上云报文发送失败 {}", topic, ex);
@@ -184,6 +193,7 @@ public class DjiCloudMqttConnector implements MqttCallbackExtended {
         }
         try {
             client.publish(reply.topic(), reply.json().getBytes(StandardCharsets.UTF_8), 1, false);
+            exchangeJournal.acceptOutbound(reply.topic(), reply.json());
         } catch (MqttException ex) {
             log.error("上云应答发送失败，网关 {}", reply.gatewaySn(), ex);
             return;

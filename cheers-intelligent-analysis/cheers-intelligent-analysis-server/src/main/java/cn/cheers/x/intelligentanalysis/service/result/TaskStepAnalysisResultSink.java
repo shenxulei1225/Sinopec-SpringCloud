@@ -4,6 +4,7 @@ import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.intelligentanalysis.dal.dataobject.AnalysisJobDO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.TaskExecutionSessionApi;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStepSnapshotDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionWritebackReqDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -24,12 +25,29 @@ import java.util.Map;
 public class TaskStepAnalysisResultSink implements AnalysisJobResultSink {
 
     public static final String BUSINESS_REF_TYPE = "TASK_STEP";
+    /** 连续视频检查。一帧的结果不结束这一步，整次任务结束才关。 */
+    public static final String TASK_STREAM_REF_TYPE = "TASK_STREAM";
 
     private final TaskExecutionSessionApi taskExecutionSessionApi;
 
+    /** 这一步已经告警过。后面的正常帧不把告警抹掉。 */
+    private boolean alreadyAlarm(long executionRecordId, String stepCode) {
+        CommonResult<List<TaskExecutionStepSnapshotDTO>> listed = taskExecutionSessionApi.listSteps(executionRecordId);
+        if (listed == null || !listed.isSuccess() || listed.getData() == null) {
+            return false;
+        }
+        for (TaskExecutionStepSnapshotDTO step : listed.getData()) {
+            if (step == null || !stepCode.equals(step.getStepCode()) || step.getResultPayload() == null) {
+                continue;
+            }
+            return "告警".equals(String.valueOf(step.getResultPayload().get("analysisResult")));
+        }
+        return false;
+    }
+
     @Override
     public boolean supports(String businessRefType) {
-        return BUSINESS_REF_TYPE.equals(businessRefType);
+        return BUSINESS_REF_TYPE.equals(businessRefType) || TASK_STREAM_REF_TYPE.equals(businessRefType);
     }
 
     @Override
@@ -51,22 +69,30 @@ public class TaskStepAnalysisResultSink implements AnalysisJobResultSink {
         }
 
         String verdict = String.valueOf(normalizedResult.getOrDefault("verdict", "FAILED"));
+        String analysisResult = switch (verdict) {
+            case "NORMAL" -> "正常";
+            case "ALARM" -> "告警";
+            default -> "失败";
+        };
+        if ("正常".equals(analysisResult) && alreadyAlarm(executionRecordId, stepCode)) {
+            analysisResult = "告警";
+        }
         Map<String, Object> payload = new LinkedHashMap<>(normalizedResult);
         payload.put("analysisJobNo", job.getJobNo());
         payload.put("analysisCapabilityCode", job.getCapabilityCodeSnapshot());
         payload.put("analysisCapabilityVersion", job.getCapabilityVersionSnapshot());
-        payload.put("analysisResult", switch (verdict) {
-            case "NORMAL" -> "正常";
-            case "ALARM" -> "告警";
-            default -> "失败";
-        });
+        payload.put("analysisResult", analysisResult);
+        if ("告警".equals(analysisResult)) {
+            verdict = "ALARM";
+        }
 
         TaskExecutionWritebackReqDTO request = new TaskExecutionWritebackReqDTO();
         request.setExecutionRecordId(executionRecordId);
         request.setEntityTypeCode("task_record_patrol");
         TaskExecutionWritebackReqDTO.StepUpdate update = new TaskExecutionWritebackReqDTO.StepUpdate();
         update.setStepCode(stepCode);
-        update.setStatus("FAILED".equals(verdict) ? "failed" : "completed");
+        boolean taskStream = TASK_STREAM_REF_TYPE.equals(job.getBusinessRefType());
+        update.setStatus(taskStream ? "in_progress" : ("FAILED".equals(verdict) ? "failed" : "completed"));
         update.setResultPayload(payload);
         request.setStepUpdates(List.of(update));
         CommonResult<Boolean> written = taskExecutionSessionApi.writeback(request);

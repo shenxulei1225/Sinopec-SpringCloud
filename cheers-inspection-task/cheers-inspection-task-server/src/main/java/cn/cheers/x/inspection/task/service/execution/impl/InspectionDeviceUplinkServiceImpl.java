@@ -8,6 +8,7 @@ import cn.cheers.x.device.protocolgateway.api.opcode.TransportOpcode;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.task.service.execution.InspectionDeviceUplinkService;
+import cn.cheers.x.inspection.task.service.execution.analysis.PatrolLiveStreamWatch;
 import cn.cheers.x.inspection.task.service.execution.analysis.PatrolPhotoAnalysisService;
 import cn.cheers.x.inspection.task.service.execution.scheduleboard.PatrolScheduleSlotExecutionWritebackService;
 import cn.cheers.x.inspection.task.service.execution.steptree.TaskStepTreeAssembler;
@@ -30,9 +31,10 @@ import java.util.Map;
  * 巡检采集适配：把样本收成「采集结果到了」，并组好要对回的步/整次状态。
  * <p>记过程、改某一步、改整次状态都由条件策略做。本方法不对执行账写。
  * 拍照步写上之后，跑冒滴漏检查项若配了视频智能分析，交给分析提交去送图；送图失败不回滚这次上报。
+ * 任务报成正在执行后，记下收流名称，供流媒体网关抽当前画面。这里不解码视频。
  * 设备故障上报另外记一条异常，挂在对上的那台设备上，不进分类。
  * <p>不负责：拆原始报文、按字段说明核对、工业通道。
- * <p>禁止：执行记录 id 空了猜设备；不合格还把某一步标成完成；用上报点位对步骤。
+ * <p>禁止：执行记录 id 空了猜设备；不合格还把某一步标成完成；用上报点位对步骤。往来原文另记，不在本方法里用设备编号补执行记录编号。
  */
 @Slf4j
 @Service
@@ -46,6 +48,7 @@ public class InspectionDeviceUplinkServiceImpl implements InspectionDeviceUplink
     private final PatrolScheduleSlotExecutionWritebackService scheduleSlotExecutionWritebackService;
     private final DeviceCollectionAnomalyRecorder deviceCollectionAnomalyRecorder;
     private final PatrolPhotoAnalysisService patrolPhotoAnalysisService;
+    private final PatrolLiveStreamWatch patrolLiveStreamWatch;
 
     @Override
     public void applyCollection(CollectionSample sample) {
@@ -82,6 +85,13 @@ public class InspectionDeviceUplinkServiceImpl implements InspectionDeviceUplink
                 patrolPhotoAnalysisService.submitAfterReported(handledEvent);
             } catch (RuntimeException ex) {
                 log.error("[patrol-uplink] 跑冒滴漏分析提交失败 executionRecordId={} reason={}",
+                        sample.executionRecordId(), ex.getMessage());
+            }
+            try {
+                patrolLiveStreamWatch.onExecutionStatus(
+                        handledEvent.getExecutionRecordId(), handledEvent.getExecutionStatus());
+            } catch (RuntimeException ex) {
+                log.info("[patrol-uplink] 收流抽帧没有挂上 executionRecordId={} reason={}",
                         sample.executionRecordId(), ex.getMessage());
             }
         } else {

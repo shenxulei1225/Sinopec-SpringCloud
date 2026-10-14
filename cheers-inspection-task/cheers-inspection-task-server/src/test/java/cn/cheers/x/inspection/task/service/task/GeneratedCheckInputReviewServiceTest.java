@@ -95,7 +95,7 @@ class GeneratedCheckInputReviewServiceTest {
         return new PatrolTaskDraft(
                 9L, "机器人储罐巡检", "巡检", 1L, "ROBOT", content, binding,
                 null, stepTree(actionCode), null, null, null, null, null, null, true,
-                null, null, null, null, null);
+                null, null, null, null, null, null);
     }
 
     private static Map<String, Object> stepTree(String actionCode) {

@@ -5,6 +5,7 @@ import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.inspection.task.controller.admin.vo.task.*;
 import cn.cheers.x.inspection.task.service.execution.InspectionTaskStartExecutionService;
+import cn.cheers.x.inspection.task.service.execution.openrun.BatteryHeadOpenRunGuard;
 import cn.cheers.x.inspection.task.service.query.InspectionTaskQueryService;
 import cn.cheers.x.inspection.task.service.task.InspectionTaskService;
 import cn.cheers.x.inspection.task.service.task.GeneratedCheckInputReviewService;
@@ -56,6 +57,9 @@ public class InspectionTaskController {
 
     @Resource
     private GeneratedCheckInputReviewService generatedCheckInputReviewService;
+
+    @Resource
+    private BatteryHeadOpenRunGuard batteryHeadOpenRunGuard;
 
     // ==================== 查询 ====================
 
@@ -112,6 +116,16 @@ public class InspectionTaskController {
             @PathVariable("id") Long id,
             @RequestParam(value = "slotId", required = false) String slotId) {
         return success(inspectionTaskStartExecutionService.startExecution(id, slotId));
+    }
+
+    /**
+     * 电量检查已经提示这次无法执行之后，用户选择取消这次还没下发的执行。
+     */
+    @PostMapping("/execution-record/{recordId}/cancel-unrunnable")
+    @Operation(summary = "取消这次无法执行的待执行")
+    public CommonResult<Boolean> cancelUnrunnable(@PathVariable("recordId") Long recordId) {
+        batteryHeadOpenRunGuard.cancelUnrunnable(recordId);
+        return success(true);
     }
 
     @PostMapping("/{id}/review-generated-inputs")

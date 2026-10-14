@@ -95,6 +95,9 @@ public class InspectionTaskUpdateReqVO {
     @Schema(description = "任务创建选定的终点（点位路网节点 id）；空串表示清掉")
     private String endStopId;
 
+    @Schema(description = "任务准备方式。leak 为带跑冒滴漏的任务开始和结束")
+    private String taskPreparation;
+
     @Schema(description = "已发布任务在最后一步更新任务时才允许写回已发布字段")
     private Boolean applyToPublished;
 }

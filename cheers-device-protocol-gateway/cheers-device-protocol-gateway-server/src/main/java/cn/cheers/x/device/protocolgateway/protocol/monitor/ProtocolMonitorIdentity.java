@@ -6,6 +6,7 @@ import cn.cheers.x.device.protocolgateway.api.opcode.TransportOpcode;
 /**
  * 监控列表上的识别文案：先告诉人这是哪一类包。
  * <p>同步指令的下发用指令名。同一操作码的答卷用「的响应」，不再沿用下发那个名字。
+ * <p>心跳下发和设备上报都叫「心跳」。列表上的箭头表示方向。
  * <p>主动上报仍用上报自己的名字。不负责字段说明翻译。未知操作码写明编号，不猜成某条指令。
  */
 public final class ProtocolMonitorIdentity {
@@ -32,9 +33,6 @@ public final class ProtocolMonitorIdentity {
     public static String forOutbound(Integer opcode) {
         if (opcode == null) {
             return "无法识别";
-        }
-        if (opcode == TransportOpcode.HEARTBEAT.code()) {
-            return "心跳回显";
         }
         if (opcode == TransportOpcode.ACK.code()) {
             return "回执";

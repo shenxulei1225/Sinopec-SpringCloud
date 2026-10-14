@@ -321,6 +321,9 @@ public final class TaskStepTreeAssembler {
         source.put("nodeKey", node.nodeKey());
         source.put("actionDomain", node.actionDomain());
         source.put("analysisCapabilityId", node.analysisCapabilityId());
+        if (node.analysisSpan() != null) {
+            source.put("analysisSpan", node.analysisSpan());
+        }
         source.put("dispatched", dispatched);
         if (dispatched) {
             source.put("sequence", sequence);

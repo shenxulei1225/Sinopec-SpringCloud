@@ -9,7 +9,8 @@ import java.util.List;
 
 /**
  * 往这次执行的账里记一条过程。
- * <p>必填：账本编号、何时收到、哪类报文、合不合格。没有账本编号不得猜设备。
+ * <p>必填：账本编号、何时收到、哪类报文、合不合格。调用方必须已经选定账本编号。
+ * <p>摘要不放报文原文。要回放的原文放在 payloadJson，方向放在 direction。
  */
 @Data
 public class TaskExecutionAppendProcessReqDTO {
@@ -33,4 +34,19 @@ public class TaskExecutionAppendProcessReqDTO {
 
     /** 过程摘要；不要塞原始报文 */
     private String summary;
+
+    /**
+     * 这次是平台发出还是设备发来。取值 inbound 或 outbound。
+     * 旧的步骤过程可以不填。
+     */
+    private String direction;
+
+    /** 这一次往来的报文原文，供任务回放。步骤过程可以不填。 */
+    private String payloadJson;
+
+    /**
+     * 这包上报里已经带上的可播放文件地址。有则写到这次执行的录像地址上。
+     * 没有就空着，不编一个地址。
+     */
+    private String mediaFileUrl;
 }

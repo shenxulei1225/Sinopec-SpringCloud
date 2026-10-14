@@ -20,7 +20,9 @@ public record TaskStepNode(
         Map<String, Object> params,
         String actionDomain,
         Long analysisCapabilityId,
-        boolean required
+        boolean required,
+        /** 连续跑冒滴漏才有。TASK 表示从这次任务开始检测到结束。 */
+        String analysisSpan
 ) {
     public static final String HANG_ACTION = "action";
     public static final String HANG_INSPECTION_ITEM = "inspection_item";
@@ -36,6 +38,7 @@ public record TaskStepNode(
         title = title == null ? "" : title.trim();
         parentNodeKey = parentNodeKey == null || parentNodeKey.isBlank() ? null : parentNodeKey.trim();
         actionDomain = trimToNull(actionDomain);
+        analysisSpan = trimToNull(analysisSpan);
         params = params == null
                 ? Map.of()
                 : Collections.unmodifiableMap(new LinkedHashMap<>(params));
@@ -51,7 +54,7 @@ public record TaskStepNode(
             String title,
             Map<String, Object> params
     ) {
-        this(nodeKey, order, parentNodeKey, hangTypeCode, refCode, refId, title, params, null, null, true);
+        this(nodeKey, order, parentNodeKey, hangTypeCode, refCode, refId, title, params, null, null, true, null);
     }
 
     public TaskStepNode(
@@ -67,7 +70,7 @@ public record TaskStepNode(
             Long analysisCapabilityId
     ) {
         this(nodeKey, order, parentNodeKey, hangTypeCode, refCode, refId, title, params,
-                actionDomain, analysisCapabilityId, true);
+                actionDomain, analysisCapabilityId, true, null);
     }
 
     public boolean isAction() {

@@ -9,6 +9,7 @@ import cn.cheers.x.device.protocolgateway.api.opcode.TransportOpcode;
 import cn.cheers.x.device.protocolgateway.api.protocol.ProtocolCodes;
 import cn.cheers.x.device.protocolgateway.datacollection.DeviceRegistrationLookup;
 import cn.cheers.x.device.protocolgateway.protocol.envelope.EnvelopeJsonCodec;
+import cn.cheers.x.device.protocolgateway.protocol.exchange.RunningTaskExchangeRecorder;
 import cn.cheers.x.device.protocolgateway.service.DeviceProtocolDownlinkService;
 import cn.cheers.x.device.protocolgateway.service.MissionDownlink;
 import cn.cheers.x.device.protocolgateway.service.MissionTranslationService;
@@ -18,6 +19,7 @@ import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.task.api.InspectionDeviceUplinkApi;
 import cn.cheers.x.inspection.task.api.dto.PatrolGeneratedTaskActionDTO;
 import cn.cheers.x.inspection.task.api.dto.PatrolGeneratedTaskDownlinkDTO;
+import cn.cheers.x.inspection.task.api.dto.TaskExchangeTranscriptReqDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -41,6 +43,7 @@ public class ProtocolMonitorDownlinkService {
     private final EnvelopeJsonCodec envelopeJsonCodec;
     private final DeviceProtocolDownlinkService downlinkService;
     private final DeviceTransport deviceTransport;
+    private final RunningTaskExchangeRecorder runningTaskExchangeRecorder;
     private final InspectionDeviceUplinkApi inspectionDeviceUplinkApi;
     private final MissionTranslationService missionTranslationService;
 
@@ -90,12 +93,14 @@ public class ProtocolMonitorDownlinkService {
             return toResult(result, payloadJson);
         }
         boolean written = deviceTransport.sendText(deviceId.trim(), payloadJson);
-        return new ProtocolMonitorDownlinkResultDTO(
-                written,
-                false,
-                written ? "已写出" : "设备当前未连接",
-                payloadJson
-        );
+        String note = written ? "已写出" : "设备当前未连接";
+        if (written) {
+            note = RunningTaskExchangeRecorder.joinNote(
+                    note,
+                    runningTaskExchangeRecorder.recordNow(
+                            deviceId.trim(), TaskExchangeTranscriptReqDTO.OUTBOUND, payloadJson));
+        }
+        return new ProtocolMonitorDownlinkResultDTO(written, false, note, payloadJson);
     }
 
     /**
@@ -123,7 +128,8 @@ public class ProtocolMonitorDownlinkService {
         } else {
             payloadJson = payloadForGenerated(deviceId, protocol, opcode, msgId, recordId, task);
         }
-        SyncDownlinkResult result = downlinkService.sendSyncCommand(deviceId, payloadJson, opcode, msgId);
+        SyncDownlinkResult result = downlinkService.sendSyncCommand(
+                deviceId, payloadJson, opcode, msgId, task.getExecutionRecordId());
         ProtocolMonitorDownlinkResultDTO sent = toResult(result, payloadJson);
         String name = task.getRecordName() == null ? recordId : task.getRecordName();
         String note = sent.note() + "。任务记录是「" + name + "」";
@@ -198,7 +204,11 @@ public class ProtocolMonitorDownlinkService {
             return new ProtocolMonitorDownlinkResultDTO(false, false, result.failureReason(), payloadJson);
         }
         if (result.accepted()) {
-            return new ProtocolMonitorDownlinkResultDTO(true, true, "同号答卷已收下", payloadJson);
+            return new ProtocolMonitorDownlinkResultDTO(
+                    true,
+                    true,
+                    RunningTaskExchangeRecorder.joinNote("同号答卷已收下", result.failureReason()),
+                    payloadJson);
         }
         return new ProtocolMonitorDownlinkResultDTO(true, false, result.failureReason(), payloadJson);
     }

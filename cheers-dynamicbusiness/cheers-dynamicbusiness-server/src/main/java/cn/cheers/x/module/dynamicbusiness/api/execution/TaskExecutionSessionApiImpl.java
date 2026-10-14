@@ -1,6 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.api.execution;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendPoseReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchReqDTO;
@@ -49,6 +50,12 @@ public class TaskExecutionSessionApiImpl implements TaskExecutionSessionApi {
     public CommonResult<TaskExecutionAppendProcessRespDTO> appendProcess(
             TaskExecutionAppendProcessReqDTO req) {
         return success(taskExecutionSessionService.appendProcess(req));
+    }
+
+    @Override
+    public CommonResult<Boolean> appendPose(TaskExecutionAppendPoseReqDTO req) {
+        taskExecutionSessionService.appendPose(req);
+        return success(true);
     }
 
     @Override

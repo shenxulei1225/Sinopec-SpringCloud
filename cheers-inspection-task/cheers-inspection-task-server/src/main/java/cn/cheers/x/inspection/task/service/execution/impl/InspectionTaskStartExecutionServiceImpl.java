@@ -6,6 +6,7 @@ import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.task.model.task.ExecutionDeviceBinding;
 import cn.cheers.x.inspection.task.service.execution.InspectionTaskStartExecutionService;
+import cn.cheers.x.inspection.task.service.execution.openrun.BatteryHeadOpenRunGuard;
 import cn.cheers.x.inspection.task.service.execution.openrun.PatrolOpenRunMaterializeService;
 import cn.cheers.x.inspection.task.service.execution.openrun.PatrolOpenRunMaterializeService.FrozenOpenRun;
 import cn.cheers.x.inspection.task.service.execution.openrun.PatrolOpenRunSnapshotSupport;
@@ -26,8 +27,9 @@ import java.util.Map;
 
 /**
  * 巡检「开始执行」：读生成任务时已物化的待执行账与已翻译下行，再下发；不再首次 translate。
- * <p>新建账在生成任务时已经完成。本方法只触发下发并把这一次标成进行中。不负责现算步骤，不读设备上的当前参数。
- * <p>禁止：执行任务时再解析设备参数；在巡检模块做 protocol_mapping。
+ * <p>新建账在生成任务时已经完成。本方法只触发下发并把这一次标成进行中。不负责现算步骤，不读设备上的检查参数。
+ * <p>电量检查：大疆用报上的剩余可飞秒数。东古用电量百分比，没有耗电曲线时按最长飞行时间换成剩余秒数。不够或算不出时不下发。
+ * <p>禁止：执行任务时再解析设备检查参数；在巡检模块做 protocol_mapping；把电量百分比直接和秒数比。
  */
 @Service
 @RequiredArgsConstructor
@@ -42,6 +44,7 @@ public class InspectionTaskStartExecutionServiceImpl implements InspectionTaskSt
     private final PatrolOpenRunMaterializeService openRunMaterializeService;
     private final PatrolScheduleSlotExecutionWritebackService scheduleSlotExecutionWritebackService;
     private final PatrolTaskExecutionRecordMediaBinder patrolTaskExecutionRecordMediaBinder;
+    private final BatteryHeadOpenRunGuard batteryHeadOpenRunGuard;
 
     @Override
     public MissionStartRespDTO startExecution(Long taskId) {
@@ -58,6 +61,10 @@ public class InspectionTaskStartExecutionServiceImpl implements InspectionTaskSt
         FrozenOpenRun frozen = openRunMaterializeService.requireFrozen(task, resolvedSlotId);
         ExecutionDeviceBinding binding = frozen.binding();
         requireKnownProtocol(binding);
+        String blocked = batteryHeadOpenRunGuard.blockIfCannotRun(task, frozen);
+        if (blocked != null) {
+            return new MissionStartRespDTO(false, true, false, false, blocked, null);
+        }
 
         StrategyHandleRespDTO handled = publishStart(task, binding, frozen, resolvedSlotId);
         if (Boolean.FALSE.equals(handled.getDispatchSuccess())) {

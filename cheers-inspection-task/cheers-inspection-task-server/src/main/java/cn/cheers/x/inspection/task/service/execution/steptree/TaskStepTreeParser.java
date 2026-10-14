@@ -53,7 +53,8 @@ public final class TaskStepTreeParser {
                     node.params(),
                     node.actionDomain(),
                     node.analysisCapabilityId(),
-                    node.required()
+                    node.required(),
+                    node.analysisSpan()
             ));
         }
         return List.copyOf(ordered);
@@ -105,7 +106,8 @@ public final class TaskStepTreeParser {
                 paramsOf(row.get("params")),
                 nullIfBlank(row.get("actionDomain")),
                 idOf(row.get("analysisCapabilityId")),
-                !Boolean.FALSE.equals(row.get("required"))
+                !Boolean.FALSE.equals(row.get("required")),
+                nullIfBlank(row.get("analysisSpan"))
         );
     }
 

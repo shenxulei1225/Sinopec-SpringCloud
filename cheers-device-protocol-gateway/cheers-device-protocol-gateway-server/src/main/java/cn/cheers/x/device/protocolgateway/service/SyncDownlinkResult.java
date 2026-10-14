@@ -31,4 +31,17 @@ public record SyncDownlinkResult(
     public static SyncDownlinkResult accepted(String replyJson) {
         return new SyncDownlinkResult(true, true, true, replyJson, null);
     }
+
+    /**
+     * 写出已经完成。没记进任务时，把原因接在失败说明后面。下发是否成功不因此改掉。
+     */
+    public SyncDownlinkResult withTranscript(String reason) {
+        if (reason == null || reason.isBlank()) {
+            return this;
+        }
+        String combined = failureReason == null || failureReason.isBlank()
+                ? reason
+                : failureReason + "。" + reason;
+        return new SyncDownlinkResult(written, replied, businessSuccess, replyJson, combined);
+    }
 }

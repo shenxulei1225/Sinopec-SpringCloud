@@ -82,6 +82,7 @@ final class PatrolWizardPageDraft {
                 schedule,
                 stored.schedulePolicyId(),
                 stored.orchestrationPreviewSlots(),
-                stored.orchestrationPreviewPlainSummary(), stored.updateHint());
+                stored.orchestrationPreviewPlainSummary(), stored.updateHint(),
+                stored.taskPreparation());
     }
 }

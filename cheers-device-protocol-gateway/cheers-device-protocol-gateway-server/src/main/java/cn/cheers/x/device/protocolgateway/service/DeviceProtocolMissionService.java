@@ -104,6 +104,7 @@ public class DeviceProtocolMissionService {
         String shownWire = null;
         boolean wroteCommand = false;
         boolean sentPackage = false;
+        Long recordId = executionRecordId(plan.taskId());
         for (DownlinkPiece piece : downlink.pieces()) {
             SyncDownlinkResult result;
             if (piece.direct() != null) {
@@ -112,10 +113,11 @@ public class DeviceProtocolMissionService {
                         plan.deviceId(),
                         piece.direct().wireJson(),
                         piece.direct().opcode(),
-                        piece.direct().msgId());
+                        piece.direct().msgId(),
+                        recordId);
             } else {
                 shownWire = envelopeJsonCodec.encodeCommandSend(piece.commandPackage());
-                result = downlinkService.sendCommandPackage(piece.commandPackage());
+                result = downlinkService.sendCommandPackage(piece.commandPackage(), recordId);
                 sentPackage = true;
             }
             if (!result.accepted()) {
@@ -139,7 +141,7 @@ public class DeviceProtocolMissionService {
                 plan.templateId(),
                 System.currentTimeMillis() / 1000L
         );
-        SyncDownlinkResult startupResult = downlinkService.startupExecute(startup);
+        SyncDownlinkResult startupResult = downlinkService.startupExecute(startup, recordId);
         if (!startupResult.accepted()) {
             return fail(true, true, startupResult.written(),
                     startupResult.failureReason(), shownWire);
@@ -174,6 +176,25 @@ public class DeviceProtocolMissionService {
         return new MissionStartRespDTO(
                 true, true, true, false, null, shownWire,
                 downlink.waylineFileId(), downlink.waylineFingerprint());
+    }
+
+    /**
+     * 计划上的任务 id 是这次执行记录编号。不是数字时不拿任务模板 id 来顶。
+     */
+    static Long executionRecordId(String taskId) {
+        if (taskId == null) {
+            return null;
+        }
+        String text = taskId.trim();
+        if (text.isEmpty() || !text.chars().allMatch(Character::isDigit)) {
+            return null;
+        }
+        try {
+            long value = Long.parseLong(text);
+            return value > 0 ? value : null;
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 
     private static MissionStartRespDTO fail(

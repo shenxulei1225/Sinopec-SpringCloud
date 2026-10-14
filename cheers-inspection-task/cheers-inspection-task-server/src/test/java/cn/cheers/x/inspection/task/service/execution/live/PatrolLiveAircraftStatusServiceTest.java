@@ -41,7 +41,7 @@ class PatrolLiveAircraftStatusServiceTest {
         when(aircraftStatusApi.status("dock-1")).thenReturn(CommonResult.success(
                 new AircraftFlightStatusDTO(
                         null, "aircraft-1", 1L, "P", "手动飞行", 80, 720, 5, 18, 6,
-                        10.0, 1.0, 2.0, 0.0, 3, 4, null, 5L, 1L, 35, null, null)));
+                        10.0, 1.0, 2.0, 0.0, 3, 4, null, 5L, 1L, 35, null, null, null)));
 
         AircraftFlightStatusDTO status = service.load(9L);
 

@@ -122,6 +122,9 @@ public class InspectionTaskRespVO {
     @Schema(description = "任务创建选定的终点（无人机降落点）")
     private String endStopId;
 
+    @Schema(description = "任务准备方式。leak 为带跑冒滴漏的任务开始和结束")
+    private String taskPreparation;
+
     @Schema(description = "已保存路线摘要（含 segments/visitPositions 时可回显路线示意图）")
     private TaskSavedRoutePreviewVO routePreview;
 

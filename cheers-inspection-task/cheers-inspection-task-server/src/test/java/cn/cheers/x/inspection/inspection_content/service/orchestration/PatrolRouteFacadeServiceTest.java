@@ -313,7 +313,7 @@ class PatrolRouteFacadeServiceTest {
         PatrolTaskDraft draft = new PatrolTaskDraft(
                 TASK_ID, "task", "巡检", FACILITY_ID, "UAV", null, null, null,
                 sampleStepTree(), planned, "draft", 2,
-                "sta-start", "sta-end", null, Boolean.FALSE, null, null, previewSlots, null, null);
+                "sta-start", "sta-end", null, Boolean.FALSE, null, null, previewSlots, null, null, null);
         when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draft);
         when(patrolTaskEntityStore.readOrchestrationPreviewSlots(TASK_ID)).thenReturn(previewSlots);
         stubArrangePolicy("priority_preempt", 15);
@@ -362,7 +362,7 @@ class PatrolRouteFacadeServiceTest {
         PatrolTaskDraft draft = new PatrolTaskDraft(
                 TASK_ID, "task", "巡检", FACILITY_ID, "ROBOT", null, null, null,
                 sampleStepTree(), planned, "draft", 2,
-                "sta-start", "sta-end", null, Boolean.FALSE, null, null, previewSlots, null, null);
+                "sta-start", "sta-end", null, Boolean.FALSE, null, null, previewSlots, null, null, null);
         when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draft);
         when(patrolTaskEntityStore.readOrchestrationPreviewSlots(TASK_ID)).thenReturn(previewSlots);
         when(runtimePersistApi.persist(any())).thenReturn(CommonResult.success(true));
@@ -421,7 +421,7 @@ class PatrolRouteFacadeServiceTest {
         PatrolTaskDraft draft = new PatrolTaskDraft(
                 TASK_ID, "task", "巡检", FACILITY_ID, "UAV", null, null, null,
                 sampleStepTree(), planned, "draft", 2,
-                "sta-start", "sta-end", null, Boolean.FALSE, null, null, previewSlots, null, null);
+                "sta-start", "sta-end", null, Boolean.FALSE, null, null, previewSlots, null, null, null);
         when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draft);
         when(patrolTaskEntityStore.readOrchestrationPreviewSlots(TASK_ID)).thenReturn(previewSlots);
         stubArrangePolicy("priority_preempt", 15);
@@ -455,7 +455,7 @@ class PatrolRouteFacadeServiceTest {
         PatrolTaskDraft draft = new PatrolTaskDraft(
                 TASK_ID, "task", "巡检", FACILITY_ID, "UAV", null, null, null,
                 sampleStepTree(), planned, "draft", 2,
-                "sta-start", "sta-end", "job-old", Boolean.TRUE, null, null, previewSlots, null, null);
+                "sta-start", "sta-end", "job-old", Boolean.TRUE, null, null, previewSlots, null, null, null);
         when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draft);
         when(patrolTaskEntityStore.readOrchestrationPreviewSlots(TASK_ID)).thenReturn(previewSlots);
         stubArrangePolicy("priority_preempt", 15);
@@ -488,7 +488,7 @@ class PatrolRouteFacadeServiceTest {
         PatrolTaskDraft draft = new PatrolTaskDraft(
                 TASK_ID, "task", "巡检", FACILITY_ID, "UAV", null, null, null,
                 sampleStepTree(), planned, "draft", 2,
-                "sta-start", "sta-end", null, Boolean.FALSE, null, null, previewSlots, null, null);
+                "sta-start", "sta-end", null, Boolean.FALSE, null, null, previewSlots, null, null, null);
         when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draft);
         when(patrolTaskEntityStore.readOrchestrationPreviewSlots(TASK_ID)).thenReturn(previewSlots);
         stubArrangePolicy("priority_preempt", 15);
@@ -798,7 +798,7 @@ class PatrolRouteFacadeServiceTest {
         return new PatrolTaskDraft(
                 TASK_ID, "task", "巡检", FACILITY_ID, "UAV", null, null, null,
                 stepTree, planned, "draft", 2, "sta-start", "sta-end", runtimeJobId, orchestrationCommitted, null, null,
-                null, null, null);
+                null, null, null, null);
     }
 
     private static WorkItemDTO templateWorkItem() {
@@ -826,7 +826,7 @@ class PatrolRouteFacadeServiceTest {
     private static PatrolTaskDraft draftWithoutRoute() {
         return new PatrolTaskDraft(
                 TASK_ID, "task", "巡检", FACILITY_ID, "UAV", null, null, null,
-                null, Map.of(), "draft", 2, null, null, null, null, null, null, null, null, null);
+                null, Map.of(), "draft", 2, null, null, null, null, null, null, null, null, null, null);
     }
 
     private static ScheduleSlotDTO slot(String slotId, String runtimeJobId, String start, String end,

@@ -89,6 +89,29 @@ class ProtocolMonitorFieldReaderTest {
     }
 
     @Test
+    void getPackageResponse_dataPackagesArray_expandsSteps() {
+        ProtocolMonitorFieldReader reader = reader((opcode, version, volume) -> {
+            assertEquals(500301, opcode);
+            assertEquals(ProtocolInstructionCatalog.VOLUME_INBOUND_SUCCESS, volume);
+            return CatalogLookup.found(List.of(
+                    new FieldDescriptionRow("data.packages", "array", "有序动作集合", true),
+                    new FieldDescriptionRow("data.packages[].sequence", "integer", "动作序号", true),
+                    new FieldDescriptionRow("data.packages[].opcode", "integer", "内层动作码", true),
+                    new FieldDescriptionRow("data.packages[].request.pointId", "string", "点位标识", false)
+            ));
+        });
+        String payload = "{\"opcode\":500301,\"msgId\":\"m1\",\"code\":200,\"data\":{\"templateId\":\"T1\",\"lineId\":\"L1\","
+                + "\"packages\":[{\"sequence\":1,\"opcode\":200401,\"request\":{\"pointId\":\"P1\"}}]}}";
+        ProtocolMonitorEventDTO shown = reader.present(new ProtocolMonitorEventDTO(
+                "e1", "sim-parse-001", "inbound", 500301, "m1", "获取指令包的响应", "", payload, 1L, List.of(), null));
+        assertEquals("有序动作集合", shown.parsedFields().get(0).label());
+        assertNull(shown.parsedFields().get(0).issue());
+        assertEquals("动作序号 1 · 内层动作码 200401", shown.parsedFields().get(1).label());
+        assertEquals("P1", valueOf(shown, "data.packages[0].request.pointId"));
+        assertNull(fieldOf(shown, "data.packages[0].request.pointId").issue());
+    }
+
+    @Test
     void commandPackage_hidesFieldsThisStepDoesNotHave() {
         ProtocolMonitorFieldReader reader = reader((opcode, version, volume) -> CatalogLookup.found(List.of(
                 new FieldDescriptionRow("packages", "array", "有序动作集合", true),

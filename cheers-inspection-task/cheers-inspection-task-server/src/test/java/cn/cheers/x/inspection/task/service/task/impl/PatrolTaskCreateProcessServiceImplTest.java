@@ -63,7 +63,7 @@ class PatrolTaskCreateProcessServiceImplTest {
     ) {
         return new PatrolTaskDraft(
                 8L, "样例", "巡检", 2L, mode, content, null, null, null, plannedRoute, "draft", unlocked,
-                null, null, runtimeJobId, orchestrationCommitted, null, null, orchestrationPreviewSlots, null, null);
+                null, null, runtimeJobId, orchestrationCommitted, null, null, orchestrationPreviewSlots, null, null, null);
     }
 
     private static InspectionContent selectedTank() {

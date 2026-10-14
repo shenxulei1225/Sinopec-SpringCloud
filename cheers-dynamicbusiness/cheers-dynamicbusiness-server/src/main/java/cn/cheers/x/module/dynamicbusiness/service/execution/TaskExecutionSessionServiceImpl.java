@@ -1,6 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.execution;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendPoseReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchReqDTO;
@@ -256,6 +257,7 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
         List<Map<String, Object>> entries = readProcessEntries(custom.get(PROCESS_ENTRIES_KEY));
         entries.add(toProcessEntry(req));
         custom.put(PROCESS_ENTRIES_KEY, entries);
+        rememberMedia(custom, req.getMediaFileUrl());
         updateReq.setCustomFields(custom);
         entityService.update(updateReq);
 
@@ -263,6 +265,67 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
         resp.setExecutionRecordId(record.getId());
         resp.setProcessEntryCount(entries.size());
         return resp;
+    }
+
+    /** 回放位置单独成列。过程列表仍只放指令往来。样本过多时丢掉最早的点。 */
+    private static final String REPLAY_POSE_KEY = "replay_pose";
+    private static final int REPLAY_POSE_LIMIT = 8000;
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void appendPose(TaskExecutionAppendPoseReqDTO req) {
+        if (req.getExecutionRecordId() == null) {
+            throw new ServiceException(400, "记回放位置必须带这次执行的账本编号");
+        }
+        String entityTypeCode = resolveRecordType(req.getEntityTypeCode());
+        EntityRespVO record = entityService.get(req.getExecutionRecordId(), entityTypeCode);
+        if (record == null || record.getId() == null) {
+            throw new ServiceException(404, "执行记录不存在：" + req.getExecutionRecordId());
+        }
+        EntityUpdateReqVO updateReq = new EntityUpdateReqVO();
+        updateReq.setId(record.getId());
+        Map<String, Object> base = copyMap(record.getBaseFields());
+        base.put("entityTypeCode", entityTypeCode);
+        if (record.getModelId() != null) {
+            base.put("modelId", record.getModelId());
+        }
+        if (record.getName() != null) {
+            base.put("name", record.getName());
+        }
+        updateReq.setBaseFields(base);
+        Map<String, Object> custom = copyMap(record.getCustomFields());
+        List<Map<String, Object>> poses = readProcessEntries(custom.get(REPLAY_POSE_KEY));
+        Map<String, Object> point = new LinkedHashMap<>();
+        point.put("t", req.getT());
+        point.put("x", req.getX());
+        point.put("y", req.getY());
+        point.put("z", req.getZ());
+        point.put("yaw", req.getYaw() == null ? 0 : req.getYaw());
+        point.put("frameRef", StringUtils.hasText(req.getFrameRef()) ? req.getFrameRef().trim() : "wgs84");
+        poses.add(point);
+        if (poses.size() > REPLAY_POSE_LIMIT) {
+            poses.subList(0, poses.size() - REPLAY_POSE_LIMIT).clear();
+        }
+        custom.put(REPLAY_POSE_KEY, poses);
+        updateReq.setCustomFields(custom);
+        entityService.update(updateReq);
+    }
+
+    private static void rememberMedia(Map<String, Object> custom, String mediaFileUrl) {
+        if (!StringUtils.hasText(mediaFileUrl)) {
+            return;
+        }
+        Object raw = custom.get("task_patrol_record_media");
+        Map<String, Object> media = new LinkedHashMap<>();
+        if (raw instanceof Map<?, ?> map) {
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                if (entry.getKey() != null) {
+                    media.put(String.valueOf(entry.getKey()), entry.getValue());
+                }
+            }
+        }
+        media.put("recordFileUrl", mediaFileUrl.trim());
+        custom.put("task_patrol_record_media", media);
     }
 
     private void applyStepUpdate(
@@ -527,6 +590,12 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
                 : List.copyOf(req.getQualifyErrors()));
         if (StringUtils.hasText(req.getSummary())) {
             entry.put("summary", req.getSummary().trim());
+        }
+        if (StringUtils.hasText(req.getDirection())) {
+            entry.put("direction", req.getDirection().trim());
+        }
+        if (StringUtils.hasText(req.getPayloadJson())) {
+            entry.put("payloadJson", req.getPayloadJson());
         }
         return entry;
     }

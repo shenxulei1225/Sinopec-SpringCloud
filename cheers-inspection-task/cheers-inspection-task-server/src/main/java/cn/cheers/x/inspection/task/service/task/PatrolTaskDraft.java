@@ -39,6 +39,11 @@ public record PatrolTaskDraft(
          * 已生成任务上的「需要更新」。
          * 动作库或检查项保存时写下，列表只读这一份。点更新任务成功后清掉。
          */
-        String updateHint
+        String updateHint,
+        /**
+         * 任务准备方式。空或 standard 用现有任务开始和结束。
+         * leak 再在准备里打开跑冒滴漏，在结束里关闭。
+         */
+        String taskPreparation
 ) {
 }

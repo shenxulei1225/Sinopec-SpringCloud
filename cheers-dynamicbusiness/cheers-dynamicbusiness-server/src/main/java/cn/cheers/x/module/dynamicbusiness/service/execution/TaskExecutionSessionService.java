@@ -1,5 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.execution;
 
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendPoseReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchReqDTO;
@@ -33,6 +34,11 @@ public interface TaskExecutionSessionService {
      * 没有账本编号或找不到这本账 → 失败，不按设备号猜。
      */
     TaskExecutionAppendProcessRespDTO appendProcess(TaskExecutionAppendProcessReqDTO req);
+
+    /**
+     * 往这次执行另存一个回放位置点。不写入过程列表。
+     */
+    void appendPose(TaskExecutionAppendPoseReqDTO req);
 
     /**
      * 列出这次执行账上的步骤。没有步骤时返回空列表，不按设备号另查。

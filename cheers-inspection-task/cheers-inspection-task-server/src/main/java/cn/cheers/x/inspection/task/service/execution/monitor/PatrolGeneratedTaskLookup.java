@@ -74,6 +74,35 @@ public class PatrolGeneratedTaskLookup {
         return dto;
     }
 
+    /**
+     * 这次往来要记进的执行记录。
+     * 报文编号已经出现在某条执行记录上时，直接用它。
+     * 大疆主题上的网关序列号或飞机序列号，先对到恰好一台设备的设备编号，再按同一条规则选。
+     * 一条正在执行就用它。否则只有一条已经到点的待执行才用它。还没到点的不参与。
+     */
+    public PatrolGeneratedTaskSelector.RunningMatch forExchange(String deviceId) {
+        try {
+            List<PatrolGeneratedTaskSelector.Candidate> rows = candidates(loadRecords());
+            OffsetDateTime now = OffsetDateTime.now(PLAN_ZONE);
+            if (hasLedgerRow(rows, deviceId)) {
+                return PatrolGeneratedTaskSelector.forExchange(rows, deviceId, now);
+            }
+            EquipmentLedgerIdentity.Match identity = EquipmentLedgerIdentity.resolve(deviceId, loadDeviceIdentities());
+            if (identity.ambiguous()) {
+                return PatrolGeneratedTaskSelector.RunningMatch.skipped("多台设备登记了同一个序列号，这次往来未记入任务");
+            }
+            String ledgerId = identity.code();
+            if (ledgerId != null && deviceId != null && !ledgerId.equals(deviceId.trim())) {
+                return PatrolGeneratedTaskSelector.forExchange(rows, ledgerId, now);
+            }
+            return PatrolGeneratedTaskSelector.forExchange(rows, deviceId, now);
+        } catch (RuntimeException ex) {
+            String message = ex.getMessage();
+            return PatrolGeneratedTaskSelector.RunningMatch.skipped(
+                    message == null || message.isBlank() ? "读不到巡检执行记录" : message);
+        }
+    }
+
     private List<EntityRespDTO> loadRecords() {
         CommonResult<List<EntityRespDTO>> listed = entityRpcApi.listEntities(RECORD_TYPE, null);
         if (listed == null || !listed.isSuccess() || listed.getData() == null) {
@@ -97,6 +126,47 @@ public class PatrolGeneratedTaskLookup {
         }
         PatrolTaskDraft task = patrolTaskEntityStore.require(taskDefinitionId);
         return task == null ? null : task.executionDeviceBinding();
+    }
+
+    private static boolean hasLedgerRow(List<PatrolGeneratedTaskSelector.Candidate> rows, String deviceId) {
+        if (deviceId == null || deviceId.isBlank() || rows == null) {
+            return false;
+        }
+        String wanted = deviceId.trim();
+        for (PatrolGeneratedTaskSelector.Candidate row : rows) {
+            if (row != null && wanted.equals(row.deviceId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 设备编号、出厂序列号、飞机序列号。序列号空着的不拿来对报文。
+     */
+    private List<EquipmentLedgerIdentity.Device> loadDeviceIdentities() {
+        CommonResult<List<EntityRespDTO>> listed = entityRpcApi.listEntities("equipment", null);
+        if (listed == null || !listed.isSuccess() || listed.getData() == null) {
+            throw ServiceExceptionUtil.invalidParamException(
+                    listed != null && StringUtils.hasText(listed.getMsg()) ? listed.getMsg() : "读不到巡检设备");
+        }
+        List<EquipmentLedgerIdentity.Device> rows = new ArrayList<>();
+        for (EntityRespDTO row : listed.getData()) {
+            if (row == null) {
+                continue;
+            }
+            Map<String, Object> base = row.getBaseFields() == null ? Map.of() : row.getBaseFields();
+            Map<String, Object> custom = row.getCustomFields() == null ? Map.of() : row.getCustomFields();
+            String code = firstText(text(base.get("code")), text(custom.get("code")));
+            if (!StringUtils.hasText(code)) {
+                continue;
+            }
+            rows.add(new EquipmentLedgerIdentity.Device(
+                    code,
+                    firstText(text(base.get("serial_number")), text(custom.get("serial_number"))),
+                    firstText(text(base.get("aircraft_sn")), text(custom.get("aircraft_sn")))));
+        }
+        return rows;
     }
 
     private static List<PatrolGeneratedTaskSelector.Candidate> candidates(List<EntityRespDTO> records) {
@@ -196,5 +266,12 @@ public class PatrolGeneratedTaskLookup {
 
     private static String text(Object raw) {
         return raw == null ? null : String.valueOf(raw).trim();
+    }
+
+    private static String firstText(String primary, String fallback) {
+        if (StringUtils.hasText(primary)) {
+            return primary;
+        }
+        return StringUtils.hasText(fallback) ? fallback : null;
     }
 }

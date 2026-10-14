@@ -167,6 +167,6 @@ class GeneratedTaskUpdateHintServiceTest {
                 id, name, "巡检", 44L, "ROBOT", content, null, null,
                 Map.of("nodes", List.of(equipment, itemNode, action)),
                 null, "enabled", 3, null, null, "job", Boolean.TRUE,
-                null, null, null, null, null);
+                null, null, null, null, null, null);
     }
 }

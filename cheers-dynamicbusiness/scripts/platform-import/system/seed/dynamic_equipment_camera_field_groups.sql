@@ -26,7 +26,7 @@ SET field_groups_config = (
       AND f.code IN (
         'spec_weight_g', 'spec_max_takeoff_weight_g', 'spec_max_payload_g',
         'spec_dimensions', 'spec_wheelbase_mm',
-        'max_flight_time', 'max_hover_time',
+        'max_flight_time', 'battery_discharge_curve', 'max_hover_time',
         'max_horizontal_speed', 'max_ascent_speed', 'max_descent_speed', 'max_wind_resistance',
         'spec_max_altitude_m', 'spec_operating_temperature', 'spec_max_pitch_angle',
         'payload_mounts', 'body_camera_group',
@@ -52,7 +52,7 @@ SET field_groups_config = (
         WHEN code IN (
           'spec_weight_g', 'spec_max_takeoff_weight_g', 'spec_max_payload_g',
           'spec_dimensions', 'spec_wheelbase_mm',
-          'max_flight_time', 'max_hover_time',
+          'max_flight_time', 'battery_discharge_curve', 'max_hover_time',
           'max_horizontal_speed', 'max_ascent_speed', 'max_descent_speed', 'max_wind_resistance',
           'spec_max_altitude_m', 'spec_operating_temperature', 'spec_max_pitch_angle',
           'payload_mounts', 'body_camera_group'
@@ -68,6 +68,7 @@ SET field_groups_config = (
         WHEN 'spec_dimensions' THEN 20
         WHEN 'spec_wheelbase_mm' THEN 22
         WHEN 'max_flight_time' THEN 30
+        WHEN 'battery_discharge_curve' THEN 31
         WHEN 'max_hover_time' THEN 32
         WHEN 'max_horizontal_speed' THEN 40
         WHEN 'max_ascent_speed' THEN 42
@@ -190,7 +191,7 @@ WHERE m.deleted = false
       AND a.field_code IN (
         'spec_weight_g', 'spec_max_takeoff_weight_g', 'spec_max_payload_g',
         'spec_dimensions', 'spec_wheelbase_mm',
-        'max_flight_time', 'max_hover_time',
+        'max_flight_time', 'battery_discharge_curve', 'max_hover_time',
         'max_horizontal_speed', 'max_ascent_speed', 'max_descent_speed', 'max_wind_resistance',
         'spec_max_altitude_m', 'spec_operating_temperature', 'spec_max_pitch_angle',
         'payload_mounts', 'body_camera_group',

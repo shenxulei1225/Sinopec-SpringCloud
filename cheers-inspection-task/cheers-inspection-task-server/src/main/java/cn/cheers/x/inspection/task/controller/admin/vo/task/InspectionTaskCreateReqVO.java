@@ -96,4 +96,7 @@ public class InspectionTaskCreateReqVO {
 
     @Schema(description = "任务创建选定的终点（点位路网节点 id）")
     private String endStopId;
+
+    @Schema(description = "任务准备方式。leak 为带跑冒滴漏的任务开始和结束，空为常规")
+    private String taskPreparation;
 }

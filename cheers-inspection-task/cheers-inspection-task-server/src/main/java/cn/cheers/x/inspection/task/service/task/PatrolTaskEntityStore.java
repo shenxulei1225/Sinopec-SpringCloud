@@ -88,6 +88,8 @@ public class PatrolTaskEntityStore {
      * 不按巡检方式分格。点更新任务成功后清掉。
      */
     public static final String DRAFT_KEY_UPDATE_HINT = "updateHint";
+    /** 任务准备方式。leak 表示带跑冒滴漏的任务开始和结束。 */
+    public static final String DRAFT_KEY_PREPARATION = "taskPreparation";
     public static final String FIELD_STEP_TREE = "step_tree_json";
     public static final String EMPTY_SCHEDULE = "{\"items\":[],\"version\":1}";
 
@@ -114,7 +116,7 @@ public class PatrolTaskEntityStore {
                 req.getScheduleConfig(), req.getSchedulePolicyId(),
                 req.getConflictStrategy(), req.getTaskGapMinutes(),
                 req.getAllowShiftExisting(), req.getMaxShiftMinutes(),
-                null, null, null));
+                null, null, null, req.getTaskPreparation()));
         return requireId(entityRpcApi.createEntity(write), "创建总任务失败");
     }
 
@@ -158,12 +160,16 @@ public class PatrolTaskEntityStore {
         Integer maxShiftToWrite = req.getMaxShiftMinutes() != null
                 ? req.getMaxShiftMinutes()
                 : asInteger(existingDraft.get(DRAFT_KEY_MAX_SHIFT_MINUTES));
+        String preparationToWrite = req.getTaskPreparation() != null
+                ? req.getTaskPreparation()
+                : firstText(existingDraft.get(DRAFT_KEY_PREPARATION));
         write.setFields(toFields(req.getDomain(), req.getFacilityId(), req.getPatrolExecutionMode(),
                 req.getStartStopId(), req.getEndStopId(),
                 req.getInspectionContent(), req.getExecutionDeviceBinding(), req.getResourcePolicy(),
                 scheduleToWrite, policyToWrite, conflictToWrite, gapToWrite,
                 allowShiftToWrite, maxShiftToWrite,
-                existingBag.get(FIELD_STEP_TREE), existingBag.get(FIELD_ROUTE), existingDraft));
+                existingBag.get(FIELD_STEP_TREE), existingBag.get(FIELD_ROUTE), existingDraft,
+                preparationToWrite));
         requireOk(entityRpcApi.updateEntityFields(write), "更新总任务失败");
     }
 
@@ -600,7 +606,8 @@ public class PatrolTaskEntityStore {
             Integer maxShiftMinutes,
             Object stepTree,
             Object plannedRoute,
-            Map<String, Object> existingDraft
+            Map<String, Object> existingDraft,
+            String taskPreparation
     ) {
         Map<String, Object> fields = new LinkedHashMap<>();
         fields.put(FIELD_DOMAIN, StringUtils.hasText(domain) ? domain.trim() : "巡检");
@@ -643,6 +650,9 @@ public class PatrolTaskEntityStore {
             draft.put(DRAFT_KEY_END, PatrolMeansKeyedSupport.putSlice(
                     draft.get(DRAFT_KEY_END), wrapOwner, writeMeans,
                     StringUtils.hasText(endStopId) ? endStopId.trim() : null));
+        }
+        if (taskPreparation != null) {
+            draft.put(DRAFT_KEY_PREPARATION, StringUtils.hasText(taskPreparation) ? taskPreparation.trim() : null);
         }
         if (binding != null) {
             draft.put("executionDeviceBinding", PatrolMeansKeyedSupport.putSlice(
@@ -715,7 +725,8 @@ public class PatrolTaskEntityStore {
                 previewSlice,
                 firstText(PatrolMeansKeyedSupport.readSlice(
                         readOrchestrationPreviewSummaryFromDraft(draft), means, unwrappedOwner)),
-                firstText(draft.get(DRAFT_KEY_UPDATE_HINT))
+                firstText(draft.get(DRAFT_KEY_UPDATE_HINT)),
+                firstText(draft.get(DRAFT_KEY_PREPARATION))
         );
     }
 

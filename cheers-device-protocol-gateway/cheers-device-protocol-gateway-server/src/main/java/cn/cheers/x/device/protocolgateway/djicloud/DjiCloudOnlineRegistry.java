@@ -2,6 +2,7 @@ package cn.cheers.x.device.protocolgateway.djicloud;
 
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -45,5 +46,27 @@ public class DjiCloudOnlineRegistry {
      */
     public List<DjiCloudOnlineDevice> listOnline() {
         return List.copyOf(online.values());
+    }
+
+    /**
+     * 这台序列号只挂在一个已应答的网关上时，返回那个网关。
+     * 没有，或同时挂在多个网关上，返回 null，不挑一个。
+     */
+    public String singleGatewayOf(String deviceSn) {
+        if (deviceSn == null || deviceSn.isBlank()) {
+            return null;
+        }
+        List<String> hits = new ArrayList<>();
+        for (DjiCloudOnlineDevice device : online.values()) {
+            if (device == null || device.gatewaySn() == null) {
+                continue;
+            }
+            boolean self = deviceSn.equals(device.gatewaySn());
+            boolean child = device.subDeviceSns() != null && device.subDeviceSns().contains(deviceSn);
+            if (self || child) {
+                hits.add(device.gatewaySn());
+            }
+        }
+        return hits.size() == 1 ? hits.get(0) : null;
     }
 }

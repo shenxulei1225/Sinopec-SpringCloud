@@ -176,7 +176,8 @@ public class PatrolMissionTranslateService {
                 draft.schedulePolicyId(),
                 draft.orchestrationPreviewSlots(),
                 draft.orchestrationPreviewPlainSummary(),
-                draft.updateHint());
+                draft.updateHint(),
+                draft.taskPreparation());
     }
 
     private static String formatPreviewTranslateFailure(String rpcMsg) {

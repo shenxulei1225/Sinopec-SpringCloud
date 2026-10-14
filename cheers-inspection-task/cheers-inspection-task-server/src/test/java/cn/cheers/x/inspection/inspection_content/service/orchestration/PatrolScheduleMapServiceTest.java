@@ -158,7 +158,7 @@ class PatrolScheduleMapServiceTest {
         planned.put("totalDistanceMeters", 80L);
         when(patrolTaskEntityStore.require(9L)).thenReturn(new PatrolTaskDraft(
                 9L, "task", "巡检", 1L, "ROBOT", null, null, null,
-                null, planned, "draft", 2, "sta-start", "sta-end", null, null, null, null, null, null, null));
+                null, planned, "draft", 2, "sta-start", "sta-end", null, null, null, null, null, null, null, null));
 
         PatrolScheduleMapReqDTO request = PatrolScheduleMapReqDTO.builder()
                 .taskId(9L)
@@ -186,7 +186,7 @@ class PatrolScheduleMapServiceTest {
         planned.put("totalDistanceMeters", 80L);
         when(patrolTaskEntityStore.require(9L)).thenReturn(new PatrolTaskDraft(
                 9L, "task", "巡检", 1L, "ROBOT", null, binding, null,
-                null, planned, "draft", 2, "sta-start", "sta-end", null, null, null, null, null, null, null));
+                null, planned, "draft", 2, "sta-start", "sta-end", null, null, null, null, null, null, null, null));
 
         PatrolScheduleMapRespDTO resp = service.expandPatrolWorkItems(PatrolScheduleMapReqDTO.builder()
                 .taskId(9L)
@@ -208,7 +208,7 @@ class PatrolScheduleMapServiceTest {
         when(patrolTaskEntityStore.require(9L)).thenReturn(new PatrolTaskDraft(
                 9L, "task", "巡检", 1L, "ROBOT", null, null, null,
                 null, planned, "draft", 2, "sta-start", "sta-end", null, null,
-                dailySchedule("2026-09-01", "2026-09-02", List.of("09:00", "18:00")), null, null, null, null));
+                dailySchedule("2026-09-01", "2026-09-02", List.of("09:00", "18:00")), null, null, null, null, null));
 
         PatrolScheduleMapRespDTO resp = service.expandPatrolWorkItems(PatrolScheduleMapReqDTO.builder()
                 .taskId(9L)
@@ -232,7 +232,7 @@ class PatrolScheduleMapServiceTest {
         planned.put("totalDistanceMeters", 80L);
         when(patrolTaskEntityStore.require(9L)).thenReturn(new PatrolTaskDraft(
                 9L, "task", "巡检", 1L, "ROBOT", null, null, null,
-                null, planned, "draft", 2, "sta-start", "sta-end", null, null, null, null, null, null, null));
+                null, planned, "draft", 2, "sta-start", "sta-end", null, null, null, null, null, null, null, null));
 
         ServiceException ex = assertThrows(ServiceException.class, () -> service.expandPatrolWorkItems(
                 PatrolScheduleMapReqDTO.builder()
@@ -251,7 +251,7 @@ class PatrolScheduleMapServiceTest {
         planned.put("totalDistanceMeters", 80L);
         when(patrolTaskEntityStore.require(9L)).thenReturn(new PatrolTaskDraft(
                 9L, "task", "巡检", 1L, "ROBOT", null, null, null,
-                null, planned, "draft", 2, "sta-start", "sta-end", null, null, null, null, null, null, null));
+                null, planned, "draft", 2, "sta-start", "sta-end", null, null, null, null, null, null, null, null));
 
         PatrolScheduleMapReqDTO request = PatrolScheduleMapReqDTO.builder()
                 .taskId(9L)

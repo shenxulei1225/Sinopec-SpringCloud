@@ -17,7 +17,7 @@ import java.util.Map;
  * 把结构化上报转成采集样本：打身份、转发字段、有则带执行记录 id。
  * <p>负责：巡检等 JSON 应用报文的核对前转发。定时状态和步骤结果先认 {@code packages} 与 {@code result} 两个外层名。
  * <p>不负责：按字段说明做协议合格核对（交给 {@link CollectionQualifyService}）；PLC 点表换算；改模拟器。
- * <p>禁止：执行记录 id 空了用设备编号猜；在本类写成合格；两个外层字段都有还互相覆盖。
+ * <p>禁止：执行记录 id 空了用设备编号猜；在本类写成合格；两个外层字段都有还互相覆盖。往来原文归入正在执行的任务不在本类。
  */
 @Component
 @RequiredArgsConstructor

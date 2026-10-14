@@ -527,6 +527,9 @@ public final class TaskStepTreeGenerator {
         if (action.analysisCapabilityId() != null) {
             row.put("analysisCapabilityId", action.analysisCapabilityId());
         }
+        if ("act-task-head-leak".equals(action.refCode())) {
+            row.put("analysisSpan", "TASK");
+        }
         row.put("required", action.required());
     }
 

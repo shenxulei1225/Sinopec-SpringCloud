@@ -48,6 +48,10 @@ public class TaskStepTreeGenerateService {
     static final String BATTERY_ROBOT = "act-robot-battery-check";
     /** 电量检查上的秒数。检查项动作耗时加路径耗时。 */
     static final String REQUIRED_DURATION = "required_duration";
+    /** 任务准备方式：带跑冒滴漏。准备里打开，结束里关闭。 */
+    static final String PREPARATION_LEAK = "leak";
+    static final String LEAK_HEAD = "act-task-head-leak";
+    static final String LEAK_TAIL = "act-task-tail-leak";
     /** 任务级全程录像：动作库编码。 */
     /** 飞向目标点。降落到指定点时，用任务终点再写一个航点，到了那里降落。 */
     static final String WAYPOINT_ANCHOR = "action-065340437bcb46788b7dc261fab81c63";
@@ -127,6 +131,7 @@ public class TaskStepTreeGenerateService {
                     ProtocolDispatchProfile.robotOpeningSteps(), means, equipmentModelId, null, protocol);
             tail = new ArrayList<>();
             appendTaskLevelRecording(means, protocol, equipmentModelId, head, tail);
+            appendLeakWatch(draft, means, equipmentModelId, protocol, head, tail);
         } else if (TaskStepTreeGenerator.MEANS_UAV.equals(means)) {
             if (!ProtocolDispatchProfile.supportsUavOpeningSteps(protocol)) {
                 throw ServiceExceptionUtil.invalidParamException("执行设备的对接协议无法生成开头步骤");
@@ -140,6 +145,7 @@ public class TaskStepTreeGenerateService {
                     ? new ArrayList<>(landingTail(flightPlan, end, means, equipmentModelId, protocol))
                     : new ArrayList<>();
             appendTaskLevelRecording(means, protocol, equipmentModelId, head, tail);
+            appendLeakWatch(draft, means, equipmentModelId, protocol, head, tail);
         }
         selected = withVisitStops(selected, means);
         Map<String, String> itemStops = itemStopsOf(selected, means);
@@ -428,6 +434,33 @@ public class TaskStepTreeGenerateService {
     /**
      * 复合头尾拆成库里的子动作；叶子用动作库名称。缺子动作或对不上库 → 报缺口。
      */
+    /**
+     * 这次任务选了带跑冒滴漏的准备方式时，开始录像之后打开检测，结束工作的第一步关闭检测。
+     */
+    private void appendLeakWatch(
+            PatrolTaskDraft draft,
+            String means,
+            Long equipmentModelId,
+            String protocol,
+            List<TaskStepTreeGenerator.MethodAction> head,
+            List<TaskStepTreeGenerator.MethodAction> tail) {
+        if (!PREPARATION_LEAK.equals(draft.taskPreparation())) {
+            return;
+        }
+        List<TaskStepTreeGenerator.MethodAction> start = expandLibraryAction(
+                LEAK_HEAD, "任务开始（带跑冒滴漏）", Map.of(), means, equipmentModelId, protocol);
+        int insertAt = head.size();
+        for (int i = 0; i < head.size(); i++) {
+            if (ProtocolDispatchProfile.ACTION_TASK_RECORD_START.equals(head.get(i).refCode())) {
+                insertAt = i + 1;
+                break;
+            }
+        }
+        head.addAll(insertAt, start);
+        tail.addAll(0, expandLibraryAction(
+                LEAK_TAIL, "任务结束（带跑冒滴漏）", Map.of(), means, equipmentModelId, protocol));
+    }
+
     private void appendTaskLevelRecording(
             String means,
             String protocol,

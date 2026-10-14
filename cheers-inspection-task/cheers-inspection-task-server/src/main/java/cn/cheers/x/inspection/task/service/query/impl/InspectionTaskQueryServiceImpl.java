@@ -206,6 +206,7 @@ public class InspectionTaskQueryServiceImpl implements InspectionTaskQueryServic
      */
     private void enrichSavedRouteFromDraft(InspectionTaskRespVO respVO, PatrolTaskDraft draft) {
         Map<String, Object> planned = PatrolPlannedRouteSupport.asPlannedMap(draft.plannedRoute());
+        respVO.setTaskPreparation(draft.taskPreparation());
         if (planned == null || planned.isEmpty()) {
             respVO.setStopSequence(Collections.emptyList());
             respVO.setStartStopId(draft.startStopId());

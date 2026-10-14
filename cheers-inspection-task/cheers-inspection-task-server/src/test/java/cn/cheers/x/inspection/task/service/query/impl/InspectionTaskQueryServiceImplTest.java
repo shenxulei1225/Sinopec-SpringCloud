@@ -75,6 +75,6 @@ class InspectionTaskQueryServiceImplTest {
         return new PatrolTaskDraft(
                 1L, "1-5# 储罐每周巡检", "巡检", 1L, "UAV",
                 null, null, null, null, null,
-                "draft", 3, null, null, runtimeJobId, Boolean.FALSE, null, null, null, null, null);
+                "draft", 3, null, null, runtimeJobId, Boolean.FALSE, null, null, null, null, null, null);
     }
 }

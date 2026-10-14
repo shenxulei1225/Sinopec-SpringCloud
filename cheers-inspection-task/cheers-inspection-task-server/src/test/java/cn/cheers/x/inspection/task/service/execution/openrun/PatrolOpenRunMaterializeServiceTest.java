@@ -281,6 +281,6 @@ class PatrolOpenRunMaterializeServiceTest {
         content.setCustomObjects(List.of(object));
         return new PatrolTaskDraft(
                 1L, "样例", "巡检", facilityId, means, content, binding,
-                null, null, null, "draft", 3, null, null, null, null, null, null, null, null, null);
+                null, null, null, "draft", 3, null, null, null, null, null, null, null, null, null, null);
     }
 }

@@ -31,11 +31,12 @@ public record AircraftFlightStatusDTO(
         Long storageUsedKb,
         Integer headingDegrees,
         List<CameraExposureStatusDTO> cameras,
-        List<PayloadGimbalAttitudeDTO> gimbals
+        List<PayloadGimbalAttitudeDTO> gimbals,
+        String rawPayloadJson
 ) {
     public static AircraftFlightStatusDTO gap(String gap, String aircraftSn) {
         return new AircraftFlightStatusDTO(
                 gap, aircraftSn, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 }

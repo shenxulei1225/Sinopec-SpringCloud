@@ -43,7 +43,7 @@ class PatrolWizardPageDraftTest {
         PatrolTaskDraft stored = new PatrolTaskDraft(
                 99L, "task", "巡检", 7L, "ROBOT", null, null, null,
                 null, null, "draft", 2, "sta-start", "sta-end", null, Boolean.TRUE,
-                null, null, null, null, null);
+                null, null, null, null, null, null);
 
         PatrolTaskDraft working = PatrolWizardPageDraft.overlay(stored, request, calculator);
 

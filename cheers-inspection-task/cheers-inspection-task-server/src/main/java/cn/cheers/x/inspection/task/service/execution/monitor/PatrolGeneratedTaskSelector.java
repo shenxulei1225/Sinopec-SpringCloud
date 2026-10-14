@@ -71,4 +71,90 @@ public final class PatrolGeneratedTaskSelector {
         due.sort(Comparator.comparing(Candidate::plannedStart).reversed().thenComparing(Candidate::id, Comparator.reverseOrder()));
         return due.get(0);
     }
+
+    /**
+     * 这台设备此刻正在执行的那一条。
+     * 没有，或多于一条，只给出原因。待执行的记录不参与。
+     */
+    public static RunningMatch runningOnly(List<Candidate> rows, String deviceId) {
+        if (deviceId == null || deviceId.isBlank()) {
+            return RunningMatch.skipped("要先选定一台设备");
+        }
+        String wanted = deviceId.trim();
+        List<Candidate> running = new ArrayList<>();
+        if (rows != null) {
+            for (Candidate row : rows) {
+                if (row != null && wanted.equals(row.deviceId()) && IN_PROGRESS.equals(row.status())) {
+                    running.add(row);
+                }
+            }
+        }
+        if (running.isEmpty()) {
+            return RunningMatch.skipped("这台设备没有正在执行的任务，这次往来未记入任务");
+        }
+        if (running.size() > 1) {
+            return RunningMatch.skipped("这台设备有多条正在执行的任务，这次往来未记入任务");
+        }
+        return RunningMatch.found(running.get(0).id());
+    }
+
+    /**
+     * 东古地面站这次往来要记进的执行记录。
+     * 报文里没有任务 id 时才用。一条正在执行就用它。否则只有一条已经到点的待执行才用它。
+     * 还没到点的不参与。多条正在执行，或多条已经到点，不挑。
+     */
+    public static RunningMatch forExchange(List<Candidate> rows, String deviceId, OffsetDateTime now) {
+        if (deviceId == null || deviceId.isBlank()) {
+            return RunningMatch.skipped("要先选定一台设备");
+        }
+        if (now == null) {
+            return RunningMatch.skipped("缺少当前时刻");
+        }
+        String wanted = deviceId.trim();
+        List<Candidate> running = new ArrayList<>();
+        List<Candidate> due = new ArrayList<>();
+        if (rows != null) {
+            for (Candidate row : rows) {
+                if (row == null || !wanted.equals(row.deviceId())) {
+                    continue;
+                }
+                if (IN_PROGRESS.equals(row.status())) {
+                    running.add(row);
+                } else if (PENDING.equals(row.status()) && row.plannedStart() != null && !row.plannedStart().isAfter(now)) {
+                    due.add(row);
+                }
+            }
+        }
+        if (running.size() > 1) {
+            return RunningMatch.skipped("这台设备有多条正在执行的任务，这次往来未记入任务");
+        }
+        if (running.size() == 1) {
+            return RunningMatch.found(running.get(0).id());
+        }
+        if (due.isEmpty()) {
+            return RunningMatch.skipped("这台设备没有正在执行或已经到点的任务，这次往来未记入任务");
+        }
+        if (due.size() > 1) {
+            return RunningMatch.skipped("这台设备有多条已经到点的任务，还没确定执行哪一条，这次往来未记入任务");
+        }
+        return RunningMatch.found(due.get(0).id());
+    }
+
+    /**
+     * 恰好一条进行中记录时带上它的编号。否则编号为空，原因说明为什么没记。
+     */
+    public record RunningMatch(Long recordId, String skipReason) {
+
+        public boolean found() {
+            return recordId != null;
+        }
+
+        static RunningMatch found(long recordId) {
+            return new RunningMatch(recordId, null);
+        }
+
+        static RunningMatch skipped(String skipReason) {
+            return new RunningMatch(null, skipReason);
+        }
+    }
 }
