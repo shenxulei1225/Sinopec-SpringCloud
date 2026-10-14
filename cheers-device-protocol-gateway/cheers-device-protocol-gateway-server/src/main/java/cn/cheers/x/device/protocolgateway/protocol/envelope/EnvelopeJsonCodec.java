@@ -126,7 +126,7 @@ public class EnvelopeJsonCodec {
     }
 
     /**
-     * 心跳对回：原包加上 time，操作码仍是 500105，不改成 500106。
+     * 组一包心跳 JSON（原字段 + time，操作码 500105）。通信层收设备心跳不再调用；保留给联调或设备侧参考。
      */
     public String encodeHeartbeatEcho(String payloadJson, long epochSeconds) {
         try {

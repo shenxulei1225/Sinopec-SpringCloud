@@ -19,7 +19,8 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * 通信层收包入口：按固定顺序处理心跳、回执、同步答卷、其余上报。
- * <p>负责：心跳、立刻回执、完成正在等的同号答卷、将其余包送进总线；进监控窗口复制上报原文。收回的原文、心跳和回执只送进往来队列。状态里的经纬度另送回放位置队列，同一设备一秒内只留一个点。
+ * <p>负责：设备心跳只记账（在线/监控/往来），立刻回执、完成正在等的同号答卷、将其余包送进总线；进监控窗口复制上报原文。收回的原文、心跳和回执只送进往来队列。状态里的经纬度另送回放位置队列，同一设备一秒内只留一个点。
+ * <p>设备上行 {@code 500105} 不再写回心跳，避免与会对回心跳的设备 ping-pong；平台下发心跳仍由写出路径负责。
  * <p>不负责：填协议空包、读巡检库、判断巡检步骤成败、监控页展示、猜通道、按字段说明做合格核对、在这条线程上写执行账。
  * <p>禁止：在本方法里 HTTP / 写库；把回执当成业务成功；通道空了默认成巡检；把原文当业务主契约。
  */
@@ -70,7 +71,7 @@ public class UplinkIngressService {
         groundStationLiveStatusStore.remember(deviceId, opcode, payloadJson);
         InstructionExchangeMode mode = InstructionExchangeCatalog.modeOf(opcode);
         if (mode == InstructionExchangeMode.HEARTBEAT) {
-            echoHeartbeat(deviceId, payloadJson);
+            log.debug("[device-protocol] 收到心跳 deviceId={} msgId={}", deviceId, msgId);
             return;
         }
         if (mode == InstructionExchangeMode.ACK) {
@@ -92,16 +93,6 @@ public class UplinkIngressService {
                         payloadJson,
                         System.currentTimeMillis()
                 )));
-    }
-
-    private void echoHeartbeat(String deviceId, String payloadJson) {
-        String echo = envelopeJsonCodec.encodeHeartbeatEcho(payloadJson, nowEpochSeconds());
-        boolean sent = deviceTransport.sendText(deviceId, echo);
-        if (!sent) {
-            log.warn("[device-protocol] 心跳写出失败 deviceId={}", deviceId);
-            return;
-        }
-        runningTaskExchangeRecorder.enqueue(deviceId, TaskExchangeTranscriptReqDTO.OUTBOUND, echo);
     }
 
     private void ackReceived(String deviceId, String msgId, int opcode, Long executionRecordId) {

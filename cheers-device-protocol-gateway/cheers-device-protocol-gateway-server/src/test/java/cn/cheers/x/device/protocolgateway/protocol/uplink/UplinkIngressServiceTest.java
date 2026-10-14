@@ -23,7 +23,6 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -67,17 +66,15 @@ class UplinkIngressServiceTest {
     }
 
     @Test
-    void heartbeat_echoesSameOpcode_noAck_noPublish() {
+    void heartbeat_doesNotEcho_noAck_noPublish() {
         ingress.handle(AccessChannelCodes.INSPECTION, "d1", "{\"opcode\":500105,\"msgId\":\"h1\"}");
 
         verify(monitorHub).copyInbound(eq("d1"), anyString());
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(transport).sendText(eq("d1"), captor.capture());
-        assertEquals(500105, codec.readOpcode(captor.getValue()));
-        assertTrue(captor.getValue().contains("\"time\""));
+        verify(transport, never()).sendText(anyString(), anyString());
         verify(publisher, never()).publish(org.mockito.ArgumentMatchers.any());
         verify(transcript).enqueue(eq("d1"), eq(TaskExchangeTranscriptReqDTO.INBOUND), anyString());
-        verify(transcript).enqueue(eq("d1"), eq(TaskExchangeTranscriptReqDTO.OUTBOUND), anyString());
+        verify(transcript, never()).enqueue(
+                eq("d1"), eq(TaskExchangeTranscriptReqDTO.OUTBOUND), anyString());
     }
 
     @Test
