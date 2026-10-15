@@ -36,6 +36,7 @@ import java.util.UUID;
  * <p>
  * 权威：创建目录时从此处用<strong>同一份</strong>「通用台账」模版实例化布局行——
  * 一次写好同类分类/型号/实体栏、类型码，以及栏所在<strong>区域编号</strong>（本份布局头上的区域清单），禁止半截空壳。
+ * 已有数据页缺型号、对象或详情栏时，仍按这份模版把缺的栏补进原布局，已有栏和展示配置不动。
  * <ul>
  *   <li>基础数据（NATIVE）与 REUSE/DOMAIN/SCOPE：四栏全开（列表台账）。</li>
  *   <li>分类绑定实体（CATEGORY）：只作用在数据页。仍复制四栏，再关掉型号/实体栏（树即对象）。</li>
@@ -119,6 +120,7 @@ public class DmWorkbenchLayoutService {
 
     /**
      * 目录「数据」页签：若尚无 dataLayoutId，从通用台账模版生成实例并写回类型。
+     * 已有布局但缺分类、型号、对象或详情栏时，按同一模版把缺的栏补上，不改已有栏。
      */
     @Transactional(rollbackFor = Exception.class)
     public Long ensureCatalogDataLayout(EntityTypeDO entityType,
@@ -128,6 +130,7 @@ public class DmWorkbenchLayoutService {
             List<DmDataTabLayoutDO> rows =
                     dmDataTabLayoutMapper.selectListByLayoutId(entityType.getDataLayoutId());
             if (!rows.isEmpty()) {
+                appendMissingCoreColumns(entityType, categoryTypeCode, categoryAsEntityLayout, rows);
                 return entityType.getDataLayoutId();
             }
         }
@@ -283,109 +286,19 @@ public class DmWorkbenchLayoutService {
         }
 
         for (DmDataTabLayoutDO src : templateRows) {
-            DmDataTabLayoutDO row = new DmDataTabLayoutDO();
-            row.setLayoutId(instance.getId());
-            row.setEntityTypeCode(code);
-            row.setColumnKind(src.getColumnKind());
-            row.setTabId(src.getTabId());
-            row.setPropsId(null);
-            row.setEnabled(src.getEnabled());
-            row.setColumnMeta(copyMeta(src.getColumnMeta()));
-            String sourceSectionId = requireSectionIdInTemplateRow(
-                    row.getColumnMeta(), row.getColumnKind(), allowedSectionIds);
-
-            if (DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(src.getColumnKind())) {
-                // 模版若仍是旧字面 default / 空，换成真实编号；已有合法编号则保留
-                String srcTab = row.getTabId() == null ? "" : row.getTabId().trim();
-                if (!isStableGeneratedTabId(srcTab)) {
-                    row.setTabId(allocateStableTabId(usedTabIds));
-                }
-                Map<String, Object> meta = row.getColumnMeta() != null
-                        ? new LinkedHashMap<>(row.getColumnMeta())
-                        : new LinkedHashMap<>();
-                meta.put("categoryTypeCode", storageCode);
-                meta.put("label", categoryDisplayName);
-                meta.put("columnSection", sourceSectionId);
-                Object existingKey = meta.get("columnKey");
-                String keyStr = existingKey == null ? "" : String.valueOf(existingKey).trim();
-                // 分组键只认「这一栏」；空 / default 生成 col-xxxxxx，不把类型码写进分组键
-                if (!StringUtils.hasText(keyStr) || "default".equalsIgnoreCase(keyStr)
-                        || keyStr.toLowerCase().endsWith("-default")) {
-                    meta.put("columnKey", allocateStableColumnKey(usedColumnKeys));
-                }
-                if (!(meta.get("widthPx") instanceof Number)) {
-                    meta.put("widthPx", DmDataTabLayoutBootstrapMeta.CATEGORY_COLUMN_WIDTH_PX);
-                }
-                if (!(meta.get("sectionWidthPx") instanceof Number)) {
-                    meta.put("sectionWidthPx", DmDataTabLayoutBootstrapMeta.FILTER_SECTION_WIDTH_PX);
-                }
-                row.setColumnMeta(meta);
-            } else if (DmDataTabLayoutKindEnum.MODEL.getCode().equals(src.getColumnKind())) {
-                // 型号栏编号稳定；类型写在 modelEntityTypeCode。禁止空与 default。
-                String modelTab = row.getTabId() == null ? "" : row.getTabId().trim();
-                if (!isStableGeneratedTabId(modelTab)) {
-                    row.setTabId(allocateStableTabId(usedTabIds));
-                }
-                Map<String, Object> meta = row.getColumnMeta() != null
-                        ? new LinkedHashMap<>(row.getColumnMeta())
-                        : new LinkedHashMap<>();
-                meta.put("modelEntityTypeCode", storageCode);
-                meta.put("label", storageDisplayName);
-                meta.put("columnSection", sourceSectionId);
-                if (!(meta.get("widthPx") instanceof Number)) {
-                    meta.put("widthPx", DmDataTabLayoutBootstrapMeta.MODEL_COLUMN_WIDTH_PX);
-                }
-                // 筛选区宽已由分类领头栏写出；型号不抢 sectionWidthPx
-                meta.remove("sectionWidthPx");
-                row.setColumnMeta(meta);
-            } else if (DmDataTabLayoutKindEnum.ENTITY.getCode().equals(src.getColumnKind())) {
-                // 实体栏编号稳定；类型写在 entityEntityTypeCode。禁止空与 default。
-                String entityTab = row.getTabId() == null ? "" : row.getTabId().trim();
-                if (!isStableGeneratedTabId(entityTab)) {
-                    row.setTabId(allocateStableTabId(usedTabIds));
-                }
-                Map<String, Object> meta = row.getColumnMeta() != null
-                        ? new LinkedHashMap<>(row.getColumnMeta())
-                        : new LinkedHashMap<>();
-                // 类型码 = 同类底座；显示名优先本目录名（划分页仍认设备账）
-                meta.put("entityEntityTypeCode", storageCode);
-                meta.put("label", StringUtils.hasText(registryDisplayName)
-                        ? registryDisplayName : storageDisplayName);
-                meta.put("columnSection", sourceSectionId);
-                if (!(meta.get("widthPx") instanceof Number)) {
-                    meta.put("widthPx", DmDataTabLayoutBootstrapMeta.ENTITY_COLUMN_WIDTH_PX);
-                }
-                if (!(meta.get("sectionWidthPx") instanceof Number)) {
-                    meta.put("sectionWidthPx", DmDataTabLayoutBootstrapMeta.OBJECT_SECTION_WIDTH_PX);
-                }
-                row.setColumnMeta(meta);
-            } else if (DmDataTabLayoutKindEnum.DETAIL.getCode().equals(src.getColumnKind())) {
-                String detailTab = row.getTabId() == null ? "" : row.getTabId().trim();
-                if (!isStableGeneratedTabId(detailTab)) {
-                    row.setTabId(allocateStableTabId(usedTabIds));
-                }
-                row.setEnabled(true);
-                Map<String, Object> meta = row.getColumnMeta() != null
-                        ? new LinkedHashMap<>(row.getColumnMeta())
-                        : new LinkedHashMap<>();
-                meta.put("columnSection", sourceSectionId);
-                if (!metaHasText(meta, "label")) {
-                    // 仅在模板未配置展示名时给中性默认文案；禁止这里写死业务语义名。
-                    meta.put("label", "区段栏");
-                }
-                meta.put("entityEntityTypeCode", storageCode);
-                if (!(meta.get("sectionWidthPx") instanceof Number)) {
-                    meta.put("sectionWidthPx", DmDataTabLayoutBootstrapMeta.DETAIL_SECTION_WIDTH_PX);
-                }
-                row.setColumnMeta(meta);
-            }
-
-            if (modelManagementPage) {
-                applyModelManagementEnables(row);
-            } else if (categoryAsEntityLayout) {
-                applyCategoryAsEntityEnables(row);
-            }
-            dmDataTabLayoutMapper.insert(row);
+            insertStampedColumn(
+                    src,
+                    instance.getId(),
+                    code,
+                    storageCode,
+                    storageDisplayName,
+                    registryDisplayName,
+                    categoryDisplayName,
+                    usedTabIds,
+                    usedColumnKeys,
+                    allowedSectionIds,
+                    modelManagementPage,
+                    categoryAsEntityLayout);
         }
         assertInstantiatedColumnIdentities(instance.getId());
         dmCatalogLayoutDisplayPropsBootstrapService.bindDefaultDisplayProps(
@@ -393,6 +306,213 @@ public class DmWorkbenchLayoutService {
         dmDataTabColumnRelationBootstrapService.applyInitialDefaultRelations(
                 instance.getId(), code, storageCode);
         return instance.getId();
+    }
+
+    /**
+     * 已有数据页缺分类、型号、对象或详情栏时，按通用台账模版把缺的栏补进这份布局。
+     * 已有栏和它们的展示配置保持不动。不写详情跟随连线。
+     */
+    private void appendMissingCoreColumns(EntityTypeDO entityType,
+                                          String categoryTypeCode,
+                                          boolean categoryAsEntityLayout,
+                                          List<DmDataTabLayoutDO> existingRows) {
+        Set<String> present = new LinkedHashSet<>();
+        for (DmDataTabLayoutDO row : existingRows) {
+            if (row.getColumnKind() != null) {
+                present.add(row.getColumnKind().trim().toUpperCase());
+            }
+        }
+        boolean missing = false;
+        for (DmDataTabLayoutKindEnum required : List.of(
+                DmDataTabLayoutKindEnum.CATEGORY,
+                DmDataTabLayoutKindEnum.MODEL,
+                DmDataTabLayoutKindEnum.ENTITY,
+                DmDataTabLayoutKindEnum.DETAIL)) {
+            if (!present.contains(required.getCode())) {
+                missing = true;
+                break;
+            }
+        }
+        if (!missing) {
+            return;
+        }
+        Long templateId = requireDefaultTemplateId();
+        List<DmDataTabLayoutDO> templateRows = dmDataTabLayoutMapper.selectListByLayoutId(templateId);
+        assertLedgerTemplateCoreKinds(templateId, templateRows);
+        Long layoutId = entityType.getDataLayoutId();
+        DmWorkbenchLayoutDO layout = requireLayout(layoutId);
+        Set<String> allowedSectionIds = sectionIds(readSections(layout.getSettingsJson()));
+        if (allowedSectionIds.isEmpty()) {
+            throw new ServiceException(500, "数据页布局缺少区域清单，无法补齐栏：" + layoutId);
+        }
+        String code = entityType.getCode().trim();
+        String storageCode = StringUtils.hasText(categoryTypeCode) ? categoryTypeCode.trim() : code;
+        String storageDisplayName = resolveEntityTypeDisplayName(storageCode);
+        String registryDisplayName = resolveEntityTypeDisplayName(code);
+        String categoryDisplayName = resolveCategoryTypeDisplayName(storageCode);
+        if (!StringUtils.hasText(categoryDisplayName)) {
+            categoryDisplayName = storageDisplayName;
+        }
+        Set<String> usedTabIds = new HashSet<>();
+        Set<String> usedColumnKeys = new HashSet<>();
+        rememberUsedTabAndColumnKeys(existingRows, usedTabIds, usedColumnKeys);
+        rememberUsedTabAndColumnKeys(templateRows, usedTabIds, usedColumnKeys);
+        for (DmDataTabLayoutDO src : templateRows) {
+            String kind = src.getColumnKind() == null ? "" : src.getColumnKind().trim().toUpperCase();
+            if (present.contains(kind)) {
+                continue;
+            }
+            insertStampedColumn(
+                    src,
+                    layoutId,
+                    code,
+                    storageCode,
+                    storageDisplayName,
+                    registryDisplayName,
+                    categoryDisplayName,
+                    usedTabIds,
+                    usedColumnKeys,
+                    allowedSectionIds,
+                    false,
+                    categoryAsEntityLayout);
+        }
+        assertInstantiatedColumnIdentities(layoutId);
+        dmCatalogLayoutDisplayPropsBootstrapService.bindDefaultDisplayProps(layoutId, code, storageCode);
+        dmDataTabColumnRelationBootstrapService.applyInitialDefaultRelations(layoutId, code, storageCode);
+    }
+
+    /**
+     * 把模版里的一栏盖上本目录的类型码后写入布局。
+     * 分类、型号、对象、详情各自写自己的类型码和区域。不改调用方已经占用的栏编号。
+     */
+    private void insertStampedColumn(DmDataTabLayoutDO src,
+                                     Long layoutId,
+                                     String registryCode,
+                                     String storageCode,
+                                     String storageDisplayName,
+                                     String registryDisplayName,
+                                     String categoryDisplayName,
+                                     Set<String> usedTabIds,
+                                     Set<String> usedColumnKeys,
+                                     Set<String> allowedSectionIds,
+                                     boolean modelManagementPage,
+                                     boolean categoryAsEntityLayout) {
+        DmDataTabLayoutDO row = new DmDataTabLayoutDO();
+        row.setLayoutId(layoutId);
+        row.setEntityTypeCode(registryCode);
+        row.setColumnKind(src.getColumnKind());
+        row.setTabId(src.getTabId());
+        row.setPropsId(null);
+        row.setEnabled(src.getEnabled());
+        row.setColumnMeta(copyMeta(src.getColumnMeta()));
+        String sourceSectionId = requireSectionIdInTemplateRow(
+                row.getColumnMeta(), row.getColumnKind(), allowedSectionIds);
+
+        if (DmDataTabLayoutKindEnum.CATEGORY.getCode().equals(src.getColumnKind())) {
+            String srcTab = row.getTabId() == null ? "" : row.getTabId().trim();
+            if (!isStableGeneratedTabId(srcTab)) {
+                row.setTabId(allocateStableTabId(usedTabIds));
+            }
+            Map<String, Object> meta = row.getColumnMeta() != null
+                    ? new LinkedHashMap<>(row.getColumnMeta())
+                    : new LinkedHashMap<>();
+            meta.put("categoryTypeCode", storageCode);
+            meta.put("label", categoryDisplayName);
+            meta.put("columnSection", sourceSectionId);
+            Object existingKey = meta.get("columnKey");
+            String keyStr = existingKey == null ? "" : String.valueOf(existingKey).trim();
+            if (!StringUtils.hasText(keyStr) || "default".equalsIgnoreCase(keyStr)
+                    || keyStr.toLowerCase().endsWith("-default")) {
+                meta.put("columnKey", allocateStableColumnKey(usedColumnKeys));
+            }
+            if (!(meta.get("widthPx") instanceof Number)) {
+                meta.put("widthPx", DmDataTabLayoutBootstrapMeta.CATEGORY_COLUMN_WIDTH_PX);
+            }
+            if (!(meta.get("sectionWidthPx") instanceof Number)) {
+                meta.put("sectionWidthPx", DmDataTabLayoutBootstrapMeta.FILTER_SECTION_WIDTH_PX);
+            }
+            row.setColumnMeta(meta);
+        } else if (DmDataTabLayoutKindEnum.MODEL.getCode().equals(src.getColumnKind())) {
+            String modelTab = row.getTabId() == null ? "" : row.getTabId().trim();
+            if (!isStableGeneratedTabId(modelTab)) {
+                row.setTabId(allocateStableTabId(usedTabIds));
+            }
+            Map<String, Object> meta = row.getColumnMeta() != null
+                    ? new LinkedHashMap<>(row.getColumnMeta())
+                    : new LinkedHashMap<>();
+            meta.put("modelEntityTypeCode", storageCode);
+            meta.put("label", storageDisplayName);
+            meta.put("columnSection", sourceSectionId);
+            if (!(meta.get("widthPx") instanceof Number)) {
+                meta.put("widthPx", DmDataTabLayoutBootstrapMeta.MODEL_COLUMN_WIDTH_PX);
+            }
+            meta.remove("sectionWidthPx");
+            row.setColumnMeta(meta);
+        } else if (DmDataTabLayoutKindEnum.ENTITY.getCode().equals(src.getColumnKind())) {
+            String entityTab = row.getTabId() == null ? "" : row.getTabId().trim();
+            if (!isStableGeneratedTabId(entityTab)) {
+                row.setTabId(allocateStableTabId(usedTabIds));
+            }
+            Map<String, Object> meta = row.getColumnMeta() != null
+                    ? new LinkedHashMap<>(row.getColumnMeta())
+                    : new LinkedHashMap<>();
+            meta.put("entityEntityTypeCode", storageCode);
+            meta.put("label", StringUtils.hasText(registryDisplayName)
+                    ? registryDisplayName : storageDisplayName);
+            meta.put("columnSection", sourceSectionId);
+            if (!(meta.get("widthPx") instanceof Number)) {
+                meta.put("widthPx", DmDataTabLayoutBootstrapMeta.ENTITY_COLUMN_WIDTH_PX);
+            }
+            if (!(meta.get("sectionWidthPx") instanceof Number)) {
+                meta.put("sectionWidthPx", DmDataTabLayoutBootstrapMeta.OBJECT_SECTION_WIDTH_PX);
+            }
+            row.setColumnMeta(meta);
+        } else if (DmDataTabLayoutKindEnum.DETAIL.getCode().equals(src.getColumnKind())) {
+            String detailTab = row.getTabId() == null ? "" : row.getTabId().trim();
+            if (!isStableGeneratedTabId(detailTab)) {
+                row.setTabId(allocateStableTabId(usedTabIds));
+            }
+            row.setEnabled(true);
+            Map<String, Object> meta = row.getColumnMeta() != null
+                    ? new LinkedHashMap<>(row.getColumnMeta())
+                    : new LinkedHashMap<>();
+            meta.put("columnSection", sourceSectionId);
+            if (!metaHasText(meta, "label")) {
+                meta.put("label", "区段栏");
+            }
+            meta.put("entityEntityTypeCode", storageCode);
+            if (!(meta.get("sectionWidthPx") instanceof Number)) {
+                meta.put("sectionWidthPx", DmDataTabLayoutBootstrapMeta.DETAIL_SECTION_WIDTH_PX);
+            }
+            row.setColumnMeta(meta);
+        }
+
+        if (modelManagementPage) {
+            applyModelManagementEnables(row);
+        } else if (categoryAsEntityLayout) {
+            applyCategoryAsEntityEnables(row);
+        }
+        dmDataTabLayoutMapper.insert(row);
+    }
+
+    /** 记下已有栏的页编号和分组键，补栏时避开它们。 */
+    private static void rememberUsedTabAndColumnKeys(List<DmDataTabLayoutDO> rows,
+                                                     Set<String> usedTabIds,
+                                                     Set<String> usedColumnKeys) {
+        for (DmDataTabLayoutDO existing : rows) {
+            String tab = existing.getTabId() == null ? "" : existing.getTabId().trim();
+            if (isStableGeneratedTabId(tab)) {
+                usedTabIds.add(tab);
+            }
+            Map<String, Object> existingMeta = existing.getColumnMeta();
+            if (existingMeta != null && existingMeta.get("columnKey") != null) {
+                String key = String.valueOf(existingMeta.get("columnKey")).trim();
+                if (StringUtils.hasText(key) && !"default".equalsIgnoreCase(key)
+                        && !key.toLowerCase().endsWith("-default")) {
+                    usedColumnKeys.add(key);
+                }
+            }
+        }
     }
 
     /**

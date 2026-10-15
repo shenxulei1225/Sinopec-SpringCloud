@@ -20,6 +20,11 @@ public class LoginUser {
 
     public static final String INFO_KEY_NICKNAME = "nickname";
     public static final String INFO_KEY_DEPT_ID = "deptId";
+    /** 令牌上的账号范围。PLATFORM 表示系统账号，家在平台，不在某个业务租户。 */
+    public static final String INFO_KEY_ACCOUNT_SCOPE = "accountScope";
+    public static final String ACCOUNT_SCOPE_PLATFORM = "PLATFORM";
+    /** 值为 true 时，这个登录人是超级管理员。进入其他租户时才跳过功能权限。 */
+    public static final String INFO_KEY_SUPER_ADMIN = "superAdmin";
 
     /**
      * 用户编号

@@ -26,16 +26,17 @@ public interface CatalogRoleGrantMapper extends BaseMapperX<CatalogRoleGrantDO> 
     }
 
     /**
-     * 当前用户任一角色是否拥有该目录的这一项操作。
-     * 角色编号为空时不放行。
+     * 当前用户任一角色是否拥有该目录、该对象上的这一项操作。
+     * 角色编号为空时不放行。对象必须一并传入，避免分类勾选放行实体。
      */
-    default boolean existsGrant(Collection<Long> roleIds, String registryCode, String operation) {
+    default boolean existsGrant(Collection<Long> roleIds, String registryCode, String subject, String operation) {
         if (roleIds == null || roleIds.isEmpty()) {
             return false;
         }
         return selectCount(new LambdaQueryWrapperX<CatalogRoleGrantDO>()
                 .in(CatalogRoleGrantDO::getRoleId, roleIds)
                 .eq(CatalogRoleGrantDO::getRegistryCode, registryCode)
+                .eq(CatalogRoleGrantDO::getSubject, subject)
                 .eq(CatalogRoleGrantDO::getOperation, operation)) > 0;
     }
 }

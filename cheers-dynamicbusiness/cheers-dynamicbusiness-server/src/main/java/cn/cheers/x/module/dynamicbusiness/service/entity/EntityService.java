@@ -109,7 +109,9 @@ public interface EntityService {
     void deleteEntityWithAssociationCleanup(Long id, String entityTypeCode, boolean clearInboundRelations);
 
     /**
-     * CRUD 弹窗字段异步校验：当前支持实体 name 在同 model 下唯一。
+     * CRUD 弹窗字段异步校验。
+     * 名称允许重复（部门、设备都放在同一张表里，不同场站可以同名）。
+     * 编码在同一实体类型物理表内唯一。
      */
     EntityFieldAvailabilityRespVO checkFieldUnique(
             String entityTypeCode,

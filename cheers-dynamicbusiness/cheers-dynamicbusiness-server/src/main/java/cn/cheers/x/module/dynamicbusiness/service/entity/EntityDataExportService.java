@@ -16,7 +16,7 @@ public interface EntityDataExportService {
      * 导入业务实体数据
      *
      * @param importList    导入数据列表
-     * @param updateSupport 是否支持更新已存在的数据
+     * @param updateSupport 保留入参。名称可以重复，导入不按名称查找或覆盖已有记录
      * @return 导入结果
      */
     EntityImportRespVO importEntityList(List<EntityImportExcelVO> importList, Boolean updateSupport);

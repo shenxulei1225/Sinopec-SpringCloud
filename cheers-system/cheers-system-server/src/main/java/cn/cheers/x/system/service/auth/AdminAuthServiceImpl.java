@@ -8,6 +8,8 @@ import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.cheers.x.framework.common.util.servlet.ServletUtils;
 import cn.cheers.x.framework.common.util.validation.ValidationUtils;
 import cn.cheers.x.framework.datapermission.core.annotation.DataPermission;
+import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
+import cn.cheers.x.framework.tenant.core.util.TenantUtils;
 import cn.cheers.x.system.api.logger.dto.LoginLogCreateReqDTO;
 import cn.cheers.x.system.api.sms.SmsCodeApi;
 import cn.cheers.x.system.api.sms.dto.code.SmsCodeUseReqDTO;
@@ -25,6 +27,7 @@ import cn.cheers.x.system.service.logger.LoginLogService;
 import cn.cheers.x.system.service.member.MemberService;
 import cn.cheers.x.system.service.oauth2.OAuth2TokenService;
 import cn.cheers.x.system.service.social.SocialUserService;
+import cn.cheers.x.system.service.tenant.TenantService;
 import cn.cheers.x.system.service.user.AdminUserService;
 import com.anji.captcha.model.common.ResponseModel;
 import com.anji.captcha.service.CaptchaService;
@@ -44,9 +47,13 @@ import static cn.cheers.x.framework.common.util.servlet.ServletUtils.getClientIP
 import static cn.cheers.x.system.enums.ErrorCodeConstants.*;
 
 /**
- * Auth Service 实现类
+ * 登录。
  *
- * 
+ * 业务账号只属于一个业务租户。登录页选哪个租户，就只在那个租户里认账号。
+ * 系统账号属于平台。所选租户里没有这个账号时，再到平台认。令牌记在平台，
+ * 选中的业务租户通过 visitTenantId 交给前端。
+ *
+ * 不负责：把系统账号复制进每个租户。平台本身不能当作登录目标。
  */
 @Service
 @Slf4j
@@ -54,6 +61,8 @@ public class AdminAuthServiceImpl implements AdminAuthService {
 
     @Resource
     private AdminUserService userService;
+    @Resource
+    private TenantService tenantService;
     @Resource
     private LoginLogService loginLogService;
     @Resource
@@ -105,16 +114,58 @@ public class AdminAuthServiceImpl implements AdminAuthService {
         // 校验验证码
         validateCaptcha(reqVO);
 
-        // 使用账号密码，进行登录
-        AdminUserDO user = authenticate(reqVO.getUsername(), reqVO.getPassword());
+        Long selectedTenantId = TenantContextHolder.getTenantId();
+        if (tenantService.isPlatformTenant(selectedTenantId)) {
+            throw exception(AUTH_LOGIN_TENANT_NOT_BUSINESS);
+        }
+        // 所选业务租户里有这个账号就用它。没有，再到平台认系统账号。
+        AdminUserDO user = userService.getUserByUsername(reqVO.getUsername());
+        if (user != null) {
+            user = authenticate(reqVO.getUsername(), reqVO.getPassword());
+        } else {
+            user = authenticatePlatformUser(reqVO.getUsername(), reqVO.getPassword());
+        }
 
         // 如果 socialType 非空，说明需要绑定社交用户
         if (reqVO.getSocialType() != null) {
             socialUserService.bindSocialUser(new SocialUserBindReqDTO(user.getId(), getUserType().getValue(),
                     reqVO.getSocialType(), reqVO.getSocialCode(), reqVO.getSocialState()));
         }
-        // 创建 Token 令牌，记录登录日志
-        return createTokenAfterLoginSuccess(user.getId(), reqVO.getUsername(), LoginLogTypeEnum.LOGIN_USERNAME);
+        return issueLoginToken(user, reqVO.getUsername(), selectedTenantId);
+    }
+
+    /**
+     * 所选业务租户里没有这个账号时，到平台认系统账号。
+     * 密码不对、账号停用，和普通登录同一句失败提示。平台上没有这个账号，也按账号不存在处理。
+     */
+    private AdminUserDO authenticatePlatformUser(String username, String password) {
+        Long platformTenantId = tenantService.getPlatformTenantId();
+        AdminUserDO platformUser = TenantUtils.execute(platformTenantId,
+                () -> userService.getUserByUsername(username));
+        if (platformUser == null) {
+            createLoginLog(null, username, LoginLogTypeEnum.LOGIN_USERNAME, LoginResultEnum.BAD_CREDENTIALS);
+            throw exception(AUTH_LOGIN_BAD_CREDENTIALS);
+        }
+        return TenantUtils.execute(platformTenantId, () -> authenticate(username, password));
+    }
+
+    /**
+     * 令牌写在账号所属租户上。系统账号选了业务租户时，把选中的租户放进 visitTenantId。
+     * 前端之后用 tenant-id 对齐令牌，用 visit-tenant-id 读选中租户的数据。
+     */
+    private AuthLoginRespVO issueLoginToken(AdminUserDO user, String username, Long selectedTenantId) {
+        boolean crossTenant = selectedTenantId != null
+                && user.getTenantId() != null
+                && !selectedTenantId.equals(user.getTenantId());
+        AuthLoginRespVO resp = crossTenant
+                ? TenantUtils.execute(user.getTenantId(), () ->
+                createTokenAfterLoginSuccess(user.getId(), username, LoginLogTypeEnum.LOGIN_USERNAME))
+                : createTokenAfterLoginSuccess(user.getId(), username, LoginLogTypeEnum.LOGIN_USERNAME);
+        resp.setTenantId(user.getTenantId() != null ? user.getTenantId() : selectedTenantId);
+        if (crossTenant) {
+            resp.setVisitTenantId(selectedTenantId);
+        }
+        return resp;
     }
 
     @Override

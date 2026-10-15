@@ -5,6 +5,7 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import cn.cheers.x.framework.common.enums.CommonStatusEnum;
+import cn.cheers.x.framework.tenant.core.util.TenantUtils;
 import cn.cheers.x.framework.common.util.collection.CollectionUtils;
 import cn.cheers.x.framework.datapermission.core.annotation.DataPermission;
 import cn.cheers.x.framework.common.biz.system.permission.dto.DeptDataPermissionRespDTO;
@@ -71,6 +72,11 @@ public class PermissionServiceImpl implements PermissionService {
         List<RoleDO> roles = getEnableUserRoleListByUserIdFromCache(userId);
         if (CollUtil.isEmpty(roles)) {
             return false;
+        }
+
+        // 超级管理员进入某个租户后，管理这个租户。角色仍在平台，这里认已经读到的角色，不再按当前租户重查。
+        if (roles.stream().anyMatch(role -> role != null && RoleCodeEnum.isSuperAdmin(role.getCode()))) {
+            return true;
         }
 
         // 情况一：遍历判断每个权限，如果有一满足，说明有权限
@@ -294,8 +300,8 @@ public class PermissionServiceImpl implements PermissionService {
     List<RoleDO> getEnableUserRoleListByUserIdFromCache(Long userId) {
         // 获得用户拥有的角色编号
         Set<Long> roleIds = getSelf().getUserRoleIdListByUserIdFromCache(userId);
-        // 获得角色数组，并移除被禁用的
-        List<RoleDO> roles = roleService.getRoleListFromCache(roleIds);
+        // 超级管理员的角色记在平台租户。进入业务租户后仍要读到这个角色，不能按当前租户把角色滤掉。
+        List<RoleDO> roles = TenantUtils.executeIgnore(() -> roleService.getRoleListFromCache(roleIds));
         roles.removeIf(role -> !CommonStatusEnum.ENABLE.getStatus().equals(role.getStatus()));
         return roles;
     }

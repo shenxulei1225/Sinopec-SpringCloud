@@ -1,0 +1,30 @@
+package cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+
+@Data
+public class EmergencyCommandAssessReqVO {
+
+    @Schema(description = "应急事件编号")
+    @NotBlank(message = "事件编号不能为空")
+    private String eventId;
+
+    @Schema(description = "是否成立")
+    @NotNull(message = "请选择是否成立")
+    private Boolean real;
+
+    @Schema(description = "事件类型。成立时必填，取值与预案上的事件类型相同")
+    private String eventType;
+
+    @Schema(description = "响应级别。成立时必填，取值与预案步骤该级的 methodKey 相同")
+    private String responseLevel;
+
+    @Schema(description = "研判意见")
+    private String comment;
+
+    @Schema(description = "成立并触发预案时选定的预案编号。不成立时不填")
+    private String planId;
+}

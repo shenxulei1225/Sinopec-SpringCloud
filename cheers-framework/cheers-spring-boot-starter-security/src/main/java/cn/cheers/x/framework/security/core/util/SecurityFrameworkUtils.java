@@ -15,6 +15,7 @@ import org.springframework.util.StringUtils;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Collections;
+import java.util.Map;
 
 /**
  * 安全服务工具类
@@ -143,20 +144,21 @@ public class SecurityFrameworkUtils {
     }
 
     /**
-     * 是否条件跳过权限校验，包括数据权限、功能权限
+     * 超级管理员进入其他租户时，角色在平台上，业务接口不再按当前租户查角色。
+     * 其他系统账号不跳过。令牌上没有超级管理员标记时也不跳过。
      *
-     * @return 是否跳过
+     * @return 是否跳过功能权限和数据权限
      */
     public static boolean skipPermissionCheck() {
         LoginUser loginUser = getLoginUser();
-        if (loginUser == null) {
+        if (loginUser == null || loginUser.getVisitTenantId() == null) {
             return false;
         }
-        if (loginUser.getVisitTenantId() == null) {
+        if (ObjUtil.equal(loginUser.getVisitTenantId(), loginUser.getTenantId())) {
             return false;
         }
-        // 重点：跨租户访问时，无法进行权限校验
-        return ObjUtil.notEqual(loginUser.getVisitTenantId(), loginUser.getTenantId());
+        Map<String, String> info = loginUser.getInfo();
+        return info != null && "true".equals(info.get(LoginUser.INFO_KEY_SUPER_ADMIN));
     }
 
 }

@@ -42,8 +42,11 @@ public class TenantVisitContextInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        // 校验用户是否可切换租户
-        if (!securityFrameworkService.hasAnyPermissions(PERMISSION)) {
+        // 系统账号的家在平台。登录页选的业务租户只决定这次看哪份数据。
+        // 业务账号仍要有切换租户的权限，不能靠请求头把自己送进别的租户。
+        boolean systemAccount = loginUser.getInfo() != null
+                && LoginUser.ACCOUNT_SCOPE_PLATFORM.equals(loginUser.getInfo().get(LoginUser.INFO_KEY_ACCOUNT_SCOPE));
+        if (!systemAccount && !securityFrameworkService.hasAnyPermissions(PERMISSION)) {
             throw exception0(GlobalErrorCodeConstants.FORBIDDEN.getCode(), "您无权切换租户");
         }
 

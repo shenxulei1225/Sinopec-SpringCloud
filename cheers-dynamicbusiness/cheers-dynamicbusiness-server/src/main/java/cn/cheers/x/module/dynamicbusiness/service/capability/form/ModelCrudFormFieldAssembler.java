@@ -34,8 +34,6 @@ import java.util.Set;
  */
 public final class ModelCrudFormFieldAssembler {
 
-    private static final String ASYNC_CHECK_NAME_UNIQUE = "check-entity-name-unique";
-
     /** 实体/模型元数据：CRUD 表单不展示（由上下文或后端写入）。 */
     private static final Set<String> AUTO_GENERATED_FIELD_CODES = Set.of(
             "id",
@@ -256,7 +254,6 @@ public final class ModelCrudFormFieldAssembler {
         Map<String, Object> item = baseFieldItem("name", label, "TEXT", "input");
         item.put("required", true);
         item.put("maxLength", 200);
-        item.put("asyncCheckId", ASYNC_CHECK_NAME_UNIQUE);
         item.put("sort", -100);
         item.put("groupName", "基础信息");
         item.put("groupSortOrder", 0);
@@ -1006,7 +1003,4 @@ public final class ModelCrudFormFieldAssembler {
         }
     }
 
-    public static String asyncCheckNameUniqueId() {
-        return ASYNC_CHECK_NAME_UNIQUE;
-    }
 }

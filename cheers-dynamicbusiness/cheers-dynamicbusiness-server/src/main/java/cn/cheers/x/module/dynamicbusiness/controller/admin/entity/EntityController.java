@@ -247,13 +247,13 @@ public class EntityController {
         summary = "校验实体字段值是否可用",
         description = """
             CRUD 弹窗异步校验。
-            - fieldKey=name：同 entityTypeCode + modelId 下名称唯一（须传 modelId）
+            - fieldKey=name：名称允许重复，直接可用
             - fieldKey=code：同实体类型物理表内编码唯一（不按型号收窄）
-            excludeId 用于编辑时排除自身。
+            excludeId 用于编辑编码时排除自身。
             """
     )
     @Parameter(name = "entityTypeCode", required = true, example = "equipment")
-    @Parameter(name = "modelId", description = "名称唯一时必填；编码唯一可不传", example = "157")
+    @Parameter(name = "modelId", description = "名称不查重；编码唯一可不传", example = "157")
     @Parameter(name = "fieldKey", required = true, example = "name")
     @Parameter(name = "value", required = true, example = "测试设备")
     @Parameter(name = "excludeId", description = "编辑时排除的实体 id")

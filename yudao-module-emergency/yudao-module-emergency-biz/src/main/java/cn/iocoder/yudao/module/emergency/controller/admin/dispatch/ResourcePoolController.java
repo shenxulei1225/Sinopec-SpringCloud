@@ -16,8 +16,13 @@ import java.util.List;
 
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
+/**
+ * 物资资源列表。
+ * 管理端控制器会自动加上 /admin-api，这里只写业务路径。
+ * 调度接口挂在同一路径下，两边的方法不重叠。
+ */
 @RestController
-@RequestMapping("/admin-api/emergency/resources")
+@RequestMapping("/emergency/resources")
 @Tag(name = "管理后台 - 资源池管理")
 public class ResourcePoolController {
 

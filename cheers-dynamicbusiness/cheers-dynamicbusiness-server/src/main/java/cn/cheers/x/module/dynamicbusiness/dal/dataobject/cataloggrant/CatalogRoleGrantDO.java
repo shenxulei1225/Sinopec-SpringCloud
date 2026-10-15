@@ -9,8 +9,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 自定义角色在某个数据目录上的一项操作。
- * 目录身份是目录注册编码。超级管理员和租户管理员不靠本表放行。
+ * 角色在某个数据目录上、某一类对象的一项操作。
+ * 目录身份是目录注册编码。对象是分类、模型、实体或详情。
+ * 超级管理员不靠本表放行。租户管理员和自定义角色都读本表。
  */
 @TableName("dynamic_catalog_role_grant")
 @KeySequence("dynamic_catalog_role_grant_id_seq")
@@ -27,6 +28,9 @@ public class CatalogRoleGrantDO extends TenantBaseDO {
     /** 数据目录注册编码 */
     private String registryCode;
 
-    /** query / create / update / delete */
+    /** category 分类 / model 模型 / entity 实体 / detail 详情 */
+    private String subject;
+
+    /** query 查看；create、update、delete 合成角色页上的一项「维护」 */
     private String operation;
 }

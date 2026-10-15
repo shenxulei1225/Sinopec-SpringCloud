@@ -105,8 +105,9 @@ public class TenantServiceImpl implements TenantService {
         // 校验套餐被禁用
         TenantPackageDO tenantPackage = tenantPackageService.validTenantPackage(createReqVO.getPackageId());
 
-        // 创建租户
+        // 创建租户。这里只建业务租户。平台租户由迁移写入，不从创建租户入口产生。
         TenantDO tenant = BeanUtils.toBean(createReqVO, TenantDO.class);
+        tenant.setScope(TenantDO.SCOPE_BUSINESS);
         tenantMapper.insert(tenant);
         // 创建租户的管理员
         TenantUtils.execute(tenant.getId(), () -> {
@@ -277,6 +278,41 @@ public class TenantServiceImpl implements TenantService {
     @Override
     public List<TenantDO> getTenantListByStatus(Integer status) {
         return tenantMapper.selectListByStatus(status);
+    }
+
+    @Override
+    public boolean isPlatformTenant(Long tenantId) {
+        if (tenantId == null) {
+            return false;
+        }
+        TenantDO tenant = tenantMapper.selectById(tenantId);
+        return tenant != null && TenantDO.SCOPE_PLATFORM.equals(tenant.getScope());
+    }
+
+    @Override
+    public Long getPlatformTenantId() {
+        TenantDO tenant = tenantMapper.selectByScope(TenantDO.SCOPE_PLATFORM);
+        if (tenant == null) {
+            throw exception(TENANT_PLATFORM_NOT_EXISTS);
+        }
+        return tenant.getId();
+    }
+
+    @Override
+    public void updateTenantPortal(String portalName, String portalNameEn, String logoUrl) {
+        Long tenantId = TenantContextHolder.getRequiredTenantId();
+        TenantDO tenant = tenantMapper.selectById(tenantId);
+        if (tenant == null) {
+            throw exception(TENANT_NOT_EXISTS);
+        }
+        if (TenantDO.SCOPE_PLATFORM.equals(tenant.getScope())) {
+            throw exception(AUTH_LOGIN_TENANT_NOT_BUSINESS);
+        }
+        tenantMapper.updateById(new TenantDO()
+                .setId(tenantId)
+                .setPortalName(portalName.trim())
+                .setPortalNameEn(portalNameEn.trim())
+                .setLogoUrl(logoUrl == null ? "" : logoUrl.trim()));
     }
 
     @Override

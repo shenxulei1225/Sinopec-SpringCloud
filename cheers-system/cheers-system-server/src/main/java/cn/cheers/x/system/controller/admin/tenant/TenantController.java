@@ -9,6 +9,7 @@ import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.cheers.x.framework.excel.core.util.ExcelUtils;
 import cn.cheers.x.framework.tenant.core.aop.TenantIgnore;
 import cn.cheers.x.system.controller.admin.tenant.vo.tenant.TenantPageReqVO;
+import cn.cheers.x.system.controller.admin.tenant.vo.tenant.TenantPortalSaveReqVO;
 import cn.cheers.x.system.controller.admin.tenant.vo.tenant.TenantRespVO;
 import cn.cheers.x.system.controller.admin.tenant.vo.tenant.TenantSaveReqVO;
 import cn.cheers.x.system.dal.dataobject.tenant.TenantDO;
@@ -57,8 +58,11 @@ public class TenantController {
     @Operation(summary = "获取租户精简信息列表", description = "只包含被开启的租户，用于【首页】功能的选择租户选项")
     public CommonResult<List<TenantRespVO>> getTenantSimpleList() {
         List<TenantDO> list = tenantService.getTenantListByStatus(CommonStatusEnum.ENABLE.getStatus());
+        list.removeIf(tenant -> TenantDO.SCOPE_PLATFORM.equals(tenant.getScope()));
         return success(convertList(list, tenantDO ->
-                new TenantRespVO().setId(tenantDO.getId()).setName(tenantDO.getName())));
+                new TenantRespVO().setId(tenantDO.getId()).setName(tenantDO.getName())
+                        .setPortalName(tenantDO.getPortalName()).setPortalNameEn(tenantDO.getPortalNameEn())
+                        .setLogoUrl(tenantDO.getLogoUrl())));
     }
 
     @GetMapping("/get-by-website")
@@ -87,6 +91,14 @@ public class TenantController {
     @PreAuthorize("@ss.hasPermission('system:tenant:update')")
     public CommonResult<Boolean> updateTenant(@Valid @RequestBody TenantSaveReqVO updateReqVO) {
         tenantService.updateTenant(updateReqVO);
+        return success(true);
+    }
+
+    @PutMapping("/portal")
+    @Operation(summary = "更新当前租户的门户名称和 Logo")
+    @PreAuthorize("@ss.hasAnyRoles('super_admin', 'tenant_admin')")
+    public CommonResult<Boolean> updateTenantPortal(@Valid @RequestBody TenantPortalSaveReqVO reqVO) {
+        tenantService.updateTenantPortal(reqVO.getPortalName(), reqVO.getPortalNameEn(), reqVO.getLogoUrl());
         return success(true);
     }
 

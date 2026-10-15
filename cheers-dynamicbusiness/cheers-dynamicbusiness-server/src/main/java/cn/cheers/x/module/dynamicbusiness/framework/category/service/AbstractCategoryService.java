@@ -282,12 +282,22 @@ public abstract class AbstractCategoryService<
         updateObj.setParentCode(parent == null ? null : parent.getCode());
     }
 
+    /**
+     * 部门栏里的节点就是部门记录。不同场站可以有同名部门，名称上不写场站。
+     * 设备种类树和其他分类仍要求同一上级下名称不重复。
+     */
+    static boolean rejectsDuplicateSiblingName(String categoryTypeCode) {
+        return !"department".equals(categoryTypeCode);
+    }
+
     private void validateUnique(DO category, boolean isCreate) {
         Long parentId = category.getParentId();
         String categoryTypeCode = category.getCategoryTypeCode();
-        DO nameDup = getMapper().selectByNameAndParent(category.getName(), parentId, categoryTypeCode);
-        if (nameDup != null && (isCreate || !Objects.equals(nameDup.getId(), category.getId()))) {
-            throw new ServiceException(400, "同一父分类下名称已存在");
+        if (rejectsDuplicateSiblingName(categoryTypeCode)) {
+            DO nameDup = getMapper().selectByNameAndParent(category.getName(), parentId, categoryTypeCode);
+            if (nameDup != null && (isCreate || !Objects.equals(nameDup.getId(), category.getId()))) {
+                throw new ServiceException(400, "同一父分类下名称已存在");
+            }
         }
         if (category.getSort() != null) {
             DO sortDup = getMapper().selectBySortAndParent(category.getSort(), parentId, categoryTypeCode);

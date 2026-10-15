@@ -49,6 +49,15 @@ public class TenantRespVO {
     @Schema(description = "账号数量", requiredMode = Schema.RequiredMode.REQUIRED, example = "1024")
     private Integer accountCount;
 
+    @Schema(description = "门户名称。登录页标题和登录后左上角使用")
+    private String portalName;
+
+    @Schema(description = "门户英文名。显示在中文名称下面")
+    private String portalNameEn;
+
+    @Schema(description = "门户 Logo 地址。空则使用默认图标")
+    private String logoUrl;
+
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("创建时间")
     private LocalDateTime createTime;

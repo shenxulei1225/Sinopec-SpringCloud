@@ -2,6 +2,7 @@ package cn.cheers.x.system.api.permission;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.system.api.permission.dto.RoleRespDTO;
+import cn.cheers.x.system.service.permission.PermissionService;
 import cn.cheers.x.system.service.permission.RoleService;
 import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
@@ -18,6 +19,8 @@ public class RoleApiImpl implements RoleApi {
 
     @Resource
     private RoleService roleService;
+    @Resource
+    private PermissionService permissionService;
 
     @Override
     public CommonResult<Boolean> validRoleList(Collection<Long> ids) {
@@ -35,8 +38,12 @@ public class RoleApiImpl implements RoleApi {
         return success(List.of());
     }
 
+    /**
+     * 目录授权要按这个用户实际挂的角色判断。
+     * 角色服务上的同名方法固定返回空列表，这里不能再走它。
+     */
     @Override
     public CommonResult<Collection<Long>> getUserRoleIdListByUserId(Long userId) {
-        return success(roleService.getRoleIdListByUserId(userId));
+        return success(permissionService.getUserRoleIdListByUserId(userId));
     }
 }

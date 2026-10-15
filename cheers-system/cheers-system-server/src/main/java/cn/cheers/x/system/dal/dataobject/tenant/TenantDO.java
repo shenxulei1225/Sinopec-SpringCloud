@@ -34,6 +34,11 @@ public class TenantDO extends BaseDO {
      */
     public static final Long PACKAGE_ID_SYSTEM = 0L;
 
+    /** 业务租户。登录页可以选择。 */
+    public static final String SCOPE_BUSINESS = "BUSINESS";
+    /** 平台。只放系统账号，不出现在登录租户列表。 */
+    public static final String SCOPE_PLATFORM = "PLATFORM";
+
     /**
      * 租户编号，自增
      */
@@ -85,5 +90,21 @@ public class TenantDO extends BaseDO {
      * 账号数量
      */
     private Integer accountCount;
+    /**
+     * BUSINESS 业务租户。PLATFORM 平台，只放系统账号。
+     */
+    private String scope;
+    /**
+     * 门户名称。登录页标题和登录后左上角使用。空则显示租户名。
+     */
+    private String portalName;
+    /**
+     * 门户英文名。显示在中文名称下面。
+     */
+    private String portalNameEn;
+    /**
+     * 门户 Logo 地址。空则使用默认图标。
+     */
+    private String logoUrl;
 
 }

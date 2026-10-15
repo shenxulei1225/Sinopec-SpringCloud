@@ -19,17 +19,20 @@ import cn.cheers.x.system.controller.admin.oauth2.vo.token.OAuth2AccessTokenPage
 import cn.cheers.x.system.dal.dataobject.oauth2.OAuth2AccessTokenDO;
 import cn.cheers.x.system.dal.dataobject.oauth2.OAuth2ClientDO;
 import cn.cheers.x.system.dal.dataobject.oauth2.OAuth2RefreshTokenDO;
+import cn.cheers.x.system.dal.dataobject.tenant.TenantDO;
 import cn.cheers.x.system.dal.dataobject.user.AdminUserDO;
 import cn.cheers.x.system.dal.mysql.oauth2.OAuth2AccessTokenMapper;
 import cn.cheers.x.system.dal.mysql.oauth2.OAuth2RefreshTokenMapper;
 import cn.cheers.x.system.dal.redis.oauth2.OAuth2AccessTokenRedisDAO;
+import cn.cheers.x.system.service.permission.PermissionService;
+import cn.cheers.x.system.service.permission.RoleService;
+import cn.cheers.x.system.service.tenant.TenantService;
 import cn.cheers.x.system.service.user.AdminUserService;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -64,6 +67,15 @@ public class OAuth2TokenServiceImpl implements OAuth2TokenService {
     @Resource
     @Lazy // 懒加载，避免循环依赖
     private AdminUserService adminUserService;
+    @Resource
+    @Lazy
+    private TenantService tenantService;
+    @Resource
+    @Lazy
+    private PermissionService permissionService;
+    @Resource
+    @Lazy
+    private RoleService roleService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -231,8 +243,16 @@ public class OAuth2TokenServiceImpl implements OAuth2TokenService {
         }
         if (userType.equals(UserTypeEnum.ADMIN.getValue())) {
             AdminUserDO user = adminUserService.getUser(userId);
+            // 账号范围和是否超级管理员写进令牌。其他服务靠这两项判断能不能进入所选租户。
+            String accountScope = tenantService.isPlatformTenant(user.getTenantId())
+                    ? LoginUser.ACCOUNT_SCOPE_PLATFORM : TenantDO.SCOPE_BUSINESS;
+            boolean superAdmin = roleService.hasAnySuperAdmin(
+                    permissionService.getUserRoleIdListByUserId(user.getId()));
             return MapUtil.builder(LoginUser.INFO_KEY_NICKNAME, user.getNickname())
-                    .put(LoginUser.INFO_KEY_DEPT_ID, StrUtil.toStringOrNull(user.getDeptId())).build();
+                    .put(LoginUser.INFO_KEY_DEPT_ID, StrUtil.toStringOrNull(user.getDeptId()))
+                    .put(LoginUser.INFO_KEY_ACCOUNT_SCOPE, accountScope)
+                    .put(LoginUser.INFO_KEY_SUPER_ADMIN, superAdmin ? "true" : "false")
+                    .build();
         } else if (userType.equals(UserTypeEnum.MEMBER.getValue())) {
             // 注意：目前 Member 暂时不读取，可以按需实现
             return Collections.emptyMap();

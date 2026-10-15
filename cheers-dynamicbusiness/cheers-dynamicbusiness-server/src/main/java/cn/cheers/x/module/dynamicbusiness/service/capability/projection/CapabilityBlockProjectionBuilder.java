@@ -580,20 +580,12 @@ public final class CapabilityBlockProjectionBuilder {
         return block;
     }
 
-    /** 动态实体 CRUD 弹窗异步校验（与前端 AsyncFieldCheck 契约对齐）。 */
+    /**
+     * 动态实体 CRUD 弹窗异步校验。
+     * 名称可以重复，不挂名称查重。编码仍在离开输入框时查重。
+     */
     private static void appendEntityAsyncChecks(Map<String, Object> projection) {
-        List<Map<String, Object>> checks = new ArrayList<>(2);
-        Map<String, Object> nameUnique = new LinkedHashMap<>();
-        nameUnique.put("id", "check-entity-name-unique");
-        nameUnique.put("fieldKey", "name");
-        nameUnique.put("trigger", "blur");
-        nameUnique.put("appliesTo", List.of("create", "update"));
-        nameUnique.put("message", "名称已存在");
-        nameUnique.put("endpoint", Map.of(
-                "url", ENTITY_CHECK_FIELD_UNIQUE_URL,
-                "method", "GET"));
-        checks.add(nameUnique);
-
+        List<Map<String, Object>> checks = new ArrayList<>(1);
         Map<String, Object> codeUnique = new LinkedHashMap<>();
         codeUnique.put("id", "check-entity-code-unique");
         codeUnique.put("fieldKey", "code");

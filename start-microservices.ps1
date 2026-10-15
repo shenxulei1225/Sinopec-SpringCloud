@@ -23,9 +23,15 @@ param(
 
 $ErrorActionPreference = "Continue"
 
-# 设置控制台编码为 UTF-8，解决中文乱码问题
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+# $OutputEncoding 只决定管道里外部程序的字节怎么解码，不改控制台代码页。
+# 不要设置 [Console]::OutputEncoding = UTF-8。那会把代码页改成 65001。
+# Windows PowerShell 在 65001 下把每个中文写进屏幕两遍，终端再按两倍宽度回退光标，
+# 状态表里的 gateway 就只剩最后一个 y。Write-Host 用 Unicode，系统 ANSI 代码页下每个字只出现一次。
 $OutputEncoding = [System.Text.Encoding]::UTF8
+$ansiCodePage = [System.Globalization.CultureInfo]::CurrentCulture.TextInfo.ANSICodePage
+if ([Console]::OutputEncoding.CodePage -eq 65001 -and $ansiCodePage -gt 0 -and $ansiCodePage -ne 65001) {
+    [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding($ansiCodePage)
+}
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $ScriptDir
@@ -143,6 +149,41 @@ function Write-Success { param([string]$Message) Write-ColorOutput "[OK] $Messag
 function Write-Error { param([string]$Message) Write-ColorOutput "[ERR] $Message" "Red" }
 function Write-Warning { param([string]$Message) Write-ColorOutput "[WARN] $Message" "Yellow" }
 function Write-Info { param([string]$Message) Write-ColorOutput "[INFO] $Message" "Cyan" }
+
+# 状态表按屏幕列对齐。中文占两列，不用 -f 的 {0,-n}（那个按字符个数补空格）。
+function Get-ConsoleColumnWidth {
+    param([string]$Text)
+    if ([string]::IsNullOrEmpty($Text)) { return 0 }
+    $width = 0
+    foreach ($ch in $Text.ToCharArray()) {
+        if ([int]$ch -gt 255) { $width += 2 } else { $width += 1 }
+    }
+    return $width
+}
+
+function Format-ConsoleRow {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$Cells,
+        [Parameter(Mandatory = $true)][int[]]$Widths
+    )
+    $parts = for ($i = 0; $i -lt $Cells.Count; $i++) {
+        $text = [string]$Cells[$i]
+        $pad = $Widths[$i] - (Get-ConsoleColumnWidth -Text $text)
+        if ($pad -lt 0) { $pad = 0 }
+        $text + (" " * $pad)
+    }
+    return ($parts -join " ")
+}
+
+function Write-ConsoleRow {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$Cells,
+        [Parameter(Mandatory = $true)][int[]]$Widths,
+        [string]$Color = "White"
+    )
+    # Write-Host 走 Unicode。调用前代码页不能是 65001，否则中文会写两遍并盖住服务名。
+    Write-Host (Format-ConsoleRow -Cells $Cells -Widths $Widths) -ForegroundColor $Color
+}
 
 function Test-InCmd {
     return -not [string]::IsNullOrEmpty($env:ComSpec) -and $env:ComSpec.ToLower().EndsWith("\\cmd.exe") -and -not [string]::IsNullOrEmpty($env:PROMPT)
@@ -638,9 +679,11 @@ function Show-Status {
     
     $portMap = Get-ListenPortMap
 
-    $format = "{0,-15} {1,-10} {2,-10} {3,-15} {4,-40}"
-    Write-ColorOutput ($format -f "服务名", "端口", "状态", "PID", "访问链接") "White"
-    Write-ColorOutput ("-" * 100) "White"
+    # 列宽是屏幕列，不是字符个数。服务名列要盖住 orchestration。
+    $columnWidths = @(16, 8, 8, 12, 28)
+    Write-ConsoleRow -Cells @("服务名", "端口", "状态", "PID", "访问链接") -Widths $columnWidths -Color White
+    $ruleWidth = ($columnWidths | Measure-Object -Sum).Sum + ($columnWidths.Count - 1)
+    Write-ConsoleRow -Cells @(("-" * $ruleWidth)) -Widths @($ruleWidth) -Color White
     
     foreach ($svc in $KnownServices) {
         if (-not $ServiceConfig.ContainsKey($svc)) { continue }
@@ -650,9 +693,9 @@ function Show-Status {
         if ($portMap.ContainsKey($port)) {
             $procId = $portMap[$port]
             $url = "http://localhost:$port"
-            Write-Host ($format -f $svc, $port, "运行中", $procId, $url) -ForegroundColor Green
+            Write-ConsoleRow -Cells @($svc, "$port", "运行中", "$procId", $url) -Widths $columnWidths -Color Green
         } else {
-            Write-Host ($format -f $svc, $port, "未运行", "-", "-") -ForegroundColor Red
+            Write-ConsoleRow -Cells @($svc, "$port", "未运行", "-", "-") -Widths $columnWidths -Color Red
         }
     }
     
@@ -714,13 +757,14 @@ function Show-Services {
     Write-ColorOutput "中台里只开一块: bmp-process / bmp-path / alarm / work-order / maintenance / scene-3d / gis" "White"
     Write-ColorOutput "旧名 platform / platform-* 仍能敲。不要用 platform-all。" "Yellow"
     Write-ColorOutput "" "White"
-    $format = "{0,-16} {1,-55} {2,-8}"
-    Write-ColorOutput ($format -f "正名", "路径", "端口") "White"
-    Write-ColorOutput ("-" * 80) "White"
+    $columnWidths = @(16, 72, 8)
+    Write-ConsoleRow -Cells @("正名", "路径", "端口") -Widths $columnWidths -Color White
+    $ruleWidth = ($columnWidths | Measure-Object -Sum).Sum + ($columnWidths.Count - 1)
+    Write-ConsoleRow -Cells @(("-" * $ruleWidth)) -Widths @($ruleWidth) -Color White
     foreach ($svc in $KnownServices) {
         $config = $ServiceConfig[$svc]
         if ($null -eq $config) { continue }
-        Write-ColorOutput ($format -f $svc, $config.Path, $config.Port) "White"
+        Write-ConsoleRow -Cells @($svc, $config.Path, "$($config.Port)") -Widths $columnWidths -Color White
     }
 }
 

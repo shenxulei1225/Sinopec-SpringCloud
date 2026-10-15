@@ -20,6 +20,7 @@ public interface TenantMapper extends BaseMapperX<TenantDO> {
                 .likeIfPresent(TenantDO::getContactMobile, reqVO.getContactMobile())
                 .eqIfPresent(TenantDO::getStatus, reqVO.getStatus())
                 .betweenIfPresent(TenantDO::getCreateTime, reqVO.getCreateTime())
+                .ne(TenantDO::getScope, TenantDO.SCOPE_PLATFORM)
                 .orderByDesc(TenantDO::getId));
     }
 
@@ -42,6 +43,10 @@ public interface TenantMapper extends BaseMapperX<TenantDO> {
 
     default List<TenantDO> selectListByStatus(Integer status) {
         return selectList(TenantDO::getStatus, status);
+    }
+
+    default TenantDO selectByScope(String scope) {
+        return selectOne(TenantDO::getScope, scope);
     }
 
 }

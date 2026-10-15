@@ -65,23 +65,9 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
                 // 数据校验
                 validateImportData(importVO, rowNum);
 
-                // 检查是否已存在同名实体
-                EntityDO existEntity = findExistingEntity(importVO);
-
-                if (existEntity != null) {
-                    if (Boolean.TRUE.equals(updateSupport)) {
-                        // 更新已存在的实体
-                        updateExistingEntity(existEntity, importVO);
-                        updateEntityNames.add(importVO.getName());
-                    } else {
-                        failureEntityNames.put(importVO.getName(), 
-                            String.format("第%d行：实体名称已存在，如需更新请勾选'更新已存在数据'", rowNum));
-                    }
-                } else {
-                    // 创建新实体
-                    createNewEntity(importVO);
-                    createEntityNames.add(importVO.getName());
-                }
+                // 名称可以重复。不按名称覆盖另一条设备或部门，每行新建一条记录。
+                createNewEntity(importVO);
+                createEntityNames.add(importVO.getName());
             } catch (ServiceException e) {
                 failureEntityNames.put(importVO.getName() != null ? importVO.getName() : "第" + rowNum + "行", 
                     e.getMessage());
@@ -272,23 +258,7 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
     }
 
     /**
-     * 查找已存在的实体
-     */
-    private EntityDO findExistingEntity(EntityImportExcelVO importVO) {
-        // 通过 Repository 层查询（自动处理动态表名）
-        EntityRepository.EntityQuery query = EntityRepository.EntityQuery.builder()
-                .entityTypeCode(importVO.getEntityTypeCode())
-                .modelId(importVO.getModelId())
-                .build();
-        List<EntityDO> existList = entityRepository.findAll(query);
-        return existList.stream()
-                .filter(e -> Objects.equals(e.getName(), importVO.getName()))
-                .findFirst()
-                .orElse(null);
-    }
-
-    /**
-     * 创建新实体
+     * 创建新实体。名称可以和已有记录相同。
      */
     private void createNewEntity(EntityImportExcelVO importVO) {
         EntityDO entity = EntityDO.builder()
@@ -301,19 +271,6 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
         entity.setTenantId(getTenantId());
         // 通过 Repository 层保存（自动处理动态表名）
         entityRepository.save(entity);
-    }
-
-    /**
-     * 更新已存在的实体
-     */
-    private void updateExistingEntity(EntityDO existEntity, EntityImportExcelVO importVO) {
-        EntityDO update = new EntityDO();
-        update.setId(existEntity.getId());
-        update.setEntityTypeCode(existEntity.getEntityTypeCode()); // 必须设置 entityTypeCode 用于表名路由
-        update.setCustomFields(entityBusinessHelper.parseCustomFieldsFromJson(importVO.getCustomFields()));
-        update.setStatus(importVO.getStatus());
-        // 通过 Repository 层更新（自动处理动态表名）
-        entityRepository.update(update);
     }
 
     /**

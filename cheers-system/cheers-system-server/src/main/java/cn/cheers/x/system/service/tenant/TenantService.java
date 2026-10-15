@@ -142,4 +142,30 @@ public interface TenantService {
      */
     void validTenant(Long id);
 
+    /**
+     * 更新当前租户的门户名称和 Logo。
+     * 当前租户来自本次请求。系统账号进入某个业务租户时，改的是那个租户。
+     * 不改登录列表里的租户名，也不走租户套餐那条不能改内置租户的限制。
+     *
+     * @param portalName 中文名称
+     * @param portalNameEn 英文名称，显示在中文下面
+     * @param logoUrl 门户 Logo 地址，空表示使用默认图标
+     */
+    void updateTenantPortal(String portalName, String portalNameEn, String logoUrl);
+
+    /**
+     * 这个租户是不是平台。平台只放系统账号，不能当作登录目标。
+     *
+     * @param tenantId 租户编号
+     * @return 是平台时为 true
+     */
+    boolean isPlatformTenant(Long tenantId);
+
+    /**
+     * 平台租户编号。没有平台时抛错，不猜一个业务租户。
+     *
+     * @return 平台租户编号
+     */
+    Long getPlatformTenantId();
+
 }

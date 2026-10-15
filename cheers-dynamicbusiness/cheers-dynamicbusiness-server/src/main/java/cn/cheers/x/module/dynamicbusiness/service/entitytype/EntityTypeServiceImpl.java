@@ -402,6 +402,8 @@ public class EntityTypeServiceImpl implements EntityTypeService {
 
         // 持久化保存
         entityTypeMapper.updateById(newEntityType);
+        // 与创建目录相同：补齐缺的数据页栏和模型管理布局。已有栏不覆盖。
+        entityTypeCategoryBootstrapService.ensureForEntityTypeCode(newEntityType.getCode());
         facilityOwningFieldEnsureService.ensureForEntityTypeCode(newEntityType.getCode());
         orgTreeParentFieldEnsureService.ensureForEntityTypeCode(newEntityType.getCode());
     }

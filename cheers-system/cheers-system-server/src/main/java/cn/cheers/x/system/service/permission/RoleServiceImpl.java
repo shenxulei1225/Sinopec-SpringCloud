@@ -7,6 +7,7 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import cn.cheers.x.framework.common.enums.CommonStatusEnum;
 import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.tenant.core.util.TenantUtils;
 import cn.cheers.x.framework.common.util.collection.CollectionUtils;
 import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.cheers.x.system.controller.admin.permission.vo.role.RolePageReqVO;
@@ -235,16 +236,21 @@ public class RoleServiceImpl implements RoleService {
         return roleMapper.selectPage(reqVO);
     }
 
+    /**
+     * 这些角色编号里有没有超级管理员。
+     * 超级管理员只记在平台租户。人进入别的租户做管理时，当前租户滤不到这个角色，这里要跨过这层过滤。
+     * 不把超级管理员复制到每个租户。
+     */
     @Override
     public boolean hasAnySuperAdmin(Collection<Long> ids) {
         if (CollectionUtil.isEmpty(ids)) {
             return false;
         }
         RoleServiceImpl self = getSelf();
-        return ids.stream().anyMatch(id -> {
+        return TenantUtils.executeIgnore(() -> ids.stream().anyMatch(id -> {
             RoleDO role = self.getRoleFromCache(id);
             return role != null && RoleCodeEnum.isSuperAdmin(role.getCode());
-        });
+        }));
     }
 
     @Override

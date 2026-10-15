@@ -12,6 +12,9 @@ public class CatalogRoleGrantItemRespVO {
     @Schema(description = "数据目录注册编码")
     private String registryCode;
 
-    @Schema(description = "已勾选操作")
+    @Schema(description = "对象：category 分类，model 模型，entity 实体，detail 详情")
+    private String subject;
+
+    @Schema(description = "已勾选操作。create、update、delete 同时存在时，角色页显示为一项维护")
     private List<String> operations;
 }

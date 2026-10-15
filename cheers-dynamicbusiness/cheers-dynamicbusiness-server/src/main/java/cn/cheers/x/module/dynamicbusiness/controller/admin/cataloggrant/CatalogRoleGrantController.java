@@ -28,8 +28,8 @@ import java.util.List;
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
- * 平台配置「角色与权限」：列出本租户数据目录，并保存目录上的四项操作。
- * 不分配旧菜单。不判断实体表。不创建数据目录。
+ * 平台配置「角色与权限」：列出本租户数据目录，并保存每个目录下分类、模型、实体、详情的操作。
+ * 不分配旧菜单。不判断实体表。不创建数据目录。不改其它页面的权限。
  */
 @Tag(name = "管理后台 - 数据目录角色授权")
 @RestController
@@ -86,7 +86,7 @@ public class CatalogRoleGrantController {
         }
         List<CatalogRoleGrantItem> result = new ArrayList<>();
         for (CatalogRoleGrantItemReqVO item : items) {
-            result.add(new CatalogRoleGrantItem(item.getRegistryCode(), item.getOperations()));
+            result.add(new CatalogRoleGrantItem(item.getRegistryCode(), item.getSubject(), item.getOperations()));
         }
         return result;
     }
@@ -96,6 +96,7 @@ public class CatalogRoleGrantController {
         for (CatalogRoleGrantItem item : items) {
             CatalogRoleGrantItemRespVO row = new CatalogRoleGrantItemRespVO();
             row.setRegistryCode(item.registryCode());
+            row.setSubject(item.subject());
             row.setOperations(item.operations());
             result.add(row);
         }

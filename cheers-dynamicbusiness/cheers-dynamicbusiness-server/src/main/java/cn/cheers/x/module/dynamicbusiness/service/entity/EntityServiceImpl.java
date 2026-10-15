@@ -765,13 +765,8 @@ public class EntityServiceImpl implements EntityService {
         String key = fieldKey.trim();
         String trimmedValue = value.trim();
         if ("name".equals(key)) {
-            if (modelId == null) {
-                return new EntityFieldAvailabilityRespVO(false, "缺少 modelId，无法校验名称唯一性");
-            }
-            boolean exists = entityRepository.existsByExactName(typeCode, modelId, trimmedValue, excludeId);
-            if (exists) {
-                return new EntityFieldAvailabilityRespVO(false, "名称已存在");
-            }
+            // 名称允许重复。金桥和洛阳可以各有「运行班」或「1号泵」。
+            // 编码仍按实体类型查重，见下方 code 分支。
             return new EntityFieldAvailabilityRespVO(true, null);
         }
         if ("code".equals(key)) {

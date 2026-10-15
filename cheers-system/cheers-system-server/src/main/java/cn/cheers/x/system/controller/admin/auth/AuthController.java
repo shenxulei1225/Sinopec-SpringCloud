@@ -7,7 +7,9 @@ import cn.cheers.x.framework.common.enums.UserTypeEnum;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.framework.datapermission.core.annotation.DataPermission;
 import cn.cheers.x.framework.security.config.SecurityProperties;
+import cn.cheers.x.framework.security.core.LoginUser;
 import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
+import cn.cheers.x.framework.tenant.core.util.TenantUtils;
 import cn.cheers.x.system.controller.admin.auth.vo.*;
 import cn.cheers.x.system.convert.auth.AuthConvert;
 import cn.cheers.x.system.dal.dataobject.permission.MenuDO;
@@ -94,16 +96,27 @@ public class AuthController {
     @Operation(summary = "获取登录用户的权限信息")
     @DataPermission(enable = false) // 忽略数据权限，避免因为过滤，导致无法查询用户。类似：https://t.zsxq.com/LHnrp
     public CommonResult<AuthPermissionInfoRespVO> getPermissionInfo() {
+        LoginUser loginUser = SecurityFrameworkUtils.getLoginUser();
+        Long homeTenantId = loginUser != null ? loginUser.getTenantId() : null;
+        Long visitTenantId = loginUser != null ? loginUser.getVisitTenantId() : null;
+        // 超级管理员选了别的租户后，用户和角色仍在他自己的租户。回到那个租户读，菜单才出得来。
+        if (homeTenantId != null && visitTenantId != null && !homeTenantId.equals(visitTenantId)) {
+            return success(TenantUtils.execute(homeTenantId, this::loadPermissionInfo));
+        }
+        return success(loadPermissionInfo());
+    }
+
+    private AuthPermissionInfoRespVO loadPermissionInfo() {
         // 1.1 获得用户信息
         AdminUserDO user = userService.getUser(getLoginUserId());
         if (user == null) {
-            return success(null);
+            return null;
         }
 
         // 1.2 获得角色列表
         Set<Long> roleIds = permissionService.getUserRoleIdListByUserId(getLoginUserId());
         if (CollUtil.isEmpty(roleIds)) {
-            return success(AuthConvert.INSTANCE.convert(user, Collections.emptyList(), Collections.emptyList()));
+            return AuthConvert.INSTANCE.convert(user, Collections.emptyList(), Collections.emptyList());
         }
         List<RoleDO> roles = roleService.getRoleList(roleIds);
         roles.removeIf(role -> !CommonStatusEnum.ENABLE.getStatus().equals(role.getStatus())); // 移除禁用的角色
@@ -114,7 +127,7 @@ public class AuthController {
         menuList = menuService.filterDisableMenus(menuList);
 
         // 2. 拼接结果返回
-        return success(AuthConvert.INSTANCE.convert(user, roles, menuList));
+        return AuthConvert.INSTANCE.convert(user, roles, menuList);
     }
 
     @PostMapping("/register")

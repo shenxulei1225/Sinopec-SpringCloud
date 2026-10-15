@@ -14,6 +14,10 @@ public class CatalogRoleGrantItemReqVO {
     @NotBlank(message = "请选择数据目录")
     private String registryCode;
 
-    @Schema(description = "操作：query 查看，create 新增，update 修改，delete 删除")
+    @Schema(description = "对象：category 分类，model 模型，entity 实体，detail 详情", example = "entity")
+    @NotBlank(message = "请选择分类、模型、实体或详情")
+    private String subject;
+
+    @Schema(description = "操作：query 查看；create、update、delete 是角色页上的一项维护")
     private List<String> operations;
 }
