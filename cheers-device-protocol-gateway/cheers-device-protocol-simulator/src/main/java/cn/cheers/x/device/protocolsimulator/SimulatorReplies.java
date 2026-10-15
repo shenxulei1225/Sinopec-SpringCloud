@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * 按协议组应答。平台发来一条，先回执，再回同号业务答卷。
- * <p>负责：500101 点名、500102 开关定时状态、500104 收下指令包、500201 启动、500202 步骤结果、500203 任务状态、500205 终止、500301 取包、500302 删包、500303 列出已收下的任务模板。
+ * <p>负责：500101 点名、500102 开关定时状态、500103 定时状态、500104 收下指令包、500201 启动、500202 步骤结果、500203 任务状态、500205 终止、500301 取包、500302 删包、500303 列出已收下的任务模板。
  * <p>无人机不回心跳。机器人收到 500105 时原包加上时间回 500105。
  * <p>禁止：把无人机步骤结果的外层字段改成 packages。老模拟器写在 result 上，厂商确认前保持这样。机器人按协议书写在 packages 上。
  * 拍照只填本机图片地址，不编分析结论。
@@ -81,28 +81,36 @@ public class SimulatorReplies {
     }
 
     /**
-     * 定时状态。外层字段仍是 result，和老模拟器一致。
+     * 定时状态。外层对象是 result。
+     * 操作点按字段说明写在 result.operatePoint，纬度、经度、高度、点位、操作时间、电压都要有。
+     * 设备现在的位置、电量、状态码写在 result 上。回放只读这一层，不读操作点。
+     * 不负责：再套一层 200501，或把状态写进 reportPoint。
      */
     public String timedStatus(String reportedDeviceId, int sequence, long nowMillis) {
+        long seconds = nowMillis / 1000L;
         ObjectNode root = objectMapper.createObjectNode();
         root.put("opcode", 500103);
         root.put("msgId", String.valueOf(nowMillis));
         root.put("deviceId", reportedDeviceId);
         ObjectNode body = root.putObject("result");
-        body.put("opcode", "200501");
-        body.put("sequence", sequence);
+        ObjectNode operate = body.putObject("operatePoint");
+        operate.put("lat", "31.0383416830");
+        operate.put("lng", "121.2668456836");
+        operate.put("height", "17.874");
+        operate.put("pointId", "222222");
+        operate.put("optime", seconds);
+        operate.put("electric", "80");
         body.put("deviceId", reportedDeviceId);
-        point(body.putObject("reportPoint"), nowMillis);
-        ObjectNode status = body.putObject("result");
-        status.put("deviceId", reportedDeviceId);
-        status.put("sequence", sequence);
-        status.put("time", nowMillis);
-        status.put("status", 400102);
-        status.put("fault", 100000);
-        status.put("electricity", "80");
-        status.put("lat", "31.0383416830");
-        status.put("lng", "121.2668456836");
-        status.put("distance", 12);
+        body.put("sequence", sequence);
+        body.put("time", seconds);
+        body.put("status", 400101);
+        body.put("fault", 100000);
+        body.put("faultReason", "no error");
+        body.put("dataLink", 1);
+        body.put("electricity", "80");
+        body.put("lat", "31.0383416830");
+        body.put("lng", "121.2668456836");
+        body.put("height", "17.874");
         return write(root);
     }
 

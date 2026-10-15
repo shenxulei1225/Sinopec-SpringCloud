@@ -92,7 +92,7 @@ SET param_slots_json = jsonb_set(
                 ('{"fieldCode":"pitch","required":true,"defaultValue":null}'::jsonb),
                 ('{"fieldCode":"focal_length","required":true,"defaultValue":null}'::jsonb),
                 ('{"fieldCode":"F-2b8fa8bda0b94663979c112af85325dc","required":true,"defaultValue":null}'::jsonb),
-                ('{"fieldCode":"stream_url","required":true,"defaultValue":null}'::jsonb),
+                ('{"fieldCode":"stream_url","required":true,"valueSource":"SYSTEM","defaultValue":null}'::jsonb),
                 ('{"fieldCode":"record_rotate","required":true,"defaultValue":null}'::jsonb)
               ) AS add(field)
               WHERE NOT EXISTS (
@@ -212,7 +212,7 @@ SET param_slots_json = jsonb_set(
             COALESCE(elem->'fields', '[]'::jsonb) || (
               SELECT COALESCE(jsonb_agg(add.field), '[]'::jsonb)
               FROM (VALUES
-                ('{"fieldCode":"stream_url","required":true,"defaultValue":null}'::jsonb),
+                ('{"fieldCode":"stream_url","required":true,"valueSource":"SYSTEM","defaultValue":null}'::jsonb),
                 ('{"fieldCode":"url_type","required":true,"defaultValue":null}'::jsonb),
                 ('{"fieldCode":"video_id","required":true,"defaultValue":null}'::jsonb),
                 ('{"fieldCode":"video_quality","required":true,"defaultValue":null}'::jsonb)
@@ -399,7 +399,7 @@ UPDATE ent_protocol_mapping_t1
 SET custom_fields = jsonb_set(
       custom_fields,
       '{param_slot_mapping_json}',
-      '[{"slot":"yaw","path":"request.angleLevel"},{"slot":"pitch","path":"request.angleVertical"},{"slot":"focal_length","path":"request.focuses"},{"slot":"F-2b8fa8bda0b94663979c112af85325dc","path":"request.parking"},{"slot":"stream_url","path":"request.rstp"},{"slot":"record_rotate","path":"request.rotate"},{"slot":"action_duration","path":"request.time"}]'::jsonb
+      '[{"slot":"yaw","path":"request.angleLevel"},{"slot":"pitch","path":"request.angleVertical"},{"slot":"focal_length","path":"request.focuses"},{"slot":"F-2b8fa8bda0b94663979c112af85325dc","path":"request.parking"},{"slot":"stream_url","sourceKind":"SYSTEM","path":"request.rstp"},{"slot":"record_rotate","path":"request.rotate"},{"slot":"action_duration","path":"request.time"}]'::jsonb
     ),
     updater = 'seed', update_time = CURRENT_TIMESTAMP
 WHERE deleted = false AND tenant_id = 1 AND code = 'map-start-record-uav-ws'
@@ -433,9 +433,9 @@ FROM (VALUES
   ('map-photo-dji-dock', 'act-robot-shoot', '拍照', 'dji-dock-1.16.1', '大疆机场', 'proto-dji-dock-camera-photo-take', '[{"slot":"payload_position_index","sourceKind":"EXECUTOR_MOUNT","path":"data.payload_index"}]'),
   ('map-photo-dji-pilot', 'act-robot-shoot', '拍照', 'dji-pilot-1.16.1', '大疆 Pilot', 'proto-dji-pilot-camera-photo-take', '[{"slot":"payload_position_index","sourceKind":"EXECUTOR_MOUNT","path":"data.payload_index"}]'),
   ('map-takephoto-uav-ws', 'takePhoto', '单拍', 'uav-ws', '无人机对接协议', 'proto-uav-200301-photo', '[{"slot":"yaw","path":"request.angleLevel"},{"slot":"pitch","path":"request.angleVertical"},{"slot":"focal_length","path":"request.focuses"},{"slot":"shot_count","path":"request.number"},{"slot":"F-2b8fa8bda0b94663979c112af85325dc","path":"request.parking"},{"slot":"action_duration","path":"request.time"}]'),
-  ('map-start-record-uav-ws', 'startRecord', '开始录像', 'uav-ws', '无人机对接协议', 'proto-uav-200201-record-on', '[{"slot":"yaw","path":"request.angleLevel"},{"slot":"pitch","path":"request.angleVertical"},{"slot":"focal_length","path":"request.focuses"},{"slot":"F-2b8fa8bda0b94663979c112af85325dc","path":"request.parking"},{"slot":"stream_url","path":"request.rstp"},{"slot":"record_rotate","path":"request.rotate"},{"slot":"action_duration","path":"request.time"}]'),
+  ('map-start-record-uav-ws', 'startRecord', '开始录像', 'uav-ws', '无人机对接协议', 'proto-uav-200201-record-on', '[{"slot":"yaw","path":"request.angleLevel"},{"slot":"pitch","path":"request.angleVertical"},{"slot":"focal_length","path":"request.focuses"},{"slot":"F-2b8fa8bda0b94663979c112af85325dc","path":"request.parking"},{"slot":"stream_url","sourceKind":"SYSTEM","path":"request.rstp"},{"slot":"record_rotate","path":"request.rotate"},{"slot":"action_duration","path":"request.time"}]'),
   ('map-stop-record-uav-ws', 'stopRecord', '结束录像', 'uav-ws', '无人机对接协议', 'proto-uav-200202-record-off', '[{"slot":"F-2b8fa8bda0b94663979c112af85325dc","path":"request.parking"},{"slot":"action_duration","path":"request.time"}]'),
-  ('map-start-record-robot-ws', 'startRecord', '开始录像', 'robot-ws', '机器人对接协议', 'proto-uav-200201-record-on', '[{"slot":"yaw","path":"request.angleLevel"},{"slot":"pitch","path":"request.angleVertical"},{"slot":"focal_length","path":"request.focuses"},{"slot":"F-2b8fa8bda0b94663979c112af85325dc","path":"request.parking"},{"slot":"stream_url","path":"request.rstp"},{"slot":"record_rotate","path":"request.rotate"},{"slot":"action_duration","path":"request.time"}]'),
+  ('map-start-record-robot-ws', 'startRecord', '开始录像', 'robot-ws', '机器人对接协议', 'proto-uav-200201-record-on', '[{"slot":"yaw","path":"request.angleLevel"},{"slot":"pitch","path":"request.angleVertical"},{"slot":"focal_length","path":"request.focuses"},{"slot":"F-2b8fa8bda0b94663979c112af85325dc","path":"request.parking"},{"slot":"stream_url","sourceKind":"SYSTEM","path":"request.rstp"},{"slot":"record_rotate","path":"request.rotate"},{"slot":"action_duration","path":"request.time"}]'),
   ('map-stop-record-robot-ws', 'stopRecord', '结束录像', 'robot-ws', '机器人对接协议', 'proto-uav-200202-record-off', '[{"slot":"F-2b8fa8bda0b94663979c112af85325dc","path":"request.parking"},{"slot":"action_duration","path":"request.time"}]'),
   ('map-uav-land-uav-ws', 'act-uav-land', '降落', 'uav-ws', '无人机对接协议', 'proto-uav-200103-land', '[]'),
   ('map-uav-land-dji-dock', 'act-uav-land', '降落', 'dji-dock-1.16.1', '大疆机场', 'proto-dji-return-home', '[]'),
@@ -447,10 +447,10 @@ FROM (VALUES
   ('map-self-check-uav-ws', 'act-robot-self-check', '开机自检', 'uav-ws', '无人机对接协议', 'proto-uav-500101-status', '[]'),
   ('map-self-check-robot-ws', 'act-robot-self-check', '开机自检', 'robot-ws', '机器人对接协议', 'proto-robot-500101-status', '[]'),
   ('map-preflight-uav-ws', 'action-4019fb901ff3411f99603b1f5cee5119', '起飞前检查', 'uav-ws', '无人机对接协议', 'proto-uav-500101-status', '[]'),
-  ('map-stream-on-uav-ws', 'action-a2bf6d76c8d04602bab0d18aa62f6958', '摄像头视频回传开启', 'uav-ws', '无人机对接协议', 'proto-uav-500401-stream-on', '[{"slot":"stream_url","path":"rtmp"}]'),
-  ('map-stream-on-robot-ws', 'action-a2bf6d76c8d04602bab0d18aa62f6958', '摄像头视频回传开启', 'robot-ws', '机器人对接协议', 'proto-robot-500401-stream-on', '[{"slot":"stream_url","path":"rtmp"}]'),
-  ('map-stream-on-dji-dock', 'action-a2bf6d76c8d04602bab0d18aa62f6958', '摄像头视频回传开启', 'dji-dock-1.16.1', '大疆机场', 'proto-dji-dock-live-start-push', '[{"slot":"url_type","path":"data.url_type"},{"slot":"stream_url","path":"data.url"},{"slot":"video_id","path":"data.video_id"},{"slot":"video_quality","path":"data.video_quality"}]'),
-  ('map-stream-on-dji-pilot', 'action-a2bf6d76c8d04602bab0d18aa62f6958', '摄像头视频回传开启', 'dji-pilot-1.16.1', '大疆 Pilot', 'proto-dji-pilot-live-start-push', '[{"slot":"url_type","path":"data.url_type"},{"slot":"stream_url","path":"data.url"},{"slot":"video_id","path":"data.video_id"},{"slot":"video_quality","path":"data.video_quality"}]'),
+  ('map-stream-on-uav-ws', 'action-a2bf6d76c8d04602bab0d18aa62f6958', '摄像头视频回传开启', 'uav-ws', '无人机对接协议', 'proto-uav-500401-stream-on', '[{"slot":"stream_url","sourceKind":"SYSTEM","path":"rtmp"}]'),
+  ('map-stream-on-robot-ws', 'action-a2bf6d76c8d04602bab0d18aa62f6958', '摄像头视频回传开启', 'robot-ws', '机器人对接协议', 'proto-robot-500401-stream-on', '[{"slot":"stream_url","sourceKind":"SYSTEM","path":"rtmp"}]'),
+  ('map-stream-on-dji-dock', 'action-a2bf6d76c8d04602bab0d18aa62f6958', '摄像头视频回传开启', 'dji-dock-1.16.1', '大疆机场', 'proto-dji-dock-live-start-push', '[{"slot":"url_type","path":"data.url_type"},{"slot":"stream_url","sourceKind":"SYSTEM","path":"data.url"},{"slot":"video_id","path":"data.video_id"},{"slot":"video_quality","path":"data.video_quality"}]'),
+  ('map-stream-on-dji-pilot', 'action-a2bf6d76c8d04602bab0d18aa62f6958', '摄像头视频回传开启', 'dji-pilot-1.16.1', '大疆 Pilot', 'proto-dji-pilot-live-start-push', '[{"slot":"url_type","path":"data.url_type"},{"slot":"stream_url","sourceKind":"SYSTEM","path":"data.url"},{"slot":"video_id","path":"data.video_id"},{"slot":"video_quality","path":"data.video_quality"}]'),
   ('map-stream-off-uav-ws', 'action-a2f8ee6c1ab5495fa565742c82d97413', '摄像头视频回传关闭', 'uav-ws', '无人机对接协议', 'proto-uav-500402-stream-off', '[]'),
   ('map-stream-off-robot-ws', 'action-a2f8ee6c1ab5495fa565742c82d97413', '摄像头视频回传关闭', 'robot-ws', '机器人对接协议', 'proto-robot-500402-stream-off', '[]'),
   ('map-stream-off-dji-dock', 'action-a2f8ee6c1ab5495fa565742c82d97413', '摄像头视频回传关闭', 'dji-dock-1.16.1', '大疆机场', 'proto-dji-dock-live-stop-push', '[{"slot":"video_id","path":"data.video_id"}]'),
@@ -541,5 +541,63 @@ AND NOT EXISTS (
   SELECT 1 FROM dynamic_entity_field_index_t1 idx
   WHERE idx.deleted = false AND idx.tenant_id = 1 AND idx.entity_id = e.id AND idx.field_code = 'protocol_instruction_ref'
 );
+
+-- 推流地址由任务生成时分配，动作参数是系统生成，对照也标成系统生成。
+UPDATE ent_action_t1 a
+SET param_slots_json = jsonb_set(
+      a.param_slots_json,
+      '{methods}',
+      (
+        SELECT jsonb_agg(
+          jsonb_set(
+            elem,
+            '{fields}',
+            (
+              SELECT jsonb_agg(
+                CASE
+                  WHEN f->>'fieldCode' = 'stream_url'
+                    THEN jsonb_set(f, '{valueSource}', '"SYSTEM"')
+                  ELSE f
+                END
+              )
+              FROM jsonb_array_elements(COALESCE(elem->'fields', '[]'::jsonb)) f
+            )
+          )
+        )
+        FROM jsonb_array_elements(a.param_slots_json->'methods') elem
+      )
+    ),
+    updater = 'seed',
+    update_time = CURRENT_TIMESTAMP
+WHERE a.deleted = false
+  AND a.tenant_id = 1
+  AND jsonb_typeof(a.param_slots_json->'methods') = 'array'
+  AND a.param_slots_json::text LIKE '%stream_url%';
+
+UPDATE ent_protocol_mapping_t1 e
+SET custom_fields = jsonb_set(
+      e.custom_fields,
+      '{param_slot_mapping_json}',
+      (
+        SELECT jsonb_agg(
+          CASE
+            WHEN elem->>'slot' = 'stream_url'
+              THEN elem || '{"sourceKind":"SYSTEM"}'::jsonb
+            ELSE elem
+          END
+        )
+        FROM jsonb_array_elements(e.custom_fields->'param_slot_mapping_json') elem
+      )
+    ),
+    updater = 'seed',
+    update_time = CURRENT_TIMESTAMP
+WHERE e.deleted = false
+  AND e.tenant_id = 1
+  AND jsonb_typeof(e.custom_fields->'param_slot_mapping_json') = 'array'
+  AND EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements(e.custom_fields->'param_slot_mapping_json') elem
+    WHERE elem->>'slot' = 'stream_url'
+  );
 
 COMMIT;

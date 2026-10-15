@@ -112,6 +112,30 @@ class ProtocolMonitorFieldReaderTest {
     }
 
     @Test
+    void listTemplates_objectAndArrayArePresent() {
+        ProtocolMonitorFieldReader reader = reader((opcode, version, volume) -> CatalogLookup.found(List.of(
+                new FieldDescriptionRow("opcode", "integer", "对应请求报文的操作码", true),
+                new FieldDescriptionRow("msgId", "string", "对应请求报文的消息id", true),
+                new FieldDescriptionRow("code", "integer", "返回码", true),
+                new FieldDescriptionRow("msg", "string", "返回码的描述", true),
+                new FieldDescriptionRow("data", "object", "返回消息体", true),
+                new FieldDescriptionRow("data.templates", "array", "任务模板", true),
+                new FieldDescriptionRow("data.templates[].templateId", "string", "任务模板编号", true),
+                new FieldDescriptionRow("data.templates[].lineId", "string", "指令报文id", true)
+        )));
+        ProtocolMonitorEventDTO shown = reader.present(new ProtocolMonitorEventDTO(
+                "e-list", "sim-parse-001", "inbound", 500303, "m1", "列出任务模板 id的响应", "",
+                "{\"opcode\":500303,\"msgId\":\"m1\",\"code\":200,\"msg\":\"ok\",\"data\":{\"templates\":[{\"templateId\":\"100110\",\"lineId\":\"100110\"}]}}",
+                1L, List.of(), null));
+        for (ProtocolMonitorFieldDTO field : shown.parsedFields()) {
+            System.out.println(field.label() + " | " + field.path() + " | value=" + field.value() + " | issue=" + field.issue());
+        }
+        assertNull(fieldOf(shown, "data").issue());
+        assertNull(fieldOf(shown, "data.templates").issue());
+        assertEquals("100110", valueOf(shown, "data.templates[0].templateId"));
+    }
+
+    @Test
     void heartbeat_withCode_usesOutboundVolume() {
         ProtocolMonitorFieldReader reader = reader((opcode, version, volume) -> {
             assertEquals(500105, opcode);

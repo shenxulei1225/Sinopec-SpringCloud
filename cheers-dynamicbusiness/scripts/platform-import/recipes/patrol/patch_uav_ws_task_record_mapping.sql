@@ -9,7 +9,7 @@ UPDATE ent_protocol_mapping_t1
 SET custom_fields = jsonb_set(
       custom_fields,
       '{param_slot_mapping_json}',
-      '[{"slot":"yaw","path":"request.angleLevel"},{"slot":"pitch","path":"request.angleVertical"},{"slot":"focal_length","path":"request.focuses"},{"slot":"F-2b8fa8bda0b94663979c112af85325dc","path":"request.parking"},{"slot":"stream_url","path":"request.rstp"},{"slot":"record_rotate","path":"request.rotate"},{"slot":"action_duration","path":"request.time"}]'::jsonb
+      '[{"slot":"yaw","path":"request.angleLevel"},{"slot":"pitch","path":"request.angleVertical"},{"slot":"focal_length","path":"request.focuses"},{"slot":"F-2b8fa8bda0b94663979c112af85325dc","path":"request.parking"},{"slot":"stream_url","sourceKind":"SYSTEM","path":"request.rstp"},{"slot":"record_rotate","path":"request.rotate"},{"slot":"action_duration","path":"request.time"}]'::jsonb
     ),
     updater = 'patch-uav-ws-record',
     update_time = CURRENT_TIMESTAMP

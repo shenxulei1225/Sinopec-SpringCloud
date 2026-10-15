@@ -3,6 +3,7 @@ package cn.cheers.x.inspection.task.api;
 import cn.cheers.x.device.protocolgateway.api.datacollection.CollectionSample;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.task.api.dto.PatrolGeneratedTaskDownlinkDTO;
+import cn.cheers.x.inspection.task.api.dto.PatrolGeneratedTaskOptionDTO;
 import cn.cheers.x.inspection.task.api.dto.ReplayPoseReqDTO;
 import cn.cheers.x.inspection.task.api.dto.TaskExchangeTranscriptReqDTO;
 import cn.cheers.x.inspection.task.api.dto.TaskExchangeTranscriptRespDTO;
@@ -12,6 +13,8 @@ import cn.cheers.x.inspection.task.service.execution.monitor.TaskExchangeTranscr
 import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
@@ -42,6 +45,16 @@ public class InspectionDeviceUplinkApiImpl implements InspectionDeviceUplinkApi 
     @Override
     public CommonResult<PatrolGeneratedTaskDownlinkDTO> generatedTask(String deviceId) {
         return success(patrolGeneratedTaskLookup.forDevice(deviceId));
+    }
+
+    @Override
+    public CommonResult<List<PatrolGeneratedTaskOptionDTO>> generatedTasks(String deviceId) {
+        return success(patrolGeneratedTaskLookup.listForDevice(deviceId));
+    }
+
+    @Override
+    public CommonResult<PatrolGeneratedTaskDownlinkDTO> generatedTaskRecord(String deviceId, long executionRecordId) {
+        return success(patrolGeneratedTaskLookup.forRecord(deviceId, executionRecordId));
     }
 
     @Override

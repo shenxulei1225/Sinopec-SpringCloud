@@ -177,7 +177,7 @@ INSERT INTO donggu_packet (mode, fields) VALUES
     jsonb_build_object('fieldCode', 'pitch', 'required', true, 'valueSource', 'ACTION_PARAM'),
     jsonb_build_object('fieldCode', 'focal_length', 'required', true, 'valueSource', 'ACTION_PARAM'),
     jsonb_build_object('fieldCode', 'F-2b8fa8bda0b94663979c112af85325dc', 'required', false, 'valueSource', 'ACTION_PARAM'),
-    jsonb_build_object('fieldCode', 'stream_url', 'required', true, 'valueSource', 'ACTION_PARAM'),
+    jsonb_build_object('fieldCode', 'stream_url', 'required', true, 'valueSource', 'SYSTEM'),
     jsonb_build_object('fieldCode', 'record_rotate', 'required', false, 'valueSource', 'ACTION_PARAM'),
     jsonb_build_object('fieldCode', 'action_duration', 'required', false, 'valueSource', 'ACTION_PARAM')
   )),

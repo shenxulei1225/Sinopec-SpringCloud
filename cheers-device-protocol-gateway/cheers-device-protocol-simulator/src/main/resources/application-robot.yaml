@@ -9,7 +9,7 @@ server:
 cheers:
   device-protocol-simulator:
     role: robot
-    # 小型机器人。用台账登记编码，不自编编号。这台的设备编号列是空的。
-    # 另一台已创建的大型机器人登记编码是 equipment-255d493d7aab4b3c9b177c2a7ec156fb，要另开一个进程。
-    websocket-url: ${ROBOT_SIMULATOR_WEBSOCKET_URL:ws://127.0.0.1:8095/equipment-c9fb0e4891064f759509ed72c92fb71c}
-    device-id: ${ROBOT_SIMULATOR_DEVICE_ID:equipment-c9fb0e4891064f759509ed72c92fb71c}
+    # 小型机器人。连接路径最后一段用监控下拉里的设备编号。
+    # 大型机器人的设备编号是 255d493d7aab4b3c9b177c2a7ec156fb，要另开一个进程。
+    websocket-url: ${ROBOT_SIMULATOR_WEBSOCKET_URL:ws://127.0.0.1:8095/c9fb0e4891064f759509ed72c92fb71c}
+    device-id: ${ROBOT_SIMULATOR_DEVICE_ID:c9fb0e4891064f759509ed72c92fb71c}

@@ -7,6 +7,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ProtocolMonitorDownlinkFillerTest {
 
@@ -54,6 +55,84 @@ class ProtocolMonitorDownlinkFillerTest {
         assertEquals("111122223301", filled.get("taskId"));
         assertEquals(true, ((Number) filled.get("executionTime")).longValue() > 0L);
         assertFalse(ProtocolMonitorDownlinkFiller.fillBlankTaskSlots(Map.of("opcode", 500303)).containsKey("templateId"));
+    }
+
+    @Test
+    void reportSwitchStart_writesPageFrequencyAndTotal() {
+        Map<String, Object> packet = new LinkedHashMap<>();
+        packet.put("opcode", 500102);
+        packet.put("enable", false);
+        packet.put("frequency", 0);
+        packet.put("total", 0);
+
+        ProtocolMonitorDownlinkFiller.applyReportSwitch(packet, true, 30, 100);
+
+        assertEquals(true, packet.get("enable"));
+        assertEquals(30, packet.get("frequency"));
+        assertEquals(100, packet.get("total"));
+    }
+
+    @Test
+    void reportSwitchStop_writesEnableFalseAndPageCounts() {
+        Map<String, Object> packet = new LinkedHashMap<>();
+        packet.put("enable", false);
+        packet.put("frequency", 0);
+        packet.put("total", 0);
+
+        ProtocolMonitorDownlinkFiller.applyReportSwitch(packet, false, 30, 100);
+
+        assertEquals(false, packet.get("enable"));
+        assertEquals(30, packet.get("frequency"));
+        assertEquals(100, packet.get("total"));
+    }
+
+    @Test
+    void reportSwitchStart_rejectsZeroFrequency() {
+        Map<String, Object> packet = new LinkedHashMap<>();
+        packet.put("enable", false);
+        packet.put("frequency", 0);
+        packet.put("total", 0);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ProtocolMonitorDownlinkFiller.applyReportSwitch(packet, true, 0, 100));
+    }
+
+    @Test
+    void streamAddress_writesRtmp() {
+        Map<String, Object> packet = new LinkedHashMap<>();
+        packet.put("opcode", 500401);
+        packet.put("rtmp", "");
+
+        ProtocolMonitorDownlinkFiller.applyStreamAddress(packet, " rtsp://127.0.0.1:8554/patrol-1 ");
+
+        assertEquals("rtsp://127.0.0.1:8554/patrol-1", packet.get("rtmp"));
+    }
+
+    @Test
+    void streamAddress_writesRecordAndLiveSlots() {
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("rstp", "");
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("url", "");
+        Map<String, Object> packet = new LinkedHashMap<>();
+        packet.put("request", request);
+        packet.put("data", data);
+
+        ProtocolMonitorDownlinkFiller.applyStreamAddress(packet, "rtsp://host/patrol-9");
+
+        assertEquals("rtsp://host/patrol-9", request.get("rstp"));
+        assertEquals("rtsp://host/patrol-9", data.get("url"));
+    }
+
+    @Test
+    void streamAddress_rejectsBlank() {
+        Map<String, Object> packet = new LinkedHashMap<>();
+        packet.put("rtmp", "");
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ProtocolMonitorDownlinkFiller.applyStreamAddress(packet, "  "));
     }
 
     @Test

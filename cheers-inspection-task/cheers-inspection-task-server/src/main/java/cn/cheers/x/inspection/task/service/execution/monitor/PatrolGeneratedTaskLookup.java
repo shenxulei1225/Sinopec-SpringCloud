@@ -5,12 +5,16 @@ import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.task.api.dto.PatrolGeneratedTaskActionDTO;
 import cn.cheers.x.inspection.task.api.dto.PatrolGeneratedTaskDownlinkDTO;
+import cn.cheers.x.inspection.task.api.dto.PatrolGeneratedTaskOptionDTO;
 import cn.cheers.x.inspection.task.model.task.ExecutionDeviceBinding;
 import cn.cheers.x.inspection.task.service.execution.openrun.PatrolOpenRunSnapshotSupport;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
 import cn.cheers.x.module.dynamicbusiness.api.entity.EntityRpcApi;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -24,8 +28,8 @@ import java.util.Map;
 
 /**
  * 给协议监控找出这台设备当前要下发的已生成任务。
- * <p>负责：读待执行或正在执行的账，带上执行记录编号、计划时刻和动作清单。
- * <p>不负责：翻译指令包、把上报写成完成。
+ * <p>负责：读待执行或正在执行的账，带上执行记录编号、计划时刻、动作清单，以及生成时记下的指令包。
+ * <p>不负责：再翻译指令包、把上报写成完成。
  * <p>禁止：没有到点的待执行时编一个任务编号。
  */
 @Service
@@ -39,10 +43,16 @@ public class PatrolGeneratedTaskLookup {
 
     private final EntityRpcApi entityRpcApi;
     private final PatrolTaskEntityStore patrolTaskEntityStore;
+    private final ObjectMapper objectMapper;
 
-    public PatrolGeneratedTaskLookup(EntityRpcApi entityRpcApi, PatrolTaskEntityStore patrolTaskEntityStore) {
+    public PatrolGeneratedTaskLookup(
+            EntityRpcApi entityRpcApi,
+            PatrolTaskEntityStore patrolTaskEntityStore,
+            ObjectMapper objectMapper
+    ) {
         this.entityRpcApi = entityRpcApi;
         this.patrolTaskEntityStore = patrolTaskEntityStore;
+        this.objectMapper = objectMapper;
     }
 
     public PatrolGeneratedTaskDownlinkDTO forDevice(String deviceId) {
@@ -53,7 +63,52 @@ public class PatrolGeneratedTaskLookup {
         } catch (IllegalArgumentException ex) {
             throw ServiceExceptionUtil.invalidParamException(ex.getMessage());
         }
-        EntityRespDTO record = requireRecord(chosen.id());
+        return toDownlink(deviceId, requireRecord(chosen.id()));
+    }
+
+    /**
+     * 这台设备待执行和正在执行的已生成任务，供监控页点选。
+     * 还没到点的也在里面。已结束的不列。
+     */
+    public List<PatrolGeneratedTaskOptionDTO> listForDevice(String deviceId) {
+        List<EntityRespDTO> records = loadRecords();
+        Map<Long, EntityRespDTO> byId = new LinkedHashMap<>();
+        for (EntityRespDTO record : records) {
+            if (record != null && record.getId() != null) {
+                byId.put(record.getId(), record);
+            }
+        }
+        List<PatrolGeneratedTaskOptionDTO> options = new ArrayList<>();
+        for (PatrolGeneratedTaskSelector.Candidate candidate : PatrolGeneratedTaskSelector.listed(
+                candidates(records), deviceId)) {
+            EntityRespDTO record = byId.get(candidate.id());
+            if (record == null) {
+                continue;
+            }
+            Map<String, Object> fields = record.getCustomFields() == null ? Map.of() : record.getCustomFields();
+            PatrolGeneratedTaskOptionDTO option = new PatrolGeneratedTaskOptionDTO();
+            option.setExecutionRecordId(record.getId());
+            option.setRecordName(text(mapOf(record.getBaseFields()).get("name")));
+            option.setExecutionStatus(candidate.status());
+            option.setPlannedStart(text(fields.get("planned_start")));
+            option.setMediaStreamUrl(text(mapOf(fields.get("standard_snapshot"))
+                    .get(PatrolOpenRunSnapshotKeys.TASK_RECORD_INGEST_URL)));
+            options.add(option);
+        }
+        return options;
+    }
+
+    /** 人在监控页点中的那一条。必须属于这台设备，并且仍是待执行或正在执行。 */
+    public PatrolGeneratedTaskDownlinkDTO forRecord(String deviceId, long recordId) {
+        try {
+            PatrolGeneratedTaskSelector.requireListed(candidates(loadRecords()), deviceId, recordId);
+        } catch (IllegalArgumentException ex) {
+            throw ServiceExceptionUtil.invalidParamException(ex.getMessage());
+        }
+        return toDownlink(deviceId, requireRecord(recordId));
+    }
+
+    private PatrolGeneratedTaskDownlinkDTO toDownlink(String deviceId, EntityRespDTO record) {
         Map<String, Object> fields = record.getCustomFields() == null ? Map.of() : record.getCustomFields();
         Object snapshot = fields.get("standard_snapshot");
         String protocol = text(mapOf(snapshot).get(PatrolOpenRunSnapshotSupport.KEY_PROTOCOL_VERSION));
@@ -71,6 +126,11 @@ public class PatrolGeneratedTaskLookup {
         dto.setMediaStreamUrl(text(mapOf(snapshot).get(PatrolOpenRunSnapshotKeys.TASK_RECORD_INGEST_URL)));
         dto.setExecutionTimeEpochSeconds(plannedEpochSeconds(fields.get("planned_start")));
         dto.setActions(actionsOf(snapshot));
+        StoredCommandPackage stored = storedCommandPackage(snapshot, objectMapper);
+        if (stored != null) {
+            dto.setCommandPackagesJson(stored.packagesJson());
+            dto.setCommandTemplateId(stored.templateId());
+        }
         return dto;
     }
 
@@ -185,6 +245,60 @@ public class PatrolGeneratedTaskLookup {
                     plannedStart(fields.get("planned_start"))));
         }
         return rows;
+    }
+
+    /**
+     * 生成任务时落下的巡检指令包。没有这一段时返回空，调用方再决定要不要重译。
+     * 多段包按原顺序接成一份。正文不是数组就失败，不另编一份。
+     */
+    static StoredCommandPackage storedCommandPackage(Object snapshot, ObjectMapper objectMapper) {
+        Object raw = mapOf(snapshot).get(PatrolOpenRunSnapshotKeys.DISPATCH_DOWNLINK_PIECES);
+        if (!(raw instanceof List<?> list) || list.isEmpty()) {
+            return null;
+        }
+        ArrayNode steps = objectMapper.createArrayNode();
+        String templateId = null;
+        boolean sawPackage = false;
+        for (Object item : list) {
+            if (!(item instanceof Map<?, ?> map)) {
+                continue;
+            }
+            if (!"package".equalsIgnoreCase(text(map.get("kind")))) {
+                continue;
+            }
+            String packages = text(map.get("packagesJson"));
+            if (!StringUtils.hasText(packages)) {
+                continue;
+            }
+            sawPackage = true;
+            if (!StringUtils.hasText(templateId)) {
+                templateId = text(map.get("templateId"));
+            }
+            JsonNode node;
+            try {
+                node = objectMapper.readTree(packages);
+            } catch (Exception ex) {
+                throw ServiceExceptionUtil.invalidParamException("这条执行记录上的指令包读不出来");
+            }
+            if (node == null || !node.isArray()) {
+                throw ServiceExceptionUtil.invalidParamException("这条执行记录上的指令包不是动作列表");
+            }
+            node.forEach(steps::add);
+        }
+        if (!sawPackage) {
+            return null;
+        }
+        if (steps.isEmpty()) {
+            throw ServiceExceptionUtil.invalidParamException("这条执行记录没有生成指令包");
+        }
+        try {
+            return new StoredCommandPackage(objectMapper.writeValueAsString(steps), templateId);
+        } catch (Exception ex) {
+            throw ServiceExceptionUtil.invalidParamException("这条执行记录上的指令包读不出来");
+        }
+    }
+
+    record StoredCommandPackage(String packagesJson, String templateId) {
     }
 
     private static List<PatrolGeneratedTaskActionDTO> actionsOf(Object snapshot) {

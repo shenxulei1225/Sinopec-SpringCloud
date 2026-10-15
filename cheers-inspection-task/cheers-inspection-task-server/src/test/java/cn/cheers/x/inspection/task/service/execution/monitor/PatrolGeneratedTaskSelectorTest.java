@@ -14,6 +14,19 @@ class PatrolGeneratedTaskSelectorTest {
     private static final String DEVICE = "equipment-1";
 
     @Test
+    void listsRunningFirstThenPendingByPlanTimeIncludingOnesNotYetDue() {
+        List<PatrolGeneratedTaskSelector.Candidate> listed = PatrolGeneratedTaskSelector.listed(List.of(
+                row(12, "明天", "pending", "2026-10-11T09:00:00+08:00"),
+                row(11, "傍晚", "pending", "2026-10-10T18:00:00+08:00"),
+                row(2, "正在做", "in_progress", "2026-10-10T09:00:00+08:00"),
+                row(9, "已结束", "completed", "2026-10-10T08:00:00+08:00")
+        ), DEVICE);
+
+        assertEquals(List.of(2L, 11L, 12L), listed.stream().map(PatrolGeneratedTaskSelector.Candidate::id).toList());
+        assertEquals(2L, PatrolGeneratedTaskSelector.requireListed(listed, DEVICE, 2L).id());
+    }
+
+    @Test
     void usesTheOnlyRunningRecord() {
         PatrolGeneratedTaskSelector.Candidate chosen = PatrolGeneratedTaskSelector.choose(List.of(
                 row(1, "早班", "pending", "2026-10-10T09:00:00+08:00"),

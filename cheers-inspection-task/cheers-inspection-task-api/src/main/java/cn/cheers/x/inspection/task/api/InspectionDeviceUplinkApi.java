@@ -4,6 +4,7 @@ import cn.cheers.x.device.protocolgateway.api.datacollection.CollectionSample;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.enums.ApiConstants;
 import cn.cheers.x.inspection.task.api.dto.PatrolGeneratedTaskDownlinkDTO;
+import cn.cheers.x.inspection.task.api.dto.PatrolGeneratedTaskOptionDTO;
 import cn.cheers.x.inspection.task.api.dto.ReplayPoseReqDTO;
 import cn.cheers.x.inspection.task.api.dto.TaskExchangeTranscriptReqDTO;
 import cn.cheers.x.inspection.task.api.dto.TaskExchangeTranscriptRespDTO;
@@ -14,6 +15,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.List;
 
 /**
  * 巡检接收网关已经核对过的上报样本。
@@ -34,6 +37,16 @@ public interface InspectionDeviceUplinkApi {
     @GetMapping(PREFIX + "/generated-task")
     @Operation(summary = "这台设备当前要下发的已生成任务")
     CommonResult<PatrolGeneratedTaskDownlinkDTO> generatedTask(@RequestParam("deviceId") String deviceId);
+
+    @GetMapping(PREFIX + "/generated-tasks")
+    @Operation(summary = "这台设备待执行和正在执行的已生成任务，供监控页点选")
+    CommonResult<List<PatrolGeneratedTaskOptionDTO>> generatedTasks(@RequestParam("deviceId") String deviceId);
+
+    @GetMapping(PREFIX + "/generated-task-record")
+    @Operation(summary = "监控页点中的那一条已生成任务")
+    CommonResult<PatrolGeneratedTaskDownlinkDTO> generatedTaskRecord(
+            @RequestParam("deviceId") String deviceId,
+            @RequestParam("executionRecordId") long executionRecordId);
 
     @PostMapping(PREFIX + "/transcript")
     @Operation(summary = "把这次往来原文记进这台设备正在执行的任务")

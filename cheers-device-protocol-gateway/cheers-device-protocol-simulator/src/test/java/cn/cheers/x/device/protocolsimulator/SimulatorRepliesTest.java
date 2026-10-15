@@ -19,6 +19,27 @@ class SimulatorRepliesTest {
             objectMapper, state, "dev-1", "uav", PHOTO_URL);
 
     @Test
+    void timedStatus_writesOperatePointAndCurrentPosition() throws Exception {
+        JsonNode root = objectMapper.readTree(replies.timedStatus("dev-1", 2, 1_624_511_261_000L));
+
+        assertEquals(500103, root.path("opcode").asInt());
+        assertEquals("dev-1", root.path("deviceId").asText());
+        JsonNode body = root.path("result");
+        assertEquals("222222", body.path("operatePoint").path("pointId").asText());
+        assertEquals("31.0383416830", body.path("operatePoint").path("lat").asText());
+        assertEquals(1_624_511_261L, body.path("operatePoint").path("optime").asLong());
+        assertEquals("80", body.path("operatePoint").path("electric").asText());
+        assertEquals(2, body.path("sequence").asInt());
+        assertEquals(1_624_511_261L, body.path("time").asLong());
+        assertEquals("no error", body.path("faultReason").asText());
+        assertEquals(1, body.path("dataLink").asInt());
+        assertEquals("31.0383416830", body.path("lat").asText());
+        assertEquals("17.874", body.path("height").asText());
+        assertTrue(body.path("reportPoint").isMissingNode());
+        assertTrue(body.path("result").isMissingNode());
+    }
+
+    @Test
     void locate_repliesAckThenSameOpcode() throws Exception {
         List<String> sent = replies.immediate(
                 "{\"opcode\":500101,\"msgId\":\"m1\",\"deviceId\":\"dev-1\"}", 1000L);

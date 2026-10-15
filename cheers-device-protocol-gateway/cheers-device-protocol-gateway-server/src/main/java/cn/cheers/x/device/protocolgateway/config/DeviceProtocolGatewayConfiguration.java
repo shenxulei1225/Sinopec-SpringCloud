@@ -10,7 +10,10 @@ import org.springframework.web.client.RestClient;
  * 网关配置与 HTTP 客户端（过渡上报消费者，不是正式总线）。
  */
 @Configuration
-@EnableConfigurationProperties(DeviceProtocolGatewayProperties.class)
+@EnableConfigurationProperties({
+        DeviceProtocolGatewayProperties.class,
+        ProtocolMonitorSimulatorProperties.class
+})
 public class DeviceProtocolGatewayConfiguration {
 
     @Bean

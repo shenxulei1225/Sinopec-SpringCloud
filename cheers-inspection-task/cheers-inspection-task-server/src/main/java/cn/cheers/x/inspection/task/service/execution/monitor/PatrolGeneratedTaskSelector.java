@@ -28,6 +28,42 @@ public final class PatrolGeneratedTaskSelector {
     ) {
     }
 
+    /**
+     * 这台设备上还可以拿来下发的已生成任务。
+     * 正在执行排在前面，其余待执行按计划时刻从早到晚。已结束的不在这里。
+     * 还没到点的待执行也列出，由人在监控页点选，不在这里替人挑一条。
+     */
+    public static List<Candidate> listed(List<Candidate> rows, String deviceId) {
+        if (deviceId == null || deviceId.isBlank() || rows == null) {
+            return List.of();
+        }
+        String wanted = deviceId.trim();
+        List<Candidate> mine = new ArrayList<>();
+        for (Candidate row : rows) {
+            if (row == null || !wanted.equals(row.deviceId())) {
+                continue;
+            }
+            if (IN_PROGRESS.equals(row.status()) || PENDING.equals(row.status())) {
+                mine.add(row);
+            }
+        }
+        mine.sort(Comparator
+                .comparingInt((Candidate row) -> IN_PROGRESS.equals(row.status()) ? 0 : 1)
+                .thenComparing(Candidate::plannedStart, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparingLong(Candidate::id));
+        return List.copyOf(mine);
+    }
+
+    /** 人点中的那一条必须是这台设备待执行或正在执行的任务。 */
+    public static Candidate requireListed(List<Candidate> rows, String deviceId, long recordId) {
+        for (Candidate row : listed(rows, deviceId)) {
+            if (row.id() == recordId) {
+                return row;
+            }
+        }
+        throw new IllegalArgumentException("这条执行记录不是这台设备待执行或正在执行的任务");
+    }
+
     public static Candidate choose(List<Candidate> rows, String deviceId, OffsetDateTime now) {
         if (deviceId == null || deviceId.isBlank()) {
             throw new IllegalArgumentException("要先选定一台设备");
