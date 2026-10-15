@@ -17,7 +17,7 @@ import java.util.List;
 import static cn.cheers.x.module.dynamicbusiness.enums.ErrorCodeConstants.CATEGORY_ENTITY_LINK_NOT_FOUND;
 
 /**
- * 分类与实体链接 Service 实现类
+ * 分类即实体的链接。解除时物理删除这一行。没有挂上不插入。
  *
  * @author 基础服务模块
  */
@@ -99,7 +99,11 @@ public class CategoryEntityLinkServiceImpl implements CategoryEntityLinkService 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void unlinkEntityCategory(Long entityId, String entityTypeCode) {
-        linkMapper.deleteByEntityIdAndEntityTypeCode(entityId, entityTypeCode);
+        String type = entityTypeCode == null ? null : entityTypeCode.trim();
+        if (type != null && type.isEmpty()) {
+            type = null;
+        }
+        linkMapper.deleteByEntityIdAndEntityTypeCode(entityId, type);
     }
 
     @Override

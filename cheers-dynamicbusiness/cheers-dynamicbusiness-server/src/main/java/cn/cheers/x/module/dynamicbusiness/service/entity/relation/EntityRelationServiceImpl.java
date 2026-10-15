@@ -122,7 +122,7 @@ public class EntityRelationServiceImpl implements EntityRelationService {
         // 校验关联关系存在
         getRelationDO(id);
         // entityTypeCode 参数预留用于后续扩展（如验证实体存在性）
-        entityRelationMapper.deleteById(id);
+        entityRelationMapper.physicalDeleteById(id);
     }
 
 

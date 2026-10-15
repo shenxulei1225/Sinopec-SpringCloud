@@ -45,6 +45,10 @@ public interface TaskExecutionSessionApi {
     @Operation(summary = "更新这次执行的状态或某一步的状态")
     CommonResult<Boolean> writeback(@Valid @RequestBody TaskExecutionWritebackReqDTO req);
 
+    @PostMapping(PREFIX + "/delete-pending")
+    @Operation(summary = "删除一条还没开始的执行账及其步骤")
+    CommonResult<Boolean> deletePending(@RequestParam("executionRecordId") Long executionRecordId);
+
     @PostMapping(PREFIX + "/append-process")
     @Operation(summary = "往这次执行的账里记一条过程")
     CommonResult<TaskExecutionAppendProcessRespDTO> appendProcess(

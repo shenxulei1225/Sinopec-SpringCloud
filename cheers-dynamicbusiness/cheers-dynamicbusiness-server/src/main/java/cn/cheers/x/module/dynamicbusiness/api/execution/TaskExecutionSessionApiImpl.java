@@ -47,6 +47,12 @@ public class TaskExecutionSessionApiImpl implements TaskExecutionSessionApi {
     }
 
     @Override
+    public CommonResult<Boolean> deletePending(Long executionRecordId) {
+        taskExecutionSessionService.deletePendingExecution(executionRecordId);
+        return success(true);
+    }
+
+    @Override
     public CommonResult<TaskExecutionAppendProcessRespDTO> appendProcess(
             TaskExecutionAppendProcessReqDTO req) {
         return success(taskExecutionSessionService.appendProcess(req));

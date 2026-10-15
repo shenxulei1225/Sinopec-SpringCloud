@@ -71,9 +71,8 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
      * <p>处理步骤：</p>
      * <ol>
      *   <li>校验参数（modelId/categoryId/entityTypeCode）与主数据存在性；</li>
-     *   <li>优先恢复软删除关联（避免唯一约束冲突）；</li>
-     *   <li>若有效关联已存在则直接返回成功；</li>
-     *   <li>否则创建新关联并分配分类内排序（sort）。</li>
+     *   <li>若这一对已经挂着则直接返回；</li>
+     *   <li>否则插入新行，并分配分类内排序（sort）。解除后的旧行已物理删除，不再恢复。</li>
      * </ol>
      */
     @Override
@@ -87,30 +86,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
         validateModelExists(modelId, entityTypeCode);
         validateCategoryExists(categoryId);
 
-        // 如果存在软删除的关联，优先恢复软删除关联，避免唯一键冲突
-        int restored = relationMapper.restoreDeletedRelation(
-                modelId,
-                categoryId,
-                entityTypeCode,
-                // 排序策略：增量关联不全量重排；恢复/新增均置于当前分类末尾。
-                nextRelationSort(categoryId));
-        if (restored > 0) {
-            log.info("重新启用已删除的实体-分类关联并更新排序: modelId={}, categoryId={}, entityTypeCode={}",
-                    modelId, categoryId, entityTypeCode);
-            return ModelCategoryAssociationRespVO.builder()
-                    .operationType("ASSOCIATE")
-                    .modelId(modelId)
-                    .modelExists(true)
-                    .totalCount(1)
-                    .successCount(1)
-                    .failCount(0)
-                    .successCategoryIds(Collections.singletonList(categoryId))
-                    .failItems(Collections.emptyList())
-                    .executionTime(System.currentTimeMillis() - startTime)
-                    .build();
-        }
-
-        // 检查有效关联是否已存在
+        // 已经挂着则不插第二行。解除过的行已物理删除，这里只插入新行。
         if (existsRelation(modelId, categoryId, entityTypeCode)) {
             log.debug("关联已存在: modelId={}, categoryId={}, entityTypeCode={}", modelId, categoryId, entityTypeCode);
             return ModelCategoryAssociationRespVO.builder()
@@ -327,7 +303,7 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
     @Transactional(rollbackFor = Exception.class)
     public ModelCategoryAssociationRespVO updateAssociation(
             Long modelId, List<Long> categoryIds, String entityTypeCode) {
-        // 排序策略：更新实体关联的分类时，不重排未变关联；仅对恢复/新增关联分配新的 sort。
+        // 排序策略：更新型号关联的分类时，不重排未变关联；只给新挂上的分类分配 sort。
         long startTime = System.currentTimeMillis();
         List<CategoryAssociationBaseRespVO.FailItem> failItems = new ArrayList<>();
 
@@ -375,29 +351,14 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        // Step 4: 读取目标分类上的历史关联（含 deleted）并提取恢复候选
-        List<ModelCategoryRelationDO> existingRelationsOnTarget = validCategoryIds.isEmpty()
-                ? Collections.emptyList()
-                : relationMapper.selectByModelAndCategoryIdsIncludingDeleted(modelId, validCategoryIds, entityTypeCode);
-        Set<Long> restoreCandidates = existingRelationsOnTarget.stream()
-                .filter(rel -> Boolean.TRUE.equals(rel.getDeleted()))
-                .map(ModelCategoryRelationDO::getCategoryId)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-
-        // Step 5: 差集分流（删除 / 恢复 / 新增）
+        // 差集：不再挂的物理删除；还没挂的插入新行。
         List<Long> toDelete = activeCategoryIds.stream().filter(id -> !validCategoryIds.contains(id)).toList();
-        List<Long> toRestore = validCategoryIds.stream().filter(restoreCandidates::contains).toList();
         List<Long> toInsert = validCategoryIds.stream()
-                .filter(id -> !activeCategoryIds.contains(id) && !restoreCandidates.contains(id))
+                .filter(id -> !activeCategoryIds.contains(id))
                 .toList();
 
-        // Step 6: 删除移除项（仅删除差集，不影响 toKeep）
         if (!toDelete.isEmpty()) {
             relationMapper.deleteByModelAndCategoryIds(modelId, toDelete);
-        }
-        // Step 7: 先完成状态变更（恢复 + 新增），不在此阶段分段编号
-        if (!toRestore.isEmpty()) {
-            relationMapper.restoreDeletedRelationsBatch(modelId, toRestore, entityTypeCode);
         }
         if (!toInsert.isEmpty()) {
             List<ModelCategoryRelationDO> relationsToInsert = new ArrayList<>();
@@ -413,9 +374,9 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
             relationMapper.insertBatchRelations(relationsToInsert);
         }
 
-        // Step 8: 按目标顺序统一编号（仅对变更项：恢复+新增）
+        // 按目标顺序给新挂上的分类编号
         List<Long> changedOrdered = validCategoryIds.stream()
-                .filter(id -> toRestore.contains(id) || toInsert.contains(id))
+                .filter(toInsert::contains)
                 .toList();
         if (!changedOrdered.isEmpty()) {
             Map<Long, Integer> baseSortMap = calcBaseSortByCategoryIds(changedOrdered);
@@ -1189,59 +1150,34 @@ public class ModelCategoryRelationServiceImpl implements ModelCategoryRelationSe
             return new BatchAssociateResult(0, Collections.emptyList(), failItems);
         }
 
-        // 2) 查询目标分类上的现有关联（含 deleted），一次分流出三集合
+        // 只认还挂着的行。没挂上的分类插入新行，不恢复旧行。
         List<ModelCategoryRelationDO> existingRelations = relationMapper
-                // mybatis-plus 的配置过滤了 deleted=true 的记录，所以需要显式查询包含 deleted=true 的记录
-                .selectByModelAndCategoryIdsIncludingDeleted(modelId, validCategoryIds, modelEntityType);
+                .selectByModelIdsAndCategoryIds(List.of(modelId), validCategoryIds);
 
         Set<Long> alreadyActive = new LinkedHashSet<>();
-        Set<Long> restoreCandidates = new LinkedHashSet<>();
         for (ModelCategoryRelationDO relation : existingRelations) {
+            if (!modelEntityType.equals(relation.getEntityTypeCode())) {
+                continue;
+            }
             Long categoryId = relation.getCategoryId();
-            if (Boolean.TRUE.equals(relation.getDeleted())) {
-                restoreCandidates.add(categoryId);
-            } else {
+            if (categoryId != null) {
                 alreadyActive.add(categoryId);
             }
         }
 
-        // 3) 三集合分流：已存在(不调整sort) / 可恢复 / 需新增
-        List<Long> toRestore = new ArrayList<>();
         List<Long> toInsert = new ArrayList<>();
         int successCount = 0;
         List<Long> successCategoryIds = new ArrayList<>();
         for (Long categoryId : validCategoryIds) {
             if (alreadyActive.contains(categoryId)) {
-                // 已存在关联：详情页批量更新场景不调整 sort
                 successCount++;
                 successCategoryIds.add(categoryId);
-            } else if (restoreCandidates.contains(categoryId)) {
-                toRestore.add(categoryId);
             } else {
                 toInsert.add(categoryId);
             }
         }
 
-        // 4) 批量恢复软删除（恢复后需重新编号 sort）
-        if (!toRestore.isEmpty()) {
-            int restored = relationMapper.restoreDeletedRelationsBatch(modelId, toRestore, modelEntityType);
-            successCount += restored;
-            successCategoryIds.addAll(toRestore);
-
-            // 恢复记录重新编号 sort（不影响 alreadyActive）
-            Map<Long, Integer> baseSortMap = calcBaseSortByCategoryIds(toRestore);
-            Map<Long, Integer> sortOffsetMap = new HashMap<>();
-            for (Long categoryId : toRestore) {
-                relationMapper.updateSortByModelAndCategory(
-                        modelId,
-                        categoryId,
-                        calculateSortWithBase(baseSortMap, sortOffsetMap, categoryId),
-                        modelEntityType
-                );
-            }
-        }
-
-        // 5) 批量新增剩余关联
+        // 批量新增还没挂上的关联
         if (!toInsert.isEmpty()) {
             Map<Long, Integer> baseSortMap = calcBaseSortByCategoryIds(toInsert);
             Map<Long, Integer> sortOffsetMap = new HashMap<>();

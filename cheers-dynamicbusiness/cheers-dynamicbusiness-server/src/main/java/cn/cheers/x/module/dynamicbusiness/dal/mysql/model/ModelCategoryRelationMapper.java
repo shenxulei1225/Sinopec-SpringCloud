@@ -5,6 +5,7 @@ import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelCategoryRelationDO;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -83,60 +84,55 @@ public interface ModelCategoryRelationMapper extends BaseMapperX<ModelCategoryRe
     }
 
     /**
-     * 查询模型在指定分类集合上的关联（包含 deleted=true 记录）。
-     */
-    @Select("""
-            <script>
-            SELECT *
-            FROM dynamic_model_category_relation
-            WHERE model_id = #{modelId}
-                AND entity_type_code = #{entityTypeCode}
-                AND category_id IN
-                <foreach collection='categoryIds' item='id' open='(' separator=',' close=')'>
-                    #{id}
-                </foreach>
-            </script>
-            """)
-    List<ModelCategoryRelationDO> selectByModelAndCategoryIdsIncludingDeleted(@Param("modelId") Long modelId,
-                                                                                @Param("categoryIds") List<Long> categoryIds,
-                                                                                @Param("entityTypeCode") String entityTypeCode);
-
-    /**
-     * 根据模型ID删除所有分类关联
+     * 根据模型ID物理删除所有分类关联。
      * @param modelId 模型ID
      */
     default void deleteByModelId(Long modelId) {
-        delete(new LambdaQueryWrapperX<ModelCategoryRelationDO>()
-                .eq(ModelCategoryRelationDO::getModelId, modelId));
+        physicalDeleteByModelId(modelId);
     }
+
+    @Delete("DELETE FROM dynamic_model_category_relation WHERE model_id = #{modelId}")
+    int physicalDeleteByModelId(@Param("modelId") Long modelId);
 
     /**
      * 根据模型ID + 业务类型删除分类关联。
      */
     default void deleteByModelId(Long modelId, String entityTypeCode) {
-        delete(new LambdaQueryWrapperX<ModelCategoryRelationDO>()
-                .eq(ModelCategoryRelationDO::getModelId, modelId)
-                .eq(ModelCategoryRelationDO::getEntityTypeCode, entityTypeCode));
+        physicalDeleteByModelIdAndType(modelId, entityTypeCode);
     }
+
+    @Delete("""
+            DELETE FROM dynamic_model_category_relation
+            WHERE model_id = #{modelId} AND entity_type_code = #{entityTypeCode}
+            """)
+    int physicalDeleteByModelIdAndType(@Param("modelId") Long modelId,
+                                       @Param("entityTypeCode") String entityTypeCode);
 
     /**
      * 根据分类ID删除所有模型关联（全业务）。
      * @param categoryId 分类ID
      */
     default void deleteByCategoryId(Long categoryId) {
-        delete(new LambdaQueryWrapperX<ModelCategoryRelationDO>()
-                .eq(ModelCategoryRelationDO::getCategoryId, categoryId));
+        physicalDeleteByCategoryId(categoryId);
     }
+
+    @Delete("DELETE FROM dynamic_model_category_relation WHERE category_id = #{categoryId}")
+    int physicalDeleteByCategoryId(@Param("categoryId") Long categoryId);
 
     /**
      * 根据分类ID删除所有模型关联（按业务类型隔离）。
      * @param categoryId 分类ID
      */
     default void deleteByCategoryId(Long categoryId, String entityTypeCode) {
-        delete(new LambdaQueryWrapperX<ModelCategoryRelationDO>()
-                .eq(ModelCategoryRelationDO::getCategoryId, categoryId)
-                .eq(ModelCategoryRelationDO::getEntityTypeCode, entityTypeCode));
+        physicalDeleteByCategoryIdAndType(categoryId, entityTypeCode);
     }
+
+    @Delete("""
+            DELETE FROM dynamic_model_category_relation
+            WHERE category_id = #{categoryId} AND entity_type_code = #{entityTypeCode}
+            """)
+    int physicalDeleteByCategoryIdAndType(@Param("categoryId") Long categoryId,
+                                          @Param("entityTypeCode") String entityTypeCode);
 
     /**
      * 批量删除多个分类的模型关联（全业务）。
@@ -145,9 +141,19 @@ public interface ModelCategoryRelationMapper extends BaseMapperX<ModelCategoryRe
         if (categoryIds == null || categoryIds.isEmpty()) {
             return;
         }
-        delete(new LambdaQueryWrapperX<ModelCategoryRelationDO>()
-                .in(ModelCategoryRelationDO::getCategoryId, categoryIds));
+        physicalDeleteByCategoryIds(categoryIds);
     }
+
+    @Delete("""
+            <script>
+            DELETE FROM dynamic_model_category_relation
+            WHERE category_id IN
+            <foreach collection='categoryIds' item='id' open='(' separator=',' close=')'>
+                #{id}
+            </foreach>
+            </script>
+            """)
+    int physicalDeleteByCategoryIds(@Param("categoryIds") List<Long> categoryIds);
 
     /**
      * 批量删除多个分类的模型关联（按业务类型隔离）。
@@ -156,10 +162,21 @@ public interface ModelCategoryRelationMapper extends BaseMapperX<ModelCategoryRe
         if (categoryIds == null || categoryIds.isEmpty()) {
             return;
         }
-        delete(new LambdaQueryWrapperX<ModelCategoryRelationDO>()
-                .in(ModelCategoryRelationDO::getCategoryId, categoryIds)
-                .eq(ModelCategoryRelationDO::getEntityTypeCode, entityTypeCode));
+        physicalDeleteByCategoryIdsAndType(categoryIds, entityTypeCode);
     }
+
+    @Delete("""
+            <script>
+            DELETE FROM dynamic_model_category_relation
+            WHERE entity_type_code = #{entityTypeCode}
+              AND category_id IN
+            <foreach collection='categoryIds' item='id' open='(' separator=',' close=')'>
+                #{id}
+            </foreach>
+            </script>
+            """)
+    int physicalDeleteByCategoryIdsAndType(@Param("categoryIds") List<Long> categoryIds,
+                                           @Param("entityTypeCode") String entityTypeCode);
 
     /**
      * 批量删除特定的模型-分类绑定关系
@@ -173,10 +190,21 @@ public interface ModelCategoryRelationMapper extends BaseMapperX<ModelCategoryRe
         if (categoryIds == null || categoryIds.isEmpty()) {
             return;
         }
-        delete(new LambdaQueryWrapperX<ModelCategoryRelationDO>()
-                .eq(ModelCategoryRelationDO::getModelId, modelId)
-                .in(ModelCategoryRelationDO::getCategoryId, categoryIds));
+        physicalDeleteByModelIdAndCategoryIds(modelId, categoryIds);
     }
+
+    @Delete("""
+            <script>
+            DELETE FROM dynamic_model_category_relation
+            WHERE model_id = #{modelId}
+              AND category_id IN
+            <foreach collection='categoryIds' item='id' open='(' separator=',' close=')'>
+                #{id}
+            </foreach>
+            </script>
+            """)
+    int physicalDeleteByModelIdAndCategoryIds(@Param("modelId") Long modelId,
+                                              @Param("categoryIds") List<Long> categoryIds);
 
     /**
      * 按模型ID + 分类列表 + 业务类型删除特定绑定关系。
@@ -185,11 +213,23 @@ public interface ModelCategoryRelationMapper extends BaseMapperX<ModelCategoryRe
         if (categoryIds == null || categoryIds.isEmpty()) {
             return;
         }
-        delete(new LambdaQueryWrapperX<ModelCategoryRelationDO>()
-                .eq(ModelCategoryRelationDO::getModelId, modelId)
-                .in(ModelCategoryRelationDO::getCategoryId, categoryIds)
-                .eq(ModelCategoryRelationDO::getEntityTypeCode, entityTypeCode));
+        physicalDeleteByModelIdAndCategoryIdsAndType(modelId, categoryIds, entityTypeCode);
     }
+
+    @Delete("""
+            <script>
+            DELETE FROM dynamic_model_category_relation
+            WHERE model_id = #{modelId}
+              AND entity_type_code = #{entityTypeCode}
+              AND category_id IN
+            <foreach collection='categoryIds' item='id' open='(' separator=',' close=')'>
+                #{id}
+            </foreach>
+            </script>
+            """)
+    int physicalDeleteByModelIdAndCategoryIdsAndType(@Param("modelId") Long modelId,
+                                                     @Param("categoryIds") List<Long> categoryIds,
+                                                     @Param("entityTypeCode") String entityTypeCode);
 
     /**
      * 删除特定的模型-分类绑定关系
@@ -202,20 +242,32 @@ public interface ModelCategoryRelationMapper extends BaseMapperX<ModelCategoryRe
      * @param categoryId 分类ID
      */
     default void deleteByModelIdAndCategoryId(Long modelId, Long categoryId, String entityTypeCode) {
-        delete(new LambdaQueryWrapperX<ModelCategoryRelationDO>()
-                .eq(ModelCategoryRelationDO::getModelId, modelId)
-                .eq(ModelCategoryRelationDO::getCategoryId, categoryId)
-                .eq(ModelCategoryRelationDO::getEntityTypeCode, entityTypeCode));
+        physicalDeleteByModelIdAndCategoryId(modelId, categoryId, entityTypeCode);
     }
+
+    @Delete("""
+            DELETE FROM dynamic_model_category_relation
+            WHERE model_id = #{modelId}
+              AND category_id = #{categoryId}
+              AND entity_type_code = #{entityTypeCode}
+            """)
+    int physicalDeleteByModelIdAndCategoryId(@Param("modelId") Long modelId,
+                                             @Param("categoryId") Long categoryId,
+                                             @Param("entityTypeCode") String entityTypeCode);
 
     /**
      * 兼容方法：删除模型与分类关联（命名与 Entity 侧一致，不区分业务类型）。
      */
     default void deleteByModelAndCategory(Long modelId, Long categoryId) {
-        delete(new LambdaQueryWrapperX<ModelCategoryRelationDO>()
-                .eq(ModelCategoryRelationDO::getModelId, modelId)
-                .eq(ModelCategoryRelationDO::getCategoryId, categoryId));
+        physicalDeleteByModelAndCategory(modelId, categoryId);
     }
+
+    @Delete("""
+            DELETE FROM dynamic_model_category_relation
+            WHERE model_id = #{modelId} AND category_id = #{categoryId}
+            """)
+    int physicalDeleteByModelAndCategory(@Param("modelId") Long modelId,
+                                         @Param("categoryId") Long categoryId);
 
     /**
      * 兼容方法：删除模型与分类关联（命名与 Entity 侧一致，按业务类型过滤）。
@@ -238,9 +290,19 @@ public interface ModelCategoryRelationMapper extends BaseMapperX<ModelCategoryRe
         if (modelIds == null || modelIds.isEmpty()) {
             return;
         }
-        delete(new LambdaQueryWrapperX<ModelCategoryRelationDO>()
-                .in(ModelCategoryRelationDO::getModelId, modelIds));
+        physicalDeleteByModelIds(modelIds);
     }
+
+    @Delete("""
+            <script>
+            DELETE FROM dynamic_model_category_relation
+            WHERE model_id IN
+            <foreach collection='modelIds' item='id' open='(' separator=',' close=')'>
+                #{id}
+            </foreach>
+            </script>
+            """)
+    int physicalDeleteByModelIds(@Param("modelIds") List<Long> modelIds);
 
     /**
      * 批量查询模型-分类关联（用于优化批量关联时的 N+1 查询问题）。
@@ -254,59 +316,6 @@ public interface ModelCategoryRelationMapper extends BaseMapperX<ModelCategoryRe
                 .in(ModelCategoryRelationDO::getCategoryId, categoryIds)
                 .eq(ModelCategoryRelationDO::getDeleted, false));
     }
-
-    /**
-     * 恢复软删除的模型-分类关联（deleted 从 true 改为 false）。
-     */
-    @Update("""
-            WITH target AS (
-                SELECT id
-                FROM dynamic_model_category_relation
-                WHERE model_id = #{modelId}
-                  AND category_id = #{categoryId}
-                  AND entity_type_code = #{entityTypeCode}
-                  AND deleted = TRUE
-                ORDER BY id DESC
-                LIMIT 1
-            )
-            UPDATE dynamic_model_category_relation r
-            SET deleted = FALSE,
-                sort = #{sort}
-            FROM target
-            WHERE r.id = target.id
-            """)
-    int restoreDeletedRelation(@Param("modelId") Long modelId,
-                                @Param("categoryId") Long categoryId,
-                                @Param("entityTypeCode") String entityTypeCode,
-                                @Param("sort") Integer sort);
-
-    /**
-     * 批量恢复软删除的模型-分类关联（deleted 从 true 改为 false）。
-     */
-    @Update("""
-            <script>
-            WITH candidates AS (
-                SELECT id,
-                       ROW_NUMBER() OVER (PARTITION BY category_id ORDER BY id DESC) AS rn
-                FROM dynamic_model_category_relation
-                WHERE model_id = #{modelId}
-                  AND entity_type_code = #{entityTypeCode}
-                  AND category_id IN
-                  <foreach collection='categoryIds' item='id' open='(' separator=',' close=')'>
-                      #{id}
-                  </foreach>
-                  AND deleted = TRUE
-            )
-            UPDATE dynamic_model_category_relation r
-            SET deleted = FALSE
-            FROM candidates c
-            WHERE r.id = c.id
-              AND c.rn = 1
-            </script>
-            """)
-    int restoreDeletedRelationsBatch(@Param("modelId") Long modelId,
-                                        @Param("categoryIds") List<Long> categoryIds,
-                                        @Param("entityTypeCode") String entityTypeCode);
 
     /**
      * 更新模型-分类关联的排序值。

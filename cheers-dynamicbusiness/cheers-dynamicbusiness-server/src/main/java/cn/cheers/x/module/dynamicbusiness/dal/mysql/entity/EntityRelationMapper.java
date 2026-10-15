@@ -3,7 +3,9 @@ package cn.cheers.x.module.dynamicbusiness.dal.mysql.entity;
 import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityRelationDO;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.HashMap;
 import java.util.List;
@@ -127,39 +129,41 @@ public interface EntityRelationMapper extends BaseMapperX<EntityRelationDO> {
         }
 
         /**
-         * 删除源实体的所有关联关系
+         * 物理删除源实体发出的全部关联。
          */
-        default int deleteBySourceEntityId(Long sourceEntityId) {
-                return delete(new LambdaQueryWrapperX<EntityRelationDO>()
-                        .eq(EntityRelationDO::getSourceEntityId, sourceEntityId));
-        }
+        @Delete("DELETE FROM dynamic_entity_relation WHERE source_entity_id = #{sourceEntityId}")
+        int deleteBySourceEntityId(@Param("sourceEntityId") Long sourceEntityId);
 
         /**
-         * 删除目标实体的所有关联关系
+         * 物理删除指向该实体的全部关联。
          */
-        default int deleteByTargetEntityId(Long targetEntityId) {
-                return delete(new LambdaQueryWrapperX<EntityRelationDO>()
-                        .eq(EntityRelationDO::getTargetEntityId, targetEntityId));
-        }
+        @Delete("DELETE FROM dynamic_entity_relation WHERE target_entity_id = #{targetEntityId}")
+        int deleteByTargetEntityId(@Param("targetEntityId") Long targetEntityId);
 
         /**
-         * 删除实体的所有关联关系（作为源或目标）
+         * 物理删除该实体作为来源或目标的全部关联。
          */
-        default int deleteByEntityId(Long entityId) {
-                return delete(new LambdaQueryWrapperX<EntityRelationDO>()
-                        .eq(EntityRelationDO::getSourceEntityId, entityId)
-                        .or()
-                        .eq(EntityRelationDO::getTargetEntityId, entityId));
-        }
+        @Delete("""
+                DELETE FROM dynamic_entity_relation
+                WHERE source_entity_id = #{entityId} OR target_entity_id = #{entityId}
+                """)
+        int deleteByEntityId(@Param("entityId") Long entityId);
 
         /**
-         * 删除指定的关联关系
+         * 物理删除指定来源和目标的关联。
          */
-        default int deleteBySourceAndTarget(Long sourceEntityId, Long targetEntityId) {
-                return delete(new LambdaQueryWrapperX<EntityRelationDO>()
-                        .eq(EntityRelationDO::getSourceEntityId, sourceEntityId)
-                        .eq(EntityRelationDO::getTargetEntityId, targetEntityId));
-        }
+        @Delete("""
+                DELETE FROM dynamic_entity_relation
+                WHERE source_entity_id = #{sourceEntityId} AND target_entity_id = #{targetEntityId}
+                """)
+        int deleteBySourceAndTarget(@Param("sourceEntityId") Long sourceEntityId,
+                                    @Param("targetEntityId") Long targetEntityId);
+
+        /**
+         * 按主键物理删除一条实体关联。
+         */
+        @Delete("DELETE FROM dynamic_entity_relation WHERE id = #{id}")
+        int physicalDeleteById(@Param("id") Long id);
 
         /**
          * 统计实体的关联关系数量（自己发出 + 别人指向，双向）
@@ -381,11 +385,12 @@ public interface EntityRelationMapper extends BaseMapperX<EntityRelationDO> {
          * @param fieldCode 字段编码
          * @return 删除的记录数
          */
-        default int deleteBySourceEntityIdAndFieldCode(Long sourceEntityId, String fieldCode) {
-                return delete(new LambdaQueryWrapperX<EntityRelationDO>()
-                        .eq(EntityRelationDO::getSourceEntityId, sourceEntityId)
-                        .eq(EntityRelationDO::getFieldCode, fieldCode));
-        }
+        @Delete("""
+                DELETE FROM dynamic_entity_relation
+                WHERE source_entity_id = #{sourceEntityId} AND field_code = #{fieldCode}
+                """)
+        int deleteBySourceEntityIdAndFieldCode(@Param("sourceEntityId") Long sourceEntityId,
+                                               @Param("fieldCode") String fieldCode);
 
         /**
          * 按源实体、字段编码和目标实体删除关联关系
@@ -396,12 +401,15 @@ public interface EntityRelationMapper extends BaseMapperX<EntityRelationDO> {
          * @param targetEntityId 目标实体ID
          * @return 删除的记录数
          */
-        default int deleteBySourceEntityIdAndFieldCodeAndTargetEntityId(Long sourceEntityId, String fieldCode, Long targetEntityId) {
-                return delete(new LambdaQueryWrapperX<EntityRelationDO>()
-                        .eq(EntityRelationDO::getSourceEntityId, sourceEntityId)
-                        .eq(EntityRelationDO::getFieldCode, fieldCode)
-                        .eq(EntityRelationDO::getTargetEntityId, targetEntityId));
-        }
+        @Delete("""
+                DELETE FROM dynamic_entity_relation
+                WHERE source_entity_id = #{sourceEntityId}
+                  AND field_code = #{fieldCode}
+                  AND target_entity_id = #{targetEntityId}
+                """)
+        int deleteBySourceEntityIdAndFieldCodeAndTargetEntityId(@Param("sourceEntityId") Long sourceEntityId,
+                                                                @Param("fieldCode") String fieldCode,
+                                                                @Param("targetEntityId") Long targetEntityId);
 
         /**
          * 按目标实体和源 Model 编码查询关联关系

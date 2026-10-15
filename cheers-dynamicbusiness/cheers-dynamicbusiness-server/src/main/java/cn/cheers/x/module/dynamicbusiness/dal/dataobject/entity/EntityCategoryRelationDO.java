@@ -15,8 +15,8 @@ import lombok.*;
  * <h3>身份约定</h3>
  * <p>唯一身份为「租户 + 实际存储类型 + 实体ID + 分类ID」（见 V24 迁移的
  * {@code uk_dynamic_entity_category_relation_identity}）；{@code domain} 是实体业务域的
- * 镜像，不参与唯一键。一个实体在同一分类上最多一行：{@code deleted=false} 表示已关联，
- * {@code deleted=true} 表示显式排除（型号挂分类推导时用于剔除）。</p>
+ * 镜像，不参与唯一键。一个实体在同一分类上最多一行，这一行表示挂着。
+ * 解除时物理删除这一行。没有挂上时不插入行。</p>
  */
 @TableName("dynamic_entity_category_relation")
 @KeySequence("dynamic_entity_category_relation_seq")

@@ -6,6 +6,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityCategoryRe
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -55,54 +56,6 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
     }
 
     /**
-     * 查询实体在指定分类集合上的关联，有效行与软删除的排除标记都返回。
-     *
-     * <p>须用原生 SQL：{@code @TableLogic} 会拦截 Wrapper 对 deleted=true 的查询。
-     * 调用方据 {@code deleted} 分流「已关联 / 待恢复 / 待新增」，不能只看软删除行，
-     * 否则已有有效关联会被再插一遍并撞唯一索引。</p>
-     */
-    @Select("""
-            <script>
-            SELECT *
-            FROM dynamic_entity_category_relation
-            WHERE entity_id = #{entityId}
-                AND entity_type_code = #{entityTypeCode}
-                AND category_id IN
-                <foreach collection='categoryIds' item='id' open='(' separator=',' close=')'>
-                    #{id}
-                </foreach>
-            </script>
-            """)
-    List<EntityCategoryRelationDO> selectByEntityAndCategoryIdsIncludingDeleted(@Param("entityId") Long entityId,
-                                                                                @Param("categoryIds") List<Long> categoryIds,
-                                                                                @Param("entityTypeCode") String entityTypeCode);
-
-    /**
-     * 批量查询「已解除关联」记录（deleted=true），用于模型挂分类路径下的显式排除。
-     *
-     * <p>须用原生 SQL：{@code @TableLogic} 会拦截 Wrapper 对 deleted=true 的查询。</p>
-     */
-    @Select("""
-            <script>
-            SELECT entity_id, category_id
-            FROM dynamic_entity_category_relation
-            WHERE entity_type_code = #{entityTypeCode}
-                AND entity_id IN
-                <foreach collection='entityIds' item='eid' open='(' separator=',' close=')'>
-                    #{eid}
-                </foreach>
-                AND category_id IN
-                <foreach collection='categoryIds' item='cid' open='(' separator=',' close=')'>
-                    #{cid}
-                </foreach>
-                AND deleted = TRUE
-            </script>
-            """)
-    List<EntityCategoryRelationDO> selectExcludedPairsByEntityIdsAndCategoryIds(@Param("entityIds") List<Long> entityIds,
-                                                                                @Param("categoryIds") List<Long> categoryIds,
-                                                                                @Param("entityTypeCode") String entityTypeCode);
-
-    /**
      * 根据分类ID查询所有关联（分类内按 sort,id 排序）。
      */
     default List<EntityCategoryRelationDO> selectByCategoryId(Long categoryId) {
@@ -145,92 +98,164 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
     }
 
     /**
-     * 删除实体与分类的关联（不区分业务类型）。
+     * 物理删除实体与分类的关联（不区分业务类型）。
+     * 框架的 delete 只会把行标成不挂，这里用 DELETE 把行去掉。
      */
     default void deleteByEntityAndCategory(Long entityId, Long categoryId) {
-        delete(new LambdaQueryWrapperX<EntityCategoryRelationDO>()
-                .eq(EntityCategoryRelationDO::getEntityId, entityId)
-                .eq(EntityCategoryRelationDO::getCategoryId, categoryId));
+        physicalDeleteByEntityAndCategory(entityId, categoryId);
     }
 
     /**
-     * 删除实体与分类的关联（按业务类型过滤）。
+     * 物理删除实体与分类的关联（按业务类型过滤）。
      */
     default void deleteByEntityAndCategory(Long entityId, Long categoryId, String entityTypeCode) {
-        LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
-                .eq(EntityCategoryRelationDO::getEntityId, entityId)
-                .eq(EntityCategoryRelationDO::getCategoryId, categoryId);
         if (entityTypeCode != null && !entityTypeCode.isBlank()) {
-            query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
+            physicalDeleteByEntityAndCategoryAndType(entityId, categoryId, entityTypeCode);
+            return;
         }
-        delete(query);
+        physicalDeleteByEntityAndCategory(entityId, categoryId);
     }
 
     /**
-     * 按分类 + 多实体批量软删有效关联（批量解除用，避免逐条 delete）。
+     * 按分类 + 多实体物理删除已挂关联。没有挂上的实体不写行。
      */
     default void deleteByCategoryIdAndEntityIds(Long categoryId, List<Long> entityIds, String entityTypeCode) {
         if (categoryId == null || entityIds == null || entityIds.isEmpty()) {
             return;
         }
-        LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
-                .eq(EntityCategoryRelationDO::getCategoryId, categoryId)
-                .in(EntityCategoryRelationDO::getEntityId, entityIds);
         if (entityTypeCode != null && !entityTypeCode.isBlank()) {
-            query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
+            physicalDeleteByCategoryAndEntityIdsAndType(categoryId, entityIds, entityTypeCode);
+            return;
         }
-        delete(query);
+        physicalDeleteByCategoryAndEntityIds(categoryId, entityIds);
     }
 
     /**
-     * 删除实体的所有关联
+     * 物理删除实体的所有分类关联。
      */
     default void deleteByEntityId(Long entityId) {
-        delete(new LambdaQueryWrapperX<EntityCategoryRelationDO>()
-                .eq(EntityCategoryRelationDO::getEntityId, entityId));
+        physicalDeleteByEntityId(entityId);
     }
 
-    /** 按实体 + 业务类型删除分类关联。 */
+    /** 按实体 + 业务类型物理删除分类关联。 */
     default void deleteByEntityId(Long entityId, String entityTypeCode) {
-        LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
-                .eq(EntityCategoryRelationDO::getEntityId, entityId);
         if (entityTypeCode != null && !entityTypeCode.isBlank()) {
-            query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
+            physicalDeleteByEntityIdAndType(entityId, entityTypeCode);
+            return;
         }
-        delete(query);
+        physicalDeleteByEntityId(entityId);
     }
 
     /**
-     * 按实体ID + 分类ID列表删除关联。
+     * 按实体 + 分类列表物理删除关联。
      */
     default void deleteByEntityAndCategoryIds(Long entityId, List<Long> categoryIds) {
         if (entityId == null || categoryIds == null || categoryIds.isEmpty()) {
             return;
         }
-        delete(new LambdaQueryWrapperX<EntityCategoryRelationDO>()
-                .eq(EntityCategoryRelationDO::getEntityId, entityId)
-                .in(EntityCategoryRelationDO::getCategoryId, categoryIds));
+        physicalDeleteByEntityAndCategoryIds(entityId, categoryIds);
     }
 
     /**
-     * 删除分类的所有关联（全业务）。
+     * 物理删除分类的所有实体关联（全业务）。
      */
     default void deleteByCategoryId(Long categoryId) {
-        delete(new LambdaQueryWrapperX<EntityCategoryRelationDO>()
-                .eq(EntityCategoryRelationDO::getCategoryId, categoryId));
+        physicalDeleteByCategoryId(categoryId);
     }
 
     /**
-     * 按业务类型删除分类的所有关联（按业务类型隔离）。
+     * 按业务类型物理删除分类的所有实体关联。
      */
     default void deleteByCategoryId(Long categoryId, String entityTypeCode) {
-        LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
-                .eq(EntityCategoryRelationDO::getCategoryId, categoryId);
         if (entityTypeCode != null && !entityTypeCode.isBlank()) {
-            query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
+            physicalDeleteByCategoryIdAndType(categoryId, entityTypeCode);
+            return;
         }
-        delete(query);
+        physicalDeleteByCategoryId(categoryId);
     }
+
+    @Delete("""
+            DELETE FROM dynamic_entity_category_relation
+            WHERE entity_id = #{entityId} AND category_id = #{categoryId}
+            """)
+    int physicalDeleteByEntityAndCategory(@Param("entityId") Long entityId, @Param("categoryId") Long categoryId);
+
+    @Delete("""
+            DELETE FROM dynamic_entity_category_relation
+            WHERE entity_id = #{entityId}
+                AND category_id = #{categoryId}
+                AND entity_type_code = #{entityTypeCode}
+            """)
+    int physicalDeleteByEntityAndCategoryAndType(@Param("entityId") Long entityId,
+                                                 @Param("categoryId") Long categoryId,
+                                                 @Param("entityTypeCode") String entityTypeCode);
+
+    @Delete("""
+            <script>
+            DELETE FROM dynamic_entity_category_relation
+            WHERE category_id = #{categoryId}
+                AND entity_id IN
+                <foreach collection='entityIds' item='id' open='(' separator=',' close=')'>
+                    #{id}
+                </foreach>
+            </script>
+            """)
+    int physicalDeleteByCategoryAndEntityIds(@Param("categoryId") Long categoryId,
+                                             @Param("entityIds") List<Long> entityIds);
+
+    @Delete("""
+            <script>
+            DELETE FROM dynamic_entity_category_relation
+            WHERE category_id = #{categoryId}
+                AND entity_type_code = #{entityTypeCode}
+                AND entity_id IN
+                <foreach collection='entityIds' item='id' open='(' separator=',' close=')'>
+                    #{id}
+                </foreach>
+            </script>
+            """)
+    int physicalDeleteByCategoryAndEntityIdsAndType(@Param("categoryId") Long categoryId,
+                                                    @Param("entityIds") List<Long> entityIds,
+                                                    @Param("entityTypeCode") String entityTypeCode);
+
+    @Delete("""
+            DELETE FROM dynamic_entity_category_relation
+            WHERE entity_id = #{entityId}
+            """)
+    int physicalDeleteByEntityId(@Param("entityId") Long entityId);
+
+    @Delete("""
+            DELETE FROM dynamic_entity_category_relation
+            WHERE entity_id = #{entityId} AND entity_type_code = #{entityTypeCode}
+            """)
+    int physicalDeleteByEntityIdAndType(@Param("entityId") Long entityId,
+                                        @Param("entityTypeCode") String entityTypeCode);
+
+    @Delete("""
+            <script>
+            DELETE FROM dynamic_entity_category_relation
+            WHERE entity_id = #{entityId}
+                AND category_id IN
+                <foreach collection='categoryIds' item='id' open='(' separator=',' close=')'>
+                    #{id}
+                </foreach>
+            </script>
+            """)
+    int physicalDeleteByEntityAndCategoryIds(@Param("entityId") Long entityId,
+                                             @Param("categoryIds") List<Long> categoryIds);
+
+    @Delete("""
+            DELETE FROM dynamic_entity_category_relation
+            WHERE category_id = #{categoryId}
+            """)
+    int physicalDeleteByCategoryId(@Param("categoryId") Long categoryId);
+
+    @Delete("""
+            DELETE FROM dynamic_entity_category_relation
+            WHERE category_id = #{categoryId} AND entity_type_code = #{entityTypeCode}
+            """)
+    int physicalDeleteByCategoryIdAndType(@Param("categoryId") Long categoryId,
+                                          @Param("entityTypeCode") String entityTypeCode);
 
     /**
      * 批量创建实体-分类关联
@@ -259,15 +284,25 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
     }
 
     /**
-     * 批量删除指定实体的所有分类关联
+     * 批量物理删除指定实体的所有分类关联。
      */
     default void deleteByEntityIds(List<Long> entityIds) {
         if (entityIds == null || entityIds.isEmpty()) {
             return;
         }
-        delete(new LambdaQueryWrapperX<EntityCategoryRelationDO>()
-                .in(EntityCategoryRelationDO::getEntityId, entityIds));
+        physicalDeleteByEntityIds(entityIds);
     }
+
+    @Delete("""
+            <script>
+            DELETE FROM dynamic_entity_category_relation
+            WHERE entity_id IN
+            <foreach collection='entityIds' item='id' open='(' separator=',' close=')'>
+                #{id}
+            </foreach>
+            </script>
+            """)
+    int physicalDeleteByEntityIds(@Param("entityIds") List<Long> entityIds);
 
     /**
      * 按多个分类 ID 查询有效关联（删分类级联清 REF 前回写用）。
@@ -298,89 +333,63 @@ public interface EntityCategoryRelationMapper extends BaseMapperX<EntityCategory
     }
 
     /**
-     * 批量删除指定分类的所有实体关联（全业务）。
+     * 批量物理删除指定分类的所有实体关联（全业务）。
      */
     default void deleteByCategoryIds(List<Long> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return;
         }
-        delete(new LambdaQueryWrapperX<EntityCategoryRelationDO>()
-                .in(EntityCategoryRelationDO::getCategoryId, categoryIds));
+        physicalDeleteByCategoryIds(categoryIds);
     }
 
     /**
-     * 批量删除指定分类的所有实体关联（按业务类型隔离）。
+     * 批量物理删除指定分类的所有实体关联（按业务类型隔离）。
      */
     default void deleteByCategoryIds(List<Long> categoryIds, String entityTypeCode) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return;
         }
-        LambdaQueryWrapperX<EntityCategoryRelationDO> query = new LambdaQueryWrapperX<EntityCategoryRelationDO>()
-                .in(EntityCategoryRelationDO::getCategoryId, categoryIds);
         if (entityTypeCode != null && !entityTypeCode.isBlank()) {
-            query.eq(EntityCategoryRelationDO::getEntityTypeCode, entityTypeCode);
+            physicalDeleteByCategoryIdsAndType(categoryIds, entityTypeCode);
+            return;
         }
-        delete(query);
+        physicalDeleteByCategoryIds(categoryIds);
     }
 
-    /**
-     * 恢复软删除的实体-分类关联（deleted=true -> false）。
-     *
-     * <p>须用原生 SQL：{@code @TableLogic} 会拦截 Wrapper 对 deleted=true 记录的更新。</p>
-     */
-    @Update("""
-            UPDATE dynamic_entity_category_relation
-            SET deleted = FALSE,
-                sort = #{sort},
-                entity_type_code = #{entityTypeCode},
-                domain = #{domain}
-            WHERE entity_id = #{entityId}
-                AND category_id = #{categoryId}
-                AND entity_type_code = #{entityTypeCode}
-                AND deleted = TRUE
-            """)
-    int restoreDeletedRelation(@Param("entityId") Long entityId,
-                               @Param("categoryId") Long categoryId,
-                               @Param("entityTypeCode") String entityTypeCode,
-                               @Param("domain") String domain,
-                               @Param("sort") Integer sort);
-
-    /**
-     * 批量恢复软删除的实体-分类关联（deleted=true -> false）。
-     *
-     * <p>须用原生 SQL：{@code @TableLogic} 会拦截 Wrapper 对 deleted=true 记录的更新。</p>
-     */
-    @Update("""
+    @Delete("""
             <script>
-            UPDATE dynamic_entity_category_relation
-            SET deleted = FALSE,
-                entity_type_code = #{entityTypeCode},
-                domain = #{domain}
-            WHERE entity_id = #{entityId}
-                AND entity_type_code = #{entityTypeCode}
+            DELETE FROM dynamic_entity_category_relation
+            WHERE category_id IN
+            <foreach collection='categoryIds' item='id' open='(' separator=',' close=')'>
+                #{id}
+            </foreach>
+            </script>
+            """)
+    int physicalDeleteByCategoryIds(@Param("categoryIds") List<Long> categoryIds);
+
+    @Delete("""
+            <script>
+            DELETE FROM dynamic_entity_category_relation
+            WHERE entity_type_code = #{entityTypeCode}
                 AND category_id IN
                 <foreach collection='categoryIds' item='id' open='(' separator=',' close=')'>
                     #{id}
                 </foreach>
-                AND deleted = TRUE
             </script>
             """)
-    int restoreDeletedRelationsBatch(@Param("entityId") Long entityId,
-                                     @Param("categoryIds") List<Long> categoryIds,
-                                     @Param("entityTypeCode") String entityTypeCode,
-                                     @Param("domain") String domain);
+    int physicalDeleteByCategoryIdsAndType(@Param("categoryIds") List<Long> categoryIds,
+                                           @Param("entityTypeCode") String entityTypeCode);
 
     /**
-     * 同步实体业务域到其全部分类关联（含软删除的排除标记行）。
-     *
-     * <p>须用原生 SQL：{@code @TableLogic} 会拦截 Wrapper 对 deleted=true 记录的更新，
-     * 而排除标记也必须跟随实体一起迁移业务域，否则实体换域后旧标记会失配。</p>
+     * 把实体当前业务域抄到仍挂着的分类关联上。
+     * 只更新还挂着的行。解除后的行已经物理删除，不再跟随。
      */
     @Update("""
             <script>
             UPDATE dynamic_entity_category_relation
             SET domain = #{domain}
             WHERE entity_type_code = #{entityTypeCode}
+                AND deleted = FALSE
                 AND entity_id IN
                 <foreach collection='entityIds' item='eid' open='(' separator=',' close=')'>
                     #{eid}

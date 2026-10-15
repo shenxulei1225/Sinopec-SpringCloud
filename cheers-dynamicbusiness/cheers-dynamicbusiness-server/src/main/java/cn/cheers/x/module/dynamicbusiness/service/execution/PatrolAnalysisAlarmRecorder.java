@@ -64,7 +64,7 @@ public class PatrolAnalysisAlarmRecorder {
     /**
      * 步骤结果已经写成告警之后调用。缺分析任务编号或执行设备则报错，不建空挂异常。
      */
-    public void record(EntityRespVO executionRecord, EntityRespVO step, Map<String, Object> payload) {
+    public void record(EntityRespVO executionRecord, String inspectionItemTitle, Map<String, Object> payload) {
         String jobNo = text(payload.get("analysisJobNo"));
         if (!StringUtils.hasText(jobNo)) {
             throw new ServiceException(400, "分析告警没有分析任务编号，不能记入异常记录");
@@ -78,7 +78,7 @@ public class PatrolAnalysisAlarmRecorder {
         Map<String, Object> base = new LinkedHashMap<>();
         base.put("entityTypeCode", ANOMALY_TYPE);
         base.put("modelId", entityRpcFacadeService.getModelIdByCode(MODEL_CODE));
-        base.put("name", anomalyName(step, payload));
+        base.put("name", anomalyName(inspectionItemTitle, payload));
         base.put("code", anomalyCode);
         base.put("status", 1);
         Long facilityId = facilityOf(executionRecord);
@@ -112,7 +112,7 @@ public class PatrolAnalysisAlarmRecorder {
         return map.get("executionDeviceBinding");
     }
 
-    private String anomalyName(EntityRespVO step, Map<String, Object> payload) {
+    private String anomalyName(String inspectionItemTitle, Map<String, Object> payload) {
         String display = text(payload.get("display"));
         if (!StringUtils.hasText(display)) {
             display = text(payload.get("message"));
@@ -120,31 +120,7 @@ public class PatrolAnalysisAlarmRecorder {
         if (!StringUtils.hasText(display)) {
             display = "告警";
         }
-        String itemTitle = inspectionItemTitle(step);
-        return StringUtils.hasText(itemTitle) ? itemTitle + "：" + display : display;
-    }
-
-    private String inspectionItemTitle(EntityRespVO step) {
-        Long parentId = longOf(bag(step).get("parentId"));
-        if (parentId == null) {
-            parentId = longOf(bag(step).get("parent_id"));
-        }
-        int guard = 0;
-        while (parentId != null && parentId > 0 && guard++ < 12) {
-            EntityRespVO parent = entityService.get(parentId, TaskExecutionSessionServiceImpl.STEP_ENTITY_TYPE);
-            if (parent == null) {
-                return "";
-            }
-            Map<String, Object> fields = bag(parent);
-            if ("inspection_item".equals(text(fields.get("step_type")))) {
-                return text(fields.get("step_title"));
-            }
-            parentId = longOf(fields.get("parentId"));
-            if (parentId == null) {
-                parentId = longOf(fields.get("parent_id"));
-            }
-        }
-        return "";
+        return StringUtils.hasText(inspectionItemTitle) ? inspectionItemTitle + "：" + display : display;
     }
 
     private boolean alreadyRecorded(String anomalyCode) {

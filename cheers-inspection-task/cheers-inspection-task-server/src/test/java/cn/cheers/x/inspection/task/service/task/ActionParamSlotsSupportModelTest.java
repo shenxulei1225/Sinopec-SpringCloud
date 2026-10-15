@@ -39,6 +39,28 @@ class ActionParamSlotsSupportModelTest {
     }
 
     @Test
+    void soleModelRow_usedWhenExecutorModelDoesNotMatch() {
+        Map<String, Object> raw = Map.of(
+                "version", 2,
+                "methods", List.of(
+                        Map.of(
+                                "executionMeans", "ROBOT",
+                                "applicableModelIds", List.of("2580")),
+                        Map.of(
+                                "executionMeans", "ROBOT",
+                                "equipmentModelId", 2580,
+                                "fields", List.of(
+                                        Map.of("fieldCode", "yaw", "defaultValue", 0),
+                                        Map.of("fieldCode", "shot_count", "defaultValue", 3)))));
+
+        assertEquals(
+                List.of("yaw", "shot_count"),
+                ActionParamSlotsSupport.fieldCodes(raw, "ROBOT", 1773L, objectMapper));
+        assertEquals(0, ActionParamSlotsSupport.defaultValues(raw, "ROBOT", 1773L, objectMapper).get("yaw"));
+        assertEquals(3, ActionParamSlotsSupport.defaultValues(raw, "ROBOT", 1773L, objectMapper).get("shot_count"));
+    }
+
+    @Test
     void unscopedRow_stillUsedWhenNoModelSplit() {
         Map<String, Object> raw = Map.of(
                 "methods", List.of(Map.of(

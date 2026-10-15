@@ -50,8 +50,6 @@ class ModelModelRelationServiceImplTest {
         when(modelCoreService.filterExistingModelIds(any(), any())).thenReturn(Set.of(11L, 22L, 31L));
         when(relationMapper.selectActive(any(), any(), any(), any())).thenReturn(null);
         when(relationMapper.maxSort(any(), any(), any())).thenReturn(0);
-        when(relationMapper.restoreDeleted(any(), any(), any(), any(), any())).thenReturn(0);
-
         service.associate(11L, 22L, "equipment", "equipment");
         service.associate(11L, 31L, "equipment", "inspection_item");
 
@@ -97,11 +95,9 @@ class ModelModelRelationServiceImplTest {
         when(modelCoreService.filterExistingModelIds(any(), any())).thenReturn(Set.of(11L, 31L));
         when(relationMapper.selectActive(any(), any(), any(), any())).thenReturn(null);
         when(relationMapper.maxSort(any(), any(), any())).thenReturn(0);
-        when(relationMapper.restoreDeleted(any(), any(), any(), any(), any())).thenReturn(0);
-
         service.replaceTargets("equipment", 11L, List.of(31L));
 
-        verify(relationMapper).softDelete(11L, 22L, "equipment", "equipment");
+        verify(relationMapper).deleteLink(11L, 22L, "equipment", "equipment");
         ArgumentCaptor<ModelModelRelationDO> inserted = ArgumentCaptor.forClass(ModelModelRelationDO.class);
         verify(relationMapper).insert(inserted.capture());
         assertEquals(31L, inserted.getValue().getTargetModelId());
@@ -111,6 +107,6 @@ class ModelModelRelationServiceImplTest {
     void replaceTargetsRejectsSelf() {
         assertThrows(ServiceException.class,
                 () -> service.replaceTargets("equipment", 11L, List.of(11L)));
-        verify(relationMapper, never()).softDelete(any(), any(), any(), any());
+        verify(relationMapper, never()).deleteLink(any(), any(), any(), any());
     }
 }

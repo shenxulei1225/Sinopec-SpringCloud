@@ -3,11 +3,9 @@ package cn.cheers.x.module.dynamicbusiness.dal.mysql.model;
 import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelEntityRelationDO;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
 
 import java.util.Collection;
 import java.util.List;
@@ -66,50 +64,19 @@ public interface ModelEntityRelationMapper extends BaseMapperX<ModelEntityRelati
     }
 
     /**
-     * 含软删行：用于恢复，避免撞唯一键。须原生 SQL（TableLogic 会挡 deleted=true）。
+     * 物理删除已挂上的型号—实体关联。没有这一行时删除 0 行，不另插。
      */
-    @Select("""
-            SELECT *
-            FROM dynamic_model_entity_relation
+    @Delete("""
+            DELETE FROM dynamic_model_entity_relation
             WHERE model_id = #{modelId}
               AND entity_id = #{entityId}
               AND model_entity_type_code = #{modelEntityTypeCode}
               AND entity_type_code = #{entityTypeCode}
-            LIMIT 1
             """)
-    ModelEntityRelationDO selectIncludingDeleted(@Param("modelId") Long modelId,
-                                                 @Param("entityId") Long entityId,
-                                                 @Param("modelEntityTypeCode") String modelEntityTypeCode,
-                                                 @Param("entityTypeCode") String entityTypeCode);
-
-    @Update("""
-            UPDATE dynamic_model_entity_relation
-            SET deleted = FALSE,
-                domain = #{domain},
-                sort = #{sort},
-                update_time = CURRENT_TIMESTAMP
-            WHERE model_id = #{modelId}
-              AND entity_id = #{entityId}
-              AND model_entity_type_code = #{modelEntityTypeCode}
-              AND entity_type_code = #{entityTypeCode}
-              AND deleted = TRUE
-            """)
-    int restoreDeleted(@Param("modelId") Long modelId,
-                       @Param("entityId") Long entityId,
-                       @Param("modelEntityTypeCode") String modelEntityTypeCode,
-                       @Param("entityTypeCode") String entityTypeCode,
-                       @Param("domain") String domain,
-                       @Param("sort") Integer sort);
-
-    default int softDelete(Long modelId, Long entityId, String modelEntityTypeCode, String entityTypeCode) {
-        return update(null, new LambdaUpdateWrapper<ModelEntityRelationDO>()
-                .eq(ModelEntityRelationDO::getModelId, modelId)
-                .eq(ModelEntityRelationDO::getEntityId, entityId)
-                .eq(ModelEntityRelationDO::getModelEntityTypeCode, modelEntityTypeCode)
-                .eq(ModelEntityRelationDO::getEntityTypeCode, entityTypeCode)
-                .eq(ModelEntityRelationDO::getDeleted, false)
-                .set(ModelEntityRelationDO::getDeleted, true));
-    }
+    int deleteLink(@Param("modelId") Long modelId,
+                   @Param("entityId") Long entityId,
+                   @Param("modelEntityTypeCode") String modelEntityTypeCode,
+                   @Param("entityTypeCode") String entityTypeCode);
 
     default Integer maxSort(Long modelId, String modelEntityTypeCode, String entityTypeCode) {
         List<ModelEntityRelationDO> rows = selectList(new LambdaQueryWrapperX<ModelEntityRelationDO>()

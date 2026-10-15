@@ -206,7 +206,7 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
         List<DmDataTabColumnRelationDO> existing =
                 dmDataTabColumnRelationMapper.selectListByLayoutId(layoutId);
         for (DmDataTabColumnRelationDO row : existing) {
-            dmDataTabColumnRelationMapper.deleteById(row.getId());
+            dmDataTabColumnRelationMapper.physicalDeleteById(row.getId());
         }
         dmDataTabColumnRelationMapper.deletePhysicalSoftDeletedByLayoutId(layoutId);
         for (DmDataTabColumnRelationDO row : toInsert) {
@@ -247,7 +247,7 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
             String from = row.getFromColumnIdentity() == null ? "" : row.getFromColumnIdentity().trim();
             String to = row.getToColumnIdentity() == null ? "" : row.getToColumnIdentity().trim();
             if (removed.contains(from) || removed.contains(to)) {
-                dmDataTabColumnRelationMapper.deleteById(row.getId());
+                dmDataTabColumnRelationMapper.physicalDeleteById(row.getId());
             }
         }
         dmDataTabColumnRelationMapper.deletePhysicalSoftDeletedByLayoutId(layoutId);

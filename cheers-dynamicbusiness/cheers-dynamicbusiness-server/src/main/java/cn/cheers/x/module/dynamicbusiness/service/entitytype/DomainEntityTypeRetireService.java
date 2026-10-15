@@ -175,7 +175,7 @@ public class DomainEntityTypeRetireService {
         appendRelationsByLayoutId(relations, dataLayoutId);
         appendRelationsByLayoutId(relations, modelLayoutId);
         for (DmDataTabColumnRelationDO row : relations) {
-            dmDataTabColumnRelationMapper.deleteById(row.getId());
+            dmDataTabColumnRelationMapper.physicalDeleteById(row.getId());
         }
 
         DmCatalogOrchestrationDO orchestration = catalogOrchestrationMapper.selectByEntityTypeCode(registryCode);

@@ -21,7 +21,6 @@ import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityWriteReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.TaskExecutionSessionApi;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchRespDTO;
-import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionWritebackReqDTO;
 import cn.cheers.x.module.platform.contract.dto.slot.ScheduleSlotDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -47,7 +46,7 @@ import static cn.cheers.x.inspection.task.service.execution.openrun.PatrolOpenRu
  * 生成任务占窗定稿后写「待执行」：把步骤树上已经写下的参数写入执行账。执行任务只读这份账，不再读设备。
  * <p>负责：assemble（读步骤图上的参数）；一次写下本批还没有账的计划点；时刻和账的对照一次写回任务。
  * 名称用任务名加计划执行时刻。计划时刻按北京时间写入账上的 planned_start，并带上 +08:00，不把世界时间的钟面写进去。
- * 更新任务时先取消这条任务上还没执行的旧计划点，再写下新的；已经开始或已经执行的留下。
+ * 更新任务时先删除这条任务上还没开始的旧执行账和步骤，再写下新的；已经开始或已经执行的留下。
  * <p>生成任务时调用网关 commit-translate，把下行与航线编号写入 standard_snapshot；开跑只下发。
  * <p>禁止：执行任务时再读设备参数重算；把协议 opcode 写进步骤树；
  * 待执行账所属场站从请求头猜，不写总任务已有的场站；名称里写计划点编号冒充给用户看的记录名。
@@ -58,8 +57,6 @@ public class PatrolOpenRunMaterializeService {
 
     /** 与 dynamicbusiness 执行账 custom_fields.execution_status 取值对齐，禁止跨模块依赖 server 实现类 */
     private static final String EXECUTION_STATUS_PENDING = "pending";
-    /** 更新任务替换掉的、还没执行的计划点。不再出现在当天清单里。 */
-    private static final String EXECUTION_STATUS_CANCELLED = "cancelled";
     /** 与 {@link PatrolScheduleSlotExecutionWritebackService} 写入字段一致 */
     private static final String PENDING_EXECUTION_ID_FIELD = "pending_execution_id";
     /** 与业务表上的钟点一致：北京时间，文字里带 +08:00。 */
@@ -80,15 +77,15 @@ public class PatrolOpenRunMaterializeService {
 
     /**
      * 生成任务成功后，为本批计划时刻写待执行账。
-     * 先取消还没执行的旧计划点。指令和航线只正式翻译一次，写入每个新执行点。
+     * 先删除还没开始的旧执行账。指令和航线只正式翻译一次，写入每个新执行点。
      * 东古、机器人仍按计划点分配收流地址，并写进该点快照和报文，不再按点重译。
-     * 已经开始或已经执行的计划点不取消、不重写。
+     * 已经开始或已经执行的计划点不删除、不重写。
      */
     public void materializeAllSlots(PatrolTaskDraft task, List<ScheduleSlotDTO> slots) {
         if (task == null || task.id() == null || CollectionUtils.isEmpty(slots)) {
             return;
         }
-        cancelUnexecutedPlansBeforeReplace(task);
+        deleteUnexecutedPlansBeforeReplace(task);
         List<ScheduleSlotDTO> pendingSlots = new ArrayList<>();
         for (ScheduleSlotDTO slot : slots) {
             if (slot == null || !StringUtils.hasText(slot.getSlotId())) {
@@ -279,34 +276,30 @@ public class PatrolOpenRunMaterializeService {
     }
 
     /**
-     * 更新任务：新计划点落账之前，先取消这条任务上还没执行的旧计划点。
-     * 和占窗一样，先取消原来的，再建立新的。已经开始或已经执行的不取消。
+     * 再次生成待执行账之前，删掉这条任务上还没开始的旧执行账。
+     * 已经开始或已经执行的留下。
      */
-    private void cancelUnexecutedPlansBeforeReplace(PatrolTaskDraft task) {
+    private void deleteUnexecutedPlansBeforeReplace(PatrolTaskDraft task) {
         Map<String, Long> existing = patrolTaskEntityStore.pendingExecutionRecordIds(task.id());
         if (existing == null || existing.isEmpty()) {
             return;
         }
-        List<String> cancelledSlots = new ArrayList<>();
+        List<String> removedSlots = new ArrayList<>();
         for (Map.Entry<String, Long> entry : existing.entrySet()) {
             EntityRespDTO record = requirePendingRecord(entry.getValue());
             if (!isPending(record)) {
                 continue;
             }
-            TaskExecutionWritebackReqDTO writeback = new TaskExecutionWritebackReqDTO();
-            writeback.setExecutionRecordId(entry.getValue());
-            writeback.setEntityTypeCode(PATROL_RECORD_TYPE);
-            writeback.setExecutionStatus(EXECUTION_STATUS_CANCELLED);
-            CommonResult<Boolean> written = taskExecutionSessionApi.writeback(writeback);
-            if (written == null || !written.isSuccess()) {
+            CommonResult<Boolean> deleted = taskExecutionSessionApi.deletePending(entry.getValue());
+            if (deleted == null || !deleted.isSuccess()) {
                 throw ServiceExceptionUtil.invalidParamException(
-                        written != null && StringUtils.hasText(written.getMsg())
-                                ? written.getMsg()
-                                : "取消原计划点失败");
+                        deleted != null && StringUtils.hasText(deleted.getMsg())
+                                ? deleted.getMsg()
+                                : "删除原待执行账失败");
             }
-            cancelledSlots.add(entry.getKey());
+            removedSlots.add(entry.getKey());
         }
-        patrolTaskEntityStore.dropPendingExecutionSlots(task.id(), cancelledSlots);
+        patrolTaskEntityStore.dropPendingExecutionSlots(task.id(), removedSlots);
     }
 
     private EntityRespDTO requirePendingRecord(Long recordId) {

@@ -3,10 +3,9 @@ package cn.cheers.x.module.dynamicbusiness.dal.mysql.category;
 import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryCategoryRelationDO;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Update;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -68,33 +67,20 @@ public interface CategoryCategoryRelationMapper extends BaseMapperX<CategoryCate
         return selectList(q);
     }
 
-    @Update("""
-            UPDATE dynamic_category_category_relation
-            SET deleted = FALSE,
-                sort = #{sort},
-                update_time = CURRENT_TIMESTAMP
+    /**
+     * 物理删除一条已挂上的分类—分类关联。
+     */
+    @Delete("""
+            DELETE FROM dynamic_category_category_relation
             WHERE host_category_id = #{hostCategoryId}
               AND member_category_id = #{memberCategoryId}
               AND host_category_type_code = #{hostCategoryTypeCode}
               AND member_category_type_code = #{memberCategoryTypeCode}
-              AND deleted = TRUE
             """)
-    int restoreDeleted(@Param("hostCategoryId") Long hostCategoryId,
-                       @Param("memberCategoryId") Long memberCategoryId,
-                       @Param("hostCategoryTypeCode") String hostCategoryTypeCode,
-                       @Param("memberCategoryTypeCode") String memberCategoryTypeCode,
-                       @Param("sort") Integer sort);
-
-    default int softDelete(Long hostCategoryId, Long memberCategoryId,
-                           String hostCategoryTypeCode, String memberCategoryTypeCode) {
-        return update(null, new LambdaUpdateWrapper<CategoryCategoryRelationDO>()
-                .eq(CategoryCategoryRelationDO::getHostCategoryId, hostCategoryId)
-                .eq(CategoryCategoryRelationDO::getMemberCategoryId, memberCategoryId)
-                .eq(CategoryCategoryRelationDO::getHostCategoryTypeCode, hostCategoryTypeCode)
-                .eq(CategoryCategoryRelationDO::getMemberCategoryTypeCode, memberCategoryTypeCode)
-                .eq(CategoryCategoryRelationDO::getDeleted, false)
-                .set(CategoryCategoryRelationDO::getDeleted, true));
-    }
+    int deleteLink(@Param("hostCategoryId") Long hostCategoryId,
+                   @Param("memberCategoryId") Long memberCategoryId,
+                   @Param("hostCategoryTypeCode") String hostCategoryTypeCode,
+                   @Param("memberCategoryTypeCode") String memberCategoryTypeCode);
 
     default List<CategoryCategoryRelationDO> selectByHostAndMembers(Long hostCategoryId,
                                                                     Collection<Long> memberCategoryIds,
@@ -112,21 +98,33 @@ public interface CategoryCategoryRelationMapper extends BaseMapperX<CategoryCate
     }
 
     /**
-     * 同一宿主下，批量软删多个成员关联（用于「点成员上级含子孙解绑」）。
+     * 同一宿主下，物理删除多个已挂上的成员关联。没有挂上的成员不写行。
      */
-    default int softDeleteByHostAndMembers(Long hostCategoryId, Collection<Long> memberCategoryIds,
-                                           String hostCategoryTypeCode, String memberCategoryTypeCode) {
+    default int deleteByHostAndMembers(Long hostCategoryId, Collection<Long> memberCategoryIds,
+                                       String hostCategoryTypeCode, String memberCategoryTypeCode) {
         if (hostCategoryId == null || memberCategoryIds == null || memberCategoryIds.isEmpty()) {
             return 0;
         }
-        return update(null, new LambdaUpdateWrapper<CategoryCategoryRelationDO>()
-                .eq(CategoryCategoryRelationDO::getHostCategoryId, hostCategoryId)
-                .in(CategoryCategoryRelationDO::getMemberCategoryId, memberCategoryIds)
-                .eq(CategoryCategoryRelationDO::getHostCategoryTypeCode, hostCategoryTypeCode)
-                .eq(CategoryCategoryRelationDO::getMemberCategoryTypeCode, memberCategoryTypeCode)
-                .eq(CategoryCategoryRelationDO::getDeleted, false)
-                .set(CategoryCategoryRelationDO::getDeleted, true));
+        return physicalDeleteByHostAndMembers(
+                hostCategoryId, memberCategoryIds, hostCategoryTypeCode, memberCategoryTypeCode);
     }
+
+    @Delete("""
+            <script>
+            DELETE FROM dynamic_category_category_relation
+            WHERE host_category_id = #{hostCategoryId}
+              AND host_category_type_code = #{hostCategoryTypeCode}
+              AND member_category_type_code = #{memberCategoryTypeCode}
+              AND member_category_id IN
+              <foreach collection='memberCategoryIds' item='id' open='(' separator=',' close=')'>
+                  #{id}
+              </foreach>
+            </script>
+            """)
+    int physicalDeleteByHostAndMembers(@Param("hostCategoryId") Long hostCategoryId,
+                                       @Param("memberCategoryIds") Collection<Long> memberCategoryIds,
+                                       @Param("hostCategoryTypeCode") String hostCategoryTypeCode,
+                                       @Param("memberCategoryTypeCode") String memberCategoryTypeCode);
 
     default Integer maxSort(Long hostCategoryId, String hostCategoryTypeCode, String memberCategoryTypeCode) {
         List<CategoryCategoryRelationDO> rows = selectList(new LambdaQueryWrapperX<CategoryCategoryRelationDO>()

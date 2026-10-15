@@ -48,7 +48,7 @@ public class EntityTypeRelationServiceImpl implements EntityTypeRelationService 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteRelation(Long id) {
-        relationMapper.deleteById(id);
+        relationMapper.physicalDeleteById(id);
     }
 
     @Override

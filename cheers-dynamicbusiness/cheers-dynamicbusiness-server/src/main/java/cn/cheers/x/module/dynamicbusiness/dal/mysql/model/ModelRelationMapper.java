@@ -107,15 +107,19 @@ public interface ModelRelationMapper extends BaseMapperX<ModelRelationDO> {
     int deleteByEntityTypeRelationId(@Param("entityTypeRelationId") Long entityTypeRelationId);
 
     /**
-     * 根据 Model ID 删除所有相关关联（源或目标）
+     * 按主键物理删除一条型号旧关联。
      */
-    default int deleteByModelId(Long modelId) {
-        return delete(new LambdaQueryWrapperX<ModelRelationDO>()
-                .and(w -> w
-                        .eq(ModelRelationDO::getSourceModelId, modelId)
-                        .or()
-                        .eq(ModelRelationDO::getTargetModelId, modelId)));
-    }
+    @Delete("DELETE FROM dynamic_model_relation WHERE id = #{id}")
+    int physicalDeleteById(@Param("id") Long id);
+
+    /**
+     * 物理删除该型号作为来源或目标的全部旧关联。
+     */
+    @Delete("""
+            DELETE FROM dynamic_model_relation
+            WHERE source_model_id = #{modelId} OR target_model_id = #{modelId}
+            """)
+    int deleteByModelId(@Param("modelId") Long modelId);
 
     /**
      * 根据字段编码查询关联

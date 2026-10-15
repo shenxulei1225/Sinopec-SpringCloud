@@ -15,7 +15,6 @@ import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.TaskExecutionSessionApi;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchRespDTO;
-import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionWritebackReqDTO;
 import cn.cheers.x.module.platform.contract.dto.slot.ScheduleSlotDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -116,7 +115,7 @@ class PatrolOpenRunMaterializeServiceTest {
     }
 
     @Test
-    void materialize_updateCancelsPreviousPendingPlanAndKeepsStarted() {
+    void materialize_updateDeletesPreviousPendingPlanAndKeepsStarted() {
         when(store.pendingExecutionRecordIds(1L)).thenReturn(Map.of("old-pending", 55L, "old-started", 56L));
         EntityRespDTO pending = new EntityRespDTO();
         pending.setCustomFields(Map.of("execution_status", "pending"));
@@ -124,7 +123,7 @@ class PatrolOpenRunMaterializeServiceTest {
         startedRecord.setCustomFields(Map.of("execution_status", "in_progress"));
         when(entityRpc.getEntity(eq(55L), any())).thenReturn(CommonResult.success(pending));
         when(entityRpc.getEntity(eq(56L), any())).thenReturn(CommonResult.success(startedRecord));
-        when(sessionApi.writeback(any())).thenReturn(CommonResult.success(true));
+        when(sessionApi.deletePending(55L)).thenReturn(CommonResult.success(true));
         when(store.pendingExecutionRecordId(1L, "s1")).thenReturn(null);
         TaskExecutionStartBatchRespDTO started = new TaskExecutionStartBatchRespDTO();
         TaskExecutionStartBatchRespDTO.RecordRef ref = new TaskExecutionStartBatchRespDTO.RecordRef();
@@ -135,11 +134,8 @@ class PatrolOpenRunMaterializeServiceTest {
 
         service.materializeAllSlots(sampleDraft(8L), List.of(slot("s1")));
 
-        ArgumentCaptor<TaskExecutionWritebackReqDTO> writeback =
-                ArgumentCaptor.forClass(TaskExecutionWritebackReqDTO.class);
-        verify(sessionApi).writeback(writeback.capture());
-        assertEquals(55L, writeback.getValue().getExecutionRecordId());
-        assertEquals("cancelled", writeback.getValue().getExecutionStatus());
+        verify(sessionApi).deletePending(55L);
+        verify(sessionApi, never()).deletePending(56L);
         verify(store).dropPendingExecutionSlots(eq(1L), eq(List.of("old-pending")));
         verify(sessionApi).startBatch(any());
         verify(store, never()).dropPendingExecutionSlots(eq(1L), eq(List.of("old-started")));

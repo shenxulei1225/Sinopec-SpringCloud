@@ -17,6 +17,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.relation.RelationFieldLibraryMapper;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.capability.form.ModelCrudFormFieldAssembler;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
 import cn.cheers.x.module.dynamicbusiness.service.relation.BidirectionalRelationService;
@@ -37,6 +38,7 @@ import java.util.*;
  *
  * <p>在 Entity 创建/更新/删除时,自动同步 ENTITY_REF 和 ENTITY_REF_MULTI 字段的关联关系到 EntityRelationDO 表。</p>
  * <p>权威：型号上已分配的引用字段声明了指向哪类业务。禁止再查旧的业务类型关联许可表。</p>
+ * <p>所属场站不写入关系表。列表已经按请求里的场站编号过滤行上的所属场站列。</p>
  */
 @Service
 @Slf4j
@@ -281,6 +283,10 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
                 continue;
             }
             EntityTypeBaseFieldDO baseField = baseFieldByCode.get(field.getCode().trim());
+            // 所属场站是查询条件，不因为字段类型是引用就再抄一条关系。
+            if (!copiesRefIntoRelationTable(field.getCode())) {
+                continue;
+            }
             // 字段库或固定列配成引用，均纳入同步
             if (!FieldTypeEnum.isEntityRef(field.getType()) && !isBaseFieldRef(baseField)) {
                 continue;
@@ -296,6 +302,17 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
             result.add(info);
         }
         return result;
+    }
+
+    /**
+     * 所属场站不进关系表。其它引用字段仍同步。
+     * 空编码不同步。
+     */
+    static boolean copiesRefIntoRelationTable(String fieldCode) {
+        if (!StringUtils.hasText(fieldCode)) {
+            return false;
+        }
+        return !FacilityOwningFieldCodes.FIELD_CODE.equals(fieldCode.trim());
     }
 
     private Map<String, EntityTypeBaseFieldDO> loadBaseFieldsByCode(String entityTypeCode) {

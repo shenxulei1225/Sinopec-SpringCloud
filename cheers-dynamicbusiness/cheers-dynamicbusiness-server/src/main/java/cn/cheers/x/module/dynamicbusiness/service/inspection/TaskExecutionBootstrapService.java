@@ -14,9 +14,8 @@ public interface TaskExecutionBootstrapService {
     TaskExecutionBootstrapRespVO bootstrap(TaskExecutionBootstrapReqVO req);
 
     /**
-     * 同一份步骤清单写入多条执行账。
-     * 每条账的步骤内容相同，只是所属执行账和上级步骤不同。
-     * 不负责单条执行任务，也不在这里重算步骤图。
+     * 把同一份步骤图写进已经存在的执行账。不另建步骤行。
+     * 不负责重算步骤图。账不存在就报错。
      */
     void writeSameStepsOntoRecords(
             String recordType,
@@ -26,8 +25,8 @@ public interface TaskExecutionBootstrapService {
             List<TaskExecutionBootstrapReqVO.TaskExecutionStepDraftVO> steps);
 
     /**
-     * 一次写下本批待执行账。所属场站、任务编号、计划点编号、计划执行时间和快照写在账上。
-     * 返回的编号与 accounts 顺序一致。不在这里写步骤。
+     * 一次写下本批待执行账。所属场站、任务编号、计划点编号、计划执行时间、快照和步骤图写在账上。
+     * 返回的编号与 accounts 顺序一致。不另建步骤行。
      */
     List<Long> insertPendingRecords(
             String recordType,
@@ -36,7 +35,8 @@ public interface TaskExecutionBootstrapService {
             Long taskDefinitionId,
             Object standardSnapshot,
             Object parameterSnapshot,
-            List<PendingAccount> accounts);
+            List<PendingAccount> accounts,
+            List<TaskExecutionBootstrapReqVO.TaskExecutionStepDraftVO> steps);
 
     /**
      * 一条待执行账：给用户看的名称、计划点编号、计划执行时间。

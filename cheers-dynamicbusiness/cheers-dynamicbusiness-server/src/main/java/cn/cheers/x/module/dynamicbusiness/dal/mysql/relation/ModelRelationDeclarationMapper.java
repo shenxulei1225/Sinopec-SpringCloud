@@ -3,7 +3,9 @@ package cn.cheers.x.module.dynamicbusiness.dal.mysql.relation;
 import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.relation.ModelRelationDeclarationDO;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -59,10 +61,11 @@ public interface ModelRelationDeclarationMapper extends BaseMapperX<ModelRelatio
      * @param modelId Model ID
      * @return 删除数量
      */
-    default int deleteByModelId(Long modelId) {
-        return delete(new LambdaQueryWrapperX<ModelRelationDeclarationDO>()
-                .eq(ModelRelationDeclarationDO::getModelId, modelId));
-    }
+    /**
+     * 物理删除该型号的全部关联声明。
+     */
+    @Delete("DELETE FROM dynamic_model_relation_declaration WHERE model_id = #{modelId}")
+    int deleteByModelId(@Param("modelId") Long modelId);
 
     /**
      * 删除 Model 的指定关联声明
@@ -71,11 +74,12 @@ public interface ModelRelationDeclarationMapper extends BaseMapperX<ModelRelatio
      * @param targetEntityType 目标业务类型编码
      * @return 删除数量
      */
-    default int deleteByModelIdAndTarget(Long modelId, String targetEntityType) {
-        return delete(new LambdaQueryWrapperX<ModelRelationDeclarationDO>()
-                .eq(ModelRelationDeclarationDO::getModelId, modelId)
-                .eq(ModelRelationDeclarationDO::getTargetEntityType, targetEntityType));
-    }
+    @Delete("""
+            DELETE FROM dynamic_model_relation_declaration
+            WHERE model_id = #{modelId} AND target_entity_type = #{targetEntityType}
+            """)
+    int deleteByModelIdAndTarget(@Param("modelId") Long modelId,
+                                 @Param("targetEntityType") String targetEntityType);
 
     /**
      * 查询引用某个业务类型的所有 Model ID

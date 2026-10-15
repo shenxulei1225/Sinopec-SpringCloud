@@ -1,16 +1,12 @@
 package cn.cheers.x.module.dynamicbusiness.service.inspection;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.inspection.vo.TaskExecutionBootstrapReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.inspection.vo.TaskExecutionBootstrapRespVO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
-import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
-import com.alibaba.fastjson2.JSON;
+import cn.cheers.x.module.dynamicbusiness.service.execution.ExecutionAccountStepTree;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,26 +20,20 @@ import java.util.Map;
 /**
  * 开跑 bootstrap 实现。
  *
- * <p><b>负责</b>：一次执行记录锁定快照 + 批量创建步骤树（含 parent_id）。</p>
- * <p><b>权威</b>：步骤行写入 {@code task_execution_step}；快照写入执行记录 custom_fields
- * （{@code standard_snapshot}/{@code parameter_snapshot}/{@code gap_codes}）；
- * 父子关系以 draft.parentStepCode → 已创建步骤 id 写入实体 {@code parentId}。</p>
- * <p><b>不负责</b>：复合动作展开、SOP merge（调用方先展开再传 steps）。</p>
- * <p><b>禁止</b>：在此调用路径/算路服务；有 gapCodes 时拒绝开跑；父 stepCode 缺失时静默当根；
- * 步骤缺场站时从请求头猜。步骤的所属场站只抄这次执行账上已经写下的那一个。</p>
+ * <p><b>负责</b>：把快照和当时的步骤图写进这一笔执行账。</p>
+ * <p><b>权威</b>：步骤图写入执行账 {@code step_tree_json}；逐步结果写入同一笔账的 {@code step_results}；
+ * 快照写入 {@code standard_snapshot}/{@code parameter_snapshot}/{@code gap_codes}。</p>
+ * <p><b>不负责</b>：复合动作展开、SOP merge（调用方先展开再传 steps）。不另建步骤行。</p>
+ * <p><b>禁止</b>：在此调用路径/算路服务；有 gapCodes 时拒绝开跑；父步骤还没出现时静默当根；
+ * 缺步骤图时留空账。所属场站只认这笔执行账上已经写下的那一个。</p>
  */
 @Service
 public class TaskExecutionBootstrapServiceImpl implements TaskExecutionBootstrapService {
 
     public static final String EXECUTION_RECORD_TYPE = "task_excution_record";
-    public static final String STEP_ENTITY_TYPE = "task_execution_step";
-    public static final String STEP_MODEL_CODE = "task_execution_step";
 
     @Resource
     private EntityService entityService;
-
-    @Resource
-    private ModelMapper modelMapper;
 
     @Resource
     private TaskExecutionStepBatchWriter taskExecutionStepBatchWriter;
@@ -62,12 +52,7 @@ public class TaskExecutionBootstrapServiceImpl implements TaskExecutionBootstrap
             throw new ServiceException(404, "执行记录不存在：" + req.getExecutionRecordId());
         }
 
-        ModelDO stepModel = modelMapper.selectByCode(STEP_MODEL_CODE);
-        if (stepModel == null || stepModel.getId() == null) {
-            throw new ServiceException(500, "缺少型号 task_execution_step，请先跑 task-execution seed");
-        }
-
-        // 锁定快照到执行记录 custom_fields（过程字段权威在开跑写入，不读路径补）
+        List<Map<String, Object>> stepTree = ExecutionAccountStepTree.freeze(req.getSteps());
         Map<String, Object> custom = new LinkedHashMap<>();
         if (record.getCustomFields() != null) {
             custom.putAll(record.getCustomFields());
@@ -77,6 +62,7 @@ public class TaskExecutionBootstrapServiceImpl implements TaskExecutionBootstrap
             custom.put("parameter_snapshot", req.getParameterSnapshot());
         }
         custom.put("gap_codes", List.of());
+        ExecutionAccountStepTree.putFrozen(custom, stepTree);
         EntityUpdateReqVO updateReq = new EntityUpdateReqVO();
         updateReq.setId(record.getId());
         Map<String, Object> base = new LinkedHashMap<>();
@@ -92,64 +78,12 @@ public class TaskExecutionBootstrapServiceImpl implements TaskExecutionBootstrap
         updateReq.setCustomFields(custom);
         entityService.update(updateReq);
 
-        // 步骤和这次执行是同一场站。只抄执行账上已有的所属场站，不从请求头猜。
-        Long facilityId = facilityIdOf(record);
-
-        // 按列表顺序创建：父须出现在子之前；stepCode → id 映射后写 parentId
-        List<Long> stepIds = new ArrayList<>();
-        Map<String, Long> stepCodeToId = new LinkedHashMap<>();
-        for (TaskExecutionBootstrapReqVO.TaskExecutionStepDraftVO draft : req.getSteps()) {
-            if (draft == null || !StringUtils.hasText(draft.getStepCode())) {
-                throw new ServiceException(400, "步骤 draft 缺少 stepCode");
-            }
-            if (stepCodeToId.containsKey(draft.getStepCode())) {
-                throw new ServiceException(400, "步骤 stepCode 重复：" + draft.getStepCode());
-            }
-
-            Long parentId = null;
-            if (StringUtils.hasText(draft.getParentStepCode())) {
-                parentId = stepCodeToId.get(draft.getParentStepCode());
-                if (parentId == null) {
-                    throw new ServiceException(400,
-                            "步骤 parentStepCode 未找到或顺序错误（父须在子之前）："
-                                    + draft.getParentStepCode());
-                }
-            }
-
-            EntityCreateReqVO createReq = new EntityCreateReqVO();
-            Map<String, Object> stepBase = new LinkedHashMap<>();
-            stepBase.put("entityTypeCode", STEP_ENTITY_TYPE);
-            stepBase.put("modelId", stepModel.getId());
-            stepBase.put("name", draft.getName());
-            stepBase.put("status", 1);
-            // 执行记录是关联字段，只收 {类型, 编号}。类型用这次执行账已经落下的存储类型。
-            Map<String, Object> recordRef = new LinkedHashMap<>(2);
-            recordRef.put("entityTypeCode", recordType);
-            recordRef.put("id", req.getExecutionRecordId());
-            stepBase.put("execution_record_id", recordRef);
-            stepBase.put("step_code", draft.getStepCode());
-            stepBase.put("step_order", draft.getStepOrder());
-            stepBase.put("step_title", draft.getStepTitle() != null ? draft.getStepTitle() : draft.getName());
-            stepBase.put("step_type", draft.getStepType() != null ? draft.getStepType() : "sop_step");
-            stepBase.put("step_required", draft.getStepRequired() == null || draft.getStepRequired());
-            stepBase.put("step_status", "pending");
-            if (facilityId != null) {
-                stepBase.put(FacilityOwningFieldCodes.FIELD_CODE, FacilityOwningFieldCodes.toApiRef(facilityId));
-            }
-            if (parentId != null) {
-                stepBase.put("parentId", parentId);
-            }
-            if (draft.getSource() != null) {
-                stepBase.put("result_payload", JSON.toJSONString(Map.of("source", draft.getSource())));
-            }
-            createReq.setBaseFields(stepBase);
-            Long stepId = entityService.create(createReq);
-            stepCodeToId.put(draft.getStepCode(), stepId);
-            stepIds.add(stepId);
-        }
-
         TaskExecutionBootstrapRespVO resp = new TaskExecutionBootstrapRespVO();
         resp.setExecutionRecordId(req.getExecutionRecordId());
+        List<Long> stepIds = new ArrayList<>();
+        for (int i = 1; i <= stepTree.size(); i++) {
+            stepIds.add((long) i);
+        }
         resp.setStepIds(stepIds);
         return resp;
     }
@@ -161,8 +95,37 @@ public class TaskExecutionBootstrapServiceImpl implements TaskExecutionBootstrap
             Long facilityId,
             List<Long> executionRecordIds,
             List<TaskExecutionBootstrapReqVO.TaskExecutionStepDraftVO> steps) {
-        taskExecutionStepBatchWriter.write(
-                recordType, recordModelCode, facilityId, executionRecordIds, steps);
+        if (executionRecordIds == null || executionRecordIds.isEmpty()) {
+            throw new ServiceException(400, "没有待写入的执行账");
+        }
+        List<Map<String, Object>> stepTree = ExecutionAccountStepTree.freeze(steps);
+        for (Long recordId : executionRecordIds) {
+            EntityRespVO record = entityService.get(recordId, recordType);
+            if (record == null || record.getId() == null) {
+                throw new ServiceException(404, "执行记录不存在：" + recordId);
+            }
+            Map<String, Object> custom = new LinkedHashMap<>();
+            if (record.getCustomFields() != null) {
+                custom.putAll(record.getCustomFields());
+            }
+            ExecutionAccountStepTree.putFrozen(custom, stepTree);
+            EntityUpdateReqVO updateReq = new EntityUpdateReqVO();
+            updateReq.setId(record.getId());
+            Map<String, Object> base = new LinkedHashMap<>();
+            if (record.getBaseFields() != null) {
+                base.putAll(record.getBaseFields());
+            }
+            base.put("entityTypeCode", recordType);
+            if (record.getModelId() != null) {
+                base.put("modelId", record.getModelId());
+            }
+            if (record.getName() != null) {
+                base.put("name", record.getName());
+            }
+            updateReq.setBaseFields(base);
+            updateReq.setCustomFields(custom);
+            entityService.update(updateReq);
+        }
     }
 
     @Override
@@ -173,24 +136,10 @@ public class TaskExecutionBootstrapServiceImpl implements TaskExecutionBootstrap
             Long taskDefinitionId,
             Object standardSnapshot,
             Object parameterSnapshot,
-            List<PendingAccount> accounts) {
+            List<PendingAccount> accounts,
+            List<TaskExecutionBootstrapReqVO.TaskExecutionStepDraftVO> steps) {
         return taskExecutionStepBatchWriter.insertPendingRecords(
                 recordType, modelId, facilityId, taskDefinitionId,
-                standardSnapshot, parameterSnapshot, accounts);
-    }
-
-    /** 执行账上的所属场站。没有则 null，交给步骤创建按站场级规则报缺场站。 */
-    private static Long facilityIdOf(EntityRespVO record) {
-        Long fromBase = FacilityOwningFieldCodes.extractId(
-                record.getBaseFields() == null
-                        ? null
-                        : record.getBaseFields().get(FacilityOwningFieldCodes.FIELD_CODE));
-        if (fromBase != null) {
-            return fromBase;
-        }
-        return FacilityOwningFieldCodes.extractId(
-                record.getCustomFields() == null
-                        ? null
-                        : record.getCustomFields().get(FacilityOwningFieldCodes.FIELD_CODE));
+                standardSnapshot, parameterSnapshot, accounts, steps);
     }
 }

@@ -23,7 +23,7 @@ import java.util.Set;
  * 模型—模型关联。
  *
  * <p>同类型、异类型都写同一张表，用来源类型和目标类型区分。
- * 已卸掉的同一对再次挂上时恢复原行。缺型号、自己指向自己、类型为空都拒绝。</p>
+ * 解除时物理删除这一行。再挂同一对时插入新行。缺型号、自己指向自己、类型为空都拒绝。</p>
  */
 @Service
 @Validated
@@ -63,7 +63,7 @@ public class ModelModelRelationServiceImpl implements ModelModelRelationService 
         String sourceType = resolveStorage(sourceEntityTypeCode, "sourceEntityTypeCode");
         String targetType = resolveStorage(targetEntityTypeCode, "targetEntityTypeCode");
         requireIds(sourceModelId, targetModelId);
-        relationMapper.softDelete(sourceModelId, targetModelId, sourceType, targetType);
+        relationMapper.deleteLink(sourceModelId, targetModelId, sourceType, targetType);
         return result("DISASSOCIATE", sourceModelId, targetModelId);
     }
 
@@ -169,9 +169,6 @@ public class ModelModelRelationServiceImpl implements ModelModelRelationService 
             return;
         }
         int sort = nextSort(relationMapper.maxSort(sourceModelId, sourceType, targetType));
-        if (relationMapper.restoreDeleted(sourceModelId, targetModelId, sourceType, targetType, sort) > 0) {
-            return;
-        }
         relationMapper.insert(ModelModelRelationDO.builder()
                 .sourceEntityTypeCode(sourceType)
                 .sourceModelId(sourceModelId)

@@ -3,7 +3,9 @@ package cn.cheers.x.module.dynamicbusiness.dal.mysql.group;
 import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.group.GroupRelationDO;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -26,16 +28,17 @@ public interface GroupRelationMapper extends BaseMapperX<GroupRelationDO> {
                 .orderByAsc(GroupRelationDO::getSort, GroupRelationDO::getId));
     }
 
-    default void deleteByTypeAndTargetAndGroup(String groupType, Long targetId, Long groupId) {
-        delete(new LambdaQueryWrapperX<GroupRelationDO>()
-                .eq(GroupRelationDO::getGroupType, groupType)
-                .eq(GroupRelationDO::getTargetId, targetId)
-                .eq(GroupRelationDO::getGroupId, groupId));
-    }
+    /**
+     * 物理删除这一条分组关联。没有挂上时删除 0 行。
+     */
+    @Delete("""
+            DELETE FROM dynamic_group_relation
+            WHERE group_type = #{groupType} AND target_id = #{targetId} AND group_id = #{groupId}
+            """)
+    int deleteByTypeAndTargetAndGroup(@Param("groupType") String groupType,
+                                      @Param("targetId") Long targetId,
+                                      @Param("groupId") Long groupId);
 
-    default void deleteByTypeAndGroupId(String groupType, Long groupId) {
-        delete(new LambdaQueryWrapperX<GroupRelationDO>()
-                .eq(GroupRelationDO::getGroupType, groupType)
-                .eq(GroupRelationDO::getGroupId, groupId));
-    }
+    @Delete("DELETE FROM dynamic_group_relation WHERE group_type = #{groupType} AND group_id = #{groupId}")
+    int deleteByTypeAndGroupId(@Param("groupType") String groupType, @Param("groupId") Long groupId);
 }

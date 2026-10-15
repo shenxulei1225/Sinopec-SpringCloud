@@ -38,7 +38,8 @@ import java.util.stream.Collectors;
 /**
  * 实体-分类关联：谁挂在哪个分类下。
  *
- * <p>负责：分类–实体边的增删；边建好后只把型号挂到「种类=存数类型」的纯分类。</p>
+ * <p>负责：分类–实体边的增删；边建好后只把型号挂到「种类=存数类型」的纯分类。
+ * 解除时物理删除已挂上的行。这一对本来没挂上时不插入行。</p>
  * <p>不负责：REF 投影、分类—分类、路网点位几何。</p>
  * <p>禁止：点位挂到场站分类即实体时，把路网点位型号当成点位纯分类写上去。</p>
  */
@@ -469,7 +470,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                     continue;
                 }
                 List<EntityCategoryRelationDO> oldEdges =
-                        markEntitiesExcludedFromCategory(List.of(entityId), other.getId(), storageEntityTypeCode);
+                        removeLinkedEntityCategoryEdges(List.of(entityId), other.getId(), storageEntityTypeCode);
                 unsyncModelsAfterRemovedEntityCategoryEdges(oldEdges);
                 log.info("单归属换挂：解除旧分类 entityId={}, oldCategoryId={}, keepCategoryId={}",
                         entityId, other.getId(), categoryId);
@@ -497,9 +498,8 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
      * <ol>
      *   <li>校验参数与业务类型编码；</li>
      *   <li>校验实体与分类存在性；</li>
-     *   <li>若存在软删除记录则恢复并更新排序；</li>
-     *   <li>若已存在有效关联则直接返回成功；</li>
-     *   <li>否则新增关系并分配分类内排序。</li>
+     *   <li>若已挂上则直接返回成功；</li>
+     *   <li>否则新增关系并分配分类内排序。解除过的一对不再留行，再挂时插入新行。</li>
      * </ol>
      */
     @Override
@@ -514,33 +514,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         validateEntitiesInEntryDomain(entityTypeCode, storageEntityTypeCode, List.of(entityId));
         validateCategoryExists(categoryId);
 
-        // 如果存在软删除的关联，优先恢复软删除关联，避免唯一键冲突
-        int restored = relationMapper.restoreDeletedRelation(
-                entityId,
-                categoryId,
-                storageEntityTypeCode,
-                domain,
-                // 排序策略：增量关联不全量重排；恢复/新增均置于当前分类末尾。
-                nextRelationSort(categoryId));
-        if (restored > 0) {
-            log.info("重新启用已删除的实体-分类关联并更新排序: entityId={}, categoryId={}, entityTypeCode={}, domain={}",
-                    entityId, categoryId, storageEntityTypeCode, domain);
-            syncEntityModelToCategory(entityId, categoryId, storageEntityTypeCode);
-            applyAssociationModeAndRefWriteback(entityId, categoryId, storageEntityTypeCode);
-            return EntityCategoryAssociationRespVO.builder()
-                    .operationType("ASSOCIATE")
-                    .entityId(entityId)
-                    .entityExists(true)
-                    .totalCount(1)
-                    .successCount(1)
-                    .failCount(0)
-                    .successCategoryIds(Collections.singletonList(categoryId))
-                    .failItems(Collections.emptyList())
-                    .executionTime(System.currentTimeMillis() - startTime)
-                    .build();
-        }
-
-        // 检查有效关联是否已存在
+        // 已挂上则直接返回。解除后行已物理删除，再挂走下面的新增。
         if (existsRelation(entityId, categoryId, storageEntityTypeCode)) {
             log.debug("关联已存在: entityId={}, categoryId={}, entityTypeCode={}", entityId, categoryId, storageEntityTypeCode);
             syncEntityModelToCategory(entityId, categoryId, storageEntityTypeCode);
@@ -617,7 +591,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         String storageEntityTypeCode = resolveStorageEntityTypeCode(entityTypeCode);
         validateEntitiesInEntryDomain(entityTypeCode, storageEntityTypeCode, List.of(entityId));
         List<EntityCategoryRelationDO> removedEdges =
-                markEntitiesExcludedFromCategory(List.of(entityId), categoryId, storageEntityTypeCode);
+                removeLinkedEntityCategoryEdges(List.of(entityId), categoryId, storageEntityTypeCode);
         unsyncModelsAfterRemovedEntityCategoryEdges(removedEdges);
         log.info("删除实体-分类关联: entityId={}, categoryId={}, entityTypeCode={}", entityId, categoryId, storageEntityTypeCode);
         entityCategoryRefWritebackService.afterDisassociated(entityId, categoryId, storageEntityTypeCode);
@@ -742,7 +716,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
     @Transactional(rollbackFor = Exception.class)
     public EntityCategoryAssociationRespVO updateAssociation(
             Long entityId, List<Long> categoryIds, String entityTypeCode) {
-        // 排序策略：更新实体关联的分类时，不重排未变关联；仅对恢复/新增关联分配新的 sort。
+        // 排序策略：更新实体关联的分类时，不重排未变关联；仅对新增关联分配新的 sort。
         long startTime = System.currentTimeMillis();
         List<CategoryAssociationBaseRespVO.FailItem> failItems = new ArrayList<>();
 
@@ -793,23 +767,12 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        // Step 4: 读取目标分类上的历史关联（含 deleted）并提取恢复候选
-        List<EntityCategoryRelationDO> existingRelationsOnTarget = validCategoryIds.isEmpty()
-                ? Collections.emptyList()
-                : relationMapper.selectByEntityAndCategoryIdsIncludingDeleted(entityId, validCategoryIds, storageEntityTypeCode);
-        Set<Long> restoreCandidates = existingRelationsOnTarget.stream()
-                .filter(rel -> Boolean.TRUE.equals(rel.getDeleted()))
-                .map(EntityCategoryRelationDO::getCategoryId)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-
-        // Step 5: 差集分流（删除 / 恢复 / 新增）
+        // 差集：摘掉的物理删除，新勾上的插入。没挂过的分类不写行。
         List<Long> toDelete = activeCategoryIds.stream().filter(id -> !validCategoryIds.contains(id)).toList();
-        List<Long> toRestore = validCategoryIds.stream().filter(restoreCandidates::contains).toList();
         List<Long> toInsert = validCategoryIds.stream()
-                .filter(id -> !activeCategoryIds.contains(id) && !restoreCandidates.contains(id))
+                .filter(id -> !activeCategoryIds.contains(id))
                 .toList();
 
-        // Step 6: 删除移除项（仅删除差集，不影响 toKeep）；REF 回写 + 末实例解除型号–分类
         if (!toDelete.isEmpty()) {
             relationMapper.deleteByEntityAndCategoryIds(entityId, toDelete);
             for (Long categoryId : toDelete) {
@@ -819,10 +782,6 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                 entityCategoryRefWritebackService.afterDisassociated(entityId, categoryId, storageEntityTypeCode);
                 unsyncEntityModelFromCategoryIfLast(entityId, categoryId, storageEntityTypeCode);
             }
-        }
-        // Step 7: 先完成状态变更（恢复 + 新增），不在此阶段分段编号
-        if (!toRestore.isEmpty()) {
-            relationMapper.restoreDeletedRelationsBatch(entityId, toRestore, storageEntityTypeCode, domain);
         }
         if (!toInsert.isEmpty()) {
             List<EntityCategoryRelationDO> relationsToInsert = new ArrayList<>();
@@ -838,9 +797,9 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             relationMapper.insertBatchRelations(relationsToInsert);
         }
 
-        // Step 8: 按目标顺序统一编号（仅对变更项：恢复+新增）
+        // 按目标顺序给新增行编号。已经挂着的不改 sort。
         List<Long> changedOrdered = validCategoryIds.stream()
-                .filter(id -> toRestore.contains(id) || toInsert.contains(id))
+                .filter(toInsert::contains)
                 .toList();
         if (!changedOrdered.isEmpty()) {
             Map<Long, Integer> baseSortMap = calcBaseSortByCategoryIds(changedOrdered);
@@ -925,7 +884,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
 
         validateEntitiesInEntryDomain(entityTypeCode, storageEntityTypeCode, entityIds);
         List<EntityCategoryRelationDO> removedActiveEdges =
-                markEntitiesExcludedFromCategory(entityIds, categoryId, storageEntityTypeCode);
+                removeLinkedEntityCategoryEdges(entityIds, categoryId, storageEntityTypeCode);
 
         log.info("批量取消实体与分类的关联: entityIds={}, categoryId={}, entityTypeCode={}, removedActive={}",
                 entityIds.size(), categoryId, storageEntityTypeCode, removedActiveEdges.size());
@@ -955,12 +914,13 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
     }
 
     /**
-     * 批量解除实体与分类：集合删有效边；无有效边时批量写入排除标记。
-     * <p><b>不</b>在此处做型号–分类收尾（由调用方 {@link #unsyncModelsAfterRemovedEntityCategoryEdges} 一次完成）。</p>
+     * 批量解除实体与分类：只物理删除已经挂上的行。
+     * 这一对本来没挂上时不插入行。
+     * <p>不在此处做型号–分类收尾（由调用方 {@link #unsyncModelsAfterRemovedEntityCategoryEdges} 一次完成）。</p>
      *
-     * @return 本次软删掉的有效关联边（供型号收尾 / REF 回写）
+     * @return 本次删掉的已挂关联（供型号收尾 / REF 回写）。没有挂上时返回空列表。
      */
-    private List<EntityCategoryRelationDO> markEntitiesExcludedFromCategory(
+    private List<EntityCategoryRelationDO> removeLinkedEntityCategoryEdges(
             List<Long> entityIds, Long categoryId, String storageEntityTypeCode) {
         LinkedHashSet<Long> uniqueIds = new LinkedHashSet<>();
         for (Long id : entityIds) {
@@ -973,11 +933,10 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         }
         List<Long> ids = List.copyOf(uniqueIds);
 
-        // 1) 一次查出本批有效边，再一次 IN 软删
         List<EntityCategoryRelationDO> activeEdges =
                 relationMapper.selectByEntityIdsAndCategoryIds(ids, List.of(categoryId), storageEntityTypeCode);
-        if (activeEdges == null) {
-            activeEdges = List.of();
+        if (activeEdges == null || activeEdges.isEmpty()) {
+            return List.of();
         }
         Set<Long> activeEntityIds = new HashSet<>();
         List<EntityCategoryRelationDO> removed = new ArrayList<>(activeEdges.size());
@@ -992,49 +951,6 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             relationMapper.deleteByCategoryIdAndEntityIds(
                     categoryId, new ArrayList<>(activeEntityIds), storageEntityTypeCode);
         }
-
-        // 2) 无有效边：需排除标记（防仍靠型号–分类出现在范围内）；已有 deleted 行则跳过
-        List<Long> needExclude = new ArrayList<>();
-        for (Long id : ids) {
-            if (!activeEntityIds.contains(id)) {
-                needExclude.add(id);
-            }
-        }
-        if (!needExclude.isEmpty()) {
-            List<EntityCategoryRelationDO> alreadyExcluded =
-                    relationMapper.selectExcludedPairsByEntityIdsAndCategoryIds(
-                            needExclude, List.of(categoryId), storageEntityTypeCode);
-            Set<Long> excludedEntityIds = new HashSet<>();
-            if (alreadyExcluded != null) {
-                for (EntityCategoryRelationDO row : alreadyExcluded) {
-                    if (row != null && row.getEntityId() != null) {
-                        excludedEntityIds.add(row.getEntityId());
-                    }
-                }
-            }
-            List<Long> toMark = new ArrayList<>();
-            for (Long id : needExclude) {
-                if (!excludedEntityIds.contains(id)) {
-                    toMark.add(id);
-                }
-            }
-            if (!toMark.isEmpty()) {
-                Map<Long, String> domainByEntityId = loadEntityDomains(toMark, storageEntityTypeCode);
-                List<EntityCategoryRelationDO> toInsert = new ArrayList<>(toMark.size());
-                for (Long entityId : toMark) {
-                    toInsert.add(EntityCategoryRelationDO.builder()
-                            .entityId(entityId)
-                            .categoryId(categoryId)
-                            .entityTypeCode(storageEntityTypeCode)
-                            .domain(domainByEntityId.get(entityId))
-                            .sort(0)
-                            .build());
-                }
-                relationMapper.insertBatchRelations(toInsert);
-                relationMapper.deleteByCategoryIdAndEntityIds(categoryId, toMark, storageEntityTypeCode);
-            }
-        }
-
         return removed;
     }
 
@@ -1098,23 +1014,9 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             }
         }
 
-        // 4.1 已存在的排除标记（deleted=true）必须走恢复，不能重复插入：
-        // 唯一键为 租户 + 存储类型 + 实体 + 分类，盲插会撞唯一索引。
-        Map<Long, Set<Long>> excludedByEntity = new HashMap<>();
-        if (!existingEntityIds.isEmpty() && !validCategoryIds.isEmpty()) {
-            for (EntityCategoryRelationDO excluded : relationMapper.selectExcludedPairsByEntityIdsAndCategoryIds(
-                    new ArrayList<>(existingEntityIds), validCategoryIds, storageEntityTypeCode)) {
-                excludedByEntity
-                        .computeIfAbsent(excluded.getEntityId(), k -> new HashSet<>())
-                        .add(excluded.getCategoryId());
-            }
-        }
-
-        // 5. 计算需要插入的新关联（同时统计每个实体的成功/失败）
+        // 已挂上的跳过。没挂上的插入新行。解除后不再留可恢复的行。
         List<EntityCategoryRelationDO> relationsToInsert = new ArrayList<>();
         Map<Long, EntityResultData> entityResultDataMap = new HashMap<>();
-        Map<Long, Integer> insertCountByEntity = new HashMap<>();
-        Map<Long, List<Long>> restoreCategoryIdsByEntity = new HashMap<>();
         // 已存在边：仅挂靠模式 / REF，不需再挂型号–分类
         List<long[]> alreadyActivePairs = new ArrayList<>();
         AssociationPostProcessCache postCache = new AssociationPostProcessCache();
@@ -1127,7 +1029,6 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             }
 
             Set<Long> existedCategories = existingByEntity.getOrDefault(entityId, Collections.emptySet());
-            Set<Long> excludedCategories = excludedByEntity.getOrDefault(entityId, Collections.emptySet());
             int entitySuccessCount = validCategoryIds.size();
             int entityFailCount = notFoundCategoryIds.size();
 
@@ -1136,41 +1037,19 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                     alreadyActivePairs.add(new long[]{entityId, categoryId});
                     continue;
                 }
-                if (excludedCategories.contains(categoryId)) {
-                    restoreCategoryIdsByEntity
-                            .computeIfAbsent(entityId, k -> new ArrayList<>())
-                            .add(categoryId);
-                    continue;
-                }
                 relationsToInsert.add(EntityCategoryRelationDO.builder()
                         .entityId(entityId)
                         .categoryId(categoryId)
                         .entityTypeCode(storageEntityTypeCode)
                         .domain(domainByEntityId.get(entityId))
                         .build());
-                Integer currentInsert = insertCountByEntity.get(entityId);
-                insertCountByEntity.put(entityId, currentInsert == null ? 1 : currentInsert + 1);
             }
 
             entityResultDataMap.put(entityId, new EntityResultData(
                     entityId, true, entitySuccessCount, entityFailCount, null));
         }
 
-        // 5.1 恢复排除标记：同时刷新 domain，使关联行与实体当前业务域一致
-        List<EntityCategoryRelationDO> restoredEdges = new ArrayList<>();
-        for (Map.Entry<Long, List<Long>> entry : restoreCategoryIdsByEntity.entrySet()) {
-            relationMapper.restoreDeletedRelationsBatch(entry.getKey(), entry.getValue(),
-                    storageEntityTypeCode, domainByEntityId.get(entry.getKey()));
-            for (Long categoryId : entry.getValue()) {
-                restoredEdges.add(EntityCategoryRelationDO.builder()
-                        .entityId(entry.getKey())
-                        .categoryId(categoryId)
-                        .entityTypeCode(storageEntityTypeCode)
-                        .build());
-            }
-        }
-
-        // 6. 批量插入新关联（按分类分组分配 sort）
+        // 批量插入新关联（按分类分组分配 sort）
         if (!relationsToInsert.isEmpty()) {
             Map<Long, Integer> sortOffsetMap = new HashMap<>();
             for (EntityCategoryRelationDO relation : relationsToInsert) {
@@ -1179,21 +1058,13 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             relationMapper.insertBatchRelations(relationsToInsert);
         }
 
-        // 6.1 型号–分类：新增/恢复边一次去重批量挂（禁止逐实体 syncEntityModelToCategory）
-        List<EntityCategoryRelationDO> edgesForModelSync = new ArrayList<>(restoredEdges.size() + relationsToInsert.size());
-        edgesForModelSync.addAll(restoredEdges);
-        edgesForModelSync.addAll(relationsToInsert);
-        syncModelsAfterAddedEntityCategoryEdges(edgesForModelSync);
+        // 型号–分类：新增边一次去重批量挂（禁止逐实体 syncEntityModelToCategory）
+        syncModelsAfterAddedEntityCategoryEdges(relationsToInsert);
 
-        // 6.2 挂靠模式 + REF：分类元数据 / 台账绑定本批只解析一次
+        // 挂靠模式 + REF：分类元数据 / 台账绑定本批只解析一次
         for (long[] pair : alreadyActivePairs) {
             applyAssociationModeAndRefWriteback(
                     pair[0], pair[1], storageEntityTypeCode, entityAssociationMode, postCache);
-        }
-        for (EntityCategoryRelationDO edge : restoredEdges) {
-            applyAssociationModeAndRefWriteback(
-                    edge.getEntityId(), edge.getCategoryId(), storageEntityTypeCode,
-                    entityAssociationMode, postCache);
         }
         for (EntityCategoryRelationDO relation : relationsToInsert) {
             applyAssociationModeAndRefWriteback(
@@ -1698,59 +1569,30 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             return new BatchAssociateResult(0, Collections.emptyList(), failItems);
         }
 
-        // 2) 查询目标分类上的现有关联（含 deleted），一次分流出三集合
+        // 只认还挂着的行。没挂上的分类插入新行。
         List<EntityCategoryRelationDO> existingRelations = relationMapper
-                // mybatis-plus 的配置过滤了 deleted=true 的记录，所以需要显式查询包含 deleted=true 的记录
-                .selectByEntityAndCategoryIdsIncludingDeleted(entityId, validCategoryIds, storageEntityTypeCode);
+                .selectByEntityIdsAndCategoryIds(List.of(entityId), validCategoryIds, storageEntityTypeCode);
 
         Set<Long> alreadyActive = new LinkedHashSet<>();
-        Set<Long> restoreCandidates = new LinkedHashSet<>();
         for (EntityCategoryRelationDO relation : existingRelations) {
-            Long categoryId = relation.getCategoryId();
-            if (Boolean.TRUE.equals(relation.getDeleted())) {
-                restoreCandidates.add(categoryId);
-            } else {
-                alreadyActive.add(categoryId);
+            if (relation.getCategoryId() != null) {
+                alreadyActive.add(relation.getCategoryId());
             }
         }
 
-        // 3) 三集合分流：已存在(不调整sort) / 可恢复 / 需新增
-        List<Long> toRestore = new ArrayList<>();
         List<Long> toInsert = new ArrayList<>();
         int successCount = 0;
         List<Long> successCategoryIds = new ArrayList<>();
         for (Long categoryId : validCategoryIds) {
             if (alreadyActive.contains(categoryId)) {
-                // 已存在关联：详情页批量更新场景不调整 sort
                 successCount++;
                 successCategoryIds.add(categoryId);
-            } else if (restoreCandidates.contains(categoryId)) {
-                toRestore.add(categoryId);
             } else {
                 toInsert.add(categoryId);
             }
         }
 
-        // 4) 批量恢复软删除（恢复后需重新编号 sort）
-        if (!toRestore.isEmpty()) {
-            int restored = relationMapper.restoreDeletedRelationsBatch(entityId, toRestore, storageEntityTypeCode, domain);
-            successCount += restored;
-            successCategoryIds.addAll(toRestore);
-
-            // 恢复记录重新编号 sort（不影响 alreadyActive）
-            Map<Long, Integer> baseSortMap = calcBaseSortByCategoryIds(toRestore);
-            Map<Long, Integer> sortOffsetMap = new HashMap<>();
-            for (Long categoryId : toRestore) {
-                relationMapper.updateSortByEntityAndCategory(
-                        entityId,
-                        categoryId,
-                        calculateSortWithBase(baseSortMap, sortOffsetMap, categoryId),
-                        storageEntityTypeCode
-                );
-            }
-        }
-
-        // 5) 批量新增剩余关联
+        // 批量新增尚未挂上的关联
         if (!toInsert.isEmpty()) {
             Map<Long, Integer> baseSortMap = calcBaseSortByCategoryIds(toInsert);
             Map<Long, Integer> sortOffsetMap = new HashMap<>();

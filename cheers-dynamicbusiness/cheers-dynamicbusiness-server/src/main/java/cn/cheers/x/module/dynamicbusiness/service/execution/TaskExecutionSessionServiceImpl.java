@@ -22,6 +22,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.entity.EntityQueryScene;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeResolver;
 import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
+import cn.cheers.x.module.dynamicbusiness.service.entity.EntityCacheEvictionService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import cn.cheers.x.module.dynamicbusiness.service.inspection.TaskExecutionBootstrapService;
 import com.alibaba.fastjson2.JSON;
@@ -41,7 +42,8 @@ import java.util.Set;
 /**
  * 任务模块标准执行会话实现。
  *
- * <p><b>负责</b>：新建这次执行的账；更新这次/某一步的状态；往账里记一条过程。
+ * <p><b>负责</b>：新建这次执行的账；更新这次/某一步的状态；往账里记一条过程；
+ * 重新生成前物理删除还没开始的执行账、步骤和关系行，不留删除标记。
  * 分析步骤写成告警时，另记一条巡检异常记录并挂到这次任务的执行设备上。</p>
  * <p><b>权威</b>：执行记录与步骤实体；过程写在 custom_fields.process_entries，其它过程字段同袋
  * （task_id / pending_execution_id / execution_status / planned_start）。</p>
@@ -77,6 +79,10 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
     private EntityTypeScopeResolver entityTypeScopeResolver;
     @Resource
     private PatrolAnalysisAlarmRecorder patrolAnalysisAlarmRecorder;
+    @Resource
+    private PendingExecutionPhysicalDeleter pendingExecutionPhysicalDeleter;
+    @Resource
+    private EntityCacheEvictionService entityCacheEvictionService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -142,10 +148,6 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
         }
         String entityTypeCode = resolveRecordType(req.getEntityTypeCode());
         Long modelId = resolveModelId(req.getModelId(), req.getModelCode());
-        ModelDO recordModel = modelMapper.selectById(modelId);
-        String recordModelCode = recordModel != null && StringUtils.hasText(recordModel.getCode())
-                ? recordModel.getCode()
-                : req.getModelCode();
 
         List<TaskExecutionBootstrapService.PendingAccount> accounts = new ArrayList<>();
         Set<String> seenRefs = new HashSet<>();
@@ -164,6 +166,7 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
                             ? occurrence.getPlannedStart().trim()
                             : null));
         }
+        List<TaskExecutionBootstrapReqVO.TaskExecutionStepDraftVO> steps = toBootstrapSteps(req.getSteps());
         List<Long> recordIds = taskExecutionBootstrapService.insertPendingRecords(
                 entityTypeCode,
                 modelId,
@@ -171,7 +174,8 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
                 req.getTaskDefinitionId(),
                 req.getStandardSnapshot(),
                 req.getParameterSnapshot(),
-                accounts);
+                accounts,
+                steps);
         if (recordIds == null || recordIds.size() != accounts.size()) {
             throw new ServiceException(500, "待执行账写入数量与计划点不一致");
         }
@@ -182,12 +186,6 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
             ref.setExecutionRecordId(recordIds.get(i));
             refs.add(ref);
         }
-        taskExecutionBootstrapService.writeSameStepsOntoRecords(
-                entityTypeCode,
-                recordModelCode,
-                req.getFacilityId(),
-                recordIds,
-                toBootstrapSteps(req.getSteps()));
         TaskExecutionStartBatchRespDTO resp = new TaskExecutionStartBatchRespDTO();
         resp.setRecords(refs);
         return resp;
@@ -218,14 +216,49 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
             custom.put("execution_status", req.getExecutionStatus().trim());
             updateReq.setCustomFields(custom);
             entityService.update(updateReq);
+            record.setCustomFields(custom);
         }
 
         if (CollectionUtils.isEmpty(req.getStepUpdates())) {
             return;
         }
-        Long facilityId = facilityOf(record);
         for (TaskExecutionWritebackReqDTO.StepUpdate stepUpdate : req.getStepUpdates()) {
-            applyStepUpdate(record, facilityId, stepUpdate);
+            applyStepUpdate(record, entityTypeCode, stepUpdate);
+        }
+    }
+
+    /**
+     * 重新生成待执行账时，物理删掉还没开始的旧账。
+     * 步骤有上下级时整棵删掉。关系行和分类挂靠一并删掉，不留删除标记。
+     * 已经开始的不删。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deletePendingExecution(Long executionRecordId) {
+        if (executionRecordId == null) {
+            throw new ServiceException(400, "执行账编号不能为空");
+        }
+        EntityRespVO record = entityService.get(executionRecordId, DEFAULT_RECORD_TYPE);
+        if (record == null || record.getId() == null) {
+            throw new ServiceException(404, "执行记录不存在：" + executionRecordId);
+        }
+        String status = textOf(record.getCustomFields() == null
+                ? null
+                : record.getCustomFields().get("execution_status"));
+        if (!STATUS_PENDING.equalsIgnoreCase(status)) {
+            throw new ServiceException(400, "这条执行账已经开始，重新生成时不能删除：" + executionRecordId);
+        }
+        Long facilityId = facilityOf(record);
+        List<Long> stepIds = listStepIds(executionRecordId, facilityId);
+        pendingExecutionPhysicalDeleter.delete(executionRecordId, stepIds);
+        entityCacheEvictionService.evictEntityCaches(record.getModelId(), DEFAULT_RECORD_TYPE);
+        ModelDO stepModel = modelMapper.selectByCode(STEP_ENTITY_TYPE);
+        if (stepModel != null && stepModel.getId() != null) {
+            entityCacheEvictionService.evictEntityCaches(stepModel.getId(), STEP_ENTITY_TYPE);
+        }
+        entityCacheEvictionService.evictEntity(executionRecordId);
+        for (Long stepId : stepIds) {
+            entityCacheEvictionService.evictEntity(stepId);
         }
     }
 
@@ -328,39 +361,45 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
         custom.put("task_patrol_record_media", media);
     }
 
+    /**
+     * 回写只改这笔执行账上该步骤编号的结果。
+     * 步骤图里没有这一步就报错，不新建步骤行。
+     */
     private void applyStepUpdate(
-            EntityRespVO record, Long facilityId, TaskExecutionWritebackReqDTO.StepUpdate stepUpdate) {
-        Long executionRecordId = record.getId();
-        Long stepId = stepUpdate.getStepId();
-        if (stepId == null) {
-            if (!StringUtils.hasText(stepUpdate.getStepCode())) {
-                throw new ServiceException(400, "步骤更新须提供 stepId 或 stepCode");
-            }
-            stepId = findStepIdByCode(executionRecordId, facilityId, stepUpdate.getStepCode().trim());
+            EntityRespVO record, String entityTypeCode, TaskExecutionWritebackReqDTO.StepUpdate stepUpdate) {
+        if (!StringUtils.hasText(stepUpdate.getStepCode())) {
+            throw new ServiceException(400, "回写须带步骤编号");
         }
-        EntityRespVO step = entityService.get(stepId, STEP_ENTITY_TYPE);
-        if (step == null || step.getId() == null) {
-            throw new ServiceException(404, "执行步骤不存在：" + stepId);
+        if (!StringUtils.hasText(stepUpdate.getStatus())) {
+            throw new ServiceException(400, "回写须带步骤状态");
         }
+        Map<String, Object> custom = copyMap(record.getCustomFields());
+        custom.put(
+                ExecutionAccountStepTree.FIELD_STEP_RESULTS,
+                ExecutionAccountStepTree.mergeResult(
+                        custom,
+                        stepUpdate.getStepCode(),
+                        stepUpdate.getStatus(),
+                        stepUpdate.getResultPayload()));
         EntityUpdateReqVO updateReq = new EntityUpdateReqVO();
-        updateReq.setId(step.getId());
-        Map<String, Object> base = copyMap(step.getBaseFields());
-        base.put("entityTypeCode", STEP_ENTITY_TYPE);
-        if (step.getModelId() != null) {
-            base.put("modelId", step.getModelId());
+        updateReq.setId(record.getId());
+        Map<String, Object> base = copyMap(record.getBaseFields());
+        base.put("entityTypeCode", entityTypeCode);
+        if (record.getModelId() != null) {
+            base.put("modelId", record.getModelId());
         }
-        if (step.getName() != null) {
-            base.put("name", step.getName());
-        }
-        base.put("step_status", stepUpdate.getStatus().trim());
-        if (stepUpdate.getResultPayload() != null) {
-            base.put("result_payload", JSON.toJSONString(stepUpdate.getResultPayload()));
+        if (record.getName() != null) {
+            base.put("name", record.getName());
         }
         updateReq.setBaseFields(base);
-        updateReq.setCustomFields(copyMap(step.getCustomFields()));
+        updateReq.setCustomFields(custom);
         entityService.update(updateReq);
+        record.setCustomFields(custom);
         if (PatrolAnalysisAlarmRecorder.isAlarm(stepUpdate.getResultPayload())) {
-            patrolAnalysisAlarmRecorder.record(record, step, stepUpdate.getResultPayload());
+            patrolAnalysisAlarmRecorder.record(
+                    record,
+                    ExecutionAccountStepTree.inspectionItemTitle(custom, stepUpdate.getStepCode()),
+                    stepUpdate.getResultPayload());
         }
     }
 
@@ -394,42 +433,51 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
                 record.getBaseFields().get(FacilityOwningFieldCodes.FIELD_CODE));
     }
 
-    private Long findStepIdByCode(Long executionRecordId, Long facilityId, String stepCode) {
+    /** 删账前先收齐旧步骤行编号。新账没有步骤行时这里是空的。 */
+    private List<Long> listStepIds(Long executionRecordId, Long facilityId) {
+        List<Long> ids = new ArrayList<>();
+        int pageNo = 1;
+        final int pageSize = 200;
         List<FieldFilterReqVO> filters = stepListFilters(executionRecordId, facilityId);
-        FieldFilterReqVO byCode = new FieldFilterReqVO();
-        byCode.setFieldCode("step_code");
-        byCode.setOp("EQ");
-        byCode.setValue(stepCode);
-        filters.add(byCode);
-        EntitySceneQueryRespVO resp = entityService.queryEntities(
-                EntityQueryScene.ENTITIES_BY_MODEL,
-                "PAGE",
-                "LIGHT",
-                null,
-                STEP_ENTITY_TYPE,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                1,
-                5,
-                null,
-                null,
-                filters,
-                null,
-                null,
-                null,
-                null,
-                null);
-        if (resp == null || resp.getPage() == null || CollectionUtils.isEmpty(resp.getPage().getList())) {
-            throw new ServiceException(404, "执行步骤不存在 stepCode=" + stepCode);
+        while (true) {
+            EntitySceneQueryRespVO resp = entityService.queryEntities(
+                    EntityQueryScene.ENTITIES_BY_MODEL,
+                    "PAGE",
+                    "LIGHT",
+                    null,
+                    STEP_ENTITY_TYPE,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    pageNo,
+                    pageSize,
+                    null,
+                    null,
+                    filters,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null);
+            if (resp == null || resp.getPage() == null || CollectionUtils.isEmpty(resp.getPage().getList())) {
+                return ids;
+            }
+            for (EntityRespVO row : resp.getPage().getList()) {
+                if (row != null && row.getId() != null) {
+                    ids.add(row.getId());
+                }
+            }
+            if (resp.getPage().getList().size() < pageSize) {
+                return ids;
+            }
+            pageNo++;
         }
-        return resp.getPage().getList().get(0).getId();
     }
 
     @Override
@@ -441,101 +489,11 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
         if (record == null || record.getId() == null) {
             throw new ServiceException(404, "执行记录不存在：" + executionRecordId);
         }
-        List<FieldFilterReqVO> filters = stepListFilters(executionRecordId, facilityOf(record));
-        EntitySceneQueryRespVO resp = entityService.queryEntities(
-                EntityQueryScene.ENTITIES_BY_MODEL,
-                "PAGE",
-                "FULL",
-                null,
-                STEP_ENTITY_TYPE,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                1,
-                500,
-                null,
-                null,
-                filters,
-                null,
-                null,
-                null,
-                null,
-                null);
-        if (resp == null || resp.getPage() == null || CollectionUtils.isEmpty(resp.getPage().getList())) {
-            return List.of();
-        }
-        List<TaskExecutionStepSnapshotDTO> steps = new ArrayList<>();
-        for (EntityRespVO row : resp.getPage().getList()) {
-            if (row == null || row.getId() == null) {
-                continue;
-            }
-            steps.add(toStepSnapshot(row));
-        }
-        return steps;
-    }
-
-    private static TaskExecutionStepSnapshotDTO toStepSnapshot(EntityRespVO row) {
-        Map<String, Object> base = row.getBaseFields() == null ? Map.of() : row.getBaseFields();
-        TaskExecutionStepSnapshotDTO snapshot = new TaskExecutionStepSnapshotDTO();
-        snapshot.setId(row.getId());
-        snapshot.setStepCode(textOf(base.get("step_code")));
-        snapshot.setStepTitle(textOf(base.get("step_title")));
-        snapshot.setStepStatus(textOf(base.get("step_status")));
-        Long parentId = longOf(base.get("parentId"));
-        if (parentId == null) {
-            parentId = longOf(base.get("parent_id"));
-        }
-        snapshot.setParentId(parentId);
-        Map<String, Object> resultPayload = payloadOf(base.get("result_payload"));
-        snapshot.setResultPayload(resultPayload);
-        snapshot.setSource(payloadOf(resultPayload.get("source")));
-        return snapshot;
+        return ExecutionAccountStepTree.project(record.getCustomFields());
     }
 
     private static String textOf(Object raw) {
         return raw == null ? "" : String.valueOf(raw).trim();
-    }
-
-    private static Long longOf(Object raw) {
-        if (raw instanceof Number number) {
-            return number.longValue();
-        }
-        if (raw instanceof Map<?, ?> map) {
-            return longOf(map.get("id"));
-        }
-        if (raw instanceof String text && StringUtils.hasText(text)) {
-            try {
-                return Long.parseLong(text.trim());
-            } catch (NumberFormatException ex) {
-                return null;
-            }
-        }
-        return null;
-    }
-
-    private static Map<String, Object> payloadOf(Object raw) {
-        if (raw instanceof Map<?, ?> map) {
-            Map<String, Object> copy = new LinkedHashMap<>();
-            map.forEach((key, value) -> {
-                if (key != null) {
-                    copy.put(String.valueOf(key), value);
-                }
-            });
-            return copy;
-        }
-        if (raw instanceof String text && StringUtils.hasText(text)) {
-            Object parsed = JSON.parse(text);
-            if (parsed instanceof Map<?, ?> map) {
-                return payloadOf(map);
-            }
-        }
-        return Map.of();
     }
 
     /**

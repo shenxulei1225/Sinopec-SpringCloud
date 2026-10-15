@@ -188,8 +188,10 @@ WHERE code = 'equipment'
   AND deleted = false;
 
 -- 3) 金桥两台执行设备。序列号空着。
--- 机场这台的产品型号是「大疆机场」（dji-dock-1），不是按体型登记的「小型无人机」。
--- Pilot 这台的产品型号是 Matrice 30（dji-m30）。台账没有写明具体哪一款时，按任意一款大疆飞机落在这一款。
+-- 金桥大疆机场无人机是机场带的飞机，产品型号是 Matrice 30（dji-m30），不是机场本体。
+-- 默认协议仍是大疆机场。云台挂 M30 双光，挂载点 0。机身相机不在这里预挂。
+-- Pilot 这台的产品型号也是 Matrice 30。台账没有写明具体哪一款时，按任意一款大疆飞机落在这一款。
+-- 领域跟飞机主类型走，是 0。缺了领域，详情保存会报「领域不能为空」。
 DO $$
 BEGIN
   IF to_regclass('dynamicbusiness.ent_equipment_t1') IS NULL THEN
@@ -204,14 +206,14 @@ BEGIN
     creator, updater, deleted, tenant_id, guid
   )
   SELECT
-    900157, 'equipment', dock_model.id, '金桥大疆机场无人机', 'EQ-DJI-DOCK-JQ-01', 44,
+    900157, 'equipment', aircraft_model.id, '金桥大疆机场无人机', 'EQ-DJI-DOCK-JQ-01', 44,
     'EQ-DJI-DOCK-JQ-01', 1, 30, '["UAV"]'::jsonb, 'dji-dock-1.16.1', '["dji-dock-1.16.1"]'::jsonb,
     'dock', NULL, NULL,
     'seed', 'seed', false, 1, 'guid-eq-dji-dock-jq-01'
-  FROM dynamic_model AS dock_model
-  WHERE dock_model.code = 'dji-dock-1'
-    AND dock_model.tenant_id = 1
-    AND dock_model.deleted = false
+  FROM dynamic_model AS aircraft_model
+  WHERE aircraft_model.code = 'dji-m30'
+    AND aircraft_model.tenant_id = 1
+    AND aircraft_model.deleted = false
     AND EXISTS (SELECT 1 FROM ent_facility_t1 WHERE id = 44 AND deleted = false)
     AND NOT EXISTS (
       SELECT 1 FROM ent_equipment_t1 WHERE code = 'EQ-DJI-DOCK-JQ-01' AND deleted = false
@@ -256,4 +258,123 @@ BEGIN
         AND r.category_id = c.category_id
         AND r.deleted = false
     );
+
+  -- 已有行不走上面的插入。Pilot 这台默认协议保持大疆 Pilot。领域按主类型前缀补上。
+  UPDATE ent_equipment_t1
+  SET
+    custom_fields = COALESCE(custom_fields, '{}'::jsonb)
+      || jsonb_build_object(
+        'platform_protocol', 'dji-pilot-1.16.1',
+        'cloud_access_mode', 'pilot',
+        'protocol_versions', jsonb_build_array('dji-pilot-1.16.1'),
+        'dji_domain', split_part(custom_fields->>'dji_main_type', ':', 1)
+      ),
+    updater = 'seed',
+    update_time = CURRENT_TIMESTAMP
+  WHERE code = 'EQ-DJI-PILOT-JQ-01'
+    AND deleted = false
+    AND tenant_id = 1
+    AND split_part(COALESCE(custom_fields->>'dji_main_type', ''), ':', 1) <> '';
+
+  -- 已有行不走上面的插入。这台改成 Matrice 30，协议保持大疆机场。
+  UPDATE ent_equipment_t1 AS host
+  SET
+    model_id = aircraft.id,
+    custom_fields = COALESCE(host.custom_fields, '{}'::jsonb)
+      || jsonb_build_object(
+        'dji_domain', '0',
+        'dji_main_type', '0:67',
+        'dji_sub_type', '0:67:0'
+      ),
+    updater = 'seed',
+    update_time = CURRENT_TIMESTAMP
+  FROM dynamic_model AS aircraft
+  WHERE host.code = 'EQ-DJI-DOCK-JQ-01'
+    AND host.deleted = false
+    AND host.tenant_id = 1
+    AND aircraft.code = 'dji-m30'
+    AND aircraft.tenant_id = 1
+    AND aircraft.deleted = false;
+
+  INSERT INTO ent_equipment_t1 (
+    entity_type_code, model_id, parent_id, name, code, guid,
+    tenant_id, facility_id, status, creator, updater, brand, manufacturer, custom_fields
+  )
+  SELECT
+    'equipment',
+    camera_model.id,
+    host.id,
+    '相机 · 云台相机 M30 双光相机（广角 + 变焦）',
+    'EQ-DJI-DOCK-JQ-01-CAM',
+    'guid-eq-dji-dock-jq-01-cam',
+    1,
+    host.facility_id,
+    1,
+    'seed',
+    'seed',
+    '大疆',
+    '大疆',
+    jsonb_build_object(
+      'dji_domain', '1',
+      'dji_main_type', '1:52',
+      'dji_sub_type', '1:52:0'
+    )
+  FROM ent_equipment_t1 AS host
+  JOIN dynamic_model AS camera_model
+    ON camera_model.code = 'dji-pl-m30-cam'
+   AND camera_model.tenant_id = 1
+   AND camera_model.deleted = false
+  WHERE host.code = 'EQ-DJI-DOCK-JQ-01'
+    AND host.deleted = false
+    AND host.tenant_id = 1
+    AND NOT EXISTS (
+      SELECT 1 FROM ent_equipment_t1 AS existing
+      WHERE existing.code = 'EQ-DJI-DOCK-JQ-01-CAM'
+        AND existing.deleted = false
+        AND existing.tenant_id = 1
+    );
+
+  UPDATE ent_equipment_t1 AS camera
+  SET tree_path = '/' || camera.parent_id || '/' || camera.id || '/',
+      updater = 'seed',
+      update_time = CURRENT_TIMESTAMP
+  WHERE camera.code = 'EQ-DJI-DOCK-JQ-01-CAM'
+    AND camera.deleted = false
+    AND camera.tenant_id = 1
+    AND camera.parent_id IS NOT NULL;
+
+  INSERT INTO dynamic_entity_category_relation_t1 (
+    entity_id, category_id, entity_type_code, sort, creator, updater, deleted, tenant_id
+  )
+  SELECT camera.id, 2104809, 'equipment', 0, 'seed', 'seed', false, 1
+  FROM ent_equipment_t1 AS camera
+  WHERE camera.code = 'EQ-DJI-DOCK-JQ-01-CAM'
+    AND camera.deleted = false
+    AND camera.tenant_id = 1
+    AND NOT EXISTS (
+      SELECT 1 FROM dynamic_entity_category_relation_t1 AS existing
+      WHERE existing.entity_id = camera.id
+        AND existing.category_id = 2104809
+        AND existing.deleted = false
+    );
+
+  UPDATE ent_equipment_t1 AS host
+  SET
+    custom_fields = COALESCE(host.custom_fields, '{}'::jsonb)
+      || jsonb_build_object(
+        'payload_mounts',
+        jsonb_build_array(
+          jsonb_build_object('mountPoint', '0', 'equipmentId', camera.id)
+        )
+      ),
+    updater = 'seed',
+    update_time = CURRENT_TIMESTAMP
+  FROM ent_equipment_t1 AS camera
+  WHERE host.code = 'EQ-DJI-DOCK-JQ-01'
+    AND host.deleted = false
+    AND host.tenant_id = 1
+    AND camera.code = 'EQ-DJI-DOCK-JQ-01-CAM'
+    AND camera.deleted = false
+    AND camera.tenant_id = 1
+    AND camera.parent_id = host.id;
 END $$;

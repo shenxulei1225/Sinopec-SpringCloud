@@ -3,6 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.dal.mysql.category;
 import cn.cheers.x.framework.mybatis.core.mapper.BaseMapperX;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryEntityLinkDO;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -37,24 +38,26 @@ public interface CategoryEntityLinkMapper extends BaseMapperX<CategoryEntityLink
         return selectOne(query);
     }
 
-    default int deleteByCategoryId(Long categoryId) {
-        return delete(new LambdaQueryWrapperX<CategoryEntityLinkDO>()
-                .eq(CategoryEntityLinkDO::getCategoryId, categoryId));
-    }
+    /**
+     * 物理删除该分类作为实体的链接。没有挂上时删除 0 行。
+     */
+    @Delete("DELETE FROM dynamic_category_entity_link WHERE category_id = #{categoryId}")
+    int deleteByCategoryId(@Param("categoryId") Long categoryId);
 
-    default int deleteByEntityId(Long entityId) {
-        return delete(new LambdaQueryWrapperX<CategoryEntityLinkDO>()
-                .eq(CategoryEntityLinkDO::getEntityId, entityId));
-    }
+    @Delete("DELETE FROM dynamic_category_entity_link WHERE entity_id = #{entityId}")
+    int deleteByEntityId(@Param("entityId") Long entityId);
 
-    default int deleteByEntityIdAndEntityTypeCode(Long entityId, String entityTypeCode) {
-        LambdaQueryWrapperX<CategoryEntityLinkDO> query = new LambdaQueryWrapperX<CategoryEntityLinkDO>()
-                .eq(CategoryEntityLinkDO::getEntityId, entityId);
-        if (entityTypeCode != null && !entityTypeCode.isBlank()) {
-            query.eq(CategoryEntityLinkDO::getEntityTypeCode, entityTypeCode.trim());
-        }
-        return delete(query);
-    }
+    @Delete("""
+            <script>
+            DELETE FROM dynamic_category_entity_link
+            WHERE entity_id = #{entityId}
+            <if test='entityTypeCode != null and entityTypeCode != ""'>
+              AND entity_type_code = #{entityTypeCode}
+            </if>
+            </script>
+            """)
+    int deleteByEntityIdAndEntityTypeCode(@Param("entityId") Long entityId,
+                                          @Param("entityTypeCode") String entityTypeCode);
 
     /**
      * 批量根据分类ID查询链接（用于优化批量删除时的 N+1 查询问题）

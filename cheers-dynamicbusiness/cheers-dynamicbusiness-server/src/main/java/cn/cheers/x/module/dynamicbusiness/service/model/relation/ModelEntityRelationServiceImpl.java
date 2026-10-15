@@ -25,7 +25,8 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * 型号—实体多对多关联实现。
+ * 型号—实体多对多关联。
+ * 解除时物理删除这一行。没有挂上不插入。再挂同一对时插入新行。
  */
 @Service
 @Validated
@@ -113,13 +114,6 @@ public class ModelEntityRelationServiceImpl implements ModelEntityRelationServic
         }
 
         int sort = nextSort(modelId, modelType, entityType);
-        int restored = relationMapper.restoreDeleted(modelId, entityId, modelType, entityType, domain, sort);
-        if (restored > 0) {
-            log.info("恢复型号—实体关联: modelId={}, entityId={}, modelType={}, entityType={}",
-                    modelId, entityId, modelType, entityType);
-            return ok("ASSOCIATE", modelId, entityId, 1, 0, List.of(entityId), List.of(), start);
-        }
-
         ModelEntityRelationDO row = ModelEntityRelationDO.builder()
                 .modelId(modelId)
                 .modelEntityTypeCode(modelType)
@@ -146,7 +140,7 @@ public class ModelEntityRelationServiceImpl implements ModelEntityRelationServic
             return ok("DISASSOCIATE", modelId, entityId, 0, 1, List.of(),
                     List.of("modelId/entityId 不能为空"), start);
         }
-        relationMapper.softDelete(modelId, entityId, modelType, entityType);
+        relationMapper.deleteLink(modelId, entityId, modelType, entityType);
         return ok("DISASSOCIATE", modelId, entityId, 1, 0, List.of(entityId), List.of(), start);
     }
 
@@ -216,7 +210,7 @@ public class ModelEntityRelationServiceImpl implements ModelEntityRelationServic
         List<Long> ids = normalizeIds(entityIds);
         List<Long> okIds = new ArrayList<>();
         for (Long entityId : ids) {
-            relationMapper.softDelete(modelId, entityId, modelType, entityType);
+            relationMapper.deleteLink(modelId, entityId, modelType, entityType);
             okIds.add(entityId);
         }
         return ok("BATCH_DISASSOCIATE", modelId, null, okIds.size(), 0, okIds, List.of(), start);

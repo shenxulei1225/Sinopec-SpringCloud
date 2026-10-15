@@ -354,7 +354,7 @@ public class ModelRelationServiceImpl implements ModelRelationService {
             int deletedCount = modelFieldAssignmentService.deleteByModelRelationId(relation.getId());
             log.info("级联删除字段分配: modelRelationId={}, deletedCount={}", relation.getId(), deletedCount);
             
-            modelRelationMapper.deleteById(relation.getId());
+            modelRelationMapper.physicalDeleteById(relation.getId());
             log.info("删除 Model 关联成功: {} -> {}", sourceModelCode, targetModelCode);
         } else {
             log.warn("Model 关联不存在: {} -> {}", sourceModelCode, targetModelCode);
@@ -370,7 +370,7 @@ public class ModelRelationServiceImpl implements ModelRelationService {
             int deletedCount = modelFieldAssignmentService.deleteByModelRelationId(id);
             log.info("级联删除字段分配: modelRelationId={}, deletedCount={}", id, deletedCount);
             
-            modelRelationMapper.deleteById(id);
+            modelRelationMapper.physicalDeleteById(id);
             log.info("删除 Model 关联成功: id={}, {} -> {}", 
                     id, relation.getSourceModelCode(), relation.getTargetModelCode());
         }

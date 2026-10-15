@@ -11,7 +11,8 @@ import java.util.UUID;
 
 /**
  * 动作库 {@code param_slots_json} 的共用读法：按巡检方式（及可选型号）取字段名单与默认值。
- * <p>任务冻结步骤、协议网关翻译前补默认、动作列表接口共用，禁止各模块复制 methodRow 逻辑。
+ * <p>任务冻结步骤时，设备没填的格子用这一档默认值。执行设备型号对不上时，这一巡检方式只登记了一个带参数的型号，就用这一档，不留成无参数。登记了多个型号时不挑。
+ * <p>任务冻结步骤、动作列表接口共用，禁止各模块复制 methodRow 逻辑。协议网关不在这里补动作参数。
  */
 public final class ActionParamSlotsJsonCore {
 
@@ -102,13 +103,33 @@ public final class ActionParamSlotsJsonCore {
                 unscoped = method;
             }
         }
-        if (equipmentModelId == null) {
-            if (unscoped != null && fieldCount(unscoped) > 0) {
-                return unscoped;
-            }
-            return null;
+        if (equipmentModelId == null && unscoped != null && fieldCount(unscoped) > 0) {
+            return unscoped;
         }
-        return null;
+        return soleFilledModelRow(methods, wanted);
+    }
+
+    /**
+     * 执行设备型号对不上，这一巡检方式又只登记了一个带参数的型号时，用这一档。
+     * 例如机器人机身对不上云台，定点拍照仍用云台上的偏航、俯仰、焦距和张数。
+     * 同一方式有多台相机时返回空，不把另一台的默认角度写进来。
+     */
+    private static Map<?, ?> soleFilledModelRow(List<?> methods, String meansUpper) {
+        Map<?, ?> only = null;
+        for (Object row : methods) {
+            if (!(row instanceof Map<?, ?> method)) {
+                continue;
+            }
+            String rowMeans = text(first(method, "methodKey", "executionMeans", "execution_means")).toUpperCase();
+            if (!meansUpper.equals(rowMeans) || modelIdOf(method) == null || fieldCount(method) == 0) {
+                continue;
+            }
+            if (only != null) {
+                return null;
+            }
+            only = method;
+        }
+        return only;
     }
 
     /**

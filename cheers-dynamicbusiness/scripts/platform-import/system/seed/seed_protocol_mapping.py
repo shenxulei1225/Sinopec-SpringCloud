@@ -41,6 +41,7 @@ MAPPINGS = (
             {"slot": "F-e49f76bdca3e4e1393e8e2f1cc0e7867", "sourcePath": "FLD-PNT-002", "path": "request.pointId"},
             {"slot": "F-e49f76bdca3e4e1393e8e2f1cc0e7867", "sourcePath": "FLD-LOC-014.longitude", "path": "request.lng"},
             {"slot": "F-e49f76bdca3e4e1393e8e2f1cc0e7867", "sourcePath": "FLD-LOC-014.latitude", "path": "request.lat"},
+            {"slot": "F-e49f76bdca3e4e1393e8e2f1cc0e7867", "sourcePath": "FLD-LOC-014.height", "path": "request.height"},
         ),
     },
     {
@@ -51,6 +52,9 @@ MAPPINGS = (
         "instruction_code": "proto-robot-200102-move",
         "slots": (
             {"slot": "F-e49f76bdca3e4e1393e8e2f1cc0e7867", "sourcePath": "FLD-PNT-002", "path": "request.pointId"},
+            {"slot": "F-e49f76bdca3e4e1393e8e2f1cc0e7867", "sourcePath": "FLD-LOC-014.latitude", "path": "request.lat"},
+            {"slot": "F-e49f76bdca3e4e1393e8e2f1cc0e7867", "sourcePath": "FLD-LOC-014.longitude", "path": "request.lng"},
+            {"slot": "F-e49f76bdca3e4e1393e8e2f1cc0e7867", "sourcePath": "FLD-LOC-014.height", "path": "request.height"},
         ),
     },
     {
@@ -91,6 +95,9 @@ MAPPINGS = (
         "instruction_code": "proto-robot-200102-move",
         "slots": (
             {"slot": "F-e49f76bdca3e4e1393e8e2f1cc0e7867", "sourcePath": "FLD-PNT-002", "path": "request.pointId"},
+            {"slot": "F-e49f76bdca3e4e1393e8e2f1cc0e7867", "sourcePath": "FLD-LOC-014.latitude", "path": "request.lat"},
+            {"slot": "F-e49f76bdca3e4e1393e8e2f1cc0e7867", "sourcePath": "FLD-LOC-014.longitude", "path": "request.lng"},
+            {"slot": "F-e49f76bdca3e4e1393e8e2f1cc0e7867", "sourcePath": "FLD-LOC-014.height", "path": "request.height"},
         ),
     },
     {

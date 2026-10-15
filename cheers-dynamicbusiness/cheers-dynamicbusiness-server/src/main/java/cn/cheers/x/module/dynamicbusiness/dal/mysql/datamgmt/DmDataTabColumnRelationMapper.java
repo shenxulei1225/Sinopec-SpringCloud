@@ -19,6 +19,12 @@ public interface DmDataTabColumnRelationMapper extends BaseMapperX<DmDataTabColu
                 .orderByAsc(DmDataTabColumnRelationDO::getId));
     }
 
+    /**
+     * 物理删除一条数据页栏关系。
+     */
+    @Delete("DELETE FROM dm_data_tab_column_relation WHERE id = #{id}")
+    int physicalDeleteById(@Param("id") Long id);
+
     @Delete("DELETE FROM dm_data_tab_column_relation WHERE layout_id = #{layoutId} AND deleted = true")
     void deletePhysicalSoftDeletedByLayoutId(@Param("layoutId") Long layoutId);
 }

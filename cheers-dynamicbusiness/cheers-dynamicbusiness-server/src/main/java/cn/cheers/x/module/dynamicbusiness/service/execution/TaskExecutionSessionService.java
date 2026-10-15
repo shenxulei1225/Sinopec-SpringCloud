@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * 任务模块标准执行会话。
- * <p>负责：新建这次执行的账；更新这次/某一步的状态；往账里记一条过程。
+ * <p>负责：新建这次执行的账；更新这次/某一步的状态；往账里记一条过程；重新生成前物理删除还没开始的执行账。
  * <p>不负责：外部通道协议、算路、域专用设备列、策略匹配。
  */
 public interface TaskExecutionSessionService {
@@ -28,6 +28,12 @@ public interface TaskExecutionSessionService {
     TaskExecutionStartBatchRespDTO startBatch(TaskExecutionStartBatchReqDTO req);
 
     void writeback(TaskExecutionWritebackReqDTO req);
+
+    /**
+     * 重新生成待执行账之前，物理删掉这一条还没开始的执行账、它的步骤和关系行。
+     * 不留删除标记。已经开始或已经执行的不删，调用失败。
+     */
+    void deletePendingExecution(Long executionRecordId);
 
     /**
      * 往这次执行的账里记一条过程。

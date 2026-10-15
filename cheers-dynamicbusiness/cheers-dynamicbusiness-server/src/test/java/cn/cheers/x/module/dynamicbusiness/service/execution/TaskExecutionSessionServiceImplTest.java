@@ -90,14 +90,14 @@ class TaskExecutionSessionServiceImplTest {
     }
 
     @Test
-    void startBatch_createsEachAccountThenWritesStepsOnce() {
+    void startBatch_writesStepTreeOntoEachAccount() {
         ModelDO model = new ModelDO();
         model.setId(3L);
         model.setCode("exec_patrol_record");
         when(modelMapper.selectByCode("exec_patrol_record")).thenReturn(model);
         when(modelMapper.selectById(3L)).thenReturn(model);
         when(bootstrapService.insertPendingRecords(
-                any(), any(), any(), any(), any(), nullable(Object.class), any()))
+                any(), any(), any(), any(), any(), nullable(Object.class), any(), any()))
                 .thenReturn(List.of(77L, 78L));
 
         TaskExecutionStartBatchReqDTO req = new TaskExecutionStartBatchReqDTO();
@@ -134,14 +134,10 @@ class TaskExecutionSessionServiceImplTest {
                 eq(88L),
                 any(),
                 isNull(),
-                accountsCaptor.capture());
+                accountsCaptor.capture(),
+                any());
         assertEquals("2026-09-28T09:00:00+08:00", accountsCaptor.getValue().get(0).plannedStart());
         assertEquals("2026-09-28T21:00:00+08:00", accountsCaptor.getValue().get(1).plannedStart());
-        verify(bootstrapService).writeSameStepsOntoRecords(
-                eq("task_excution_record"),
-                eq("exec_patrol_record"),
-                eq(8L),
-                eq(List.of(77L, 78L)),
-                any());
+        verify(bootstrapService, never()).writeSameStepsOntoRecords(any(), any(), any(), any(), any());
     }
 }

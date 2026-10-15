@@ -22,7 +22,8 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * 分类—分类跨种类关联实现。
+ * 分类—分类跨种类关联。
+ * 解除时物理删除已挂上的行。没有挂上不插入。再挂同一对时插入新行。
  */
 @Service
 @Validated
@@ -134,15 +135,6 @@ public class CategoryCategoryRelationServiceImpl implements CategoryCategoryRela
         }
 
         int sort = nextSort(hostCategoryId, hostType, memberType);
-        int restored = relationMapper.restoreDeleted(
-                hostCategoryId, memberCategoryId, hostType, memberType, sort);
-        if (restored > 0) {
-            log.info("恢复分类—分类关联: hostId={}, memberId={}, hostType={}, memberType={}",
-                    hostCategoryId, memberCategoryId, hostType, memberType);
-            return ok("ASSOCIATE", hostCategoryId, memberCategoryId, 1, 0,
-                    List.of(memberCategoryId), List.of(), start);
-        }
-
         CategoryCategoryRelationDO row = CategoryCategoryRelationDO.builder()
                 .hostCategoryId(hostCategoryId)
                 .hostCategoryTypeCode(hostType)
@@ -184,7 +176,7 @@ public class CategoryCategoryRelationServiceImpl implements CategoryCategoryRela
             memberIds = List.of(memberCategoryId);
         }
 
-        // 先查出实际存在的边，再软删，避免「父节点无边却报成功」
+        // 先查出实际挂着的边，再物理删除。没有挂上的不写行。
         List<Long> removedMemberIds = relationMapper
                 .selectByHostAndMembers(hostCategoryId, memberIds, hostType, memberType)
                 .stream()
@@ -197,7 +189,7 @@ public class CategoryCategoryRelationServiceImpl implements CategoryCategoryRela
                     List.of("当前成员分类及其下级与该宿主无关联"), start);
         }
 
-        int deleted = relationMapper.softDeleteByHostAndMembers(
+        int deleted = relationMapper.deleteByHostAndMembers(
                 hostCategoryId, removedMemberIds, hostType, memberType);
         log.info("解除分类—分类关联: hostId={}, memberRoot={}, includeDescendants={}, removed={}, rows={}",
                 hostCategoryId, memberCategoryId, includeDescendantMembers, removedMemberIds, deleted);
@@ -340,7 +332,7 @@ public class CategoryCategoryRelationServiceImpl implements CategoryCategoryRela
         toRemove.addAll(covering);
 
         if (!toRemove.isEmpty()) {
-            relationMapper.softDeleteByHostAndMembers(
+            relationMapper.deleteByHostAndMembers(
                     hostCategoryId, new ArrayList<>(toRemove), hostType, memberType);
         }
 

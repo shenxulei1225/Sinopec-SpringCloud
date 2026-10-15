@@ -587,8 +587,8 @@ public class ModelServiceImpl implements ModelService {
      *       <li>不存在：批量创建新关联</li>
      *     </ul>
      *   </li>
-     *   <li>批量恢复软删除的关联（一次SQL）</li>
-     *   <li>批量创建新的关联关系（一次SQL）</li>
+     *   <li>已经挂着的跳过</li>
+     *   <li>还没挂上的插入新行（一次 SQL）</li>
      * </ol>
      * 
      * @param modelId 模型ID
@@ -616,35 +616,23 @@ public class ModelServiceImpl implements ModelService {
             throw new ServiceException(404, "分类不存在,ID：" + notFoundCategoryIds);
         }
         
-        // 步骤2：批量查询现有关联（包括软删除的）
+        // 只读还挂着的行。没挂上的分类插入新行。
         List<ModelCategoryRelationDO> existingRelations = modelCategoryRelationMapper.selectList(
                 new LambdaQueryWrapperX<ModelCategoryRelationDO>()
                         .eq(ModelCategoryRelationDO::getModelId, modelId)
                         .eq(ModelCategoryRelationDO::getEntityTypeCode, entityTypeCode)
                         .in(ModelCategoryRelationDO::getCategoryId, categoryIds));
         
-        // 步骤3：将分类ID分为三类
-        Set<Long> existingAndNotDeleted = new HashSet<>();  // 已存在且未删除：跳过
-        Set<Long> existingButDeleted = new HashSet<>();    // 已存在但软删除：需要恢复
-        Set<Long> notExisting = new HashSet<>(categoryIds); // 不存在：需要创建
+        Set<Long> existingAndNotDeleted = new HashSet<>();
+        Set<Long> notExisting = new HashSet<>(categoryIds);
         
         for (ModelCategoryRelationDO relation : existingRelations) {
             Long categoryId = relation.getCategoryId();
-            if (Boolean.TRUE.equals(relation.getDeleted())) {
-                existingButDeleted.add(categoryId);
-            } else {
-                existingAndNotDeleted.add(categoryId);
-            }
-            notExisting.remove(categoryId); // 从"不存在"集合中移除
+            existingAndNotDeleted.add(categoryId);
+            notExisting.remove(categoryId);
         }
         
-        // 步骤4：批量恢复软删除的关联（租户插件自动处理 tenantId）
-        if (!existingButDeleted.isEmpty()) {
-            List<Long> categoryIdsToRestore = new ArrayList<>(existingButDeleted);
-            modelCategoryRelationMapper.restoreDeletedRelationsBatch(modelId, categoryIdsToRestore, entityTypeCode);
-        }
-        
-        // 步骤5：批量创建新的关联关系（租户插件会自动填充 tenantId）
+        // 还没挂上的分类插入新行（租户插件会自动填充 tenantId）
         // model_code / category_code 为库表非空列，须与创建路径一致一并写入（勿只写 id）
         if (!notExisting.isEmpty()) {
             ModelDO model = modelCoreService.get(modelId);
@@ -675,7 +663,7 @@ public class ModelServiceImpl implements ModelService {
         // 返回处理结果
         return new CategoryRelationBatchResult(
                 new ArrayList<>(existingAndNotDeleted),
-                new ArrayList<>(existingButDeleted),
+                new ArrayList<>(),
                 new ArrayList<>(notExisting)
         );
     }
