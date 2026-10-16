@@ -20,15 +20,26 @@ import java.util.Map;
 
 /**
  * 智能分析步骤写成告警时，另记一条巡检异常记录，并挂到这次任务的执行设备上。
- * <p>点设备才能在异常记录里看到它。同一条分析任务只记一次。
- * <p>不负责：设备故障上报、改步骤上的分析结果、在路线回放上画告警。
- * <p>禁止：对不上唯一执行设备还建一条没挂设备的异常；没有分析任务编号就编一个编号。
+ * <p>这条异常写下分析能力名称、说明、检测框、来自哪次任务的哪一步，以及任务里已有照片的地址。
+ * 同一条分析只记一次。正常结果不记。
+ * <p>不负责：设备故障上报、改步骤上的分析结果、在路线回放上画告警、另存照片文件。
+ * <p>禁止：对不上唯一执行设备还建一条没挂设备的异常；没有分析任务编号或能力名称就编一个。
  */
 @Service
 public class PatrolAnalysisAlarmRecorder {
 
     static final String ANOMALY_TYPE = "anomaly";
     static final String MODEL_CODE = "exec_patrol_issue";
+    static final String ALARM_CODE_PREFIX = "analysis-alarm-";
+    static final String FACT_CAPABILITY_NAME = "analysis_capability_name";
+    static final String FACT_NOTE = "analysis_note";
+    static final String FACT_PHOTO_URL = "photo_url";
+    static final String FACT_DETECTIONS = "detections";
+    static final String FACT_TASK_ID = "task_id";
+    static final String FACT_TASK_NAME = "task_name";
+    static final String FACT_EXECUTION_RECORD_ID = "execution_record_id";
+    static final String FACT_STEP_CODE = "step_code";
+    static final String FACT_STEP_TITLE = "step_title";
     static final String EQUIPMENT_TYPE = "equipment";
     static final String TASK_TYPE = "task";
     /** 任务草稿。executionDeviceBinding 记下这次执行设备。 */
@@ -62,23 +73,34 @@ public class PatrolAnalysisAlarmRecorder {
     }
 
     /**
-     * 步骤结果已经写成告警之后调用。缺分析任务编号或执行设备则报错，不建空挂异常。
+     * 步骤结果已经写成告警之后调用。缺分析任务编号、能力名称、步骤或执行设备则报错，不建空挂异常。
      */
     public void record(EntityRespVO executionRecord, String inspectionItemTitle, Map<String, Object> payload) {
         String jobNo = text(payload.get("analysisJobNo"));
         if (!StringUtils.hasText(jobNo)) {
             throw new ServiceException(400, "分析告警没有分析任务编号，不能记入异常记录");
         }
-        String anomalyCode = "analysis-alarm-" + jobNo;
+        String capabilityName = requireCapabilityName(payload);
+        String stepCode = text(payload.get("stepCode"));
+        if (!StringUtils.hasText(stepCode)) {
+            throw new ServiceException(400, "分析告警没有步骤编号，不能记入异常记录");
+        }
+        String anomalyCode = ALARM_CODE_PREFIX + jobNo;
         if (alreadyRecorded(anomalyCode)) {
             return;
         }
-        long equipmentId = requireSingleExecutionEquipmentId(executionDeviceBinding(executionRecord));
+        EntityRespVO task = requireTask(executionRecord);
+        String taskName = task.getName();
+        if (!StringUtils.hasText(taskName)) {
+            throw new ServiceException(400, "这次任务没有名称，分析告警不能记入异常记录");
+        }
+        long equipmentId = requireSingleExecutionEquipmentId(executionDeviceBinding(task));
         EntityCreateReqVO create = new EntityCreateReqVO();
         Map<String, Object> base = new LinkedHashMap<>();
         base.put("entityTypeCode", ANOMALY_TYPE);
         base.put("modelId", entityRpcFacadeService.getModelIdByCode(MODEL_CODE));
-        base.put("name", anomalyName(inspectionItemTitle, payload));
+        String note = noteOf(payload);
+        base.put("name", alarmTitle(capabilityName, inspectionItemTitle, note));
         base.put("code", anomalyCode);
         base.put("status", 1);
         Long facilityId = facilityOf(executionRecord);
@@ -86,6 +108,19 @@ public class PatrolAnalysisAlarmRecorder {
             base.put(FacilityOwningFieldCodes.FIELD_CODE, FacilityOwningFieldCodes.toApiRef(facilityId));
         }
         create.setBaseFields(base);
+        Map<String, Object> facts = new LinkedHashMap<>();
+        facts.put(FACT_CAPABILITY_NAME, capabilityName);
+        facts.put(FACT_NOTE, note);
+        facts.put(FACT_PHOTO_URL, text(payload.get("photoUrl")));
+        if (payload.get("detections") != null) {
+            facts.put(FACT_DETECTIONS, payload.get("detections"));
+        }
+        facts.put(FACT_TASK_ID, task.getId());
+        facts.put(FACT_TASK_NAME, taskName.trim());
+        facts.put(FACT_EXECUTION_RECORD_ID, executionRecord.getId());
+        facts.put(FACT_STEP_CODE, stepCode);
+        facts.put(FACT_STEP_TITLE, text(inspectionItemTitle));
+        create.setCustomFields(facts);
         Long anomalyId = entityService.create(create);
         if (anomalyId == null || anomalyId <= 0) {
             throw new ServiceException(500, "分析告警写入异常记录失败");
@@ -93,15 +128,56 @@ public class PatrolAnalysisAlarmRecorder {
         attachToEquipment(equipmentId, anomalyId);
     }
 
-    private Object executionDeviceBinding(EntityRespVO executionRecord) {
+    static String requireCapabilityName(Map<String, Object> payload) {
+        String name = text(payload == null ? null : payload.get("analysisCapabilityName"));
+        if (!StringUtils.hasText(name)) {
+            throw new ServiceException(400, "分析告警没有分析能力名称，不能记入异常记录");
+        }
+        return name;
+    }
+
+    /**
+     * 异常记录的名称。能力名称在前，检查项和说明在后。名称栏最长 255，超出的说明仍写在记录内容里。
+     */
+    static String alarmTitle(String capabilityName, String itemTitle, String display) {
+        String note = StringUtils.hasText(display) ? display.trim() : "告警";
+        String head = capabilityName.trim();
+        if (StringUtils.hasText(itemTitle)) {
+            head = head + " · " + itemTitle.trim();
+        }
+        String title = head + "：" + note;
+        if (title.length() <= 255) {
+            return title;
+        }
+        int room = 255 - head.length() - 1;
+        if (room < 1) {
+            throw new ServiceException(400, "分析告警名称超过长度，不能记入异常记录");
+        }
+        return head + "：" + note.substring(0, room);
+    }
+
+    private static String noteOf(Map<String, Object> payload) {
+        String display = text(payload.get("display"));
+        if (StringUtils.hasText(display)) {
+            return display;
+        }
+        String message = text(payload.get("message"));
+        return StringUtils.hasText(message) ? message : "告警";
+    }
+
+    private EntityRespVO requireTask(EntityRespVO executionRecord) {
         Long taskId = longOf(bag(executionRecord).get("task_id"));
         if (taskId == null) {
             throw new ServiceException(400, "这次执行记录没有任务，分析告警不能记入异常记录");
         }
         EntityRespVO task = entityService.get(taskId, TASK_TYPE);
-        if (task == null) {
+        if (task == null || task.getId() == null) {
             throw new ServiceException(404, "任务不存在：" + taskId);
         }
+        return task;
+    }
+
+    private Object executionDeviceBinding(EntityRespVO task) {
         Object draft = bag(task).get(TASK_DRAFT_FIELD);
         if (draft instanceof String text && StringUtils.hasText(text)) {
             draft = JSON.parse(text);
@@ -110,17 +186,6 @@ public class PatrolAnalysisAlarmRecorder {
             return null;
         }
         return map.get("executionDeviceBinding");
-    }
-
-    private String anomalyName(String inspectionItemTitle, Map<String, Object> payload) {
-        String display = text(payload.get("display"));
-        if (!StringUtils.hasText(display)) {
-            display = text(payload.get("message"));
-        }
-        if (!StringUtils.hasText(display)) {
-            display = "告警";
-        }
-        return StringUtils.hasText(inspectionItemTitle) ? inspectionItemTitle + "：" + display : display;
     }
 
     private boolean alreadyRecorded(String anomalyCode) {

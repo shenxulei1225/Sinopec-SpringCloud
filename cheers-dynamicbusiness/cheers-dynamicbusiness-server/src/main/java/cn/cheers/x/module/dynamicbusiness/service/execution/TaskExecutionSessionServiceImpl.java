@@ -396,10 +396,15 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
         entityService.update(updateReq);
         record.setCustomFields(custom);
         if (PatrolAnalysisAlarmRecorder.isAlarm(stepUpdate.getResultPayload())) {
+            Map<String, Object> alarmPayload = new LinkedHashMap<>();
+            if (stepUpdate.getResultPayload() != null) {
+                alarmPayload.putAll(stepUpdate.getResultPayload());
+            }
+            alarmPayload.put("stepCode", stepUpdate.getStepCode());
             patrolAnalysisAlarmRecorder.record(
                     record,
                     ExecutionAccountStepTree.inspectionItemTitle(custom, stepUpdate.getStepCode()),
-                    stepUpdate.getResultPayload());
+                    alarmPayload);
         }
     }
 

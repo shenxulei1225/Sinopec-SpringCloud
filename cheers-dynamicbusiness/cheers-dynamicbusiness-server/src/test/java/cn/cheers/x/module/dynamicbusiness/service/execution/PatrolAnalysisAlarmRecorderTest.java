@@ -36,4 +36,17 @@ class PatrolAnalysisAlarmRecorderTest {
         assertTrue(PatrolAnalysisAlarmRecorder.isAlarm(Map.of("analysisResult", "告警")));
         assertFalse(PatrolAnalysisAlarmRecorder.isAlarm(Map.of("analysisResult", "正常")));
     }
+
+    @Test
+    void alarmTitleStartsWithCapabilityName() {
+        assertEquals("跑冒滴漏识别 · 法兰：有液体",
+                PatrolAnalysisAlarmRecorder.alarmTitle("跑冒滴漏识别", "法兰", "有液体"));
+    }
+
+    @Test
+    void missingCapabilityNameIsRejected() {
+        ServiceException missing = assertThrows(ServiceException.class,
+                () -> PatrolAnalysisAlarmRecorder.requireCapabilityName(Map.of("analysisResult", "告警")));
+        assertTrue(missing.getMessage().contains("没有分析能力名称"));
+    }
 }
