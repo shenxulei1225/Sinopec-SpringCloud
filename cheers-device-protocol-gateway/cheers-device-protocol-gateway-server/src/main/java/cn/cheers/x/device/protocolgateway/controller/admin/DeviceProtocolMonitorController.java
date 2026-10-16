@@ -108,7 +108,9 @@ public class DeviceProtocolMonitorController {
                     request.frequency(),
                     request.total(),
                     request.streamUrl(),
-                    request.executionRecordId()));
+                    request.executionRecordId(),
+                    request.templateId(),
+                    request.taskId()));
         } catch (IllegalArgumentException | IllegalStateException ex) {
             return error(400, ex.getMessage());
         }

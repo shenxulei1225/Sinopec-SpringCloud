@@ -4,8 +4,8 @@ import lombok.Data;
 
 /**
  * 协议监控里可选的一条已生成任务。
- * <p>只带选择时要看的名称、状态、计划时刻和已经分配的收流地址。
- * <p>不负责：动作清单和翻译后的指令包。选定后再按执行记录编号读取。
+ * <p>只带选择时要看的名称、状态、计划时刻、已经分配的收流地址，以及指令包上记下的模板编号。
+ * <p>不负责：动作清单和指令包正文。选定后再按执行记录编号读取。
  */
 @Data
 public class PatrolGeneratedTaskOptionDTO {
@@ -22,4 +22,7 @@ public class PatrolGeneratedTaskOptionDTO {
 
     /** 生成任务时写入的收流地址。没有时为空。 */
     private String mediaStreamUrl;
+
+    /** 生成时写在指令包上的模板编号。没有指令包或包上没写时为空。 */
+    private String commandTemplateId;
 }

@@ -91,8 +91,17 @@ public class PatrolGeneratedTaskLookup {
             option.setRecordName(text(mapOf(record.getBaseFields()).get("name")));
             option.setExecutionStatus(candidate.status());
             option.setPlannedStart(text(fields.get("planned_start")));
-            option.setMediaStreamUrl(text(mapOf(fields.get("standard_snapshot"))
-                    .get(PatrolOpenRunSnapshotKeys.TASK_RECORD_INGEST_URL)));
+            Map<String, Object> snapshot = mapOf(fields.get("standard_snapshot"));
+            option.setMediaStreamUrl(text(snapshot.get(PatrolOpenRunSnapshotKeys.TASK_RECORD_INGEST_URL)));
+            // 名单仍列出这条任务。指令包正文读不出来时模板编号留空，启动时再拒绝。
+            try {
+                StoredCommandPackage stored = storedCommandPackage(snapshot, objectMapper);
+                if (stored != null && StringUtils.hasText(stored.templateId())) {
+                    option.setCommandTemplateId(stored.templateId().trim());
+                }
+            } catch (RuntimeException ignored) {
+                option.setCommandTemplateId(null);
+            }
             options.add(option);
         }
         return options;

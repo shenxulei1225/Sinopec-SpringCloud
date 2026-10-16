@@ -14,9 +14,9 @@ import java.util.Map;
 
 /**
  * 协议监控里，任务指令改用已生成执行记录的编号。
- * <p>负责：指令包、启动、终止、取包、删包带上这次执行记录编号。指令包里的序号沿用翻译结果。
+ * <p>负责：指令包、启动、终止、取包、删包带上这次执行记录编号。启动包的模板编号用指令包上记下的，或页面改过的。指令包里的序号沿用翻译结果。
  * <p>不负责：翻译动作、把上报写成完成。
- * <p>禁止：再填协议样例里的任务编号。
+ * <p>禁止：再填协议样例里的任务编号。禁止把执行记录编号写进启动包的模板编号。
  */
 public final class ProtocolMonitorGeneratedEnvelope {
 
@@ -41,27 +41,50 @@ public final class ProtocolMonitorGeneratedEnvelope {
         return codec.encodeCommandSend(new CommandSendEnvelope(msgId, deviceId, recordId, packagesJson));
     }
 
+    /**
+     * 任务编号用这次执行记录。模板编号用指令包上的，或页面改过的。两格不再写成同一个数。
+     */
     public static String startup(
             EnvelopeJsonCodec codec,
             String msgId,
             String deviceId,
-            String recordId,
+            String taskId,
+            String templateId,
             long executionTimeEpochSeconds
     ) {
         return codec.encodeStartupExecute(new StartupExecuteEnvelope(
-                msgId, recordId, deviceId, recordId, executionTimeEpochSeconds));
+                msgId, taskId, deviceId, templateId, executionTimeEpochSeconds));
     }
 
-    public static String stop(EnvelopeJsonCodec codec, String msgId, String deviceId, String recordId) {
-        return codec.encodeTaskStop(new TaskStopEnvelope(msgId, recordId, deviceId));
+    public static String stop(EnvelopeJsonCodec codec, String msgId, String deviceId, String taskId) {
+        return codec.encodeTaskStop(new TaskStopEnvelope(msgId, taskId, deviceId));
     }
 
     /**
-     * 取包、删包仍用说明书上的空包，只把已有的模板编号、任务编号换成这次执行记录编号。
+     * 删除指令包。模板编号用指令包上记下的，或页面改过的。
+     * 空包没写这一格时也要带上，否则页面填的编号发不出去。
+     */
+    public static String deletePackage(EnvelopeJsonCodec codec, String msgId, String deviceId, String templateId) {
+        Map<String, Object> packet = new java.util.LinkedHashMap<>();
+        packet.put("opcode", TransportOpcode.DELETE_COMMAND_PACKAGE.code());
+        packet.put("msgId", msgId);
+        packet.put("deviceId", deviceId);
+        packet.put("templateId", templateId);
+        return codec.encodeObject(packet);
+    }
+
+    /**
+     * 取包仍用说明书上的空包。任务编号换成这次执行记录编号。
+     * 模板编号优先用调用方给出的。没给出时才用执行记录编号。
      */
     public static Map<String, Object> withRecordId(Map<String, Object> packet, String recordId) {
+        return withRecordId(packet, recordId, null);
+    }
+
+    public static Map<String, Object> withRecordId(Map<String, Object> packet, String recordId, String templateId) {
         if (packet.containsKey("templateId")) {
-            packet.put("templateId", recordId);
+            String written = templateId == null || templateId.isBlank() ? recordId : templateId.trim();
+            packet.put("templateId", written);
         }
         if (packet.containsKey("taskId")) {
             packet.put("taskId", recordId);

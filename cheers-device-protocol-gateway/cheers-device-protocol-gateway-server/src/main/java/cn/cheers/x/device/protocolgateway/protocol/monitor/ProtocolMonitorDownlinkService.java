@@ -28,9 +28,9 @@ import java.util.UUID;
 
 /**
  * 监控页模拟下发：按这台设备已登记的默认协议取出下发空包，经现有连接写出。
- * <p>负责：列出可下发指令。巡检指令包写出生成时记下的那一份。启动、终止、取包、删包改用这台设备已生成执行记录的编号。其余指令只补空包里已有且还空着的设备编号、消息编号。定时上报再按页面选定的开关、频率和重复次数填写。启动推流再按页面选定的推流地址填写；页面没填时用这台已生成任务上分配的收流地址。写出后立刻返回，不等同号答卷。答卷随后出现在这台的报文窗口。
+ * <p>负责：列出可下发指令。巡检指令包写出生成时记下的那一份。启动、终止、取包、删包改用这台设备已生成执行记录的编号。启动包的模板编号默认用这条任务指令包上记下的编号；页面另填时写入这次下发包。其余指令只补空包里已有且还空着的设备编号、消息编号。定时上报再按页面选定的开关、频率和重复次数填写。启动推流再按页面选定的推流地址填写；页面没填时用这台已生成任务上分配的收流地址。写出后立刻返回，不等同号答卷。答卷随后出现在这台的报文窗口。
  * <p>不负责：另开一条设备连接；在这里自己编包内序号。序号由指令翻译按动作清单从 0 递增，单独发出的指令也占一个号。字段说明不要求必填、这次没有值的项，写进下发说明。
- * <p>禁止：设备没登记默认协议时挑一份说明书；任务指令再填协议样例编号；把大疆指令改从地面站连接发出；设备离线仍组包或调用巡检。
+ * <p>禁止：设备没登记默认协议时挑一份说明书；任务指令再填协议样例编号；把执行记录编号写进启动包的模板编号；把大疆指令改从地面站连接发出；设备离线仍组包或调用巡检。
  */
 @Service
 @RequiredArgsConstructor
@@ -72,7 +72,7 @@ public class ProtocolMonitorDownlinkService {
 
     public ProtocolMonitorDownlinkResultDTO send(
             String deviceId, int opcode, Boolean enable, Integer frequency, Integer total, String streamUrl) {
-        return send(deviceId, opcode, enable, frequency, total, streamUrl, null);
+        return send(deviceId, opcode, enable, frequency, total, streamUrl, null, null);
     }
 
     /** 这台设备待执行和正在执行的已生成任务。巡检暂时读不到时返回空名单。 */
@@ -100,6 +100,31 @@ public class ProtocolMonitorDownlinkService {
             Integer total,
             String streamUrl,
             Long executionRecordId) {
+        return send(deviceId, opcode, enable, frequency, total, streamUrl, executionRecordId, null);
+    }
+
+    public ProtocolMonitorDownlinkResultDTO send(
+            String deviceId,
+            int opcode,
+            Boolean enable,
+            Integer frequency,
+            Integer total,
+            String streamUrl,
+            Long executionRecordId,
+            String templateId) {
+        return send(deviceId, opcode, enable, frequency, total, streamUrl, executionRecordId, templateId, null);
+    }
+
+    public ProtocolMonitorDownlinkResultDTO send(
+            String deviceId,
+            int opcode,
+            Boolean enable,
+            Integer frequency,
+            Integer total,
+            String streamUrl,
+            Long executionRecordId,
+            String templateId,
+            String taskId) {
         DeviceRegistrationLookup.Registration registration = registrationLookup.registrationOf(deviceId);
         if (!registration.ok()) {
             throw new IllegalArgumentException(registration.reason());
@@ -114,7 +139,8 @@ public class ProtocolMonitorDownlinkService {
         }
         String msgId = newMsgId();
         if (ProtocolMonitorGeneratedEnvelope.usesGeneratedTask(opcode)) {
-            return sendGenerated(deviceId.trim(), registration.protocol(), opcode, msgId, executionRecordId);
+            return sendGenerated(
+                    deviceId.trim(), registration.protocol(), opcode, msgId, executionRecordId, templateId, taskId);
         }
         ProtocolMonitorDownlinkCatalog.Prepared instruction = catalog.require(registration.protocol(), opcode);
         Map<String, Object> packet = ProtocolMonitorDownlinkFiller.fillIdentity(
@@ -164,27 +190,34 @@ public class ProtocolMonitorDownlinkService {
 
     /**
      * 巡检指令包用生成时记下的正文。没有记下时才按动作清单重译。
-     * 启动、终止、取包、删包的编号来自这台设备已生成的执行记录。
+     * 启动、终止、取包、删包的任务编号来自这台设备已生成的执行记录。
+     * 模板编号先用手填的。没手填时用指令包上记下的。启动和删包两边都没有就拒绝。
+     * 终止任务的任务编号先用手填的。没手填时用执行记录编号。
      */
     private ProtocolMonitorDownlinkResultDTO sendGenerated(
-            String deviceId, String protocol, int opcode, String msgId, Long executionRecordId) {
+            String deviceId,
+            String protocol,
+            int opcode,
+            String msgId,
+            Long executionRecordId,
+            String templateId,
+            String taskId) {
         PatrolGeneratedTaskDownlinkDTO task = requireGeneratedTask(deviceId, executionRecordId);
         if (task.getProtocolVersion() != null && !task.getProtocolVersion().equals(protocol)) {
             throw new IllegalArgumentException("这条执行记录的对接协议和这台设备登记的协议不一致");
         }
         String recordId = String.valueOf(task.getExecutionRecordId());
+        String chosenTemplateId = chosenTemplateId(templateId, task.getCommandTemplateId());
         List<String> notices = List.of();
         String payloadJson;
         boolean storedPackage = false;
         if (opcode == TransportOpcode.COMMAND_SEND.code()) {
             String packages = task.getCommandPackagesJson();
+            String packageTemplateId = chosenTemplateId == null ? recordId : chosenTemplateId;
             if (packages != null && !packages.isBlank()) {
                 storedPackage = true;
-                String templateId = task.getCommandTemplateId() == null || task.getCommandTemplateId().isBlank()
-                        ? recordId
-                        : task.getCommandTemplateId().trim();
                 payloadJson = ProtocolMonitorGeneratedEnvelope.commandSend(
-                        envelopeJsonCodec, msgId, deviceId, templateId, packages);
+                        envelopeJsonCodec, msgId, deviceId, packageTemplateId, packages);
             } else {
                 MissionDownlink downlink = missionTranslationService.translate(
                         planOf(deviceId, protocol, recordId, task), false);
@@ -193,11 +226,12 @@ public class ProtocolMonitorDownlinkService {
                         envelopeJsonCodec,
                         msgId,
                         deviceId,
-                        recordId,
+                        packageTemplateId,
                         ProtocolMonitorGeneratedEnvelope.packagesJson(envelopeJsonCodec, downlink));
             }
         } else {
-            payloadJson = payloadForGenerated(deviceId, protocol, opcode, msgId, recordId, task);
+            payloadJson = payloadForGenerated(
+                    deviceId, protocol, opcode, msgId, recordId, chosenTemplateId, taskId, task);
         }
         runningTaskExchangeRecorder.remember(deviceId, msgId, task.getExecutionRecordId());
         ProtocolMonitorDownlinkResultDTO sent = writeWithoutWaiting(
@@ -240,23 +274,53 @@ public class ProtocolMonitorDownlinkService {
             int opcode,
             String msgId,
             String recordId,
+            String chosenTemplateId,
+            String typedTaskId,
             PatrolGeneratedTaskDownlinkDTO task
     ) {
         if (opcode == TransportOpcode.STARTUP_EXECUTE.code()) {
             if (task.getExecutionTimeEpochSeconds() == null) {
                 throw new IllegalArgumentException("这条执行记录没有计划时刻");
             }
+            if (chosenTemplateId == null) {
+                throw new IllegalArgumentException("这条任务的指令包里没有模板编号");
+            }
             return ProtocolMonitorGeneratedEnvelope.startup(
-                    envelopeJsonCodec, msgId, deviceId, recordId, task.getExecutionTimeEpochSeconds());
+                    envelopeJsonCodec,
+                    msgId,
+                    deviceId,
+                    recordId,
+                    chosenTemplateId,
+                    task.getExecutionTimeEpochSeconds());
         }
         if (opcode == TransportOpcode.TASK_STOP.code()) {
-            return ProtocolMonitorGeneratedEnvelope.stop(envelopeJsonCodec, msgId, deviceId, recordId);
+            String writtenTaskId = typedTaskId == null || typedTaskId.isBlank() ? recordId : typedTaskId.trim();
+            return ProtocolMonitorGeneratedEnvelope.stop(envelopeJsonCodec, msgId, deviceId, writtenTaskId);
+        }
+        if (opcode == TransportOpcode.DELETE_COMMAND_PACKAGE.code()) {
+            if (chosenTemplateId == null) {
+                throw new IllegalArgumentException("这条任务的指令包里没有模板编号");
+            }
+            return ProtocolMonitorGeneratedEnvelope.deletePackage(
+                    envelopeJsonCodec, msgId, deviceId, chosenTemplateId);
         }
         ProtocolMonitorDownlinkCatalog.Prepared instruction = catalog.require(protocol, opcode);
         Map<String, Object> packet = ProtocolMonitorGeneratedEnvelope.withRecordId(
                 ProtocolMonitorDownlinkFiller.fillIdentity(instruction.outbound(), deviceId, msgId),
-                recordId);
+                recordId,
+                chosenTemplateId);
         return envelopeJsonCodec.encodeObject(packet);
+    }
+
+    /** 手填优先。没手填时用指令包上的模板编号。两边都空就返回空，调用方再决定拒绝还是改用执行记录编号。 */
+    private static String chosenTemplateId(String typed, String fromPackage) {
+        if (typed != null && !typed.isBlank()) {
+            return typed.trim();
+        }
+        if (fromPackage != null && !fromPackage.isBlank()) {
+            return fromPackage.trim();
+        }
+        return null;
     }
 
     private static DeviceMissionPlan planOf(

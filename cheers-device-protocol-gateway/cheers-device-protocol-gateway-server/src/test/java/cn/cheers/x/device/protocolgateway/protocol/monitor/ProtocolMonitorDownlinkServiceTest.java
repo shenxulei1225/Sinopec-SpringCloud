@@ -291,6 +291,169 @@ class ProtocolMonitorDownlinkServiceTest {
     }
 
     @Test
+    void startup_usesTemplateIdFromTheCommandPackage() throws Exception {
+        DeviceRegistrationLookup registration = mock(DeviceRegistrationLookup.class);
+        DeviceTransport transport = mock(DeviceTransport.class);
+        InspectionDeviceUplinkApi uplink = mock(InspectionDeviceUplinkApi.class);
+        ObjectMapper mapper = new ObjectMapper();
+        ProtocolMonitorDownlinkService service = new ProtocolMonitorDownlinkService(
+                registration,
+                mock(ProtocolMonitorDownlinkCatalog.class),
+                new EnvelopeJsonCodec(mapper),
+                transport,
+                mock(RunningTaskExchangeRecorder.class),
+                uplink,
+                mock(MissionTranslationService.class));
+        PatrolGeneratedTaskDownlinkDTO task = new PatrolGeneratedTaskDownlinkDTO();
+        task.setExecutionRecordId(923020L);
+        task.setProtocolVersion("robot-ws");
+        task.setExecutionTimeEpochSeconds(1_700_000_000L);
+        task.setCommandTemplateId("patrol-task-910101");
+        when(uplink.generatedTaskRecord("dev-1", 923020L)).thenReturn(CommonResult.success(task));
+        when(registration.registrationOf("dev-1"))
+                .thenReturn(new DeviceRegistrationLookup.Registration("robot-ws", ""));
+        when(transport.isOnline(anyString())).thenReturn(true);
+        when(transport.sendText(eq("dev-1"), anyString())).thenReturn(true);
+        ArgumentCaptor<String> payload = ArgumentCaptor.forClass(String.class);
+
+        service.send("dev-1", 500201, null, null, null, null, 923020L);
+
+        verify(transport).sendText(eq("dev-1"), payload.capture());
+        JsonNode root = mapper.readTree(payload.getValue());
+        assertEquals("923020", root.get("taskId").asText());
+        assertEquals("patrol-task-910101", root.get("templateId").asText());
+    }
+
+    @Test
+    void startup_typedTemplateIdReplacesThePackageOne() throws Exception {
+        DeviceRegistrationLookup registration = mock(DeviceRegistrationLookup.class);
+        DeviceTransport transport = mock(DeviceTransport.class);
+        InspectionDeviceUplinkApi uplink = mock(InspectionDeviceUplinkApi.class);
+        ObjectMapper mapper = new ObjectMapper();
+        ProtocolMonitorDownlinkService service = new ProtocolMonitorDownlinkService(
+                registration,
+                mock(ProtocolMonitorDownlinkCatalog.class),
+                new EnvelopeJsonCodec(mapper),
+                transport,
+                mock(RunningTaskExchangeRecorder.class),
+                uplink,
+                mock(MissionTranslationService.class));
+        PatrolGeneratedTaskDownlinkDTO task = new PatrolGeneratedTaskDownlinkDTO();
+        task.setExecutionRecordId(923020L);
+        task.setProtocolVersion("robot-ws");
+        task.setExecutionTimeEpochSeconds(1_700_000_000L);
+        task.setCommandTemplateId("patrol-task-910101");
+        when(uplink.generatedTaskRecord("dev-1", 923020L)).thenReturn(CommonResult.success(task));
+        when(registration.registrationOf("dev-1"))
+                .thenReturn(new DeviceRegistrationLookup.Registration("robot-ws", ""));
+        when(transport.isOnline(anyString())).thenReturn(true);
+        when(transport.sendText(eq("dev-1"), anyString())).thenReturn(true);
+        ArgumentCaptor<String> payload = ArgumentCaptor.forClass(String.class);
+
+        service.send("dev-1", 500201, null, null, null, null, 923020L, "typed-9");
+
+        verify(transport).sendText(eq("dev-1"), payload.capture());
+        JsonNode root = mapper.readTree(payload.getValue());
+        assertEquals("923020", root.get("taskId").asText());
+        assertEquals("typed-9", root.get("templateId").asText());
+    }
+
+    @Test
+    void startup_withoutTemplateId_isRejected() {
+        DeviceRegistrationLookup registration = mock(DeviceRegistrationLookup.class);
+        DeviceTransport transport = mock(DeviceTransport.class);
+        InspectionDeviceUplinkApi uplink = mock(InspectionDeviceUplinkApi.class);
+        ProtocolMonitorDownlinkService service = new ProtocolMonitorDownlinkService(
+                registration,
+                mock(ProtocolMonitorDownlinkCatalog.class),
+                new EnvelopeJsonCodec(new ObjectMapper()),
+                transport,
+                mock(RunningTaskExchangeRecorder.class),
+                uplink,
+                mock(MissionTranslationService.class));
+        PatrolGeneratedTaskDownlinkDTO task = new PatrolGeneratedTaskDownlinkDTO();
+        task.setExecutionRecordId(923020L);
+        task.setProtocolVersion("robot-ws");
+        task.setExecutionTimeEpochSeconds(1_700_000_000L);
+        when(uplink.generatedTaskRecord("dev-1", 923020L)).thenReturn(CommonResult.success(task));
+        when(registration.registrationOf("dev-1"))
+                .thenReturn(new DeviceRegistrationLookup.Registration("robot-ws", ""));
+        when(transport.isOnline(anyString())).thenReturn(true);
+
+        IllegalArgumentException error = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.send("dev-1", 500201, null, null, null, null, 923020L));
+
+        assertTrue(error.getMessage().contains("模板编号"));
+        verify(transport, never()).sendText(anyString(), anyString());
+    }
+
+    @Test
+    void stop_typedTaskIdReplacesTheRecordId() throws Exception {
+        DeviceRegistrationLookup registration = mock(DeviceRegistrationLookup.class);
+        DeviceTransport transport = mock(DeviceTransport.class);
+        InspectionDeviceUplinkApi uplink = mock(InspectionDeviceUplinkApi.class);
+        ObjectMapper mapper = new ObjectMapper();
+        ProtocolMonitorDownlinkService service = new ProtocolMonitorDownlinkService(
+                registration,
+                mock(ProtocolMonitorDownlinkCatalog.class),
+                new EnvelopeJsonCodec(mapper),
+                transport,
+                mock(RunningTaskExchangeRecorder.class),
+                uplink,
+                mock(MissionTranslationService.class));
+        PatrolGeneratedTaskDownlinkDTO task = new PatrolGeneratedTaskDownlinkDTO();
+        task.setExecutionRecordId(923020L);
+        task.setProtocolVersion("robot-ws");
+        when(uplink.generatedTaskRecord("dev-1", 923020L)).thenReturn(CommonResult.success(task));
+        when(registration.registrationOf("dev-1"))
+                .thenReturn(new DeviceRegistrationLookup.Registration("robot-ws", ""));
+        when(transport.isOnline(anyString())).thenReturn(true);
+        when(transport.sendText(eq("dev-1"), anyString())).thenReturn(true);
+        ArgumentCaptor<String> payload = ArgumentCaptor.forClass(String.class);
+
+        service.send("dev-1", 500205, null, null, null, null, 923020L, null, "typed-task");
+
+        verify(transport).sendText(eq("dev-1"), payload.capture());
+        JsonNode root = mapper.readTree(payload.getValue());
+        assertEquals(500205, root.get("opcode").asInt());
+        assertEquals("typed-task", root.get("taskId").asText());
+    }
+
+    @Test
+    void deletePackage_writesTemplateIdFromTheCommandPackage() throws Exception {
+        DeviceRegistrationLookup registration = mock(DeviceRegistrationLookup.class);
+        DeviceTransport transport = mock(DeviceTransport.class);
+        InspectionDeviceUplinkApi uplink = mock(InspectionDeviceUplinkApi.class);
+        ObjectMapper mapper = new ObjectMapper();
+        ProtocolMonitorDownlinkService service = new ProtocolMonitorDownlinkService(
+                registration,
+                mock(ProtocolMonitorDownlinkCatalog.class),
+                new EnvelopeJsonCodec(mapper),
+                transport,
+                mock(RunningTaskExchangeRecorder.class),
+                uplink,
+                mock(MissionTranslationService.class));
+        PatrolGeneratedTaskDownlinkDTO task = new PatrolGeneratedTaskDownlinkDTO();
+        task.setExecutionRecordId(923020L);
+        task.setProtocolVersion("robot-ws");
+        task.setCommandTemplateId("patrol-task-910101");
+        when(uplink.generatedTaskRecord("dev-1", 923020L)).thenReturn(CommonResult.success(task));
+        when(registration.registrationOf("dev-1"))
+                .thenReturn(new DeviceRegistrationLookup.Registration("robot-ws", ""));
+        when(transport.isOnline(anyString())).thenReturn(true);
+        when(transport.sendText(eq("dev-1"), anyString())).thenReturn(true);
+        ArgumentCaptor<String> payload = ArgumentCaptor.forClass(String.class);
+
+        service.send("dev-1", 500302, null, null, null, null, 923020L);
+
+        verify(transport).sendText(eq("dev-1"), payload.capture());
+        JsonNode root = mapper.readTree(payload.getValue());
+        assertEquals(500302, root.get("opcode").asInt());
+        assertEquals("patrol-task-910101", root.get("templateId").asText());
+    }
+
+    @Test
     void offline_doesNotSendCommandPackage() {
         DeviceRegistrationLookup registration = mock(DeviceRegistrationLookup.class);
         DeviceTransport transport = mock(DeviceTransport.class);
