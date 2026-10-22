@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SimulatorRepliesTest {
@@ -84,7 +85,7 @@ class SimulatorRepliesTest {
         assertEquals("3000", started.path("msgId").asText());
         assertEquals("39.1277217676", started.path("reportPoint").path("lat").asText());
         assertEquals("222222", started.path("reportPoint").path("pointId").asText());
-        assertEquals(3, started.path("reportPoint").path("optime").asInt());
+        assertEquals(3, started.path("reportPoint").path("reportTime").asInt());
         JsonNode step = objectMapper.readTree(steps.get(1));
         assertEquals(500202, step.path("opcode").asInt());
         assertEquals("task-1", step.path("taskId").asText());
@@ -97,6 +98,12 @@ class SimulatorRepliesTest {
         List<String> heartbeat = robot.immediate("{\"opcode\":500105,\"msgId\":\"hb\"}", 4000L);
         assertEquals(1, heartbeat.size());
         assertEquals(500105, objectMapper.readTree(heartbeat.get(0)).path("opcode").asInt());
+
+        JsonNode ownBeat = objectMapper.readTree(robot.heartbeat(4_000L));
+        assertEquals(500105, ownBeat.path("opcode").asInt());
+        assertEquals("hb-4", ownBeat.path("msgId").asText());
+        assertEquals(4L, ownBeat.path("time").asLong());
+        assertNull(replies.heartbeat(4_000L));
     }
 
     @Test
@@ -133,5 +140,17 @@ class SimulatorRepliesTest {
         JsonNode unknown = objectMapper.readTree(replies.immediate(
                 "{\"opcode\":509999,\"msgId\":\"m6\"}", 5003L).get(1));
         assertEquals(900103, unknown.path("code").asInt());
+    }
+
+    @Test
+    void readPacket_blankPackages_isEmptyList() throws Exception {
+        state.savePacket("t-empty", "line-1", "");
+
+        JsonNode body = objectMapper.readTree(replies.immediate(
+                "{\"opcode\":500301,\"msgId\":\"m9\",\"templateId\":\"t-empty\"}", 4000L).get(1));
+
+        assertEquals(200, body.path("code").asInt());
+        assertTrue(body.path("data").path("packages").isArray());
+        assertEquals(0, body.path("data").path("packages").size());
     }
 }

@@ -9,9 +9,11 @@ import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBa
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStepSnapshotDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionUnfinishedOptionDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionWritebackReqDTO;
 
 import java.util.List;
+import cn.cheers.x.module.dynamicbusiness.service.execution.OpenExecutionAccountQuery;
 import cn.cheers.x.module.dynamicbusiness.service.execution.TaskExecutionSessionService;
 import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
@@ -29,6 +31,9 @@ public class TaskExecutionSessionApiImpl implements TaskExecutionSessionApi {
 
     @Resource
     private TaskExecutionSessionService taskExecutionSessionService;
+
+    @Resource
+    private OpenExecutionAccountQuery openExecutionAccountQuery;
 
     @Override
     public CommonResult<TaskExecutionStartRespDTO> start(TaskExecutionStartReqDTO req) {
@@ -67,5 +72,10 @@ public class TaskExecutionSessionApiImpl implements TaskExecutionSessionApi {
     @Override
     public CommonResult<List<TaskExecutionStepSnapshotDTO>> listSteps(Long executionRecordId) {
         return success(taskExecutionSessionService.listSteps(executionRecordId));
+    }
+
+    @Override
+    public CommonResult<List<TaskExecutionUnfinishedOptionDTO>> listUnfinishedForDevice(String deviceId) {
+        return success(openExecutionAccountQuery.listUnfinishedForDevice(deviceId));
     }
 }

@@ -11,6 +11,8 @@ import cn.cheers.x.inspection.task.service.execution.openrun.PatrolOpenRunSnapsh
 import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
 import cn.cheers.x.module.dynamicbusiness.api.entity.EntityRpcApi;
+import cn.cheers.x.module.dynamicbusiness.api.execution.TaskExecutionSessionApi;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionUnfinishedOptionDTO;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,9 +30,10 @@ import java.util.Map;
 
 /**
  * 给协议监控找出这台设备当前要下发的已生成任务。
- * <p>负责：读待执行或正在执行的账，带上执行记录编号、计划时刻、动作清单，以及生成时记下的指令包。
- * <p>不负责：再翻译指令包、把上报写成完成。
- * <p>禁止：没有到点的待执行时编一个任务编号。
+ * <p>负责：任务下拉只读这台设备还没结束的账上的名称、状态、计划时刻、收流地址和模板编号。
+ * 人点中一条，或开跑要选账时，再读那一条的整本账和指令包。
+ * <p>不负责：再翻译指令包、把上报写成完成、在下拉里带回指令包正文。
+ * <p>禁止：没有到点的待执行时编一个任务编号；任务下拉把全部执行账拉回来再筛选。
  */
 @Service
 public class PatrolGeneratedTaskLookup {
@@ -44,15 +47,18 @@ public class PatrolGeneratedTaskLookup {
     private final EntityRpcApi entityRpcApi;
     private final PatrolTaskEntityStore patrolTaskEntityStore;
     private final ObjectMapper objectMapper;
+    private final TaskExecutionSessionApi taskExecutionSessionApi;
 
     public PatrolGeneratedTaskLookup(
             EntityRpcApi entityRpcApi,
             PatrolTaskEntityStore patrolTaskEntityStore,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            TaskExecutionSessionApi taskExecutionSessionApi
     ) {
         this.entityRpcApi = entityRpcApi;
         this.patrolTaskEntityStore = patrolTaskEntityStore;
         this.objectMapper = objectMapper;
+        this.taskExecutionSessionApi = taskExecutionSessionApi;
     }
 
     public PatrolGeneratedTaskDownlinkDTO forDevice(String deviceId) {
@@ -69,39 +75,41 @@ public class PatrolGeneratedTaskLookup {
     /**
      * 这台设备待执行和正在执行的已生成任务，供监控页点选。
      * 还没到点的也在里面。已结束的不列。
+     * 只读下拉要的几项，不把指令包正文拉回来。
      */
     public List<PatrolGeneratedTaskOptionDTO> listForDevice(String deviceId) {
-        List<EntityRespDTO> records = loadRecords();
-        Map<Long, EntityRespDTO> byId = new LinkedHashMap<>();
-        for (EntityRespDTO record : records) {
-            if (record != null && record.getId() != null) {
-                byId.put(record.getId(), record);
-            }
+        if (!StringUtils.hasText(deviceId)) {
+            return List.of();
         }
-        List<PatrolGeneratedTaskOptionDTO> options = new ArrayList<>();
-        for (PatrolGeneratedTaskSelector.Candidate candidate : PatrolGeneratedTaskSelector.listed(
-                candidates(records), deviceId)) {
-            EntityRespDTO record = byId.get(candidate.id());
-            if (record == null) {
+        String wanted = deviceId.trim();
+        List<TaskExecutionUnfinishedOptionDTO> rows = loadUnfinished(wanted);
+        Map<Long, TaskExecutionUnfinishedOptionDTO> byId = new LinkedHashMap<>();
+        List<PatrolGeneratedTaskSelector.Candidate> candidates = new ArrayList<>();
+        for (TaskExecutionUnfinishedOptionDTO row : rows) {
+            if (row == null || row.getExecutionRecordId() == null) {
                 continue;
             }
-            Map<String, Object> fields = record.getCustomFields() == null ? Map.of() : record.getCustomFields();
-            PatrolGeneratedTaskOptionDTO option = new PatrolGeneratedTaskOptionDTO();
-            option.setExecutionRecordId(record.getId());
-            option.setRecordName(text(mapOf(record.getBaseFields()).get("name")));
-            option.setExecutionStatus(candidate.status());
-            option.setPlannedStart(text(fields.get("planned_start")));
-            Map<String, Object> snapshot = mapOf(fields.get("standard_snapshot"));
-            option.setMediaStreamUrl(text(snapshot.get(PatrolOpenRunSnapshotKeys.TASK_RECORD_INGEST_URL)));
-            // 名单仍列出这条任务。指令包正文读不出来时模板编号留空，启动时再拒绝。
-            try {
-                StoredCommandPackage stored = storedCommandPackage(snapshot, objectMapper);
-                if (stored != null && StringUtils.hasText(stored.templateId())) {
-                    option.setCommandTemplateId(stored.templateId().trim());
-                }
-            } catch (RuntimeException ignored) {
-                option.setCommandTemplateId(null);
+            byId.put(row.getExecutionRecordId(), row);
+            candidates.add(new PatrolGeneratedTaskSelector.Candidate(
+                    row.getExecutionRecordId(),
+                    row.getRecordName(),
+                    row.getExecutionStatus(),
+                    wanted,
+                    plannedStart(row.getPlannedStart())));
+        }
+        List<PatrolGeneratedTaskOptionDTO> options = new ArrayList<>();
+        for (PatrolGeneratedTaskSelector.Candidate candidate : PatrolGeneratedTaskSelector.listed(candidates, wanted)) {
+            TaskExecutionUnfinishedOptionDTO row = byId.get(candidate.id());
+            if (row == null) {
+                continue;
             }
+            PatrolGeneratedTaskOptionDTO option = new PatrolGeneratedTaskOptionDTO();
+            option.setExecutionRecordId(row.getExecutionRecordId());
+            option.setRecordName(row.getRecordName());
+            option.setExecutionStatus(candidate.status());
+            option.setPlannedStart(row.getPlannedStart());
+            option.setMediaStreamUrl(text(row.getMediaStreamUrl()));
+            option.setCommandTemplateId(text(row.getCommandTemplateId()));
             options.add(option);
         }
         return options;
@@ -170,6 +178,19 @@ public class PatrolGeneratedTaskLookup {
             return PatrolGeneratedTaskSelector.RunningMatch.skipped(
                     message == null || message.isBlank() ? "读不到巡检执行记录" : message);
         }
+    }
+
+    /**
+     * 任务下拉只拿这台设备还没结束的账。缺结果就停，不改去拉全部执行账。
+     */
+    private List<TaskExecutionUnfinishedOptionDTO> loadUnfinished(String deviceId) {
+        CommonResult<List<TaskExecutionUnfinishedOptionDTO>> listed =
+                taskExecutionSessionApi.listUnfinishedForDevice(deviceId);
+        if (listed == null || !listed.isSuccess() || listed.getData() == null) {
+            throw ServiceExceptionUtil.invalidParamException(
+                    listed != null && StringUtils.hasText(listed.getMsg()) ? listed.getMsg() : "读不到这台设备还没结束的执行账");
+        }
+        return listed.getData();
     }
 
     private List<EntityRespDTO> loadRecords() {

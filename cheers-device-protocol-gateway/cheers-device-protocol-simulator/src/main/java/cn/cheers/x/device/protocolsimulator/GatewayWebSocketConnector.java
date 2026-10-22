@@ -22,7 +22,7 @@ import java.util.concurrent.Executors;
 
 /**
  * 模拟器作为设备，连到协议网关的设备口。
- * <p>负责：连上、把网关下发交给应答、把应答写回同一条连接。网关没开时只记下连不上，不退出。
+ * <p>负责：连上、把网关下发交给应答、把应答写回同一条连接。机器人每 10 秒自己发一包心跳。网关没开时只记下连不上，不退出。
  * <p>不负责：协议网关自己的监听。
  * <p>禁止：连回老平台的 8501 端口。
  */
@@ -43,10 +43,15 @@ public class GatewayWebSocketConnector {
 
     private volatile WebSocketClient client;
 
+    /** 每 10 秒确认连接还在。机器人在同一拍发心跳。定时状态仍只在平台打开之后发。 */
     @Scheduled(fixedRate = 10_000)
     public void keepConnectedAndReport() {
         connectIfNeeded();
         long now = System.currentTimeMillis();
+        String heartbeat = replies.heartbeat(now);
+        if (heartbeat != null) {
+            send(heartbeat);
+        }
         state.enabledReports().forEach((deviceId, report) -> {
             send(replies.timedStatus(deviceId, report.sent() + 1, now));
             state.markReported(deviceId);

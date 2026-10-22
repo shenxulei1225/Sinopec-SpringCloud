@@ -36,7 +36,7 @@ public class PatrolTaskExecutionRecordMediaBinder {
         writeMedia(executionRecordId, media);
     }
 
-    /** 整次结束：在已有绑定上补 recordFileUrl（仅当配置了 record-file-url-template）。 */
+    /** 整次结束：在已有绑定上补 recordFileUrl。地址用流媒体服务器主机拼出。 */
     public void refreshRecordFileUrl(Long executionRecordId) {
         EntityRespDTO record = requireRecord(executionRecordId);
         Map<String, Object> existing = readMediaMap(record);

@@ -111,6 +111,15 @@ public class EnvelopeJsonCodec {
         return code.asInt();
     }
 
+    /** 周期状态开关。报文里没有这个布尔值时返回空，不猜开或关。 */
+    public Boolean readEnable(String payloadJson) {
+        JsonNode enable = readRoot(payloadJson).get("enable");
+        if (enable == null || !enable.isBoolean()) {
+            return null;
+        }
+        return enable.asBoolean();
+    }
+
     /**
      * 通信层回执：表示收到了；不当业务成功。
      */

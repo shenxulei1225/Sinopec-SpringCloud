@@ -3,6 +3,7 @@ package cn.cheers.x.device.protocolgateway.protocol.uplink;
 import cn.cheers.x.device.protocolgateway.api.dto.DeviceUplinkEventDTO;
 import cn.cheers.x.device.protocolgateway.api.opcode.InstructionExchangeCatalog;
 import cn.cheers.x.device.protocolgateway.api.opcode.InstructionExchangeMode;
+import cn.cheers.x.device.protocolgateway.api.opcode.TransportOpcode;
 import cn.cheers.x.device.protocolgateway.datacollection.CollectionQualifyService;
 import cn.cheers.x.device.protocolgateway.protocol.envelope.EnvelopeJsonCodec;
 import cn.cheers.x.device.protocolgateway.protocol.exchange.RunningTaskExchangeRecorder;
@@ -19,7 +20,7 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * 通信层收包入口：按固定顺序处理心跳、回执、同步答卷、其余上报。
- * <p>负责：设备心跳只记账（在线/监控/往来），立刻回执、完成正在等的同号答卷、将其余包送进总线；进监控窗口复制上报原文。收回的原文、心跳和回执只送进往来队列。状态里的经纬度另送回放位置队列，同一设备一秒内只留一个点。
+ * <p>负责：设备心跳只记账（在线/监控/往来），立刻回执、完成正在等的同号答卷、将其余包送进总线；进监控窗口复制上报原文。收回的原文、心跳和回执只送进往来队列。回执只查看消息编号，不拿走，同号业务答卷再用。定时状态记到打开周期状态的那条执行。状态里的经纬度另送回放位置队列，同一设备一秒内只留一个点。
  * <p>设备上行 {@code 500105} 不再写回心跳，避免与会对回心跳的设备 ping-pong；平台下发心跳仍由写出路径负责。
  * <p>不负责：填协议空包、读巡检库、判断巡检步骤成败、监控页展示、猜通道、按字段说明做合格核对、在这条线程上写执行账。
  * <p>禁止：在本方法里 HTTP / 写库；把回执当成业务成功；通道空了默认成巡检；把原文当业务主契约。
@@ -59,7 +60,12 @@ public class UplinkIngressService {
             log.error("[device-protocol] 收包无法解析 opcode deviceId={} payload={}", deviceId, payloadJson);
             return;
         }
-        Long linked = runningTaskExchangeRecorder.linked(deviceId, msgId);
+        Long linked = opcode == TransportOpcode.ACK.code()
+                ? runningTaskExchangeRecorder.peek(deviceId, msgId)
+                : runningTaskExchangeRecorder.linked(deviceId, msgId);
+        if ((linked == null || linked <= 0L) && opcode == TransportOpcode.TIMED_DEVICE_STATUS.code()) {
+            linked = runningTaskExchangeRecorder.timedStatusRecord(deviceId);
+        }
         if (linked == null || linked <= 0L) {
             linked = null;
             runningTaskExchangeRecorder.enqueue(deviceId, TaskExchangeTranscriptReqDTO.INBOUND, payloadJson);

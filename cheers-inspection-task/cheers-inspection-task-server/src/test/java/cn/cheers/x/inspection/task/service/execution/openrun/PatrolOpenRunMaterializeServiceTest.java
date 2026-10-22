@@ -7,6 +7,7 @@ import cn.cheers.x.inspection.task.model.task.ExecutionDeviceBinding;
 import cn.cheers.x.inspection.task.model.task.InspectionContent;
 import cn.cheers.x.inspection.task.service.execution.steptree.PatrolTaskStepTreeReader;
 import cn.cheers.x.inspection.task.service.execution.steptree.TaskStepNode;
+import cn.cheers.x.inspection.task.service.task.Go2RtcStreamRegistrar;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskRecordIngestAllocator;
@@ -30,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -46,6 +48,7 @@ class PatrolOpenRunMaterializeServiceTest {
     private EntityRpcApi entityRpc;
     private PatrolMissionTranslateService translateService;
     private PatrolTaskRecordIngestAllocator ingestAllocator;
+    private Go2RtcStreamRegistrar streamRegistrar;
     private PatrolOpenRunMaterializeService service;
 
     @BeforeEach
@@ -56,11 +59,13 @@ class PatrolOpenRunMaterializeServiceTest {
         entityRpc = mock(EntityRpcApi.class);
         translateService = mock(PatrolMissionTranslateService.class);
         ingestAllocator = new PatrolTaskRecordIngestAllocator("rtsp://127.0.0.1:8554/ingest", "");
+        streamRegistrar = mock(Go2RtcStreamRegistrar.class);
         when(translateService.commitForMaterialize(any())).thenReturn(sampleCommittedDownlink());
         when(translateService.commitForMaterialize(any(), any(), nullable(String.class)))
                 .thenReturn(sampleCommittedDownlink());
         service = new PatrolOpenRunMaterializeService(
-                store, catalog, sessionApi, entityRpc, new ObjectMapper(), translateService, ingestAllocator);
+                store, catalog, sessionApi, entityRpc, new ObjectMapper(), translateService, ingestAllocator,
+                streamRegistrar);
         when(catalog.loadPatrolTaskStepTree(1L)).thenReturn(List.of(
                 new TaskStepNode(
                         "a1", 0, null, TaskStepNode.HANG_ACTION, "capture", 11L, "拍照", null,
@@ -120,7 +125,9 @@ class PatrolOpenRunMaterializeServiceTest {
         EntityRespDTO pending = new EntityRespDTO();
         pending.setCustomFields(Map.of("execution_status", "pending"));
         EntityRespDTO startedRecord = new EntityRespDTO();
-        startedRecord.setCustomFields(Map.of("execution_status", "in_progress"));
+        startedRecord.setCustomFields(Map.of(
+                "execution_status", "in_progress",
+                "standard_snapshot", Map.of("taskRecordStreamName", "patrol-1-running")));
         when(entityRpc.getEntity(eq(55L), any())).thenReturn(CommonResult.success(pending));
         when(entityRpc.getEntity(eq(56L), any())).thenReturn(CommonResult.success(startedRecord));
         when(sessionApi.deletePending(55L)).thenReturn(CommonResult.success(true));
@@ -139,6 +146,7 @@ class PatrolOpenRunMaterializeServiceTest {
         verify(store).dropPendingExecutionSlots(eq(1L), eq(List.of("old-pending")));
         verify(sessionApi).startBatch(any());
         verify(store, never()).dropPendingExecutionSlots(eq(1L), eq(List.of("old-started")));
+        verify(streamRegistrar).replaceTaskReceiveSlots(1L, List.of("patrol-1-s1", "patrol-1-running"));
     }
 
     @Test
@@ -172,6 +180,7 @@ class PatrolOpenRunMaterializeServiceTest {
         verify(translateService, times(1)).commitForMaterialize(any(), storageKey.capture(), translatedUrl.capture());
         assertEquals("patrol-task-1", storageKey.getValue());
         assertEquals("rtsp://127.0.0.1:8554/ingest/patrol-1-s1", translatedUrl.getValue());
+        verify(streamRegistrar).replaceTaskReceiveSlots(1L, List.of("patrol-1-s1", "patrol-1-s2"));
         ArgumentCaptor<TaskExecutionStartBatchReqDTO> captor =
                 ArgumentCaptor.forClass(TaskExecutionStartBatchReqDTO.class);
         verify(sessionApi, times(2)).startBatch(captor.capture());
@@ -211,6 +220,7 @@ class PatrolOpenRunMaterializeServiceTest {
 
         verify(translateService, times(1)).commitForMaterialize(any(), eq("patrol-task-1"), eq(null));
         verify(translateService, never()).commitForMaterialize(any());
+        verify(streamRegistrar, never()).replaceTaskReceiveSlots(any(Long.class), any());
         ArgumentCaptor<TaskExecutionStartBatchReqDTO> captor =
                 ArgumentCaptor.forClass(TaskExecutionStartBatchReqDTO.class);
         verify(sessionApi).startBatch(captor.capture());
@@ -220,6 +230,17 @@ class PatrolOpenRunMaterializeServiceTest {
         assertTrue(snapshot.get("dispatchDownlinkPieces") instanceof List<?> pieces && pieces.size() == 1);
         assertEquals("wayline-88", snapshot.get("waylineFileId"));
         assertEquals("fp-88", snapshot.get("waylineFingerprint"));
+    }
+
+    @Test
+    void materialize_streamRegisterFails_stopsWithoutCreatingRecord() {
+        doThrow(new IllegalStateException("流媒体没起来"))
+                .when(streamRegistrar).replaceTaskReceiveSlots(1L, List.of("patrol-1-s1"));
+
+        assertThrows(IllegalStateException.class,
+                () -> service.materializeAllSlots(sampleDraft(8L), List.of(slot("s1"))));
+
+        verify(sessionApi, never()).startBatch(any());
     }
 
     @Test

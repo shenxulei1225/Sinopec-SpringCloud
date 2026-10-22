@@ -30,6 +30,8 @@ import java.util.Set;
  * 组装模型 CRUD 表单字段 JSON（供 model_crud_form_definition.crudFormFields 持久化）。
  *
  * <p>字段范围：业务类型基础字段 + 模型扩展字段；排除系统自动生成、不可编辑的元数据字段。</p>
+ * <p>目录基础字段默认进每个型号的表单。目录上新建、编辑、详情都标明不显示，且本型号没有分配这一栏时，不进本型号表单。
+ * 型号分配上写了是否显示时，以该型号为准。</p>
  * <p>输出结构与前端 {@code RequestBodyField} / {@code parseModelCrudFormPayload} 对齐。</p>
  */
 public final class ModelCrudFormFieldAssembler {
@@ -86,6 +88,7 @@ public final class ModelCrudFormFieldAssembler {
                 resolvePlatformLabel(platformFieldLabels, "status", "状态")));
         // 组织上级：仅当高级分类系统已挂接 parentId / TREE_PARENT 字段时，由下方基础字段/分配行进入表单
 
+        Set<String> assignedFieldCodes = assignedFieldCodes(assigns, fieldById);
         if (includeBaseFields && baseFieldByCode != null && !baseFieldByCode.isEmpty()) {
             List<EntityTypeBaseFieldDO> sortedBaseFields = new ArrayList<>(baseFieldByCode.values());
             sortedBaseFields.sort(Comparator.comparingInt(base -> base.getSortOrder() != null ? base.getSortOrder() : 0));
@@ -95,6 +98,10 @@ public final class ModelCrudFormFieldAssembler {
                 }
                 String code = baseField.getFieldCode().trim();
                 if (shouldSkipField(code, baseField, null)) {
+                    continue;
+                }
+                // 目录标明三处都不显示、本型号又没分配：这一栏不属于本型号。
+                if (!assignedFieldCodes.contains(code) && catalogFormHidden(baseField)) {
                     continue;
                 }
                 FieldDO libraryField = baseField.getLibraryFieldId() != null && fieldById != null
@@ -429,6 +436,8 @@ public final class ModelCrudFormFieldAssembler {
         if (baseField != null) {
             applyBaseFieldTypeConfig(item, baseField);
         }
+        // 目录可以隐藏这一栏。本型号分配写了显示时，新建/编辑/详情以本型号为准。
+        applyAssignmentFormVisibility(item, assign.getValidationRules());
         applyFieldTypeExtensions(item, entityTypeCode, field, fieldType, assign, refResolveContext);
 
         // 展示分组不改变基础字段或自定义字段。没被移走的基础字段仍归在基本信息。
@@ -546,6 +555,61 @@ public final class ModelCrudFormFieldAssembler {
         if (StringUtils.hasText(rules.getString("valueShape"))) {
             item.put("valueShape", rules.getString("valueShape").trim());
         }
+    }
+
+    /**
+     * 目录基础字段三处都标明不显示。缺任何一项都不算隐藏，避免把没写配置的栏从型号表单拿掉。
+     */
+    private static boolean catalogFormHidden(EntityTypeBaseFieldDO baseField) {
+        JSONObject config = parseJsonObject(baseField.getTypeConfig());
+        if (config == null
+                || !config.containsKey("createVisible")
+                || !config.containsKey("editVisible")
+                || !config.containsKey("detailVisible")) {
+            return false;
+        }
+        return Boolean.FALSE.equals(config.getBoolean("createVisible"))
+                && Boolean.FALSE.equals(config.getBoolean("editVisible"))
+                && Boolean.FALSE.equals(config.getBoolean("detailVisible"));
+    }
+
+    private static Set<String> assignedFieldCodes(
+            List<ModelFieldAssignmentDO> assigns,
+            Map<Long, FieldDO> fieldById) {
+        Set<String> codes = new HashSet<>();
+        if (assigns == null) {
+            return codes;
+        }
+        for (ModelFieldAssignmentDO assign : assigns) {
+            if (assign == null) {
+                continue;
+            }
+            if (StringUtils.hasText(assign.getFieldCode())) {
+                codes.add(assign.getFieldCode().trim());
+                continue;
+            }
+            if (assign.getFieldId() == null || fieldById == null) {
+                continue;
+            }
+            FieldDO field = fieldById.get(assign.getFieldId());
+            if (field != null && StringUtils.hasText(field.getCode())) {
+                codes.add(field.getCode().trim());
+            }
+        }
+        return codes;
+    }
+
+    /**
+     * 型号分配里的显示开关。写在分配规则上，盖过目录基础字段的隐藏。
+     */
+    private static void applyAssignmentFormVisibility(Map<String, Object> item, String validationRulesJson) {
+        JSONObject rules = parseJsonObject(validationRulesJson);
+        if (rules == null || rules.isEmpty()) {
+            return;
+        }
+        copyBooleanRule(item, rules, "createVisible", "create_visible");
+        copyBooleanRule(item, rules, "editVisible", "edit_visible");
+        copyBooleanRule(item, rules, "detailVisible", "detail_visible");
     }
 
     private static void applyBaseFieldTypeConfig(Map<String, Object> item, EntityTypeBaseFieldDO baseField) {

@@ -65,7 +65,7 @@ JOIN (
       'NUMBER',
       false,
       NULL,
-      '智能分析模块中的能力编号。未接入能力目录时不得填写假值。',
+      '智能分析动作引用的平台分析能力编号。只在智能分析动作型号上填写。',
       '{"createVisible":false,"editVisible":false,"detailVisible":false}',
       12
     )

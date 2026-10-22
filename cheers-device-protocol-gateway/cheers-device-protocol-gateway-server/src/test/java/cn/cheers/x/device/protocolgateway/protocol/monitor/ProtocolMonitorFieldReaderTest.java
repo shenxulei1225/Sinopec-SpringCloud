@@ -136,6 +136,24 @@ class ProtocolMonitorFieldReaderTest {
     }
 
     @Test
+    void listTemplates_capitalData_stillShowsTemplateId() {
+        ProtocolMonitorFieldReader reader = reader((opcode, version, volume) -> CatalogLookup.found(List.of(
+                new FieldDescriptionRow("data", "object", "返回消息体", true),
+                new FieldDescriptionRow("data.templates", "array", "任务模板", true),
+                new FieldDescriptionRow("data.templates[].templateId", "string", "任务模板编号", true),
+                new FieldDescriptionRow("data.templates[].lineId", "string", "指令报文id", true)
+        )));
+        ProtocolMonitorEventDTO shown = reader.present(new ProtocolMonitorEventDTO(
+                "e-list-data", "sim-parse-001", "inbound", 500303, "m1", "列出任务模板 id的响应", "",
+                "{\"opcode\":500303,\"msgId\":\"m1\",\"code\":200,\"msg\":\"ok\",\"Data\":{\"templates\":[{\"templateId\":\"patrol-task-910101\",\"lineId\":\"patrol-task-910101\"}]}}",
+                1L, List.of(), null));
+        assertNull(fieldOf(shown, "data").issue());
+        assertEquals("patrol-task-910101", valueOf(shown, "data.templates[0].templateId"));
+        assertNull(fieldOf(shown, "data.templates[0].templateId").issue());
+        assertEquals("patrol-task-910101", valueOf(shown, "data.templates[0].lineId"));
+    }
+
+    @Test
     void heartbeat_withCode_usesOutboundVolume() {
         ProtocolMonitorFieldReader reader = reader((opcode, version, volume) -> {
             assertEquals(500105, opcode);

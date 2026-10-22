@@ -20,7 +20,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * 东古地面站和大疆上云的往来原文交给巡检。
  * 报文里有任务 id 或飞行编号就记到那次。平台这次下发已经知道执行记录时，指令包和同号答卷也记到这次。
- * 否则一条正在执行，或只有一条已经到点的待执行，才记入。
+ * 回执只核对消息编号，不拿走这次对应。同号业务答卷再用一次。
+ * 打开周期状态时记下这条执行。之后这台设备的定时状态记到这条，不在多条到点待执行里挑。
+ * 其余对不上的报文：一条正在执行，或只有一条已经到点的待执行，才记入。
  * <p>收包线程只排队。写出发生在另一条线程，或发生在下发请求自己的线程。
  * 东古状态里的经纬度另存成回放位置，不写进过程列表。
  * <p>不负责：判断步骤成败、改执行状态。
@@ -37,6 +39,8 @@ public class RunningTaskExchangeRecorder {
     private final InspectionDeviceUplinkApi inspectionDeviceUplinkApi;
     private final BlockingQueue<Pending> queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
     private final ConcurrentMap<String, Link> replyLinks = new ConcurrentHashMap<>();
+    /** 这台设备的周期状态当前记在哪条执行上。定时状态会连续上来，这里不按条数用完。 */
+    private final ConcurrentMap<String, Link> timedStatusByDevice = new ConcurrentHashMap<>();
     private final AtomicBoolean running = new AtomicBoolean(false);
     private Thread worker;
 
@@ -110,13 +114,55 @@ public class RunningTaskExchangeRecorder {
     }
 
     /**
-     * 收回的同号答卷用一次就拿掉。超过十分钟的编号不再挂。
+     * 回执先到时只查看，不拿走。同号业务答卷还要用这个编号。
+     */
+    public Long peek(String deviceId, String msgId) {
+        return readLink(deviceId, msgId, false);
+    }
+
+    /**
+     * 收回的同号业务答卷用一次就拿掉。超过十分钟的编号不再挂。
      */
     public Long linked(String deviceId, String msgId) {
+        return readLink(deviceId, msgId, true);
+    }
+
+    /**
+     * 这条执行打开了这台设备的周期状态。之后的定时状态记到这条执行。
+     */
+    public void bindTimedStatus(String deviceId, Long executionRecordId) {
+        if (blank(deviceId) || executionRecordId == null || executionRecordId <= 0L) {
+            return;
+        }
+        timedStatusByDevice.put(deviceId.trim(), new Link(executionRecordId, System.currentTimeMillis()));
+    }
+
+    /** 这条执行关掉周期状态后，后面的定时状态不再记到它。 */
+    public void clearTimedStatus(String deviceId) {
+        if (blank(deviceId)) {
+            return;
+        }
+        timedStatusByDevice.remove(deviceId.trim());
+    }
+
+    /** 这台设备的定时状态当前记在哪条执行上。连续上报不拿掉。 */
+    public Long timedStatusRecord(String deviceId) {
+        if (blank(deviceId)) {
+            return null;
+        }
+        Link link = timedStatusByDevice.get(deviceId.trim());
+        if (link == null || link.recordId() == null || link.recordId() <= 0L) {
+            return null;
+        }
+        return link.recordId();
+    }
+
+    private Long readLink(String deviceId, String msgId, boolean consume) {
         if (blank(deviceId) || blank(msgId)) {
             return null;
         }
-        Link link = replyLinks.remove(key(deviceId, msgId));
+        String linkKey = key(deviceId, msgId);
+        Link link = consume ? replyLinks.remove(linkKey) : replyLinks.get(linkKey);
         if (link == null || link.recordId() == null || link.recordId() <= 0L
                 || System.currentTimeMillis() - link.at() > LINK_TTL_MS) {
             return null;

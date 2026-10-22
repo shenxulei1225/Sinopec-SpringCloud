@@ -35,7 +35,7 @@ public final class TaskPatrolRecordingSupport {
         return ProtocolDispatchProfile.taskLevelRecordingEnabled(means, protocolVersion);
     }
 
-    /** 服务器收流（rstp），物化时必须写入 stream_url。 */
+    /** 服务器收流写在 request.streamUrl。物化时必须写入 stream_url。 */
     public static boolean usesServerIngest(String protocolVersion) {
         return ProtocolDispatchProfile.usesServerIngest(protocolVersion);
     }

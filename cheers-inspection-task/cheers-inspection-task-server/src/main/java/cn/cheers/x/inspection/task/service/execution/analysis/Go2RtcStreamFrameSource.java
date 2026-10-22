@@ -1,6 +1,6 @@
 package cn.cheers.x.inspection.task.service.execution.analysis;
 
-import org.springframework.beans.factory.annotation.Value;
+import cn.cheers.x.inspection.task.service.task.PatrolMediaAddress;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -22,10 +22,11 @@ public class Go2RtcStreamFrameSource implements StreamFrameSource {
             .followRedirects(HttpClient.Redirect.NEVER)
             .build();
 
-    public Go2RtcStreamFrameSource(
-            @Value("${patrol.media.frame-url-template:http://127.0.0.1:1984/api/frame.jpeg?src={streamName}}")
-            String frameUrlTemplate) {
-        this.frameUrlTemplate = frameUrlTemplate;
+    /**
+     * 抽帧地址用流媒体服务器主机拼出来。主机没配时服务起不来，这里不另编地址。
+     */
+    public Go2RtcStreamFrameSource(PatrolMediaAddress media) {
+        this.frameUrlTemplate = media.frameUrlTemplate();
     }
 
     @Override

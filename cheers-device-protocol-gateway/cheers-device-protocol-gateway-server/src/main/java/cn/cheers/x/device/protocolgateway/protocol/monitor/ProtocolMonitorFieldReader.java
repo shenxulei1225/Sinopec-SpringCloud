@@ -23,6 +23,7 @@ import java.util.Map;
 /**
  * 按字段说明把报文里的值填上中文名，给监控页右边那一栏。
  * <p>名字只用说明书上的 label。设备没登记协议版本时，多份说明书不一致就写原因，不挑一份。
+ * 说明书上的键名和报文里的键名只差大小写时，仍填到这一行。不改窗口原文。
  * <p>说明书里的每一行都留下，对象和列表只占一层，值写在它下面的字段上。
  * <p>列表里的每一条指令单独成一步。这一步只带自己的序号、操作码和参数，不把后面各步的同一项拼进同一格。
  * <p>不负责：改窗口原文、改协议合格结论、把整段对象再铺成 JSON。
@@ -190,8 +191,8 @@ public class ProtocolMonitorFieldReader implements ProtocolMonitorFieldPresenter
             return "第 " + (index + 1) + " 项";
         }
         List<String> parts = new ArrayList<>();
-        addTitlePart(parts, children, root + "[].sequence", map.get("sequence"));
-        addTitlePart(parts, children, root + "[].opcode", map.get("opcode"));
+        addTitlePart(parts, children, root + "[].sequence", FieldDescriptionQualifier.valueAtKey(map, "sequence"));
+        addTitlePart(parts, children, root + "[].opcode", FieldDescriptionQualifier.valueAtKey(map, "opcode"));
         if (parts.isEmpty()) {
             return "第 " + (index + 1) + " 项";
         }
@@ -251,7 +252,7 @@ public class ProtocolMonitorFieldReader implements ProtocolMonitorFieldPresenter
             if (!(node instanceof Map<?, ?> map)) {
                 return List.of();
             }
-            node = map.get(part);
+            node = FieldDescriptionQualifier.valueAtKey(map, part);
         }
         return node instanceof List<?> list ? list : List.of();
     }
@@ -264,10 +265,10 @@ public class ProtocolMonitorFieldReader implements ProtocolMonitorFieldPresenter
         for (String rawPart : path.split("\\.")) {
             boolean each = rawPart.endsWith("[]");
             String key = each ? rawPart.substring(0, rawPart.length() - 2) : rawPart;
-            if (!(node instanceof Map<?, ?> map) || !map.containsKey(key)) {
+            if (!(node instanceof Map<?, ?> map) || !FieldDescriptionQualifier.hasKey(map, key)) {
                 return false;
             }
-            Object child = map.get(key);
+            Object child = FieldDescriptionQualifier.valueAtKey(map, key);
             if (!each) {
                 node = child;
                 continue;

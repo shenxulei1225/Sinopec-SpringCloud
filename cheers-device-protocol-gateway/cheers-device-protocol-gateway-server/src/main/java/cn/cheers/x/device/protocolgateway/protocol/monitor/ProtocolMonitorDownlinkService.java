@@ -28,9 +28,9 @@ import java.util.UUID;
 
 /**
  * 监控页模拟下发：按这台设备已登记的默认协议取出下发空包，经现有连接写出。
- * <p>负责：列出可下发指令。巡检指令包写出生成时记下的那一份。启动、终止、取包、删包改用这台设备已生成执行记录的编号。启动包的模板编号默认用这条任务指令包上记下的编号；页面另填时写入这次下发包。其余指令只补空包里已有且还空着的设备编号、消息编号。定时上报再按页面选定的开关、频率和重复次数填写。启动推流再按页面选定的推流地址填写；页面没填时用这台已生成任务上分配的收流地址。写出后立刻返回，不等同号答卷。答卷随后出现在这台的报文窗口。
+ * <p>负责：按设备登记的协议列出下发指令，读到就返回。巡检指令包写出生成时记下的那一份。启动、终止、取包、删包改用这台设备已生成执行记录的编号。启动包的模板编号默认用这条任务指令包上记下的编号；页面另填时写入这次下发包。其余指令只补空包里已有且还空着的设备编号、消息编号。定时上报再按页面选定的开关、频率和重复次数填写。启动推流只写请求里带来的推流地址。写出后立刻返回，不等同号答卷。答卷随后出现在这台的报文窗口。
  * <p>不负责：另开一条设备连接；在这里自己编包内序号。序号由指令翻译按动作清单从 0 递增，单独发出的指令也占一个号。字段说明不要求必填、这次没有值的项，写进下发说明。
- * <p>禁止：设备没登记默认协议时挑一份说明书；任务指令再填协议样例编号；把执行记录编号写进启动包的模板编号；把大疆指令改从地面站连接发出；设备离线仍组包或调用巡检。
+ * <p>禁止：设备没登记默认协议时挑一份说明书；读指令列表时再查执行账；启动推流没带地址时再查执行账；任务指令再填协议样例编号；把执行记录编号写进启动包的模板编号；把大疆指令改从地面站连接发出；设备离线仍组包或调用巡检。
  */
 @Service
 @RequiredArgsConstructor
@@ -47,17 +47,20 @@ public class ProtocolMonitorDownlinkService {
     private final InspectionDeviceUplinkApi inspectionDeviceUplinkApi;
     private final MissionTranslationService missionTranslationService;
 
+    /**
+     * 这台设备登记的协议，以及这份协议里的下发指令。
+     * 读到就返回。不查执行账，也不附带推流地址。
+     */
     public ProtocolMonitorInstructionListDTO list(String deviceId) {
         DeviceRegistrationLookup.Registration registration = registrationLookup.registrationOf(deviceId);
         if (!registration.ok()) {
-            return new ProtocolMonitorInstructionListDTO("", "", registration.reason(), List.of(), "");
+            return new ProtocolMonitorInstructionListDTO("", "", registration.reason(), List.of());
         }
         return new ProtocolMonitorInstructionListDTO(
                 registration.protocol(),
                 ProtocolCodes.label(registration.protocol()),
                 "",
-                catalog.list(registration.protocol()),
-                streamUrlOf(deviceId, null)
+                catalog.list(registration.protocol())
         );
     }
 
@@ -155,26 +158,40 @@ public class ProtocolMonitorDownlinkService {
             ProtocolMonitorDownlinkFiller.applyReportSwitch(packet, enable, frequency, total);
         }
         if (opcode == TransportOpcode.STREAM_START.code()) {
-            String address = streamUrl == null || streamUrl.isBlank()
-                    ? streamUrlOf(deviceId, executionRecordId)
-                    : streamUrl;
-            ProtocolMonitorDownlinkFiller.applyStreamAddress(packet, address);
+            ProtocolMonitorDownlinkFiller.applyStreamAddress(packet, streamUrl);
         }
         Object writtenMsgId = packet.get("msgId");
         if (!(writtenMsgId instanceof String text) || text.isBlank()) {
             throw new IllegalArgumentException("这条指令空包没有消息编号，无法下发");
         }
         String payloadJson = envelopeJsonCodec.encodeObject(packet);
-        Long recordForTranscript = opcode == TransportOpcode.STREAM_START.code() ? executionRecordId : null;
-        ProtocolMonitorDownlinkResultDTO sent = writeWithoutWaiting(deviceId.trim(), payloadJson, recordForTranscript);
+        boolean timedReport = opcode == TransportOpcode.SWITCH_TIMED_REPORT.code();
+        // 页面已经选定一条执行时，单独下发的指令也记到这条。没选定就不猜是哪一条。
+        Long recordForTranscript = executionRecordId != null && executionRecordId > 0L
+                ? executionRecordId
+                : null;
+        if (recordForTranscript != null) {
+            runningTaskExchangeRecorder.remember(id, String.valueOf(writtenMsgId), recordForTranscript);
+        }
+        ProtocolMonitorDownlinkResultDTO sent = writeWithoutWaiting(id, payloadJson, recordForTranscript);
         if (!sent.written()) {
+            if (recordForTranscript != null) {
+                runningTaskExchangeRecorder.forget(id, String.valueOf(writtenMsgId));
+            }
             return sent;
+        }
+        if (timedReport && executionRecordId != null && executionRecordId > 0L) {
+            if (Boolean.TRUE.equals(enable)) {
+                runningTaskExchangeRecorder.bindTimedStatus(id, executionRecordId);
+            } else {
+                runningTaskExchangeRecorder.clearTimedStatus(id);
+            }
         }
         if (opcode == TransportOpcode.STREAM_START.code()) {
             return new ProtocolMonitorDownlinkResultDTO(
                     sent.written(),
                     sent.businessSuccess(),
-                    sent.note() + "推流地址是「" + packet.get("rtmp") + "」。",
+                    sent.note() + "推流地址是「" + ProtocolMonitorDownlinkFiller.writtenAddress(packet) + "」。",
                     sent.payloadJson());
         }
         if (opcode != TransportOpcode.SWITCH_TIMED_REPORT.code()) {
@@ -355,25 +372,6 @@ public class ProtocolMonitorDownlinkService {
         runningTaskExchangeRecorder.enqueue(
                 deviceId, TaskExchangeTranscriptReqDTO.OUTBOUND, payloadJson, executionRecordId);
         return new ProtocolMonitorDownlinkResultDTO(true, false, "已提交下发，可以继续发下一条。设备答卷在左侧报文里看。", payloadJson);
-    }
-
-    /** 点中的任务上的收流地址。没点时用已经到点的那一条。没有任务或还没分配时返回空。 */
-    private String streamUrlOf(String deviceId, Long executionRecordId) {
-        if (deviceId == null || deviceId.isBlank()) {
-            return "";
-        }
-        try {
-            CommonResult<PatrolGeneratedTaskDownlinkDTO> loaded = executionRecordId == null
-                    ? inspectionDeviceUplinkApi.generatedTask(deviceId.trim())
-                    : inspectionDeviceUplinkApi.generatedTaskRecord(deviceId.trim(), executionRecordId);
-            if (loaded == null || !loaded.isSuccess() || loaded.getData() == null) {
-                return "";
-            }
-            String url = loaded.getData().getMediaStreamUrl();
-            return url == null ? "" : url.trim();
-        } catch (RuntimeException ex) {
-            return "";
-        }
     }
 
     private static String countText(Object total) {

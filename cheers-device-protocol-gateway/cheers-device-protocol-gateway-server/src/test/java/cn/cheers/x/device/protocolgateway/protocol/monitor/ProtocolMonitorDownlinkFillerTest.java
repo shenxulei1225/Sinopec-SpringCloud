@@ -102,17 +102,17 @@ class ProtocolMonitorDownlinkFillerTest {
     void streamAddress_writesRtmp() {
         Map<String, Object> packet = new LinkedHashMap<>();
         packet.put("opcode", 500401);
-        packet.put("rtmp", "");
+        packet.put("streamUrl", "");
 
         ProtocolMonitorDownlinkFiller.applyStreamAddress(packet, " rtsp://127.0.0.1:8554/patrol-1 ");
 
-        assertEquals("rtsp://127.0.0.1:8554/patrol-1", packet.get("rtmp"));
+        assertEquals("rtsp://127.0.0.1:8554/patrol-1", packet.get("streamUrl"));
     }
 
     @Test
     void streamAddress_writesRecordAndLiveSlots() {
         Map<String, Object> request = new LinkedHashMap<>();
-        request.put("rstp", "");
+        request.put("streamUrl", "");
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("url", "");
         Map<String, Object> packet = new LinkedHashMap<>();
@@ -121,14 +121,14 @@ class ProtocolMonitorDownlinkFillerTest {
 
         ProtocolMonitorDownlinkFiller.applyStreamAddress(packet, "rtsp://host/patrol-9");
 
-        assertEquals("rtsp://host/patrol-9", request.get("rstp"));
+        assertEquals("rtsp://host/patrol-9", request.get("streamUrl"));
         assertEquals("rtsp://host/patrol-9", data.get("url"));
     }
 
     @Test
     void streamAddress_rejectsBlank() {
         Map<String, Object> packet = new LinkedHashMap<>();
-        packet.put("rtmp", "");
+        packet.put("streamUrl", "");
 
         assertThrows(
                 IllegalArgumentException.class,

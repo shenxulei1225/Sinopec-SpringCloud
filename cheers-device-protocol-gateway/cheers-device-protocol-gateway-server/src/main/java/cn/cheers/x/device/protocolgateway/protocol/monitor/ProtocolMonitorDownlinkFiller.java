@@ -63,7 +63,9 @@ public final class ProtocolMonitorDownlinkFiller {
 
     /**
      * 把页面上的推流地址写进空包已有的地址格。空包没有这一格时不能发。地址空着也不能发。
-     * 地面站启动推流写 {@code rtmp}，开始录像写 {@code request.rstp}，大疆开始直播写 {@code data.url}。
+     * 启动推流写 {@code streamUrl}，开始录像写 {@code request.streamUrl}。
+     * 值以 rtsp:// 或 rtmp:// 开头，设备按地址里的协议推。
+     * 大疆开始直播仍写官方字段 {@code data.url}。
      */
     public static void applyStreamAddress(Map<String, Object> packet, String streamUrl) {
         if (packet == null || !hasStreamAddressSlot(packet)) {
@@ -73,11 +75,35 @@ public final class ProtocolMonitorDownlinkFiller {
             throw new IllegalArgumentException("启动推流要填写推流地址");
         }
         String url = streamUrl.trim();
-        if (packet.containsKey("rtmp")) {
-            packet.put("rtmp", url);
+        if (packet.containsKey("streamUrl")) {
+            packet.put("streamUrl", url);
         }
-        writeNested(packet, "request", "rstp", url);
+        writeNested(packet, "request", "streamUrl", url);
         writeNested(packet, "data", "url", url);
+    }
+
+    /**
+     * 这次写下的推流地址。启动推流在顶层 {@code streamUrl}，开始录像在 {@code request.streamUrl}。
+     * 大疆开始直播在 {@code data.url}。都没有时返回空串。
+     */
+    public static String writtenAddress(Map<String, Object> packet) {
+        if (packet == null) {
+            return "";
+        }
+        String top = text(packet.get("streamUrl"));
+        if (!top.isEmpty()) {
+            return top;
+        }
+        if (packet.get("request") instanceof Map<?, ?> request) {
+            String nested = text(request.get("streamUrl"));
+            if (!nested.isEmpty()) {
+                return nested;
+            }
+        }
+        if (packet.get("data") instanceof Map<?, ?> data) {
+            return text(data.get("url"));
+        }
+        return "";
     }
 
     public static boolean isInnerStep(Map<String, Object> outbound) {
@@ -85,10 +111,17 @@ public final class ProtocolMonitorDownlinkFiller {
     }
 
     private static boolean hasStreamAddressSlot(Map<String, Object> packet) {
-        if (packet.containsKey("rtmp")) {
+        if (packet.containsKey("streamUrl")) {
             return true;
         }
-        return nestedHas(packet, "request", "rstp") || nestedHas(packet, "data", "url");
+        return nestedHas(packet, "request", "streamUrl") || nestedHas(packet, "data", "url");
+    }
+
+    private static String text(Object value) {
+        if (!(value instanceof String text) || text.isBlank()) {
+            return "";
+        }
+        return text;
     }
 
     private static boolean nestedHas(Map<String, Object> packet, String objectKey, String field) {

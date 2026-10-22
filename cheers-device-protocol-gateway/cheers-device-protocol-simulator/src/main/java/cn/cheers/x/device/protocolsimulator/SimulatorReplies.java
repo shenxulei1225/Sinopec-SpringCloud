@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * 按协议组应答。平台发来一条，先回执，再回同号业务答卷。
  * <p>负责：500101 点名、500102 开关定时状态、500103 定时状态、500104 收下指令包、500201 启动、500202 步骤结果、500203 任务状态、500205 终止、500301 取包、500302 删包、500303 列出已收下的任务模板。
- * <p>无人机不回心跳。机器人收到 500105 时原包加上时间回 500105。
+ * <p>无人机不发心跳，也不回心跳。机器人连上后自己按拍发 500105；收到平台发来的 500105 时原包加上时间回一包。
  * <p>禁止：把无人机步骤结果的外层字段改成 packages。老模拟器写在 result 上，厂商确认前保持这样。机器人按协议书写在 packages 上。
  * 拍照只填本机图片地址，不编分析结论。
  */
@@ -29,6 +29,23 @@ public class SimulatorReplies {
      * 主机必须是 127.0.0.1。分析服务只下载这个主机上的图片。
      */
     private final String photoUrl;
+
+    /**
+     * 机器人这一拍自己发出的心跳。时间用秒。
+     * 无人机返回 null，调用方不写连接。
+     * 平台收到后只记账，不会再打回来。
+     */
+    public String heartbeat(long nowMillis) {
+        if (!robot()) {
+            return null;
+        }
+        long seconds = nowMillis / 1000L;
+        ObjectNode root = objectMapper.createObjectNode();
+        root.put("opcode", 500105);
+        root.put("msgId", "hb-" + seconds);
+        root.put("time", seconds);
+        return write(root);
+    }
 
     /**
      * 立刻要发出去的报文。启动任务时，步骤结果不在这个列表里，由 {@link #runTask} 稍后发。
@@ -208,7 +225,8 @@ public class SimulatorReplies {
     }
 
     /**
-     * 任务状态上报。消息编号按字段说明用文字。上报点带纬度、经度、高度、点位、操作时间和电压。
+     * 任务状态上报。消息编号按字段说明用文字。
+     * 上报点的时间用协议里的 reportTime，不写成操作点上的 optime。
      */
     private ObjectNode taskStatus(String taskId, int status, String content, long nowMillis) {
         ObjectNode root = objectMapper.createObjectNode();
@@ -223,7 +241,7 @@ public class SimulatorReplies {
         report.put("lng", "117.0190597072");
         report.put("height", "17.874");
         report.put("pointId", "222222");
-        report.put("optime", nowMillis / 1000);
+        report.put("reportTime", nowMillis / 1000);
         report.put("electric", "100.00");
         return root;
     }
@@ -322,10 +340,11 @@ public class SimulatorReplies {
 
     /**
      * 取包应答里的动作集合按列表写回。存的是一段数组文字时先解析，页面才能读到序号和操作码。
+     * 空包写成空列表。写成空字符串时，字段说明类型是列表，这一行会标类型不对。
      */
     private JsonNode packagesNode(String packagesJson) {
         if (packagesJson == null || packagesJson.isBlank()) {
-            return objectMapper.getNodeFactory().textNode(packagesJson == null ? "" : packagesJson);
+            return objectMapper.createArrayNode();
         }
         try {
             JsonNode node = objectMapper.readTree(packagesJson);

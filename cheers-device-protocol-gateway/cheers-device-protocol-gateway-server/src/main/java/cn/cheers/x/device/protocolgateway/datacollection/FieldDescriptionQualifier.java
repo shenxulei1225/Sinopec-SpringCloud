@@ -10,9 +10,9 @@ import java.util.Map;
 
 /**
  * 按字段说明核一份已解析的采集样本。
- * <p>负责：必填、类型、路径结构。
+ * <p>负责：必填、类型、路径结构。字段说明里的键名和报文里的键名只差大小写时，仍算这一格。
  * <p>不负责：读说明书、判检查项、补缺字段。
- * <p>禁止：报文多出来的键当不合格；缺说明假装合格。
+ * <p>禁止：报文多出来的键当不合格；缺说明假装合格；往报文里再写一个大小写不同的键。
  */
 public final class FieldDescriptionQualifier {
 
@@ -112,11 +112,45 @@ public final class FieldDescriptionQualifier {
         return current;
     }
 
+    /**
+     * 按字段说明里的键名取报文对象上的这一格。
+     * 大小写不同仍取到。同时有两种写法、又没有和说明完全一致的那个键时不取，这一格仍按缺了处理。
+     */
+    public static Object valueAtKey(Map<?, ?> map, String key) {
+        String matched = matchKey(map, key);
+        return matched == null ? null : map.get(matched);
+    }
+
+    /** 这一格在不在。值是空的也算在，只是大小写不同也算在。两种写法同时在、又没有完全同名的键时不算在。 */
+    public static boolean hasKey(Map<?, ?> map, String key) {
+        return matchKey(map, key) != null;
+    }
+
+    private static String matchKey(Map<?, ?> map, String key) {
+        if (map == null || key == null) {
+            return null;
+        }
+        if (map.containsKey(key)) {
+            return key;
+        }
+        String found = null;
+        for (Object raw : map.keySet()) {
+            if (!(raw instanceof String name) || !name.equalsIgnoreCase(key)) {
+                continue;
+            }
+            if (found != null) {
+                return null;
+            }
+            found = name;
+        }
+        return found;
+    }
+
     private static void collectChildren(Object node, String key, boolean each, List<Object> next) {
         if (!(node instanceof Map<?, ?> map)) {
             return;
         }
-        Object child = map.get(key);
+        Object child = valueAtKey(map, key);
         if (child == null) {
             return;
         }
@@ -144,7 +178,7 @@ public final class FieldDescriptionQualifier {
             }
             boolean each = rawPart.endsWith("[]");
             String key = each ? rawPart.substring(0, rawPart.length() - 2) : rawPart;
-            Object child = map.get(key);
+            Object child = valueAtKey(map, key);
             if (each) {
                 return child instanceof Collection<?> collection && collection.isEmpty();
             }

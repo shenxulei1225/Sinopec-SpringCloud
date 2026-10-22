@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * 协议下行：信封编码后经通信层发送；同步指令还要等到同号业务答卷。
  * <p>不负责任务编排与巡检对象解析；设备不在线时失败，不假装成功。
+ * <p>打开周期状态的下发成功后，把这台设备的定时状态记到这次执行。关掉则不再记。
  * <p>禁止：写出即返回成功；把回执 500106 当答卷。
  */
 @Service
@@ -117,6 +118,14 @@ public class DeviceProtocolDownlinkService {
             runningTaskExchangeRecorder.forget(deviceId, msgId);
             syncReplyWaiter.cancel(deviceId, msgId, opcode);
             return SyncDownlinkResult.writeFailed("设备当前未连接或写出失败：" + deviceId);
+        }
+        if (opcode == TransportOpcode.SWITCH_TIMED_REPORT.code()) {
+            Boolean enable = envelopeJsonCodec.readEnable(wireJson);
+            if (Boolean.TRUE.equals(enable)) {
+                runningTaskExchangeRecorder.bindTimedStatus(deviceId, executionRecordId);
+            } else if (Boolean.FALSE.equals(enable)) {
+                runningTaskExchangeRecorder.clearTimedStatus(deviceId);
+            }
         }
         String transcriptReason = runningTaskExchangeRecorder.recordNow(
                 deviceId, TaskExchangeTranscriptReqDTO.OUTBOUND, wireJson, executionRecordId);

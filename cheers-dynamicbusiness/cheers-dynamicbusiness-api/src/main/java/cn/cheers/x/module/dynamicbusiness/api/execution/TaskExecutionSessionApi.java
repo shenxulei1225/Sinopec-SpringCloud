@@ -9,6 +9,7 @@ import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBa
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStepSnapshotDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionUnfinishedOptionDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionWritebackReqDTO;
 import cn.cheers.x.module.dynamicbusiness.enums.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
@@ -62,4 +63,14 @@ public interface TaskExecutionSessionApi {
     @Operation(summary = "列出这次执行账上的步骤")
     CommonResult<List<TaskExecutionStepSnapshotDTO>> listSteps(
             @RequestParam("executionRecordId") Long executionRecordId);
+
+    /**
+     * 协议监控任务下拉。按执行账快照里的设备编号，列出待执行和正在执行的账。
+     * 只返回名称、状态、计划时刻、收流地址和模板编号。
+     * 不返回指令包正文。其它业务不要拿它当通用列表。
+     */
+    @GetMapping(PREFIX + "/unfinished-for-device")
+    @Operation(summary = "这台设备还没结束的执行账，只含监控下拉要的几项")
+    CommonResult<List<TaskExecutionUnfinishedOptionDTO>> listUnfinishedForDevice(
+            @RequestParam("deviceId") String deviceId);
 }

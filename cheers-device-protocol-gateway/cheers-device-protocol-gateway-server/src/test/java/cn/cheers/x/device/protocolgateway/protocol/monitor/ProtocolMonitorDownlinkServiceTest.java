@@ -73,6 +73,45 @@ class ProtocolMonitorDownlinkServiceTest {
         assertTrue(result.note().contains("已提交下发"));
         verify(transport).sendText(eq("dev-1"), eq("{\"opcode\":500101}"));
         verify(recorder).enqueue(eq("dev-1"), anyString(), eq("{\"opcode\":500101}"), isNull());
+        verify(recorder, never()).remember(anyString(), anyString(), anyLong());
+    }
+
+    @Test
+    void plainStatus_withSelectedExecution_isRecordedOnThatExecution() {
+        DeviceRegistrationLookup registration = mock(DeviceRegistrationLookup.class);
+        ProtocolMonitorDownlinkCatalog catalog = mock(ProtocolMonitorDownlinkCatalog.class);
+        EnvelopeJsonCodec codec = mock(EnvelopeJsonCodec.class);
+        DeviceTransport transport = mock(DeviceTransport.class);
+        RunningTaskExchangeRecorder recorder = mock(RunningTaskExchangeRecorder.class);
+        ProtocolMonitorDownlinkService service = new ProtocolMonitorDownlinkService(
+                registration,
+                catalog,
+                codec,
+                transport,
+                recorder,
+                mock(InspectionDeviceUplinkApi.class),
+                mock(MissionTranslationService.class));
+        when(registration.registrationOf("dev-1"))
+                .thenReturn(new DeviceRegistrationLookup.Registration("robot-ws", ""));
+        when(catalog.require("robot-ws", 500101)).thenReturn(new ProtocolMonitorDownlinkCatalog.Prepared(
+                "获取设备实时状态",
+                500101,
+                new LinkedHashMap<>(Map.of("opcode", 500101, "msgId", "", "deviceId", "")),
+                true,
+                null,
+                "",
+                "500101",
+                "downlink"));
+        when(codec.encodeObject(any())).thenReturn("{\"opcode\":500101}");
+        when(transport.isOnline(anyString())).thenReturn(true);
+        when(transport.sendText(eq("dev-1"), anyString())).thenReturn(true);
+
+        ProtocolMonitorDownlinkResultDTO result = service.send(
+                "dev-1", 500101, null, null, null, null, 88L);
+
+        assertTrue(result.written());
+        verify(recorder).remember(eq("dev-1"), anyString(), eq(88L));
+        verify(recorder).enqueue(eq("dev-1"), anyString(), eq("{\"opcode\":500101}"), eq(88L));
     }
 
     @Test
@@ -132,7 +171,7 @@ class ProtocolMonitorDownlinkServiceTest {
         outbound.put("opcode", 500401);
         outbound.put("msgId", "");
         outbound.put("deviceId", "");
-        outbound.put("rtmp", "");
+        outbound.put("streamUrl", "");
         when(registration.registrationOf("dev-1"))
                 .thenReturn(new DeviceRegistrationLookup.Registration("robot-ws", ""));
         when(catalog.require("robot-ws", 500401)).thenReturn(new ProtocolMonitorDownlinkCatalog.Prepared(
@@ -146,46 +185,37 @@ class ProtocolMonitorDownlinkServiceTest {
         ProtocolMonitorDownlinkResultDTO result = service.send(
                 "dev-1", 500401, null, null, null, "rtsp://127.0.0.1:8554/patrol-1");
 
-        assertEquals("rtsp://127.0.0.1:8554/patrol-1", packet.getValue().get("rtmp"));
+        assertEquals("rtsp://127.0.0.1:8554/patrol-1", packet.getValue().get("streamUrl"));
         assertTrue(result.note().contains("rtsp://127.0.0.1:8554/patrol-1"));
     }
 
     @Test
-    void streamStart_withoutPageAddress_usesTaskIngest() {
+    void streamStart_withoutPageAddress_rejects() {
         DeviceRegistrationLookup registration = mock(DeviceRegistrationLookup.class);
         ProtocolMonitorDownlinkCatalog catalog = mock(ProtocolMonitorDownlinkCatalog.class);
-        EnvelopeJsonCodec codec = mock(EnvelopeJsonCodec.class);
         DeviceTransport transport = mock(DeviceTransport.class);
-        InspectionDeviceUplinkApi uplink = mock(InspectionDeviceUplinkApi.class);
         ProtocolMonitorDownlinkService service = new ProtocolMonitorDownlinkService(
                 registration,
                 catalog,
-                codec,
+                mock(EnvelopeJsonCodec.class),
                 transport,
                 mock(RunningTaskExchangeRecorder.class),
-                uplink,
+                mock(InspectionDeviceUplinkApi.class),
                 mock(MissionTranslationService.class));
         Map<String, Object> outbound = new LinkedHashMap<>();
         outbound.put("opcode", 500401);
         outbound.put("msgId", "");
         outbound.put("deviceId", "");
-        outbound.put("rtmp", "");
-        PatrolGeneratedTaskDownlinkDTO task = new PatrolGeneratedTaskDownlinkDTO();
-        task.setMediaStreamUrl("rtsp://127.0.0.1:8554/patrol-task");
-        when(uplink.generatedTask("dev-1")).thenReturn(CommonResult.success(task));
+        outbound.put("streamUrl", "");
         when(registration.registrationOf("dev-1"))
                 .thenReturn(new DeviceRegistrationLookup.Registration("robot-ws", ""));
         when(catalog.require("robot-ws", 500401)).thenReturn(new ProtocolMonitorDownlinkCatalog.Prepared(
                 "启动推流", 500401, outbound, true, null, "", "500401", "downlink"));
-        when(transport.isOnline(anyString())).thenReturn(true);
-        when(transport.sendText(eq("dev-1"), anyString())).thenReturn(true);
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, Object>> packet = ArgumentCaptor.forClass(Map.class);
-        when(codec.encodeObject(packet.capture())).thenReturn("{\"opcode\":500401}");
+        when(transport.isOnline("dev-1")).thenReturn(true);
 
-        service.send("dev-1", 500401);
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> service.send("dev-1", 500401));
 
-        assertEquals("rtsp://127.0.0.1:8554/patrol-task", packet.getValue().get("rtmp"));
+        assertEquals("启动推流要填写推流地址", error.getMessage());
     }
 
     @Test

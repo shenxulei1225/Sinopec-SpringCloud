@@ -130,6 +130,42 @@ class FieldDescriptionQualifierTest {
     }
 
     @Test
+    void listTemplates_capitalData_matchesBookPath() {
+        CollectionSample sample = FieldDescriptionQualifier.qualify(
+                sample(Map.of(
+                        "opcode", 500303,
+                        "msgId", "m1",
+                        "code", 200,
+                        "msg", "ok",
+                        "Data", Map.of("templates", List.of(Map.of(
+                                "templateId", "patrol-task-910101",
+                                "lineId", "patrol-task-910101")))
+                )),
+                CatalogLookup.found(List.of(
+                        new FieldDescriptionRow("data", "object", "返回消息体", true),
+                        new FieldDescriptionRow("data.templates", "array", "任务模板", true),
+                        new FieldDescriptionRow("data.templates[].templateId", "string", "任务模板编号", true),
+                        new FieldDescriptionRow("data.templates[].lineId", "string", "指令报文id", true)
+                )));
+        assertEquals(ProtocolQualifyStatus.QUALIFIED, sample.protocolQualify());
+        assertTrue(sample.qualifyErrors().isEmpty());
+    }
+
+    @Test
+    void twoCasingsWithoutExactKey_staysMissing() {
+        Map<String, Object> fields = new LinkedHashMap<>();
+        fields.put("name", "甲");
+        fields.put("NAME", "乙");
+        CollectionSample sample = FieldDescriptionQualifier.qualify(
+                sample(fields),
+                CatalogLookup.found(List.of(
+                        new FieldDescriptionRow("Name", "string", "名称", true)
+                )));
+        assertEquals(ProtocolQualifyStatus.UNQUALIFIED, sample.protocolQualify());
+        assertTrue(sample.qualifyErrors().get(0).contains("名称"));
+    }
+
+    @Test
     void missingCatalog_isUnqualified() {
         CollectionSample sample = FieldDescriptionQualifier.qualify(
                 sample(Map.of("opcode", 500202)),

@@ -12,6 +12,7 @@ import cn.cheers.x.inspection.task.service.execution.steptree.TaskStepTreeAssemb
 import cn.cheers.x.inspection.task.service.execution.steptree.TaskStepTreeParser;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskEntityStore;
+import cn.cheers.x.inspection.task.service.task.Go2RtcStreamRegistrar;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskRecordIngestAllocator;
 import cn.cheers.x.inspection.task.service.task.TaskPatrolRecordingSupport;
 import cn.cheers.x.module.dynamicbusiness.api.entity.EntityRpcApi;
@@ -48,6 +49,8 @@ import static cn.cheers.x.inspection.task.service.execution.openrun.PatrolOpenRu
  * 名称用任务名加计划执行时刻。计划时刻按北京时间写入账上的 planned_start，并带上 +08:00，不把世界时间的钟面写进去。
  * 更新任务时先删除这条任务上还没开始的旧执行账和步骤，再写下新的；已经开始或已经执行的留下。
  * <p>生成任务时调用网关 commit-translate，把下行与航线编号写入 standard_snapshot；开跑只下发。
+ * 东古、机器人在写下待执行账之前，把本批收流名字一次登记到流媒体。
+ * 更新任务时，这条任务以前登记、这次计划点不再使用的名字先从流媒体拿掉。已经开始或已经执行的名字留下。登记失败则不写账。
  * <p>禁止：执行任务时再读设备参数重算；把协议 opcode 写进步骤树；
  * 待执行账所属场站从请求头猜，不写总任务已有的场站；名称里写计划点编号冒充给用户看的记录名。
  */
@@ -74,6 +77,7 @@ public class PatrolOpenRunMaterializeService {
     private final ObjectMapper objectMapper;
     private final PatrolMissionTranslateService patrolMissionTranslateService;
     private final PatrolTaskRecordIngestAllocator patrolTaskRecordIngestAllocator;
+    private final Go2RtcStreamRegistrar go2RtcStreamRegistrar;
 
     /**
      * 生成任务成功后，为本批计划时刻写待执行账。
@@ -125,7 +129,8 @@ public class PatrolOpenRunMaterializeService {
 
     /**
      * 东古、机器人：指令只翻译一次。每个执行点仍有自己的收流地址。
-     * 把已翻译报文里的那一个地址换成该点的地址，不重新翻译，也不另生成航线。
+     * 先把这条任务不再使用的旧收流名字从流媒体拿掉，再登记本批计划点。已经开始或已经执行的名字留下。
+     * 然后把已翻译报文里的那一个地址换成该点的地址。不重新翻译，也不另生成航线。
      */
     private Map<String, Long> materializeIngestSnapshots(
             PatrolTaskDraft task,
@@ -134,6 +139,12 @@ public class PatrolOpenRunMaterializeService {
             TaskStepTreeAssembler.AssembledOpenRun assembled,
             MissionTranslateCommitRespDTO committed,
             String translatedIngestUrl) {
+        List<String> streamNames = new ArrayList<>();
+        for (ScheduleSlotDTO slot : pendingSlots) {
+            streamNames.add(patrolTaskRecordIngestAllocator.streamName(task.id(), slot.getSlotId().trim()));
+        }
+        streamNames.addAll(streamNamesStillInUse(task.id()));
+        go2RtcStreamRegistrar.replaceTaskReceiveSlots(task.id(), streamNames);
         Map<String, Long> written = new LinkedHashMap<>();
         for (ScheduleSlotDTO slot : pendingSlots) {
             String slotId = slot.getSlotId().trim();
@@ -273,6 +284,69 @@ public class PatrolOpenRunMaterializeService {
         occurrence.setPlannedStart(plannedStart);
         occurrence.setName(buildExecutionName(task, plannedStart));
         return occurrence;
+    }
+
+    /**
+     * 已经开始或已经执行的计划点，收流名字还要留在流媒体上。
+     * 还没开始的、以及已经取消的，不放进留下名单。它们的名字由这次登记从流媒体拿掉。
+     */
+    private List<String> streamNamesStillInUse(Long taskId) {
+        Map<String, Long> existing = patrolTaskEntityStore.pendingExecutionRecordIds(taskId);
+        List<String> names = new ArrayList<>();
+        if (existing == null || existing.isEmpty()) {
+            return names;
+        }
+        for (Long recordId : existing.values()) {
+            EntityRespDTO record = optionalRecord(recordId);
+            if (record == null || !keepsRegisteredStream(record)) {
+                continue;
+            }
+            collectStreamName(names, record.getCustomFields().get("standard_snapshot"),
+                    TaskPatrolRecordingSupport.SNAPSHOT_TASK_RECORD_STREAM_NAME);
+            collectStreamName(names, record.getCustomFields().get(
+                    TaskPatrolRecordingSupport.CUSTOM_FIELD_TASK_PATROL_RECORD_MEDIA), "streamName");
+        }
+        return names;
+    }
+
+    /** 待执行和已取消的计划点不再占用收流名字。已经开始、已经完成的留下。 */
+    private static boolean keepsRegisteredStream(EntityRespDTO record) {
+        if (record.getCustomFields() == null) {
+            return false;
+        }
+        String status = text(record.getCustomFields().get("execution_status"));
+        if (!StringUtils.hasText(status)) {
+            return false;
+        }
+        String normalized = status.trim().toLowerCase();
+        return !"pending".equals(normalized) && !"cancelled".equals(normalized);
+    }
+
+    private void collectStreamName(List<String> names, Object carrier, String key) {
+        String value = nestedText(carrier, key);
+        if (!StringUtils.hasText(value) || names.contains(value)) {
+            return;
+        }
+        names.add(value);
+    }
+
+    private String nestedText(Object carrier, String key) {
+        if (carrier instanceof Map<?, ?> map) {
+            Object raw = map.get(key);
+            return raw == null ? "" : String.valueOf(raw).trim();
+        }
+        if (!(carrier instanceof String text) || !StringUtils.hasText(text)) {
+            return "";
+        }
+        try {
+            com.fasterxml.jackson.databind.JsonNode node = objectMapper.readTree(text);
+            if (node == null || !node.has(key) || node.get(key).isNull()) {
+                return "";
+            }
+            return node.get(key).asText("").trim();
+        } catch (Exception ex) {
+            return "";
+        }
     }
 
     /**
