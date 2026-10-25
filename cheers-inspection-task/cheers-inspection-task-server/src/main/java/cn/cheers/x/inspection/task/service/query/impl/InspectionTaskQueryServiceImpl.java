@@ -5,6 +5,8 @@ import cn.cheers.x.inspection.task.controller.admin.vo.task.*;
 import cn.cheers.x.inspection.task.model.task.InspectionContent;
 import cn.cheers.x.inspection.task.service.query.InspectionTaskQueryService;
 import cn.cheers.x.inspection.task.service.task.GeneratedCheckInputReviewService;
+import cn.cheers.x.inspection.task.service.task.GeneratedCheckInputReviewReadContext;
+import cn.cheers.x.inspection.task.service.task.GeneratedCheckInputReviewReadSupport;
 import cn.cheers.x.inspection.task.service.task.PatrolPlannedRouteSupport;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskDraft;
 import cn.cheers.x.inspection.task.service.task.PatrolTaskDurationSupport;
@@ -20,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * 巡检任务查询服务实现类。
@@ -38,35 +39,37 @@ public class InspectionTaskQueryServiceImpl implements InspectionTaskQueryServic
     private final RuntimeQueryApi runtimeQueryApi;
     private final ObjectMapper objectMapper;
     private final GeneratedCheckInputReviewService generatedCheckInputReviewService;
+    private final GeneratedCheckInputReviewReadSupport generatedCheckInputReviewReadSupport;
 
     @Override
     public PageResult<InspectionTaskSimpleRespVO> getTaskPage(InspectionTaskPageReqVO pageReqVO) {
-        List<PatrolTaskDraft> all = patrolTaskEntityStore.listAll();
-        String name = pageReqVO.getTaskName();
-        List<PatrolTaskDraft> filtered = all.stream()
-                .filter(draft -> !StringUtils.hasText(name)
-                        || (draft.name() != null && draft.name().contains(name.trim())))
-                .toList();
         int pageNo = pageReqVO.getPageNo() == null || pageReqVO.getPageNo() < 1 ? 1 : pageReqVO.getPageNo();
         int pageSize = pageReqVO.getPageSize() == null || pageReqVO.getPageSize() < 1 ? 10 : pageReqVO.getPageSize();
-        int from = Math.min((pageNo - 1) * pageSize, filtered.size());
-        int to = Math.min(from + pageSize, filtered.size());
-        List<InspectionTaskSimpleRespVO> voList = filtered.subList(from, to).stream()
-                .map(this::toSimple)
-                .collect(Collectors.toList());
-        return new PageResult<>(voList, (long) filtered.size());
+        PageResult<PatrolTaskDraft> page = patrolTaskEntityStore.page(
+                pageReqVO.getTaskName(), pageReqVO.getStatus(), pageNo, pageSize);
+        List<PatrolTaskDraft> generated = page.getList().stream()
+                .filter(draft -> Boolean.TRUE.equals(draft.orchestrationCommitted()))
+                .toList();
+        GeneratedCheckInputReviewReadContext context =
+                generatedCheckInputReviewReadSupport.load(generated);
+        List<InspectionTaskSimpleRespVO> voList = page.getList().stream()
+                .map(draft -> toSimple(draft, context))
+                .toList();
+        return new PageResult<>(voList, page.getTotal());
     }
 
-    private InspectionTaskSimpleRespVO toSimple(PatrolTaskDraft draft) {
+    private InspectionTaskSimpleRespVO toSimple(
+            PatrolTaskDraft draft,
+            GeneratedCheckInputReviewReadContext context) {
         InspectionTaskSimpleRespVO vo = new InspectionTaskSimpleRespVO();
         vo.setId(draft.id());
         vo.setTaskName(draft.name());
         vo.setDomain(draft.domain());
         vo.setStatus(deriveDisplayStatus(draft));
-        vo.setEnabled(Boolean.TRUE.equals(draft.orchestrationCommitted()));
+        vo.setEnabled("enabled".equals(draft.manageStatus()));
         vo.setRuntimeJobId(draft.runtimeJobId());
         vo.setSubTaskCount(0);
-        vo.setUpdateHint(liveUpdateHint(draft));
+        vo.setUpdateHint(liveUpdateHint(draft, context));
         return vo;
     }
 
@@ -74,11 +77,14 @@ public class InspectionTaskQueryServiceImpl implements InspectionTaskQueryServic
      * 已生成任务用和打开详情相同的对照。有差异才显示需要更新。
      * 草稿不对照。记下的说明为空时，不再把这一条当成已经更新过。
      */
-    private String liveUpdateHint(PatrolTaskDraft draft) {
+    private String liveUpdateHint(
+            PatrolTaskDraft draft,
+            GeneratedCheckInputReviewReadContext context) {
         if (!Boolean.TRUE.equals(draft.orchestrationCommitted())) {
             return null;
         }
-        InspectionTaskGeneratedInputReviewRespVO review = generatedCheckInputReviewService.review(draft.id());
+        InspectionTaskGeneratedInputReviewRespVO review =
+                generatedCheckInputReviewService.review(draft, context);
         if (review.getChanges() == null || review.getChanges().isEmpty()) {
             return null;
         }
@@ -104,7 +110,7 @@ public class InspectionTaskQueryServiceImpl implements InspectionTaskQueryServic
         respVO.setFacilityId(draft.facilityId());
         respVO.setDomain(draft.domain());
         respVO.setStatus(deriveDisplayStatus(draft));
-        respVO.setEnabled(Boolean.TRUE.equals(draft.orchestrationCommitted()));
+        respVO.setEnabled("enabled".equals(draft.manageStatus()));
         respVO.setRuntimeJobId(draft.runtimeJobId());
         respVO.setExecutionDeviceBinding(draft.executionDeviceBinding());
         respVO.setResourcePolicy(draft.resourcePolicy());
@@ -172,33 +178,40 @@ public class InspectionTaskQueryServiceImpl implements InspectionTaskQueryServic
 
     @Override
     public InspectionTaskStatisticsRespVO getTaskStatistics() {
-        List<PatrolTaskDraft> all = patrolTaskEntityStore.listAll();
-        long enabled = all.stream().filter(d -> Boolean.TRUE.equals(d.orchestrationCommitted())).count();
+        long total = patrolTaskEntityStore.countByManageStatus(null);
+        long enabled = patrolTaskEntityStore.countByManageStatus(1);
+        long draft = patrolTaskEntityStore.countByManageStatus(0);
+        long disabled = patrolTaskEntityStore.countByManageStatus(2);
         InspectionTaskStatisticsRespVO vo = new InspectionTaskStatisticsRespVO();
-        vo.setTaskTotal((long) all.size());
+        vo.setTaskTotal(total);
         vo.setEnabledCount(enabled);
-        vo.setDisabledCount((long) all.size() - enabled);
-        vo.setDraftCount(all.stream().filter(d -> deriveDisplayStatus(d) == 0).count());
+        vo.setDisabledCount(disabled);
+        vo.setDraftCount(draft);
         return vo;
     }
 
     /**
      * 派生任务的展示状态（列表状态列 / 详情状态）。
+     * 没写下管理状态时返回空，列表仍显示这一条。不把空值猜成草稿。
+     * 写下了但不认识的值仍报错。
      *
      * <ul>
-     *   <li>orchestrationCommitted = true → 1 已启用</li>
-     *   <li>orchestrationCommitted ≠ true 且 runtimeJobId 有值 → 2 已停用</li>
-     *   <li>其余（含仅有 orchestrationPreview 试排）→ 0 草稿</li>
+     *   <li>enabled → 1 已启用</li>
+     *   <li>disabled → 2 已停用</li>
+     *   <li>draft → 0 草稿</li>
      * </ul>
      */
     public static Integer deriveDisplayStatus(PatrolTaskDraft draft) {
-        if (Boolean.TRUE.equals(draft.orchestrationCommitted())) {
-            return 1;
+        String manageStatus = draft.manageStatus();
+        if (!StringUtils.hasText(manageStatus)) {
+            return null;
         }
-        if (StringUtils.hasText(draft.runtimeJobId())) {
-            return 2;
-        }
-        return 0;
+        return switch (manageStatus) {
+            case "draft" -> 0;
+            case "enabled" -> 1;
+            case "disabled" -> 2;
+            default -> throw new IllegalStateException("任务管理状态无效：" + manageStatus);
+        };
     }
 
     /**

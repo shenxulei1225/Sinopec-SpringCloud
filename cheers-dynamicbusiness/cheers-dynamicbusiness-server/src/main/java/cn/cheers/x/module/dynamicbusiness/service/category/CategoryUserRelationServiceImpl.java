@@ -1,11 +1,9 @@
 package cn.cheers.x.module.dynamicbusiness.service.category;
 
-import cn.cheers.x.framework.common.enums.CommonStatusEnum;
-import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.UserAccountDTO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryUserRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryUserRelationMapper;
-import cn.cheers.x.system.api.user.AdminUserApi;
-import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
+import cn.cheers.x.module.dynamicbusiness.service.directory.UserAccountDirectoryQueryService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,12 +20,15 @@ import static cn.cheers.x.module.dynamicbusiness.enums.ErrorCodeConstants.*;
 @Validated
 public class CategoryUserRelationServiceImpl implements CategoryUserRelationService {
 
+    /** 用户目录状态：1 表示启用。 */
+    private static final Integer USER_ACCOUNT_ENABLED = 1;
+
     @Resource
     private CategoryUserRelationMapper categoryUserRelationMapper;
     @Resource
     private CategoryService categoryService;
     @Resource
-    private AdminUserApi adminUserApi;
+    private UserAccountDirectoryQueryService userAccountDirectoryQueryService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -91,13 +92,13 @@ public class CategoryUserRelationServiceImpl implements CategoryUserRelationServ
         return new ArrayList<>(set);
     }
 
+    /**
+     * 分类挂人只接受用户目录中存在且启用的人。
+     * 用户不存在时由目录查询显式报错。禁止回查系统用户，也禁止把状态 1 当成停用。
+     */
     private void assertUserEnabled(Long userId) {
-        CommonResult<AdminUserRespDTO> result = adminUserApi.getUser(userId);
-        AdminUserRespDTO user = result == null ? null : result.getCheckedData();
-        if (user == null) {
-            throw exception(USER_NOT_EXISTS);
-        }
-        if (CommonStatusEnum.isDisable(user.getStatus())) {
+        UserAccountDTO user = userAccountDirectoryQueryService.getUserAccount(userId);
+        if (!USER_ACCOUNT_ENABLED.equals(user.getStatus())) {
             throw exception(USER_IS_DISABLE, user.getNickname());
         }
     }

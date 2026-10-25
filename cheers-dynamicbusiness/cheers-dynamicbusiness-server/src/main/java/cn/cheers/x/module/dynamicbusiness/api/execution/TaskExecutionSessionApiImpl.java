@@ -1,9 +1,11 @@
 package cn.cheers.x.module.dynamicbusiness.api.execution;
 
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendPoseReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionDayAccountPageDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartReqDTO;
@@ -14,6 +16,7 @@ import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionWriteba
 
 import java.util.List;
 import cn.cheers.x.module.dynamicbusiness.service.execution.OpenExecutionAccountQuery;
+import cn.cheers.x.module.dynamicbusiness.service.execution.PatrolLayerDayAccountQuery;
 import cn.cheers.x.module.dynamicbusiness.service.execution.TaskExecutionSessionService;
 import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
@@ -34,6 +37,9 @@ public class TaskExecutionSessionApiImpl implements TaskExecutionSessionApi {
 
     @Resource
     private OpenExecutionAccountQuery openExecutionAccountQuery;
+
+    @Resource
+    private PatrolLayerDayAccountQuery patrolLayerDayAccountQuery;
 
     @Override
     public CommonResult<TaskExecutionStartRespDTO> start(TaskExecutionStartReqDTO req) {
@@ -77,5 +83,14 @@ public class TaskExecutionSessionApiImpl implements TaskExecutionSessionApi {
     @Override
     public CommonResult<List<TaskExecutionUnfinishedOptionDTO>> listUnfinishedForDevice(String deviceId) {
         return success(openExecutionAccountQuery.listUnfinishedForDevice(deviceId));
+    }
+
+    @Override
+    public CommonResult<TaskExecutionDayAccountPageDTO> listPatrolLayerDay(
+            Long facilityId, String day, Integer pageNo, Integer pageSize) {
+        if (facilityId == null || pageNo == null || pageSize == null) {
+            throw new ServiceException(400, "当天巡检账查询条件不完整");
+        }
+        return success(patrolLayerDayAccountQuery.page(facilityId, day, pageNo, pageSize));
     }
 }

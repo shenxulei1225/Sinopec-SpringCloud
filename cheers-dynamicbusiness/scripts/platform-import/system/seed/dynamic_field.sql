@@ -6875,6 +6875,10 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
+UPDATE dynamic_field
+SET deleted = true, status = 0, updater = 'seed', update_time = CURRENT_TIMESTAMP
+WHERE code = 'FLD-TSK-022' AND tenant_id = 1 AND deleted = false;
+
 INSERT INTO dynamic_field (
   code, name, type, unit, description, source, status, max_relations,
   index_strategy, options, provider_code, semantic_type, tenant_id, creator
@@ -6899,8 +6903,8 @@ INSERT INTO dynamic_field (
   code, name, type, unit, description, source, status, max_relations,
   index_strategy, options, provider_code, semantic_type, tenant_id, creator
 ) VALUES (
-  'FLD-TSK-022', '管理状态', 'ENUM',
-  NULL, '任务定义生命周期：草稿/已启用/已停用',
+  'manage_status', '管理状态', 'ENUM',
+  NULL, '任务底座生命周期：草稿/已启用/已停用',
   'SYSTEM', 1,
   NULL, 'NONE',
   '[{"label": "草稿", "value": "draft"}, {"label": "已启用", "value": "enabled"}, {"label": "已停用", "value": "disabled"}]', NULL,
@@ -7142,4 +7146,27 @@ INSERT INTO dynamic_field (
 )
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET name = EXCLUDED.name, semantic_type = EXCLUDED.semantic_type, updater = 'seed', update_time = CURRENT_TIMESTAMP;
+
+-- 部门负责人只存用户目录实体 id。字段编码与 department 固定列同名。
+INSERT INTO dynamic_field (
+  code, name, type, unit, description, source, status, max_relations,
+  index_strategy, options, provider_code, semantic_type, tenant_id, creator
+) VALUES (
+  'leader_user_id', '部门负责人', 'ENTITY_REF',
+  NULL, '部门负责人对应的 user_account 实体 id',
+  'SYSTEM', 1, 1, 'NONE',
+  NULL, 'dynamic-entity:user_account',
+  'department_leader', 1, 'seed'
+)
+ON CONFLICT (code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  name = EXCLUDED.name,
+  type = EXCLUDED.type,
+  description = EXCLUDED.description,
+  max_relations = EXCLUDED.max_relations,
+  provider_code = EXCLUDED.provider_code,
+  semantic_type = EXCLUDED.semantic_type,
+  status = EXCLUDED.status,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
 

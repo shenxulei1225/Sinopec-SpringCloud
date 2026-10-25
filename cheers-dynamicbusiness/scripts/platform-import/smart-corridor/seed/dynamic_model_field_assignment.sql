@@ -2489,42 +2489,13 @@ DO UPDATE SET
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 
-INSERT INTO dynamic_model_field_assignment (
-  model_code, field_code, model_id, field_id, required, is_searchable, is_filterable, is_sortable,
-  default_value, validation_rules, sort, field_group_id, field_source,
-  ref_library_id, model_relation_id, target_entity_type, tenant_id, creator
-)
-SELECT
-  'patrol_task', 'FLD-TSK-022', m.id, f.id,
-  FALSE, FALSE,
-  TRUE, FALSE,
-  'draft', NULL,
-  40, NULL,
-  NULL, NULL,
-  NULL, NULL, 1, 'seed'
-FROM dynamic_model m
-JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
-WHERE m.deleted = false AND m.tenant_id = 1
-  AND m.code = 'patrol_task'
-  AND f.code = 'FLD-TSK-022'
-ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
-DO UPDATE SET
-  model_id = EXCLUDED.model_id,
-  field_id = EXCLUDED.field_id,
-  required = EXCLUDED.required,
-  is_searchable = EXCLUDED.is_searchable,
-  is_filterable = EXCLUDED.is_filterable,
-  is_sortable = EXCLUDED.is_sortable,
-  default_value = EXCLUDED.default_value,
-  validation_rules = EXCLUDED.validation_rules,
-  sort = EXCLUDED.sort,
-  field_group_id = EXCLUDED.field_group_id,
-  field_source = EXCLUDED.field_source,
-  ref_library_id = EXCLUDED.ref_library_id,
-  model_relation_id = EXCLUDED.model_relation_id,
-  target_entity_type = EXCLUDED.target_entity_type,
-  updater = 'seed',
-  update_time = CURRENT_TIMESTAMP;
+-- 管理状态已经是所有任务共用的底座字段，型号不得再分配旧扩展字段。
+UPDATE dynamic_model_field_assignment
+SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
+WHERE deleted = false
+  AND tenant_id = 1
+  AND model_code = 'patrol_task'
+  AND field_code = 'FLD-TSK-022';
 
 INSERT INTO dynamic_model_field_assignment (
   model_code, field_code, model_id, field_id, required, is_searchable, is_filterable, is_sortable,

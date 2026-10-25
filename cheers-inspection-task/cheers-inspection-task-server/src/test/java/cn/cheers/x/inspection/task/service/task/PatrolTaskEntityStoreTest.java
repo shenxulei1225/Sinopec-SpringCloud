@@ -59,6 +59,7 @@ class PatrolTaskEntityStoreTest {
     void updateDraft_writesSelectedEquipmentAsJsonText() throws Exception {
         EntityRespDTO existing = new EntityRespDTO();
         existing.setId(88L);
+        existing.setBaseFields(Map.of(PatrolTaskEntityStore.FIELD_MANAGE_STATUS, "draft"));
         existing.setCustomFields(Map.of(
                 PatrolTaskEntityStore.FIELD_DRAFT,
                 Map.of("patrolExecutionMode", "UAV", PatrolTaskEntityStore.DRAFT_KEY_UNLOCKED, 2)
@@ -224,6 +225,7 @@ class PatrolTaskEntityStoreTest {
                 "endStopId", "gate-2");
         EntityRespDTO existing = new EntityRespDTO();
         existing.setId(88L);
+        existing.setBaseFields(Map.of(PatrolTaskEntityStore.FIELD_MANAGE_STATUS, "enabled"));
         existing.setCustomFields(Map.of(
                 PatrolTaskEntityStore.FIELD_DRAFT,
                 Map.of(
@@ -244,6 +246,7 @@ class PatrolTaskEntityStoreTest {
         req.setFacilityId(2L);
         req.setPatrolExecutionMode("UAV");
         req.setInspectionContent(selectedTank());
+        req.setApplyToPublished(true);
         store.updateDraft(req);
 
         ArgumentCaptor<EntityWriteReqDTO> captor = ArgumentCaptor.forClass(EntityWriteReqDTO.class);

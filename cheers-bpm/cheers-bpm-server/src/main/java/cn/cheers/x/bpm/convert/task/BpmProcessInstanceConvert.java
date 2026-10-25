@@ -28,7 +28,7 @@ import cn.cheers.x.bpm.framework.flowable.core.util.BpmnModelUtils;
 import cn.cheers.x.bpm.framework.flowable.core.util.FlowableUtils;
 import cn.cheers.x.bpm.service.message.dto.BpmMessageSendWhenProcessInstanceApproveReqDTO;
 import cn.cheers.x.bpm.service.message.dto.BpmMessageSendWhenProcessInstanceRejectReqDTO;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import org.flowable.bpmn.model.BpmnModel;
 import org.flowable.engine.history.HistoricProcessInstance;
@@ -61,7 +61,7 @@ public interface BpmProcessInstanceConvert {
                                                                           Map<String, BpmCategoryDO> categoryMap,
                                                                           Map<String, List<Task>> taskMap,
                                                                           Map<Long, AdminUserRespDTO> userMap,
-                                                                          Map<Long, DeptRespDTO> deptMap,
+                                                                          Map<Long, DepartmentDTO> deptMap,
                                                                           Map<String, BpmProcessDefinitionInfoDO> processDefinitionInfoMap) {
         PageResult<BpmProcessInstanceRespVO> vpPageResult = BeanUtils.toBean(pageResult, BpmProcessInstanceRespVO.class);
         for (int i = 0; i < pageResult.getList().size(); i++) {
@@ -102,7 +102,7 @@ public interface BpmProcessInstanceConvert {
                                                           ProcessDefinition processDefinition,
                                                           BpmProcessDefinitionInfoDO processDefinitionInfo,
                                                           AdminUserRespDTO startUser,
-                                                          DeptRespDTO dept) {
+                                                          DepartmentDTO dept) {
         BpmProcessInstanceRespVO respVO = BeanUtils.toBean(processInstance, BpmProcessInstanceRespVO.class);
         respVO.setStatus(FlowableUtils.getProcessInstanceStatus(processInstance))
                 .setFormVariables(FlowableUtils.getProcessInstanceFormVariable(processInstance));
@@ -152,7 +152,7 @@ public interface BpmProcessInstanceConvert {
                                                                                     Set<String> finishedSequenceFlowActivityIds,
                                                                                     Set<String> rejectTaskActivityIds,
                                                                                     Map<Long, AdminUserRespDTO> userMap,
-                                                                                    Map<Long, DeptRespDTO> deptMap) {
+                                                                                    Map<Long, DepartmentDTO> deptMap) {
         BpmProcessInstanceBpmnModelViewRespVO respVO = new BpmProcessInstanceBpmnModelViewRespVO();
         // 基本信息
         respVO.setProcessInstance(BeanUtils.toBean(processInstance, BpmProcessInstanceRespVO.class, o -> o
@@ -174,7 +174,7 @@ public interface BpmProcessInstanceConvert {
 
     default UserSimpleBaseVO buildUser(String userIdStr,
                                        Map<Long, AdminUserRespDTO> userMap,
-                                       Map<Long, DeptRespDTO> deptMap) {
+                                       Map<Long, DepartmentDTO> deptMap) {
         if (StrUtil.isEmpty(userIdStr)) {
             return null;
         }
@@ -184,7 +184,7 @@ public interface BpmProcessInstanceConvert {
 
     default UserSimpleBaseVO buildUser(Long userId,
                                        Map<Long, AdminUserRespDTO> userMap,
-                                       Map<Long, DeptRespDTO> deptMap) {
+                                       Map<Long, DepartmentDTO> deptMap) {
         if (userId == null) {
             return null;
         }
@@ -193,7 +193,7 @@ public interface BpmProcessInstanceConvert {
             return null;
         }
         UserSimpleBaseVO userVO = BeanUtils.toBean(user, UserSimpleBaseVO.class);
-        DeptRespDTO dept = user.getDeptId() != null ? deptMap.get(user.getDeptId()) : null;
+        DepartmentDTO dept = user.getDeptId() != null ? deptMap.get(user.getDeptId()) : null;
         if (dept != null) {
             userVO.setDeptName(dept.getName());
         }
@@ -251,12 +251,12 @@ public interface BpmProcessInstanceConvert {
                                                         BpmTaskRespVO todoTask,
                                                         Map<String, String> formFieldsPermission,
                                                         Map<Long, AdminUserRespDTO> userMap,
-                                                        Map<Long, DeptRespDTO> deptMap) {
+                                                        Map<Long, DepartmentDTO> deptMap) {
         // 1.1 流程实例
         BpmProcessInstanceRespVO processInstanceResp = null;
         if (processInstance != null) {
             AdminUserRespDTO startUser = userMap.get(NumberUtils.parseLong(processInstance.getStartUserId()));
-            DeptRespDTO dept = startUser != null ? deptMap.get(startUser.getDeptId()) : null;
+            DepartmentDTO dept = startUser != null ? deptMap.get(startUser.getDeptId()) : null;
             processInstanceResp = buildProcessInstance(processInstance, null, null, startUser, dept);
         }
 

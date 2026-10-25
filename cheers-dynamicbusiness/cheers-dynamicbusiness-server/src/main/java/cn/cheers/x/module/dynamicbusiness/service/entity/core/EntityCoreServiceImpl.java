@@ -4,6 +4,7 @@ import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
+import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.PhysicalColumnFilter;
 import cn.cheers.x.module.dynamicbusiness.framework.hierarchy.IdTreeHierarchy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -151,6 +152,13 @@ public class EntityCoreServiceImpl implements EntityCoreService {
 
     @Override
     public PageResult<EntityDO> pageEntities(String entityTypeCode, Long modelId, Integer status, String keyword, Integer pageNo, Integer pageSize) {
+        return pageEntities(entityTypeCode, modelId, status, keyword, pageNo, pageSize, List.of());
+    }
+
+    @Override
+    public PageResult<EntityDO> pageEntities(String entityTypeCode, Long modelId, Integer status, String keyword,
+                                             Integer pageNo, Integer pageSize,
+                                             List<PhysicalColumnFilter> physicalFilters) {
         EntityRepository.EntityQuery query = EntityRepository.EntityQuery.builder()
                 .entityTypeCode(entityTypeCode)
                 .modelId(modelId)
@@ -158,8 +166,17 @@ public class EntityCoreServiceImpl implements EntityCoreService {
                 .keyword(keyword)
                 .pageNo(pageNo)
                 .pageSize(pageSize)
+                .physicalFilters(physicalFilters)
                 .build();
         return entityRepository.findPage(query);
+    }
+
+    @Override
+    public List<EntityDO> listByCodes(List<String> codes, String entityTypeCode) {
+        if (codes == null || codes.isEmpty() || entityTypeCode == null || entityTypeCode.isBlank()) {
+            return Collections.emptyList();
+        }
+        return entityRepository.findByCodes(codes, entityTypeCode);
     }
 
     @Override

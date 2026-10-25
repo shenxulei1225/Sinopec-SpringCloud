@@ -55,6 +55,17 @@ public class PatrolItemActionDurationCalculator {
      */
     public Optional<BigDecimal> computeLiveSeconds(
             InspectionContent content, String patrolExecutionMode, Long equipmentModelId) {
+        return computeLiveSeconds(content, patrolExecutionMode, equipmentModelId, null);
+    }
+
+    /**
+     * 列表实时核对使用当前页读快照，不再逐检查项、逐动作访问远程接口。
+     */
+    public Optional<BigDecimal> computeLiveSeconds(
+            InspectionContent content,
+            String patrolExecutionMode,
+            Long equipmentModelId,
+            GeneratedCheckInputReviewReadContext context) {
         if (content == null || !StringUtils.hasText(patrolExecutionMode)) {
             return Optional.empty();
         }
@@ -67,7 +78,7 @@ public class PatrolItemActionDurationCalculator {
         String means = patrolExecutionMode.trim();
         for (Long itemId : itemIds) {
             Optional<BigDecimal> minutes = perItem.computeIfAbsent(
-                    itemId, id -> minutesOfItem(id, means, equipmentModelId));
+                    itemId, id -> minutesOfItem(id, means, equipmentModelId, context));
             if (minutes.isEmpty()) {
                 return Optional.empty();
             }
@@ -114,8 +125,14 @@ public class PatrolItemActionDurationCalculator {
         return null;
     }
 
-    private Optional<BigDecimal> minutesOfItem(Long itemId, String means, Long equipmentModelId) {
-        EntityRespDTO item = optionalEntity(entityRpcApi.getEntity(itemId, ITEM_TYPE));
+    private Optional<BigDecimal> minutesOfItem(
+            Long itemId,
+            String means,
+            Long equipmentModelId,
+            GeneratedCheckInputReviewReadContext context) {
+        EntityRespDTO item = context == null
+                ? optionalEntity(entityRpcApi.getEntity(itemId, ITEM_TYPE))
+                : context.item(itemId);
         if (item == null) {
             return Optional.empty();
         }
@@ -126,7 +143,8 @@ public class PatrolItemActionDurationCalculator {
         }
         BigDecimal total = BigDecimal.ZERO;
         for (TaskStepTreeGenerator.MethodAction action : actions) {
-            Optional<BigDecimal> minutes = minutesOfAction(action.refCode(), means, equipmentModelId, new HashSet<>());
+            Optional<BigDecimal> minutes = minutesOfAction(
+                    action.refCode(), means, equipmentModelId, new HashSet<>(), context);
             if (minutes.isEmpty()) {
                 return Optional.empty();
             }
@@ -136,8 +154,12 @@ public class PatrolItemActionDurationCalculator {
     }
 
     private Optional<BigDecimal> minutesOfAction(
-            String actionCode, String means, Long equipmentModelId, Set<String> visiting) {
-        EntityRespDTO entity = loadAction(actionCode);
+            String actionCode,
+            String means,
+            Long equipmentModelId,
+            Set<String> visiting,
+            GeneratedCheckInputReviewReadContext context) {
+        EntityRespDTO entity = context == null ? loadAction(actionCode) : context.action(actionCode);
         if (entity == null) {
             return Optional.empty();
         }
@@ -153,7 +175,7 @@ public class PatrolItemActionDurationCalculator {
             BigDecimal total = BigDecimal.ZERO;
             for (ActionGroupMemberParser.Member member : members) {
                 Optional<BigDecimal> minutes = minutesOfAction(
-                        member.actionCode(), means, equipmentModelId, branch);
+                        member.actionCode(), means, equipmentModelId, branch, context);
                 if (minutes.isEmpty()) {
                     return Optional.empty();
                 }

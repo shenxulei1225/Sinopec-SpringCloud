@@ -2,14 +2,15 @@ package cn.cheers.x.bpm.framework.flowable.core.candidate.strategy.dept;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.framework.test.core.ut.BaseMockitoUnitTest;
-import cn.cheers.x.system.api.dept.DeptApi;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import org.assertj.core.util.Sets;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
 
+import java.util.List;
 import java.util.Set;
 
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
@@ -24,16 +25,22 @@ public class BpmTaskCandidateDeptLeaderMultiStrategyTest extends BaseMockitoUnit
     private BpmTaskCandidateDeptLeaderMultiStrategy strategy;
 
     @Mock
-    private DeptApi deptApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
 
     @Test
     public void testCalculateUsers() {
         // 准备参数
         String param = "10,20|2";
         // mock 方法
-        when(deptApi.getDept(any())).thenAnswer((Answer< CommonResult<DeptRespDTO>>) invocationOnMock -> {
-            Long deptId = invocationOnMock.getArgument(0);
-            return success(randomPojo(DeptRespDTO.class, o -> o.setId(deptId).setParentId(deptId * 100).setLeaderUserId(deptId + 1)));
+        when(departmentDirectoryApi.listDepartmentsByIds(any())).thenAnswer(
+                (Answer<CommonResult<List<DepartmentDTO>>>) invocationOnMock -> {
+            List<Long> departmentIds = invocationOnMock.getArgument(0);
+            return success(departmentIds.stream()
+                    .map(departmentId -> randomPojo(DepartmentDTO.class,
+                            o -> o.setId(departmentId)
+                                    .setParentId(departmentId * 100)
+                                    .setLeaderUserId(departmentId + 1)))
+                    .toList());
         });
 
         // 调用

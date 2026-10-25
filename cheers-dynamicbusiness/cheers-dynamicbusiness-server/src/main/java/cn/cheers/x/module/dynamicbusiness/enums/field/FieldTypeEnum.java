@@ -101,6 +101,12 @@ public enum FieldTypeEnum {
     MODEL_RELATION("MODEL_RELATION", "模型关联", true),
 
     /**
+     * 调用服务。这一项不写入记录。
+     * 创建保存成功后，按字段 options 里的服务和操作，把新记录编号交给那个操作。
+     */
+    SERVICE_CALL("SERVICE_CALL", "调用服务", false),
+
+    /**
  * 引用数据（单选）
  *
  * <p>用户在字段库只选「引用数据」并指定目标数据类型；挂到型号后由系统判定：</p>
@@ -192,6 +198,11 @@ ENTITY_SELF_REF("ENTITY_SELF_REF", "系统组织上级", true),
     /** 引用型号字段。读型号上点名的字段，不读某一条记录。 */
     public static boolean isRefModel(String code) {
         return REF_MODEL.getCode().equalsIgnoreCase(code);
+    }
+
+    /** 调用服务。值不落记录。 */
+    public static boolean isServiceCall(String code) {
+        return SERVICE_CALL.getCode().equalsIgnoreCase(code);
     }
 
     /**

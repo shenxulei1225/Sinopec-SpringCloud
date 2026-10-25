@@ -12,8 +12,8 @@ import cn.cheers.x.bpm.service.definition.BpmFormService;
 import cn.cheers.x.bpm.service.definition.BpmProcessDefinitionService;
 import cn.cheers.x.bpm.service.task.BpmProcessInstanceService;
 import cn.cheers.x.bpm.service.task.BpmTaskService;
-import cn.cheers.x.system.api.dept.DeptApi;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import cn.cheers.x.system.api.user.AdminUserApi;
 import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertMap;
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 import static cn.cheers.x.framework.common.util.collection.CollectionUtils.*;
 import static cn.cheers.x.framework.web.core.util.WebFrameworkUtils.getLoginUserId;
@@ -58,7 +59,7 @@ public class BpmTaskController {
     @Resource
     private AdminUserApi adminUserApi;
     @Resource
-    private DeptApi deptApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
 
     @GetMapping("todo-page")
     @Operation(summary = "获取 Todo 待办任务分页")
@@ -114,8 +115,8 @@ public class BpmTaskController {
         Set<Long> userIds = convertSet(processInstanceMap.values(), instance -> Long.valueOf(instance.getStartUserId()));
         userIds.addAll(convertSet(pageResult.getList(), task -> NumberUtils.parseLong(task.getAssignee())));
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(userIds);
-        Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(
-                convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
+        Map<Long, DepartmentDTO> deptMap = convertMap(departmentDirectoryApi.listDepartmentsByIds(java.util.List.copyOf(
+                convertSet(userMap.values(), AdminUserRespDTO::getDeptId))).getCheckedData(), DepartmentDTO::getId);
         Map<String, BpmProcessDefinitionInfoDO> processDefinitionInfoMap = processDefinitionService.getProcessDefinitionInfoMap(
                 convertSet(pageResult.getList(), HistoricTaskInstance::getProcessDefinitionId));
         return success(BpmTaskConvert.INSTANCE.buildTaskPage(pageResult, processInstanceMap, userMap, deptMap, processDefinitionInfoMap));
@@ -136,8 +137,8 @@ public class BpmTaskController {
         Set<Long> userIds = convertSetByFlatMap(taskList, task ->
                 Stream.of(NumberUtils.parseLong(task.getAssignee()), NumberUtils.parseLong(task.getOwner())));
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(userIds);
-        Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(
-                convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
+        Map<Long, DepartmentDTO> deptMap = convertMap(departmentDirectoryApi.listDepartmentsByIds(java.util.List.copyOf(
+                convertSet(userMap.values(), AdminUserRespDTO::getDeptId))).getCheckedData(), DepartmentDTO::getId);
         // 获得 Form Map
         Map<Long, BpmFormDO> formMap = formService.getFormMap(
                 convertSet(taskList, task -> NumberUtils.parseLong(task.getFormKey())));
@@ -239,8 +240,8 @@ public class BpmTaskController {
         // 拼接数据
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(convertSetByFlatMap(taskList,
                 user -> Stream.of(NumberUtils.parseLong(user.getAssignee()), NumberUtils.parseLong(user.getOwner()))));
-        Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(
-                convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
+        Map<Long, DepartmentDTO> deptMap = convertMap(departmentDirectoryApi.listDepartmentsByIds(java.util.List.copyOf(
+                convertSet(userMap.values(), AdminUserRespDTO::getDeptId))).getCheckedData(), DepartmentDTO::getId);
         return success(BpmTaskConvert.INSTANCE.buildTaskListByParentTaskId(taskList, userMap, deptMap));
     }
 

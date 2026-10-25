@@ -6,7 +6,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.cheers.x.framework.common.enums.UserTypeEnum;
 import cn.cheers.x.system.dal.dataobject.oauth2.OAuth2AccessTokenDO;
 import cn.cheers.x.system.dal.dataobject.oauth2.OAuth2CodeDO;
-import cn.cheers.x.system.dal.dataobject.user.AdminUserDO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.UserAccountDTO;
 import cn.cheers.x.system.enums.ErrorCodeConstants;
 import cn.cheers.x.system.service.auth.AdminAuthService;
 import jakarta.annotation.Resource;
@@ -72,7 +72,7 @@ public class OAuth2GrantServiceImpl implements OAuth2GrantService {
     @Override
     public OAuth2AccessTokenDO grantPassword(String username, String password, String clientId, List<String> scopes) {
         // 使用账号 + 密码进行登录
-        AdminUserDO user = adminAuthService.authenticate(username, password);
+        UserAccountDTO user = adminAuthService.authenticate(username, password);
         Assert.notNull(user, "用户不能为空！"); // 防御性编程
 
         // 创建访问令牌

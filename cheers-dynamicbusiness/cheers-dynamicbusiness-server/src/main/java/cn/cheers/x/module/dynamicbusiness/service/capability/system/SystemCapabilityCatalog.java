@@ -18,7 +18,6 @@ public final class SystemCapabilityCatalog {
     private static final Map<String, SystemCapabilityDefinition> BY_CODE = new LinkedHashMap<>();
 
     static {
-        register(dept("dept", "部门", "/system/dept/list", false));
         register(page("user", "用户", "/system/user/page",
                 fields("id", "ID", false, "username", "用户名", true, "nickname", "昵称", false, "mobile", "手机号", true),
                 fields("username", "用户名", true, "mobile", "手机号", true, "status", "状态", false)));

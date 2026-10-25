@@ -18,4 +18,8 @@ public class CatalogRoleGrantSaveReqVO {
     @Schema(description = "各数据目录的勾选。空列表表示清空该角色的目录授权。")
     @Valid
     private List<CatalogRoleGrantItemReqVO> items;
+
+    @Schema(description = "各数据目录的场站范围。不传则不改已保存的范围。空列表表示全部改回全部场站。")
+    @Valid
+    private List<CatalogRoleStationScopeReqVO> stationScopes;
 }

@@ -282,11 +282,13 @@ public class EntityTypeStepStructureProvisionService {
                 INSERT INTO dynamic_model_field_assignment (
                   model_id, field_id, model_code, field_code,
                   required, is_searchable, is_filterable, is_sortable, sort,
-                  default_value, target_entity_type, field_source, tenant_id, creator
+                  default_value, target_entity_type, field_source, tenant_id, creator,
+                  create_visible, edit_visible, detail_visible
                 )
                 SELECT
                   m.id, f.id, m.code, ?, false, false, false, false, 930,
-                  '[]', NULL, 'BASE', m.tenant_id, 'capability-step-structure'
+                  '[]', NULL, 'BASE', m.tenant_id, 'capability-step-structure',
+                  false, false, false
                 FROM dynamic_model m
                 JOIN dynamic_field f
                   ON f.deleted = false
@@ -306,6 +308,9 @@ public class EntityTypeStepStructureProvisionService {
                   sort = EXCLUDED.sort,
                   default_value = EXCLUDED.default_value,
                   field_source = EXCLUDED.field_source,
+                  create_visible = COALESCE(dynamic_model_field_assignment.create_visible, EXCLUDED.create_visible),
+                  edit_visible = COALESCE(dynamic_model_field_assignment.edit_visible, EXCLUDED.edit_visible),
+                  detail_visible = COALESCE(dynamic_model_field_assignment.detail_visible, EXCLUDED.detail_visible),
                   updater = 'capability-step-structure',
                   update_time = NOW()
                 """,
@@ -402,7 +407,7 @@ public class EntityTypeStepStructureProvisionService {
 
     /**
      * 现网编码列表 / 是否复合是步骤树存盘派生列，不是第二种用途。
-     * 开能力时写下详情不可见，介绍区按这份规则藏，不按列名在页面再藏一遍。
+     * 开能力时，这个型号还没自己改过的分配行写成三个画面都不显示。介绍区认分配上的开关。
      */
     private void hidePersistCompanionFields(Long tenantId, String entityTypeCode, String editorKind) {
         if (!"child_action_tree".equals(editorKind)) {
@@ -421,6 +426,25 @@ public class EntityTypeStepStructureProvisionService {
                   AND entity_type_code = ?
                   AND deleted = false
                   AND field_code IN ('child_action_ids_json', 'is_composite')
+                """,
+                tenantId,
+                entityTypeCode
+        );
+        jdbcTemplate.update(
+                """
+                UPDATE dynamic_model_field_assignment a
+                SET create_visible = COALESCE(a.create_visible, false),
+                    edit_visible = COALESCE(a.edit_visible, false),
+                    detail_visible = COALESCE(a.detail_visible, false),
+                    updater = 'capability-step-structure',
+                    update_time = NOW()
+                FROM dynamic_model m
+                WHERE a.model_id = m.id
+                  AND a.deleted = false
+                  AND m.deleted = false
+                  AND a.tenant_id = ?
+                  AND m.entity_type_code = ?
+                  AND a.field_code IN ('child_action_ids_json', 'is_composite')
                 """,
                 tenantId,
                 entityTypeCode

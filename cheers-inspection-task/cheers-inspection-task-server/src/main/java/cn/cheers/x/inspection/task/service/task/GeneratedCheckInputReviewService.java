@@ -1,17 +1,12 @@
 package cn.cheers.x.inspection.task.service.task;
 
-import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
-import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskGeneratedInputReviewRespVO;
 import cn.cheers.x.inspection.task.model.task.InspectionContent;
 import cn.cheers.x.inspection.task.service.execution.steptree.HostSopParamPack;
 import cn.cheers.x.inspection.task.service.execution.steptree.InspectionMethodSnapshotParser;
-import cn.cheers.x.inspection.task.service.execution.steptree.PatrolTaskStepTreeReader;
 import cn.cheers.x.inspection.task.service.execution.steptree.StepParamModelScope;
 import cn.cheers.x.inspection.task.service.execution.steptree.TaskStepTreeGenerator;
-import cn.cheers.x.module.dynamicbusiness.api.entity.EntityRpcApi;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,7 +15,6 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,21 +37,26 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class GeneratedCheckInputReviewService {
 
-    static final String ITEM_TYPE = "inspection_item";
-    static final String EQUIPMENT_TYPE = "equipment";
-    static final String ACTION_TYPE = "action";
     static final String FIELD_STEP_TREE = "step_tree_json";
     static final String FIELD_ACTION_TREE = "action_tree_json";
 
     private final PatrolTaskEntityStore patrolTaskEntityStore;
-    private final PatrolTaskStepTreeReader stepTreeReader;
     private final PatrolItemActionDurationCalculator itemActionDurationCalculator;
-    private final EntityRpcApi entityRpcApi;
+    private final GeneratedCheckInputReviewReadSupport readSupport;
     private final ObjectMapper objectMapper;
 
     public InspectionTaskGeneratedInputReviewRespVO review(Long taskId) {
-        InspectionTaskGeneratedInputReviewRespVO resp = new InspectionTaskGeneratedInputReviewRespVO();
         PatrolTaskDraft draft = patrolTaskEntityStore.require(taskId);
+        return review(draft, readSupport.load(List.of(draft)));
+    }
+
+    /**
+     * 列表核对只消费当前页已经批量装入的读快照，不再逐任务访问动态业务服务。
+     */
+    public InspectionTaskGeneratedInputReviewRespVO review(
+            PatrolTaskDraft draft,
+            GeneratedCheckInputReviewReadContext context) {
+        InspectionTaskGeneratedInputReviewRespVO resp = new InspectionTaskGeneratedInputReviewRespVO();
         boolean generated = Boolean.TRUE.equals(draft.orchestrationCommitted());
         resp.setAlreadyGenerated(generated);
         if (!generated || draft.inspectionContent() == null || !StringUtils.hasText(draft.patrolExecutionMode())) {
@@ -67,8 +66,8 @@ public class GeneratedCheckInputReviewService {
         Map<String, String> pointNames = pointNamesOf(draft.stepTree());
         String means = draft.patrolExecutionMode().trim();
         Long executionEquipmentId = executionEquipmentId(draft, means);
-        Long equipmentModelId = equipmentModelId(executionEquipmentId);
-        List<Long> mountedModelIds = mountedModelIds(executionEquipmentId);
+        Long equipmentModelId = context.equipmentModelId(executionEquipmentId);
+        List<Long> mountedModelIds = context.mountedModelIds(executionEquipmentId);
         List<InspectionTaskGeneratedInputReviewRespVO.Change> changes = new ArrayList<>();
         Map<Long, Set<Long>> applicableByEquipment = new LinkedHashMap<>();
         for (InspectionContent.ObjectContent object : objectsOf(draft.inspectionContent())) {
@@ -76,8 +75,8 @@ public class GeneratedCheckInputReviewService {
                 continue;
             }
             Set<Long> applicable = applicableByEquipment.computeIfAbsent(
-                    object.getObjectId(), this::applicableItemIds);
-            HostSopParamPack pack = stepTreeReader.loadHostPackOrEmpty(object.getObjectId());
+                    object.getObjectId(), context::applicableItemIds);
+            HostSopParamPack pack = context.hostPack(object.getObjectId());
             for (InspectionContent.ItemContent item : object.getItems()) {
                 if (item.getItemId() == null) {
                     continue;
@@ -91,11 +90,11 @@ public class GeneratedCheckInputReviewService {
                     continue;
                 }
                 List<GeneratedCheckInputDiff.StepView> live = liveSteps(
-                        item.getItemId(), means, pack, pointNames, equipmentModelId, mountedModelIds);
+                        item.getItemId(), means, pack, pointNames, equipmentModelId, mountedModelIds, context);
                 appendChanges(changes, object, item, GeneratedCheckInputDiff.diffItem(live, saved.steps()));
             }
         }
-        appendDurationChange(changes, draft, equipmentModelId);
+        appendDurationChange(changes, draft, equipmentModelId, context);
         resp.setChanges(changes);
         return resp;
     }
@@ -108,11 +107,13 @@ public class GeneratedCheckInputReviewService {
     private void appendDurationChange(
             List<InspectionTaskGeneratedInputReviewRespVO.Change> changes,
             PatrolTaskDraft draft,
-            Long equipmentModelId
+            Long equipmentModelId,
+            GeneratedCheckInputReviewReadContext context
     ) {
         BigDecimal storedAction = PatrolItemActionDurationSupport.minutesOf(draft.inspectionContent());
         BigDecimal liveAction = itemActionDurationCalculator
-                .computeLiveSeconds(draft.inspectionContent(), draft.patrolExecutionMode(), equipmentModelId)
+                .computeLiveSeconds(
+                        draft.inspectionContent(), draft.patrolExecutionMode(), equipmentModelId, context)
                 .orElse(null);
         if (liveAction == null || storedAction == null) {
             return;
@@ -135,19 +136,6 @@ public class GeneratedCheckInputReviewService {
         row.setDetail("生成时占窗按 " + baseline + " 分钟，现在检查项动作耗时加上路径耗时是 " + liveTotal + " 分钟");
         row.setDurationInput(true);
         changes.add(row);
-    }
-
-    /**
-     * 第 1 步同一条读法：这台设备在关联表里对端的检查项。
-     * 读失败不当成「一条适用都没有」，避免把还适用的项说成不再适用。
-     */
-    private Set<Long> applicableItemIds(Long equipmentId) {
-        CommonResult<List<Long>> result = entityRpcApi.listCounterpartEntityIds(
-                List.of(equipmentId), EQUIPMENT_TYPE, ITEM_TYPE);
-        if (result == null || !result.isSuccess() || result.getData() == null) {
-            throw ServiceExceptionUtil.invalidParamException("读不到这台设备的适用检查项");
-        }
-        return new LinkedHashSet<>(result.getData());
     }
 
     private static void appendChanges(
@@ -189,72 +177,16 @@ public class GeneratedCheckInputReviewService {
         return equipmentId;
     }
 
-    private Long equipmentModelId(Long equipmentId) {
-        if (equipmentId == null) {
-            return null;
-        }
-        EntityRespDTO equipment = optionalEntity(entityRpcApi.getEntity(equipmentId, EQUIPMENT_TYPE));
-        if (equipment == null) {
-            return null;
-        }
-        return longOf(bagOf(equipment).get("modelId"));
-    }
-
-    /**
-     * 挂载上的设备型号。执行设备型号对不上动作分型号参数时，挂载里只有一个适用型号才用它。
-     * 与生成步骤图读取挂载是同一条读法。读不到就空列表，不编一个型号。
-     */
-    private List<Long> mountedModelIds(Long executionEquipmentId) {
-        if (executionEquipmentId == null) {
-            return List.of();
-        }
-        EntityRespDTO host = optionalEntity(entityRpcApi.getEntity(executionEquipmentId, EQUIPMENT_TYPE));
-        if (host == null) {
-            return List.of();
-        }
-        Object raw = bagOf(host).get("payload_mounts");
-        Object value = raw;
-        if (raw instanceof String text && !text.isBlank()) {
-            try {
-                value = objectMapper.readValue(text, new TypeReference<List<Map<String, Object>>>() {
-                });
-            } catch (Exception ex) {
-                return List.of();
-            }
-        }
-        if (!(value instanceof List<?> rows)) {
-            return List.of();
-        }
-        List<Long> modelIds = new ArrayList<>();
-        for (Object row : rows) {
-            if (!(row instanceof Map<?, ?> map)) {
-                continue;
-            }
-            Long childId = longOf(map.get("equipmentId"));
-            if (childId == null) {
-                continue;
-            }
-            EntityRespDTO child = optionalEntity(entityRpcApi.getEntity(childId, EQUIPMENT_TYPE));
-            if (child == null) {
-                continue;
-            }
-            Long modelId = longOf(bagOf(child).get("modelId"));
-            if (modelId != null && !modelIds.contains(modelId)) {
-                modelIds.add(modelId);
-            }
-        }
-        return modelIds;
-    }
-
     private List<GeneratedCheckInputDiff.StepView> liveSteps(
             Long itemId,
             String means,
             HostSopParamPack pack,
             Map<String, String> pointNames,
             Long equipmentModelId,
-            List<Long> mountedModelIds
+            List<Long> mountedModelIds,
+            GeneratedCheckInputReviewReadContext context
     ) {
-        EntityRespDTO entity = optionalEntity(entityRpcApi.getEntity(itemId, ITEM_TYPE));
+        EntityRespDTO entity = context.item(itemId);
         if (entity == null) {
             return List.of();
         }
@@ -271,7 +203,7 @@ public class GeneratedCheckInputReviewService {
                     ? action.sourceNodeKey().trim()
                     : text(action.refCode());
             String actionRef = StringUtils.hasText(action.refCode()) ? action.refCode().trim() : "";
-            EntityRespDTO actionEntity = loadAction(action.refCode());
+            EntityRespDTO actionEntity = context.action(action.refCode());
             // 现在要哪些参数只认动作库。检查项步骤上抄下来的名单不参与对比。
             // 分型号参数先对执行设备，再对挂载里唯一适用型号。没对上就保持空名单，不拿另一型号。
             Object slotJson = actionEntity == null ? null : bagOf(actionEntity).get("param_slots_json");
@@ -399,21 +331,6 @@ public class GeneratedCheckInputReviewService {
     }
 
     private record SnapshotItem(List<GeneratedCheckInputDiff.StepView> steps) {
-    }
-
-    /** 巡检读动作只认业务编码。返回和打开这条动作相同的档案，含参数清单。 */
-    private EntityRespDTO loadAction(String actionCode) {
-        if (!StringUtils.hasText(actionCode)) {
-            return null;
-        }
-        return optionalEntity(entityRpcApi.getEntityByCode(actionCode.trim(), ACTION_TYPE));
-    }
-
-    private static EntityRespDTO optionalEntity(CommonResult<EntityRespDTO> result) {
-        if (result == null || !result.isSuccess()) {
-            return null;
-        }
-        return result.getData();
     }
 
     private static Map<String, Object> bagOf(EntityRespDTO entity) {

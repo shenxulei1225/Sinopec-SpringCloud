@@ -17,8 +17,8 @@ import cn.cheers.x.crm.dal.dataobject.customer.CrmCustomerDO;
 import cn.cheers.x.crm.dal.dataobject.customer.CrmCustomerPoolConfigDO;
 import cn.cheers.x.crm.service.customer.CrmCustomerPoolConfigService;
 import cn.cheers.x.crm.service.customer.CrmCustomerService;
-import cn.cheers.x.system.api.dept.DeptApi;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import cn.cheers.x.system.api.user.AdminUserApi;
 import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertMap;
 import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 import static cn.cheers.x.framework.common.pojo.PageParam.PAGE_SIZE_NONE;
@@ -58,7 +59,7 @@ public class CrmCustomerController {
     private CrmCustomerPoolConfigService customerPoolConfigService;
 
     @Resource
-    private DeptApi deptApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
     @Resource
     private AdminUserApi adminUserApi;
 
@@ -136,7 +137,7 @@ public class CrmCustomerController {
         // 1.1 获取创建人、负责人列表
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(convertSetByFlatMap(list,
                 contact -> Stream.of(NumberUtils.parseLong(contact.getCreator()), contact.getOwnerUserId())));
-        Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
+        Map<Long, DepartmentDTO> deptMap = convertMap(departmentDirectoryApi.listDepartmentsByIds(java.util.List.copyOf(convertSet(userMap.values(), AdminUserRespDTO::getDeptId))).getCheckedData(), DepartmentDTO::getId);
         // 1.2 获取距离进入公海的时间
         Map<Long, Long> poolDayMap = getPoolDayMap(list);
         // 2. 转换成 VO

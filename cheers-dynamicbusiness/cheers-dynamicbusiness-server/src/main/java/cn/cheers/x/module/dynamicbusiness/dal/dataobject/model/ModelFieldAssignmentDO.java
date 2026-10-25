@@ -85,6 +85,21 @@ public class ModelFieldAssignmentDO extends TenantBaseDO {
     private String alias;
 
     /**
+     * 创建弹窗是否画出这一行。空表示画出。只属于这个型号。
+     */
+    private Boolean createVisible;
+
+    /**
+     * 编辑弹窗是否画出这一行。空表示画出。只属于这个型号。
+     */
+    private Boolean editVisible;
+
+    /**
+     * 详情是否画出这一行。空表示画出。只属于这个型号。
+     */
+    private Boolean detailVisible;
+
+    /**
      * 业务规则（JSON格式）
      */
     private String validationRules;

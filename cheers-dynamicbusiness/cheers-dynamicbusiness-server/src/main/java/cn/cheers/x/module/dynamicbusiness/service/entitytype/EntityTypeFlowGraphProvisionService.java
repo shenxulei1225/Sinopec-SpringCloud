@@ -124,11 +124,13 @@ public class EntityTypeFlowGraphProvisionService {
                 INSERT INTO dynamic_model_field_assignment (
                   model_id, field_id, model_code, field_code,
                   required, is_searchable, is_filterable, is_sortable, sort,
-                  default_value, target_entity_type, field_source, tenant_id, creator
+                  default_value, target_entity_type, field_source, tenant_id, creator,
+                  create_visible, edit_visible, detail_visible
                 )
                 SELECT
                   m.id, f.id, m.code, ?, false, false, false, false, 940,
-                  '{}', NULL, 'BASE', m.tenant_id, 'capability-flow-graph'
+                  '{}', NULL, 'BASE', m.tenant_id, 'capability-flow-graph',
+                  false, false, false
                 FROM dynamic_model m
                 JOIN dynamic_field f
                   ON f.deleted = false
@@ -148,6 +150,9 @@ public class EntityTypeFlowGraphProvisionService {
                   sort = EXCLUDED.sort,
                   default_value = EXCLUDED.default_value,
                   field_source = EXCLUDED.field_source,
+                  create_visible = COALESCE(dynamic_model_field_assignment.create_visible, EXCLUDED.create_visible),
+                  edit_visible = COALESCE(dynamic_model_field_assignment.edit_visible, EXCLUDED.edit_visible),
+                  detail_visible = COALESCE(dynamic_model_field_assignment.detail_visible, EXCLUDED.detail_visible),
                   updater = 'capability-flow-graph',
                   update_time = NOW()
                 """,

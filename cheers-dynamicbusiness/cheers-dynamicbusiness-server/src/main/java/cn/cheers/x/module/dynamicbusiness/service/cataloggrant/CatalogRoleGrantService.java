@@ -14,6 +14,12 @@ public interface CatalogRoleGrantService {
     void replaceRoleGrants(Long roleId, List<CatalogRoleGrantItem> items);
 
     /**
+     * 同一次保存目录操作和场站范围。
+     * stationScopes 为 null 时不改范围。
+     */
+    void saveRoleCatalogPermission(Long roleId, List<CatalogRoleGrantItem> items, List<CatalogStationScope> stationScopes);
+
+    /**
      * 当前登录用户能否对这个数据目录里的实体做这一项。
      * 只认实体上的授权行。分类、模型和详情的勾选不放行实体。
      * 目录注册编码为空、目录不在本租户、操作不在四项内，都返回 false。

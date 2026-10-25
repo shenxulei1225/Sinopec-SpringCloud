@@ -186,6 +186,7 @@ public class EntityController {
         reqVO.setId(id);
         reqVO.setEntityTypeCode(entityTypeCode);
         reqVO.setForceDelete(forceDelete);
+        reqVO.setRegistryCode(registryCode);
         entityService.delete(reqVO);
         return success(true);
     }

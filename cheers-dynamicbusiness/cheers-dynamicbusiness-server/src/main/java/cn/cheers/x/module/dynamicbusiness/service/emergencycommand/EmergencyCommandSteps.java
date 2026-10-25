@@ -296,7 +296,8 @@ public final class EmergencyCommandSteps {
                     runStatus,
                     completedAt,
                     startedAt,
-                    text(node.get(EmergencyCommandFields.STEP_STAGE_KEY))));
+                    text(node.get(EmergencyCommandFields.STEP_STAGE_KEY)),
+                    text(node.get("reportFormId"))));
             out.addAll(flattenNodes(node.getJSONArray("children"), nodeKey, status));
         }
         return out;
@@ -356,11 +357,172 @@ public final class EmergencyCommandSteps {
         return raw == null ? "" : String.valueOf(raw).trim();
     }
 
+    /**
+     * 指挥页展示这份预案的预警和每一级步骤。
+     * 完成情况按「级别 + 步骤编号」从事件脉络叠上。换级不清空其它级。
+     */
+    public static List<LevelNodes> present(Object planRaw, Object warningRaw, Object timelineRaw) {
+        Map<String, NodeMark> marks = marksFromTimeline(timelineRaw);
+        List<LevelNodes> levels = new ArrayList<>();
+        JSONArray warning = asArray(warningRaw);
+        if (warning != null && !warning.isEmpty()) {
+            levels.add(new LevelNodes(
+                    EmergencyCommandFields.LEVEL_WARNING,
+                    flattenNodes(warning, null, marksFor(marks, EmergencyCommandFields.LEVEL_WARNING))));
+        }
+        JSONObject plan = asObject(planRaw);
+        JSONArray methods = plan == null ? null : plan.getJSONArray("methods");
+        if (methods == null) {
+            return levels;
+        }
+        for (int i = 0; i < methods.size(); i++) {
+            JSONObject method = methods.getJSONObject(i);
+            if (method == null) {
+                continue;
+            }
+            String level = text(method.get("methodKey"));
+            if (level.isEmpty()) {
+                continue;
+            }
+            levels.add(new LevelNodes(level, flattenNodes(method.getJSONArray("stepTree"), null, marksFor(marks, level))));
+        }
+        return levels;
+    }
+
+    /** 这一级在预案上有步骤。预警阶段用 warning。 */
+    public static boolean levelHasSteps(Object planRaw, Object warningRaw, String level) {
+        return !nodesOf(planRaw, warningRaw, level).isEmpty();
+    }
+
+    /** 预案这一级里有没有这一步。同名编号在不同级别各算各的。 */
+    public static boolean hasStep(Object planRaw, Object warningRaw, String level, String nodeKey) {
+        return findNode(nodesOf(planRaw, warningRaw, level), nodeKey) != null;
+    }
+
+    /** 这一步挂的信息表。没挂时返回空。 */
+    public static String reportFormId(Object planRaw, Object warningRaw, String level, String nodeKey) {
+        JSONObject node = findNode(nodesOf(planRaw, warningRaw, level), nodeKey);
+        return node == null ? "" : text(node.get("reportFormId"));
+    }
+
+    /** 步骤说明。脉络里只存编号，展示时再从预案读这句话。 */
+    public static String stepDescription(Object planRaw, Object warningRaw, String level, String nodeKey) {
+        JSONObject node = findNode(nodesOf(planRaw, warningRaw, level), nodeKey);
+        return node == null ? "" : text(node.get("stepDescription"));
+    }
+
+    private static Map<String, NodeMark> marksFromTimeline(Object raw) {
+        Map<String, NodeMark> marks = new LinkedHashMap<>();
+        JSONArray rows = asArray(raw);
+        if (rows == null) {
+            return marks;
+        }
+        for (int i = 0; i < rows.size(); i++) {
+            JSONObject row = rows.getJSONObject(i);
+            if (row == null) {
+                continue;
+            }
+            String kind = text(row.get("kind"));
+            String level = text(row.get("level"));
+            String nodeKey = text(row.get("nodeKey"));
+            if (level.isEmpty() || nodeKey.isEmpty()) {
+                continue;
+            }
+            String key = level + "|" + nodeKey;
+            NodeMark current = marks.get(key);
+            if ("step_started".equals(kind)) {
+                if (current != null && EmergencyCommandFields.STEP_DONE.equals(current.runStatus())) {
+                    continue;
+                }
+                String started = current != null && !current.startedAt().isEmpty()
+                        ? current.startedAt() : text(row.get("at"));
+                marks.put(key, new NodeMark(
+                        EmergencyCommandFields.STEP_RUNNING,
+                        current == null ? "" : current.completedAt(),
+                        started));
+            } else if ("step_completed".equals(kind)) {
+                String started = current == null ? "" : current.startedAt();
+                String completed = current != null && !current.completedAt().isEmpty()
+                        ? current.completedAt() : text(row.get("at"));
+                marks.put(key, new NodeMark(EmergencyCommandFields.STEP_DONE, completed, started));
+            }
+        }
+        return marks;
+    }
+
+    private static Map<String, NodeMark> marksFor(Map<String, NodeMark> all, String level) {
+        Map<String, NodeMark> out = new LinkedHashMap<>();
+        String prefix = level + "|";
+        for (Map.Entry<String, NodeMark> entry : all.entrySet()) {
+            if (entry.getKey().startsWith(prefix)) {
+                out.put(entry.getKey().substring(prefix.length()), entry.getValue());
+            }
+        }
+        return out;
+    }
+
+    private static JSONArray nodesOf(Object planRaw, Object warningRaw, String level) {
+        if (EmergencyCommandFields.LEVEL_WARNING.equals(level)) {
+            JSONArray warning = asArray(warningRaw);
+            return warning == null ? new JSONArray() : warning;
+        }
+        JSONObject plan = asObject(planRaw);
+        JSONArray methods = plan == null ? null : plan.getJSONArray("methods");
+        if (methods == null) {
+            return new JSONArray();
+        }
+        for (int i = 0; i < methods.size(); i++) {
+            JSONObject method = methods.getJSONObject(i);
+            if (method != null && level.equals(text(method.get("methodKey")))) {
+                JSONArray tree = method.getJSONArray("stepTree");
+                return tree == null ? new JSONArray() : tree;
+            }
+        }
+        return new JSONArray();
+    }
+
+    private static JSONObject findNode(JSONArray nodes, String nodeKey) {
+        if (nodes == null || nodeKey == null || nodeKey.isBlank()) {
+            return null;
+        }
+        for (int i = 0; i < nodes.size(); i++) {
+            JSONObject node = nodes.getJSONObject(i);
+            if (node == null) {
+                continue;
+            }
+            if (nodeKey.equals(text(node.get("nodeKey")))) {
+                return node;
+            }
+            JSONObject child = findNode(node.getJSONArray("children"), nodeKey);
+            if (child != null) {
+                return child;
+            }
+        }
+        return null;
+    }
+
+    private static JSONArray asArray(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        if (raw instanceof JSONArray array) {
+            return array;
+        }
+        if (raw instanceof String text && !text.isBlank()) {
+            String trimmed = text.trim();
+            if (trimmed.startsWith("[")) {
+                return JSON.parseArray(trimmed);
+            }
+            return null;
+        }
+        return JSON.parseArray(JSON.toJSONString(raw));
+    }
+
     /** 用户在预案上定义的阶段。名称原样显示。 */
     public record StageDef(String stageKey, String name) {
     }
 
-    /** 某一级响应上的步骤。完成情况只在已经启动的那一级有值。 */
+    /** 某一级响应上的步骤。完成情况按级别和步骤编号从事件脉络叠上去。 */
     public record LevelNodes(String level, List<StepNode> nodes) {
     }
 
@@ -373,7 +535,8 @@ public final class EmergencyCommandSteps {
             String runStatus,
             String completedAt,
             String startedAt,
-            String stageKey) {
+            String stageKey,
+            String reportFormId) {
     }
 
     private record NodeMark(String runStatus, String completedAt, String startedAt) {

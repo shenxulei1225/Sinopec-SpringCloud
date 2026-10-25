@@ -3,8 +3,8 @@ package cn.cheers.x.bpm.framework.flowable.core.candidate.strategy.dept;
 import cn.cheers.x.framework.common.util.string.StrUtils;
 import cn.cheers.x.bpm.framework.flowable.core.candidate.BpmTaskCandidateStrategy;
 import cn.cheers.x.bpm.framework.flowable.core.enums.BpmTaskCandidateStrategyEnum;
-import cn.cheers.x.system.api.dept.DeptApi;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +22,7 @@ import static cn.cheers.x.framework.common.util.collection.CollectionUtils.conve
 public class BpmTaskCandidateDeptLeaderStrategy implements BpmTaskCandidateStrategy {
 
     @Resource
-    private DeptApi deptApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
 
     @Override
     public BpmTaskCandidateStrategyEnum getStrategy() {
@@ -32,14 +32,16 @@ public class BpmTaskCandidateDeptLeaderStrategy implements BpmTaskCandidateStrat
     @Override
     public void validateParam(String param) {
         Set<Long> deptIds = StrUtils.splitToLongSet(param);
-        deptApi.validateDeptList(deptIds).checkError();
+        deptIds.forEach(deptId ->
+                departmentDirectoryApi.validateDepartmentEnabled(deptId).getCheckedData());
     }
 
     @Override
     public Set<Long> calculateUsers(String param) {
         Set<Long> deptIds = StrUtils.splitToLongSet(param);
-        List<DeptRespDTO> depts = deptApi.getDeptList(deptIds).getCheckedData();
-        return convertSet(depts, DeptRespDTO::getLeaderUserId);
+        List<DepartmentDTO> depts = departmentDirectoryApi.listDepartmentsByIds(
+                List.copyOf(deptIds)).getCheckedData();
+        return convertSet(depts, DepartmentDTO::getLeaderUserId);
     }
 
 }

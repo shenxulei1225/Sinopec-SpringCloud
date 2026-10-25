@@ -10,8 +10,8 @@ import cn.cheers.x.crm.controller.admin.customer.vo.limitconfig.CrmCustomerLimit
 import cn.cheers.x.crm.controller.admin.customer.vo.limitconfig.CrmCustomerLimitConfigSaveReqVO;
 import cn.cheers.x.crm.dal.dataobject.customer.CrmCustomerLimitConfigDO;
 import cn.cheers.x.crm.service.customer.CrmCustomerLimitConfigService;
-import cn.cheers.x.system.api.dept.DeptApi;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import cn.cheers.x.system.api.user.AdminUserApi;
 import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Collection;
 import java.util.Map;
 
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertMap;
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertSetByFlatMap;
 
@@ -39,7 +40,7 @@ public class CrmCustomerLimitConfigController {
     private CrmCustomerLimitConfigService customerLimitConfigService;
 
     @Resource
-    private DeptApi deptApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
     @Resource
     private AdminUserApi adminUserApi;
 
@@ -75,7 +76,7 @@ public class CrmCustomerLimitConfigController {
         CrmCustomerLimitConfigDO limitConfig = customerLimitConfigService.getCustomerLimitConfig(id);
         // 拼接数据
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(limitConfig.getUserIds());
-        Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(limitConfig.getDeptIds());
+        Map<Long, DepartmentDTO> deptMap = convertMap(departmentDirectoryApi.listDepartmentsByIds(java.util.List.copyOf(limitConfig.getDeptIds())).getCheckedData(), DepartmentDTO::getId);
         return success(BeanUtils.toBean(limitConfig, CrmCustomerLimitConfigRespVO.class, configVO -> {
             configVO.setUsers(CollectionUtils.convertList(configVO.getUserIds(), userMap::get));
             configVO.setDepts(CollectionUtils.convertList(configVO.getDeptIds(), deptMap::get));
@@ -93,8 +94,8 @@ public class CrmCustomerLimitConfigController {
         // 拼接数据
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(
                 convertSetByFlatMap(pageResult.getList(), CrmCustomerLimitConfigDO::getUserIds, Collection::stream));
-        Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(
-                convertSetByFlatMap(pageResult.getList(), CrmCustomerLimitConfigDO::getDeptIds, Collection::stream));
+        Map<Long, DepartmentDTO> deptMap = convertMap(departmentDirectoryApi.listDepartmentsByIds(java.util.List.copyOf(
+                convertSetByFlatMap(pageResult.getList(), CrmCustomerLimitConfigDO::getDeptIds, Collection::stream))).getCheckedData(), DepartmentDTO::getId);
         return success(BeanUtils.toBean(pageResult, CrmCustomerLimitConfigRespVO.class, configVO -> {
             configVO.setUsers(CollectionUtils.convertList(configVO.getUserIds(), userMap::get));
             configVO.setDepts(CollectionUtils.convertList(configVO.getDeptIds(), deptMap::get));

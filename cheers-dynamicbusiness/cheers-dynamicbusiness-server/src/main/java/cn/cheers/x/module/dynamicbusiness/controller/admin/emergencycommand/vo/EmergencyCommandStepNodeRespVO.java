@@ -29,4 +29,7 @@ public class EmergencyCommandStepNodeRespVO {
 
     @Schema(description = "这一步所属阶段。空表示预案还没把这一步分到阶段")
     private String stageKey;
+
+    @Schema(description = "这一步挂的信息表。没挂时为空")
+    private String reportFormId;
 }

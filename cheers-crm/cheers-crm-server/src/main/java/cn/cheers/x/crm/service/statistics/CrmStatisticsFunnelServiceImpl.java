@@ -10,8 +10,8 @@ import cn.cheers.x.crm.dal.dataobject.business.CrmBusinessDO;
 import cn.cheers.x.crm.dal.mysql.statistics.CrmStatisticsFunnelMapper;
 import cn.cheers.x.crm.enums.business.CrmBusinessEndStatusEnum;
 import cn.cheers.x.crm.service.business.CrmBusinessService;
-import cn.cheers.x.system.api.dept.DeptApi;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import cn.cheers.x.system.api.user.AdminUserApi;
 import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import jakarta.annotation.Resource;
@@ -40,7 +40,7 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
     @Resource
     private CrmBusinessService businessService;
     @Resource
-    private DeptApi deptApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
 
     @Override
     public CrmStatisticFunnelSummaryRespVO getFunnelSummary(CrmStatisticsFunnelReqVO reqVO) {
@@ -145,8 +145,7 @@ public class CrmStatisticsFunnelServiceImpl implements CrmStatisticsFunnelServic
         }
         // 情况二：选中某个部门
         // 2.1 获得部门列表
-        List<Long> deptIds = convertList(deptApi.getChildDeptList(reqVO.getDeptId()).getCheckedData(), DeptRespDTO::getId);
-        deptIds.add(reqVO.getDeptId());
+        List<Long> deptIds = convertList(departmentDirectoryApi.listDepartmentSubtree(reqVO.getDeptId()).getCheckedData(), DepartmentDTO::getId);
         // 2.2 获得用户编号
         return convertList(adminUserApi.getUserListByDeptIds(deptIds).getCheckedData(), AdminUserRespDTO::getId);
     }

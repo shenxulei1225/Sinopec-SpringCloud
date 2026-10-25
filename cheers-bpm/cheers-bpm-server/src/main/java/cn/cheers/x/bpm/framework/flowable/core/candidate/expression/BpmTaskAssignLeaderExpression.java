@@ -2,10 +2,10 @@ package cn.cheers.x.bpm.framework.flowable.core.candidate.expression;
 
 import cn.cheers.x.framework.common.util.number.NumberUtils;
 import cn.cheers.x.bpm.service.task.BpmProcessInstanceService;
-import cn.cheers.x.system.api.dept.DeptApi;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
-import cn.cheers.x.system.api.user.AdminUserApi;
-import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.UserAccountApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.UserAccountDTO;
 import org.flowable.engine.delegate.DelegateExecution;
 import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Component;
@@ -28,9 +28,9 @@ import static java.util.Collections.emptySet;
 public class BpmTaskAssignLeaderExpression {
 
     @Resource
-    private AdminUserApi adminUserApi;
+    private UserAccountApi userAccountApi;
     @Resource
-    private DeptApi deptApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
 
     @Resource
     private BpmProcessInstanceService processInstanceService;
@@ -48,7 +48,7 @@ public class BpmTaskAssignLeaderExpression {
         ProcessInstance processInstance = processInstanceService.getProcessInstance(execution.getProcessInstanceId());
         Long startUserId = NumberUtils.parseLong(processInstance.getStartUserId());
         // 获得对应 leve 的部门
-        DeptRespDTO dept = null;
+        DepartmentDTO dept = null;
         for (int i = 0; i < level; i++) {
             // 获得 level 对应的部门
             if (dept == null) {
@@ -57,22 +57,22 @@ public class BpmTaskAssignLeaderExpression {
                     return emptySet();
                 }
             } else {
-                DeptRespDTO parentDept = deptApi.getDept(dept.getParentId()).getCheckedData();
-                if (parentDept == null) { // 找不到父级部门，所以只好结束寻找。原因是：例如说，级别比较高的人，所在部门层级比较少
+                if (dept.getParentId() == null) {
                     break;
                 }
+                DepartmentDTO parentDept = departmentDirectoryApi.getDepartment(dept.getParentId()).getCheckedData();
                 dept = parentDept;
             }
         }
         return dept.getLeaderUserId() != null ? asSet(dept.getLeaderUserId()) : emptySet();
     }
 
-    private DeptRespDTO getStartUserDept(Long startUserId) {
-        AdminUserRespDTO startUser = adminUserApi.getUser(startUserId).getCheckedData();
-        if (startUser.getDeptId() == null) { // 找不到部门，所以无法使用该规则
+    private DepartmentDTO getStartUserDept(Long startUserId) {
+        UserAccountDTO startUser = userAccountApi.getUserAccount(startUserId).getCheckedData();
+        if (startUser.getDepartmentId() == null) { // 找不到部门，所以无法使用该规则
             return null;
         }
-        return deptApi.getDept(startUser.getDeptId()).getCheckedData();
+        return departmentDirectoryApi.getDepartment(startUser.getDepartmentId()).getCheckedData();
     }
 
 }

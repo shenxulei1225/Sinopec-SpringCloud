@@ -20,6 +20,7 @@ import org.springframework.validation.annotation.Validated;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -296,6 +297,15 @@ public class EntityRelationServiceImpl implements EntityRelationService {
                                                String relatedEntityTypeCode,
                                                String listEntityTypeCode) {
         return entityRelationMapper.selectCounterpartEntityIds(
+                relatedEntityIds, relatedEntityTypeCode, listEntityTypeCode);
+    }
+
+    @Override
+    public Map<Long, List<Long>> listCounterpartEntityIdsGrouped(
+            List<Long> relatedEntityIds,
+            String relatedEntityTypeCode,
+            String listEntityTypeCode) {
+        return entityRelationMapper.selectCounterpartEntityIdsGrouped(
                 relatedEntityIds, relatedEntityTypeCode, listEntityTypeCode);
     }
 

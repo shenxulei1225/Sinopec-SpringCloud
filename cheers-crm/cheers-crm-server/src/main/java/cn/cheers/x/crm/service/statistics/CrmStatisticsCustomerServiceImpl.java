@@ -10,8 +10,8 @@ import cn.cheers.x.framework.ip.core.enums.AreaTypeEnum;
 import cn.cheers.x.framework.ip.core.utils.AreaUtils;
 import cn.cheers.x.crm.controller.admin.statistics.vo.customer.*;
 import cn.cheers.x.crm.dal.mysql.statistics.CrmStatisticsCustomerMapper;
-import cn.cheers.x.system.api.dept.DeptApi;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import cn.cheers.x.system.api.user.AdminUserApi;
 import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import jakarta.annotation.Resource;
@@ -44,7 +44,7 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
     @Resource
     private AdminUserApi adminUserApi;
     @Resource
-    private DeptApi deptApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
 
     @Override
     public List<CrmStatisticsCustomerSummaryByDateRespVO> getCustomerSummaryByDate(CrmStatisticsCustomerReqVO reqVO) {
@@ -359,8 +359,7 @@ public class CrmStatisticsCustomerServiceImpl implements CrmStatisticsCustomerSe
         }
         // 情况二：选中某个部门
         // 2.1 获得部门列表
-        List<Long> deptIds = convertList(deptApi.getChildDeptList(reqVO.getDeptId()).getCheckedData(), DeptRespDTO::getId);
-        deptIds.add(reqVO.getDeptId());
+        List<Long> deptIds = convertList(departmentDirectoryApi.listDepartmentSubtree(reqVO.getDeptId()).getCheckedData(), DepartmentDTO::getId);
         // 2.2 获得用户编号
         return convertList(adminUserApi.getUserListByDeptIds(deptIds).getCheckedData(), AdminUserRespDTO::getId);
     }

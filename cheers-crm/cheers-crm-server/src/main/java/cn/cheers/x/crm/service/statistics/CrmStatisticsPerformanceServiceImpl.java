@@ -6,8 +6,8 @@ import cn.hutool.core.util.ObjUtil;
 import cn.cheers.x.crm.controller.admin.statistics.vo.performance.CrmStatisticsPerformanceReqVO;
 import cn.cheers.x.crm.controller.admin.statistics.vo.performance.CrmStatisticsPerformanceRespVO;
 import cn.cheers.x.crm.dal.mysql.statistics.CrmStatisticsPerformanceMapper;
-import cn.cheers.x.system.api.dept.DeptApi;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import cn.cheers.x.system.api.user.AdminUserApi;
 import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import jakarta.annotation.Resource;
@@ -39,7 +39,7 @@ public class CrmStatisticsPerformanceServiceImpl implements CrmStatisticsPerform
     @Resource
     private AdminUserApi adminUserApi;
     @Resource
-    private DeptApi deptApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
 
     @Override
     public List<CrmStatisticsPerformanceRespVO> getContractCountPerformance(CrmStatisticsPerformanceReqVO performanceReqVO) {
@@ -111,8 +111,7 @@ public class CrmStatisticsPerformanceServiceImpl implements CrmStatisticsPerform
         // 情况二：选中某个部门
         // 2.1 获得部门列表
         final Long deptId = reqVO.getDeptId();
-        List<Long> deptIds = convertList(deptApi.getChildDeptList(deptId).getCheckedData(), DeptRespDTO::getId);
-        deptIds.add(deptId);
+        List<Long> deptIds = convertList(departmentDirectoryApi.listDepartmentSubtree(deptId).getCheckedData(), DepartmentDTO::getId);
         // 2.2 获得用户编号
         return convertList(adminUserApi.getUserListByDeptIds(deptIds).getCheckedData(), AdminUserRespDTO::getId);
     }

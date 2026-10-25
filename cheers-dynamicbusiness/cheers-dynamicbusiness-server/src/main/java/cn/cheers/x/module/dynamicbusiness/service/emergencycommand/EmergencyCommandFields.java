@@ -14,6 +14,10 @@ public final class EmergencyCommandFields {
     public static final String RESPONSE_CATALOG = "emergency_response";
 
     public static final String ALERT_ID = "alert_id";
+    /** 事件发生时间。人工接报可填，告警转入可空。 */
+    public static final String OCCUR_TIME = "occur_time";
+    /** 选定预案之前的接报经过。 */
+    public static final String INTAKE_NOTE = "intake_note";
     public static final String EVENT_STATUS = "event_status";
     public static final String JUDGED_REAL = "judged_real";
     public static final String EVENT_TYPE = "event_type";
@@ -30,6 +34,13 @@ public final class EmergencyCommandFields {
     public static final String EVENT_ID = "event_id";
     public static final String PLAN_ID = "plan_id";
     public static final String STEP_TREE = "step_tree_json";
+    /** 预警阶段的步骤。不分级别，和响应步骤分开存。 */
+    public static final String WARNING_STEPS = "warning_step_tree_json";
+    /** 这起事件上已经发生的启动、变级、完成和上报。只追加。 */
+    public static final String EVENT_TIMELINE = "event_timeline";
+    /** 当前用的预案和级别。级别变化只改这里，不改脉络里的旧记录。 */
+    public static final String CURRENT_PLAN_STATE = "current_plan_state";
+    public static final String LEVEL_WARNING = "warning";
     public static final String RESPONSE_STATUS = "response_status";
     public static final String RESPONSE_RUNNING = "进行中";
 
@@ -37,6 +48,14 @@ public final class EmergencyCommandFields {
     public static final String STATUS_REJECTED = "不成立";
     public static final String STATUS_READY = "待启动";
     public static final String STATUS_RESPONDING = "响应中";
+    /** 应急响应之后的阶段。图层状态显示「后期处置」，不再显示等级。 */
+    public static final String STATUS_AFTERMATH = "后期处置";
+    /** 结案状态写在事件上。处置中、已结案。不按预案。 */
+    public static final String CASE_STATUS = "case_status";
+    public static final String CASE_OPEN = "处置中";
+    public static final String CASE_CLOSED = "已结案";
+    /** 预案上的启动规则。指挥只读。 */
+    public static final String START_RULES = "start_rules";
 
     public static final String STEP_RUN_STATUS = "runStatus";
     public static final String STEP_COMPLETED_AT = "completedAt";

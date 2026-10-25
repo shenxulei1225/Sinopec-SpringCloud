@@ -1,6 +1,8 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityPageReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityWriteReqDTO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCreateReqVO;
@@ -10,6 +12,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdat
 import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityDoVoHelper;
 import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityDtoConvert;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
+import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.PhysicalColumnFilter;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityDedicatedColumnService;
@@ -54,8 +57,10 @@ public class EntityRpcFacadeService {
         if (CollUtil.isEmpty(ids)) {
             return Collections.emptyList();
         }
-        List<EntityDO> entities = entityCoreService.listByIds(ids, entityTypeCode);
-        List<EntityRespVO> vos = EntityDoVoHelper.toRespVOList(entities, customFieldValidationService);
+        List<EntityDO> entities =
+                entityCoreService.listByIdsWithDedicatedBaseFields(ids, entityTypeCode);
+        List<EntityRespVO> vos = EntityDoVoHelper.toRespVOList(
+                entities, customFieldValidationService, entityDedicatedColumnService);
         return EntityDtoConvert.toDtoList(vos);
     }
 
@@ -84,6 +89,40 @@ public class EntityRpcFacadeService {
     }
 
     /**
+     * 数据库先完成过滤和分页，再一次加载本页基础字段。
+     * 基础字段编码必须能由当前底座元数据解析为安全物理列。
+     */
+    public PageResult<EntityRespDTO> page(EntityPageReqDTO req) {
+        if (req == null || StrUtil.isBlank(req.getEntityTypeCode())) {
+            throw new ServiceException(400, "底座类型编码不能为空");
+        }
+        String entityTypeCode = req.getEntityTypeCode().trim();
+        List<PhysicalColumnFilter> filters = new ArrayList<>();
+        Map<String, Object> baseFieldEquals = req.getBaseFieldEquals() == null
+                ? Map.of()
+                : req.getBaseFieldEquals();
+        for (Map.Entry<String, Object> entry : baseFieldEquals.entrySet()) {
+            String fieldCode = StrUtil.trim(entry.getKey());
+            String column = entityDedicatedColumnService.resolvePhysicalColumn(entityTypeCode, fieldCode);
+            if (column == null) {
+                throw new ServiceException(400, "基础字段不能用于数据库筛选：" + fieldCode);
+            }
+            filters.add(new PhysicalColumnFilter(column, "EQ", entry.getValue()));
+        }
+        PageResult<EntityDO> page = entityCoreService.pageEntities(
+                entityTypeCode, req.getModelId(), req.getStatus(), req.getKeyword(),
+                req.getPageNo(), req.getPageSize(), filters);
+        List<Long> ids = page.getList().stream()
+                .map(EntityDO::getId)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        List<EntityDO> loaded = entityCoreService.listByIdsWithDedicatedBaseFields(ids, entityTypeCode);
+        List<EntityRespVO> vos = EntityDoVoHelper.toRespVOList(
+                loaded, customFieldValidationService, entityDedicatedColumnService);
+        return new PageResult<>(EntityDtoConvert.toDtoList(vos), page.getTotal());
+    }
+
+    /**
      * 按业务编码读这一条的完整档案（含参数清单、步骤图）。
      * 编码只定位这一行，返回和按编号打开详情同一套装配。
      * 不扫该类型的列表。列表行没有这些固定列。
@@ -108,24 +147,25 @@ public class EntityRpcFacadeService {
     }
 
     /**
-     * 按编码批量读完整档案。每条都走 {@link #getByCode}，不扫列表。
+     * 按编码一次定位实体，再一次加载完整基础字段。
+     * 列表核对共享该批量结果，禁止逐编码调用详情接口。
      */
     public List<EntityRespDTO> listByCodes(List<String> codes, String entityTypeCode) {
-        if (CollUtil.isEmpty(codes)) {
+        if (CollUtil.isEmpty(codes) || StrUtil.isBlank(entityTypeCode)) {
             return Collections.emptyList();
         }
-        List<EntityRespDTO> details = new ArrayList<>();
         Set<String> seen = new HashSet<>();
         for (String code : codes) {
-            if (StrUtil.isBlank(code) || !seen.add(code.trim())) {
-                continue;
-            }
-            EntityRespDTO detail = getByCode(code, entityTypeCode);
-            if (detail != null) {
-                details.add(detail);
+            if (StrUtil.isNotBlank(code)) {
+                seen.add(code.trim());
             }
         }
-        return details;
+        List<EntityDO> matched = entityCoreService.listByCodes(new ArrayList<>(seen), entityTypeCode.trim());
+        List<Long> ids = matched.stream().map(EntityDO::getId).filter(java.util.Objects::nonNull).toList();
+        List<EntityDO> loaded = entityCoreService.listByIdsWithDedicatedBaseFields(ids, entityTypeCode.trim());
+        List<EntityRespVO> vos = EntityDoVoHelper.toRespVOList(
+                loaded, customFieldValidationService, entityDedicatedColumnService);
+        return EntityDtoConvert.toDtoList(vos);
     }
 
     /**

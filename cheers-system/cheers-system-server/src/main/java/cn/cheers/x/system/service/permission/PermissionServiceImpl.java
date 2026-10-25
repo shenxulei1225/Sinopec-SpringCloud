@@ -9,6 +9,9 @@ import cn.cheers.x.framework.tenant.core.util.TenantUtils;
 import cn.cheers.x.framework.common.util.collection.CollectionUtils;
 import cn.cheers.x.framework.datapermission.core.annotation.DataPermission;
 import cn.cheers.x.framework.common.biz.system.permission.dto.DeptDataPermissionRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.UserAccountApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import cn.cheers.x.system.dal.dataobject.permission.MenuDO;
 import cn.cheers.x.system.dal.dataobject.permission.RoleDO;
 import cn.cheers.x.system.dal.dataobject.permission.RoleMenuDO;
@@ -18,8 +21,6 @@ import cn.cheers.x.system.dal.mysql.permission.UserRoleMapper;
 import cn.cheers.x.system.dal.redis.RedisKeyConstants;
 import cn.cheers.x.system.enums.permission.DataScopeEnum;
 import cn.cheers.x.system.enums.permission.RoleCodeEnum;
-import cn.cheers.x.system.service.dept.DeptService;
-import cn.cheers.x.system.service.user.AdminUserService;
 import com.baomidou.dynamic.datasource.annotation.DSTransactional;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Suppliers;
@@ -57,9 +58,9 @@ public class PermissionServiceImpl implements PermissionService {
     @Resource
     private MenuService menuService;
     @Resource
-    private DeptService deptService;
+    private DepartmentDirectoryApi departmentDirectoryApi;
     @Resource
-    private AdminUserService userService;
+    private UserAccountApi userAccountApi;
 
     @Override
     public boolean hasAnyPermissions(Long userId, String... permissions) {
@@ -327,7 +328,8 @@ public class PermissionServiceImpl implements PermissionService {
         }
 
         // 获得用户的部门编号的缓存，通过 Guava 的 Suppliers 惰性求值，即有且仅有第一次发起 DB 的查询
-        Supplier<Long> userDeptId = Suppliers.memoize(() -> userService.getUser(userId).getDeptId());
+        Supplier<Long> userDeptId = Suppliers.memoize(() ->
+                userAccountApi.getUserAccount(userId).getCheckedData().getDepartmentId());
         // 遍历每个角色，计算
         for (RoleDO role : roles) {
             // 为空时，跳过
@@ -354,9 +356,12 @@ public class PermissionServiceImpl implements PermissionService {
             }
             // 情况四，DEPT_DEPT_AND_CHILD
             if (Objects.equals(role.getDataScope(), DataScopeEnum.DEPT_AND_CHILD.getScope())) {
-                CollUtil.addAll(result.getDeptIds(), deptService.getChildDeptIdListFromCache(userDeptId.get()));
-                // 添加本身部门编号
-                CollUtil.addAll(result.getDeptIds(), userDeptId.get());
+                Long departmentId = userDeptId.get();
+                if (departmentId != null) {
+                    CollUtil.addAll(result.getDeptIds(),
+                            convertSet(departmentDirectoryApi.listDepartmentSubtree(departmentId).getCheckedData(),
+                                    DepartmentDTO::getId));
+                }
                 continue;
             }
             // 情况五，SELF

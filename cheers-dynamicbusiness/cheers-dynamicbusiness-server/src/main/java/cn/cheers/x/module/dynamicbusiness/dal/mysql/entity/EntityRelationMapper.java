@@ -516,4 +516,49 @@ public interface EntityRelationMapper extends BaseMapperX<EntityRelationDO> {
                 }
                 return new java.util.ArrayList<>(out);
         }
+
+        /**
+         * 批量查询时保留“上游实体 → 对端实体”分组，供一页任务共享两次关系查询。
+         */
+        default Map<Long, List<Long>> selectCounterpartEntityIdsGrouped(
+                List<Long> relatedEntityIds,
+                String relatedEntityTypeCode,
+                String listEntityTypeCode) {
+                if (relatedEntityIds == null || relatedEntityIds.isEmpty()
+                        || relatedEntityTypeCode == null || relatedEntityTypeCode.isBlank()
+                        || listEntityTypeCode == null || listEntityTypeCode.isBlank()) {
+                        return java.util.Collections.emptyMap();
+                }
+                List<Long> ids = relatedEntityIds.stream()
+                        .filter(java.util.Objects::nonNull)
+                        .distinct()
+                        .toList();
+                Map<Long, java.util.LinkedHashSet<Long>> grouped = new java.util.LinkedHashMap<>();
+                ids.forEach(id -> grouped.put(id, new java.util.LinkedHashSet<>()));
+                String relatedType = relatedEntityTypeCode.trim();
+                String listType = listEntityTypeCode.trim();
+                List<EntityRelationDO> asSource = selectList(new LambdaQueryWrapperX<EntityRelationDO>()
+                        .in(EntityRelationDO::getSourceEntityId, ids)
+                        .eq(EntityRelationDO::getSourceEntityTypeCode, relatedType)
+                        .eq(EntityRelationDO::getTargetEntityTypeCode, listType)
+                        .eq(EntityRelationDO::getDeleted, false));
+                for (EntityRelationDO row : asSource) {
+                        if (row.getSourceEntityId() != null && row.getTargetEntityId() != null) {
+                                grouped.get(row.getSourceEntityId()).add(row.getTargetEntityId());
+                        }
+                }
+                List<EntityRelationDO> asTarget = selectList(new LambdaQueryWrapperX<EntityRelationDO>()
+                        .in(EntityRelationDO::getTargetEntityId, ids)
+                        .eq(EntityRelationDO::getTargetEntityTypeCode, relatedType)
+                        .eq(EntityRelationDO::getSourceEntityTypeCode, listType)
+                        .eq(EntityRelationDO::getDeleted, false));
+                for (EntityRelationDO row : asTarget) {
+                        if (row.getTargetEntityId() != null && row.getSourceEntityId() != null) {
+                                grouped.get(row.getTargetEntityId()).add(row.getSourceEntityId());
+                        }
+                }
+                Map<Long, List<Long>> out = new java.util.LinkedHashMap<>();
+                grouped.forEach((id, values) -> out.put(id, new java.util.ArrayList<>(values)));
+                return out;
+        }
 }

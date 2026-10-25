@@ -16,15 +16,15 @@ public class EmergencyCommandAssessReqVO {
     @NotNull(message = "请选择是否成立")
     private Boolean real;
 
-    @Schema(description = "事件类型。成立时必填，取值与预案上的事件类型相同")
+    @Schema(description = "事件分类。成立时必填，表示这次发生了什么")
     private String eventType;
 
-    @Schema(description = "响应级别。成立时必填，取值与预案步骤该级的 methodKey 相同")
+    @Schema(description = "响应级别。成立时必填，取值与所选预案该级的 methodKey 相同")
     private String responseLevel;
 
     @Schema(description = "研判意见")
     private String comment;
 
-    @Schema(description = "成立并触发预案时选定的预案编号。不成立时不填")
+    @Schema(description = "成立时选定的预案编号。写入事件，供预警和响应读取。不成立时不填")
     private String planId;
 }

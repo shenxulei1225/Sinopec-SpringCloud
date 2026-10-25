@@ -67,6 +67,17 @@ public interface CategoryCategoryRelationMapper extends BaseMapperX<CategoryCate
         return selectList(q);
     }
 
+    /** 某一对种类之间已经挂上的关联。组织树一次读出运营区域和场站的对应。 */
+    default List<CategoryCategoryRelationDO> selectByTypePair(String hostCategoryTypeCode,
+                                                              String memberCategoryTypeCode) {
+        return selectList(new LambdaQueryWrapperX<CategoryCategoryRelationDO>()
+                .eq(CategoryCategoryRelationDO::getHostCategoryTypeCode, hostCategoryTypeCode)
+                .eq(CategoryCategoryRelationDO::getMemberCategoryTypeCode, memberCategoryTypeCode)
+                .eq(CategoryCategoryRelationDO::getDeleted, false)
+                .orderByAsc(CategoryCategoryRelationDO::getSort)
+                .orderByAsc(CategoryCategoryRelationDO::getId));
+    }
+
     /**
      * 物理删除一条已挂上的分类—分类关联。
      */

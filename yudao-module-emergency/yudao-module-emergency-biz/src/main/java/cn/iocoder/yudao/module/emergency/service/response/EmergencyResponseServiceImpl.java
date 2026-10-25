@@ -3,6 +3,8 @@ package cn.iocoder.yudao.module.emergency.service.response;
 import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.framework.common.pojo.PageParam;
+import cn.cheers.x.module.dynamicbusiness.api.directory.UserAccountApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.UserAccountDTO;
 import cn.iocoder.yudao.module.emergency.controller.admin.response.vo.*;
 import cn.iocoder.yudao.module.emergency.convert.response.EmergencyResponseConvert;
 import cn.iocoder.yudao.module.emergency.dal.dataobject.event.EmergencyEventDO;
@@ -68,6 +70,7 @@ public class EmergencyResponseServiceImpl implements EmergencyResponseService {
     private final EmergencyEventStatusHistoryMapper statusHistoryMapper;
     private final EmergencyProcessTimelineWriter processTimelineWriter;
     private final OrchestrationRunApi orchestrationRunApi;
+    private final UserAccountApi userAccountApi;
 
     public EmergencyResponseServiceImpl(EmergencyEventMapper eventMapper,
                                         EmergencyResponseMapper responseMapper,
@@ -84,7 +87,8 @@ public class EmergencyResponseServiceImpl implements EmergencyResponseService {
                                         EventStateMachine stateMachine,
                                         EmergencyEventStatusHistoryMapper statusHistoryMapper,
                                         EmergencyProcessTimelineWriter processTimelineWriter,
-                                        OrchestrationRunApi orchestrationRunApi) {
+                                        OrchestrationRunApi orchestrationRunApi,
+                                        UserAccountApi userAccountApi) {
         this.eventMapper = eventMapper;
         this.responseMapper = responseMapper;
         this.responseHistoryMapper = responseHistoryMapper;
@@ -101,6 +105,7 @@ public class EmergencyResponseServiceImpl implements EmergencyResponseService {
         this.statusHistoryMapper = statusHistoryMapper;
         this.processTimelineWriter = processTimelineWriter;
         this.orchestrationRunApi = orchestrationRunApi;
+        this.userAccountApi = userAccountApi;
     }
 
     @Override
@@ -153,9 +158,26 @@ public class EmergencyResponseServiceImpl implements EmergencyResponseService {
         if (commandOrg == null || commandOrg.isEmpty()) {
             throw ServiceExceptionUtil.exception(ErrorCodeConstants.EVENT_RESPONDING_REQUIRES_LEADER);
         }
+        requireEnabledCommandUser(commandOrg);
         // 提交兜底：同一事件禁止再开一条进行中响应（引擎路径 + HTTP 共用）
         if (responseMapper.selectLatestActiveByEventId(req.getEventId()) != null) {
             throw ServiceExceptionUtil.exception(ErrorCodeConstants.RESPONSE_ALREADY_ACTIVE);
+        }
+    }
+
+    /**
+     * 应急负责人只认用户目录编号。旧系统用户编号和自由文本都在提交时显式拒绝。
+     */
+    private void requireEnabledCommandUser(String commandOrg) {
+        final Long userAccountId;
+        try {
+            userAccountId = Long.valueOf(commandOrg);
+        } catch (NumberFormatException ex) {
+            throw new ServiceException(400, "负责人必须是用户目录编号");
+        }
+        UserAccountDTO user = userAccountApi.getUserAccount(userAccountId).getCheckedData();
+        if (!Integer.valueOf(1).equals(user.getStatus())) {
+            throw new ServiceException(400, "负责人已停用：" + userAccountId);
         }
     }
 

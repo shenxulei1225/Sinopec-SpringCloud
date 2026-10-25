@@ -3,15 +3,15 @@ package cn.cheers.x.system.controller.admin.user;
 import cn.hutool.core.collection.CollUtil;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.framework.datapermission.core.annotation.DataPermission;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import cn.cheers.x.system.controller.admin.user.vo.profile.UserProfileRespVO;
 import cn.cheers.x.system.controller.admin.user.vo.profile.UserProfileUpdatePasswordReqVO;
 import cn.cheers.x.system.controller.admin.user.vo.profile.UserProfileUpdateReqVO;
 import cn.cheers.x.system.convert.user.UserConvert;
-import cn.cheers.x.system.dal.dataobject.dept.DeptDO;
 import cn.cheers.x.system.dal.dataobject.dept.PostDO;
 import cn.cheers.x.system.dal.dataobject.permission.RoleDO;
 import cn.cheers.x.system.dal.dataobject.user.AdminUserDO;
-import cn.cheers.x.system.service.dept.DeptService;
 import cn.cheers.x.system.service.dept.PostService;
 import cn.cheers.x.system.service.permission.PermissionService;
 import cn.cheers.x.system.service.permission.RoleService;
@@ -39,7 +39,7 @@ public class UserProfileController {
     @Resource
     private AdminUserService userService;
     @Resource
-    private DeptService deptService;
+    private DepartmentDirectoryApi departmentDirectoryApi;
     @Resource
     private PostService postService;
     @Resource
@@ -56,7 +56,10 @@ public class UserProfileController {
         // 获得用户角色
         List<RoleDO> userRoles = roleService.getRoleListFromCache(permissionService.getUserRoleIdListByUserId(user.getId()));
         // 获得部门信息
-        DeptDO dept = user.getDeptId() != null ? deptService.getDept(user.getDeptId()) : null;
+        // 个人中心只读取动态部门目录。目录缺失时显式失败，不回查 system_dept。
+        DepartmentDTO dept = user.getDeptId() != null
+                ? departmentDirectoryApi.listDepartmentsByIds(List.of(user.getDeptId()))
+                        .getCheckedData().get(0) : null;
         // 获得岗位信息
         List<PostDO> posts = CollUtil.isNotEmpty(user.getPostIds()) ? postService.getPostList(user.getPostIds()) : null;
         return success(UserConvert.INSTANCE.convert(user, userRoles, dept, posts));

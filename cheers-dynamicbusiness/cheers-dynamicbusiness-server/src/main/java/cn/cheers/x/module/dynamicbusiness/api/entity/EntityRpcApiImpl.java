@@ -1,15 +1,18 @@
 package cn.cheers.x.module.dynamicbusiness.api.entity;
 
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityPageReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityWriteReqDTO;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityRpcFacadeService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityRelationService;
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
@@ -44,6 +47,11 @@ public class EntityRpcApiImpl implements EntityRpcApi {
     @Override
     public CommonResult<List<EntityRespDTO>> listEntities(String entityTypeCode, Long modelId) {
         return success(entityRpcFacadeService.list(entityTypeCode, modelId));
+    }
+
+    @Override
+    public CommonResult<PageResult<EntityRespDTO>> pageEntities(EntityPageReqDTO req) {
+        return success(entityRpcFacadeService.page(req));
     }
 
     @Override
@@ -90,6 +98,15 @@ public class EntityRpcApiImpl implements EntityRpcApi {
             String listEntityTypeCode
     ) {
         return success(entityRelationService.listCounterpartEntityIds(
+                relatedEntityIds, relatedEntityTypeCode, listEntityTypeCode));
+    }
+
+    @Override
+    public CommonResult<Map<Long, List<Long>>> listCounterpartEntityIdsGrouped(
+            List<Long> relatedEntityIds,
+            String relatedEntityTypeCode,
+            String listEntityTypeCode) {
+        return success(entityRelationService.listCounterpartEntityIdsGrouped(
                 relatedEntityIds, relatedEntityTypeCode, listEntityTypeCode));
     }
 

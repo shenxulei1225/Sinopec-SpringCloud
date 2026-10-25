@@ -5,8 +5,8 @@ import cn.cheers.x.framework.common.util.collection.MapUtils;
 import cn.cheers.x.crm.controller.admin.statistics.vo.rank.CrmStatisticsRankReqVO;
 import cn.cheers.x.crm.controller.admin.statistics.vo.rank.CrmStatisticsRankRespVO;
 import cn.cheers.x.crm.dal.mysql.statistics.CrmStatisticsRankMapper;
-import cn.cheers.x.system.api.dept.DeptApi;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import cn.cheers.x.system.api.user.AdminUserApi;
 import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import jakarta.annotation.Resource;
@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertMap;
 import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertList;
 import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertSet;
 
@@ -37,7 +38,7 @@ public class CrmStatisticsRankServiceImpl implements CrmStatisticsRankService {
     @Resource
     private AdminUserApi adminUserApi;
     @Resource
-    private DeptApi deptApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
 
     @Override
     public List<CrmStatisticsRankRespVO> getContractPriceRank(CrmStatisticsRankReqVO rankReqVO) {
@@ -110,7 +111,7 @@ public class CrmStatisticsRankServiceImpl implements CrmStatisticsRankService {
      */
     private void appendUserInfo(List<CrmStatisticsRankRespVO> ranks) {
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(convertSet(ranks, CrmStatisticsRankRespVO::getOwnerUserId));
-        Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
+        Map<Long, DepartmentDTO> deptMap = convertMap(departmentDirectoryApi.listDepartmentsByIds(java.util.List.copyOf(convertSet(userMap.values(), AdminUserRespDTO::getDeptId))).getCheckedData(), DepartmentDTO::getId);
         ranks.forEach(rank -> MapUtils.findAndThen(userMap, rank.getOwnerUserId(), user -> {
             rank.setNickname(user.getNickname());
             MapUtils.findAndThen(deptMap, user.getDeptId(), dept -> rank.setDeptName(dept.getName()));
@@ -125,8 +126,7 @@ public class CrmStatisticsRankServiceImpl implements CrmStatisticsRankService {
      */
     public List<Long> getUserIds(Long deptId) {
         // 1. 获得部门列表
-        List<Long> deptIds = convertList(deptApi.getChildDeptList(deptId).getCheckedData(), DeptRespDTO::getId);
-        deptIds.add(deptId);
+        List<Long> deptIds = convertList(departmentDirectoryApi.listDepartmentSubtree(deptId).getCheckedData(), DepartmentDTO::getId);
         // 2. 获得用户编号
         return convertList(adminUserApi.getUserListByDeptIds(deptIds).getCheckedData(), AdminUserRespDTO::getId);
     }

@@ -74,7 +74,7 @@ INSERT INTO dynamic_model_field_assignment (
 )
 SELECT m.id, f.id, m.code, f.code, false, false, true, false, 40, 'draft', NULL, 1, 'seed'
 FROM dynamic_model m
-JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1 AND f.code = 'FLD-TSK-022'
+JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1 AND f.code = 'manage_status'
 WHERE m.deleted = false AND m.tenant_id = 1 AND m.code = 'patrol_task'
 ON CONFLICT (model_code, field_code, tenant_id) WHERE deleted = false
 DO UPDATE SET sort = EXCLUDED.sort, default_value = EXCLUDED.default_value, is_filterable = EXCLUDED.is_filterable, updater = 'seed', update_time = CURRENT_TIMESTAMP;
@@ -309,7 +309,7 @@ DO UPDATE SET sort = EXCLUDED.sort, updater = 'seed', update_time = CURRENT_TIME
 UPDATE dynamic_model_field_assignment
 SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP
 WHERE deleted = false AND tenant_id = 1 AND model_code = 'patrol_task'
-  AND field_code IN ('FLD-TSK-018', 'FLD-TSK-019', 'FLD-TSK-021', 'FLD-TSK-025', 'FLD-TSK-026');
+  AND field_code IN ('FLD-TSK-018', 'FLD-TSK-019', 'FLD-TSK-021', 'FLD-TSK-022', 'FLD-TSK-025', 'FLD-TSK-026');
 
 UPDATE dynamic_group_relation
 SET deleted = true, updater = 'seed', update_time = CURRENT_TIMESTAMP

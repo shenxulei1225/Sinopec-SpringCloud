@@ -55,6 +55,7 @@ import cn.cheers.x.module.dynamicbusiness.service.action.ActionCreationValidator
 import cn.cheers.x.module.dynamicbusiness.service.action.ActionFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.action.CheckItemDeletedActionRemover;
 import cn.cheers.x.module.dynamicbusiness.service.entity.scene.EntitySceneQueryService;
+import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogStationScopeService;
 
 /**
  * 实体服务实现：CRUD、关联块、批量与排序；按场景列表/树查询委托 {@link EntitySceneQueryService}。
@@ -86,6 +87,9 @@ public class EntityServiceImpl implements EntityService {
     private cn.cheers.x.module.dynamicbusiness.service.category.hierarchy.AdvancedCategoryEntityHierarchyService advancedCategoryEntityHierarchyService;
     @Resource
     private EntityBusinessHelper entityBusinessHelper;
+    /** 按目录上已配置的场站范围核对保存和详情。不按目录类型写分支。 */
+    @Resource
+    private CatalogStationScopeService catalogStationScopeService;
     @Resource
     private EntityCacheEvictionService entityCacheEvictionService;
     @Resource
@@ -199,10 +203,21 @@ public class EntityServiceImpl implements EntityService {
 
     /**
      * 创建实体（本体落库 + 关系同步 + 缓存失效 + 事件发布）。
+     * 保存前只按该目录已配置的场站范围核对所属场站。不按目录类型写分支。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long create(EntityCreateReqVO reqVO) {
+        return insertEntity(reqVO);
+    }
+
+    private Long insertEntity(EntityCreateReqVO reqVO) {
+        catalogStationScopeService.assertWriteMatchesCurrentStation(
+                reqVO.getRegistryCode(),
+                EntityFieldMapsSupport.getEntityTypeCode(reqVO.getBaseFields()),
+                reqVO.getBaseFields(),
+                reqVO.getCustomFields(),
+                null);
         EntityDO data = entityBusinessHelper.prepareCreateEntity(reqVO);
         // prepare 后 customFields 已含全部非核心字段（含 REF）；抽固定列前先留下，供写关联表
         Map<String, Object> fieldValues = new LinkedHashMap<>(
@@ -337,6 +352,12 @@ public class EntityServiceImpl implements EntityService {
         String effectiveEntityTypeCode = StringUtils.hasText(requestedEntityTypeCode)
                 ? requestedEntityTypeCode.trim()
                 : oldEntity.getEntityTypeCode();
+        catalogStationScopeService.assertWriteMatchesCurrentStation(
+                reqVO.getRegistryCode(),
+                effectiveEntityTypeCode,
+                reqVO.getBaseFields(),
+                reqVO.getCustomFields(),
+                loadStoredForStationScope(reqVO.getId(), effectiveEntityTypeCode));
         guardSopSystemFieldMutation(reqVO, oldEntity, effectiveEntityTypeCode);
 
         Long requestedModelId = EntityFieldMapsSupport.getModelId(reqVO.getBaseFields());
@@ -612,6 +633,22 @@ public class EntityServiceImpl implements EntityService {
     }
 
     /**
+     * 读出已保存的专用列，供场站范围核对所属场站。
+     * 读不到时退回普通查询。普通查询没有专用列时，核对会指出没有所属场站。
+     */
+    private EntityDO loadStoredForStationScope(Long id, String entityTypeCode) {
+        if (id == null || !StringUtils.hasText(entityTypeCode)) {
+            return null;
+        }
+        List<EntityDO> loaded = entityCoreService.listByIdsWithDedicatedBaseFields(
+                Collections.singletonList(id), entityTypeCode.trim());
+        if (loaded != null && !loaded.isEmpty()) {
+            return loaded.get(0);
+        }
+        return entityCoreService.get(id, entityTypeCode.trim());
+    }
+
+    /**
      * 删除实体（删除前约束校验 + 关系清理 + 本体删除 + 缓存/事件处理）。
      */
     @Override
@@ -622,6 +659,12 @@ public class EntityServiceImpl implements EntityService {
         if (existingEntity == null) {
             throw new ServiceException(404, ENTITY_NOT_EXISTS);
         }
+        catalogStationScopeService.assertWriteMatchesCurrentStation(
+                reqVO.getRegistryCode(),
+                reqVO.getEntityTypeCode(),
+                null,
+                null,
+                loadStoredForStationScope(reqVO.getId(), reqVO.getEntityTypeCode()));
 
         // 非强制删除时，做最小化保护：存在子实体则拒绝删除
         if (!Boolean.TRUE.equals(reqVO.getForceDelete())
@@ -802,6 +845,7 @@ public class EntityServiceImpl implements EntityService {
         if (loaded == null || loaded.isEmpty()) {
             return null;
         }
+        catalogStationScopeService.assertViewMatchesCurrentStation(entityTypeCode, loaded.get(0));
         EntityRespVO vo = EntityDoVoHelper.toRespVO(
                 loaded.get(0), customFieldValidationService, entityDedicatedColumnService);
         // 详情读路径与列表一致：REF 只存 id，展示名在此补齐（不写库）
@@ -1188,6 +1232,12 @@ public class EntityServiceImpl implements EntityService {
                     continue;
                 }
 
+                catalogStationScopeService.assertWriteMatchesCurrentStation(
+                        reqVO.getRegistryCode(),
+                        entityTypeCode,
+                        null,
+                        null,
+                        loadStoredForStationScope(id, entityTypeCode));
                 if (Boolean.FALSE.equals(forceDelete)
                         && entityCoreService.existsByParentId(id, entityTypeCode)) {
                     failItems.add(EntityBatchOperationRespVO.FailItem.builder()

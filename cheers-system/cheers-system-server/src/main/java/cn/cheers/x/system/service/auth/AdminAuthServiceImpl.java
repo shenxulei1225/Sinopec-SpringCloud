@@ -1,7 +1,7 @@
 package cn.cheers.x.system.service.auth;
 
 import cn.hutool.core.util.ObjectUtil;
-import cn.cheers.x.framework.common.enums.CommonStatusEnum;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.enums.UserTypeEnum;
 import cn.cheers.x.framework.common.util.monitor.TracerUtils;
 import cn.cheers.x.framework.common.util.object.BeanUtils;
@@ -10,6 +10,8 @@ import cn.cheers.x.framework.common.util.validation.ValidationUtils;
 import cn.cheers.x.framework.datapermission.core.annotation.DataPermission;
 import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
 import cn.cheers.x.framework.tenant.core.util.TenantUtils;
+import cn.cheers.x.module.dynamicbusiness.api.directory.UserAccountApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.UserAccountDTO;
 import cn.cheers.x.system.api.logger.dto.LoginLogCreateReqDTO;
 import cn.cheers.x.system.api.sms.SmsCodeApi;
 import cn.cheers.x.system.api.sms.dto.code.SmsCodeUseReqDTO;
@@ -18,7 +20,6 @@ import cn.cheers.x.system.api.social.dto.SocialUserRespDTO;
 import cn.cheers.x.system.controller.admin.auth.vo.*;
 import cn.cheers.x.system.convert.auth.AuthConvert;
 import cn.cheers.x.system.dal.dataobject.oauth2.OAuth2AccessTokenDO;
-import cn.cheers.x.system.dal.dataobject.user.AdminUserDO;
 import cn.cheers.x.system.enums.logger.LoginLogTypeEnum;
 import cn.cheers.x.system.enums.logger.LoginResultEnum;
 import cn.cheers.x.system.enums.oauth2.OAuth2ClientConstants;
@@ -28,7 +29,6 @@ import cn.cheers.x.system.service.member.MemberService;
 import cn.cheers.x.system.service.oauth2.OAuth2TokenService;
 import cn.cheers.x.system.service.social.SocialUserService;
 import cn.cheers.x.system.service.tenant.TenantService;
-import cn.cheers.x.system.service.user.AdminUserService;
 import com.anji.captcha.model.common.ResponseModel;
 import com.anji.captcha.service.CaptchaService;
 import com.google.common.annotations.VisibleForTesting;
@@ -60,7 +60,9 @@ import static cn.cheers.x.system.enums.ErrorCodeConstants.*;
 public class AdminAuthServiceImpl implements AdminAuthService {
 
     @Resource
-    private AdminUserService userService;
+    private UserAccountApi userAccountApi;
+    @Resource
+    private LoginCredentialService loginCredentialService;
     @Resource
     private TenantService tenantService;
     @Resource
@@ -88,20 +90,19 @@ public class AdminAuthServiceImpl implements AdminAuthService {
     private Boolean captchaEnable;
 
     @Override
-    public AdminUserDO authenticate(String username, String password) {
+    public UserAccountDTO authenticate(String username, String password) {
         final LoginLogTypeEnum logTypeEnum = LoginLogTypeEnum.LOGIN_USERNAME;
-        // 校验账号是否存在
-        AdminUserDO user = userService.getUserByUsername(username);
+        UserAccountDTO user = findUserAccount(username);
         if (user == null) {
             createLoginLog(null, username, logTypeEnum, LoginResultEnum.BAD_CREDENTIALS);
             throw exception(AUTH_LOGIN_BAD_CREDENTIALS);
         }
-        if (!userService.isPasswordMatch(password, user.getPassword())) {
+        if (!loginCredentialService.matches(user.getId(), password)) {
             createLoginLog(user.getId(), username, logTypeEnum, LoginResultEnum.BAD_CREDENTIALS);
             throw exception(AUTH_LOGIN_BAD_CREDENTIALS);
         }
-        // 校验是否禁用
-        if (CommonStatusEnum.isDisable(user.getStatus())) {
+        // 用户目录只认 1=启用。状态缺失或其它值都拒绝，不猜成启用。
+        if (!Integer.valueOf(1).equals(user.getStatus())) {
             createLoginLog(user.getId(), username, logTypeEnum, LoginResultEnum.USER_DISABLED);
             throw exception(AUTH_LOGIN_USER_DISABLED);
         }
@@ -118,12 +119,14 @@ public class AdminAuthServiceImpl implements AdminAuthService {
         if (tenantService.isPlatformTenant(selectedTenantId)) {
             throw exception(AUTH_LOGIN_TENANT_NOT_BUSINESS);
         }
-        // 所选业务租户里有这个账号就用它。没有，再到平台认系统账号。
-        AdminUserDO user = userService.getUserByUsername(reqVO.getUsername());
-        if (user != null) {
-            user = authenticate(reqVO.getUsername(), reqVO.getPassword());
-        } else {
+        // 所选业务租户先查用户目录。没有时再查平台租户的用户目录。
+        UserAccountDTO user = findUserAccount(reqVO.getUsername());
+        Long accountTenantId = selectedTenantId;
+        if (user == null) {
+            accountTenantId = tenantService.getPlatformTenantId();
             user = authenticatePlatformUser(reqVO.getUsername(), reqVO.getPassword());
+        } else {
+            user = authenticate(reqVO.getUsername(), reqVO.getPassword());
         }
 
         // 如果 socialType 非空，说明需要绑定社交用户
@@ -131,17 +134,17 @@ public class AdminAuthServiceImpl implements AdminAuthService {
             socialUserService.bindSocialUser(new SocialUserBindReqDTO(user.getId(), getUserType().getValue(),
                     reqVO.getSocialType(), reqVO.getSocialCode(), reqVO.getSocialState()));
         }
-        return issueLoginToken(user, reqVO.getUsername(), selectedTenantId);
+        return issueLoginToken(user, reqVO.getUsername(), accountTenantId, selectedTenantId);
     }
 
     /**
      * 所选业务租户里没有这个账号时，到平台认系统账号。
      * 密码不对、账号停用，和普通登录同一句失败提示。平台上没有这个账号，也按账号不存在处理。
      */
-    private AdminUserDO authenticatePlatformUser(String username, String password) {
+    private UserAccountDTO authenticatePlatformUser(String username, String password) {
         Long platformTenantId = tenantService.getPlatformTenantId();
-        AdminUserDO platformUser = TenantUtils.execute(platformTenantId,
-                () -> userService.getUserByUsername(username));
+        UserAccountDTO platformUser = TenantUtils.execute(platformTenantId,
+                () -> findUserAccount(username));
         if (platformUser == null) {
             createLoginLog(null, username, LoginLogTypeEnum.LOGIN_USERNAME, LoginResultEnum.BAD_CREDENTIALS);
             throw exception(AUTH_LOGIN_BAD_CREDENTIALS);
@@ -153,15 +156,20 @@ public class AdminAuthServiceImpl implements AdminAuthService {
      * 令牌写在账号所属租户上。系统账号选了业务租户时，把选中的租户放进 visitTenantId。
      * 前端之后用 tenant-id 对齐令牌，用 visit-tenant-id 读选中租户的数据。
      */
-    private AuthLoginRespVO issueLoginToken(AdminUserDO user, String username, Long selectedTenantId) {
+    private AuthLoginRespVO issueLoginToken(UserAccountDTO user, String username,
+                                            Long accountTenantId, Long selectedTenantId) {
         boolean crossTenant = selectedTenantId != null
-                && user.getTenantId() != null
-                && !selectedTenantId.equals(user.getTenantId());
+                && accountTenantId != null
+                && !selectedTenantId.equals(accountTenantId);
+        if (crossTenant && (user.getVisitTenantIds() == null
+                || !user.getVisitTenantIds().contains(selectedTenantId))) {
+            throw new ServiceException(403, "这个平台用户不能进入所选业务租户");
+        }
         AuthLoginRespVO resp = crossTenant
-                ? TenantUtils.execute(user.getTenantId(), () ->
+                ? TenantUtils.execute(accountTenantId, () ->
                 createTokenAfterLoginSuccess(user.getId(), username, LoginLogTypeEnum.LOGIN_USERNAME))
                 : createTokenAfterLoginSuccess(user.getId(), username, LoginLogTypeEnum.LOGIN_USERNAME);
-        resp.setTenantId(user.getTenantId() != null ? user.getTenantId() : selectedTenantId);
+        resp.setTenantId(accountTenantId != null ? accountTenantId : selectedTenantId);
         if (crossTenant) {
             resp.setVisitTenantId(selectedTenantId);
         }
@@ -179,7 +187,7 @@ public class AdminAuthServiceImpl implements AdminAuthService {
         }
 
         // 登录场景，验证是否存在
-        if (userService.getUserByMobile(reqVO.getMobile()) == null) {
+        if (findUserAccountByMobile(reqVO.getMobile()) == null) {
             throw exception(AUTH_MOBILE_NOT_EXISTS);
         }
         // 发送验证码
@@ -192,9 +200,12 @@ public class AdminAuthServiceImpl implements AdminAuthService {
         smsCodeApi.useSmsCode(AuthConvert.INSTANCE.convert(reqVO, SmsSceneEnum.ADMIN_MEMBER_LOGIN.getScene(), getClientIP())).checkError();
 
         // 获得用户信息
-        AdminUserDO user = userService.getUserByMobile(reqVO.getMobile());
+        UserAccountDTO user = findUserAccountByMobile(reqVO.getMobile());
         if (user == null) {
             throw exception(USER_NOT_EXISTS);
+        }
+        if (!Integer.valueOf(1).equals(user.getStatus())) {
+            throw exception(AUTH_LOGIN_USER_DISABLED);
         }
 
         // 创建 Token 令牌，记录登录日志
@@ -214,10 +225,6 @@ public class AdminAuthServiceImpl implements AdminAuthService {
         reqDTO.setUserIp(ServletUtils.getClientIP());
         reqDTO.setResult(loginResult.getResult());
         loginLogService.createLoginLog(reqDTO);
-        // 更新最后登录时间
-        if (userId != null && Objects.equals(LoginResultEnum.SUCCESS.getResult(), loginResult.getResult())) {
-            userService.updateUserLogin(userId, ServletUtils.getClientIP());
-        }
     }
 
     @Override
@@ -230,13 +237,10 @@ public class AdminAuthServiceImpl implements AdminAuthService {
         }
 
         // 获得用户
-        AdminUserDO user = userService.getUser(socialUser.getUserId());
-        if (user == null) {
-            throw exception(USER_NOT_EXISTS);
-        }
+        UserAccountDTO user = userAccountApi.getUserAccount(socialUser.getUserId()).getCheckedData();
 
         // 创建 Token 令牌，记录登录日志
-        return createTokenAfterLoginSuccess(user.getId(), user.getUsername(), LoginLogTypeEnum.LOGIN_SOCIAL);
+        return createTokenAfterLoginSuccess(user.getId(), user.getAccount(), LoginLogTypeEnum.LOGIN_SOCIAL);
     }
 
     @VisibleForTesting
@@ -308,8 +312,33 @@ public class AdminAuthServiceImpl implements AdminAuthService {
         if (userId == null) {
             return null;
         }
-        AdminUserDO user = userService.getUser(userId);
-        return user != null ? user.getUsername() : null;
+        return userAccountApi.getUserAccount(userId).getCheckedData().getAccount();
+    }
+
+    /**
+     * 在当前租户按账号找用户目录。只有“账号不存在”返回空。
+     * 远程失败和其它数据错误继续抛出，禁止把服务异常伪装成平台账号回退。
+     */
+    private UserAccountDTO findUserAccount(String username) {
+        try {
+            return userAccountApi.getUserAccountByAccount(username).getCheckedData();
+        } catch (ServiceException ex) {
+            if (Objects.equals(ex.getCode(), 404)) {
+                return null;
+            }
+            throw ex;
+        }
+    }
+
+    private UserAccountDTO findUserAccountByMobile(String mobile) {
+        try {
+            return userAccountApi.getUserAccountByMobile(mobile).getCheckedData();
+        } catch (ServiceException ex) {
+            if (Objects.equals(ex.getCode(), 404)) {
+                return null;
+            }
+            throw ex;
+        }
     }
 
     private UserTypeEnum getUserType() {
@@ -318,14 +347,7 @@ public class AdminAuthServiceImpl implements AdminAuthService {
 
     @Override
     public AuthLoginRespVO register(AuthRegisterReqVO registerReqVO) {
-        // 1. 校验验证码
-        validateCaptcha(registerReqVO);
-
-        // 2. 校验用户名是否已存在
-        Long userId = userService.registerUser(registerReqVO);
-
-        // 3. 创建 Token 令牌，记录登录日志
-        return createTokenAfterLoginSuccess(userId, registerReqVO.getUsername(), LoginLogTypeEnum.LOGIN_USERNAME);
+        throw new ServiceException(400, "请在用户目录创建用户");
     }
 
     @VisibleForTesting
@@ -340,7 +362,7 @@ public class AdminAuthServiceImpl implements AdminAuthService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void resetPassword(AuthResetPasswordReqVO reqVO) {
-        AdminUserDO userByMobile = userService.getUserByMobile(reqVO.getMobile());
+        UserAccountDTO userByMobile = findUserAccountByMobile(reqVO.getMobile());
         if (userByMobile == null) {
             throw exception(USER_MOBILE_NOT_EXISTS);
         }
@@ -352,6 +374,6 @@ public class AdminAuthServiceImpl implements AdminAuthService {
                 .setUsedIp(getClientIP())
         ).checkError();
 
-        userService.updateUserPassword(userByMobile.getId(), reqVO.getPassword());
+        loginCredentialService.replace(userByMobile.getId(), reqVO.getPassword());
     }
 }

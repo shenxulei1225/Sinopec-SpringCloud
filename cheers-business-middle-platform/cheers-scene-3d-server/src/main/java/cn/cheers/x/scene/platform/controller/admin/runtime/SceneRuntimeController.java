@@ -115,6 +115,11 @@ public class SceneRuntimeController {
             if (StrUtil.isNotBlank(renderAssetCode)) {
                 attrs.put("renderAssetCode", renderAssetCode);
             }
+            // 模型上已经记下的设备编号。画面用它把设备名单和这一个模型对上。没有编号就不写。
+            Long equipmentId = extractEquipmentId(actor.getMetadataJson());
+            if (equipmentId != null) {
+                attrs.put("equipmentId", equipmentId);
+            }
             item.setAttributeConfig(attrs);
             item.setEnabled(Boolean.TRUE.equals(actor.getVisibleFlag()));
             item.setGpsLng(actor.getGpsLng());
@@ -225,6 +230,32 @@ public class SceneRuntimeController {
             }
         }
         return null;
+    }
+
+    /** 读模型记录上的设备编号。没有、不是正整数，就当这台模型还没对上设备。 */
+    @SuppressWarnings("unchecked")
+    private static Long extractEquipmentId(String json) {
+        if (StrUtil.isBlank(json)) {
+            return null;
+        }
+        Map<String, Object> map = JsonUtils.parseObject(json, Map.class);
+        if (map == null || map.isEmpty()) {
+            return null;
+        }
+        Object value = map.get("equipmentId");
+        if (value instanceof Number number) {
+            long id = number.longValue();
+            return id > 0 ? id : null;
+        }
+        if (value == null || StrUtil.isBlank(String.valueOf(value))) {
+            return null;
+        }
+        try {
+            long id = Long.parseLong(String.valueOf(value).trim());
+            return id > 0 ? id : null;
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
     private void fillTransform(SceneRuntimePackageRespVO.ActorInstanceRuntimeConfigRespVO item, Transform transform) {

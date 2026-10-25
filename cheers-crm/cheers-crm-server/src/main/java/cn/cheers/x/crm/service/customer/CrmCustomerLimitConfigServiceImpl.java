@@ -8,7 +8,7 @@ import cn.cheers.x.crm.controller.admin.customer.vo.limitconfig.CrmCustomerLimit
 import cn.cheers.x.crm.dal.dataobject.customer.CrmCustomerLimitConfigDO;
 import cn.cheers.x.crm.dal.mysql.customer.CrmCustomerLimitConfigMapper;
 import cn.cheers.x.crm.enums.customer.CrmCustomerLimitConfigTypeEnum;
-import cn.cheers.x.system.api.dept.DeptApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
 import cn.cheers.x.system.api.user.AdminUserApi;
 import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import com.mzt.logapi.context.LogRecordContext;
@@ -38,7 +38,7 @@ public class CrmCustomerLimitConfigServiceImpl implements CrmCustomerLimitConfig
     private CrmCustomerLimitConfigMapper customerLimitConfigMapper;
 
     @Resource
-    private DeptApi deptApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
     @Resource
     private AdminUserApi adminUserApi;
 
@@ -110,7 +110,8 @@ public class CrmCustomerLimitConfigServiceImpl implements CrmCustomerLimitConfig
      * @param deptIds 部门 ids
      */
     private void validateUserAndDept(Collection<Long> userIds, Collection<Long> deptIds) {
-        deptApi.validateDeptList(deptIds).checkError();
+        deptIds.forEach(deptId ->
+                departmentDirectoryApi.validateDepartmentEnabled(deptId).getCheckedData());
         adminUserApi.validateUserList(userIds).checkError();
     }
 

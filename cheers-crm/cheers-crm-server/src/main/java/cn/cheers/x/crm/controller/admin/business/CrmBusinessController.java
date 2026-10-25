@@ -19,8 +19,8 @@ import cn.cheers.x.crm.service.business.CrmBusinessService;
 import cn.cheers.x.crm.service.business.CrmBusinessStatusService;
 import cn.cheers.x.crm.service.customer.CrmCustomerService;
 import cn.cheers.x.crm.service.product.CrmProductService;
-import cn.cheers.x.system.api.dept.DeptApi;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import cn.cheers.x.system.api.user.AdminUserApi;
 import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertMap;
 import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
@@ -67,7 +68,7 @@ public class CrmBusinessController {
     @Resource
     private AdminUserApi adminUserApi;
     @Resource
-    private DeptApi deptApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
 
     @PostMapping("/create")
     @Operation(summary = "创建商机")
@@ -187,7 +188,7 @@ public class CrmBusinessController {
         // 1.2 获取创建人、负责人列表
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(convertListByFlatMap(list,
                 contact -> Stream.of(NumberUtils.parseLong(contact.getCreator()), contact.getOwnerUserId())));
-        Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
+        Map<Long, DepartmentDTO> deptMap = convertMap(departmentDirectoryApi.listDepartmentsByIds(java.util.List.copyOf(convertSet(userMap.values(), AdminUserRespDTO::getDeptId))).getCheckedData(), DepartmentDTO::getId);
         // 1.3 获得商机状态组
         Map<Long, CrmBusinessStatusTypeDO> statusTypeMap = businessStatusTypeService.getBusinessStatusTypeMap(
                 convertSet(list, CrmBusinessDO::getStatusTypeId));

@@ -12,9 +12,9 @@ import cn.cheers.x.crm.dal.dataobject.permission.CrmPermissionDO;
 import cn.cheers.x.crm.enums.permission.CrmPermissionLevelEnum;
 import cn.cheers.x.crm.framework.permission.core.annotations.CrmPermission;
 import cn.cheers.x.crm.service.permission.CrmPermissionService;
-import cn.cheers.x.system.api.dept.DeptApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
 import cn.cheers.x.system.api.dept.PostApi;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import cn.cheers.x.system.api.dept.dto.PostRespDTO;
 import cn.cheers.x.system.api.user.AdminUserApi;
 import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertMap;
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertSet;
 import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertSetByFlatMap;
@@ -51,7 +52,7 @@ public class CrmPermissionController {
     @Resource
     private AdminUserApi adminUserApi;
     @Resource
-    private DeptApi deptApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
     @Resource
     private PostApi postApi;
 
@@ -103,7 +104,7 @@ public class CrmPermissionController {
         // 查询相关数据
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(
                 convertSet(permissions, CrmPermissionDO::getUserId));
-        Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
+        Map<Long, DepartmentDTO> deptMap = convertMap(departmentDirectoryApi.listDepartmentsByIds(java.util.List.copyOf(convertSet(userMap.values(), AdminUserRespDTO::getDeptId))).getCheckedData(), DepartmentDTO::getId);
         Map<Long, PostRespDTO> postMap = postApi.getPostMap(
                 convertSetByFlatMap(userMap.values(), AdminUserRespDTO::getPostIds,
                         item -> item != null ? item.stream() : Stream.empty()));

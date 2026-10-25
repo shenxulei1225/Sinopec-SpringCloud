@@ -1927,7 +1927,7 @@ FROM dynamic_group g
 JOIN dynamic_field f ON f.deleted = false AND f.tenant_id = 1
 WHERE g.deleted = false AND g.tenant_id = 1 AND g.group_type = 'FIELD'
   AND g.code = 'FG-BIZ-TASK'
-  AND f.code = 'FLD-TSK-022'
+  AND f.code = 'manage_status'
 ON CONFLICT (group_type, group_code, target_code, tenant_id) WHERE deleted = false
 DO UPDATE SET
   group_id = EXCLUDED.group_id,
@@ -1935,6 +1935,14 @@ DO UPDATE SET
   sort = EXCLUDED.sort,
   updater = 'zhgl-seed',
   update_time = CURRENT_TIMESTAMP;
+
+UPDATE dynamic_group_relation
+SET deleted = true, updater = 'zhgl-seed', update_time = CURRENT_TIMESTAMP
+WHERE deleted = false
+  AND group_type = 'FIELD'
+  AND group_code = 'FG-BIZ-TASK'
+  AND target_code = 'FLD-TSK-022'
+  AND tenant_id = 1;
 
 INSERT INTO dynamic_group_relation (
   group_type, group_code, target_code, group_id, target_id, sort, tenant_id, creator

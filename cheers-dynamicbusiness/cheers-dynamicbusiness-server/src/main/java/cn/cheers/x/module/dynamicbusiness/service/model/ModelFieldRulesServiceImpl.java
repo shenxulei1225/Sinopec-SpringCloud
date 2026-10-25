@@ -98,6 +98,16 @@ public class ModelFieldRulesServiceImpl implements ModelFieldRulesService {
         if (reqVO.getAlias() != null) {
             assignment.setAlias(reqVO.getAlias());
         }
+        // 三个画面开关写在这个型号的这一行上。基础字段和扩展字段同一套。没传来则保持原值。
+        if (reqVO.getCreateVisible() != null) {
+            assignment.setCreateVisible(reqVO.getCreateVisible());
+        }
+        if (reqVO.getEditVisible() != null) {
+            assignment.setEditVisible(reqVO.getEditVisible());
+        }
+        if (reqVO.getDetailVisible() != null) {
+            assignment.setDetailVisible(reqVO.getDetailVisible());
+        }
         if (reqVO.getValidationRules() != null) {
             assignment.setValidationRules(reqVO.getValidationRules());
         }
@@ -155,6 +165,9 @@ public class ModelFieldRulesServiceImpl implements ModelFieldRulesService {
         reqVO.setIsFilterable(assignment.getIsFilterable());
         reqVO.setDefaultValue(assignment.getDefaultValue());
         reqVO.setAlias(assignment.getAlias());
+        reqVO.setCreateVisible(assignment.getCreateVisible());
+        reqVO.setEditVisible(assignment.getEditVisible());
+        reqVO.setDetailVisible(assignment.getDetailVisible());
         reqVO.setValidationRules(assignment.getValidationRules());
 
         return reqVO;

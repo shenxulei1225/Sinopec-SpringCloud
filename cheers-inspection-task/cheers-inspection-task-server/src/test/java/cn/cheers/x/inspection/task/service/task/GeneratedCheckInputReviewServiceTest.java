@@ -1,11 +1,7 @@
 package cn.cheers.x.inspection.task.service.task;
 
-import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.task.model.task.ExecutionDeviceBinding;
 import cn.cheers.x.inspection.task.model.task.InspectionContent;
-import cn.cheers.x.inspection.task.service.execution.steptree.HostSopParamPack;
-import cn.cheers.x.inspection.task.service.execution.steptree.PatrolTaskStepTreeReader;
-import cn.cheers.x.module.dynamicbusiness.api.entity.EntityRpcApi;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -13,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,52 +21,32 @@ class GeneratedCheckInputReviewServiceTest {
 
     @Test
     void review_modelScopedPhotoSlotsMatchSavedStepTree() {
-        EntityRpcApi entityRpcApi = mock(EntityRpcApi.class);
         PatrolTaskEntityStore store = mock(PatrolTaskEntityStore.class);
-        PatrolTaskStepTreeReader reader = mock(PatrolTaskStepTreeReader.class);
-        when(store.require(9L)).thenReturn(draft());
-        when(reader.loadHostPackOrEmpty(900105L)).thenReturn(HostSopParamPack.empty());
-        when(entityRpcApi.listCounterpartEntityIds(List.of(900105L), "equipment", "inspection_item"))
-                .thenReturn(CommonResult.success(List.of(2354L)));
-        when(entityRpcApi.getEntity(8001L, "equipment")).thenReturn(CommonResult.success(equipment()));
-        when(entityRpcApi.getEntity(2354L, "inspection_item")).thenReturn(CommonResult.success(item()));
-        when(entityRpcApi.getEntityByCode("takePhoto", "action")).thenReturn(CommonResult.success(photoAction()));
         PatrolItemActionDurationCalculator duration = mock(PatrolItemActionDurationCalculator.class);
-        when(duration.computeLiveSeconds(any(), any(), any())).thenReturn(Optional.empty());
+        when(duration.computeLiveSeconds(any(), any(), any(), any())).thenReturn(Optional.empty());
 
         GeneratedCheckInputReviewService service = new GeneratedCheckInputReviewService(
                 store,
-                reader,
                 duration,
-                entityRpcApi,
+                mock(GeneratedCheckInputReviewReadSupport.class),
                 new ObjectMapper());
 
-        assertTrue(service.review(9L).getChanges().isEmpty());
+        assertTrue(service.review(draft(), context()).getChanges().isEmpty());
     }
 
     @Test
     void review_reportsChangedActionEvenWhenModelMatches() {
-        EntityRpcApi entityRpcApi = mock(EntityRpcApi.class);
         PatrolTaskEntityStore store = mock(PatrolTaskEntityStore.class);
-        PatrolTaskStepTreeReader reader = mock(PatrolTaskStepTreeReader.class);
-        when(store.require(9L)).thenReturn(draftWithAction("other-action"));
-        when(reader.loadHostPackOrEmpty(900105L)).thenReturn(HostSopParamPack.empty());
-        when(entityRpcApi.listCounterpartEntityIds(List.of(900105L), "equipment", "inspection_item"))
-                .thenReturn(CommonResult.success(List.of(2354L)));
-        when(entityRpcApi.getEntity(8001L, "equipment")).thenReturn(CommonResult.success(equipment()));
-        when(entityRpcApi.getEntity(2354L, "inspection_item")).thenReturn(CommonResult.success(item()));
-        when(entityRpcApi.getEntityByCode("takePhoto", "action")).thenReturn(CommonResult.success(photoAction()));
         PatrolItemActionDurationCalculator duration = mock(PatrolItemActionDurationCalculator.class);
-        when(duration.computeLiveSeconds(any(), any(), any())).thenReturn(Optional.empty());
+        when(duration.computeLiveSeconds(any(), any(), any(), any())).thenReturn(Optional.empty());
 
         GeneratedCheckInputReviewService service = new GeneratedCheckInputReviewService(
                 store,
-                reader,
                 duration,
-                entityRpcApi,
+                mock(GeneratedCheckInputReviewReadSupport.class),
                 new ObjectMapper());
 
-        var changes = service.review(9L).getChanges();
+        var changes = service.review(draftWithAction("other-action"), context()).getChanges();
         assertEquals(1, changes.size());
         assertEquals("步骤", changes.get(0).getAspect());
     }
@@ -160,5 +137,14 @@ class GeneratedCheckInputReviewServiceTest {
                                                 Map.of("fieldCode", "yaw", "defaultValue", "30"),
                                                 Map.of("fieldCode", "action_duration", "defaultValue", 12)))))));
         return entity;
+    }
+
+    private static GeneratedCheckInputReviewReadContext context() {
+        return new GeneratedCheckInputReviewReadContext(
+                Map.of(8001L, equipment()),
+                Map.of(2354L, item()),
+                Map.of("takePhoto", photoAction()),
+                Map.of(900105L, Set.of(2354L)),
+                new ObjectMapper());
     }
 }

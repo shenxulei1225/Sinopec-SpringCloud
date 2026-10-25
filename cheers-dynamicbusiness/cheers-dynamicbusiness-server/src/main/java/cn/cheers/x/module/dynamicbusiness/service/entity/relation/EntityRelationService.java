@@ -5,6 +5,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRelat
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRelationUpdateReqVO;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 业务实体关联关系 Service 接口
@@ -81,4 +82,11 @@ public interface EntityRelationService {
     List<Long> listCounterpartEntityIds(List<Long> relatedEntityIds,
                                         String relatedEntityTypeCode,
                                         String listEntityTypeCode);
+
+    /**
+     * 按每个上游实体保留对端编号分组。
+     */
+    Map<Long, List<Long>> listCounterpartEntityIdsGrouped(List<Long> relatedEntityIds,
+                                                          String relatedEntityTypeCode,
+                                                          String listEntityTypeCode);
 }

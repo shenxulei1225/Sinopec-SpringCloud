@@ -2488,3 +2488,58 @@ WHERE deleted = false
   AND field_code IN ('FLD-BASE-region-region_level', 'region_level')
   AND tenant_id = 1;
 
+-- 所有任务 domain 共用管理状态。任务页面只按该底座字段筛选，不读取型号扩展旧字段。
+INSERT INTO dynamic_entity_type_base_field (
+  entity_type_code, library_field_id, field_code, field_name, data_type, required, default_value,
+  description, type_config, sort_order, status, tenant_id, creator
+) VALUES (
+  'task', NULL, 'manage_status', '管理状态', 'ENUM', TRUE, 'draft',
+  '任务定义生命周期：草稿/已启用/已停用',
+  '{"options":[{"label":"草稿","value":"draft"},{"label":"已启用","value":"enabled"},{"label":"已停用","value":"disabled"}]}',
+  22, 1, 1, 'seed'
+)
+ON CONFLICT (entity_type_code, field_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  field_name = EXCLUDED.field_name,
+  data_type = EXCLUDED.data_type,
+  required = EXCLUDED.required,
+  default_value = EXCLUDED.default_value,
+  description = EXCLUDED.description,
+  type_config = EXCLUDED.type_config,
+  sort_order = EXCLUDED.sort_order,
+  status = EXCLUDED.status,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+
+-- 部门负责人是 department 固定列。引用目标由字段库 provider_code 声明为 user_account。
+INSERT INTO dynamic_entity_type_base_field (
+  entity_type_code, library_field_id, field_code, field_name, data_type, required, default_value,
+  description, type_config, sort_order, status, tenant_id, creator
+) VALUES (
+  'department',
+  (
+    SELECT id
+    FROM dynamic_field
+    WHERE code = 'leader_user_id'
+      AND tenant_id = 1
+      AND deleted = false
+    ORDER BY id
+    LIMIT 1
+  ),
+  'leader_user_id', '部门负责人', 'ENTITY_REF', FALSE, NULL,
+  '引用用户目录 user_account 的实体 id',
+  NULL, 90, 1, 1, 'seed'
+)
+ON CONFLICT (entity_type_code, field_code, tenant_id) WHERE deleted = false
+DO UPDATE SET
+  library_field_id = EXCLUDED.library_field_id,
+  field_name = EXCLUDED.field_name,
+  data_type = EXCLUDED.data_type,
+  required = EXCLUDED.required,
+  description = EXCLUDED.description,
+  type_config = EXCLUDED.type_config,
+  sort_order = EXCLUDED.sort_order,
+  status = EXCLUDED.status,
+  updater = 'seed',
+  update_time = CURRENT_TIMESTAMP;
+

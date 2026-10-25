@@ -288,7 +288,7 @@ public final class QueryContractPropsGenerator {
     }
 
     /**
-     * 从列表 URL 推导 CRUD 根路径，如 /system/dept/list → /system/dept。
+     * 从列表 URL 推导 CRUD 根路径，如 /system/role/list → /system/role。
      */
     static String resolveCrudBasePath(String listUrl) {
         if (StrUtil.isBlank(listUrl) || !listUrl.startsWith("/system/")) {

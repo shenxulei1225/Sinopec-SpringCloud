@@ -18,6 +18,8 @@ import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository
 import cn.cheers.x.framework.mybatis.core.type.JsonbMapTypeHandler;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
+import cn.cheers.x.module.dynamicbusiness.service.department.DepartmentCompanyCodes;
+import cn.cheers.x.module.dynamicbusiness.service.department.DepartmentCompanyOwner;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.FacilityOwningFieldEnsureService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeCapabilityService;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
@@ -44,6 +46,7 @@ public class EntityBusinessHelper {
     private final EntityRepository entityRepository;
     private final EntityDedicatedColumnService entityDedicatedColumnService;
     private final FacilityOwningFieldEnsureService facilityOwningFieldEnsureService;
+    private final DepartmentCompanyOwner departmentCompanyOwner;
     private final EntityTypeCapabilityService entityTypeCapabilityService;
 
     public ModelDO validateModelExists(Long modelId) {
@@ -258,6 +261,10 @@ public class EntityBusinessHelper {
      */
     private void applyFacilityOwningOnCreate(
             Map<String, Object> baseFields, Map<String, Object> customFields, String entityTypeCode) {
+        if (DepartmentCompanyCodes.isDepartment(entityTypeCode)) {
+            departmentCompanyOwner.applyOnCreate(baseFields, customFields);
+            return;
+        }
         if (!requiresFacilityOwning(entityTypeCode)) {
             return;
         }
@@ -281,6 +288,10 @@ public class EntityBusinessHelper {
             Map<String, Object> customFields,
             String entityTypeCode,
             EntityDO dbEntity) {
+        if (DepartmentCompanyCodes.isDepartment(entityTypeCode)) {
+            departmentCompanyOwner.applyOnUpdate(baseFields, customFields, dbEntity);
+            return;
+        }
         if (!requiresFacilityOwning(entityTypeCode)) {
             return;
         }

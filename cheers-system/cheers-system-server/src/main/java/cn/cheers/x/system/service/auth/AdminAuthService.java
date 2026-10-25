@@ -1,7 +1,7 @@
 package cn.cheers.x.system.service.auth;
 
 import cn.cheers.x.system.controller.admin.auth.vo.*;
-import cn.cheers.x.system.dal.dataobject.user.AdminUserDO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.UserAccountDTO;
 import jakarta.validation.Valid;
 
 /**
@@ -20,7 +20,7 @@ public interface AdminAuthService {
      * @param password 密码
      * @return 用户
      */
-    AdminUserDO authenticate(String username, String password);
+    UserAccountDTO authenticate(String username, String password);
 
     /**
      * 账号登录

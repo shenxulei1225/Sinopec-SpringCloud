@@ -2,12 +2,14 @@ package cn.cheers.x.inspection.task.service.task;
 
 import cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil;
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskCreateReqVO;
 import cn.cheers.x.inspection.task.controller.admin.vo.task.InspectionTaskUpdateReqVO;
 import cn.cheers.x.inspection.task.model.task.ExecutionDeviceBinding;
 import cn.cheers.x.inspection.task.model.task.InspectionContent;
 import cn.cheers.x.inspection.task.model.task.ResourcePolicy;
 import cn.cheers.x.module.dynamicbusiness.api.entity.EntityRpcApi;
+import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityPageReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRpcDtoSupport;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityWriteReqDTO;
@@ -40,7 +42,8 @@ public class PatrolTaskEntityStore {
     public static final String TASK_TYPE = "task";
     public static final String MODEL_PATROL = "patrol_task";
     public static final String FIELD_DOMAIN = "FLD-TSK-003";
-    public static final String FIELD_STATUS = "FLD-TSK-022";
+    /** 所有任务业务域共用的底座管理状态。旧 FLD-TSK-022 只由迁移读取。 */
+    public static final String FIELD_MANAGE_STATUS = "manage_status";
     public static final String FIELD_SCHEDULE = "FLD-TSK-018";
     public static final String FIELD_CONTENT = "FLD-TSK-019";
     public static final String FIELD_RESOURCE = "FLD-TSK-020";
@@ -110,13 +113,15 @@ public class PatrolTaskEntityStore {
         write.setEntityTypeCode(TASK_TYPE);
         write.setModelCode(MODEL_PATROL);
         write.setName(req.getTaskName().trim());
-        write.setFields(toFields(req.getDomain(), req.getFacilityId(), req.getPatrolExecutionMode(),
+        Map<String, Object> fields = toFields(req.getDomain(), req.getFacilityId(), req.getPatrolExecutionMode(),
                 req.getStartStopId(), req.getEndStopId(),
                 req.getInspectionContent(), req.getExecutionDeviceBinding(), req.getResourcePolicy(),
                 req.getScheduleConfig(), req.getSchedulePolicyId(),
                 req.getConflictStrategy(), req.getTaskGapMinutes(),
                 req.getAllowShiftExisting(), req.getMaxShiftMinutes(),
-                null, null, null, req.getTaskPreparation()));
+                null, null, null, req.getTaskPreparation());
+        fields.put(FIELD_MANAGE_STATUS, "draft");
+        write.setFields(fields);
         return requireId(entityRpcApi.createEntity(write), "创建总任务失败");
     }
 
@@ -163,13 +168,15 @@ public class PatrolTaskEntityStore {
         String preparationToWrite = req.getTaskPreparation() != null
                 ? req.getTaskPreparation()
                 : firstText(existingDraft.get(DRAFT_KEY_PREPARATION));
-        write.setFields(toFields(req.getDomain(), req.getFacilityId(), req.getPatrolExecutionMode(),
+        Map<String, Object> fields = toFields(req.getDomain(), req.getFacilityId(), req.getPatrolExecutionMode(),
                 req.getStartStopId(), req.getEndStopId(),
                 req.getInspectionContent(), req.getExecutionDeviceBinding(), req.getResourcePolicy(),
                 scheduleToWrite, policyToWrite, conflictToWrite, gapToWrite,
                 allowShiftToWrite, maxShiftToWrite,
                 existingBag.get(FIELD_STEP_TREE), existingBag.get(FIELD_ROUTE), existingDraft,
-                preparationToWrite));
+                preparationToWrite);
+        fields.put(FIELD_MANAGE_STATUS, firstText(existingBag.get(FIELD_MANAGE_STATUS)));
+        write.setFields(fields);
         requireOk(entityRpcApi.updateEntityFields(write), "更新总任务失败");
     }
 
@@ -198,7 +205,7 @@ public class PatrolTaskEntityStore {
         if (patch.isEmpty()) {
             throw ServiceExceptionUtil.invalidParamException("编排状态补丁不能为空");
         }
-        mergeDraftFields(taskId, patch);
+        mergeDraftFields(taskId, patch, Map.of(FIELD_MANAGE_STATUS, "enabled"));
     }
 
     /**
@@ -211,7 +218,7 @@ public class PatrolTaskEntityStore {
         patch.put(DRAFT_KEY_RUNTIME_JOB, null);
         patch.put(DRAFT_KEY_COMMITTED_MEANS, null);
         patch.put(DRAFT_KEY_PENDING_EXECUTION_BY_SLOT, new LinkedHashMap<>());
-        mergeDraftFields(taskId, patch);
+        mergeDraftFields(taskId, patch, Map.of(FIELD_MANAGE_STATUS, "draft"));
     }
 
     /**
@@ -283,7 +290,7 @@ public class PatrolTaskEntityStore {
         write.setId(taskId);
         write.setEntityTypeCode(TASK_TYPE);
         write.setModelCode(MODEL_PATROL);
-        write.setFields(Map.of(FIELD_DRAFT, draft));
+        write.setFields(Map.of(FIELD_DRAFT, draft, FIELD_MANAGE_STATUS, "disabled"));
         requireOk(entityRpcApi.updateEntityFields(write), "清除试排状态失败");
     }
 
@@ -409,6 +416,10 @@ public class PatrolTaskEntityStore {
      * <p>用来写建任务进度；禁止借这里重写巡检方式或勾选对象。
      */
     public void mergeDraftFields(Long taskId, Map<String, Object> patch) {
+        mergeDraftFields(taskId, patch, Map.of());
+    }
+
+    private void mergeDraftFields(Long taskId, Map<String, Object> patch, Map<String, Object> additionalFields) {
         if (patch == null || patch.isEmpty()) {
             throw ServiceExceptionUtil.invalidParamException("草稿补丁不能为空");
         }
@@ -432,7 +443,9 @@ public class PatrolTaskEntityStore {
         write.setId(taskId);
         write.setEntityTypeCode(TASK_TYPE);
         write.setModelCode(MODEL_PATROL);
-        write.setFields(Map.of(FIELD_DRAFT, draft));
+        Map<String, Object> fields = new LinkedHashMap<>(additionalFields);
+        fields.put(FIELD_DRAFT, draft);
+        write.setFields(fields);
         requireOk(entityRpcApi.updateEntityFields(write), "写入建任务进度失败");
     }
 
@@ -589,6 +602,36 @@ public class PatrolTaskEntityStore {
         return drafts;
     }
 
+    /**
+     * 总任务表先按名称和管理状态筛选，再只返回当前页。
+     */
+    public PageResult<PatrolTaskDraft> page(String taskName, Integer manageStatus, Integer pageNo, Integer pageSize) {
+        EntityPageReqDTO req = new EntityPageReqDTO();
+        req.setEntityTypeCode(TASK_TYPE);
+        req.setModelId(requireId(entityRpcApi.getModelIdByCode(MODEL_PATROL), "读不到巡检任务型号"));
+        req.setKeyword(StringUtils.hasText(taskName) ? taskName.trim() : null);
+        req.setPageNo(pageNo);
+        req.setPageSize(pageSize);
+        if (manageStatus != null) {
+            req.setBaseFieldEquals(Map.of(FIELD_MANAGE_STATUS, manageStatusValue(manageStatus)));
+        }
+        CommonResult<PageResult<EntityRespDTO>> result = entityRpcApi.pageEntities(req);
+        if (result == null || !result.isSuccess() || result.getData() == null) {
+            throw ServiceExceptionUtil.invalidParamException(
+                    result != null && StringUtils.hasText(result.getMsg())
+                            ? result.getMsg()
+                            : "读不到巡检任务分页");
+        }
+        List<PatrolTaskDraft> drafts = result.getData().getList().stream()
+                .map(this::fromEntity)
+                .toList();
+        return new PageResult<>(drafts, result.getData().getTotal());
+    }
+
+    public long countByManageStatus(Integer manageStatus) {
+        return page(null, manageStatus, 1, 1).getTotal();
+    }
+
     private Map<String, Object> toFields(
             String domain,
             Long facilityId,
@@ -611,7 +654,6 @@ public class PatrolTaskEntityStore {
     ) {
         Map<String, Object> fields = new LinkedHashMap<>();
         fields.put(FIELD_DOMAIN, StringUtils.hasText(domain) ? domain.trim() : "巡检");
-        fields.put(FIELD_STATUS, "draft");
         fields.put(FIELD_SCHEDULE, resolveScheduleField(scheduleConfig));
         if (facilityId != null) {
             fields.put(FIELD_FACILITY, facilityRef(facilityId));
@@ -714,7 +756,7 @@ public class PatrolTaskEntityStore {
                 normalizeStepTreeField(PatrolMeansKeyedSupport.readSlice(
                         normalizeStepTreeField(bag.get(FIELD_STEP_TREE)), means, unwrappedOwner)),
                 routeSlice,
-                text(bag.get(FIELD_STATUS)),
+                text(bag.get(FIELD_MANAGE_STATUS)),
                 asUnlockedStep(PatrolMeansKeyedSupport.readSlice(draft.get(DRAFT_KEY_UNLOCKED), means, unwrappedOwner)),
                 firstText(PatrolMeansKeyedSupport.readSlice(draft.get(DRAFT_KEY_START), means, unwrappedOwner)),
                 firstText(PatrolMeansKeyedSupport.readSlice(draft.get(DRAFT_KEY_END), means, unwrappedOwner)),
@@ -1007,6 +1049,15 @@ public class PatrolTaskEntityStore {
 
     private static String text(Object raw) {
         return raw == null ? null : String.valueOf(raw).trim();
+    }
+
+    private static String manageStatusValue(Integer status) {
+        return switch (status) {
+            case 0 -> "draft";
+            case 1 -> "enabled";
+            case 2 -> "disabled";
+            default -> throw ServiceExceptionUtil.invalidParamException("管理状态无效");
+        };
     }
 
     private static String firstText(Object raw) {

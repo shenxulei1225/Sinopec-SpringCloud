@@ -33,8 +33,10 @@ import cn.cheers.x.bpm.service.definition.BpmModelService;
 import cn.cheers.x.bpm.service.definition.BpmProcessDefinitionService;
 import cn.cheers.x.bpm.service.message.BpmMessageService;
 import cn.cheers.x.bpm.service.message.dto.BpmMessageSendWhenTaskTimeoutReqDTO;
-import cn.cheers.x.system.api.dept.DeptApi;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.UserAccountApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.UserAccountDTO;
 import cn.cheers.x.system.api.user.AdminUserApi;
 import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import jakarta.annotation.Resource;
@@ -106,7 +108,9 @@ public class BpmTaskServiceImpl implements BpmTaskService {
     @Resource
     private AdminUserApi adminUserApi;
     @Resource
-    private DeptApi deptApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
+    @Resource
+    private UserAccountApi userAccountApi;
 
     // ========== Query 查询相关方法 ==========
 
@@ -1535,10 +1539,15 @@ public class BpmTaskServiceImpl implements BpmTaskService {
                         // 情况二：转交给部门负责人审批
                         if (ObjectUtils.equalsAny(assignStartUserHandlerType,
                                 BpmUserTaskAssignStartUserHandlerTypeEnum.TRANSFER_DEPT_LEADER.getType())) {
-                            AdminUserRespDTO startUser = adminUserApi.getUser(Long.valueOf(processInstance.getStartUserId())).getCheckedData();
+                            Long startUserId = Long.valueOf(processInstance.getStartUserId());
+                            AdminUserRespDTO startUser = adminUserApi.getUser(startUserId).getCheckedData();
                             Assert.notNull(startUser, "提交人({})信息为空", processInstance.getStartUserId());
-                            DeptRespDTO dept = startUser.getDeptId() != null ? deptApi.getDept(startUser.getDeptId()).getCheckedData() : null;
-                            Assert.notNull(dept, "提交人({})部门({})信息为空", processInstance.getStartUserId(), startUser.getDeptId());
+                            UserAccountDTO startUserAccount = userAccountApi.getUserAccount(startUserId).getCheckedData();
+                            DepartmentDTO dept = startUserAccount.getDepartmentId() != null
+                                    ? departmentDirectoryApi.getDepartment(startUserAccount.getDepartmentId()).getCheckedData()
+                                    : null;
+                            Assert.notNull(dept, "提交人({})部门({})信息为空",
+                                    processInstance.getStartUserId(), startUserAccount.getDepartmentId());
                             // 找不到部门负责人的情况下，自动审批通过
                             // noinspection DataFlowIssue
                             if (dept.getLeaderUserId() == null) {

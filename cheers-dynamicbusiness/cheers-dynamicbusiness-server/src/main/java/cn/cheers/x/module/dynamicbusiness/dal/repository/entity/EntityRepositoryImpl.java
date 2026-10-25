@@ -106,6 +106,17 @@ public class EntityRepositoryImpl implements EntityRepository {
         );
     }
 
+    @Override
+    public List<EntityDO> findByCodes(List<String> codes, String entityTypeCode) {
+        if (CollUtil.isEmpty(codes)) {
+            return Collections.emptyList();
+        }
+        return withTableName(entityTypeCode, () ->
+                entityMapper.selectList(new LambdaQueryWrapperX<EntityDO>()
+                        .in(EntityDO::getCode, codes))
+        );
+    }
+
     /**
      * 慢路径：候选 id ∩ 专用表物理列条件（如 facility_id），保序；不走字段索引。
      */

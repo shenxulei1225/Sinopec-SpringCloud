@@ -1,6 +1,5 @@
 package cn.cheers.x.system.controller.admin.user.vo.profile;
 
-import cn.cheers.x.system.controller.admin.dept.vo.dept.DeptSimpleRespVO;
 import cn.cheers.x.system.controller.admin.dept.vo.post.PostSimpleRespVO;
 import cn.cheers.x.system.controller.admin.permission.vo.role.RoleSimpleRespVO;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -50,10 +49,21 @@ public class UserProfileRespVO {
     /**
      * 所在部门
      */
-    private DeptSimpleRespVO dept;
+    private Department dept;
     /**
      * 所属岗位数组
      */
     private List<PostSimpleRespVO> posts;
+
+    @Data
+    @Schema(description = "管理后台 - 用户所属部门")
+    public static class Department {
+
+        @Schema(description = "部门编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+        private Long id;
+
+        @Schema(description = "部门名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "研发部")
+        private String name;
+    }
 
 }

@@ -1,9 +1,11 @@
 package cn.cheers.x.module.dynamicbusiness.api.entity;
 
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityPageReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityWriteReqDTO;
 import cn.cheers.x.module.dynamicbusiness.enums.ApiConstants;
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.pojo.PageResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 动态业务通用实体 RPC。读按 id / 编码；写按型号编码落到对应底座表。
@@ -55,6 +58,13 @@ public interface EntityRpcApi {
             @Parameter(description = "实体类型编码", required = true, example = "facility")
             @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam(value = "modelId", required = false) Long modelId);
+
+    /**
+     * 实体表负责分页和基础字段过滤。调用方只核对返回的当前页。
+     */
+    @PostMapping(PREFIX + "/page")
+    @Operation(summary = "按实体表条件分页")
+    CommonResult<PageResult<EntityRespDTO>> pageEntities(@RequestBody EntityPageReqDTO req);
 
     @GetMapping(PREFIX + "/deleted-by-code")
     @Operation(summary = "编码是否只剩已删除行")
@@ -102,6 +112,13 @@ public interface EntityRpcApi {
     @GetMapping(PREFIX + "/counterpart-ids")
     @Operation(summary = "按关联取对端实体 id")
     CommonResult<List<Long>> listCounterpartEntityIds(
+            @RequestParam("relatedEntityIds") List<Long> relatedEntityIds,
+            @RequestParam("relatedEntityTypeCode") String relatedEntityTypeCode,
+            @RequestParam("listEntityTypeCode") String listEntityTypeCode);
+
+    @GetMapping(PREFIX + "/counterpart-ids-grouped")
+    @Operation(summary = "批量按关联取对端实体 id 并保留分组")
+    CommonResult<Map<Long, List<Long>>> listCounterpartEntityIdsGrouped(
             @RequestParam("relatedEntityIds") List<Long> relatedEntityIds,
             @RequestParam("relatedEntityTypeCode") String relatedEntityTypeCode,
             @RequestParam("listEntityTypeCode") String listEntityTypeCode);

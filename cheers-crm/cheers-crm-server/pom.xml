@@ -36,6 +36,11 @@
         </dependency>
         <dependency>
             <groupId>cn.cheers.x</groupId>
+            <artifactId>cheers-dynamicbusiness-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.cheers.x</groupId>
             <artifactId>cheers-crm-api</artifactId>
             <version>${revision}</version>
         </dependency>

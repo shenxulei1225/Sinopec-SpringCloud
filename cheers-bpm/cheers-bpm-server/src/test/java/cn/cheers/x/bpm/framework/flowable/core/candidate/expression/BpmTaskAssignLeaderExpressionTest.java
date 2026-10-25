@@ -2,10 +2,10 @@ package cn.cheers.x.bpm.framework.flowable.core.candidate.expression;
 
 import cn.cheers.x.framework.test.core.ut.BaseMockitoUnitTest;
 import cn.cheers.x.bpm.service.task.BpmProcessInstanceService;
-import cn.cheers.x.system.api.dept.DeptApi;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
-import cn.cheers.x.system.api.user.AdminUserApi;
-import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.UserAccountApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.UserAccountDTO;
 import org.flowable.engine.delegate.DelegateExecution;
 import org.flowable.engine.impl.persistence.entity.ExecutionEntityImpl;
 import org.junit.jupiter.api.Test;
@@ -28,9 +28,9 @@ public class BpmTaskAssignLeaderExpressionTest extends BaseMockitoUnitTest {
     private BpmTaskAssignLeaderExpression expression;
 
     @Mock
-    private AdminUserApi adminUserApi;
+    private UserAccountApi userAccountApi;
     @Mock
-    private DeptApi deptApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
 
     @Mock
     private BpmProcessInstanceService processInstanceService;
@@ -40,10 +40,8 @@ public class BpmTaskAssignLeaderExpressionTest extends BaseMockitoUnitTest {
         // 准备参数
         DelegateExecution execution = mockDelegateExecution(1L);
         // mock 方法(startUser)
-        AdminUserRespDTO startUser = randomPojo(AdminUserRespDTO.class, o -> o.setDeptId(10L));
-        when(adminUserApi.getUser(eq(1L))).thenReturn(success(startUser));
-        // mock 方法(getStartUserDept)没有部门
-        when(deptApi.getDept(eq(10L))).thenReturn(success(null));
+        UserAccountDTO startUser = randomPojo(UserAccountDTO.class, o -> o.setDepartmentId(null));
+        when(userAccountApi.getUserAccount(eq(1L))).thenReturn(success(startUser));
 
         // 调用
         Set<Long> result = expression.calculateUsers(execution, 1);
@@ -56,13 +54,12 @@ public class BpmTaskAssignLeaderExpressionTest extends BaseMockitoUnitTest {
         // 准备参数
         DelegateExecution execution = mockDelegateExecution(1L);
         // mock 方法(startUser)
-        AdminUserRespDTO startUser = randomPojo(AdminUserRespDTO.class, o -> o.setDeptId(10L));
-        when(adminUserApi.getUser(eq(1L))).thenReturn(success(startUser));
-        DeptRespDTO startUserDept = randomPojo(DeptRespDTO.class, o -> o.setId(10L).setParentId(100L)
+        UserAccountDTO startUser = randomPojo(UserAccountDTO.class, o -> o.setDepartmentId(10L));
+        when(userAccountApi.getUserAccount(eq(1L))).thenReturn(success(startUser));
+        DepartmentDTO startUserDept = randomPojo(DepartmentDTO.class, o -> o.setId(10L).setParentId(null)
                 .setLeaderUserId(20L));
         // mock 方法（getDept）
-        when(deptApi.getDept(eq(10L))).thenReturn(success(startUserDept));
-        when(deptApi.getDept(eq(100L))).thenReturn(success(null));
+        when(departmentDirectoryApi.getDepartment(eq(10L))).thenReturn(success(startUserDept));
 
         // 调用
         Set<Long> result = expression.calculateUsers(execution, 2);
@@ -75,15 +72,15 @@ public class BpmTaskAssignLeaderExpressionTest extends BaseMockitoUnitTest {
         // 准备参数
         DelegateExecution execution = mockDelegateExecution(1L);
         // mock 方法(startUser)
-        AdminUserRespDTO startUser = randomPojo(AdminUserRespDTO.class, o -> o.setDeptId(10L));
-        when(adminUserApi.getUser(eq(1L))).thenReturn(success(startUser));
-        DeptRespDTO startUserDept = randomPojo(DeptRespDTO.class, o -> o.setId(10L).setParentId(100L)
+        UserAccountDTO startUser = randomPojo(UserAccountDTO.class, o -> o.setDepartmentId(10L));
+        when(userAccountApi.getUserAccount(eq(1L))).thenReturn(success(startUser));
+        DepartmentDTO startUserDept = randomPojo(DepartmentDTO.class, o -> o.setId(10L).setParentId(100L)
                 .setLeaderUserId(20L));
-        when(deptApi.getDept(eq(10L))).thenReturn(success(startUserDept));
+        when(departmentDirectoryApi.getDepartment(eq(10L))).thenReturn(success(startUserDept));
         // mock 方法（父 dept）
-        DeptRespDTO parentDept = randomPojo(DeptRespDTO.class, o -> o.setId(100L).setParentId(1000L)
+        DepartmentDTO parentDept = randomPojo(DepartmentDTO.class, o -> o.setId(100L).setParentId(1000L)
                 .setLeaderUserId(200L));
-        when(deptApi.getDept(eq(100L))).thenReturn(success(parentDept));
+        when(departmentDirectoryApi.getDepartment(eq(100L))).thenReturn(success(parentDept));
 
         // 调用
         Set<Long> result = expression.calculateUsers(execution, 2);

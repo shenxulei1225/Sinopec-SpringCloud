@@ -20,4 +20,7 @@ public class EntityDeleteReqVO {
     @Schema(description = "是否强制删除（同时删除所有关联关系）", example = "false")
     private Boolean forceDelete = false;
 
+    @Schema(description = "这次打开的数据目录注册编码。场站范围按它判断。")
+    private String registryCode;
+
 }

@@ -15,19 +15,19 @@ import cn.cheers.x.framework.security.config.SecurityProperties;
 import cn.cheers.x.framework.security.core.LoginUser;
 import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
 import cn.cheers.x.framework.tenant.core.util.TenantUtils;
+import cn.cheers.x.module.dynamicbusiness.api.directory.UserAccountApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.UserAccountDTO;
 import cn.cheers.x.system.controller.admin.oauth2.vo.token.OAuth2AccessTokenPageReqVO;
 import cn.cheers.x.system.dal.dataobject.oauth2.OAuth2AccessTokenDO;
 import cn.cheers.x.system.dal.dataobject.oauth2.OAuth2ClientDO;
 import cn.cheers.x.system.dal.dataobject.oauth2.OAuth2RefreshTokenDO;
 import cn.cheers.x.system.dal.dataobject.tenant.TenantDO;
-import cn.cheers.x.system.dal.dataobject.user.AdminUserDO;
 import cn.cheers.x.system.dal.mysql.oauth2.OAuth2AccessTokenMapper;
 import cn.cheers.x.system.dal.mysql.oauth2.OAuth2RefreshTokenMapper;
 import cn.cheers.x.system.dal.redis.oauth2.OAuth2AccessTokenRedisDAO;
 import cn.cheers.x.system.service.permission.PermissionService;
 import cn.cheers.x.system.service.permission.RoleService;
 import cn.cheers.x.system.service.tenant.TenantService;
-import cn.cheers.x.system.service.user.AdminUserService;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -65,8 +65,8 @@ public class OAuth2TokenServiceImpl implements OAuth2TokenService {
     @Resource
     private SecurityProperties securityProperties;
     @Resource
-    @Lazy // 懒加载，避免循环依赖
-    private AdminUserService adminUserService;
+    @Lazy
+    private UserAccountApi userAccountApi;
     @Resource
     @Lazy
     private TenantService tenantService;
@@ -242,14 +242,14 @@ public class OAuth2TokenServiceImpl implements OAuth2TokenService {
             return Collections.emptyMap();
         }
         if (userType.equals(UserTypeEnum.ADMIN.getValue())) {
-            AdminUserDO user = adminUserService.getUser(userId);
-            // 账号范围和是否超级管理员写进令牌。其他服务靠这两项判断能不能进入所选租户。
-            String accountScope = tenantService.isPlatformTenant(user.getTenantId())
+            UserAccountDTO user = userAccountApi.getUserAccount(userId).getCheckedData();
+            // 用户目录编号是令牌和权限的唯一用户编号。部门只读动态部门引用。
+            String accountScope = tenantService.isPlatformTenant(TenantContextHolder.getTenantId())
                     ? LoginUser.ACCOUNT_SCOPE_PLATFORM : TenantDO.SCOPE_BUSINESS;
             boolean superAdmin = roleService.hasAnySuperAdmin(
                     permissionService.getUserRoleIdListByUserId(user.getId()));
             return MapUtil.builder(LoginUser.INFO_KEY_NICKNAME, user.getNickname())
-                    .put(LoginUser.INFO_KEY_DEPT_ID, StrUtil.toStringOrNull(user.getDeptId()))
+                    .put(LoginUser.INFO_KEY_DEPT_ID, StrUtil.toStringOrNull(user.getDepartmentId()))
                     .put(LoginUser.INFO_KEY_ACCOUNT_SCOPE, accountScope)
                     .put(LoginUser.INFO_KEY_SUPER_ADMIN, superAdmin ? "true" : "false")
                     .build();

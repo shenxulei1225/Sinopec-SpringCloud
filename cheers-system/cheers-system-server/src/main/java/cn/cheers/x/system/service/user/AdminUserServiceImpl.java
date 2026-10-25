@@ -13,6 +13,8 @@ import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.cheers.x.framework.common.util.validation.ValidationUtils;
 import cn.cheers.x.framework.datapermission.core.util.DataPermissionUtils;
 import cn.cheers.x.infra.api.config.ConfigApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import cn.cheers.x.system.controller.admin.auth.vo.AuthRegisterReqVO;
 import cn.cheers.x.system.controller.admin.user.vo.profile.UserProfileUpdatePasswordReqVO;
 import cn.cheers.x.system.controller.admin.user.vo.profile.UserProfileUpdateReqVO;
@@ -20,12 +22,10 @@ import cn.cheers.x.system.controller.admin.user.vo.user.UserImportExcelVO;
 import cn.cheers.x.system.controller.admin.user.vo.user.UserImportRespVO;
 import cn.cheers.x.system.controller.admin.user.vo.user.UserPageReqVO;
 import cn.cheers.x.system.controller.admin.user.vo.user.UserSaveReqVO;
-import cn.cheers.x.system.dal.dataobject.dept.DeptDO;
 import cn.cheers.x.system.dal.dataobject.dept.UserPostDO;
 import cn.cheers.x.system.dal.dataobject.user.AdminUserDO;
 import cn.cheers.x.system.dal.mysql.dept.UserPostMapper;
 import cn.cheers.x.system.dal.mysql.user.AdminUserMapper;
-import cn.cheers.x.system.service.dept.DeptService;
 import cn.cheers.x.system.service.dept.PostService;
 import cn.cheers.x.system.service.oauth2.OAuth2TokenService;
 import cn.cheers.x.system.service.permission.PermissionService;
@@ -68,7 +68,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     private AdminUserMapper userMapper;
 
     @Resource
-    private DeptService deptService;
+    private DepartmentDirectoryApi departmentDirectoryApi;
     @Resource
     private PostService postService;
     @Resource
@@ -367,9 +367,9 @@ public class AdminUserServiceImpl implements AdminUserService {
         if (deptId == null) {
             return Collections.emptySet();
         }
-        Set<Long> deptIds = convertSet(deptService.getChildDeptList(deptId), DeptDO::getId);
-        deptIds.add(deptId); // 包括自身
-        return deptIds;
+        // 动态部门编号已经是运行时权威 ID。子树接口返回自身和全部后代，禁止查询 system_dept。
+        return convertSet(departmentDirectoryApi.listDepartmentSubtree(deptId).getCheckedData(),
+                DepartmentDTO::getId);
     }
 
     private AdminUserDO validateUserForCreateOrUpdate(Long id, String username, String mobile, String email,
@@ -384,8 +384,11 @@ public class AdminUserServiceImpl implements AdminUserService {
             validateMobileUnique(id, mobile);
             // 校验邮箱唯一
             validateEmailUnique(id, email);
-            // 校验部门处于开启状态
-            deptService.validateDeptList(CollectionUtils.singleton(deptId));
+            // 旧系统用户写入口若仍被调用，部门必须是动态目录中真实且启用的部门。
+            // 空部门保留平台用户语义；非空部门不得静默忽略，也不得回查 system_dept。
+            if (deptId != null) {
+                departmentDirectoryApi.validateDepartmentEnabled(deptId).getCheckedData();
+            }
             // 校验岗位处于开启状态
             postService.validatePostList(postIds);
             return user;

@@ -1,6 +1,6 @@
 package cn.cheers.x.crm.controller.admin.customer.vo.limitconfig;
 
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -34,7 +34,7 @@ public class CrmCustomerLimitConfigRespVO {
     private List<AdminUserRespDTO> users;
 
     @Schema(description = "规则适用部门名称")
-    private List<DeptRespDTO> depts;
+    private List<DepartmentDTO> depts;
 
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime createTime;

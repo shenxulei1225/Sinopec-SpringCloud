@@ -36,4 +36,7 @@ public class EmergencyCommandDetailRespVO {
 
     @Schema(description = "预案上用户定义的阶段，按从先到后的顺序")
     private List<EmergencyCommandStageRespVO> stages;
+
+    @Schema(description = "这起事件已经记下的启动、变级、完成和上报。换级后原级别的记录仍在")
+    private List<EmergencyCommandTimelineRespVO> timeline;
 }

@@ -15,8 +15,10 @@ import cn.cheers.x.bpm.service.definition.BpmCategoryService;
 import cn.cheers.x.bpm.service.definition.BpmProcessDefinitionService;
 import cn.cheers.x.bpm.service.task.BpmProcessInstanceService;
 import cn.cheers.x.bpm.service.task.BpmTaskService;
-import cn.cheers.x.system.api.dept.DeptApi;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.UserAccountApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.UserAccountDTO;
 import cn.cheers.x.system.api.user.AdminUserApi;
 import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertMap;
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 import static cn.cheers.x.framework.common.util.collection.CollectionUtils.*;
@@ -60,7 +63,9 @@ public class BpmProcessInstanceController {
     @Resource
     private AdminUserApi adminUserApi;
     @Resource
-    private DeptApi deptApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
+    @Resource
+    private UserAccountApi userAccountApi;
 
     @GetMapping("/my-page")
     @Operation(summary = "获得我的实例分页列表", description = "在【我的流程】菜单中，进行调用")
@@ -86,8 +91,8 @@ public class BpmProcessInstanceController {
         userIds.addAll(convertSetByFlatMap(taskMap.values(),
                 tasks -> tasks.stream().map(Task::getAssignee).filter(StrUtil::isNotBlank).map(Long::parseLong)));
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(userIds);
-        Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(
-                convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
+        Map<Long, DepartmentDTO> deptMap = convertMap(departmentDirectoryApi.listDepartmentsByIds(java.util.List.copyOf(
+                convertSet(userMap.values(), AdminUserRespDTO::getDeptId))).getCheckedData(), DepartmentDTO::getId);
         return success(BpmProcessInstanceConvert.INSTANCE.buildProcessInstancePage(pageResult,
                 processDefinitionMap, categoryMap, taskMap, userMap, deptMap, processDefinitionInfoMap));
     }
@@ -113,8 +118,8 @@ public class BpmProcessInstanceController {
         // 发起人信息
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(
                 convertSet(pageResult.getList(), processInstance -> NumberUtils.parseLong(processInstance.getStartUserId())));
-        Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(
-                convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
+        Map<Long, DepartmentDTO> deptMap = convertMap(departmentDirectoryApi.listDepartmentsByIds(java.util.List.copyOf(
+                convertSet(userMap.values(), AdminUserRespDTO::getDeptId))).getCheckedData(), DepartmentDTO::getId);
         Map<String, BpmProcessDefinitionInfoDO> processDefinitionInfoMap = processDefinitionService.getProcessDefinitionInfoMap(
                 convertSet(pageResult.getList(), HistoricProcessInstance::getProcessDefinitionId));
         return success(BpmProcessInstanceConvert.INSTANCE.buildProcessInstancePage(pageResult,
@@ -143,10 +148,12 @@ public class BpmProcessInstanceController {
                 processInstance.getProcessDefinitionId());
         BpmProcessDefinitionInfoDO processDefinitionInfo = processDefinitionService.getProcessDefinitionInfo(
                 processInstance.getProcessDefinitionId());
-        AdminUserRespDTO startUser = adminUserApi.getUser(NumberUtils.parseLong(processInstance.getStartUserId())).getCheckedData();
-        DeptRespDTO dept = null;
-        if (startUser != null && startUser.getDeptId() != null) {
-            dept = deptApi.getDept(startUser.getDeptId()).getCheckedData();
+        Long startUserId = NumberUtils.parseLong(processInstance.getStartUserId());
+        AdminUserRespDTO startUser = adminUserApi.getUser(startUserId).getCheckedData();
+        UserAccountDTO startUserAccount = userAccountApi.getUserAccount(startUserId).getCheckedData();
+        DepartmentDTO dept = null;
+        if (startUserAccount.getDepartmentId() != null) {
+            dept = departmentDirectoryApi.getDepartment(startUserAccount.getDepartmentId()).getCheckedData();
         }
         return success(BpmProcessInstanceConvert.INSTANCE.buildProcessInstance(processInstance,
                 processDefinition, processDefinitionInfo, startUser, dept));
@@ -211,15 +218,19 @@ public class BpmProcessInstanceController {
         if (historicProcessInstance == null) {
             throw exception(PROCESS_INSTANCE_NOT_EXISTS);
         }
-        AdminUserRespDTO startUser = adminUserApi.getUser(Long.valueOf(historicProcessInstance.getStartUserId())).getCheckedData();
-        DeptRespDTO dept = deptApi.getDept(startUser.getDeptId()).getCheckedData();
+        Long startUserId = Long.valueOf(historicProcessInstance.getStartUserId());
+        AdminUserRespDTO startUser = adminUserApi.getUser(startUserId).getCheckedData();
+        UserAccountDTO startUserAccount = userAccountApi.getUserAccount(startUserId).getCheckedData();
+        DepartmentDTO dept = startUserAccount.getDepartmentId() != null
+                ? departmentDirectoryApi.getDepartment(startUserAccount.getDepartmentId()).getCheckedData() : null;
         List<HistoricTaskInstance> tasks = taskService.getFinishedTaskListByProcessInstanceIdWithoutCancel(processInstanceId);
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(
                 convertSet(tasks, item -> Long.valueOf(item.getAssignee())));
         return success(BpmProcessInstanceConvert.INSTANCE.buildProcessInstancePrintData(historicProcessInstance,
                 processDefinitionService.getProcessDefinitionInfo(historicProcessInstance.getProcessDefinitionId()),
                 tasks, userMap,
-                new UserSimpleBaseVO().setNickname(startUser.getNickname()).setDeptName(dept.getName())));
+                new UserSimpleBaseVO().setNickname(startUser.getNickname())
+                        .setDeptName(dept != null ? dept.getName() : null)));
     }
 
 }

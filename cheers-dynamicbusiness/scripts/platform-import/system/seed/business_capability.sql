@@ -43,21 +43,6 @@ DO UPDATE SET
 INSERT INTO business_capability (
   entity_type_code, capability_full, version, business_category, tenant_id, creator
 ) VALUES (
-  'dept', '{"readUrl": "/system/dept/list", "paginated": false, "components": ["card", "table", "tree", "list"], "entityTypeCode": "dept", "businessCategory": "system", "capabilityVersion": 15}',
-  15, 'system',
-  1, 'seed'
-)
-ON CONFLICT (entity_type_code, tenant_id) WHERE deleted = false
-DO UPDATE SET
-  capability_full = EXCLUDED.capability_full,
-  version = EXCLUDED.version,
-  business_category = EXCLUDED.business_category,
-  updater = 'seed',
-  update_time = CURRENT_TIMESTAMP;
-
-INSERT INTO business_capability (
-  entity_type_code, capability_full, version, business_category, tenant_id, creator
-) VALUES (
   'dictData', '{"readUrl": "/system/dict-data/page", "paginated": true, "components": ["card", "table", "tree", "list"], "entityTypeCode": "dictData", "businessCategory": "system", "capabilityVersion": 15}',
   15, 'system',
   1, 'seed'

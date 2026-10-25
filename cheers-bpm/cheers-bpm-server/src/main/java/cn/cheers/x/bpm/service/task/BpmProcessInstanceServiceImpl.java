@@ -39,8 +39,8 @@ import cn.cheers.x.bpm.framework.flowable.core.util.FlowableUtils;
 import cn.cheers.x.bpm.framework.flowable.core.util.SimpleModelUtils;
 import cn.cheers.x.bpm.service.definition.BpmProcessDefinitionService;
 import cn.cheers.x.bpm.service.message.BpmMessageService;
-import cn.cheers.x.system.api.dept.DeptApi;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import cn.cheers.x.system.api.user.AdminUserApi;
 import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import jakarta.annotation.Resource;
@@ -68,6 +68,7 @@ import org.springframework.validation.annotation.Validated;
 
 import java.util.*;
 
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertMap;
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.cheers.x.framework.common.util.collection.CollectionUtils.*;
 import static cn.cheers.x.bpm.controller.admin.task.vo.instance.BpmApprovalDetailRespVO.ActivityNode;
@@ -112,7 +113,7 @@ public class BpmProcessInstanceServiceImpl implements BpmProcessInstanceService 
     @Resource
     private AdminUserApi adminUserApi;
     @Resource
-    private DeptApi deptApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
 
     @Resource
     private BpmProcessInstanceEventPublisher processInstanceEventPublisher;
@@ -293,7 +294,7 @@ public class BpmProcessInstanceServiceImpl implements BpmProcessInstanceService 
         // 4. 拼接基础信息
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(
                 convertSetByFlatMap(nextActivityNodes, ActivityNode::getCandidateUserIds, Collection::stream));
-        Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
+        Map<Long, DepartmentDTO> deptMap = convertMap(departmentDirectoryApi.listDepartmentsByIds(java.util.List.copyOf(convertSet(userMap.values(), AdminUserRespDTO::getDeptId))).getCheckedData(), DepartmentDTO::getId);
         nextActivityNodes.forEach(node -> node.setCandidateUsers(convertList(node.getCandidateUserIds(), userId -> {
             AdminUserRespDTO user = userMap.get(userId);
             if (user != null) {
@@ -382,7 +383,7 @@ public class BpmProcessInstanceServiceImpl implements BpmProcessInstanceService 
                 asList(endApprovalNodeInfos, runningApprovalNodeInfos, simulateApprovalNodeInfos));
         Set<Long> userIds = BpmProcessInstanceConvert.INSTANCE.parseUserIds(processInstance, approveNodes, todoTask);
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(userIds);
-        Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
+        Map<Long, DepartmentDTO> deptMap = convertMap(departmentDirectoryApi.listDepartmentsByIds(java.util.List.copyOf(convertSet(userMap.values(), AdminUserRespDTO::getDeptId))).getCheckedData(), DepartmentDTO::getId);
 
         // 2. 表单权限
         String taskId = reqVO.getTaskId() == null && todoTask != null ? todoTask.getId() : reqVO.getTaskId();
@@ -741,7 +742,7 @@ public class BpmProcessInstanceServiceImpl implements BpmProcessInstanceService 
         // 2.2 拼接基础信息
         Set<Long> userIds = BpmProcessInstanceConvert.INSTANCE.parseUserIds02(processInstance, tasks);
         Map<Long, AdminUserRespDTO> userMap = adminUserApi.getUserMap(userIds);
-        Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(convertSet(userMap.values(), AdminUserRespDTO::getDeptId));
+        Map<Long, DepartmentDTO> deptMap = convertMap(departmentDirectoryApi.listDepartmentsByIds(java.util.List.copyOf(convertSet(userMap.values(), AdminUserRespDTO::getDeptId))).getCheckedData(), DepartmentDTO::getId);
         return BpmProcessInstanceConvert.INSTANCE.buildProcessInstanceBpmnModelView(processInstance, tasks, bpmnModel,
                 simpleModel,
                 unfinishedTaskActivityIds, finishedTaskActivityIds, finishedSequenceFlowActivityIds,

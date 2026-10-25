@@ -1,8 +1,8 @@
 package cn.cheers.x.crm.framework.operatelog.core;
 
 import cn.hutool.core.util.StrUtil;
-import cn.cheers.x.system.api.dept.DeptApi;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import com.mzt.logapi.service.IParseFunction;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ public class SysDeptParseFunction implements IParseFunction {
     public static final String NAME = "getDeptById";
 
     @Resource
-    private DeptApi deptApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
 
     @Override
     public String functionName() {
@@ -34,7 +34,7 @@ public class SysDeptParseFunction implements IParseFunction {
         }
 
         // 获取部门信息
-        DeptRespDTO dept = deptApi.getDept(Long.parseLong(value.toString())).getCheckedData();
+        DepartmentDTO dept = departmentDirectoryApi.getDepartment(Long.parseLong(value.toString())).getCheckedData();
         if (dept == null) {
             log.warn("[apply][获取部门{{}}为空", value);
             return "";

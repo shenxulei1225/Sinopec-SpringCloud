@@ -3,16 +3,12 @@ package cn.cheers.x.bpm.framework.flowable.core.candidate.strategy.dept;
 import cn.cheers.x.framework.common.util.string.StrUtils;
 import cn.cheers.x.bpm.framework.flowable.core.candidate.BpmTaskCandidateStrategy;
 import cn.cheers.x.bpm.framework.flowable.core.enums.BpmTaskCandidateStrategyEnum;
-import cn.cheers.x.system.api.dept.DeptApi;
-import cn.cheers.x.system.api.user.AdminUserApi;
-import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Set;
-
-import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertSet;
 
 /**
  * 部门的成员 {@link BpmTaskCandidateStrategy} 实现类
@@ -23,9 +19,7 @@ import static cn.cheers.x.framework.common.util.collection.CollectionUtils.conve
 public class BpmTaskCandidateDeptMemberStrategy implements BpmTaskCandidateStrategy {
 
     @Resource
-    private DeptApi deptApi;
-    @Resource
-    private AdminUserApi adminUserApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
 
     @Override
     public BpmTaskCandidateStrategyEnum getStrategy() {
@@ -35,14 +29,18 @@ public class BpmTaskCandidateDeptMemberStrategy implements BpmTaskCandidateStrat
     @Override
     public void validateParam(String param) {
         Set<Long> deptIds = StrUtils.splitToLongSet(param);
-        deptApi.validateDeptList(deptIds).checkError();
+        deptIds.forEach(deptId ->
+                departmentDirectoryApi.validateDepartmentEnabled(deptId).getCheckedData());
     }
 
     @Override
     public Set<Long> calculateUsers(String param) {
         Set<Long> deptIds = StrUtils.splitToLongSet(param);
-        List<AdminUserRespDTO> users = adminUserApi.getUserListByDeptIds(deptIds).getCheckedData();
-        return convertSet(users, AdminUserRespDTO::getId);
+        Set<Long> userAccountIds = new LinkedHashSet<>();
+        departmentDirectoryApi.listUserAccountIdsByDepartmentIds(
+                        java.util.List.copyOf(deptIds)).getCheckedData()
+                .values().forEach(userAccountIds::addAll);
+        return userAccountIds;
     }
 
 }

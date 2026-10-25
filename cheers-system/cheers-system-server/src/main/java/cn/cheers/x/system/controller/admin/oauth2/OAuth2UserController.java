@@ -3,13 +3,13 @@ package cn.cheers.x.system.controller.admin.oauth2;
 import cn.hutool.core.collection.CollUtil;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.framework.common.util.object.BeanUtils;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import cn.cheers.x.system.controller.admin.oauth2.vo.user.OAuth2UserInfoRespVO;
 import cn.cheers.x.system.controller.admin.oauth2.vo.user.OAuth2UserUpdateReqVO;
 import cn.cheers.x.system.controller.admin.user.vo.profile.UserProfileUpdateReqVO;
-import cn.cheers.x.system.dal.dataobject.dept.DeptDO;
 import cn.cheers.x.system.dal.dataobject.dept.PostDO;
 import cn.cheers.x.system.dal.dataobject.user.AdminUserDO;
-import cn.cheers.x.system.service.dept.DeptService;
 import cn.cheers.x.system.service.dept.PostService;
 import cn.cheers.x.system.service.user.AdminUserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,7 +44,7 @@ public class OAuth2UserController {
     @Resource
     private AdminUserService userService;
     @Resource
-    private DeptService deptService;
+    private DepartmentDirectoryApi departmentDirectoryApi;
     @Resource
     private PostService postService;
 
@@ -57,7 +57,9 @@ public class OAuth2UserController {
         OAuth2UserInfoRespVO resp = BeanUtils.toBean(user, OAuth2UserInfoRespVO.class);
         // 获得部门信息
         if (user.getDeptId() != null) {
-            DeptDO dept = deptService.getDept(user.getDeptId());
+            // OAuth2 用户展示只认动态部门目录，缺失时由目录接口显式报错。
+            DepartmentDTO dept = departmentDirectoryApi.listDepartmentsByIds(List.of(user.getDeptId()))
+                    .getCheckedData().get(0);
             resp.setDept(BeanUtils.toBean(dept, OAuth2UserInfoRespVO.Dept.class));
         }
         // 获得岗位信息

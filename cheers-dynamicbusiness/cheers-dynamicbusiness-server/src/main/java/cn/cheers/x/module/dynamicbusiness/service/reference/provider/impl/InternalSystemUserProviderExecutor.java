@@ -6,9 +6,9 @@ import cn.cheers.x.module.dynamicbusiness.service.reference.provider.ReferenceBa
 import cn.cheers.x.module.dynamicbusiness.service.reference.provider.ReferenceProviderExecutor;
 import cn.cheers.x.module.dynamicbusiness.service.reference.provider.ReferenceValidateReq;
 import cn.cheers.x.module.dynamicbusiness.service.reference.provider.ReferenceValidationResult;
-import cn.cheers.x.framework.common.pojo.CommonResult;
-import cn.cheers.x.system.api.user.AdminUserApi;
-import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
+import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.UserAccountDTO;
+import cn.cheers.x.module.dynamicbusiness.service.directory.UserAccountDirectoryQueryService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class InternalSystemUserProviderExecutor implements ReferenceProviderExecutor {
 
-    private final AdminUserApi adminUserApi;
+    private final UserAccountDirectoryQueryService userAccountDirectoryQueryService;
 
     @Override
     public boolean supports(ReferenceProviderDO provider) {
@@ -32,11 +32,10 @@ public class InternalSystemUserProviderExecutor implements ReferenceProviderExec
 
     @Override
     public List<ReferenceCandidateRespVO> queryCandidates(ReferenceProviderDO provider, String keyword, Integer pageNo, Integer pageSize) {
-        CommonResult<List<AdminUserRespDTO>> result = adminUserApi.getUserListByNickname(StringUtils.defaultString(keyword));
-        if (result == null || result.getData() == null || result.getData().isEmpty()) {
+        List<UserAccountDTO> users = userAccountDirectoryQueryService.listUserAccountsByNickname(keyword);
+        if (users.isEmpty()) {
             return Collections.emptyList();
         }
-        List<AdminUserRespDTO> users = result.getData();
         int safePageNo = pageNo == null || pageNo < 1 ? 1 : pageNo;
         int safePageSize = pageSize == null || pageSize < 1 ? 20 : pageSize;
         int from = (safePageNo - 1) * safePageSize;
@@ -61,7 +60,7 @@ public class InternalSystemUserProviderExecutor implements ReferenceProviderExec
         if (ids.isEmpty()) {
             return Collections.emptyList();
         }
-        return adminUserApi.getUserList(ids).getData().stream()
+        return userAccountDirectoryQueryService.listUserAccountsByIds(ids).stream()
                 .filter(Objects::nonNull)
                 .map(this::toCandidate)
                 .collect(Collectors.toList());
@@ -72,19 +71,20 @@ public class InternalSystemUserProviderExecutor implements ReferenceProviderExec
         if (req == null || StringUtils.isBlank(req.getId())) {
             return ReferenceValidationResult.builder().valid(false).reason("id 不能为空").build();
         }
-        CommonResult<AdminUserRespDTO> result = adminUserApi.getUser(Long.valueOf(req.getId()));
-        if (result == null || result.getData() == null) {
+        try {
+            userAccountDirectoryQueryService.getUserAccount(Long.valueOf(req.getId()));
+        } catch (ServiceException ex) {
             return ReferenceValidationResult.builder().valid(false).reason("引用目标不存在").build();
         }
         return ReferenceValidationResult.builder().valid(true).build();
     }
 
-    private ReferenceCandidateRespVO toCandidate(AdminUserRespDTO user) {
+    private ReferenceCandidateRespVO toCandidate(UserAccountDTO user) {
         return ReferenceCandidateRespVO.builder()
                 .id(String.valueOf(user.getId()))
-                .label(StringUtils.defaultIfBlank(user.getNickname(), user.getUsername()))
+                .label(StringUtils.defaultIfBlank(user.getNickname(), user.getAccount()))
                 .extra(String.format("{\"username\":\"%s\",\"mobile\":\"%s\"}",
-                        StringUtils.defaultString(user.getUsername()),
+                        StringUtils.defaultString(user.getAccount()),
                         StringUtils.defaultString(user.getMobile())))
                 .build();
     }

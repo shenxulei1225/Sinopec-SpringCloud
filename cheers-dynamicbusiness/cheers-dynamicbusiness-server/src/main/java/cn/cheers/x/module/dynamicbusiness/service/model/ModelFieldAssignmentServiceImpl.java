@@ -532,6 +532,9 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                 respVO.setIsSortable(assignment.getIsSortable());
                 respVO.setDefaultValue(assignment.getDefaultValue());
                 respVO.setAlias(assignment.getAlias());
+                respVO.setCreateVisible(assignment.getCreateVisible());
+                respVO.setEditVisible(assignment.getEditVisible());
+                respVO.setDetailVisible(assignment.getDetailVisible());
                 respVO.setValidationRules(assignment.getValidationRules());
                 respVO.setSort(assignment.getSort());
                 // LIBRARY / 已登记为基础字段的分配，均按 BASE 展示（不另读固定列表补行）
@@ -556,6 +559,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                             : field.getCode();
                     respVO.setFieldCode(fieldCode);
                     applyBaseFieldDisplayAlias(respVO, model.getEntityTypeCode(), fieldCode);
+                    attachBaseFieldTypeConfig(respVO, model.getEntityTypeCode(), fieldCode);
                 } else if (isBaseAssignment) {
                     respVO.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_BASE);
                     // 固定列不可从模型移除，但模型级规则（必填/搜索/排序/筛选）可在此配置
@@ -566,6 +570,7 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
                             : registeredFieldCodeForLibrary(model.getEntityTypeCode(), field);
                     respVO.setFieldCode(fieldCode);
                     applyBaseFieldDisplayAlias(respVO, model.getEntityTypeCode(), fieldCode);
+                    attachBaseFieldTypeConfig(respVO, model.getEntityTypeCode(), fieldCode);
                 } else {
                     respVO.setFieldSource(ModelFieldAssignmentRespVO.FIELD_SOURCE_CUSTOM);
                     respVO.setEditable(true);
@@ -644,12 +649,22 @@ public class ModelFieldAssignmentServiceImpl implements ModelFieldAssignmentServ
     }
 
     /**
-     * 将固定列字段转换为 ModelFieldAssignmentRespVO
-     * 
-     * @param baseField 固定列字段
-     * @param sourceEntityTypeCode 源业务类型编码（用于查询关联关系）
-     * @return 模型字段响应 VO
+     * 基础字段的画面开关在数据类型这一行，型号列表只带回 type_config 给眼睛读取。
+     * 不把分配行上的三个开关当成基础字段的权威。
      */
+    private void attachBaseFieldTypeConfig(
+            ModelFieldAssignmentRespVO respVO, String entityTypeCode, String physicalFieldCode) {
+        if (respVO == null || !StringUtils.hasText(entityTypeCode) || !StringUtils.hasText(physicalFieldCode)) {
+            return;
+        }
+        EntityTypeBaseFieldDO baseField =
+                entityTypeBaseFieldService.getBaseFieldByCode(entityTypeCode, physicalFieldCode);
+        if (baseField == null) {
+            return;
+        }
+        respVO.setTypeConfig(baseField.getTypeConfig());
+    }
+
     /**
      * 基础字段在数据类型上已有显示名称时，填进型号这一行的别名。
      * 型号上已经写了别名则不动。不改字段库名称。

@@ -2,7 +2,8 @@ package cn.cheers.x.bpm.framework.rpc.config;
 
 import cn.cheers.x.bpm.api.event.CrmContractStatusListener;
 import cn.cheers.x.bpm.api.event.CrmReceivableStatusListener;
-import cn.cheers.x.system.api.dept.DeptApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.UserAccountApi;
 import cn.cheers.x.system.api.dept.PostApi;
 import cn.cheers.x.system.api.dict.DictDataApi;
 import cn.cheers.x.system.api.permission.PermissionApi;
@@ -15,7 +16,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(value = "bpmRpcConfiguration", proxyBeanMethods = false)
-@EnableFeignClients(clients = {RoleApi.class, DeptApi.class, PostApi.class, AdminUserApi.class, SmsSendApi.class, DictDataApi.class,
+@EnableFeignClients(clients = {RoleApi.class, DepartmentDirectoryApi.class, UserAccountApi.class,
+        PostApi.class, AdminUserApi.class, SmsSendApi.class, DictDataApi.class,
         PermissionApi.class})
 public class RpcConfiguration {
 

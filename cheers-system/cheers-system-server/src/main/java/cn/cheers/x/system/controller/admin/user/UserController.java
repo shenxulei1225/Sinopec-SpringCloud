@@ -7,12 +7,12 @@ import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.framework.common.pojo.PageParam;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.framework.excel.core.util.ExcelUtils;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import cn.cheers.x.system.controller.admin.user.vo.user.*;
 import cn.cheers.x.system.convert.user.UserConvert;
-import cn.cheers.x.system.dal.dataobject.dept.DeptDO;
 import cn.cheers.x.system.dal.dataobject.user.AdminUserDO;
 import cn.cheers.x.system.enums.common.SexEnum;
-import cn.cheers.x.system.service.dept.DeptService;
 import cn.cheers.x.system.service.user.AdminUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -28,11 +28,14 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertMap;
 import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertList;
 
 @Tag(name = "管理后台 - 用户")
@@ -44,7 +47,7 @@ public class UserController {
     @Resource
     private AdminUserService userService;
     @Resource
-    private DeptService deptService;
+    private DepartmentDirectoryApi departmentDirectoryApi;
 
     @PostMapping("/create")
     @Operation(summary = "新增用户")
@@ -106,8 +109,7 @@ public class UserController {
             return success(new PageResult<>(pageResult.getTotal()));
         }
         // 拼接数据
-        Map<Long, DeptDO> deptMap = deptService.getDeptMap(
-                convertList(pageResult.getList(), AdminUserDO::getDeptId));
+        Map<Long, DepartmentDTO> deptMap = getDepartmentMap(pageResult.getList());
         return success(new PageResult<>(UserConvert.INSTANCE.convertList(pageResult.getList(), deptMap),
                 pageResult.getTotal()));
     }
@@ -117,8 +119,7 @@ public class UserController {
     public CommonResult<List<UserSimpleRespVO>> getSimpleUserList() {
         List<AdminUserDO> list = userService.getUserListByStatus(CommonStatusEnum.ENABLE.getStatus());
         // 拼接数据
-        Map<Long, DeptDO> deptMap = deptService.getDeptMap(
-                convertList(list, AdminUserDO::getDeptId));
+        Map<Long, DepartmentDTO> deptMap = getDepartmentMap(list);
         return success(UserConvert.INSTANCE.convertSimpleList(list, deptMap));
     }
 
@@ -132,7 +133,9 @@ public class UserController {
             return success(null);
         }
         // 拼接数据
-        DeptDO dept = deptService.getDept(user.getDeptId());
+        DepartmentDTO dept = user.getDeptId() == null ? null
+                : departmentDirectoryApi.listDepartmentsByIds(List.of(user.getDeptId()))
+                        .getCheckedData().get(0);
         return success(UserConvert.INSTANCE.convert(user, dept));
     }
 
@@ -145,8 +148,7 @@ public class UserController {
         exportReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
         List<AdminUserDO> list = userService.getUserPage(exportReqVO).getList();
         // 输出 Excel
-        Map<Long, DeptDO> deptMap = deptService.getDeptMap(
-                convertList(list, AdminUserDO::getDeptId));
+        Map<Long, DepartmentDTO> deptMap = getDepartmentMap(list);
         ExcelUtils.write(response, "用户数据.xls", "数据", UserRespVO.class,
                 UserConvert.INSTANCE.convertList(list, deptMap));
     }
@@ -176,6 +178,22 @@ public class UserController {
                                                       @RequestParam(value = "updateSupport", required = false, defaultValue = "false") Boolean updateSupport) throws Exception {
         List<UserImportExcelVO> list = ExcelUtils.read(file, UserImportExcelVO.class);
         return success(userService.importUserList(list, updateSupport));
+    }
+
+    /**
+     * 旧系统用户页面仅展示动态部门目录中的名称。
+     * 部门缺失由目录接口显式报错，禁止回查 system_dept 或静默补名。
+     */
+    private Map<Long, DepartmentDTO> getDepartmentMap(List<AdminUserDO> users) {
+        List<Long> departmentIds = convertList(users, AdminUserDO::getDeptId).stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (departmentIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return convertMap(departmentDirectoryApi.listDepartmentsByIds(departmentIds).getCheckedData(),
+                DepartmentDTO::getId);
     }
 
 }

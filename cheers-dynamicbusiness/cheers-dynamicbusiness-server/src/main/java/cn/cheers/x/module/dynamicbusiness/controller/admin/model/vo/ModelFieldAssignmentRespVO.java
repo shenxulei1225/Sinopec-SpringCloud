@@ -77,6 +77,15 @@ public class ModelFieldAssignmentRespVO {
     @Schema(description = "类型配置（JSON格式）", example = "{\"precision\": 10, \"scale\": 2}")
     private String typeConfig;
 
+    @Schema(description = "创建弹窗是否画出这一行。空表示画出。只属于这个型号")
+    private Boolean createVisible;
+
+    @Schema(description = "编辑弹窗是否画出这一行。空表示画出。只属于这个型号")
+    private Boolean editVisible;
+
+    @Schema(description = "详情是否画出这一行。空表示画出。只属于这个型号")
+    private Boolean detailVisible;
+
     // ========== 关联字段专用属性 ==========
 
     @Schema(description = "关联字段库ID", example = "1")

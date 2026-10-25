@@ -2,7 +2,6 @@ package cn.cheers.x.system.controller.admin.user.vo.user;
 
 import cn.hutool.core.util.ObjectUtil;
 import cn.cheers.x.framework.common.validation.Mobile;
-import cn.cheers.x.system.framework.operatelog.core.DeptParseFunction;
 import cn.cheers.x.system.framework.operatelog.core.PostParseFunction;
 import cn.cheers.x.system.framework.operatelog.core.SexParseFunction;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -38,7 +37,7 @@ public class UserSaveReqVO {
     private String remark;
 
     @Schema(description = "部门编号", example = "我是一个用户")
-    @DiffLogField(name = "部门", function = DeptParseFunction.NAME)
+    @DiffLogField(name = "部门")
     private Long deptId;
 
     @Schema(description = "岗位编号数组", example = "1")

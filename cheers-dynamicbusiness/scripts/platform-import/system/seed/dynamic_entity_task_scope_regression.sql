@@ -209,36 +209,38 @@ DO UPDATE SET model_id = EXCLUDED.model_id, category_id = EXCLUDED.category_id,
 -- ---------------------------------------------------------------------------
 -- 6. 任务实体 ent_task（22 条）
 -- ---------------------------------------------------------------------------
-INSERT INTO ent_task (id, entity_type_code, model_id, name, code, tenant_id, creator, tree_path, sort, status, deleted, custom_fields)
+INSERT INTO ent_task (id, entity_type_code, model_id, name, code, tenant_id, creator, tree_path, sort, status, deleted, manage_status, custom_fields)
 OVERRIDING SYSTEM VALUE
-SELECT v.id, 'task', m.id, v.name, v.code, 1, 'oil-depot-scope', v.tree_path, v.sort, 1, false, v.custom_fields::jsonb
+SELECT v.id, 'task', m.id, v.name, v.code, 1, 'oil-depot-scope', v.tree_path, v.sort, 1, false,
+  v.custom_fields::jsonb->>'manage_status', v.custom_fields::jsonb - 'manage_status'
 FROM (VALUES
-  (910001, 'patrol_task', 'TK-PAT-001', '储罐A区日常巡检', '/910001/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
-  (910002, 'patrol_task', 'TK-PAT-002', '储罐B区日常巡检', '/910002/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"进行中","FLD-TSK-022":"enabled"}'),
-  (910003, 'patrol_task', 'TK-PAT-003', '储罐C区专项巡检', '/910003/', 3, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
-  (910004, 'patrol_task', 'TK-PAT-004', '夜间储罐巡检', '/910004/', 4, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"已完成","FLD-TSK-022":"enabled"}'),
-  (910005, 'patrol_task', 'TK-PAT-005', '周末储罐巡检', '/910005/', 5, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待验收","FLD-TSK-022":"enabled"}'),
-  (910101, 'patrol_task', 'PL-PAT-001', '1#输油管廊巡检', '/910101/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
-  (910102, 'patrol_task', 'PL-PAT-002', '2#输油管廊巡检', '/910102/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"进行中","FLD-TSK-022":"enabled"}'),
-  (910103, 'patrol_task', 'PL-PAT-003', '栈桥区管廊巡检', '/910103/', 3, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
-  (910108, 'patrol_task', 'FR-PAT-001', '消防泵房巡检', '/910108/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
-  (910109, 'patrol_task', 'FR-PAT-002', '泡沫站巡检', '/910109/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"进行中","FLD-TSK-022":"enabled"}'),
-  (910110, 'patrol_task', 'FR-PAT-003', '灭火器月度巡检', '/910110/', 3, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
-  (910104, 'patrol_task', 'VL-PAT-001', '进油阀专项巡检', '/910104/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
-  (910105, 'patrol_task', 'VL-PAT-002', '出站阀专项巡检', '/910105/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"已完成","FLD-TSK-022":"enabled"}'),
-  (910106, 'patrol_task', 'AD-PAT-001', '雨前库内加巡', '/910106/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"草稿","FLD-TSK-022":"draft"}'),
-  (910107, 'patrol_task', 'AD-PAT-002', '节前安全加巡', '/910107/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"草稿","FLD-TSK-022":"draft"}'),
-  (910201, 'patrol_task', 'MT-WO-001', '输油泵预防性保养', '/910201/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
-  (910202, 'patrol_task', 'MT-WO-002', '调节阀计划更换', '/910202/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"进行中","FLD-TSK-022":"enabled"}'),
-  (910203, 'patrol_task', 'MT-WO-003', '液位仪年度校准', '/910203/', 3, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待验收","FLD-TSK-022":"enabled"}'),
-  (910204, 'patrol_task', 'MT-EM-001', '管线法兰泄漏抢修', '/910204/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"进行中","FLD-TSK-022":"enabled"}'),
-  (910205, 'patrol_task', 'MT-EM-002', '配电间故障抢修', '/910205/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","FLD-TSK-022":"enabled"}'),
-  (910301, 'patrol_task', 'ST-GEN-001', 'HSE培训计划', '/910301/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"草稿","FLD-TSK-022":"draft"}'),
-  (910302, 'patrol_task', 'ST-GEN-002', '库区卫生大扫除', '/910302/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"已完成","FLD-TSK-022":"enabled"}')
+  (910001, 'patrol_task', 'TK-PAT-001', '储罐A区日常巡检', '/910001/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","manage_status":"enabled"}'),
+  (910002, 'patrol_task', 'TK-PAT-002', '储罐B区日常巡检', '/910002/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"进行中","manage_status":"enabled"}'),
+  (910003, 'patrol_task', 'TK-PAT-003', '储罐C区专项巡检', '/910003/', 3, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","manage_status":"enabled"}'),
+  (910004, 'patrol_task', 'TK-PAT-004', '夜间储罐巡检', '/910004/', 4, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"已完成","manage_status":"enabled"}'),
+  (910005, 'patrol_task', 'TK-PAT-005', '周末储罐巡检', '/910005/', 5, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待验收","manage_status":"enabled"}'),
+  (910101, 'patrol_task', 'PL-PAT-001', '1#输油管廊巡检', '/910101/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","manage_status":"enabled"}'),
+  (910102, 'patrol_task', 'PL-PAT-002', '2#输油管廊巡检', '/910102/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"进行中","manage_status":"enabled"}'),
+  (910103, 'patrol_task', 'PL-PAT-003', '栈桥区管廊巡检', '/910103/', 3, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","manage_status":"enabled"}'),
+  (910108, 'patrol_task', 'FR-PAT-001', '消防泵房巡检', '/910108/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","manage_status":"enabled"}'),
+  (910109, 'patrol_task', 'FR-PAT-002', '泡沫站巡检', '/910109/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"进行中","manage_status":"enabled"}'),
+  (910110, 'patrol_task', 'FR-PAT-003', '灭火器月度巡检', '/910110/', 3, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","manage_status":"enabled"}'),
+  (910104, 'patrol_task', 'VL-PAT-001', '进油阀专项巡检', '/910104/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","manage_status":"enabled"}'),
+  (910105, 'patrol_task', 'VL-PAT-002', '出站阀专项巡检', '/910105/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"已完成","manage_status":"enabled"}'),
+  (910106, 'patrol_task', 'AD-PAT-001', '雨前库内加巡', '/910106/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"草稿","manage_status":"draft"}'),
+  (910107, 'patrol_task', 'AD-PAT-002', '节前安全加巡', '/910107/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"草稿","manage_status":"draft"}'),
+  (910201, 'patrol_task', 'MT-WO-001', '输油泵预防性保养', '/910201/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","manage_status":"enabled"}'),
+  (910202, 'patrol_task', 'MT-WO-002', '调节阀计划更换', '/910202/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"进行中","manage_status":"enabled"}'),
+  (910203, 'patrol_task', 'MT-WO-003', '液位仪年度校准', '/910203/', 3, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待验收","manage_status":"enabled"}'),
+  (910204, 'patrol_task', 'MT-EM-001', '管线法兰泄漏抢修', '/910204/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"进行中","manage_status":"enabled"}'),
+  (910205, 'patrol_task', 'MT-EM-002', '配电间故障抢修', '/910205/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"待派工","manage_status":"enabled"}'),
+  (910301, 'patrol_task', 'ST-GEN-001', 'HSE培训计划', '/910301/', 1, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"草稿","manage_status":"draft"}'),
+  (910302, 'patrol_task', 'ST-GEN-002', '库区卫生大扫除', '/910302/', 2, '{"FLD-TSK-003":"巡检","FLD-TSK-004":"已完成","manage_status":"enabled"}')
 ) AS v(id, model_code, code, name, tree_path, sort, custom_fields)
 JOIN dynamic_model m ON m.deleted = false AND m.tenant_id = 1 AND m.code = v.model_code
 ON CONFLICT (id) DO UPDATE SET
   model_id = EXCLUDED.model_id, name = EXCLUDED.name, code = EXCLUDED.code,
+  manage_status = EXCLUDED.manage_status,
   custom_fields = EXCLUDED.custom_fields, deleted = false,
   updater = 'oil-depot-scope', update_time = CURRENT_TIMESTAMP;
 

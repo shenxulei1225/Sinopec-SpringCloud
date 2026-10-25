@@ -178,6 +178,9 @@ public class ModelFieldAssignmentController {
         rulesReqVO.setIsFilterable(reqVO.getIsFilterable());
         rulesReqVO.setDefaultValue(reqVO.getDefaultValue());
         rulesReqVO.setAlias(reqVO.getAlias());
+        rulesReqVO.setCreateVisible(reqVO.getCreateVisible());
+        rulesReqVO.setEditVisible(reqVO.getEditVisible());
+        rulesReqVO.setDetailVisible(reqVO.getDetailVisible());
         rulesReqVO.setValidationRules(reqVO.getValidationRules());
         // 注意：fieldGroupId 已移除，分组关联应通过 ModelFieldGroupAssignmentController 管理
         modelFieldRulesService.updateFieldRules(reqVO.getModelId(), reqVO.getFieldId(), rulesReqVO);

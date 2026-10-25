@@ -2,6 +2,7 @@ package cn.cheers.x.module.dynamicbusiness.service.entity.core;
 
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
+import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.PhysicalColumnFilter;
 
 import java.util.List;
 import java.util.Map;
@@ -160,6 +161,18 @@ public interface EntityCoreService {
      * @return 分页结果
      */
     PageResult<EntityDO> pageEntities(String entityTypeCode, Long modelId, Integer status, String keyword, Integer pageNo, Integer pageSize);
+
+    /**
+     * 按实体表条件分页。物理列条件必须由上层按底座字段元数据校验后传入。
+     */
+    PageResult<EntityDO> pageEntities(String entityTypeCode, Long modelId, Integer status, String keyword,
+                                      Integer pageNo, Integer pageSize,
+                                      List<PhysicalColumnFilter> physicalFilters);
+
+    /**
+     * 按业务编码批量查询实体本体。
+     */
+    List<EntityDO> listByCodes(List<String> codes, String entityTypeCode);
 
     /**
      * 按多个模型ID进行实体本体分页查询。

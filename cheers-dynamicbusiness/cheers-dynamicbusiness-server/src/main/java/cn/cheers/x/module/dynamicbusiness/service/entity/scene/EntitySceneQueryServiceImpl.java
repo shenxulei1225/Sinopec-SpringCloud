@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityDedicatedColumnService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityFieldQueryEngine;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
+import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogStationScopeService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityTableDirectPagingGate;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityTreeBuilder;
@@ -113,6 +114,9 @@ public class EntitySceneQueryServiceImpl implements EntitySceneQueryService {
     @Resource
     @Lazy
     private EntityService entityService;
+    /** 查看范围是仅当前站时，给这次列表补上当前站筛选。不按目录类型写分支。 */
+    @Resource
+    private CatalogStationScopeService catalogStationScopeService;
     @Resource
     @Lazy
     private EntityRelationService entityRelationService;
@@ -186,6 +190,7 @@ public class EntitySceneQueryServiceImpl implements EntitySceneQueryService {
             List<Long> relatedEntityIds, String relatedEntityTypeCode) {
 
         if (scene == null) throw new ServiceException(400, "查询场景 scene 参数不能为空");
+        filters = catalogStationScopeService.constrainListFilters(entityTypeCode, filters);
 
         Integer effectivePageNo = (pageNo == null || pageNo < 1) ? 1 : pageNo;
         Integer effectivePageSize = (pageSize == null || pageSize < 1) ? 20 : pageSize;

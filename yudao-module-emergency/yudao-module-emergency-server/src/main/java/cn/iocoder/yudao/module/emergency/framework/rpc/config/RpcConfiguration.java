@@ -2,6 +2,7 @@ package cn.iocoder.yudao.module.emergency.framework.rpc.config;
 
 import cn.cheers.x.framework.common.biz.infra.logger.ApiAccessLogCommonApi;
 import cn.cheers.x.framework.common.biz.system.category.CategoryCommonApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.UserAccountApi;
 import cn.cheers.x.system.api.user.AdminUserApi;
 import cn.cheers.x.system.api.notify.NotifyMessageSendApi;
 import cn.cheers.x.system.api.sms.SmsSendApi;
@@ -19,6 +20,7 @@ import org.springframework.context.annotation.Import;
 @EnableFeignClients(
         clients = {
             AdminUserApi.class,        // 用户服务API
+            UserAccountApi.class,      // 用户目录；应急负责人只认 user_account.id
             CategoryCommonApi.class,   // 分类服务API（调用System模块的分类功能，使用CommonApi）
             NotifyMessageSendApi.class, // 站内信发送API
             SmsSendApi.class,          // 短信发送API

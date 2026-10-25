@@ -12,8 +12,8 @@ import cn.cheers.x.bpm.service.definition.BpmCategoryService;
 import cn.cheers.x.bpm.service.definition.BpmFormService;
 import cn.cheers.x.bpm.service.definition.BpmModelService;
 import cn.cheers.x.bpm.service.definition.BpmProcessDefinitionService;
-import cn.cheers.x.system.api.dept.DeptApi;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import cn.cheers.x.system.api.user.AdminUserApi;
 import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static cn.cheers.x.framework.common.util.collection.CollectionUtils.convertMap;
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 import static cn.cheers.x.framework.common.util.collection.CollectionUtils.*;
 import static cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
@@ -56,7 +57,7 @@ public class BpmModelController {
     @Resource
     private AdminUserApi adminUserApi;
     @Resource
-    private DeptApi deptApi;
+    private DepartmentDirectoryApi departmentDirectoryApi;
 
     @GetMapping("/list")
     @Operation(summary = "获得模型分页")
@@ -93,7 +94,7 @@ public class BpmModelController {
             BpmModelMetaInfoVO metaInfo = BpmModelConvert.INSTANCE.parseMetaInfo(model);
             return metaInfo != null && metaInfo.getStartDeptIds() != null ? metaInfo.getStartDeptIds().stream() : Stream.empty();
         });
-        Map<Long, DeptRespDTO> deptMap = deptApi.getDeptMap(deptIds);
+        Map<Long, DepartmentDTO> deptMap = convertMap(departmentDirectoryApi.listDepartmentsByIds(java.util.List.copyOf(deptIds)).getCheckedData(), DepartmentDTO::getId);
         return success(BpmModelConvert.INSTANCE.buildModelList(list,
                 formMap, categoryMap, deploymentMap, processDefinitionMap, userMap, deptMap));
     }

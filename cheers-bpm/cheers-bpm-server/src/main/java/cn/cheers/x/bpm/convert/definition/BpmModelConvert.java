@@ -14,7 +14,7 @@ import cn.cheers.x.bpm.controller.admin.definition.vo.process.BpmProcessDefiniti
 import cn.cheers.x.bpm.dal.dataobject.definition.BpmCategoryDO;
 import cn.cheers.x.bpm.dal.dataobject.definition.BpmFormDO;
 import cn.cheers.x.bpm.framework.flowable.core.util.BpmnModelUtils;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import org.flowable.common.engine.impl.db.SuspensionState;
 import org.flowable.engine.repository.Deployment;
@@ -46,7 +46,7 @@ public interface BpmModelConvert {
                                                 Map<String, Deployment> deploymentMap,
                                                 Map<String, ProcessDefinition> processDefinitionMap,
                                                 Map<Long, AdminUserRespDTO> userMap,
-                                                Map<Long, DeptRespDTO> deptMap) {
+                                                Map<Long, DepartmentDTO> deptMap) {
         List<BpmModelRespVO> result = convertList(list, model -> {
             BpmModelMetaInfoVO metaInfo = parseMetaInfo(model);
             BpmFormDO form = metaInfo != null ? formMap.get(metaInfo.getFormId()) : null;
@@ -55,7 +55,7 @@ public interface BpmModelConvert {
             ProcessDefinition processDefinition = model.getDeploymentId() != null ?
                     processDefinitionMap.get(model.getDeploymentId()) : null;
             List<AdminUserRespDTO> startUsers = metaInfo != null ? convertList(metaInfo.getStartUserIds(), userMap::get) : null;
-            List<DeptRespDTO> startDepts = metaInfo != null ? convertList(metaInfo.getStartDeptIds(), deptMap::get) : null;
+            List<DepartmentDTO> startDepts = metaInfo != null ? convertList(metaInfo.getStartDeptIds(), deptMap::get) : null;
             return buildModel0(model, metaInfo, form, category, deployment, processDefinition, startUsers, startDepts);
         });
         // 排序
@@ -76,7 +76,7 @@ public interface BpmModelConvert {
     default BpmModelRespVO buildModel0(Model model,
                                        BpmModelMetaInfoVO metaInfo, BpmFormDO form, BpmCategoryDO category,
                                        Deployment deployment, ProcessDefinition processDefinition,
-                                       List<AdminUserRespDTO> startUsers, List<DeptRespDTO> startDepts) {
+                                       List<AdminUserRespDTO> startUsers, List<DepartmentDTO> startDepts) {
         BpmModelRespVO modelRespVO = new BpmModelRespVO().setId(model.getId()).setName(model.getName())
                 .setKey(model.getKey()).setCategory(model.getCategory())
                 .setCreateTime(DateUtils.of(model.getCreateTime()));

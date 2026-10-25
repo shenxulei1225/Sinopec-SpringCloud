@@ -69,6 +69,11 @@ public interface EntityRepository {
     List<EntityDO> findByIds(List<Long> ids, String entityTypeCode);
 
     /**
+     * 按业务编码一次查询多条未删除实体。
+     */
+    List<EntityDO> findByCodes(List<String> codes, String entityTypeCode);
+
+    /**
      * 慢路径站场/物理前提：在有序候选 id 上按专用表物理列筛，保留仍命中的 id（保序）。
      *
      * <p>{@code physicalFilters} 为空时原样返回候选；列名须已校验。用于 {@code facility_id} 等

@@ -14,4 +14,7 @@ public class EmergencyCommandFromAlertReqVO {
     @Schema(description = "事件名称")
     @NotBlank(message = "事件名称不能为空")
     private String name;
+
+    @Schema(description = "当前场站编号。写入这起事件的所属场站")
+    private String facilityId;
 }

@@ -5,7 +5,7 @@ import cn.cheers.x.framework.common.util.number.NumberUtils;
 import cn.cheers.x.bpm.framework.flowable.core.candidate.BpmTaskCandidateStrategy;
 import cn.cheers.x.bpm.framework.flowable.core.enums.BpmTaskCandidateStrategyEnum;
 import cn.cheers.x.bpm.service.task.BpmProcessInstanceService;
-import cn.cheers.x.system.api.dept.dto.DeptRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
 import jakarta.annotation.Resource;
 import org.flowable.bpmn.model.BpmnModel;
 import org.flowable.engine.delegate.DelegateExecution;
@@ -49,7 +49,7 @@ public class BpmTaskCandidateStartUserDeptLeaderMultiStrategy extends AbstractBp
         ProcessInstance processInstance = processInstanceService.getProcessInstance(execution.getProcessInstanceId());
         Long startUserId = NumberUtils.parseLong(processInstance.getStartUserId());
         // 获取发起人的 multi 部门负责人
-        DeptRespDTO dept = super.getStartUserDept(startUserId);
+        DepartmentDTO dept = super.getStartUserDept(startUserId);
         if (dept == null) {
             return new HashSet<>();
         }
@@ -60,7 +60,7 @@ public class BpmTaskCandidateStartUserDeptLeaderMultiStrategy extends AbstractBp
     public Set<Long> calculateUsersByActivity(BpmnModel bpmnModel, String activityId, String param,
                                               Long startUserId, String processDefinitionId, Map<String, Object> processVariables) {
         int level = Integer.parseInt(param); // 参数是部门的层级
-        DeptRespDTO dept = super.getStartUserDept(startUserId);
+        DepartmentDTO dept = super.getStartUserDept(startUserId);
         if (dept == null) {
             return new HashSet<>();
         }

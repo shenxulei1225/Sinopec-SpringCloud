@@ -49,6 +49,7 @@ INSERT INTO ent_task (
   sort,
   status,
   deleted,
+  manage_status,
   custom_fields
 )
 OVERRIDING SYSTEM VALUE
@@ -64,6 +65,7 @@ SELECT
   v.sort,
   1,
   false,
+  v.manage_status,
   v.custom_fields
 FROM (
   VALUES
@@ -73,11 +75,11 @@ FROM (
       '日常巡检-储罐A区',
       '/910001/',
       1,
+      'enabled',
       jsonb_build_object(
         'FLD-TSK-003', '巡检',
         'FLD-TSK-004', '待派工',
         'FLD-TSK-005', '中',
-        'FLD-TSK-022', 'enabled',
         'FLD-TSK-023', 'POLICY-SET-DAILY-01',
         'FLD-TSK-007', '2026-07-01 08:00:00',
         'FLD-TSK-008', '2026-07-01 12:00:00',
@@ -96,11 +98,11 @@ FROM (
       '日常巡检-泵房管廊',
       '/910002/',
       2,
+      'enabled',
       jsonb_build_object(
         'FLD-TSK-003', '巡检',
         'FLD-TSK-004', '进行中',
         'FLD-TSK-005', '高',
-        'FLD-TSK-022', 'enabled',
         'FLD-TSK-023', 'POLICY-SET-DAILY-02',
         'FLD-TSK-007', '2026-07-05 09:00:00',
         'FLD-TSK-008', '2026-07-05 17:00:00',
@@ -116,11 +118,11 @@ FROM (
       '专项巡检-阀门密封',
       '/910003/',
       3,
+      'draft',
       jsonb_build_object(
         'FLD-TSK-003', '巡检',
         'FLD-TSK-004', '待派工',
         'FLD-TSK-005', '紧急',
-        'FLD-TSK-022', 'draft',
         'FLD-TSK-028', '{"entityTypeCode":"patrol_schedule","id":201}',
         'FLD-TSK-031', '[{"entityTypeCode":"inspection_item","id":102}]',
         'FLD-TSK-020', '{"version":1,"policyMode":"pool","preferredAssigneeRole":"senior_inspector"}'
@@ -132,11 +134,11 @@ FROM (
       '夜间巡检-照明与应急',
       '/910004/',
       4,
+      'enabled',
       jsonb_build_object(
         'FLD-TSK-003', '巡检',
         'FLD-TSK-004', '已完成',
         'FLD-TSK-005', '低',
-        'FLD-TSK-022', 'enabled',
         'FLD-TSK-023', 'POLICY-SET-NIGHT-01',
         'FLD-TSK-007', '2026-07-08 22:00:00',
         'FLD-TSK-008', '2026-07-09 02:00:00',
@@ -151,17 +153,17 @@ FROM (
       '周末巡检-消防设施',
       '/910005/',
       5,
+      'enabled',
       jsonb_build_object(
         'FLD-TSK-003', '巡检',
         'FLD-TSK-004', '待验收',
         'FLD-TSK-005', '中',
-        'FLD-TSK-022', 'enabled',
         'FLD-TSK-028', '{"entityTypeCode":"patrol_schedule","id":201}',
         'FLD-TSK-031', '[{"entityTypeCode":"inspection_item","id":101},{"entityTypeCode":"inspection_item","id":102}]',
         'FLD-TSK-020', '{"version":1,"policyMode":"pool","preferredAssigneeRole":"inspector"}'
       )
     )
-) AS v(id, code, name, tree_path, sort, custom_fields)
+) AS v(id, code, name, tree_path, sort, manage_status, custom_fields)
 JOIN dynamic_model m
   ON m.code = 'patrol_task'
  AND m.entity_type_code = 'task'
@@ -174,6 +176,7 @@ ON CONFLICT (id) DO UPDATE SET
   tenant_id = EXCLUDED.tenant_id,
   tree_path = EXCLUDED.tree_path,
   sort = EXCLUDED.sort,
+  manage_status = EXCLUDED.manage_status,
   status = EXCLUDED.status,
   deleted = false,
   custom_fields = EXCLUDED.custom_fields,

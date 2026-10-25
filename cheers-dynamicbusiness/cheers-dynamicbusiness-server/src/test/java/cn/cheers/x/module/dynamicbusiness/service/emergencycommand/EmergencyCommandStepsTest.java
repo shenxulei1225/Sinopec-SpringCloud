@@ -1,5 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.emergencycommand;
 
+import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import org.junit.jupiter.api.Test;
 
@@ -123,5 +124,36 @@ class EmergencyCommandStepsTest {
         assertEquals("事件上报", stages.get(0).name());
         assertEquals("现场处置", stages.get(1).name());
         assertEquals("response", EmergencyCommandSteps.listLevels(plan, null, "II").get(0).nodes().get(0).stageKey());
+    }
+
+    @Test
+    void present_keepsEarlierLevelCompletion_whenALaterRecordUsesTheSameStepKey() {
+        JSONObject plan = JSONObject.parseObject("""
+                {"version":1,"methods":[
+                  {"methodKey":"I","stepTree":[{"nodeKey":"s1","stepDescription":"初报","reportFormId":"1"}]},
+                  {"methodKey":"II","stepTree":[
+                    {"nodeKey":"s1","stepDescription":"再报"},
+                    {"nodeKey":"s2","stepDescription":"续报","reportFormId":"2"}
+                  ]}
+                ]}
+                """);
+        JSONArray timeline = new JSONArray();
+        timeline = EmergencyCommandRecords.append(timeline, EmergencyCommandRecords.KIND_STEP_COMPLETED,
+                EmergencyCommandRecords.fields("level", "II", "nodeKey", "s1"));
+        timeline = EmergencyCommandRecords.append(timeline, EmergencyCommandRecords.KIND_LEVEL,
+                EmergencyCommandRecords.fields("fromLevel", "II", "toLevel", "I", "level", "I"));
+        timeline = EmergencyCommandRecords.append(timeline, EmergencyCommandRecords.KIND_STEP_COMPLETED,
+                EmergencyCommandRecords.fields("level", "II", "nodeKey", "s2"));
+        timeline = EmergencyCommandRecords.append(timeline, EmergencyCommandRecords.KIND_REPORT,
+                EmergencyCommandRecords.fields("level", "II", "nodeKey", "s2", "reportFormId", "2"));
+
+        List<EmergencyCommandSteps.LevelNodes> levels = EmergencyCommandSteps.present(plan, null, timeline);
+
+        assertEquals(4, timeline.size());
+        assertEquals("未完成", levels.get(0).nodes().get(0).runStatus());
+        assertEquals("已完成", levels.get(1).nodes().get(0).runStatus());
+        assertEquals("已完成", levels.get(1).nodes().get(1).runStatus());
+        assertEquals("2", levels.get(1).nodes().get(1).reportFormId());
+        assertTrue(EmergencyCommandRecords.hasStepRecord(timeline, EmergencyCommandRecords.KIND_REPORT, "II", "s2"));
     }
 }

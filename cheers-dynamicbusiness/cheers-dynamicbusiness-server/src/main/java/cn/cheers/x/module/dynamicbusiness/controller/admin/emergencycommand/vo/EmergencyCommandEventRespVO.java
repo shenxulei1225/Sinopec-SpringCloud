@@ -41,4 +41,10 @@ public class EmergencyCommandEventRespVO {
 
     @Schema(description = "记录创建时间")
     private String createTime;
+
+    @Schema(description = "这起事件所属场站。启动时写入")
+    private String facilityId;
+
+    @Schema(description = "结案状态。处置中或已结案。空着表示还没结案")
+    private String caseStatus;
 }

@@ -30,6 +30,15 @@ public class ModelFieldRulesUpdateReqVO {
     @Schema(description = "显示别名。空字符串表示清掉", example = "俯仰角")
     private String alias;
 
+    @Schema(description = "创建弹窗是否画出这一行。只属于这个型号")
+    private Boolean createVisible;
+
+    @Schema(description = "编辑弹窗是否画出这一行。只属于这个型号")
+    private Boolean editVisible;
+
+    @Schema(description = "详情是否画出这一行。只属于这个型号")
+    private Boolean detailVisible;
+
     @Schema(description = "业务规则（JSON格式，包含范围、格式等验证规则）", example = "{\"min\": 0, \"max\": 100}")
     private String validationRules;
 

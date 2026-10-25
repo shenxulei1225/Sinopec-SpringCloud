@@ -15,7 +15,11 @@ public class EmergencyCommandCompleteStepReqVO {
     @NotBlank(message = "请先选择场站")
     private String facilityId;
 
-    @Schema(description = "响应副本上的步骤编号")
+    @Schema(description = "步骤所属级别。可以是当前级别，也可以是已经离开的级别。预警为 warning")
+    @NotBlank(message = "请选择级别")
+    private String level;
+
+    @Schema(description = "预案上的步骤编号")
     @NotBlank(message = "步骤编号不能为空")
     private String nodeKey;
 }

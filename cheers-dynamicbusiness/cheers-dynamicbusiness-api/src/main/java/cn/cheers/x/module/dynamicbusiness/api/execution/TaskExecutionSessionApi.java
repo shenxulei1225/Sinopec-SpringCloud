@@ -4,6 +4,7 @@ import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendPoseReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionDayAccountPageDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartReqDTO;
@@ -73,4 +74,17 @@ public interface TaskExecutionSessionApi {
     @Operation(summary = "这台设备还没结束的执行账，只含监控下拉要的几项")
     CommonResult<List<TaskExecutionUnfinishedOptionDTO>> listUnfinishedForDevice(
             @RequestParam("deviceId") String deviceId);
+
+    /**
+     * 巡检图层侧栏。按当前站场和所选日期，列出这一天的执行账。
+     * 日期格式 yyyy-MM-dd。只返回名称、任务、计划时刻和执行状态。
+     * 不作为数据目录的通用列表。
+     */
+    @GetMapping(PREFIX + "/patrol-layer-day")
+    @Operation(summary = "巡检图层侧栏：当前站场、所选日期的执行账")
+    CommonResult<TaskExecutionDayAccountPageDTO> listPatrolLayerDay(
+            @RequestParam("facilityId") Long facilityId,
+            @RequestParam("day") String day,
+            @RequestParam("pageNo") Integer pageNo,
+            @RequestParam("pageSize") Integer pageSize);
 }

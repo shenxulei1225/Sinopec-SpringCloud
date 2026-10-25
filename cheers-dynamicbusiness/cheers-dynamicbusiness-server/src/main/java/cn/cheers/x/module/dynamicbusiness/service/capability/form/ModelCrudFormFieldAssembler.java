@@ -439,6 +439,9 @@ public final class ModelCrudFormFieldAssembler {
         // 目录可以隐藏这一栏。本型号分配写了显示时，新建/编辑/详情以本型号为准。
         applyAssignmentFormVisibility(item, assign.getValidationRules());
         applyFieldTypeExtensions(item, entityTypeCode, field, fieldType, assign, refResolveContext);
+        if (FieldTypeEnum.isServiceCall(fieldType)) {
+            applyServiceCall(item, field);
+        }
 
         // 展示分组不改变基础字段或自定义字段。没被移走的基础字段仍归在基本信息。
         applyGroupMeta(item, field.getId(), groups);
@@ -535,6 +538,7 @@ public final class ModelCrudFormFieldAssembler {
             case "RANGED_NUMBER" -> "ranged-number";
             case "MODEL_RELATION" -> "model-relation";
             case "REF_MODEL" -> "ref-model";
+            case "SERVICE_CALL" -> "service-call";
             default -> "input";
         };
     }
@@ -610,6 +614,26 @@ public final class ModelCrudFormFieldAssembler {
         copyBooleanRule(item, rules, "createVisible", "create_visible");
         copyBooleanRule(item, rules, "editVisible", "edit_visible");
         copyBooleanRule(item, rules, "detailVisible", "detail_visible");
+    }
+
+    /**
+     * 调用服务不往记录上写值。服务和操作记在字段 options。
+     * 缺了服务或操作时，创建弹窗仍画出输入，保存后调用会拒绝。
+     */
+    private static void applyServiceCall(Map<String, Object> item, FieldDO field) {
+        item.put("persist", false);
+        JSONObject options = parseJsonObject(field != null ? field.getOptions() : null);
+        if (options == null) {
+            return;
+        }
+        String serviceCode = options.getString("serviceCode");
+        String operationCode = options.getString("operationCode");
+        if (StringUtils.hasText(serviceCode)) {
+            item.put("serviceCode", serviceCode.trim());
+        }
+        if (StringUtils.hasText(operationCode)) {
+            item.put("operationCode", operationCode.trim());
+        }
     }
 
     private static void applyBaseFieldTypeConfig(Map<String, Object> item, EntityTypeBaseFieldDO baseField) {

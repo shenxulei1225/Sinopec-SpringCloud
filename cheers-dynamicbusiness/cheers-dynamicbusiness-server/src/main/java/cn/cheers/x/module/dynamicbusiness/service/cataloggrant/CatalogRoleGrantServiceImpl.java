@@ -46,6 +46,8 @@ public class CatalogRoleGrantServiceImpl implements CatalogRoleGrantService {
     private PermissionApi permissionApi;
     @Resource
     private RoleApi roleApi;
+    @Resource
+    private CatalogStationScopeService catalogStationScopeService;
 
     @Override
     public List<CatalogRoleGrantItem> listByRoleId(Long roleId) {
@@ -106,6 +108,16 @@ public class CatalogRoleGrantServiceImpl implements CatalogRoleGrantService {
                 row.setOperation(operation);
                 catalogRoleGrantMapper.insert(row);
             }
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void saveRoleCatalogPermission(Long roleId, List<CatalogRoleGrantItem> items,
+                                          List<CatalogStationScope> stationScopes) {
+        replaceRoleGrants(roleId, items);
+        if (stationScopes != null) {
+            catalogStationScopeService.replaceRoleScopes(roleId, stationScopes);
         }
     }
 

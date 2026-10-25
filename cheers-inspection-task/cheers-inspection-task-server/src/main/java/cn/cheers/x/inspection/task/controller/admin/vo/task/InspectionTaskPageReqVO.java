@@ -25,7 +25,7 @@ public class InspectionTaskPageReqVO extends PageParam {
     @Schema(description = "任务编码")
     private String taskCode;
 
-    @Schema(description = "任务状态")
+    @Schema(description = "管理状态：0 草稿，1 已启用，2 已停用")
     private Integer status;
 
     @Schema(description = "是否启用")
