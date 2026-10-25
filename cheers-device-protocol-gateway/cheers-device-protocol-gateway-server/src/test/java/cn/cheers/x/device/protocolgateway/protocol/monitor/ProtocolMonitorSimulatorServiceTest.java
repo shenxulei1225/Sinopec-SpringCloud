@@ -35,6 +35,28 @@ class ProtocolMonitorSimulatorServiceTest {
     }
 
     @Test
+    void windowsStart_usesGitBashAndTheSameScript() {
+        List<String> start = BashSimulatorProcessLauncher.windowsScriptCommand(
+                Path.of("C:/Program Files/Git/bin/bash.exe"),
+                Path.of("E:/Sinopec/Sinopec-SpringCloud/start-microservices.sh"),
+                false,
+                "robot");
+
+        assertEquals("C:\\Program Files\\Git\\bin\\bash.exe", start.get(0));
+        assertEquals("E:\\Sinopec\\Sinopec-SpringCloud\\start-microservices.sh", start.get(1));
+        assertEquals("robot", start.get(2));
+    }
+
+    @Test
+    void windowsStop_killsTheListeningPort() {
+        List<String> stop = BashSimulatorProcessLauncher.windowsStopCommand(8302);
+
+        assertEquals("cmd.exe", stop.get(0));
+        assertTrue(stop.get(2).contains("taskkill"));
+        assertTrue(stop.get(2).contains(":8302"));
+    }
+
+    @Test
     void startRobot_whenDeviceAlreadyOnline_isRejected() throws Exception {
         DeviceTransport transport = mock(DeviceTransport.class);
         when(transport.isOnline("c9fb0e4891064f759509ed72c92fb71c")).thenReturn(true);
@@ -102,7 +124,7 @@ class ProtocolMonitorSimulatorServiceTest {
         }
 
         @Override
-        public void halt(Path script, String serviceName) {
+        public void halt(Path script, String serviceName, int port) {
             halted.add(serviceName);
         }
 

@@ -14,7 +14,8 @@
 # 本地端口 15xxx（网关 15080；协议网关 8095，设备 WebSocket 直连）。前端业务页只连网关。
 # 中台工程：cheers-business-middle-platform
 # 动态业务：cheers-dynamicbusiness/cheers-dynamicbusiness-server
-# Maven 本地仓库：默认 ~/MavenRepositoy，可用 MAVEN_REPO_LOCAL 覆盖。
+# Maven 本地仓库：环境变量 MAVEN_REPO_LOCAL 优先。
+# Linux 未设置时固定 ~/MavenRepositoy。Windows 未设置时读 Maven 配置里的本地仓库，没有再退回 ~/MavenRepositoy。
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -32,9 +33,73 @@ if [ -f "setup-java17.sh" ]; then
     source setup-java17.sh 2>/dev/null
 fi
 
-# 统一本地仓库，避免 spring-boot:run 落到 ~/.m2 而找不到本仓 SNAPSHOT
+# 统一本地仓库，避免 spring-boot:run 落到 ~/.m2 而找不到本仓 SNAPSHOT。
+# 已设置 MAVEN_REPO_LOCAL 时，Windows 和 Linux 都用它。
+# Linux 没设置时固定 ~/MavenRepositoy，不读 Maven 配置，避免云上配置把仓库带偏。
+# Windows（Git Bash）没设置时读配置里的本地仓库。这台开发机的 ~/MavenRepositoy 没有父 POM。
 # 注意：nohup 无法调用 shell 函数，启动命令须直接写 mvn -Dmaven.repo.local=...
-MAVEN_REPO_LOCAL="${MAVEN_REPO_LOCAL:-$HOME/MavenRepositoy}"
+windows_host() {
+    case "$(uname -s 2>/dev/null)" in
+        MINGW*|MSYS*|CYGWIN*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+read_settings_local_repository() {
+    local file="$1"
+    [ -f "$file" ] || return 1
+    awk '
+        /<!--/ { comment = 1 }
+        /-->/ { comment = 0; next }
+        comment { next }
+        /<localRepository>[^<]+<\/localRepository>/ {
+            line = $0
+            sub(/^[[:space:]]*<localRepository>/, "", line)
+            sub(/<\/localRepository>.*/, "", line)
+            gsub(/[[:space:]]/, "", line)
+            if (line != "" && index(line, "path/to") == 0) {
+                print line
+                exit
+            }
+        }
+    ' "$file"
+}
+
+resolve_maven_repo_local() {
+    if [ -n "${MAVEN_REPO_LOCAL:-}" ]; then
+        printf '%s\n' "$MAVEN_REPO_LOCAL"
+        return 0
+    fi
+    if ! windows_host; then
+        printf '%s\n' "$HOME/MavenRepositoy"
+        return 0
+    fi
+    local found=""
+    local settings=""
+    if [ -f "$HOME/.m2/settings.xml" ]; then
+        found="$(read_settings_local_repository "$HOME/.m2/settings.xml" || true)"
+    fi
+    if [ -z "$found" ]; then
+        local mvn_path=""
+        mvn_path="$(command -v mvn 2>/dev/null || command -v mvn.cmd 2>/dev/null || true)"
+        if [ -n "$mvn_path" ]; then
+            settings="$(cd "$(dirname "$mvn_path")/.." && pwd)/conf/settings.xml"
+            if [ -f "$settings" ]; then
+                found="$(read_settings_local_repository "$settings" || true)"
+            fi
+        fi
+    fi
+    if [ -z "$found" ] && [ -n "${MAVEN_HOME:-}" ] && [ -f "$MAVEN_HOME/conf/settings.xml" ]; then
+        found="$(read_settings_local_repository "$MAVEN_HOME/conf/settings.xml" || true)"
+    fi
+    if [ -n "$found" ]; then
+        printf '%s\n' "$found"
+        return 0
+    fi
+    printf '%s\n' "$HOME/MavenRepositoy"
+}
+
+MAVEN_REPO_LOCAL="$(resolve_maven_repo_local)"
 mkdir -p "$MAVEN_REPO_LOCAL"
 
 # Nacos 配置（Mac 默认 ~/nacos，可通过 NACOS_HOME 环境变量覆盖）
@@ -255,11 +320,12 @@ is_service_running() {
         return 1
     fi
     
-    if lsof -iTCP:"$port" -sTCP:LISTEN > /dev/null 2>&1; then
-        return 0
-    else
-        return 1
+    if command -v lsof >/dev/null 2>&1; then
+        lsof -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1
+        return $?
     fi
+    # Git Bash 没有 lsof。能连上这个口，说明进程已经在听。
+    (echo >/dev/tcp/127.0.0.1/"$port") >/dev/null 2>&1
 }
 
 # 获取监听端口的应用 PID（Spring Boot 进程）
@@ -311,7 +377,7 @@ start_service() {
     echo -e "   路径: $service_path"
     echo ""
 
-    # 本仓 SNAPSHOT API 需先 install 到 ~/MavenRepositoy；否则 spring-boot:run 会去远程找 jar
+    # 本仓 SNAPSHOT 先 install 到已解析的 MAVEN_REPO_LOCAL，再 spring-boot:run
     # 一律从仓库根 -pl <相对路径> -am，才能拉到跨父工程依赖（如 orchestration → emergency-api）
     case "$service_name" in
         resource|runtime|orchestration|policy|capability|topology|routing|\

@@ -18,10 +18,11 @@ public interface SimulatorProcessLauncher {
     void launch(Path script, String serviceName);
 
     /**
-     * 执行停止脚本并等到它结束。
-     * 脚本失败时抛 IllegalArgumentException，页面看到这句话。
+     * 停掉这一台并等到结束。
+     * Linux 走停止脚本。Windows 结束本机拉起的进程，并清掉仍占着 {@code port} 的进程。
+     * 失败时抛 IllegalArgumentException，页面看到这句话。
      */
-    void halt(Path script, String serviceName);
+    void halt(Path script, String serviceName, int port);
 
     /**
      * 最近一次启动脚本已经退出且失败时的说明。

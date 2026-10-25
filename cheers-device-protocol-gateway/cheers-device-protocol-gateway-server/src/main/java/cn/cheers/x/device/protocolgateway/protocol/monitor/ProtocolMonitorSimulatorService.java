@@ -64,7 +64,7 @@ public class ProtocolMonitorSimulatorService {
             return snapshot(target);
         }
         launching.remove(target.role());
-        launcher.halt(scriptPath(), target.serviceName());
+        launcher.halt(scriptPath(), target.serviceName(), target.port());
         return snapshot(target);
     }
 
