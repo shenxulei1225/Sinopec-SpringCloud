@@ -16,6 +16,8 @@
 # 动态业务：cheers-dynamicbusiness/cheers-dynamicbusiness-server
 # Maven 本地仓库：环境变量 MAVEN_REPO_LOCAL 优先。
 # Linux 未设置时固定 ~/MavenRepositoy。Windows 未设置时读 Maven 配置里的本地仓库，没有再退回 ~/MavenRepositoy。
+# 业务进程堆：平时停在软目标 512MB。dynamic 硬上限 3GB，inspection、protocol 硬上限 1.5GB，其余 768MB。
+# 已在跑的进程要重启后才使用新上限。实体列表同时能进几份，不在这里限制。
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -339,6 +341,26 @@ get_service_app_pid() {
     netstat -ano | awk -v port="$port" '$1 == "TCP" && $2 ~ ":" port "$" && $4 == "LISTENING" { print $5; exit }'
 }
 
+# 业务进程堆参数。平时停在 512MB；超出后可以临时涨到硬上限，空闲约 5 分钟再交还。
+# dynamic 会整表读实体，硬上限 3GB。inspection、protocol 硬上限 1.5GB。其余服务 768MB。
+# 元空间在堆以外，单独封顶。不在这里限制某一类请求能同时进几份。
+app_jvm_arguments() {
+    local service_name=$1
+    local hard_xmx="768m"
+    local initial_heap="256m"
+    case "$service_name" in
+        dynamic)
+            hard_xmx="3g"
+            initial_heap="512m"
+            ;;
+        inspection|protocol)
+            hard_xmx="1536m"
+            initial_heap="512m"
+            ;;
+    esac
+    echo "-Xms${initial_heap} -Xmx${hard_xmx} -XX:SoftMaxHeapSize=512m -XX:MaxMetaspaceSize=256m -XX:+UseG1GC -XX:G1PeriodicGCInterval=300000"
+}
+
 # 启动服务
 start_service() {
     local raw_name=$1
@@ -425,11 +447,17 @@ start_service() {
     # 机器人与无人机共用同一模块，编译目录分开，两个进程可以同时开着
     local run_profiles="local"
     local extra_mvn=()
+    local jvm_args
+    jvm_args=$(app_jvm_arguments "$service_name")
     if [ "$service_name" = "robot" ]; then
         run_profiles="robot"
         extra_mvn+=(-Dproject.build.directory=target/robot)
     fi
-    nohup mvn -Dmaven.repo.local="$MAVEN_REPO_LOCAL" spring-boot:run "${extra_mvn[@]}" -Dspring-boot.run.profiles="$run_profiles" -Dmaven.test.skip=true > "$log_file" 2>&1 &
+    echo -e "${BLUE}   业务进程堆: ${jvm_args}${NC}"
+    echo -e "${BLUE}   Maven 父进程堆上限: 256MB${NC}"
+    # 父进程封顶只加在 spring-boot:run。前面的 install 仍用 Maven 默认堆，避免依赖安装被 256MB 卡住。
+    MAVEN_OPTS="-Xmx256m -XX:MaxMetaspaceSize=128m" \
+        nohup mvn -Dmaven.repo.local="$MAVEN_REPO_LOCAL" spring-boot:run "${extra_mvn[@]}" -Dspring-boot.run.profiles="$run_profiles" -Dspring-boot.run.jvmArguments="${jvm_args}" -Dmaven.test.skip=true > "$log_file" 2>&1 &
     local pid=$!
     disown -h "$pid" 2>/dev/null || true
     
