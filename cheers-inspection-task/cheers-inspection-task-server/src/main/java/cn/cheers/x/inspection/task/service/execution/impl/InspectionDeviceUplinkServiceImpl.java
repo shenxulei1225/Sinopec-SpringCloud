@@ -9,6 +9,7 @@ import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.task.service.execution.InspectionDeviceUplinkService;
 import cn.cheers.x.inspection.task.service.execution.analysis.PatrolLiveStreamWatch;
+import cn.cheers.x.inspection.task.service.execution.pagepush.InspectionExecutionPagePublisher;
 import cn.cheers.x.inspection.task.service.execution.analysis.PatrolPhotoAnalysisService;
 import cn.cheers.x.inspection.task.service.execution.scheduleboard.PatrolScheduleSlotExecutionWritebackService;
 import cn.cheers.x.inspection.task.service.execution.steptree.TaskStepTreeAssembler;
@@ -30,6 +31,7 @@ import java.util.Map;
 /**
  * 巡检采集适配：把样本收成「采集结果到了」，并组好要对回的步/整次状态。
  * <p>记过程、改某一步、改整次状态都由条件策略做。本方法不对执行账写。
+ * 策略把步骤写上之后，把这次步骤结果交给页面推送。推送失败不回滚这次上报。
  * 拍照步写上之后，跑冒滴漏检查项若配了视频智能分析，交给分析提交去送图；送图失败不回滚这次上报。
  * 任务报成正在执行后，记下收流名称，供流媒体网关抽当前画面。这里不解码视频。
  * 设备故障上报另外记一条异常，挂在对上的那台设备上，不进分类。
@@ -49,6 +51,7 @@ public class InspectionDeviceUplinkServiceImpl implements InspectionDeviceUplink
     private final DeviceCollectionAnomalyRecorder deviceCollectionAnomalyRecorder;
     private final PatrolPhotoAnalysisService patrolPhotoAnalysisService;
     private final PatrolLiveStreamWatch patrolLiveStreamWatch;
+    private final InspectionExecutionPagePublisher pagePublisher;
 
     @Override
     public void applyCollection(CollectionSample sample) {
@@ -80,6 +83,12 @@ public class InspectionDeviceUplinkServiceImpl implements InspectionDeviceUplink
                 log.error("[patrol-uplink] 计划点写回失败 executionRecordId={} reason={}",
                         sample.executionRecordId(), ex.getMessage());
                 throw ex;
+            }
+            try {
+                pagePublisher.publishSteps(handledEvent);
+            } catch (RuntimeException ex) {
+                log.error("[patrol-uplink] 步骤结果没有推到页面 executionRecordId={} reason={}",
+                        sample.executionRecordId(), ex.getMessage());
             }
             try {
                 patrolPhotoAnalysisService.submitAfterReported(handledEvent);
@@ -216,6 +225,10 @@ public class InspectionDeviceUplinkServiceImpl implements InspectionDeviceUplink
         JsonNode result = pkg == null ? null : pkg.get("result");
         if (result != null && !result.isNull() && !result.isMissingNode()) {
             snapshot.put("result", objectMapper.convertValue(result, Object.class));
+        }
+        JsonNode point = pkg == null ? null : pkg.get("operatePoint");
+        if (point != null && point.isObject()) {
+            snapshot.put("operatePoint", objectMapper.convertValue(point, Object.class));
         }
         return snapshot;
     }

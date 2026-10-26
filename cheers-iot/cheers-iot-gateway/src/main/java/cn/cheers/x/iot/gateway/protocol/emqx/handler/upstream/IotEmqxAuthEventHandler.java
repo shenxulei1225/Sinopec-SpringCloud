@@ -14,12 +14,16 @@ import cn.cheers.x.iot.core.topic.auth.IotDeviceRegisterReqDTO;
 import cn.cheers.x.iot.core.topic.auth.IotDeviceRegisterRespDTO;
 import cn.cheers.x.iot.core.util.IotDeviceAuthUtils;
 import cn.cheers.x.iot.gateway.protocol.emqx.IotEmqxProtocol;
+import cn.cheers.x.iot.gateway.protocol.emqx.PushPageConnection;
+import cn.cheers.x.iot.gateway.protocol.emqx.PushSubscriptionCatalogNotifier;
 import cn.cheers.x.iot.gateway.service.device.message.IotDeviceMessageService;
 import cn.cheers.x.iot.gateway.util.IotMqttTopicUtils;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Locale;
 
 /**
@@ -111,7 +115,13 @@ public class IotEmqxAuthEventHandler {
                 return;
             }
 
-            // 2.2 情况二：执行认证
+            // 2.2 页面连接：只认 page- 客户端和单独配置的口令，不走设备认证
+            if (PushPageConnection.isPageClient(clientId)) {
+                sendAuthResponse(context, pageClientAllowed(clientId, username, password) ? RESULT_ALLOW : RESULT_DENY);
+                return;
+            }
+
+            // 2.3 情况二：执行认证
             boolean authResult = handleDeviceAuth(clientId, username, password);
             log.info("[handleAuth][设备认证结果: {} -> {}]", username, authResult);
             if (authResult) {
@@ -211,6 +221,13 @@ public class IotEmqxAuthEventHandler {
             }
             String username = body.getString("username");
             String topic = body.getString("topic");
+            String clientId = body.getString("clientid");
+            if (PushPageConnection.isPageClient(clientId)) {
+                Boolean subscribe = parseAclSubscribeFlag(body);
+                boolean allowed = Boolean.TRUE.equals(subscribe) && PushPageConnection.topicAllowed(topic);
+                sendAuthResponse(context, allowed ? RESULT_ALLOW : RESULT_DENY);
+                return;
+            }
             if (StrUtil.hasBlank(username, topic)) {
                 log.info("[handleAcl][ACL 参数不完整: username={}, topic={}]", username, topic);
                 sendAuthResponse(context, RESULT_IGNORE);
@@ -316,6 +333,13 @@ public class IotEmqxAuthEventHandler {
                     break;
                 case EVENT_CLIENT_DISCONNECTED:
                     handleClientDisconnected(body);
+                    mirrorPageSubscription(body, EVENT_CLIENT_DISCONNECTED);
+                    break;
+                case "session.subscribed":
+                    mirrorPageSubscription(body, "session.subscribed");
+                    break;
+                case "session.unsubscribed":
+                    mirrorPageSubscription(body, "session.unsubscribed");
                     break;
                 default:
                     break;
@@ -364,8 +388,47 @@ public class IotEmqxAuthEventHandler {
     }
 
     /**
-     * 处理客户端断开连接事件
+     * 页面连接的口令单独配置。没配、用户名不是 page:{租户}:{用户}、口令不对，都拒绝。
+     * 不拿设备账号顶替。
      */
+    private boolean pageClientAllowed(String clientId, String username, String password) {
+        if (!PushPageConnection.isPageClient(clientId) || PushPageConnection.parseUsername(username) == null) {
+            log.info("[pageClientAllowed][页面连接身份不完整: clientId={}, username={}]", clientId, username);
+            return false;
+        }
+        String expected = protocol.getEmqxConfig().getPageClientPassword();
+        if (StrUtil.isBlank(expected) || password == null) {
+            log.error("[pageClientAllowed][页面连接口令没配或没带，拒绝连接][clientId={}]", clientId);
+            return false;
+        }
+        return MessageDigest.isEqual(
+                expected.getBytes(StandardCharsets.UTF_8),
+                password.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * 页面连接的订阅变化转发到推送订阅目录。设备连接不进这本目录。
+     * 转发失败只记日志。EMQX 仍按自己的订阅投递。
+     */
+    private void mirrorPageSubscription(JsonObject body, String event) {
+        String clientId = body.getString("clientid");
+        if (!PushPageConnection.isPageClient(clientId)) {
+            return;
+        }
+        try {
+            PushSubscriptionCatalogNotifier notifier = SpringUtil.getBean(PushSubscriptionCatalogNotifier.class);
+            notifier.forward(
+                    protocol.getEmqxConfig().getPushCatalogUrl(),
+                    protocol.getEmqxConfig().getPushCatalogToken(),
+                    event,
+                    clientId,
+                    body.getString("username"),
+                    body.getString("topic"));
+        } catch (Exception ex) {
+            log.error("[mirrorPageSubscription][推送目录回调没有发出][event={}, clientId={}]", event, clientId, ex);
+        }
+    }
+
     private void handleClientDisconnected(JsonObject body) {
         String username = body.getString("username");
         String reason = body.getString("reason");

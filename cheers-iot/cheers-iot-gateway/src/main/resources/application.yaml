@@ -145,6 +145,12 @@ cheers:
             # 是否信任所有 SSL 证书 (默认: false)。警告：生产环境必须为 false！
             # 仅在开发环境或内网测试时，如果使用了自签名证书，可以临时设置为 true
             trust-all: true # 在 dev 环境可以设为 true
+            # 页面连接（clientId 以 page- 开头）的口令，以及把订阅变化写入推送目录的地址和口令。
+            # 三个值都来自环境变量。没配时，页面连接会被拒绝，目录里也不会出现订阅行。
+            # emqx-1 仍保持关闭：打开它还会去连 MQTT。EMQX 没启动时网关会起不来。
+            page-client-password: ${PAGE_MQTT_PASSWORD:}
+            push-catalog-url: ${PUSH_CATALOG_URL:}
+            push-catalog-token: ${PUSH_CATALOG_TOKEN:}
             # EMQX HTTP Hook 回调网关的 HTTPS 配置（可选）
             http:
               ssl-enabled: false

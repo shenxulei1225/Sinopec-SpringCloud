@@ -49,7 +49,7 @@ public class EntityTypeFlowGraphProvisionService {
                   code, name, type, unit, description, source, status, max_relations,
                   index_strategy, options, provider_code, semantic_type, tenant_id, creator
                 )
-                VALUES (?, '流程图', 'TEXT', NULL, '通用流程图结构字段',
+                VALUES (?, '流程图', 'JSON', NULL, '通用流程图结构字段',
                         'BASE', 1, 1, 'NONE', NULL, NULL, ?, ?, 'capability-flow-graph')
                 ON CONFLICT (code, tenant_id) WHERE deleted = false
                 DO UPDATE SET

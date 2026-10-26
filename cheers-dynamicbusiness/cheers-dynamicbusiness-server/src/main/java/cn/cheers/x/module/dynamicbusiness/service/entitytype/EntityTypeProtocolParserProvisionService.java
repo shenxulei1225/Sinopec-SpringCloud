@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * 目录协议解析能力写入。
  *
- * 负责：开能力时补字段说明 / 指令 JSON / 样例，并写正式用途。
+ * 负责：开能力时补字段说明 / 指令 JSON / 样例，并写正式用途。字段类型写 JSON。
  * 这三列是型号扩展字段：只挂在报文本身是 JSON 的型号上，不进业务类型基础字段表，
  * 也不随类型继承到每一本型号。航线文件、JSBridge 不分配。
  * 不负责：报文解析算法；把样例升成第四个用户可见用途；把这三列登记成类型基础字段。
@@ -68,11 +68,12 @@ public class EntityTypeProtocolParserProvisionService {
                   code, name, type, unit, description, source, status, max_relations,
                   index_strategy, options, provider_code, semantic_type, tenant_id, creator
                 )
-                VALUES (?, ?, 'TEXT', NULL, ?,
+                VALUES (?, ?, 'JSON', NULL, ?,
                         'USER', 1, 1, 'NONE', NULL, NULL, ?, ?, 'capability-protocol-parser')
                 ON CONFLICT (code, tenant_id) WHERE deleted = false
                 DO UPDATE SET
                   name = EXCLUDED.name,
+                  type = EXCLUDED.type,
                   description = EXCLUDED.description,
                   source = EXCLUDED.source,
                   semantic_type = EXCLUDED.semantic_type,

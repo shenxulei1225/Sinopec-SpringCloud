@@ -132,6 +132,8 @@ logging:
 cheers:
   api-encrypt:
     enable: false
+  push-catalog:
+    token: ${PUSH_CATALOG_TOKEN:}
   tenant:
     enable: true
     ignore-urls:

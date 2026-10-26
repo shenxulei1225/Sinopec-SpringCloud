@@ -113,6 +113,10 @@ public class IotEmqxProtocol implements IotProtocol {
         return IotProtocolTypeEnum.EMQX;
     }
 
+    public IotEmqxConfig getEmqxConfig() {
+        return emqxConfig;
+    }
+
     @Override
     public void start() {
         if (running) {

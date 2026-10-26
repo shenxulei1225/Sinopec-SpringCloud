@@ -64,6 +64,8 @@ logging:
 --- #################### Cheers 相关配置 ####################
 
 cheers:
+  push-catalog:
+    token: ${PUSH_CATALOG_TOKEN:}
   tenant:
     enable: true
     ignore-urls:

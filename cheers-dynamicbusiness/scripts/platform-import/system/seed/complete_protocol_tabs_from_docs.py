@@ -8,6 +8,7 @@
 2 开头塞进 500104 是算任务步骤时的事，交互方式不记包内一步。
 500202 是步骤做完后的共用上报外壳，不是某条下发的同步答卷；外层永远 500202，步身份在 packages 对象里的内层 opcode + sequence。
 空包字段只认对端协议书；联调 txt 多出来的键只进样例，不进空包。
+启动推流、停止推流的成功应答没有返回消息体，不补 data。
 不负责：改通信层分流、对接表、巡检回写。
 禁止：读路径猜字段；把回执写成业务成功卷；用 resultCode 顶替外壳 code；给协议没有的指令发明水平角/垂直角/焦距；把 500202 的 packages 写成数组或漏掉内层操作码。
 """
@@ -138,15 +139,19 @@ def stamp_ack_semantics(packet: dict, rows: list[dict], *, failure: bool) -> Non
             overwrite_path(packet, path, FAILURE_ACK_MSG)
 
 
-def ack_fields(failure: bool = False, data_rows: list[dict] | None = None) -> list[dict]:
-    """协议应答固定外壳：opcode / msgId / code / msg；成功卷还必须有 data。"""
+def ack_fields(failure: bool = False, data_rows: list[dict] | None = None, *, include_data: bool = True) -> list[dict]:
+    """协议应答固定外壳：opcode / msgId / code / msg。
+
+    协议书写了返回消息体时，成功卷才带 data。
+    启动推流、停止推流的成功应答没有返回消息体，include_data 为 false。
+    """
     rows = [
         field("opcode", "integer", "对应请求报文的操作码"),
         field("msgId", "string", "对应请求报文的消息id"),
         field("code", "integer", "返回码", description="200表示成功响应，其他非200的值表示失败响应。"),
         field("msg", "string", "返回码的描述", description="失败返回，需要填写对应的失败的原因"),
     ]
-    if failure:
+    if failure or not include_data:
         return rows
     rows.append(field("data", "object", "返回消息体"))
     if data_rows:
@@ -154,10 +159,20 @@ def ack_fields(failure: bool = False, data_rows: list[dict] | None = None) -> li
     return rows
 
 
-def ack_sample(opcode: int, failure: bool = False, data: dict | None = None, msg: str = "ok") -> dict:
+def ack_sample(
+    opcode: int,
+    failure: bool = False,
+    data: dict | None = None,
+    msg: str = "ok",
+    *,
+    include_data: bool = True,
+) -> dict:
     if failure:
         return {"opcode": opcode, "msgId": MSG, "code": FAILURE_ACK_CODE, "msg": FAILURE_ACK_MSG}
-    return {"opcode": opcode, "msgId": MSG, "code": SUCCESS_ACK_CODE, "msg": msg, "data": {} if data is None else data}
+    packet = {"opcode": opcode, "msgId": MSG, "code": SUCCESS_ACK_CODE, "msg": msg}
+    if include_data:
+        packet["data"] = {} if data is None else data
+    return packet
 
 
 def has_ack_envelope(rows: list[dict]) -> bool:
@@ -177,15 +192,28 @@ def prefix_data_paths(rows: list[dict]) -> list[dict]:
     return out
 
 
-def wrap_success_as_ack(opcode: int, rows: list[dict], sample: dict | None) -> tuple[list[dict], dict]:
+def wrap_success_as_ack(
+    opcode: int,
+    rows: list[dict],
+    sample: dict | None,
+    *,
+    include_data: bool = True,
+) -> tuple[list[dict], dict]:
+    """成功卷套上应答外壳。协议没有返回消息体时不要补 data。"""
     if has_ack_envelope(rows):
-        if not any(row["path"] == "data" for row in rows):
+        if include_data and not any(row["path"] == "data" for row in rows):
             rows = [*rows, field("data", "object", "返回消息体")]
+        if not include_data:
+            rows = [row for row in rows if row["path"] != "data" and not str(row["path"]).startswith("data.")]
         if sample is None:
-            sample = ack_sample(opcode, data={})
-        elif "data" not in sample:
+            sample = ack_sample(opcode, include_data=include_data)
+        elif include_data and "data" not in sample:
             sample = {**sample, "data": {}}
+        elif not include_data and "data" in sample:
+            sample = {key: value for key, value in sample.items() if key != "data"}
         return rows, sample
+    if not include_data:
+        return ack_fields(include_data=False), ack_sample(opcode, include_data=False)
     return ack_fields(data_rows=prefix_data_paths(rows)), ack_sample(opcode, data={} if sample is None else sample)
 
 
@@ -374,7 +402,12 @@ def command(opcode: int, outbound: list[dict], outbound_sample: dict, **kwargs) 
         packets["outbound"]["opcode"] = opcode
     samples = {"outbound": outbound_sample}
     if success_rows is not None:
-        success_rows, success_sample = wrap_success_as_ack(opcode, success_rows, success_sample)
+        success_rows, success_sample = wrap_success_as_ack(
+            opcode,
+            success_rows,
+            success_sample,
+            include_data=kwargs.get("include_data", True),
+        )
         fields["inboundSuccess"] = success_rows
         packets["inboundSuccess"] = fields_to_blank(success_rows)
         stamp_ack_semantics(packets["inboundSuccess"], success_rows, failure=False)
@@ -395,9 +428,22 @@ def command(opcode: int, outbound: list[dict], outbound_sample: dict, **kwargs) 
     }
 
 
-def gs_ack(opcode: int, outbound: list[dict], outbound_sample: dict, data_rows: list[dict] | None = None, data_sample=None) -> dict:
-    success = ack_fields(data_rows=data_rows)
-    success_sample = ack_sample(opcode, data={} if data_rows and data_sample is None else data_sample)
+def gs_ack(
+    opcode: int,
+    outbound: list[dict],
+    outbound_sample: dict,
+    data_rows: list[dict] | None = None,
+    data_sample=None,
+    *,
+    include_data: bool = True,
+) -> dict:
+    """同步应答。include_data 为 false 时成功卷只有外壳，不写返回消息体。"""
+    success = ack_fields(data_rows=data_rows, include_data=include_data)
+    success_sample = ack_sample(
+        opcode,
+        data=None if not include_data else ({} if data_rows and data_sample is None else data_sample),
+        include_data=include_data,
+    )
     if data_rows and data_sample is None:
         success_sample["data"] = fields_to_blank(data_rows)
         # 样例里补常见值
@@ -409,7 +455,14 @@ def gs_ack(opcode: int, outbound: list[dict], outbound_sample: dict, data_rows: 
             success_sample["data"]["packages"] = "[]"
         if "data.templates" in {row["path"] for row in data_rows}:
             success_sample["data"]["templates"] = [{"templateId": TEMPLATE, "lineId": "line-100111"}]
-    return command(opcode, outbound, outbound_sample, success=success, success_sample=success_sample)
+    return command(
+        opcode,
+        outbound,
+        outbound_sample,
+        success=success,
+        success_sample=success_sample,
+        include_data=include_data,
+    )
 
 
 def build_catalog() -> dict[str, dict]:
@@ -1131,6 +1184,7 @@ def build_catalog() -> dict[str, dict]:
             field("rtmp", "string", "推流地址"),
         ],
         {"opcode": 500401, "msgId": MSG, "deviceId": DEVICE, "rtmp": "rtmp://example/live"},
+        include_data=False,
     )
     catalog["proto-gs-500402-stream-off"] = gs_ack(
         500402,
@@ -1140,6 +1194,7 @@ def build_catalog() -> dict[str, dict]:
             field("deviceId", "string", "设备逻辑标识"),
         ],
         {"opcode": 500402, "msgId": MSG, "deviceId": DEVICE},
+        include_data=False,
     )
     return catalog
 
@@ -1495,8 +1550,12 @@ def assert_ack_semantics(catalog: dict[str, dict]) -> None:
             missing = [key for key in envelope if key not in success]
             if missing:
                 raise AssertionError(f"{code} inboundSuccess 缺外壳 {missing}")
-            if "data" not in success:
+            described = item["field_description_json"].get("inboundSuccess") or []
+            expects_data = any(row.get("path") == "data" for row in described)
+            if expects_data and "data" not in success:
                 raise AssertionError(f"{code} inboundSuccess 缺 data")
+            if not expects_data and "data" in success:
+                raise AssertionError(f"{code} inboundSuccess 多了协议里没有的 data")
             if success["code"] != SUCCESS_ACK_CODE:
                 raise AssertionError(f"{code} inboundSuccess.code={success['code']}")
             if "resultCode" in success:

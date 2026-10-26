@@ -5,6 +5,7 @@ import cn.cheers.x.inspection.task.api.dto.ReplayPoseReqDTO;
 import cn.cheers.x.inspection.task.api.dto.TaskExchangeTranscriptReqDTO;
 import cn.cheers.x.inspection.task.api.dto.TaskExchangeTranscriptRespDTO;
 import cn.cheers.x.inspection.task.service.execution.impl.InspectionDeviceUplinkServiceImpl;
+import cn.cheers.x.inspection.task.service.execution.pagepush.InspectionExecutionPagePublisher;
 import cn.cheers.x.module.dynamicbusiness.api.execution.TaskExecutionSessionApi;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendPoseReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessReqDTO;
@@ -30,14 +31,17 @@ public class TaskExchangeTranscriptService {
     private final PatrolGeneratedTaskLookup patrolGeneratedTaskLookup;
     private final TaskExecutionSessionApi taskExecutionSessionApi;
     private final ObjectMapper objectMapper;
+    private final InspectionExecutionPagePublisher pagePublisher;
 
     public TaskExchangeTranscriptService(
             PatrolGeneratedTaskLookup patrolGeneratedTaskLookup,
             TaskExecutionSessionApi taskExecutionSessionApi,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            InspectionExecutionPagePublisher pagePublisher) {
         this.patrolGeneratedTaskLookup = patrolGeneratedTaskLookup;
         this.taskExecutionSessionApi = taskExecutionSessionApi;
         this.objectMapper = objectMapper;
+        this.pagePublisher = pagePublisher;
     }
 
     /**
@@ -94,7 +98,8 @@ public class TaskExchangeTranscriptService {
 
     /**
      * 把飞机位置点记到这次执行上。过程列表不写这个点。
-     * 执行记录页仍按计划路线演示，不读这些点。
+     * 写上之后按推送主题里的轨迹名字规则发出。发出失败不把这次记点改成失败。
+     * 执行记录页仍按计划路线演示，要等页面订了这条主题才跟着动。
      * 真的写上才返回真。对不上执行记录，或写出失败，返回假。
      */
     public boolean recordPose(ReplayPoseReqDTO req) {
@@ -123,7 +128,11 @@ public class TaskExchangeTranscriptService {
         pose.setFrameRef(req.getFrameRef());
         try {
             CommonResult<Boolean> written = taskExecutionSessionApi.appendPose(pose);
-            return written != null && written.isSuccess();
+            if (written != null && written.isSuccess()) {
+                pagePublisher.publishTrajectory(recordId, req);
+                return true;
+            }
+            return false;
         } catch (RuntimeException ex) {
             return false;
         }

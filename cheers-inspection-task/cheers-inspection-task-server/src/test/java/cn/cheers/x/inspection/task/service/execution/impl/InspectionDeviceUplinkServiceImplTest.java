@@ -8,6 +8,7 @@ import cn.cheers.x.device.protocolgateway.api.opcode.TransportOpcode;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.task.service.execution.analysis.PatrolLiveStreamWatch;
+import cn.cheers.x.inspection.task.service.execution.pagepush.InspectionExecutionPagePublisher;
 import cn.cheers.x.inspection.task.service.execution.analysis.PatrolPhotoAnalysisService;
 import cn.cheers.x.inspection.task.service.execution.scheduleboard.PatrolScheduleSlotExecutionWritebackService;
 import cn.cheers.x.module.dynamicbusiness.api.strategy.StrategyRuntimeApi;
@@ -48,7 +49,8 @@ class InspectionDeviceUplinkServiceImplTest {
                 scheduleSlotExecutionWritebackService,
                 mock(DeviceCollectionAnomalyRecorder.class),
                 patrolPhotoAnalysisService,
-                mock(PatrolLiveStreamWatch.class));
+                mock(PatrolLiveStreamWatch.class),
+                mock(InspectionExecutionPagePublisher.class));
         when(strategyRuntimeApi.handle(any())).thenReturn(CommonResult.success(matchedHandle()));
     }
 

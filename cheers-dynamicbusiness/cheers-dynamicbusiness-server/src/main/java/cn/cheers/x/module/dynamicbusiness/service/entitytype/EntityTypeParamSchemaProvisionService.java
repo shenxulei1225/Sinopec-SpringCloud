@@ -47,11 +47,12 @@ public class EntityTypeParamSchemaProvisionService {
                   code, name, type, unit, description, source, status, max_relations,
                   index_strategy, options, provider_code, semantic_type, tenant_id, creator
                 )
-                VALUES (?, '参数定义', 'TEXT', NULL, '参数定义结构字段',
+                VALUES (?, '参数定义', 'JSON', NULL, '参数定义结构字段',
                         'BASE', 1, 1, 'NONE', NULL, NULL, ?, ?, 'capability-param-schema')
                 ON CONFLICT (code, tenant_id) WHERE deleted = false
                 DO UPDATE SET
                   name = EXCLUDED.name,
+                  type = EXCLUDED.type,
                   description = EXCLUDED.description,
                   semantic_type = EXCLUDED.semantic_type,
                   updater = 'capability-param-schema',

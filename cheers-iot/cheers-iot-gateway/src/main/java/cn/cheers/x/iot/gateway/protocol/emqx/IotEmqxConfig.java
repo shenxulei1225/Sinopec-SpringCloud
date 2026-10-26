@@ -142,6 +142,23 @@ public class IotEmqxConfig {
     private Http http = new Http();
 
     /**
+     * 页面连接的 MQTT 口令。来自环境变量，不写进仓库。
+     * 为空时，page- 开头的连接会被拒绝。
+     */
+    private String pageClientPassword;
+
+    /**
+     * 推送订阅目录的回调地址。来自环境变量。
+     * 为空时，页面订阅不会写入目录。
+     */
+    private String pushCatalogUrl;
+
+    /**
+     * 推送订阅目录的回调口令。来自环境变量，须和目录服务上的口令相同。
+     */
+    private String pushCatalogToken;
+
+    /**
      * 遗嘱消息 (Last Will and Testament)
      */
     @Data

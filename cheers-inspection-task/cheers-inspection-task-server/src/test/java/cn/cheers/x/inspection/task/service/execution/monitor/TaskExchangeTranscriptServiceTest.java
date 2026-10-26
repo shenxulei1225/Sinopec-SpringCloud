@@ -3,6 +3,7 @@ package cn.cheers.x.inspection.task.service.execution.monitor;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.task.api.dto.ReplayPoseReqDTO;
 import cn.cheers.x.inspection.task.api.dto.TaskExchangeTranscriptReqDTO;
+import cn.cheers.x.inspection.task.service.execution.pagepush.InspectionExecutionPagePublisher;
 import cn.cheers.x.module.dynamicbusiness.api.execution.TaskExecutionSessionApi;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessRespDTO;
@@ -30,7 +31,8 @@ class TaskExchangeTranscriptServiceTest {
     void setUp() {
         lookup = mock(PatrolGeneratedTaskLookup.class);
         sessionApi = mock(TaskExecutionSessionApi.class);
-        service = new TaskExchangeTranscriptService(lookup, sessionApi, new ObjectMapper());
+        service = new TaskExchangeTranscriptService(
+                lookup, sessionApi, new ObjectMapper(), mock(InspectionExecutionPagePublisher.class));
         when(sessionApi.appendProcess(any())).thenReturn(CommonResult.success(new TaskExecutionAppendProcessRespDTO()));
     }
 

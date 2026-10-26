@@ -258,11 +258,12 @@ public class EntityTypeStepStructureProvisionService {
                   code, name, type, unit, description, source, status, max_relations,
                   index_strategy, options, provider_code, semantic_type, tenant_id, creator
                 )
-                VALUES (?, '步骤树', 'TEXT', NULL, '通用步骤树结构字段',
+                VALUES (?, '步骤树', 'JSON', NULL, '通用步骤树结构字段',
                         'BASE', 1, 1, 'NONE', NULL, NULL, ?, ?, 'capability-step-structure')
                 ON CONFLICT (code, tenant_id) WHERE deleted = false
                 DO UPDATE SET
                   name = EXCLUDED.name,
+                  type = EXCLUDED.type,
                   description = EXCLUDED.description,
                   source = EXCLUDED.source,
                   status = EXCLUDED.status,

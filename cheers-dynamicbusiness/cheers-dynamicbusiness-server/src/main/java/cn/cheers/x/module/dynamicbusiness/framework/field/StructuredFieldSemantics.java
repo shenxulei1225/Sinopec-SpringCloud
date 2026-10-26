@@ -10,6 +10,7 @@ import java.util.Set;
  * 平台结构化字段用途清单。
  *
  * <p>负责：给结构化列发身份证。读路径只认这些用途，不按列名猜。</p>
+ * <p>这些列的字段类型统一是 JSON。用途决定哪个插件来画。不另造一种叫「结构化」的字段类型。</p>
  * <p>不负责：挂载配置、物理列名、某业务「怎么查」落点。</p>
  */
 public final class StructuredFieldSemantics {
