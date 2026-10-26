@@ -1,0 +1,9 @@
+/target/
+/.idea/
+*.iml
+.classpath
+.project
+.settings/
+application-local.yml
+application-local.yaml
+*.log

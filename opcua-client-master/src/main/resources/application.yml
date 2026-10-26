@@ -1,0 +1,89 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: opcua-client
+  main:
+    allow-bean-definition-overriding: true
+
+  datasource:
+    hikari:
+      # 最小空闲连接数量
+      minimum-idle: 5
+      # 空闲连接存活最大时间，默认600000（10分钟）
+      idle-timeout: 180000
+      # 数据库连接池最大连接数量，默认是10
+      maximum-pool-size: 64
+      # 此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认1800000即30分钟
+      max-lifetime: 1800000
+      # 数据库连接超时时间,默认30秒，即30000
+      connection-timeout: 5000
+      connection-test-query: SELECT 1
+      connection-init-sql: SET NAMES utf8 COLLATE utf8_unicode_ci
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${OPCUA_DATASOURCE_URL:jdbc:mysql://127.0.0.1:3306/plc?useUnicode=true&useSSL=false&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&allowMultiQueries=true&serverTimezone=UTC&connectionCollation=utf8_unicode_ci}
+    username: ${OPCUA_DATASOURCE_USERNAME:root}
+    password: ${OPCUA_DATASOURCE_PASSWORD:}
+  
+  # MyBatis-Plus配置
+  mybatis-plus:
+    configuration:
+      log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    global-config:
+      db-config:
+        id-type: auto
+        # 自动创建表配置
+        table-underline: true
+    # 自动创建表
+    mapper-locations: classpath*:/mapper/**/*.xml
+  
+  # 数据库初始化
+  sql:
+    init:
+      schema-locations: 
+        - classpath:schema-area.sql
+        - classpath:schema-plc.sql
+        - classpath:schema-tag.sql
+      mode: always
+
+  # 日志配置
+logging:
+  level:
+    com.example.opcuaclient: DEBUG
+    org.eclipse.milo: INFO
+    root: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# OPC UA配置
+opcua:
+  # OPC UA服务器地址
+  server-url: ${OPCUA_SERVER_URL:opc.tcp://127.0.0.1:4840/}
+  # 连接超时时间（毫秒）
+  connect-timeout: 10000
+  # 请求超时时间（毫秒）
+  request-timeout: 5000
+  # 是否启用安全连接
+  security-enabled: false
+  # 用户名（如果服务器需要认证）
+  username: ""
+  # 密码（如果服务器需要认证）
+  password: ""
+  # 应用程序名称
+  application-name: "OPC UA Client"
+  # 应用程序URI
+  application-uri: "urn:opcua:client:example"
+
+# 管理端点配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
