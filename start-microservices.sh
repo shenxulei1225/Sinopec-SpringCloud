@@ -312,26 +312,31 @@ STOP_SERVICES=(
     routing topology orchestration runtime policy capability resource
     alarm work-order maintenance scene-3d gis
 )
+# 本机 Java 在听才算运行中。Remote-SSH 端口映射也能连上同号端口，不能当成服务已启动。
 is_service_running() {
     local service_name=$1
-    local port=$(get_service_port "$service_name")
-    
+    local port pid
+
+    port=$(get_service_port "$service_name")
     if [ -z "$port" ]; then
         return 1
     fi
-    
-    if command -v lsof >/dev/null 2>&1; then
-        lsof -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1
-        return $?
+
+    pid=$(get_service_app_pid "$port")
+    if [ -z "$pid" ]; then
+        return 1
     fi
-    # Git Bash 没有 lsof。能连上这个口，说明进程已经在听。
-    (echo >/dev/tcp/127.0.0.1/"$port") >/dev/null 2>&1
+    tasklist //FI "PID eq ${pid}" //FO CSV 2>/dev/null | grep -qi "java.exe"
 }
 
-# 获取监听端口的应用 PID（Spring Boot 进程）
+# 谁在监听该端口；Windows 用 netstat，Mac/Linux 用 lsof。
 get_service_app_pid() {
     local port=$1
-    lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null | head -1
+    if command -v lsof >/dev/null 2>&1; then
+        lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null | head -1
+        return
+    fi
+    netstat -ano | awk -v port="$port" '$1 == "TCP" && $2 ~ ":" port "$" && $4 == "LISTENING" { print $5; exit }'
 }
 
 # 启动服务
@@ -365,6 +370,15 @@ start_service() {
         echo -e "      Knife4j:    ${BLUE}http://localhost:$port/doc.html${NC}"
         echo -e "      API Docs:   ${BLUE}http://localhost:$port/v3/api-docs${NC}"
         return 0
+    fi
+
+    local bind_port bind_pid
+    bind_port=$(get_service_port "$service_name")
+    bind_pid=$(get_service_app_pid "$bind_port")
+    if [ -n "$bind_pid" ]; then
+        echo -e "${RED}❌ 端口 ${bind_port} 被进程 ${bind_pid} 占用，不是本机 Java。${NC}"
+        echo -e "   请重载云端 SSH 窗口后再启动；或在该窗口端口面板停止 15080-15112 的转发。"
+        return 1
     fi
     
     # 检查服务目录是否存在
