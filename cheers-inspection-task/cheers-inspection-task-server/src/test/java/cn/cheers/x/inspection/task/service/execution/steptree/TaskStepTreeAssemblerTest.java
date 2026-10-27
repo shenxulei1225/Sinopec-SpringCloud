@@ -185,6 +185,40 @@ class TaskStepTreeAssemblerTest {
     }
 
     @Test
+    void assemble_stopRecord_hangsUnderFinishNotPrepare() {
+        List<TaskStepNode> nodes = List.of(
+                point("stop-start", 1, null, "起点"),
+                action("head-1", 2, "stop-start", 74L, "deviceStatus", "获取设备实时状态", Map.of()),
+                action("head-2", 3, "stop-start", 75L, "startRecord", "开始录像", Map.of()),
+                point("point-1", 4, null, "北罐组西罐1底"),
+                action("arrive", 5, "point-1", 11L, "act-arrive", "到达作业位置", Map.of()),
+                point("stop-end", 154, null, "终点"),
+                action("tail-1", 155, "stop-end", 76L, "stopRecord", "停止录像", Map.of())
+        );
+
+        TaskStepTreeAssembler.AssembledOpenRun result = TaskStepTreeAssembler.assemble(
+                nodes, code -> Optional.empty());
+
+        TaskExecutionStartReqDTO.StepDraft start = stepNamed(result, "开始录像");
+        TaskExecutionStartReqDTO.StepDraft stop = stepNamed(result, "停止录像");
+        TaskExecutionStartReqDTO.StepDraft finish = stepNamed(result, "结束工作");
+        TaskExecutionStartReqDTO.StepDraft point = stepNamed(result, "北罐组西罐1底");
+        assertEquals(TaskStepTreeAssembler.PREPARE_STEP_CODE, start.getParentStepCode());
+        assertEquals(TaskStepTreeAssembler.FINISH_STEP_CODE, stop.getParentStepCode());
+        assertEquals(154, finish.getStepOrder());
+        assertTrue(finish.getStepOrder() > point.getStepOrder());
+    }
+
+    private static TaskExecutionStartReqDTO.StepDraft stepNamed(
+            TaskStepTreeAssembler.AssembledOpenRun result, String name
+    ) {
+        return result.sessionSteps().stream()
+                .filter(step -> name.equals(step.getName()))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    @Test
     void assemble_emptyTree_throws() {
         ServiceException ex = assertThrows(ServiceException.class,
                 () -> TaskStepTreeAssembler.assemble(List.of(), code -> Optional.empty()));

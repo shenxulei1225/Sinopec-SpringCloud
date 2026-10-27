@@ -5,6 +5,8 @@ import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendP
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionMarkProcessReqDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionMarkProcessRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStepSnapshotDTO;
@@ -40,6 +42,13 @@ public interface TaskExecutionSessionService {
      * 没有账本编号或找不到这本账 → 失败，不按设备号猜。
      */
     TaskExecutionAppendProcessRespDTO appendProcess(TaskExecutionAppendProcessReqDTO req);
+
+    /**
+     * 按消息编号改已有下发事件的状态。
+     * 找不到时 updated 为假，不新造一行。
+     * 改完把这一行现在的名称和状态返回，供页面通知使用。
+     */
+    TaskExecutionMarkProcessRespDTO markProcessEvent(TaskExecutionMarkProcessReqDTO req);
 
     /**
      * 往这次执行另存一个回放位置点。不写入过程列表。

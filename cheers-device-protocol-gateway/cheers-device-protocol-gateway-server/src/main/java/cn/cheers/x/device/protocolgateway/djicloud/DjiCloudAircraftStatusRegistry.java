@@ -23,16 +23,18 @@ public class DjiCloudAircraftStatusRegistry {
 
     /**
      * 收包线程之外调用。不是飞机状态的报文直接丢掉，不覆盖上一帧。
+     * 记下的那一帧返回给调用方，用来发给页面。没记下时返回空。
      */
-    public void accept(String topic, byte[] payload) {
+    public AircraftFlightStatusDTO accept(String topic, byte[] payload) {
         String aircraftSn = aircraftSn(topic);
         if (aircraftSn == null) {
-            return;
+            return null;
         }
         AircraftFlightStatusDTO parsed = parser.parse(aircraftSn, payload);
         if (parsed != null) {
             latest.put(aircraftSn, parsed);
         }
+        return parsed;
     }
 
     public AircraftFlightStatusDTO get(String aircraftSn) {

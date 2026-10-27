@@ -65,6 +65,40 @@ class RuntimePersistServiceImplTest {
         assertEquals("bc40c82b-b9c8-4d6d-add6-316655e21a34", captor.getValue().getId());
         assertEquals("new-job", captor.getValue().getRuntimeJobId());
         assertEquals(SlotStatus.PLANNED.name(), captor.getValue().getCandidateStatus());
+        assertEquals(null, captor.getValue().getActualEnd());
+    }
+
+    @Test
+    void persist_existingCompleted_clearsActualEndWhenRewrittenPlanned() {
+        ResourceReservationDO existing = ResourceReservationDO.builder()
+                .id("patrol-task-1-52")
+                .runtimeJobId("old-job")
+                .candidateStatus(SlotStatus.COMPLETED.name())
+                .actualEnd(java.time.Instant.ofEpochSecond(1_761_454_800_000L)
+                        .atOffset(java.time.ZoneOffset.ofHours(8)))
+                .build();
+        when(resourceReservationMapper.selectById("patrol-task-1-52")).thenReturn(existing);
+
+        runtimePersistService.saveJobWithReservations(
+                RuntimeJobDTO.builder()
+                        .runtimeJobId("new-job")
+                        .entityTypeCode("task")
+                        .status(RuntimeJobStatus.SCHEDULED)
+                        .build(),
+                List.of(ResourceReservationDTO.builder()
+                        .candidateId("patrol-task-1-52")
+                        .runtimeJobId("new-job")
+                        .workId("patrol-task-1-52")
+                        .candidateStatus(SlotStatus.PLANNED)
+                        .build()),
+                44L);
+
+        ArgumentCaptor<ResourceReservationDO> captor = ArgumentCaptor.forClass(ResourceReservationDO.class);
+        verify(resourceReservationMapper).updateById(captor.capture());
+        verify(resourceReservationMapper, never()).insert(any(ResourceReservationDO.class));
+        assertEquals(SlotStatus.PLANNED.name(), captor.getValue().getCandidateStatus());
+        assertEquals(null, captor.getValue().getActualEnd());
+        assertEquals(null, captor.getValue().getActualStart());
     }
 
     @Test

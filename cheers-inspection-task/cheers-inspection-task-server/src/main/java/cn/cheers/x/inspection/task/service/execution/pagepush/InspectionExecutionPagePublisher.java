@@ -1,9 +1,7 @@
 package cn.cheers.x.inspection.task.service.execution.pagepush;
 
-import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.task.api.dto.ReplayPoseReqDTO;
-import cn.cheers.x.module.dynamicbusiness.api.entity.EntityRpcApi;
-import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.push.InspectionPushTopics;
 import cn.cheers.x.module.dynamicbusiness.api.strategy.dto.StrategyTriggerEventDTO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,25 +20,19 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 巡检把这一次执行的轨迹或步骤写上账之后，按消息目录里的主题发给页面。
- * <p>主题格式和字段说明都在「推送主题」这一行上。占位是执行记录编号。
- * 名字规则这一列的编码是 F-b2803c19be774051b1af38d9e13a760a。
- * 轨迹报文本次写入的纬度、经度、高度、时间。步骤报文本次写入的步骤编号、状态、巡检点位置、电量、照片地址。
- * <p>不负责：解析设备操作码、在数据协议里登记页面主题、页面没订时改投递。
- * <p>禁止：账还没写上就发；把照片 Base64 放进页面报文；主题读不到时自己编一条。
+ * 按已经存好的名字规则，把巡检页面要看的字段发出去。
+ * <p>名字规则在 {@link InspectionPushTopics}，和推送主题目录是同一份。发出时只填执行记录编号或设备编号。
+ * 轨迹报纬度、经度、高度、时间。步骤报步骤编号、状态、巡检点位置、电量、照片地址。
+ * 设备实时状态报这一帧飞机状态，不经过执行过程账。
+ * <p>不负责：写过程账、解析设备操作码、页面没订时改投递。
+ * <p>禁止：每发一封再查一次主题；主题不在这份规则里时自己编一条；把照片 Base64 放进页面报文。
  */
 @Slf4j
 @Component
 public class InspectionExecutionPagePublisher {
 
-    static final String TOPIC_TYPE = "push_topic";
-    /** 推送主题型号上的「名字规则」。 */
-    static final String NAME_PATTERN_FIELD = "F-b2803c19be774051b1af38d9e13a760a";
-    static final String TRAJECTORY_CODE = "inspection_execution_trajectory";
-    static final String STEP_CODE = "inspection_execution_step";
     static final String TOPIC_PLACEHOLDER = "{执行记录编号}";
 
-    private final EntityRpcApi entityRpcApi;
     private final ObjectMapper objectMapper;
     private final boolean enabled;
     private final String broker;
@@ -48,12 +40,10 @@ public class InspectionExecutionPagePublisher {
     private MqttClient client;
 
     public InspectionExecutionPagePublisher(
-            EntityRpcApi entityRpcApi,
             ObjectMapper objectMapper,
             @Value("${inspection.page-push.enabled:false}") boolean enabled,
             @Value("${inspection.page-push.broker:tcp://127.0.0.1:1883}") String broker,
             @Value("${inspection.page-push.client-id:inspection-page-push}") String clientId) {
-        this.entityRpcApi = entityRpcApi;
         this.objectMapper = objectMapper;
         this.enabled = enabled;
         this.broker = broker;
@@ -61,19 +51,35 @@ public class InspectionExecutionPagePublisher {
     }
 
     /**
-     * 轨迹点已经写入这次执行之后调用。
-     * x 是经度，y 是纬度，z 是高度。页面报文用纬度、经度、高度。
+     * 这一帧飞机状态。设备编号填进已经存好的名字规则。没有设备编号不发。
+     * 不写执行过程账。
+     */
+    public void publishDeviceStatus(String deviceId, Map<String, Object> fields) {
+        if (!enabled || !StringUtils.hasText(deviceId)) {
+            return;
+        }
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("messageKind", InspectionPushTopics.DEVICE_STATUS.code());
+        if (fields != null) {
+            body.putAll(fields);
+        }
+        send(InspectionPushTopics.DEVICE_STATUS.code(), null, deviceId, body);
+    }
+
+    /**
+     * 轨迹点。x 是经度，y 是纬度，z 是高度。页面报文用纬度、经度、高度。
+     * 记点由调用方另做，这里不看记点是否成功。
      */
     public void publishTrajectory(Long executionRecordId, ReplayPoseReqDTO pose) {
         if (!enabled || executionRecordId == null || pose == null) {
             return;
         }
         Map<String, Object> body = trajectoryBody(executionRecordId, pose);
-        send(TRAJECTORY_CODE, executionRecordId, body);
+        send(InspectionPushTopics.TRAJECTORY.code(), executionRecordId, null, body);
     }
 
     /**
-     * 策略已经把步骤结果写上这次执行之后调用。没有步骤更新则不发。
+     * 这次步骤结果。没有步骤更新则不发。
      */
     public void publishSteps(StrategyTriggerEventDTO event) {
         if (!enabled || event == null || event.getExecutionRecordId() == null) {
@@ -84,7 +90,8 @@ public class InspectionExecutionPagePublisher {
             return;
         }
         for (Map<String, Object> update : updates) {
-            send(STEP_CODE, event.getExecutionRecordId(), stepBody(event.getExecutionRecordId(), update));
+            send(InspectionPushTopics.STEP.code(), event.getExecutionRecordId(), null,
+                    stepBody(event.getExecutionRecordId(), update));
         }
     }
 
@@ -110,14 +117,112 @@ public class InspectionExecutionPagePublisher {
         Map<String, Object> result = map(payload.get("result"));
         body.put("electricity", result.get("electricity"));
         body.put("photoAddresses", photoAddresses(result.get("photos")));
+        Object receivedAt = payload.get("receivedAtEpochMs");
+        if (receivedAt != null) {
+            body.put("time", receivedAt);
+        }
         return body;
     }
 
     static String topicOf(String template, Long executionRecordId) {
-        if (!StringUtils.hasText(template) || executionRecordId == null) {
+        return topicOf(template, executionRecordId, null);
+    }
+
+    /**
+     * 名字规则里的执行记录编号、设备编号在发出时填上。缺了对应编号就不发。
+     */
+    static String topicOf(String template, Long executionRecordId, String deviceId) {
+        if (!StringUtils.hasText(template)) {
             return null;
         }
-        return template.replace(TOPIC_PLACEHOLDER, String.valueOf(executionRecordId));
+        String topic = template;
+        if (topic.contains(TOPIC_PLACEHOLDER)) {
+            if (executionRecordId == null) {
+                return null;
+            }
+            topic = topic.replace(TOPIC_PLACEHOLDER, String.valueOf(executionRecordId));
+        }
+        if (topic.contains("{设备编号}")) {
+            if (!StringUtils.hasText(deviceId)) {
+                return null;
+            }
+            topic = topic.replace("{设备编号}", deviceId.trim());
+        }
+        return topic;
+    }
+
+    /**
+     * 指令行的状态变化。正文是名称、状态、正常或异常、事件字段。页面用它改同一行。
+     * 名字规则对不上编号时不发。消息服务连不上只记日志。
+     * 不读过程账。调用方已经有这些字段才发。
+     */
+    public void publishProcessNotice(
+            String topicCode,
+            Long executionRecordId,
+            String deviceId,
+            String summary,
+            String eventStatus,
+            String outcome,
+            String msgId,
+            String direction,
+            Long receivedAtEpochMs,
+            Map<String, Object> fields) {
+        if (!enabled || !StringUtils.hasText(topicCode) || !StringUtils.hasText(eventStatus)) {
+            return;
+        }
+        Map<String, Object> body = processBody(
+                topicCode, executionRecordId, summary, eventStatus, outcome, msgId, direction, receivedAtEpochMs, fields);
+        send(topicCode, executionRecordId, deviceId, body);
+    }
+
+    /**
+     * 页面只认过程行上的这些字段。不带下发阶段，也不带报文原文。
+     */
+    static Map<String, Object> processBody(
+            String topicCode,
+            Long executionRecordId,
+            String summary,
+            String eventStatus,
+            String outcome,
+            String msgId,
+            String direction,
+            Long receivedAtEpochMs,
+            Map<String, Object> fields) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("executionRecordId", executionRecordId);
+        body.put("messageKind", topicCode);
+        body.put("summary", summary);
+        body.put("eventStatus", eventStatus);
+        body.put("outcome", outcome);
+        body.put("msgId", msgId);
+        body.put("direction", direction);
+        body.put("receivedAtEpochMs", receivedAtEpochMs);
+        Map<String, Object> eventFields = new LinkedHashMap<>();
+        if (fields != null) {
+            eventFields.putAll(fields);
+            eventFields.remove("commandPhase");
+        }
+        body.put("fields", eventFields);
+        return body;
+    }
+
+    /**
+     * 按这条标准事件自己的字段说明发出。正文就是样本上的转发字段。
+     * 名字规则对不上编号时不发。
+     */
+    public void publishStandard(
+            String topicCode, Long executionRecordId, String deviceId, Map<String, Object> fields) {
+        if (!enabled || !StringUtils.hasText(topicCode)) {
+            return;
+        }
+        Map<String, Object> body = new LinkedHashMap<>();
+        if (executionRecordId != null) {
+            body.put("executionRecordId", executionRecordId);
+        }
+        if (fields != null) {
+            body.putAll(fields);
+        }
+        send(topicCode, executionRecordId, deviceId, body);
     }
 
     /**
@@ -142,8 +247,8 @@ public class InspectionExecutionPagePublisher {
         return addresses;
     }
 
-    private void send(String protocolCode, Long executionRecordId, Map<String, Object> body) {
-        String topic = topicOf(loadTopic(protocolCode), executionRecordId);
+    private void send(String protocolCode, Long executionRecordId, String deviceId, Map<String, Object> body) {
+        String topic = topicOf(InspectionPushTopics.pattern(protocolCode), executionRecordId, deviceId);
         if (!StringUtils.hasText(topic)) {
             log.error("[inspection-page-push] 推送主题没有名字规则 code={} executionRecordId={}",
                     protocolCode, executionRecordId);
@@ -158,30 +263,6 @@ public class InspectionExecutionPagePublisher {
         } catch (RuntimeException ex) {
             log.error("[inspection-page-push] 页面报文没有发出 code={} topic={} reason={}",
                     protocolCode, topic, ex.getMessage());
-        }
-    }
-
-    private String loadTopic(String protocolCode) {
-        try {
-            CommonResult<EntityRespDTO> loaded = entityRpcApi.getEntityByCode(protocolCode, TOPIC_TYPE);
-            if (loaded == null || !loaded.isSuccess() || loaded.getData() == null) {
-                log.error("[inspection-page-push] 读不到推送主题 code={}", protocolCode);
-                return null;
-            }
-            EntityRespDTO entity = loaded.getData();
-            Object topic = fieldValue(entity.getBaseFields(), NAME_PATTERN_FIELD);
-            if (topic == null) {
-                topic = fieldValue(entity.getCustomFields(), NAME_PATTERN_FIELD);
-            }
-            if (!(topic instanceof String text) || !StringUtils.hasText(text)) {
-                log.error("[inspection-page-push] 推送主题没有名字规则 code={}", protocolCode);
-                return null;
-            }
-            return text;
-        } catch (RuntimeException ex) {
-            log.error("[inspection-page-push] 读取推送主题失败 code={} reason={}",
-                    protocolCode, ex.getMessage());
-            return null;
         }
     }
 
@@ -204,10 +285,6 @@ public class InspectionExecutionPagePublisher {
         options.setCleanSession(true);
         client.connect(options);
         return client;
-    }
-
-    private static Object fieldValue(Map<String, Object> fields, String key) {
-        return fields == null ? null : fields.get(key);
     }
 
     @SuppressWarnings("unchecked")

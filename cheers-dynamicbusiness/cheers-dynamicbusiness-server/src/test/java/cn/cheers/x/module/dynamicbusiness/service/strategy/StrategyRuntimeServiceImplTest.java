@@ -72,6 +72,19 @@ class StrategyRuntimeServiceImplTest {
     }
 
     @Test
+    void handle_ledgerAlreadyRecorded_doesNotAppendAnotherRow() {
+        when(conditionStrategyService.listVisibleEnabled(StrategyTriggerEventDTO.EVENT_COLLECTION_RECEIVED))
+                .thenReturn(List.of(appendProcessStrategy()));
+        StrategyTriggerEventDTO event = collectionEvent(9L);
+        event.setProcessAlreadyOnLedger(true);
+
+        StrategyHandleRespDTO resp = service.handle(event);
+
+        assertFalse(resp.isMatched());
+        verify(sessionService, never()).appendProcess(any());
+    }
+
+    @Test
     void handle_missingRecordId_skipsWithoutWrite() {
         when(conditionStrategyService.listVisibleEnabled(StrategyTriggerEventDTO.EVENT_COLLECTION_RECEIVED))
                 .thenReturn(List.of(appendProcessStrategy()));

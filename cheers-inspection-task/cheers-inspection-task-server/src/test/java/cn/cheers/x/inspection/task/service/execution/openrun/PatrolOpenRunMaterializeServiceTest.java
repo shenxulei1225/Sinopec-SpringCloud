@@ -150,6 +150,42 @@ class PatrolOpenRunMaterializeServiceTest {
     }
 
     @Test
+    void materialize_updateDropsMissingPendingLedgerAndWritesNewOne() {
+        when(store.pendingExecutionRecordIds(1L)).thenReturn(Map.of("old-gone", 923542L));
+        when(entityRpc.getEntity(eq(923542L), any())).thenReturn(CommonResult.success(null));
+        when(store.pendingExecutionRecordId(1L, "s1")).thenReturn(null);
+        TaskExecutionStartBatchRespDTO started = new TaskExecutionStartBatchRespDTO();
+        TaskExecutionStartBatchRespDTO.RecordRef ref = new TaskExecutionStartBatchRespDTO.RecordRef();
+        ref.setPendingRef("s1");
+        ref.setExecutionRecordId(80L);
+        started.setRecords(List.of(ref));
+        when(sessionApi.startBatch(any())).thenReturn(CommonResult.success(started));
+
+        service.materializeAllSlots(sampleDraft(8L), List.of(slot("s1")));
+
+        verify(sessionApi, never()).deletePending(any());
+        verify(store).dropPendingExecutionSlots(eq(1L), eq(List.of("old-gone")));
+        verify(sessionApi).startBatch(any());
+    }
+
+    @Test
+    void writeMissing_doesNotDeleteLiveLedgerAndWritesTheGap() {
+        when(store.pendingExecutionRecordId(1L, "s1")).thenReturn(null);
+        TaskExecutionStartBatchRespDTO started = new TaskExecutionStartBatchRespDTO();
+        TaskExecutionStartBatchRespDTO.RecordRef ref = new TaskExecutionStartBatchRespDTO.RecordRef();
+        ref.setPendingRef("s1");
+        ref.setExecutionRecordId(81L);
+        started.setRecords(List.of(ref));
+        when(sessionApi.startBatch(any())).thenReturn(CommonResult.success(started));
+
+        service.writeMissingPendingLedgers(sampleDraft(8L), List.of(slot("s1")));
+
+        verify(sessionApi, never()).deletePending(any());
+        verify(store, never()).dropPendingExecutionSlots(any(), any());
+        verify(sessionApi).startBatch(any());
+    }
+
+    @Test
     void materialize_robotWritesTranslatedPackageOntoEachOccurrence() {
         when(store.pendingExecutionRecordId(1L, "s1")).thenReturn(null);
         when(store.pendingExecutionRecordId(1L, "s2")).thenReturn(null);
@@ -230,6 +266,41 @@ class PatrolOpenRunMaterializeServiceTest {
         assertTrue(snapshot.get("dispatchDownlinkPieces") instanceof List<?> pieces && pieces.size() == 1);
         assertEquals("wayline-88", snapshot.get("waylineFileId"));
         assertEquals("fp-88", snapshot.get("waylineFingerprint"));
+    }
+
+    @Test
+    void hasStartedLedger_falseWhenMissingOrStillPending() {
+        when(store.pendingExecutionRecordId(1L, "s1")).thenReturn(null);
+        assertFalse(service.hasStartedLedger(1L, "s1"));
+
+        when(store.pendingExecutionRecordId(1L, "s1")).thenReturn(90L);
+        EntityRespDTO pending = new EntityRespDTO();
+        pending.setCustomFields(Map.of("execution_status", "pending"));
+        when(entityRpc.getEntity(eq(90L), any())).thenReturn(CommonResult.success(pending));
+        assertFalse(service.hasStartedLedger(1L, "s1"));
+    }
+
+    @Test
+    void hasStartedLedger_trueWhenCompleted() {
+        when(store.pendingExecutionRecordId(1L, "s1")).thenReturn(91L);
+        EntityRespDTO completed = new EntityRespDTO();
+        completed.setCustomFields(Map.of("execution_status", "completed"));
+        when(entityRpc.getEntity(eq(91L), any())).thenReturn(CommonResult.success(completed));
+        assertTrue(service.hasStartedLedger(1L, "s1"));
+    }
+
+    @Test
+    void materialize_sameSlotWithStartedLedger_doesNotWriteAnotherPending() {
+        when(store.pendingExecutionRecordIds(1L)).thenReturn(Map.of("s1", 91L));
+        EntityRespDTO completed = new EntityRespDTO();
+        completed.setCustomFields(Map.of("execution_status", "completed"));
+        when(entityRpc.getEntity(eq(91L), any())).thenReturn(CommonResult.success(completed));
+        when(store.pendingExecutionRecordId(1L, "s1")).thenReturn(91L);
+
+        service.materializeAllSlots(sampleDraft(8L), List.of(slot("s1")));
+
+        verify(sessionApi, never()).deletePending(91L);
+        verify(sessionApi, never()).startBatch(any());
     }
 
     @Test

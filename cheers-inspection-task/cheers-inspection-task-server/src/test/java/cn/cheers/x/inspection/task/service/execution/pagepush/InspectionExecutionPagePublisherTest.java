@@ -52,6 +52,23 @@ class InspectionExecutionPagePublisherTest {
     }
 
     @Test
+    void processNoticeCarriesTheLedgerRow() {
+        Map<String, Object> fields = new LinkedHashMap<>();
+        fields.put("code", 0);
+        fields.put("commandPhase", "sent");
+
+        Map<String, Object> body = InspectionExecutionPagePublisher.processBody(
+                "inspection_action_photo", 15L, "拍照", "已下发", null, "m-1", "outbound", 99L, fields);
+
+        assertEquals(15L, body.get("executionRecordId"));
+        assertEquals("inspection_action_photo", body.get("messageKind"));
+        assertEquals("拍照", body.get("summary"));
+        assertEquals("已下发", body.get("eventStatus"));
+        assertEquals("m-1", body.get("msgId"));
+        assertEquals(Map.of("code", 0), body.get("fields"));
+    }
+
+    @Test
     void topicFollowsTheExecutionRecord() {
         String topic = InspectionExecutionPagePublisher.topicOf(
                 "inspection/execution/{执行记录编号}/trajectory", 15L);

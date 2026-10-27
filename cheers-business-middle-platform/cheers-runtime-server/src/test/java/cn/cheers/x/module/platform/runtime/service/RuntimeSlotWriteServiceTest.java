@@ -95,6 +95,30 @@ class RuntimeSlotWriteServiceTest {
     }
 
     @Test
+    void update_planned_clearsLeftoverActualEnd() {
+        ResourceReservationDO existing = ResourceReservationDO.builder()
+                .id("slot-1")
+                .runtimeJobId("job-1")
+                .candidateStatus(SlotStatus.COMPLETED.name())
+                .actualEnd(java.time.Instant.ofEpochSecond(1_761_454_800_000L)
+                        .atOffset(java.time.ZoneOffset.ofHours(8)))
+                .facilityId(100L)
+                .build();
+        when(resourceReservationMapper.selectById("slot-1")).thenReturn(existing);
+        when(processTimelineService.append(any(ProcessTimelineActionAppendReqDTO.class))).thenReturn(42L);
+
+        runtimeSlotWriteService.updateSlotStatus(RuntimeSlotStatusUpdateReqDTO.builder()
+                .slotId("slot-1")
+                .slotStatus(SlotStatus.PLANNED)
+                .build());
+
+        ArgumentCaptor<ResourceReservationDO> slotCaptor = ArgumentCaptor.forClass(ResourceReservationDO.class);
+        verify(resourceReservationMapper).updateById(slotCaptor.capture());
+        assertEquals(SlotStatus.PLANNED.name(), slotCaptor.getValue().getCandidateStatus());
+        assertEquals(null, slotCaptor.getValue().getActualEnd());
+    }
+
+    @Test
     void release_yield_keepsCompleted_cancelsPlanned() {
         ResourceReservationDO completed = ResourceReservationDO.builder()
                 .id("slot-done")

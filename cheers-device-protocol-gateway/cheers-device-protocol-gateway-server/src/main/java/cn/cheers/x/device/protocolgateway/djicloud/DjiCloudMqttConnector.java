@@ -22,7 +22,7 @@ import java.util.concurrent.Executors;
 
 /**
  * 大疆上云 MQTT：机场和 Pilot 连到同一个代理后，本类应答上线，并订下设备推上来的全部 MQTT 主题。
- * <p>飞机定时上报解析成飞机状态。状态变更、事件上报、指令飞行上行只留各自主题的最新一帧。都不写巡检账。
+ * <p>飞机定时上报收成设备实时状态交给巡检。状态变更、事件上报、指令飞行上行只留各自主题的最新一帧。服务答卷再按方法名收成标准事件。这里不写巡检账。
  * <p>不负责地面站 WebSocket，不写下发航线。Pilot 的 HTTPS、WebSocket、JSBridge 不是 MQTT，这里不订。
  * <p>禁止：代理没配上仍标设备在线；许可没配齐仍回 config；把机场报文当成飞机状态。
  */
@@ -33,10 +33,11 @@ public class DjiCloudMqttConnector implements MqttCallbackExtended {
 
     private final DeviceProtocolGatewayProperties properties;
     private final DjiCloudOnlineRegistry onlineRegistry;
-    private final DjiCloudAircraftStatusRegistry aircraftStatus;
+    private final DjiCloudDeviceStatusForwarder deviceStatus;
     private final DjiCloudServiceReplyWaiter serviceReplies;
     private final DjiCloudTopicFrameRegistry topicFrames;
     private final DjiCloudExchangeJournal exchangeJournal;
+    private final DjiCloudStandardEventPublisher standardEvents;
     private final DjiCloudUplink uplink = new DjiCloudUplink(new ObjectMapper());
     private final ExecutorService replies = Executors.newSingleThreadExecutor(task -> {
         Thread thread = new Thread(task, "dji-cloud-reply");
@@ -134,11 +135,12 @@ public class DjiCloudMqttConnector implements MqttCallbackExtended {
     private void handle(String topic, byte[] payload) {
         exchangeJournal.acceptInbound(topic, payload);
         if (topic != null && topic.endsWith("/osd")) {
-            aircraftStatus.accept(topic, payload);
+            deviceStatus.accept(topic, payload);
             return;
         }
         if (topic != null && topic.endsWith("/services_reply")) {
             serviceReplies.completeFromPayload(payload);
+            standardEvents.publishReply(topic, payload);
             return;
         }
         DjiCloudTopicFrameRegistry.Reply frameReply = topicFrames.accept(topic, payload);

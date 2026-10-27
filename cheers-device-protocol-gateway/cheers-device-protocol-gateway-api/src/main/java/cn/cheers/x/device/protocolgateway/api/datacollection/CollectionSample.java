@@ -65,4 +65,18 @@ public record CollectionSample(
     public boolean isProtocolQualified() {
         return protocolQualify == ProtocolQualifyStatus.QUALIFIED;
     }
+
+    /** 下发时已经知道的执行记录编号。报文里没有任务编号时用这一份，不从设备编号猜。 */
+    public CollectionSample withExecutionRecordId(Long id) {
+        return new CollectionSample(
+                channelCode, deviceId, messageKind, protocolQualify, qualifyErrors,
+                fields, id, msgId, receivedAtEpochMs);
+    }
+
+    /** 收成标准事件。字段换成转发结果。不合格时字段留空，只保留错误。 */
+    public CollectionSample asTopic(String topic, Map<String, Object> nextFields) {
+        return new CollectionSample(
+                channelCode, deviceId, topic, protocolQualify, qualifyErrors,
+                nextFields, executionRecordId, msgId, receivedAtEpochMs);
+    }
 }

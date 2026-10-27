@@ -22,7 +22,7 @@ public class GroundStationLiveStatusStore {
     }
 
     /**
-     * 500101 的电量在 data 里。500103 的电量在 result 里。其它包不记。
+     * 500101 的电量在 data 里。500103 的电量在 result 里。其它包不记。答卷没有电量时不占一帧。
      */
     public void remember(String deviceId, int opcode, String payloadJson) {
         if (deviceId == null || deviceId.isBlank() || payloadJson == null || payloadJson.isBlank()) {
@@ -31,7 +31,10 @@ public class GroundStationLiveStatusStore {
         if (opcode != 500101 && opcode != 500103) {
             return;
         }
-        String electricity = readElectricity(opcode, payloadJson);
+        String electricity = readElectricity(payloadJson);
+        if (electricity == null || electricity.isBlank()) {
+            return;
+        }
         latest.put(deviceId.trim(), new Frame(electricity, System.currentTimeMillis()));
     }
 
@@ -42,13 +45,11 @@ public class GroundStationLiveStatusStore {
         return latest.get(deviceId.trim());
     }
 
-    private String readElectricity(int opcode, String payloadJson) {
+    private String readElectricity(String payloadJson) {
         try {
             JsonNode root = objectMapper.readTree(payloadJson);
-            JsonNode node = opcode == 500101
-                    ? root.path("data").path("electricity")
-                    : root.path("result").path("electricity");
-            if (node.isMissingNode() || node.isNull()) {
+            JsonNode node = firstElectricity(root);
+            if (node == null || node.isMissingNode() || node.isNull()) {
                 return null;
             }
             String text = node.asText().trim();
@@ -56,6 +57,22 @@ public class GroundStationLiveStatusStore {
         } catch (Exception ex) {
             return null;
         }
+    }
+
+    /**
+     * 500101 在 data 里。500103 在 result 里。答卷有时把电量放在根上。
+     */
+    private static JsonNode firstElectricity(JsonNode root) {
+        JsonNode data = root.path("data").path("electricity");
+        if (!data.isMissingNode() && !data.isNull()) {
+            return data;
+        }
+        JsonNode result = root.path("result").path("electricity");
+        if (!result.isMissingNode() && !result.isNull()) {
+            return result;
+        }
+        JsonNode top = root.path("electricity");
+        return top.isMissingNode() ? null : top;
     }
 
     public record Frame(String electricity, long receivedAtEpochMs) {

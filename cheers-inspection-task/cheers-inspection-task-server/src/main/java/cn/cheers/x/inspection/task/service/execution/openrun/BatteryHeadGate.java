@@ -19,6 +19,13 @@ public final class BatteryHeadGate {
     }
 
     /**
+     * 电量检查已经记下的需要秒数。没有这一步，或这一格空着，返回 null。
+     */
+    public static Integer requiredSeconds(Object stepTree) {
+        return find(stepTree).requiredSeconds();
+    }
+
+    /**
      * 有电量检查且不能下发时，返回提示。没有这一步，或剩余可飞时间够，返回 null。
      */
     public static String blockPrompt(Object stepTree, Integer remainFlySeconds, String electricity) {
@@ -45,7 +52,7 @@ public final class BatteryHeadGate {
                 return "设备没有报上电量。这次需要 " + step.requiredSeconds() + " 秒。这次无法执行。";
             }
             return "设备报上的电量是 " + electricity.trim()
-                    + "%。没有耗电曲线，或这台设备没有最长飞行时间，算不出还能用多久。这次需要 "
+                    + "%。这台设备没有最长飞行时间，算不出还能用多久。这次需要 "
                     + step.requiredSeconds() + " 秒。这次无法执行。";
         }
         if (remainFlySeconds < step.requiredSeconds()) {

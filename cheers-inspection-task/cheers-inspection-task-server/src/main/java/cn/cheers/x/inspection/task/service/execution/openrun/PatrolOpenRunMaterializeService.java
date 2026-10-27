@@ -47,7 +47,9 @@ import static cn.cheers.x.inspection.task.service.execution.openrun.PatrolOpenRu
  * 生成任务占窗定稿后写「待执行」：把步骤树上已经写下的参数写入执行账。执行任务只读这份账，不再读设备。
  * <p>负责：assemble（读步骤图上的参数）；一次写下本批还没有账的计划点；时刻和账的对照一次写回任务。
  * 名称用任务名加计划执行时刻。计划时刻按北京时间写入账上的 planned_start，并带上 +08:00，不把世界时间的钟面写进去。
- * 更新任务时先删除这条任务上还没开始的旧执行账和步骤，再写下新的；已经开始或已经执行的留下。
+ * 更新任务时先删除这条任务上还没开始的旧执行账和步骤，再写下新的；已经开跑或已经结束的执行账留下。
+ * 已经执行过指这笔执行账，不指占窗标成完成。占窗完成但没有开跑账的，仍写待执行。
+ * 旧执行账已经不在时，清掉任务上的旧编号，继续写新的待执行账。
  * <p>生成任务时调用网关 commit-translate，把下行与航线编号写入 standard_snapshot；开跑只下发。
  * 东古、机器人在写下待执行账之前，把本批收流名字一次登记到流媒体。
  * 更新任务时，这条任务以前登记、这次计划点不再使用的名字先从流媒体拿掉。已经开始或已经执行的名字留下。登记失败则不写账。
@@ -83,20 +85,54 @@ public class PatrolOpenRunMaterializeService {
      * 生成任务成功后，为本批计划时刻写待执行账。
      * 先删除还没开始的旧执行账。指令和航线只正式翻译一次，写入每个新执行点。
      * 东古、机器人仍按计划点分配收流地址，并写进该点快照和报文，不再按点重译。
-     * 已经开始或已经执行的计划点不删除、不重写。
+     * 已经开跑或已经结束的执行账不删除、不另写一条待执行。图层按这份账显示已执行。
      */
     public void materializeAllSlots(PatrolTaskDraft task, List<ScheduleSlotDTO> slots) {
+        materializeSlots(task, slots, true);
+    }
+
+    /**
+     * 这条计划点已经有开跑过的执行账（执行中、已执行、故障、失败）。
+     * 巡检图层按这份账显示已执行。没有执行账、或账仍是待执行，都不算已经执行过。
+     * 占窗标成完成但没有开跑账的，返回 false。
+     */
+    public boolean hasStartedLedger(Long taskId, String slotId) {
+        if (taskId == null || !StringUtils.hasText(slotId)) {
+            return false;
+        }
+        Long existing = patrolTaskEntityStore.pendingExecutionRecordId(taskId, slotId.trim());
+        if (existing == null) {
+            return false;
+        }
+        EntityRespDTO record = optionalRecord(existing);
+        if (record == null) {
+            return false;
+        }
+        return keepsRegisteredStream(record);
+    }
+
+    /**
+     * 计划点还在、待执行账不在时，把缺的待执行账写上。
+     * 不删除还在的待执行账，也不重新排期。
+     */
+    public void writeMissingPendingLedgers(PatrolTaskDraft task, List<ScheduleSlotDTO> slots) {
+        materializeSlots(task, slots, false);
+    }
+
+    private void materializeSlots(PatrolTaskDraft task, List<ScheduleSlotDTO> slots, boolean replaceUnexecuted) {
         if (task == null || task.id() == null || CollectionUtils.isEmpty(slots)) {
             return;
         }
-        deleteUnexecutedPlansBeforeReplace(task);
+        if (replaceUnexecuted) {
+            deleteUnexecutedPlansBeforeReplace(task);
+        }
         List<ScheduleSlotDTO> pendingSlots = new ArrayList<>();
         for (ScheduleSlotDTO slot : slots) {
             if (slot == null || !StringUtils.hasText(slot.getSlotId())) {
                 continue;
             }
             String slotId = slot.getSlotId().trim();
-            if (alreadyPending(task.id(), slotId)) {
+            if (alreadyPending(task.id(), slotId) || hasStartedLedger(task.id(), slotId)) {
                 continue;
             }
             if (!StringUtils.hasText(slot.getPlannedStart())) {
@@ -352,6 +388,7 @@ public class PatrolOpenRunMaterializeService {
     /**
      * 再次生成待执行账之前，删掉这条任务上还没开始的旧执行账。
      * 已经开始或已经执行的留下。
+     * 账已经不在时，清掉任务上还指着旧编号的那一格，继续写新的待执行账。
      */
     private void deleteUnexecutedPlansBeforeReplace(PatrolTaskDraft task) {
         Map<String, Long> existing = patrolTaskEntityStore.pendingExecutionRecordIds(task.id());
@@ -360,7 +397,11 @@ public class PatrolOpenRunMaterializeService {
         }
         List<String> removedSlots = new ArrayList<>();
         for (Map.Entry<String, Long> entry : existing.entrySet()) {
-            EntityRespDTO record = requirePendingRecord(entry.getValue());
+            EntityRespDTO record = optionalRecord(entry.getValue());
+            if (record == null) {
+                removedSlots.add(entry.getKey());
+                continue;
+            }
             if (!isPending(record)) {
                 continue;
             }
@@ -374,14 +415,6 @@ public class PatrolOpenRunMaterializeService {
             removedSlots.add(entry.getKey());
         }
         patrolTaskEntityStore.dropPendingExecutionSlots(task.id(), removedSlots);
-    }
-
-    private EntityRespDTO requirePendingRecord(Long recordId) {
-        CommonResult<EntityRespDTO> result = entityRpcApi.getEntity(recordId, PATROL_RECORD_TYPE);
-        if (result == null || !result.isSuccess() || result.getData() == null) {
-            throw ServiceExceptionUtil.invalidParamException("原计划点的待执行账不存在：" + recordId);
-        }
-        return result.getData();
     }
 
     private boolean alreadyPending(Long taskId, String slotId) {

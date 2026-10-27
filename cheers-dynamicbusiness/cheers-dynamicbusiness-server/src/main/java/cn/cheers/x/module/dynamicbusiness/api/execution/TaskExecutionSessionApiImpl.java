@@ -6,6 +6,8 @@ import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendP
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionDayAccountPageDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionMarkProcessReqDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionMarkProcessRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartReqDTO;
@@ -67,6 +69,11 @@ public class TaskExecutionSessionApiImpl implements TaskExecutionSessionApi {
     public CommonResult<TaskExecutionAppendProcessRespDTO> appendProcess(
             TaskExecutionAppendProcessReqDTO req) {
         return success(taskExecutionSessionService.appendProcess(req));
+    }
+
+    @Override
+    public CommonResult<TaskExecutionMarkProcessRespDTO> markProcessEvent(TaskExecutionMarkProcessReqDTO req) {
+        return success(taskExecutionSessionService.markProcessEvent(req));
     }
 
     @Override

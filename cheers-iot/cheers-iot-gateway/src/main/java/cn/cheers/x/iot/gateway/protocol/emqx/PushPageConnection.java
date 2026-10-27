@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 /**
  * 浏览器页面连上 EMQX 时用的连接身份。
  * 客户端编号以 page- 开头。用户名是 page:{租户编号}:{用户编号}。
- * 主题只允许三种固定名字。和推送主题目录里写入的规则相同。
+ * 主题允许告警、设备位置、设备状态，以及这次巡检执行和这台设备的主题。和推送主题目录里写入的规则相同。
  * 不负责写目录，也不负责把消息送出去。
  */
 public final class PushPageConnection {
@@ -16,7 +16,9 @@ public final class PushPageConnection {
     private static final List<Pattern> TOPIC_PATTERNS = List.of(
             Pattern.compile("^alarm/facility/[A-Za-z0-9_-]+$"),
             Pattern.compile("^device/[A-Za-z0-9_-]+/position$"),
-            Pattern.compile("^device/[A-Za-z0-9_-]+/status$"));
+            Pattern.compile("^device/[A-Za-z0-9_-]+/status$"),
+            Pattern.compile("^inspection/execution/[1-9][0-9]*/#$"),
+            Pattern.compile("^inspection/device/[A-Za-z0-9._-]+/#$"));
 
     private PushPageConnection() {
     }

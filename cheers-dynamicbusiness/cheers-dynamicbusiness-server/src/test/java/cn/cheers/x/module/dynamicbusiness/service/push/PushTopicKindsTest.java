@@ -16,9 +16,19 @@ class PushTopicKindsTest {
     }
 
     @Test
+    void acceptsPatrolLayerFilters() {
+        assertTrue(PushTopicKinds.matches("inspection/execution/15/#"));
+        assertTrue(PushTopicKinds.matches("inspection/device/dock-1/#"));
+        assertTrue(PushTopicKinds.matches("inspection/execution/15/trajectory"));
+        assertTrue(PushTopicKinds.matches("inspection/execution/15/step"));
+        assertTrue(PushTopicKinds.matches("inspection/device/dock-1/status"));
+    }
+
+    @Test
     void rejectsOtherTopics() {
         assertFalse(PushTopicKinds.matches("alarm/facility/12/extra"));
         assertFalse(PushTopicKinds.matches("device/88/alarm"));
+        assertFalse(PushTopicKinds.matches("inspection/execution/0/#"));
         assertFalse(PushTopicKinds.matches(null));
     }
 

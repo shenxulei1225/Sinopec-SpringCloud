@@ -3,6 +3,7 @@ package cn.cheers.x.inspection.task.api;
 import cn.cheers.x.device.protocolgateway.api.datacollection.CollectionSample;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.enums.ApiConstants;
+import cn.cheers.x.inspection.task.api.dto.CommandEventStatusReqDTO;
 import cn.cheers.x.inspection.task.api.dto.PatrolGeneratedTaskDownlinkDTO;
 import cn.cheers.x.inspection.task.api.dto.PatrolGeneratedTaskOptionDTO;
 import cn.cheers.x.inspection.task.api.dto.ReplayPoseReqDTO;
@@ -47,6 +48,10 @@ public interface InspectionDeviceUplinkApi {
     CommonResult<PatrolGeneratedTaskDownlinkDTO> generatedTaskRecord(
             @RequestParam("deviceId") String deviceId,
             @RequestParam("executionRecordId") long executionRecordId);
+
+    @PostMapping(PREFIX + "/command-received")
+    @Operation(summary = "设备回执把已下发事件标成设备已接收")
+    CommonResult<Boolean> markCommandReceived(@RequestBody CommandEventStatusReqDTO req);
 
     @PostMapping(PREFIX + "/transcript")
     @Operation(summary = "把这次往来原文记进这台设备正在执行的任务")

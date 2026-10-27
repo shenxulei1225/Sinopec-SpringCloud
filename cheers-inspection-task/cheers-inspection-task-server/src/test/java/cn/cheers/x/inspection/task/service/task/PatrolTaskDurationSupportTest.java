@@ -17,6 +17,8 @@ class PatrolTaskDurationSupportTest {
         content.setItemActionDurationMinutes(BigDecimal.valueOf(720));
         assertEquals(57, PatrolTaskDurationSupport.totalMinutes(
                 content, Map.of("estimatedTravelDuration", 2700), "ROBOT"));
+        assertEquals(3420, PatrolTaskDurationSupport.totalSeconds(
+                content, Map.of("estimatedTravelDuration", 2700), "ROBOT"));
     }
 
     @Test

@@ -25,4 +25,20 @@ class GroundStationLiveStatusStoreTest {
 
         assertNull(store.latest("dev-1"));
     }
+
+    @Test
+    void doesNotKeepABlankStatusFrame() {
+        GroundStationLiveStatusStore store = new GroundStationLiveStatusStore(new ObjectMapper());
+        store.remember("dev-1", 500101, "{\"opcode\":500101,\"code\":200}");
+
+        assertNull(store.latest("dev-1"));
+    }
+
+    @Test
+    void readsElectricityFromTimedStatusResult() {
+        GroundStationLiveStatusStore store = new GroundStationLiveStatusStore(new ObjectMapper());
+        store.remember("dev-1", 500103, "{\"opcode\":500103,\"result\":{\"electricity\":\"80\"}}");
+
+        assertEquals("80", store.latest("dev-1").electricity());
+    }
 }

@@ -91,6 +91,20 @@ class EntityRpcProtocolInstructionCatalogTest {
     }
 
     @Test
+    void sameOpcodeDifferentBooks_deviceVersionSelectsThatTopic() {
+        EntityRpcProtocolInstructionCatalog catalog = catalogWith(
+                entityWithTopic(500104, List.of("robot-ws"), "inspection_command_accepted",
+                        List.of(row("taskId", "string", true))),
+                entityWithTopic(500104, List.of("uav-ws"), "inspection_command_accepted",
+                        List.of(row("taskId", "string", true), row("routeId", "string", false)))
+        );
+        CatalogLookup lookup = catalog.findMainPacket(500104, "robot-ws");
+        assertTrue(lookup.ok());
+        assertEquals("inspection_command_accepted", lookup.forwardTopic());
+        assertEquals(1, lookup.rows().size());
+    }
+
+    @Test
     void versionNotOnAnyBook_exposesGap() {
         EntityRpcProtocolInstructionCatalog catalog = catalogWith(
                 entity(200501, List.of("robot-ws"), List.of(row("opcode", "integer", true)))
@@ -103,6 +117,25 @@ class EntityRpcProtocolInstructionCatalogTest {
         when(api.listEntities(eq("data_protocol"), isNull()))
                 .thenReturn(CommonResult.success(List.of(entities)));
         return new EntityRpcProtocolInstructionCatalog(api, new ObjectMapper());
+    }
+
+    private static EntityRespDTO entityWithTopic(
+            int opcode,
+            List<String> protocolVersions,
+            String forwardTopic,
+            List<Map<String, Object>> outbound
+    ) {
+        EntityRespDTO dto = entity(opcode, protocolVersions, outbound);
+        Map<String, Object> fields = new java.util.LinkedHashMap<>(dto.getCustomFields());
+        Map<String, Object> description = new java.util.LinkedHashMap<>();
+        Object raw = fields.get("field_description_json");
+        if (raw instanceof Map<?, ?> map) {
+            map.forEach((key, value) -> description.put(String.valueOf(key), value));
+        }
+        description.put("forwardTopic", forwardTopic);
+        fields.put("field_description_json", description);
+        dto.setCustomFields(fields);
+        return dto;
     }
 
     private static EntityRespDTO entity(int opcode, List<Map<String, Object>> outbound) {

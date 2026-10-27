@@ -88,6 +88,8 @@ run "${SCRIPT_DIR}/seed/dynamic_seed_retire_route_inspection_point.sql"
 run "${SCRIPT_DIR}/seed/dynamic_entity_point_route_scope.sql"
 run "${SCRIPT_DIR}/seed/repair_route_point_coordinate_from_network.sql"
 run "${SCRIPT_DIR}/seed/dynamic_entity_facility_jinqiao_luoyang.sql"
+# 设备最长飞行时间：机器人型号补格；这一台空着时抄型号默认值
+run "${SCRIPT_DIR}/seed/dynamic_equipment_max_flight_time_from_model.sql"
 # 三维场景/摆放阶段 1（前置 Flyway V17）
 run "${SCRIPT_DIR}/seed/dynamic_scene_3d_phase1.sql"
 # 导入完整性闸门：布局/关系图缺核心数据时立即失败（禁止读路径补丁兜底）

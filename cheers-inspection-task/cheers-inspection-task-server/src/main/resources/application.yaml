@@ -139,11 +139,11 @@ spring:
         namespace: dev # 命名空间。这里使用 dev 开发环境
         group: DEFAULT_GROUP # 使用的 Nacos 配置分组，默认为 DEFAULT_GROUP
 
-# 巡检写完执行账之后，按推送主题上的名字规则发给页面。
-# EMQX 还没听 1883 时保持 false。连不上只记日志，不回滚已经写上的账。
+# 巡检写完过程账之后，按推送主题上的名字规则把这一行发给页面。
+# 消息服务没连上只记日志，不回滚已经写上的账。页面这时改为每 3 秒读记录。
 inspection:
   page-push:
-    enabled: false
+    enabled: true
     broker: tcp://127.0.0.1:1883
     client-id: inspection-page-push
 

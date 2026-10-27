@@ -107,6 +107,9 @@ public class DeviceCollectionAnomalyRecorder {
     }
 
     static boolean isFaultReport(CollectionSample sample) {
+        if (sample != null && "inspection_device_fault".equals(sample.messageKind())) {
+            return true;
+        }
         try {
             return InspectionDeviceUplinkServiceImpl.readOpcode(sample) == TransportOpcode.FAULT_REPORT.code();
         } catch (IllegalArgumentException ex) {

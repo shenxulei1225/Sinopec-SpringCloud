@@ -29,7 +29,6 @@ class BatteryHeadGateTest {
     void missingFullChargeTimeDoesNotTreatPercentAsSeconds() {
         String prompt = BatteryHeadGate.blockPrompt(tree(180), null, "82.9", true);
 
-        assertTrue(prompt.contains("没有耗电曲线"));
         assertTrue(prompt.contains("最长飞行时间"));
         assertTrue(prompt.contains("82.9"));
         assertTrue(prompt.contains("这次无法执行"));

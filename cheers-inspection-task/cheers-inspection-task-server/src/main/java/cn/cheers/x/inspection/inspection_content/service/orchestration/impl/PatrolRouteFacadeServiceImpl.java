@@ -85,6 +85,8 @@ import static cn.cheers.x.inspection.inspection_content.enums.ErrorCodeConstants
  * <p>权威：页面路线随保存修改稿或更新任务写入；试排计划点 orchestrationPreview*；
  * 生成任务整段成功后才写入 runtimeJobId / orchestrationCommitted。中途失败收掉生成标记。
  * 向导上的开始编排先按这一页停靠点重算路径，再排计划点，路线只回到这一页。列表启用不带这一页，仍只读已保存路线。
+ * 待执行账被清掉、计划点还在时，按还没开跑的计划点把账写回去，不重新排期。
+ * 已经执行过看执行账。占窗完成但没有开跑账的，不算已执行，补写待执行。
  * <p>不负责：冲突算法本身（标准检测在 ScheduleConflictReporter）；读写旧固定表 inspection_task。
  * 不写已保存路线。已保存路线要等更新任务。
  */
@@ -382,6 +384,53 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
         }
     }
 
+    /**
+     * 已生成任务的待执行账不在了，按已经占好、还没开跑的计划点把账写回去。
+     * 不重新排期，不换作业号。还在的待执行账不删。已经开跑或已经结束的执行账不另写一条待执行。
+     * 占窗标成完成但没有开跑账的，先改回计划中，再写待执行。图层按这份待执行显示还没开始。
+     * 只有还没到的计划时刻才登记到点开跑，已经过去的时刻不立刻开跑。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void rewriteMissingPendingLedgers(Long taskId) {
+        PatrolTaskDraft task = patrolTaskEntityStore.require(taskId);
+        if (!Boolean.TRUE.equals(task.orchestrationCommitted())
+                || !StringUtils.hasText(task.runtimeJobId())) {
+            throw invalidParamException("这条任务还没有生成，不能补写待执行账");
+        }
+        List<ScheduleSlotDTO> slots = runtimeQueryApi.listSlotsByJobId(task.runtimeJobId().trim()).getCheckedData();
+        if (CollectionUtils.isEmpty(slots)) {
+            throw exception(PATROL_FACADE_NOT_ARRANGED);
+        }
+        List<ScheduleSlotDTO> planned = new ArrayList<>();
+        List<ScheduleSlotDTO> upcoming = new ArrayList<>();
+        OffsetDateTime now = OffsetDateTime.now(DEFAULT_ZONE);
+        for (ScheduleSlotDTO slot : slots) {
+            if (slot == null || !StringUtils.hasText(slot.getSlotId())) {
+                continue;
+            }
+            if (patrolOpenRunMaterializeService.hasStartedLedger(taskId, slot.getSlotId())) {
+                continue;
+            }
+            if (SlotStatus.COMPLETED.equals(slot.getSlotStatus())) {
+                resetLeftoverCompletedOccupancy(slot);
+                slot.setSlotStatus(SlotStatus.PLANNED);
+            } else if (!SlotStatus.PLANNED.equals(slot.getSlotStatus())) {
+                continue;
+            }
+            planned.add(slot);
+            OffsetDateTime start = effectiveStart(slot);
+            if (start != null && start.isAfter(now)) {
+                upcoming.add(slot);
+            }
+        }
+        if (planned.isEmpty()) {
+            return;
+        }
+        patrolOpenRunMaterializeService.writeMissingPendingLedgers(task, planned);
+        registerAutoStart(taskId, upcoming);
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void abortOrchestration(PatrolTaskPauseReqVO reqVO) {
@@ -466,6 +515,7 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
 
     /**
      * 试排快照只有 candidate 时刻；落库前绑 runtimeJobId，planned 留空供 finalizePlannedSchedule 定稿。
+     * 写下的是这一页新计划，状态固定计划中。不把旧占窗的完成态和实测结束时刻抄进来。
      */
     private static List<ScheduleSlotDTO> bindPreviewSlotsToRuntimeJob(
             List<ScheduleSlotDTO> previewSlots, String runtimeJobId) {
@@ -488,8 +538,8 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
                     .candidateStart(candidateStart)
                     .candidateEnd(candidateEnd)
                     .assignedResources(source.getAssignedResources())
-                    .lockState(source.getLockState())
-                    .slotStatus(source.getSlotStatus() != null ? source.getSlotStatus() : SlotStatus.PLANNED)
+                    .lockState(SlotLockState.NONE)
+                    .slotStatus(SlotStatus.PLANNED)
                     .policySnapshotId(source.getPolicySnapshotId())
                     .decisionTraceId(source.getDecisionTraceId())
                     .build());
@@ -566,6 +616,7 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
 
     /**
      * 释放这一条任务留下的未执行占窗：草稿上的作业号，以及作业号没写回、只靠工作项号能认出来的残留。
+     * 占窗标成完成但没有开跑执行账的，同样中止。已经开跑或已经结束的执行账对应占窗留下。
      * <p>禁止：按设备或场站清掉别人的占窗。
      */
     private void releaseOwnUnexecutedOccupancy(
@@ -578,7 +629,7 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
         OffsetDateTime to = horizonEnd(schedulingSpec);
         List<ScheduleSlotDTO> horizonSlots = runtimeQueryApi.listSlots(
                 from, to, null, null, facilityId,
-                List.of(SlotStatus.PLANNED, SlotStatus.IN_PROGRESS)).getCheckedData();
+                List.of(SlotStatus.PLANNED, SlotStatus.IN_PROGRESS, SlotStatus.COMPLETED)).getCheckedData();
         Set<String> jobIds = new HashSet<>();
         if (StringUtils.hasText(previousJobId)) {
             jobIds.add(previousJobId.trim());
@@ -587,6 +638,10 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
             for (ScheduleSlotDTO slot : horizonSlots) {
                 if (!PatrolTaskOwnOccupancy.isOwnSlot(taskId, previousJobId, slot)) {
                     continue;
+                }
+                if (SlotStatus.COMPLETED.equals(slot.getSlotStatus())
+                        && !patrolOpenRunMaterializeService.hasStartedLedger(taskId, slot.getSlotId())) {
+                    resetLeftoverCompletedOccupancy(slot);
                 }
                 if (StringUtils.hasText(slot.getRuntimeJobId())) {
                     jobIds.add(slot.getRuntimeJobId().trim());
@@ -601,6 +656,21 @@ public class PatrolRouteFacadeServiceImpl implements PatrolRouteFacadeService {
                     .facilityId(facilityId)
                     .build()).checkError();
         }
+    }
+
+    /**
+     * 占窗标成完成、却没有开跑执行账：这是残留，不是已执行。
+     * 改回计划中并清掉错误的实测结束时刻，随后按未执行占窗处理。
+     */
+    private void resetLeftoverCompletedOccupancy(ScheduleSlotDTO slot) {
+        if (slot == null || !StringUtils.hasText(slot.getSlotId())) {
+            return;
+        }
+        runtimeSlotWriteApi.updateSlotStatus(RuntimeSlotStatusUpdateReqDTO.builder()
+                .slotId(slot.getSlotId().trim())
+                .slotStatus(SlotStatus.PLANNED)
+                .reason("leftover occupancy marked completed without execution ledger")
+                .build()).checkError();
     }
 
     private void releaseUnfinished(PatrolTaskPauseReqVO reqVO, RuntimeSlotReleaseMode mode) {

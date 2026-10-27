@@ -54,6 +54,14 @@ public interface PatrolRouteFacadeService {
     ScheduleRunResponse commitOrchestration(PatrolOrchestrationRunReqVO reqVO);
 
     /**
+     * 已生成任务的待执行账不在了，按已经占好、还没开跑的计划点把账写回去。
+     * 不重新排期，不换作业号。还在的待执行账不删。已经开跑或已经结束的执行账不另写一条待执行。
+     * 占窗标成完成但没有开跑账的，算还没执行，先把占窗改回计划中，再写待执行。
+     * 只有还没到的计划时刻才登记到点开跑。
+     */
+    void rewriteMissingPendingLedgers(Long taskId);
+
+    /**
      * 任务列表·停用：关到点自动开跑，释放未执行占窗并清除试排草稿；与建任务向导无关。
      */
     void abortOrchestration(PatrolTaskPauseReqVO reqVO);

@@ -12,8 +12,6 @@ import cn.cheers.x.device.protocolgateway.protocol.envelope.EnvelopeJsonCodec;
 import cn.cheers.x.device.protocolgateway.protocol.exchange.RunningTaskExchangeRecorder;
 import cn.cheers.x.device.protocolgateway.protocol.monitor.ProtocolMonitorHub;
 import cn.cheers.x.device.protocolgateway.transport.DeviceTransport;
-import cn.cheers.x.inspection.task.api.dto.ReplayPoseReqDTO;
-import cn.cheers.x.inspection.task.api.dto.TaskExchangeTranscriptReqDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +25,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -54,10 +51,16 @@ class UplinkIngressServiceTest {
         transcript = mock(RunningTaskExchangeRecorder.class);
         CollectionQualifyService qualifyService = new CollectionQualifyService(
                 new CollectionSampleAssembler(new ObjectMapper()),
-                (opcode, version) -> CatalogLookup.found(java.util.List.of(
-                        new FieldDescriptionRow("opcode", "integer", "指令编码", true),
-                        new FieldDescriptionRow("msgId", "string", "消息编号", true)
-                )),
+                (opcode, version) -> {
+                    CatalogLookup found = CatalogLookup.found(java.util.List.of(
+                            new FieldDescriptionRow("opcode", "integer", "指令编码", true),
+                            new FieldDescriptionRow("msgId", "string", "消息编号", true, "msgId")
+                    ));
+                    if (opcode == 500202) {
+                        return found.withForwardTopic("inspection_execution_step");
+                    }
+                    return found;
+                },
                 deviceId -> java.util.Optional.empty());
         ingress = new UplinkIngressService(
                 codec, transport, waiter, publisher, monitorHub, qualifyService, transcript,
@@ -72,9 +75,7 @@ class UplinkIngressServiceTest {
         verify(monitorHub).copyInbound(eq("d1"), anyString());
         verify(transport, never()).sendText(anyString(), anyString());
         verify(publisher, never()).publish(org.mockito.ArgumentMatchers.any());
-        verify(transcript).enqueue(eq("d1"), eq(TaskExchangeTranscriptReqDTO.INBOUND), anyString());
-        verify(transcript, never()).enqueue(
-                eq("d1"), eq(TaskExchangeTranscriptReqDTO.OUTBOUND), anyString());
+        verify(transcript, never()).enqueue(anyString(), anyString(), anyString());
     }
 
     @Test
@@ -84,6 +85,7 @@ class UplinkIngressServiceTest {
 
         verify(transport, never()).sendText(anyString(), anyString());
         verify(publisher, never()).publish(org.mockito.ArgumentMatchers.any());
+        verify(transcript).enqueue(eq("d1"), eq("inbound"), anyString());
         assertFalse(pending.isDone());
     }
 
@@ -99,8 +101,7 @@ class UplinkIngressServiceTest {
         assertEquals(TransportOpcode.ACK.code(), codec.readOpcode(captor.getValue()));
         verify(publisher, never()).publish(org.mockito.ArgumentMatchers.any());
         assertEquals(reply, pending.getNow(""));
-        verify(transcript).enqueue(eq("d1"), eq(TaskExchangeTranscriptReqDTO.INBOUND), eq(reply));
-        verify(transcript).enqueue(eq("d1"), eq(TaskExchangeTranscriptReqDTO.OUTBOUND), anyString());
+        verify(transcript).enqueue(eq("d1"), eq("inbound"), eq(reply));
     }
 
     @Test
@@ -113,7 +114,7 @@ class UplinkIngressServiceTest {
         ArgumentCaptor<DeviceUplinkEventDTO> event = ArgumentCaptor.forClass(DeviceUplinkEventDTO.class);
         verify(publisher).publish(event.capture());
         assertEquals(AccessChannelCodes.INSPECTION, event.getValue().channelCode());
-        assertEquals("500202", event.getValue().messageKind());
+        assertEquals("inspection_execution_step", event.getValue().messageKind());
         assertEquals(ProtocolQualifyStatus.QUALIFIED, event.getValue().sample().protocolQualify());
         assertEquals("u1", event.getValue().msgId());
     }
@@ -122,24 +123,17 @@ class UplinkIngressServiceTest {
     void invalidPayload_doesNotSend() {
         ingress.handle(AccessChannelCodes.INSPECTION, "d1", "not-json");
         verify(monitorHub).copyInbound("d1", "not-json");
+        verify(transcript).enqueue(eq("d1"), eq("inbound"), eq("not-json"));
         verify(transport, never()).sendText(anyString(), anyString());
         verify(publisher, never()).publish(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
-    void status_enqueuesDevicePosition_notTheOperatePoint() {
+    void timedStatus_doesNotEnqueuePoseFromPacketPath() {
         String first = "{\"opcode\":500103,\"msgId\":\"s1\",\"result\":{\"lat\":\"31.1\",\"lng\":\"121.2\",\"height\":\"8\",\"time\":1624511261,\"operatePoint\":{\"lat\":\"1\",\"lng\":\"2\"}}}";
         ingress.handle(AccessChannelCodes.INSPECTION, "d1", first);
-        String second = "{\"opcode\":500103,\"msgId\":\"s2\",\"result\":{\"lat\":\"31.2\",\"lng\":\"121.3\",\"height\":\"9\",\"time\":1624511261}}";
-        ingress.handle(AccessChannelCodes.INSPECTION, "d1", second);
 
-        ArgumentCaptor<ReplayPoseReqDTO> pose = ArgumentCaptor.forClass(ReplayPoseReqDTO.class);
-        verify(transcript, times(1)).enqueuePose(pose.capture());
-        assertEquals(121.2, pose.getValue().getX());
-        assertEquals(31.1, pose.getValue().getY());
-        assertEquals(8.0, pose.getValue().getZ());
-        assertEquals(1624511261000L, pose.getValue().getT());
-        assertEquals("wgs84", pose.getValue().getFrameRef());
+        verify(transcript, never()).enqueuePose(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -148,10 +142,7 @@ class UplinkIngressServiceTest {
         String reply = "{\"opcode\":500104,\"msgId\":\"m-pkg\",\"code\":200}";
         ingress.handle(AccessChannelCodes.INSPECTION, "d1", reply);
 
-        verify(transcript).enqueue(
-                eq("d1"), eq(TaskExchangeTranscriptReqDTO.INBOUND), eq(reply), eq(88L));
-        verify(transcript).enqueue(
-                eq("d1"), eq(TaskExchangeTranscriptReqDTO.OUTBOUND), anyString(), eq(88L));
+        verify(transcript).enqueue(eq("d1"), eq("inbound"), eq(reply), eq(88L));
     }
 
     @Test

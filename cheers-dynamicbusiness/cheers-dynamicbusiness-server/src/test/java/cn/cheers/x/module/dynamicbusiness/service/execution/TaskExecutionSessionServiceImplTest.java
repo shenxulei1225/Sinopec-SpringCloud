@@ -1,8 +1,11 @@
 package cn.cheers.x.module.dynamicbusiness.service.execution;
 
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionMarkProcessReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartReqDTO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCreateReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.inspection.vo.TaskExecutionBootstrapReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.inspection.vo.TaskExecutionBootstrapRespVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
@@ -16,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -139,5 +143,53 @@ class TaskExecutionSessionServiceImplTest {
         assertEquals("2026-09-28T09:00:00+08:00", accountsCaptor.getValue().get(0).plannedStart());
         assertEquals("2026-09-28T21:00:00+08:00", accountsCaptor.getValue().get(1).plannedStart());
         verify(bootstrapService, never()).writeSameStepsOntoRecords(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void markProcessEvent_writesReplyFieldsOntoTheSameRow() {
+        EntityRespVO record = new EntityRespVO();
+        record.setId(924145L);
+        record.setBaseFields(new LinkedHashMap<>(Map.of(
+                "entityTypeCode", "task_excution_record",
+                "name", "机器人储罐巡检")));
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("msgId", "8d198582141d4e13bac30f68f91862a4");
+        row.put("messageKind", "inspection_device_status_snapshot");
+        row.put("summary", "设备实时状态");
+        row.put("eventStatus", "已下发");
+        row.put("direction", "outbound");
+        record.setCustomFields(new LinkedHashMap<>(Map.of("process_entries", List.of(row))));
+        when(entityService.get(924145L, "task_excution_record")).thenReturn(record);
+
+        TaskExecutionMarkProcessReqDTO req = new TaskExecutionMarkProcessReqDTO();
+        req.setExecutionRecordId(924145L);
+        req.setEntityTypeCode("task_record_patrol");
+        req.setMsgId("8d198582141d4e13bac30f68f91862a4");
+        req.setEventStatus("设备已响应");
+        req.setOutcome("正常");
+        Map<String, Object> fields = new LinkedHashMap<>();
+        fields.put("electricity", 82.9);
+        fields.put("lat", 31.018);
+        fields.put("lng", 121.266);
+        fields.put("height", 17.874);
+        fields.put("faultReasion", "no error");
+        fields.put("commandPhase", "sent");
+        req.setFields(fields);
+
+        var resp = service.markProcessEvent(req);
+
+        ArgumentCaptor<EntityUpdateReqVO> captor = ArgumentCaptor.forClass(EntityUpdateReqVO.class);
+        verify(entityService).update(captor.capture());
+        Object stored = captor.getValue().getCustomFields().get("process_entries");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> saved = ((List<Map<String, Object>>) stored).get(0);
+        assertEquals("设备已响应", saved.get("eventStatus"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> savedFields = (Map<String, Object>) saved.get("fields");
+        assertEquals(82.9, savedFields.get("electricity"));
+        assertEquals(31.018, savedFields.get("lat"));
+        assertEquals("no error", savedFields.get("faultReasion"));
+        assertEquals(false, savedFields.containsKey("commandPhase"));
+        assertEquals(82.9, resp.getFields().get("electricity"));
     }
 }

@@ -47,11 +47,16 @@ public class RuntimeSlotWriteServiceImpl implements RuntimeSlotWriteService {
         }
 
         row.setCandidateStatus(request.getSlotStatus().name());
-        if (request.getActualStart() != null) {
+        if (SlotStatus.PLANNED.equals(request.getSlotStatus())) {
             row.setActualStart(request.getActualStart());
-        }
-        if (request.getActualEnd() != null) {
             row.setActualEnd(request.getActualEnd());
+        } else {
+            if (request.getActualStart() != null) {
+                row.setActualStart(request.getActualStart());
+            }
+            if (request.getActualEnd() != null) {
+                row.setActualEnd(request.getActualEnd());
+            }
         }
         resourceReservationMapper.updateById(row);
 
@@ -206,10 +211,8 @@ public class RuntimeSlotWriteServiceImpl implements RuntimeSlotWriteService {
         payload.put("slotStatus", request.getSlotStatus().name());
         if (request.getActualStart() != null) {
             payload.put("actualStart", request.getActualStart().toString());
-            payload.put("actualStart", request.getActualStart().toString());
         }
         if (request.getActualEnd() != null) {
-            payload.put("actualEnd", request.getActualEnd().toString());
             payload.put("actualEnd", request.getActualEnd().toString());
         }
         if (StringUtils.hasText(request.getReason())) {

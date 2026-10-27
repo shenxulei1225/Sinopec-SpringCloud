@@ -16,6 +16,17 @@ public final class PatrolTaskDurationSupport {
     }
 
     public static Integer totalMinutes(InspectionContent content, Object plannedRoute, String patrolExecutionMode) {
+        Integer seconds = totalSeconds(content, plannedRoute, patrolExecutionMode);
+        if (seconds == null) {
+            return null;
+        }
+        return occupancyMinutes(BigDecimal.valueOf(seconds).divide(BigDecimal.valueOf(60), 4, RoundingMode.HALF_UP));
+    }
+
+    /**
+     * 任务总耗时，单位秒。检查项动作耗时加路径耗时。两份都没有则空着。
+     */
+    public static Integer totalSeconds(InspectionContent content, Object plannedRoute, String patrolExecutionMode) {
         BigDecimal action = PatrolItemActionDurationSupport.minutesOf(content);
         Integer travel = PatrolPlannedRouteSupport.estimatedTravelDuration(plannedRoute);
         if (travel == null) {
@@ -24,9 +35,10 @@ public final class PatrolTaskDurationSupport {
         if (action == null && travel == null) {
             return null;
         }
-        BigDecimal totalSeconds = (action == null ? BigDecimal.ZERO : action)
-                .add(BigDecimal.valueOf(travel == null ? 0 : Math.max(0, travel)));
-        return occupancyMinutes(totalSeconds.divide(BigDecimal.valueOf(60), 4, RoundingMode.HALF_UP));
+        return (action == null ? BigDecimal.ZERO : action)
+                .add(BigDecimal.valueOf(travel == null ? 0 : Math.max(0, travel)))
+                .setScale(0, RoundingMode.HALF_UP)
+                .intValue();
     }
 
     /**

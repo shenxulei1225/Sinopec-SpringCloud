@@ -38,6 +38,12 @@ public class StrategyTriggerEventDTO {
 
     private String summary;
 
+    /**
+     * 执行账已经记下这条过程。
+     * 为真时，「记一条过程」不再另写一行。那一行没有中文名称，页面会显示主题编码。
+     */
+    private Boolean processAlreadyOnLedger;
+
     private Map<String, Object> fields = new LinkedHashMap<>();
 
     /** 是哪条任务；人点了开始时必填 */

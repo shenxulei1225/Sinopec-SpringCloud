@@ -298,6 +298,9 @@ public class StrategyRuntimeServiceImpl implements StrategyRuntimeService {
     }
 
     private StrategyHandleRespDTO dispatchAppendProcess(ConditionStrategyDO row, StrategyTriggerEventDTO event) {
+        if (Boolean.TRUE.equals(event.getProcessAlreadyOnLedger())) {
+            return skipped("过程已经记在执行账上，不再另写一行");
+        }
         if (event.getExecutionRecordId() == null) {
             throw new ServiceException(400, "往执行账里记一条过程必须带这次执行的账本编号");
         }

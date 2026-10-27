@@ -14,7 +14,7 @@ import java.util.Optional;
 
 /**
  * 分发前按这台设备的协议书过滤。
- * <p>负责：协议书里没有的操作码，不送给该型号的处理模块。
+ * <p>负责：协议书里没有的操作码，不送给该型号的处理模块。已经收成标准事件的报文，送给这台设备的处理模块。
  * <p>不负责：写执行记录、改步骤、猜另一本协议书。
  * <p>禁止：机器人协议没有的起飞、降落、升降、录像，仍送进机器人处理。
  */
@@ -27,7 +27,7 @@ public class ProtocolBookAdmission {
 
     /**
      * 外层操作码和包内操作码都在这台设备的协议书里，才允许分发。
-     * 设备没登记协议版本时不允许分发。
+     * 报文种类已经是标准事件时，不再把主题当成操作码。设备没登记协议版本时不允许分发。
      */
     public Decision decide(CollectionSample sample) {
         Optional<String> version = deviceProtocolVersions.firstVersion(sample.deviceId());
@@ -35,6 +35,10 @@ public class ProtocolBookAdmission {
             return Decision.reject("设备未登记协议版本，不送给处理模块");
         }
         String protocolVersion = version.get();
+        String messageKind = sample.messageKind() == null ? "" : sample.messageKind().trim();
+        if (messageKind.startsWith("inspection_")) {
+            return Decision.admit(protocolVersion);
+        }
         Integer outer = parseOpcode(sample.messageKind());
         if (outer == null) {
             return Decision.reject("报文种类不是操作码，不送给处理模块");

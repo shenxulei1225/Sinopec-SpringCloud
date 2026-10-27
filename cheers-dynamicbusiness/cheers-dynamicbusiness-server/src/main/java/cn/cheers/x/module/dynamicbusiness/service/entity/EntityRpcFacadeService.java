@@ -14,6 +14,8 @@ import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityDtoConvert;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.PhysicalColumnFilter;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityDedicatedColumnService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
@@ -45,6 +47,8 @@ public class EntityRpcFacadeService {
     private CustomFieldValidationService customFieldValidationService;
     @Resource
     private ModelMapper modelMapper;
+    @Resource
+    private ModelFieldAssignmentMapper modelFieldAssignmentMapper;
     @Resource
     private EntityDedicatedColumnService entityDedicatedColumnService;
 
@@ -238,6 +242,27 @@ public class EntityRpcFacadeService {
         req.setId(id);
         req.setEntityTypeCode(entityTypeCode.trim());
         entityService.delete(req);
+    }
+
+    /**
+     * 读这个型号已经写下的字段默认值。没有分配或默认值为空则空着，不编一个数。
+     */
+    public String getModelFieldDefault(Long modelId, String fieldCode) {
+        if (modelId == null || modelId <= 0 || StrUtil.isBlank(fieldCode)) {
+            return null;
+        }
+        List<ModelFieldAssignmentDO> rows = modelFieldAssignmentMapper.selectByModelId(modelId);
+        if (rows == null || rows.isEmpty()) {
+            return null;
+        }
+        String code = fieldCode.trim();
+        for (ModelFieldAssignmentDO row : rows) {
+            if (row == null || !code.equals(row.getFieldCode())) {
+                continue;
+            }
+            return StrUtil.trimToNull(row.getDefaultValue());
+        }
+        return null;
     }
 
     public Long getModelIdByCode(String modelCode) {

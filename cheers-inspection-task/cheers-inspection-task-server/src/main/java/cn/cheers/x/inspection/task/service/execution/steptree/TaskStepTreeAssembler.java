@@ -20,11 +20,16 @@ import java.util.function.Function;
  * <p>动作是否下发只认生成任务时冻结的 actionDomain。设备动作统一进入协议网关；
  * 具体协议指令与打包方式由指令协议对接决定。非设备动作仍留在任务页。
  * <p>执行账上的 {@code stepOrder} 与步骤图节点 {@code order} 一致，不按写入先后编号；只读 {@code step_order} 排兄弟节点时与核对计划同一顺序。
+ * <p>挂在起点上的动作归「任务准备」。挂在终点上的动作归「结束工作」。停止录像在终点，不能收进任务准备，否则会排在开始录像旁边。
  * <p>禁止：把一个动作的参数抄进另一个动作；按标题或指令编号合并；下发时再读设备参数包；用点位对步。
  */
 public final class TaskStepTreeAssembler {
 
     public static final String PREPARE_STEP_CODE = "prepare";
+    /** 挂在终点上的动作。停止录像在这里，不在任务准备里。 */
+    public static final String FINISH_STEP_CODE = "finish";
+    static final String ANCHOR_START = "stop-start";
+    static final String ANCHOR_END = "stop-end";
     public static final String SEQ_PREFIX = "seq-";
     static final String DOMAIN_DEVICE = "DEVICE";
 
@@ -61,6 +66,7 @@ public final class TaskStepTreeAssembler {
         Map<String, TaskStepNode> byKey = indexByKey(nodes);
         List<TaskExecutionStartReqDTO.StepDraft> sessionSteps = new ArrayList<>();
         emitPrepareIfNeeded(nodes, byKey, sessionSteps);
+        emitFinishIfNeeded(nodes, byKey, sessionSteps);
         emitVisitPoints(nodes, sessionSteps);
         emitInspectionItems(nodes, byKey, sessionSteps);
 
@@ -74,9 +80,7 @@ public final class TaskStepTreeAssembler {
             }
             Long itemId = ancestorInspectionItemId(node, byKey);
             String visitPoint = itemId == null ? visitPointKey(node, byKey) : null;
-            String parentCode = itemId != null
-                    ? inspectionItemStepCode(byKey, itemId, node.parentNodeKey())
-                    : visitPoint != null ? visitPoint : PREPARE_STEP_CODE;
+            String parentCode = sessionParent(node, byKey, itemId, visitPoint);
             boolean dispatch = shouldDispatch(node);
             String stepCode = dispatch ? sequenceStepCode(sequence) : actionKeepCode(node, i);
             sessionSteps.add(toDraft(node, node.order(), stepCode, parentCode, dispatch, sequence));
@@ -120,7 +124,8 @@ public final class TaskStepTreeAssembler {
         for (TaskStepNode node : nodes) {
             if (node.isAction()
                     && ancestorInspectionItemId(node, byKey) == null
-                    && visitPointKey(node, byKey) == null) {
+                    && visitPointKey(node, byKey) == null
+                    && !underAnchor(node, byKey, ANCHOR_END)) {
                 needPrepare = true;
                 break;
             }
@@ -139,7 +144,82 @@ public final class TaskStepTreeAssembler {
         sessionSteps.add(prepare);
     }
 
-    /** 检查途经的点位。起点和终点仍走任务准备，不在这里再挂一层。 */
+    /**
+     * 终点上的动作单独成「结束工作」。
+     * 停止录像写在任务步骤图的终点下。收进任务准备后，侧栏会把它排在开始录像下面，打开后马上关闭。
+     */
+    private static void emitFinishIfNeeded(
+            List<TaskStepNode> nodes,
+            Map<String, TaskStepNode> byKey,
+            List<TaskExecutionStartReqDTO.StepDraft> sessionSteps
+    ) {
+        int earliest = Integer.MAX_VALUE;
+        boolean needFinish = false;
+        for (TaskStepNode node : nodes) {
+            if (!node.isAction() || !underAnchor(node, byKey, ANCHOR_END)) {
+                continue;
+            }
+            needFinish = true;
+            earliest = Math.min(earliest, node.order());
+        }
+        if (!needFinish) {
+            return;
+        }
+        TaskStepNode anchor = byKey.get(ANCHOR_END);
+        int groupOrder = anchor != null ? anchor.order() : earliest;
+        TaskExecutionStartReqDTO.StepDraft finish = new TaskExecutionStartReqDTO.StepDraft();
+        finish.setName("结束工作");
+        finish.setStepCode(FINISH_STEP_CODE);
+        finish.setStepOrder(groupOrder);
+        finish.setStepTitle("结束工作");
+        finish.setStepType("finish");
+        finish.setStepRequired(true);
+        finish.setSource(Map.of("displayGroup", "finish"));
+        sessionSteps.add(finish);
+    }
+
+    /**
+     * 检查项下的动作跟检查项。途经点上的动作跟这个点。
+     * 终点上的动作跟结束工作。其余开头动作跟任务准备。
+     */
+    private static String sessionParent(
+            TaskStepNode node,
+            Map<String, TaskStepNode> byKey,
+            Long itemId,
+            String visitPoint
+    ) {
+        if (itemId != null) {
+            return inspectionItemStepCode(byKey, itemId, node.parentNodeKey());
+        }
+        if (visitPoint != null) {
+            return visitPoint;
+        }
+        if (underAnchor(node, byKey, ANCHOR_END)) {
+            return FINISH_STEP_CODE;
+        }
+        return PREPARE_STEP_CODE;
+    }
+
+    /** 这一步是不是挂在起点或终点下面。终点本身不在侧栏再画一层。 */
+    private static boolean underAnchor(
+            TaskStepNode node, Map<String, TaskStepNode> byKey, String anchorKey
+    ) {
+        String parentKey = node.parentNodeKey();
+        int guard = 0;
+        while (parentKey != null && guard++ < byKey.size()) {
+            if (anchorKey.equals(parentKey)) {
+                return true;
+            }
+            TaskStepNode parent = byKey.get(parentKey);
+            if (parent == null) {
+                return false;
+            }
+            parentKey = parent.parentNodeKey();
+        }
+        return false;
+    }
+
+    /** 检查途经的点位。起点和终点不在这里再挂一层。 */
     private static void emitVisitPoints(
             List<TaskStepNode> nodes,
             List<TaskExecutionStartReqDTO.StepDraft> sessionSteps
@@ -170,7 +250,7 @@ public final class TaskStepTreeAssembler {
     }
 
     private static boolean isTerminalPoint(String nodeKey) {
-        return "stop-start".equals(nodeKey) || "stop-end".equals(nodeKey);
+        return ANCHOR_START.equals(nodeKey) || ANCHOR_END.equals(nodeKey);
     }
 
     /** 动作直接挂在途经点上时，上报步骤的上级是这个点，不是任务准备。 */

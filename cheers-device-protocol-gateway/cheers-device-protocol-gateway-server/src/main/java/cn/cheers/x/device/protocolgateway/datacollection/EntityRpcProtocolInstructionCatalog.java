@@ -55,7 +55,13 @@ public class EntityRpcProtocolInstructionCatalog implements ProtocolInstructionC
                 return ambiguous(protocolVersion);
             }
         }
-        return CatalogLookup.found(withOutbound.get(0).rows);
+        InstructionSpec chosen = withOutbound.get(0);
+        for (InstructionSpec spec : withOutbound) {
+            if (!Objects.equals(chosen.forwardTopic, spec.forwardTopic)) {
+                return ambiguous(protocolVersion);
+            }
+        }
+        return CatalogLookup.found(chosen.rows).withForwardTopic(chosen.forwardTopic);
     }
 
     @Override
@@ -87,7 +93,54 @@ public class EntityRpcProtocolInstructionCatalog implements ProtocolInstructionC
                 return ambiguous(protocolVersion);
             }
         }
-        return CatalogLookup.found(withVolume.get(0).volumes.get(key));
+        InstructionSpec chosen = withVolume.get(0);
+        for (InstructionSpec spec : withVolume) {
+            if (!Objects.equals(chosen.forwardTopic, spec.forwardTopic)) {
+                return ambiguous(protocolVersion);
+            }
+        }
+        return CatalogLookup.found(chosen.volumes.get(key)).withForwardTopic(chosen.forwardTopic);
+    }
+
+    /**
+     * 上云答卷按方法名找到转发到主题。同一方法多条说明书必须转到同一主题。
+     * 优先用响应卷。没有响应卷时用下发卷。
+     */
+    @Override
+    public CatalogLookup findByProtocolMethod(String protocolMethod) {
+        String method = protocolMethod == null ? "" : protocolMethod.trim();
+        if (method.isBlank()) {
+            return CatalogLookup.failed("缺少上云方法名");
+        }
+        List<InstructionSpec> specs;
+        try {
+            specs = cache.getOrLoad(this::loadSpecs);
+        } catch (Exception ex) {
+            log.error("[device-protocol] 读不到指令字段说明 method={}", method, ex);
+            return CatalogLookup.failed("读不到指令字段说明");
+        }
+        List<InstructionSpec> matched = new ArrayList<>();
+        for (InstructionSpec spec : specs) {
+            if (method.equals(spec.protocolMethod) && !spec.forwardTopic.isBlank()) {
+                matched.add(spec);
+            }
+        }
+        if (matched.isEmpty()) {
+            return CatalogLookup.failed("找不到该方法的转发主题");
+        }
+        String topic = matched.get(0).forwardTopic;
+        for (InstructionSpec spec : matched) {
+            if (!topic.equals(spec.forwardTopic)) {
+                return CatalogLookup.failed("同一方法转到了不同主题");
+            }
+        }
+        for (InstructionSpec spec : matched) {
+            List<FieldDescriptionRow> inbound = spec.volumes.getOrDefault(VOLUME_INBOUND_SUCCESS, List.of());
+            if (!inbound.isEmpty()) {
+                return CatalogLookup.found(inbound).withForwardTopic(topic);
+            }
+        }
+        return CatalogLookup.found(matched.get(0).rows).withForwardTopic(topic);
     }
 
     /**
@@ -104,7 +157,7 @@ public class EntityRpcProtocolInstructionCatalog implements ProtocolInstructionC
         List<InstructionSpec> matched = new ArrayList<>();
         String version = protocolVersion == null ? "" : protocolVersion.trim();
         for (InstructionSpec spec : specs) {
-            if (spec.opcode != opcode) {
+            if (spec.opcode <= 0 || spec.opcode != opcode) {
                 continue;
             }
             if (!version.isBlank() && !spec.protocolVersions.contains(version)) {
@@ -159,7 +212,8 @@ public class EntityRpcProtocolInstructionCatalog implements ProtocolInstructionC
         if (opcode == null) {
             return null;
         }
-        Map<String, List<FieldDescriptionRow>> volumes = readVolumes(bag.get(FIELD_DESCRIPTION));
+        Object description = parseDescription(bag.get(FIELD_DESCRIPTION));
+        Map<String, List<FieldDescriptionRow>> volumes = readVolumes(description);
         if (volumes.isEmpty()) {
             return null;
         }
@@ -169,24 +223,45 @@ public class EntityRpcProtocolInstructionCatalog implements ProtocolInstructionC
                 outbound,
                 fingerprint(outbound),
                 readVersions(bag.get("protocol_version")),
-                volumes
+                volumes,
+                forwardTopic(description),
+                protocolMethod(description)
         );
+    }
+
+    /** 上云方法名。没有则空。操作码为 0 时只靠这个名字找说明书。 */
+    private static String protocolMethod(Object parsed) {
+        if (!(parsed instanceof Map<?, ?> map)) {
+            return "";
+        }
+        return stringOf(map.get("protocolMethod"));
+    }
+
+    /** 说明书根上的「转发到主题」。没有则空，这份报文仍只按原操作码交上去。 */
+    private static String forwardTopic(Object parsed) {
+        if (!(parsed instanceof Map<?, ?> map)) {
+            return "";
+        }
+        return stringOf(map.get("forwardTopic"));
+    }
+
+    private Object parseDescription(Object raw) {
+        if (raw instanceof String text && !text.isBlank()) {
+            try {
+                return objectMapper.readValue(text, new TypeReference<Map<String, Object>>() {
+                });
+            } catch (Exception ex) {
+                return Map.of();
+            }
+        }
+        return raw;
     }
 
     static List<String> readVersions(Object raw) {
         return EntityRpcDeviceProtocolVersionCatalog.readVersions(raw);
     }
 
-    private Map<String, List<FieldDescriptionRow>> readVolumes(Object raw) {
-        Object parsed = raw;
-        if (raw instanceof String text && !text.isBlank()) {
-            try {
-                parsed = objectMapper.readValue(text, new TypeReference<Map<String, Object>>() {
-                });
-            } catch (Exception ex) {
-                return Map.of();
-            }
-        }
+    private Map<String, List<FieldDescriptionRow>> readVolumes(Object parsed) {
         if (!(parsed instanceof Map<?, ?> map)) {
             return Map.of();
         }
@@ -215,7 +290,8 @@ public class EntityRpcProtocolInstructionCatalog implements ProtocolInstructionC
                         path,
                         stringOf(map.get("type")),
                         stringOf(map.get("label")),
-                        boolOf(map.get("required"), true)
+                        boolOf(map.get("required"), true),
+                        stringOf(map.get("forwardName"))
                 ));
             }
         }
@@ -250,7 +326,8 @@ public class EntityRpcProtocolInstructionCatalog implements ProtocolInstructionC
         rows.stream()
                 .map(row -> includeLabel
                         ? row.path() + "|" + row.type() + "|" + row.label() + "|" + row.required()
-                        : row.path() + "|" + row.type() + "|" + row.required())
+                        + "|" + row.forwardName()
+                        : row.path() + "|" + row.type() + "|" + row.required() + "|" + row.forwardName())
                 .sorted()
                 .forEach(item -> builder.append(item).append(';'));
         return builder.toString();
@@ -275,11 +352,15 @@ public class EntityRpcProtocolInstructionCatalog implements ProtocolInstructionC
             List<FieldDescriptionRow> rows,
             String fingerprint,
             List<String> protocolVersions,
-            Map<String, List<FieldDescriptionRow>> volumes
+            Map<String, List<FieldDescriptionRow>> volumes,
+            String forwardTopic,
+            String protocolMethod
     ) {
         InstructionSpec {
             protocolVersions = protocolVersions == null ? List.of() : List.copyOf(protocolVersions);
             volumes = volumes == null ? Map.of() : Map.copyOf(volumes);
+            forwardTopic = forwardTopic == null ? "" : forwardTopic.trim();
+            protocolMethod = protocolMethod == null ? "" : protocolMethod.trim();
         }
     }
 }

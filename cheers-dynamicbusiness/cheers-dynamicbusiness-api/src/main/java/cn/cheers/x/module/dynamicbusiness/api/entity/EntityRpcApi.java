@@ -99,6 +99,12 @@ public interface EntityRpcApi {
     @Operation(summary = "按型号编码取型号 id")
     CommonResult<Long> getModelIdByCode(@RequestParam("modelCode") String modelCode);
 
+    @GetMapping(PREFIX + "/model-field-default")
+    @Operation(summary = "按型号取已分配字段的默认值")
+    CommonResult<String> getModelFieldDefault(
+            @RequestParam("modelId") Long modelId,
+            @RequestParam("fieldCode") String fieldCode);
+
     @DeleteMapping(PREFIX + "/delete")
     @Operation(summary = "删除实体")
     CommonResult<Boolean> deleteEntity(

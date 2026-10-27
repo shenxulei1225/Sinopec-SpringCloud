@@ -4,6 +4,8 @@ import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendPoseReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessRespDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionMarkProcessReqDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionMarkProcessRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartReqDTO;
@@ -300,6 +302,121 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
         return resp;
     }
 
+    /**
+     * 按消息编号改已有下发事件的状态。
+     * 已经是设备已响应时，回执不再把它改回设备已接收。
+     * 找不到这一条就 updated 为假，不新造一行。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public TaskExecutionMarkProcessRespDTO markProcessEvent(TaskExecutionMarkProcessReqDTO req) {
+        if (req.getExecutionRecordId() == null || !StringUtils.hasText(req.getMsgId())) {
+            throw new ServiceException(400, "改事件状态必须带这次执行的账本编号和消息编号");
+        }
+        String entityTypeCode = resolveRecordType(req.getEntityTypeCode());
+        EntityRespVO record = entityService.get(req.getExecutionRecordId(), entityTypeCode);
+        if (record == null || record.getId() == null) {
+            throw new ServiceException(404, "执行记录不存在：" + req.getExecutionRecordId());
+        }
+        Map<String, Object> custom = copyMap(record.getCustomFields());
+        List<Map<String, Object>> entries = readProcessEntries(custom.get(PROCESS_ENTRIES_KEY));
+        Map<String, Object> target = null;
+        for (int i = entries.size() - 1; i >= 0; i--) {
+            Map<String, Object> entry = entries.get(i);
+            if (req.getMsgId().trim().equals(String.valueOf(entry.get("msgId")).trim())) {
+                target = entry;
+                break;
+            }
+        }
+        if (target == null) {
+            TaskExecutionMarkProcessRespDTO missing = new TaskExecutionMarkProcessRespDTO();
+            missing.setUpdated(false);
+            return missing;
+        }
+        String current = target.get("eventStatus") == null ? "" : String.valueOf(target.get("eventStatus")).trim();
+        String next = req.getEventStatus().trim();
+        if ("设备已响应".equals(current) && "设备已接收".equals(next)) {
+            return markProcessNotice(target, true);
+        }
+        target.put("eventStatus", next);
+        if (StringUtils.hasText(req.getOutcome())) {
+            target.put("outcome", req.getOutcome().trim());
+        }
+        // 同号答卷的电量、位置写回这一行。回执不带字段，不覆盖已经写下的内容。
+        Map<String, Object> incoming = businessFields(req.getFields());
+        if (incoming != null) {
+            target.put("fields", incoming);
+        }
+        custom.put(PROCESS_ENTRIES_KEY, entries);
+        EntityUpdateReqVO updateReq = new EntityUpdateReqVO();
+        updateReq.setId(record.getId());
+        Map<String, Object> base = copyMap(record.getBaseFields());
+        base.put("entityTypeCode", entityTypeCode);
+        if (record.getModelId() != null) {
+            base.put("modelId", record.getModelId());
+        }
+        if (record.getName() != null) {
+            base.put("name", record.getName());
+        }
+        updateReq.setBaseFields(base);
+        updateReq.setCustomFields(custom);
+        entityService.update(updateReq);
+        return markProcessNotice(target, true);
+    }
+
+    /**
+     * 答卷里要给页面看的字段。去掉指令阶段。没有业务字段时返回空，调用方不覆盖原行。
+     */
+    private static Map<String, Object> businessFields(Map<String, Object> raw) {
+        if (raw == null || raw.isEmpty()) {
+            return null;
+        }
+        Map<String, Object> copy = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> entry : raw.entrySet()) {
+            if (entry.getKey() == null || "commandPhase".equals(entry.getKey())) {
+                continue;
+            }
+            copy.put(entry.getKey(), entry.getValue());
+        }
+        return copy.isEmpty() ? null : copy;
+    }
+
+    /** 把账上这一行现在的名称和状态交出去。页面按这一行更新，不另造一份显示。 */
+    private static TaskExecutionMarkProcessRespDTO markProcessNotice(Map<String, Object> target, boolean updated) {
+        TaskExecutionMarkProcessRespDTO resp = new TaskExecutionMarkProcessRespDTO();
+        resp.setUpdated(updated);
+        resp.setMessageKind(textOrNull(target.get("messageKind")));
+        resp.setSummary(textOrNull(target.get("summary")));
+        resp.setEventStatus(textOrNull(target.get("eventStatus")));
+        resp.setOutcome(textOrNull(target.get("outcome")));
+        resp.setMsgId(textOrNull(target.get("msgId")));
+        resp.setDeviceId(textOrNull(target.get("deviceId")));
+        resp.setDirection(textOrNull(target.get("direction")));
+        Object receivedAt = target.get("receivedAtEpochMs");
+        if (receivedAt instanceof Number number) {
+            resp.setReceivedAtEpochMs(number.longValue());
+        }
+        Object fields = target.get("fields");
+        if (fields instanceof Map<?, ?> map) {
+            Map<String, Object> copy = new LinkedHashMap<>();
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                if (entry.getKey() != null) {
+                    copy.put(String.valueOf(entry.getKey()), entry.getValue());
+                }
+            }
+            resp.setFields(copy);
+        }
+        return resp;
+    }
+
+    private static String textOrNull(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String text = String.valueOf(value).trim();
+        return text.isEmpty() || "null".equals(text) ? null : text;
+    }
+
     /** 回放位置单独成列。过程列表仍只放指令往来。样本过多时丢掉最早的点。 */
     private static final String REPLAY_POSE_KEY = "replay_pose";
     private static final int REPLAY_POSE_LIMIT = 8000;
@@ -559,6 +676,24 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
         }
         if (StringUtils.hasText(req.getPayloadJson())) {
             entry.put("payloadJson", req.getPayloadJson());
+        }
+        if (StringUtils.hasText(req.getEventStatus())) {
+            entry.put("eventStatus", req.getEventStatus().trim());
+        }
+        if (req.getActionId() != null) {
+            entry.put("actionId", req.getActionId());
+        }
+        if (StringUtils.hasText(req.getMsgId())) {
+            entry.put("msgId", req.getMsgId().trim());
+        }
+        if (StringUtils.hasText(req.getDeviceId())) {
+            entry.put("deviceId", req.getDeviceId().trim());
+        }
+        if (StringUtils.hasText(req.getOutcome())) {
+            entry.put("outcome", req.getOutcome().trim());
+        }
+        if (req.getFields() != null && !req.getFields().isEmpty()) {
+            entry.put("fields", req.getFields());
         }
         return entry;
     }

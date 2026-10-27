@@ -86,6 +86,11 @@ public class EntityRpcApiImpl implements EntityRpcApi {
     }
 
     @Override
+    public CommonResult<String> getModelFieldDefault(Long modelId, String fieldCode) {
+        return success(entityRpcFacadeService.getModelFieldDefault(modelId, fieldCode));
+    }
+
+    @Override
     public CommonResult<Boolean> deleteEntity(Long id, String entityTypeCode) {
         entityRpcFacadeService.delete(id, entityTypeCode);
         return success(true);

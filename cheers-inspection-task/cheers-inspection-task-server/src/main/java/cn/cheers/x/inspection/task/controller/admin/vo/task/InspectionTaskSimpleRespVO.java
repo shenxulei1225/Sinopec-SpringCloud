@@ -1,5 +1,6 @@
 package cn.cheers.x.inspection.task.controller.admin.vo.task;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -58,9 +59,11 @@ public class InspectionTaskSimpleRespVO {
     private Integer activePlanStatus;
 
     @Schema(description = "排期窗口开始日期")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate horizonStartDate;
 
     @Schema(description = "排期窗口结束日期")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate horizonEndDate;
 
     @Schema(description = "本次排期生成的计划点数量")

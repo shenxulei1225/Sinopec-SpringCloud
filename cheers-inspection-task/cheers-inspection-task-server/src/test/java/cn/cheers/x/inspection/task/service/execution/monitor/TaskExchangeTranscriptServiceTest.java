@@ -3,10 +3,11 @@ package cn.cheers.x.inspection.task.service.execution.monitor;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.task.api.dto.ReplayPoseReqDTO;
 import cn.cheers.x.inspection.task.api.dto.TaskExchangeTranscriptReqDTO;
-import cn.cheers.x.inspection.task.service.execution.pagepush.InspectionExecutionPagePublisher;
+import cn.cheers.x.inspection.task.service.execution.pagepush.CommandWindowPageNotice;
 import cn.cheers.x.module.dynamicbusiness.api.execution.TaskExecutionSessionApi;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessRespDTO;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -25,14 +27,15 @@ class TaskExchangeTranscriptServiceTest {
 
     private PatrolGeneratedTaskLookup lookup;
     private TaskExecutionSessionApi sessionApi;
+    private CommandWindowPageNotice commandWindowPageNotice;
     private TaskExchangeTranscriptService service;
 
     @BeforeEach
     void setUp() {
         lookup = mock(PatrolGeneratedTaskLookup.class);
         sessionApi = mock(TaskExecutionSessionApi.class);
-        service = new TaskExchangeTranscriptService(
-                lookup, sessionApi, new ObjectMapper(), mock(InspectionExecutionPagePublisher.class));
+        commandWindowPageNotice = mock(CommandWindowPageNotice.class);
+        service = new TaskExchangeTranscriptService(lookup, sessionApi, new ObjectMapper(), commandWindowPageNotice);
         when(sessionApi.appendProcess(any())).thenReturn(CommonResult.success(new TaskExecutionAppendProcessRespDTO()));
     }
 
@@ -47,6 +50,7 @@ class TaskExchangeTranscriptServiceTest {
         assertEquals(99L, captor.getValue().getExecutionRecordId());
         assertEquals(TaskExchangeTranscriptReqDTO.INBOUND, captor.getValue().getDirection());
         assertEquals(req.getPayloadJson(), captor.getValue().getPayloadJson());
+        assertEquals("单条指令操作结果", captor.getValue().getSummary());
         verify(lookup, never()).forExchange(any());
     }
 
@@ -77,6 +81,22 @@ class TaskExchangeTranscriptServiceTest {
     }
 
     @Test
+    void commandPacketWritesTheInstructionNameAndMessageId() {
+        TaskExchangeTranscriptReqDTO req = inbound(
+                "{\"opcode\":500104,\"msgId\":\"e071\",\"deviceId\":\"dev-1\",\"templateId\":\"patrol-task-1\"}");
+        req.setExecutionRecordId(924024L);
+
+        assertTrue(service.record(req).isRecorded());
+
+        ArgumentCaptor<TaskExecutionAppendProcessReqDTO> captor = ArgumentCaptor.forClass(TaskExecutionAppendProcessReqDTO.class);
+        verify(sessionApi).appendProcess(captor.capture());
+        assertEquals(924024L, captor.getValue().getExecutionRecordId());
+        assertEquals("巡检任务指令包下发", captor.getValue().getSummary());
+        assertEquals("e071", captor.getValue().getMsgId());
+        verify(commandWindowPageNotice).publish(eq(req), eq(924024L), any(JsonNode.class));
+    }
+
+    @Test
     void singleRunningRecordReceivesAPacketWithoutTaskId() {
         when(lookup.forExchange("dev-1")).thenReturn(PatrolGeneratedTaskSelector.RunningMatch.found(7L));
         TaskExchangeTranscriptReqDTO req = inbound("{\"opcode\":500103,\"templateId\":\"99\",\"deviceId\":\"other\"}");
@@ -104,6 +124,7 @@ class TaskExchangeTranscriptServiceTest {
         assertFalse(many.recorded());
         assertTrue(many.reason().contains("多条"));
         verify(sessionApi, never()).appendProcess(any());
+        verify(commandWindowPageNotice, never()).publish(any(), any(), any());
     }
 
     @Test

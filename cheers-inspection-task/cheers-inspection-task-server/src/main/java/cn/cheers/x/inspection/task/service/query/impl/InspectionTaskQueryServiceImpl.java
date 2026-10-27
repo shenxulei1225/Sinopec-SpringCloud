@@ -18,6 +18,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +32,7 @@ import java.util.Map;
  * <p>权威：总任务实体 plannedRoute + 草稿袋；不读旧固定表 inspection_task。
  * <p>已占窗：当前方式自己的试排优先；只有正在看的就是生成时那种方式才读 runtime 占窗。
  * 列表这一页上的已生成任务，用和打开这一条相同的对照。记下的说明是空的，不能当成已经更新过。
+ * 排期窗口和计划点数读同一份已占窗。没生成的不填这两格。
  * <p>详情返回任务上已经写下的名称、巡检方式、对象、路线、计划点和步骤图。
  * 不在返回前补对象名称、耗时单位或动作参数。没写下的不在这里补，免得整页等这一遍。
  */
@@ -70,7 +75,80 @@ public class InspectionTaskQueryServiceImpl implements InspectionTaskQueryServic
         vo.setRuntimeJobId(draft.runtimeJobId());
         vo.setSubTaskCount(0);
         vo.setUpdateHint(liveUpdateHint(draft, context));
+        fillOccupiedWindow(vo, draft);
         return vo;
+    }
+
+    /**
+     * 已生成任务的排期窗口和计划点数，用和打开详情相同的已占窗。
+     * 没生成的这两格留空，列表显示成横线。
+     */
+    private void fillOccupiedWindow(InspectionTaskSimpleRespVO vo, PatrolTaskDraft draft) {
+        List<ScheduleSlotDTO> slots = slotsShownOnList(draft);
+        if (slots.isEmpty()) {
+            return;
+        }
+        LocalDate start = null;
+        LocalDate end = null;
+        int count = 0;
+        for (ScheduleSlotDTO slot : slots) {
+            if (slot == null || !StringUtils.hasText(slot.getSlotId())) {
+                continue;
+            }
+            count++;
+            LocalDate day = planDay(slot.getPlannedStart());
+            if (day == null) {
+                day = planDay(slot.getCandidateStart());
+            }
+            if (day == null) {
+                continue;
+            }
+            if (start == null || day.isBefore(start)) {
+                start = day;
+            }
+            if (end == null || day.isAfter(end)) {
+                end = day;
+            }
+        }
+        if (count > 0) {
+            vo.setScheduleCount(count);
+        }
+        vo.setHorizonStartDate(start);
+        vo.setHorizonEndDate(end);
+    }
+
+    /**
+     * 和打开详情同一份计划点：这一页自己的试排优先。
+     * 没有试排时，只有正在看的就是生成时那种方式，才读已经占好的窗。
+     */
+    private List<ScheduleSlotDTO> slotsShownOnList(PatrolTaskDraft draft) {
+        if (!Boolean.TRUE.equals(draft.orchestrationCommitted()) || draft.id() == null) {
+            return List.of();
+        }
+        List<ScheduleSlotDTO> preview = patrolTaskEntityStore.readOrchestrationPreviewSlots(draft.id());
+        if (preview != null && !preview.isEmpty()) {
+            return preview;
+        }
+        if (!StringUtils.hasText(draft.runtimeJobId()) || !sameMeansAsGenerated(draft)) {
+            return List.of();
+        }
+        List<ScheduleSlotDTO> slots =
+                runtimeQueryApi.listSlotsByJobId(draft.runtimeJobId().trim()).getCheckedData();
+        return slots == null ? List.of() : slots;
+    }
+
+    /** 计划时刻按北京时间取日期。写坏的时刻不拿来撑窗口。 */
+    private static LocalDate planDay(String text) {
+        if (!StringUtils.hasText(text)) {
+            return null;
+        }
+        try {
+            return OffsetDateTime.parse(text.trim())
+                    .atZoneSameInstant(ZoneId.of("Asia/Shanghai"))
+                    .toLocalDate();
+        } catch (DateTimeParseException ex) {
+            return null;
+        }
     }
 
     /**

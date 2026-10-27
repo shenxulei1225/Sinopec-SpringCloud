@@ -1,8 +1,6 @@
 package cn.cheers.x.device.protocolgateway.djicloud;
 
 import cn.cheers.x.device.protocolgateway.protocol.exchange.RunningTaskExchangeRecorder;
-import cn.cheers.x.inspection.task.api.InspectionDeviceUplinkApi;
-import cn.cheers.x.inspection.task.api.dto.ReplayPoseReqDTO;
 import cn.cheers.x.inspection.task.api.dto.TaskExchangeTranscriptReqDTO;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,10 +19,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * 大疆上云的往来离开收包线程后再记。过程列表留指令原文。飞机位置另存。
- * <p>飞行编号或事务编号能对上这次执行时带上执行记录编号。对不上就交给巡检按网关找唯一任务。
- * <p>不负责：改步骤完成、改整次执行状态。
- * <p>禁止：在收包线程里调用巡检。定时上报和连续杆量进过程列表。飞机位置另存。
+ * 大疆上云发出的报文离开收包线程后，记一条已下发事件。
+ * <p>飞行编号或事务编号能对上这次执行时带上执行记录编号。对不上就不记。
+ * <p>不负责：改步骤完成、改整次执行状态、从报文路径记飞机位置。
+ * <p>禁止：在收包线程里调用巡检；把报文原文写进过程。
  */
 @Slf4j
 @Component
@@ -37,22 +35,18 @@ public class DjiCloudExchangeJournal {
     private final ObjectMapper objectMapper;
     private final DjiCloudOnlineRegistry onlineRegistry;
     private final RunningTaskExchangeRecorder transcripts;
-    private final InspectionDeviceUplinkApi inspectionDeviceUplinkApi;
     private final BlockingQueue<Item> queue = new ArrayBlockingQueue<>(512);
     private final ConcurrentMap<String, Long> tidToRecord = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, Long> lastPoseAt = new ConcurrentHashMap<>();
     private final AtomicBoolean running = new AtomicBoolean(false);
     private Thread worker;
 
     public DjiCloudExchangeJournal(
             ObjectMapper objectMapper,
             DjiCloudOnlineRegistry onlineRegistry,
-            RunningTaskExchangeRecorder transcripts,
-            InspectionDeviceUplinkApi inspectionDeviceUplinkApi) {
+            RunningTaskExchangeRecorder transcripts) {
         this.objectMapper = objectMapper;
         this.onlineRegistry = onlineRegistry;
         this.transcripts = transcripts;
-        this.inspectionDeviceUplinkApi = inspectionDeviceUplinkApi;
     }
 
     @PostConstruct
@@ -90,6 +84,9 @@ public class DjiCloudExchangeJournal {
     private void accept(String topic, String json, String direction) {
         JsonNode root = read(json);
         remember(root);
+        if (!TaskExchangeTranscriptReqDTO.OUTBOUND.equals(direction)) {
+            return;
+        }
         String deviceId = deviceId(topic);
         if (deviceId == null) {
             return;
@@ -98,18 +95,8 @@ public class DjiCloudExchangeJournal {
         if (recordId == null) {
             recordId = linked(root);
         }
-        String transcript = DjiCloudExchangePolicy.keepTranscript(topic, root) ? json : null;
-        DjiCloudExchangePolicy.Pose pose = TaskExchangeTranscriptReqDTO.INBOUND.equals(direction)
-                ? DjiCloudExchangePolicy.poseOf(topic, root)
-                : null;
-        if (pose != null && !dueForPose(deviceId, pose.t())) {
-            pose = null;
-        }
-        if (transcript == null && pose == null) {
-            return;
-        }
-        if (!queue.offer(new Item(deviceId, direction, transcript, recordId, pose))) {
-            log.error("[dji-cloud] 往来记录队列已满，未记入任务 deviceId={}", deviceId);
+        if (!queue.offer(new Item(deviceId, direction, json, recordId, null))) {
+            log.error("[dji-cloud] 已下发事件队列已满，未记下 deviceId={}", deviceId);
         }
     }
 
@@ -123,9 +110,6 @@ public class DjiCloudExchangeJournal {
                 if (item.payloadJson() != null) {
                     transcripts.recordNow(item.deviceId(), item.direction(), item.payloadJson(), item.recordId());
                 }
-                if (item.pose() != null) {
-                    writePose(item);
-                }
             } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt();
                 return;
@@ -133,28 +117,6 @@ public class DjiCloudExchangeJournal {
                 log.warn("[dji-cloud] 记入任务失败", ex);
             }
         }
-    }
-
-    private void writePose(Item item) {
-        ReplayPoseReqDTO req = new ReplayPoseReqDTO();
-        req.setExecutionRecordId(item.recordId());
-        req.setDeviceId(item.deviceId());
-        req.setT(item.pose().t());
-        req.setX(item.pose().x());
-        req.setY(item.pose().y());
-        req.setZ(item.pose().z());
-        req.setYaw(item.pose().yaw());
-        req.setFrameRef(item.pose().frameRef());
-        inspectionDeviceUplinkApi.recordReplayPose(req);
-    }
-
-    private boolean dueForPose(String deviceId, long t) {
-        Long previous = lastPoseAt.get(deviceId);
-        if (previous != null && t - previous < 1000) {
-            return false;
-        }
-        lastPoseAt.put(deviceId, t);
-        return true;
     }
 
     private void remember(JsonNode root) {

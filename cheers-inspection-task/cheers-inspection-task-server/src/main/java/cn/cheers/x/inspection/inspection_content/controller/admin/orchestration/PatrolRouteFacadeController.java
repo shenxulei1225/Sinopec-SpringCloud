@@ -17,6 +17,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
@@ -91,6 +92,15 @@ public class PatrolRouteFacadeController {
             summary = "生成任务：试排快照落库占窗定稿，写每计划点待执行，登记到点自动开跑（向导底栏与列表启用第二步）")
     public CommonResult<ScheduleRunResponse> generateTask(@Valid @RequestBody PatrolOrchestrationRunReqVO reqVO) {
         return success(patrolRouteFacadeService.commitOrchestration(reqVO));
+    }
+
+    @PostMapping("/orchestration/rewrite-missing-ledgers")
+    @Operation(
+            operationId = "rewriteMissingPatrolLedgers",
+            summary = "已生成任务的待执行账不在了，按还没开跑的计划点把账写回去。已开跑的账不另写。不重新排期")
+    public CommonResult<Boolean> rewriteMissingLedgers(@RequestParam("taskId") Long taskId) {
+        patrolRouteFacadeService.rewriteMissingPendingLedgers(taskId);
+        return success(true);
     }
 
     @PostMapping("/orchestration/abort")

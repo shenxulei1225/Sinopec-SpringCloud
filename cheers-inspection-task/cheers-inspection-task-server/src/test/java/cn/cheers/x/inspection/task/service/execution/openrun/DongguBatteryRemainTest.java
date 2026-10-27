@@ -21,10 +21,31 @@ class DongguBatteryRemainTest {
     }
 
     @Test
-    void missingCurveOrFullChargeDoesNotInventTime() {
-        assertNull(DongguBatteryRemain.seconds("82.9", 1800, null));
+    void remainSecondsMapBackToPercent() {
+        Integer full = DongguBatteryRemain.fullBatterySeconds(30);
+
+        assertEquals(new java.math.BigDecimal("80.00"),
+                DongguBatteryRemain.percentFromRemainSeconds(1293, full, conventionalCurve()));
+        assertEquals(new java.math.BigDecimal("20"),
+                DongguBatteryRemain.percentFromRemainSeconds(0, full, conventionalCurve()));
+    }
+
+    @Test
+    void missingCurveUsesUniformDeclineOverFullChargeTime() {
+        Integer full = DongguBatteryRemain.fullBatterySeconds(30);
+
+        assertEquals(1440, DongguBatteryRemain.seconds("80%", full, null));
+        assertEquals(new java.math.BigDecimal("80.00"),
+                DongguBatteryRemain.percentFromRemainSeconds(1440, full, null));
+        assertEquals(new java.math.BigDecimal("50.00"),
+                DongguBatteryRemain.percentFromRemainSeconds(900, full, null));
+    }
+
+    @Test
+    void missingFullChargeDoesNotInventTime() {
         assertNull(DongguBatteryRemain.seconds("82.9", null, conventionalCurve()));
         assertNull(DongguBatteryRemain.seconds("82.9", DongguBatteryRemain.fullBatterySeconds(null), conventionalCurve()));
+        assertNull(DongguBatteryRemain.seconds("82.9", null, null));
         assertNull(DongguBatteryRemain.seconds("电量", 1800, conventionalCurve()));
     }
 

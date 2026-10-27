@@ -7,6 +7,8 @@ import cn.cheers.x.device.protocolgateway.api.opcode.DeviceTaskStatusCode;
 import cn.cheers.x.device.protocolgateway.api.opcode.TransportOpcode;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.inspection.task.service.execution.ExecutionEventLedger;
+import cn.cheers.x.module.dynamicbusiness.api.push.InspectionPushTopics;
 import cn.cheers.x.inspection.task.service.execution.analysis.PatrolLiveStreamWatch;
 import cn.cheers.x.inspection.task.service.execution.pagepush.InspectionExecutionPagePublisher;
 import cn.cheers.x.inspection.task.service.execution.analysis.PatrolPhotoAnalysisService;
@@ -36,6 +38,8 @@ class InspectionDeviceUplinkServiceImplTest {
     private StrategyRuntimeApi strategyRuntimeApi;
     private PatrolScheduleSlotExecutionWritebackService scheduleSlotExecutionWritebackService;
     private PatrolPhotoAnalysisService patrolPhotoAnalysisService;
+    private InspectionExecutionPagePublisher pagePublisher;
+    private ExecutionEventLedger executionEventLedger;
     private InspectionDeviceUplinkServiceImpl service;
 
     @BeforeEach
@@ -43,6 +47,8 @@ class InspectionDeviceUplinkServiceImplTest {
         strategyRuntimeApi = mock(StrategyRuntimeApi.class);
         scheduleSlotExecutionWritebackService = mock(PatrolScheduleSlotExecutionWritebackService.class);
         patrolPhotoAnalysisService = mock(PatrolPhotoAnalysisService.class);
+        pagePublisher = mock(InspectionExecutionPagePublisher.class);
+        executionEventLedger = mock(ExecutionEventLedger.class);
         service = new InspectionDeviceUplinkServiceImpl(
                 strategyRuntimeApi,
                 new ObjectMapper(),
@@ -50,7 +56,9 @@ class InspectionDeviceUplinkServiceImplTest {
                 mock(DeviceCollectionAnomalyRecorder.class),
                 patrolPhotoAnalysisService,
                 mock(PatrolLiveStreamWatch.class),
-                mock(InspectionExecutionPagePublisher.class));
+                pagePublisher,
+                mock(cn.cheers.x.inspection.task.service.execution.monitor.TaskExchangeTranscriptService.class),
+                executionEventLedger);
         when(strategyRuntimeApi.handle(any())).thenReturn(CommonResult.success(matchedHandle()));
     }
 
@@ -58,10 +66,10 @@ class InspectionDeviceUplinkServiceImplTest {
     void taskStatus_startSuccess_putsExecutionStatusOnEvent() {
         service.applyCollection(sample(
                 AccessChannelCodes.INSPECTION,
-                TransportOpcode.TASK_STATUS.code(),
+                "inspection_execution_run",
                 9001L,
                 Map.of("status", DeviceTaskStatusCode.START_SUCCESS),
-                ProtocolQualifyStatus.UNCHECKED));
+                ProtocolQualifyStatus.QUALIFIED));
 
         StrategyTriggerEventDTO event = captureEvent();
         assertEquals(StrategyTriggerEventDTO.EVENT_COLLECTION_RECEIVED, event.getEventType());
@@ -73,13 +81,13 @@ class InspectionDeviceUplinkServiceImplTest {
     void commandResult_putsStepBySequenceOnEvent() {
         service.applyCollection(sample(
                 AccessChannelCodes.INSPECTION,
-                TransportOpcode.COMMAND_RESULT.code(),
+                "inspection_execution_step",
                 9001L,
-                Map.of("packages", Map.of(
+                Map.of("steps", List.of(Map.of(
                         "sequence", 3,
                         "opcode", 200301,
-                        "result", Map.of("electricity", "82.9"))),
-                ProtocolQualifyStatus.UNCHECKED));
+                        "electricity", "82.9"))),
+                ProtocolQualifyStatus.QUALIFIED));
 
         StrategyTriggerEventDTO event = captureEvent();
         assertEquals("seq-3", event.getStepUpdates().get(0).get("stepCode"));
@@ -96,10 +104,10 @@ class InspectionDeviceUplinkServiceImplTest {
     void commandResult_missingSequence_doesNotInventStep() {
         service.applyCollection(sample(
                 AccessChannelCodes.INSPECTION,
-                TransportOpcode.COMMAND_RESULT.code(),
+                "inspection_execution_step",
                 9001L,
-                Map.of("packages", Map.of("opcode", 200301, "result", Map.of())),
-                ProtocolQualifyStatus.UNCHECKED));
+                Map.of("steps", List.of(Map.of("opcode", 200301))),
+                ProtocolQualifyStatus.QUALIFIED));
         StrategyTriggerEventDTO event = captureEvent();
         assertTrue(event.getStepUpdates() == null || event.getStepUpdates().isEmpty());
     }
@@ -109,10 +117,10 @@ class InspectionDeviceUplinkServiceImplTest {
         when(strategyRuntimeApi.handle(any())).thenReturn(CommonResult.success(skippedHandle()));
         service.applyCollection(sample(
                 AccessChannelCodes.INSPECTION,
-                TransportOpcode.TASK_STATUS.code(),
+                "inspection_execution_run",
                 null,
                 Map.of("status", DeviceTaskStatusCode.START_SUCCESS),
-                ProtocolQualifyStatus.UNCHECKED));
+                ProtocolQualifyStatus.QUALIFIED));
         StrategyTriggerEventDTO event = captureEvent();
         assertEquals(StrategyTriggerEventDTO.EVENT_COLLECTION_RECEIVED, event.getEventType());
         assertEquals(null, event.getExecutionRecordId());
@@ -122,10 +130,10 @@ class InspectionDeviceUplinkServiceImplTest {
     void industrialChannel_skipsStrategy() {
         service.applyCollection(sample(
                 AccessChannelCodes.INDUSTRIAL,
-                TransportOpcode.TASK_STATUS.code(),
+                "inspection_execution_run",
                 9001L,
                 Map.of("status", DeviceTaskStatusCode.START_SUCCESS),
-                ProtocolQualifyStatus.UNCHECKED));
+                ProtocolQualifyStatus.QUALIFIED));
         verify(strategyRuntimeApi, never()).handle(any());
         verify(patrolPhotoAnalysisService, never()).submitAfterReported(any());
     }
@@ -134,7 +142,7 @@ class InspectionDeviceUplinkServiceImplTest {
     void unqualified_asksStrategy_withoutStepOrStatus() {
         service.applyCollection(sample(
                 AccessChannelCodes.INSPECTION,
-                TransportOpcode.TASK_STATUS.code(),
+                "inspection_execution_run",
                 9001L,
                 Map.of("status", DeviceTaskStatusCode.START_SUCCESS),
                 ProtocolQualifyStatus.UNQUALIFIED));
@@ -148,10 +156,10 @@ class InspectionDeviceUplinkServiceImplTest {
         when(strategyRuntimeApi.handle(any())).thenReturn(CommonResult.error(500, "采集结果交给策略失败"));
         assertThrows(ServiceException.class, () -> service.applyCollection(sample(
                 AccessChannelCodes.INSPECTION,
-                TransportOpcode.TASK_STATUS.code(),
+                "inspection_execution_run",
                 9001L,
                 Map.of("status", DeviceTaskStatusCode.START_SUCCESS),
-                ProtocolQualifyStatus.UNCHECKED)));
+                ProtocolQualifyStatus.QUALIFIED)));
     }
 
     private StrategyTriggerEventDTO captureEvent() {
@@ -176,9 +184,35 @@ class InspectionDeviceUplinkServiceImplTest {
         return resp;
     }
 
+    @Test
+    void deviceStatusGoesToThePageAndSkipsTheLedger() {
+        Map<String, Object> fields = Map.of("batteryPercent", 80);
+        service.applyCollection(sample(
+                AccessChannelCodes.INSPECTION,
+                InspectionPushTopics.DEVICE_STATUS.code(),
+                null,
+                fields,
+                ProtocolQualifyStatus.QUALIFIED));
+
+        verify(pagePublisher).publishDeviceStatus("SN-1", fields);
+        verify(strategyRuntimeApi, never()).handle(any());
+        verify(executionEventLedger, never()).record(any());
+    }
+
+    @Test
+    void opcodeSample_isIgnored() {
+        service.applyCollection(sample(
+                AccessChannelCodes.INSPECTION,
+                String.valueOf(TransportOpcode.TASK_STATUS.code()),
+                9001L,
+                Map.of("status", DeviceTaskStatusCode.START_SUCCESS),
+                ProtocolQualifyStatus.QUALIFIED));
+        verify(strategyRuntimeApi, never()).handle(any());
+    }
+
     private static CollectionSample sample(
             String channel,
-            int opcode,
+            String messageKind,
             Long executionRecordId,
             Map<String, Object> fields,
             ProtocolQualifyStatus qualify
@@ -186,7 +220,7 @@ class InspectionDeviceUplinkServiceImplTest {
         return new CollectionSample(
                 channel,
                 "SN-1",
-                String.valueOf(opcode),
+                messageKind,
                 qualify,
                 qualify == ProtocolQualifyStatus.UNQUALIFIED ? List.of("缺必填") : List.of(),
                 fields,

@@ -29,4 +29,12 @@ public interface ProtocolInstructionCatalog {
     default CatalogLookup findVolume(int opcode, String protocolVersion, String volume) {
         return CatalogLookup.failed("未提供这一卷字段说明");
     }
+
+    /**
+     * 按上云方法名取转发。操作码是 0 的指令不能靠操作码区分。
+     * 没实现的目录返回失败，不拿操作码 0 的某一条冒充。
+     */
+    default CatalogLookup findByProtocolMethod(String protocolMethod) {
+        return CatalogLookup.failed("未按方法名查找说明书");
+    }
 }

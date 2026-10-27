@@ -17,7 +17,9 @@
 # Maven 本地仓库：环境变量 MAVEN_REPO_LOCAL 优先。
 # Linux 未设置时固定 ~/MavenRepositoy。Windows 未设置时读 Maven 配置里的本地仓库，没有再退回 ~/MavenRepositoy。
 # 业务进程堆：平时停在软目标 512MB。dynamic 硬上限 3GB，inspection、protocol 硬上限 1.5GB，其余 768MB。
-# 已在跑的进程要重启后才使用新上限。实体列表同时能进几份，不在这里限制。
+# 操作系统上限（cgroup）：每个服务 Maven+业务 JVM 一共 dynamic 4GB、inspection/protocol 3GB、其余 2GB。
+# 已在跑的进程执行 apply-cgroup 即可套上操作系统上限，不必先重启。堆参数仍要重启后才换。
+# 实体列表同时能进几份，不在这里限制。
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -103,6 +105,12 @@ resolve_maven_repo_local() {
 
 MAVEN_REPO_LOCAL="$(resolve_maven_repo_local)"
 mkdir -p "$MAVEN_REPO_LOCAL"
+
+# 操作系统内存上限。没有 cgroup 的机器里这些函数不会改启动。
+if [ -f "$SCRIPT_DIR/scripts/cgroup-limits.sh" ]; then
+    # shellcheck source=scripts/cgroup-limits.sh
+    . "$SCRIPT_DIR/scripts/cgroup-limits.sh"
+fi
 
 # Nacos 配置（Mac 默认 ~/nacos，可通过 NACOS_HOME 环境变量覆盖）
 NACOS_HOME="${NACOS_HOME:-$HOME/nacos}"
@@ -315,6 +323,7 @@ STOP_SERVICES=(
     alarm work-order maintenance scene-3d gis
 )
 # 本机 Java 在听才算运行中。Remote-SSH 端口映射也能连上同号端口，不能当成服务已启动。
+# Linux 上进程名是 java。Windows 上才用 tasklist 核对 java.exe。
 is_service_running() {
     local service_name=$1
     local port pid
@@ -328,7 +337,21 @@ is_service_running() {
     if [ -z "$pid" ]; then
         return 1
     fi
-    tasklist //FI "PID eq ${pid}" //FO CSV 2>/dev/null | grep -qi "java.exe"
+    listener_is_java "$pid"
+}
+
+listener_is_java() {
+    local pid=$1
+    local comm
+    comm=$(ps -p "$pid" -o comm= 2>/dev/null | tr -d '[:space:]')
+    case "$comm" in
+        java|java.exe) return 0 ;;
+    esac
+    if command -v tasklist >/dev/null 2>&1; then
+        tasklist //FI "PID eq ${pid}" //FO CSV 2>/dev/null | grep -qi "java.exe"
+        return $?
+    fi
+    return 1
 }
 
 # 谁在监听该端口；Windows 用 netstat，Mac/Linux 用 lsof。
@@ -391,6 +414,9 @@ start_service() {
         echo -e "      Swagger UI: ${BLUE}http://localhost:$port/swagger-ui${NC}"
         echo -e "      Knife4j:    ${BLUE}http://localhost:$port/doc.html${NC}"
         echo -e "      API Docs:   ${BLUE}http://localhost:$port/v3/api-docs${NC}"
+        if type apply_service_cgroup >/dev/null 2>&1; then
+            apply_service_cgroup "$service_name" || true
+        fi
         return 0
     fi
 
@@ -456,8 +482,20 @@ start_service() {
     echo -e "${BLUE}   业务进程堆: ${jvm_args}${NC}"
     echo -e "${BLUE}   Maven 父进程堆上限: 256MB${NC}"
     # 父进程封顶只加在 spring-boot:run。前面的 install 仍用 Maven 默认堆，避免依赖安装被 256MB 卡住。
-    MAVEN_OPTS="-Xmx256m -XX:MaxMetaspaceSize=128m" \
-        nohup mvn -Dmaven.repo.local="$MAVEN_REPO_LOCAL" spring-boot:run "${extra_mvn[@]}" -Dspring-boot.run.profiles="$run_profiles" -Dspring-boot.run.jvmArguments="${jvm_args}" -Dmaven.test.skip=true > "$log_file" 2>&1 &
+    # Linux 上先进入 cgroup 再生下 Maven，操作系统上限从第一字节记账。迁已有进程带不走旧账。
+    export MAVEN_OPTS="-Xmx256m -XX:MaxMetaspaceSize=128m"
+    if type launch_in_service_cgroup >/dev/null 2>&1; then
+        launch_in_service_cgroup "$service_name" "$log_file" \
+            mvn -Dmaven.repo.local="$MAVEN_REPO_LOCAL" spring-boot:run "${extra_mvn[@]}" \
+            -Dspring-boot.run.profiles="$run_profiles" \
+            -Dspring-boot.run.jvmArguments="${jvm_args}" \
+            -Dmaven.test.skip=true
+    else
+        nohup mvn -Dmaven.repo.local="$MAVEN_REPO_LOCAL" spring-boot:run "${extra_mvn[@]}" \
+            -Dspring-boot.run.profiles="$run_profiles" \
+            -Dspring-boot.run.jvmArguments="${jvm_args}" \
+            -Dmaven.test.skip=true > "$log_file" 2>&1 &
+    fi
     local pid=$!
     disown -h "$pid" 2>/dev/null || true
     
@@ -512,6 +550,9 @@ start_service() {
             echo -e "      Swagger UI: ${BLUE}http://localhost:$port/swagger-ui${NC}"
             echo -e "      Knife4j:    ${BLUE}http://localhost:$port/doc.html${NC}"
             echo -e "      API Docs:   ${BLUE}http://localhost:$port/v3/api-docs${NC}"
+            if type apply_service_cgroup >/dev/null 2>&1; then
+                apply_service_cgroup "$service_name" || true
+            fi
             
             cd "$SCRIPT_DIR"
             return 0
@@ -700,6 +741,7 @@ show_services() {
     echo "  ./start-microservices.sh robot      # 机器人协议模拟器，连协议网关 8095"
     echo "  ./start-microservices.sh stop-base|stop-biz|stop-bmp|stop-all"
     echo "  ./start-microservices.sh status"
+    echo "  ./start-microservices.sh apply-cgroup  # 给已在跑的服务补操作系统内存上限，不重启"
     echo "  ./start-microservices.sh logs resource"
     echo ""
     echo -e "${BLUE}中台里只开一块${NC}"
@@ -1107,6 +1149,9 @@ main() {
             ;;
         "status")
             show_status
+            ;;
+        "apply-cgroup")
+            apply_all_running_cgroups
             ;;
         "logs")
             show_logs "$2"

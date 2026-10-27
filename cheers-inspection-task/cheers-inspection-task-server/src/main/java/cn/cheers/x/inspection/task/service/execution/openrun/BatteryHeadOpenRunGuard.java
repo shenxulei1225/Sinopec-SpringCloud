@@ -22,7 +22,7 @@ import org.springframework.util.StringUtils;
 /**
  * 开跑前做电量检查。不能下发时把比较结果记在这次执行上，并返回给页面的那一句。
  * <p>用户选取消这次执行时，把仍待执行的账记成已取消。先不执行则账保持待执行。
- * <p>不负责下发指令。东古的电量百分比按这台设备上的耗电曲线和最长飞行时间换成秒数。
+ * <p>不负责下发指令。东古的电量百分比按最长飞行时间匀速换成秒数。这一台空着时读型号默认值。设备上有耗电曲线时仍按曲线取。
  */
 @Service
 public class BatteryHeadOpenRunGuard {
@@ -35,16 +35,19 @@ public class BatteryHeadOpenRunGuard {
     private final DjiCloudAircraftStatusApi aircraftStatusApi;
     private final TaskExecutionSessionApi taskExecutionSessionApi;
     private final EntityRpcApi entityRpcApi;
+    private final EquipmentFlightBudgetQuery equipmentFlightBudgetQuery;
 
     public BatteryHeadOpenRunGuard(
             GroundStationLiveStatusApi groundStationLiveStatusApi,
             DjiCloudAircraftStatusApi aircraftStatusApi,
             TaskExecutionSessionApi taskExecutionSessionApi,
-            EntityRpcApi entityRpcApi) {
+            EntityRpcApi entityRpcApi,
+            EquipmentFlightBudgetQuery equipmentFlightBudgetQuery) {
         this.groundStationLiveStatusApi = groundStationLiveStatusApi;
         this.aircraftStatusApi = aircraftStatusApi;
         this.taskExecutionSessionApi = taskExecutionSessionApi;
         this.entityRpcApi = entityRpcApi;
+        this.equipmentFlightBudgetQuery = equipmentFlightBudgetQuery;
     }
 
     /**
@@ -112,7 +115,8 @@ public class BatteryHeadOpenRunGuard {
             String electricity = rpc == null || !rpc.isSuccess() || rpc.getData() == null
                     ? null
                     : rpc.getData().electricity();
-            EquipmentFlightBudget budget = flightBudget(task.executionDeviceBinding().getEquipmentId());
+            EquipmentFlightBudgetQuery.Snapshot budget =
+                    equipmentFlightBudgetQuery.load(task.executionDeviceBinding().getEquipmentId());
             return new Reported(
                     DongguBatteryRemain.seconds(electricity, budget.fullBatterySeconds(), budget.dischargeCurve()),
                     electricity,
@@ -120,33 +124,6 @@ public class BatteryHeadOpenRunGuard {
                     null);
         }
         return new Reported(null, null, false, null);
-    }
-
-    /**
-     * 最长飞行时间单位是分钟。耗电曲线是这台设备上已经写下的点，不在这里现造。
-     */
-    private EquipmentFlightBudget flightBudget(Long equipmentId) {
-        if (equipmentId == null || equipmentId <= 0) {
-            return EquipmentFlightBudget.empty();
-        }
-        CommonResult<EntityRespDTO> loaded = entityRpcApi.getEntity(equipmentId, "equipment");
-        if (loaded == null || !loaded.isSuccess() || loaded.getData() == null) {
-            return EquipmentFlightBudget.empty();
-        }
-        EntityRespDTO equipment = loaded.getData();
-        return new EquipmentFlightBudget(
-                DongguBatteryRemain.fullBatterySeconds(field(equipment, "max_flight_time")),
-                field(equipment, "battery_discharge_curve"));
-    }
-
-    private static Object field(EntityRespDTO equipment, String code) {
-        if (equipment.getCustomFields() != null && equipment.getCustomFields().get(code) != null) {
-            return equipment.getCustomFields().get(code);
-        }
-        if (equipment.getBaseFields() != null) {
-            return equipment.getBaseFields().get(code);
-        }
-        return null;
     }
 
     private void remember(Long executionRecordId, String summary, String rawPayloadJson) {
@@ -171,9 +148,4 @@ public class BatteryHeadOpenRunGuard {
     private record Reported(Integer remainFlySeconds, String electricity, boolean fromFullCharge, String rawPayloadJson) {
     }
 
-    private record EquipmentFlightBudget(Integer fullBatterySeconds, Object dischargeCurve) {
-        static EquipmentFlightBudget empty() {
-            return new EquipmentFlightBudget(null, null);
-        }
-    }
 }

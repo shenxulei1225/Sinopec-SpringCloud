@@ -5,6 +5,8 @@ import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendP
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionAppendProcessRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionDayAccountPageDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionMarkProcessReqDTO;
+import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionMarkProcessRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchReqDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartBatchRespDTO;
 import cn.cheers.x.module.dynamicbusiness.api.execution.dto.TaskExecutionStartReqDTO;
@@ -55,6 +57,11 @@ public interface TaskExecutionSessionApi {
     @Operation(summary = "往这次执行的账里记一条过程")
     CommonResult<TaskExecutionAppendProcessRespDTO> appendProcess(
             @Valid @RequestBody TaskExecutionAppendProcessReqDTO req);
+
+    @PostMapping(PREFIX + "/mark-process-event")
+    @Operation(summary = "按消息编号把已有下发事件标成设备已接收或设备已响应")
+    CommonResult<TaskExecutionMarkProcessRespDTO> markProcessEvent(
+            @Valid @RequestBody TaskExecutionMarkProcessReqDTO req);
 
     @PostMapping(PREFIX + "/append-pose")
     @Operation(summary = "往这次执行另存一个回放位置点")

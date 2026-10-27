@@ -84,6 +84,22 @@ class ProtocolBookAdmissionTest {
         assertTrue(uav.supports(event("500202", Map.of()).identity()));
     }
 
+    @Test
+    void standardEvent_isDeliveredWithoutAnOpcode() {
+        ProtocolBookAdmission admission = admission(Set.of(500104), "robot-ws");
+        DeviceProtocolVersionCatalog versions = versionCatalog("robot-ws");
+        InspectionDeviceUplinkApi robotApi = mock(InspectionDeviceUplinkApi.class);
+        when(robotApi.notify(any())).thenReturn(CommonResult.success(true));
+        DeviceTypeUplinkProcessor robot = new DeviceTypeUplinkProcessor(
+                DeviceTypeUplinkProcessorConfiguration.ROBOT, versions, robotApi);
+        RegisteredUplinkProcessorDispatcher dispatcher = new RegisteredUplinkProcessorDispatcher(
+                List.of(robot), admission);
+
+        dispatcher.consume(event("inspection_command_accepted", Map.of("taskId", "923543")));
+
+        verify(robotApi).notify(any());
+    }
+
     private static ProtocolBookAdmission admission(Set<Integer> opcodes, String version) {
         DeviceProtocolVersionCatalog versions = versionCatalog(version);
         ProtocolInstructionCatalog catalog = mock(ProtocolInstructionCatalog.class);

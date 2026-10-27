@@ -35,4 +35,10 @@ public class TaskExchangeTranscriptReqDTO {
      * 报文里的任务 id 或飞行编号仍优先。没有这两处时才用它。
      */
     private Long executionRecordId;
+
+    /**
+     * 说明书上的转发主题编码。页面按这个编码的名字规则收这一行。
+     * 空着表示这一包没有页面事件。不要另编一条主题。
+     */
+    private String eventTopicCode;
 }

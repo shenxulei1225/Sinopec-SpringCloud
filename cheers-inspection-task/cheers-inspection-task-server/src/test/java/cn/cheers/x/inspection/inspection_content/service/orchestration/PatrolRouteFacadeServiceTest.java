@@ -338,10 +338,108 @@ class PatrolRouteFacadeServiceTest {
         assertEquals(FACILITY_ID, persistCaptor.getValue().getFacilityId());
         assertEquals(1, persistCaptor.getValue().getSlots().size());
         assertEquals(committedJobId, persistCaptor.getValue().getSlots().get(0).getRuntimeJobId());
+        assertEquals(SlotStatus.PLANNED, persistCaptor.getValue().getSlots().get(0).getSlotStatus());
         verify(patrolTaskEntityStore).clearOrchestrationPreview(TASK_ID);
         verify(patrolTaskEntityStore).writeOrchestrationCommittedState(TASK_ID, committedJobId, Boolean.TRUE);
         verify(patrolTaskEntityStore, never()).clearGeneratedMark(any());
         verify(patrolOpenRunMaterializeService).materializeAllSlots(any(), any());
+    }
+
+    @Test
+    @DisplayName("生成任务不把旧占窗完成态抄进新计划")
+    void commitOrchestration_previewCompleted_persistsPlanned() {
+        PatrolOrchestrationRunReqVO reqVO = orchestrationReq();
+        ScheduleSlotDTO preview = slot("slot-a", "ephemeral", "2026-07-21T08:00:00+08:00",
+                "2026-07-21T09:00:00+08:00", "res-1");
+        preview.setSlotStatus(SlotStatus.COMPLETED);
+        preview.setActualEnd("58790-09-11T09:40:57+08:00");
+        List<ScheduleSlotDTO> previewSlots = List.of(preview);
+        Map<String, Object> planned = new LinkedHashMap<>();
+        planned.put("stopIds", List.of("sta-1", "sta-2"));
+        PatrolTaskDraft draft = new PatrolTaskDraft(
+                TASK_ID, "task", "巡检", FACILITY_ID, "UAV", null, null, null,
+                sampleStepTree(), planned, "draft", 2,
+                "sta-start", "sta-end", null, Boolean.FALSE, null, null, previewSlots, null, null, null);
+        when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draft);
+        when(patrolTaskEntityStore.readOrchestrationPreviewSlots(TASK_ID)).thenReturn(previewSlots);
+        stubArrangePolicy("priority_preempt", 15);
+        when(runtimePersistApi.persist(any())).thenReturn(CommonResult.success(true));
+        when(runtimeQueryApi.listSlotsByJobId(any())).thenAnswer(invocation -> {
+            String jobId = invocation.getArgument(0);
+            return CommonResult.success(List.of(slot("slot-a", jobId, "2026-07-21T08:00:00+08:00",
+                    "2026-07-21T09:00:00+08:00", "res-1")));
+        });
+        when(runtimeQueryApi.listSlots(any(), any(), any(), any(), any(), any()))
+                .thenReturn(CommonResult.success(List.of()));
+        when(runtimeSlotWriteApi.finalizePlannedSchedule(any())).thenReturn(CommonResult.success(true));
+
+        facadeService.commitOrchestration(reqVO);
+
+        ArgumentCaptor<RuntimePersistReqDTO> persistCaptor = ArgumentCaptor.forClass(RuntimePersistReqDTO.class);
+        verify(runtimePersistApi).persist(persistCaptor.capture());
+        ScheduleSlotDTO written = persistCaptor.getValue().getSlots().get(0);
+        assertEquals(SlotStatus.PLANNED, written.getSlotStatus());
+        assertEquals(null, written.getActualEnd());
+    }
+
+    @Test
+    @DisplayName("待执行账不在时按还没开跑的计划点补写；已开跑的账不另写")
+    void rewriteMissingPendingLedgers_writesPlannedSlotsWithoutNewJob() {
+        PatrolTaskDraft draft = new PatrolTaskDraft(
+                TASK_ID, "task", "巡检", FACILITY_ID, "UAV", null, null, null,
+                null, null, "enabled", 2,
+                null, null, RUNTIME_JOB_ID, Boolean.TRUE, null, null, null, null, null, null);
+        when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draft);
+        ScheduleSlotDTO planned = slot("slot-a", RUNTIME_JOB_ID, "2099-10-27T18:00:00+08:00",
+                "2099-10-27T19:00:00+08:00", "res-1");
+        ScheduleSlotDTO done = slot("slot-b", RUNTIME_JOB_ID, "2026-10-27T09:00:00+08:00",
+                "2026-10-27T10:00:00+08:00", "res-2");
+        done.setSlotStatus(SlotStatus.COMPLETED);
+        when(patrolOpenRunMaterializeService.hasStartedLedger(eq(TASK_ID), any())).thenReturn(false);
+        when(patrolOpenRunMaterializeService.hasStartedLedger(TASK_ID, "slot-b")).thenReturn(true);
+        when(runtimeQueryApi.listSlotsByJobId(RUNTIME_JOB_ID))
+                .thenReturn(CommonResult.success(List.of(planned, done)));
+
+        facadeService.rewriteMissingPendingLedgers(TASK_ID);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ScheduleSlotDTO>> written = ArgumentCaptor.forClass(List.class);
+        verify(patrolOpenRunMaterializeService).writeMissingPendingLedgers(eq(draft), written.capture());
+        assertEquals(List.of("slot-a"), written.getValue().stream().map(ScheduleSlotDTO::getSlotId).toList());
+        verify(runtimePersistApi, never()).persist(any());
+        verify(runtimeSlotWriteApi, never()).updateSlotStatus(any());
+        verify(patrolReservationAutoStartScheduler).register(any(), eq(TASK_ID));
+    }
+
+    @Test
+    @DisplayName("占窗标成完成但没有开跑账时，改回计划中并补写待执行")
+    void rewriteMissingPendingLedgers_leftoverCompletedWithoutLedger_writesPending() {
+        PatrolTaskDraft draft = new PatrolTaskDraft(
+                TASK_ID, "task", "巡检", FACILITY_ID, "UAV", null, null, null,
+                null, null, "enabled", 2,
+                null, null, RUNTIME_JOB_ID, Boolean.TRUE, null, null, null, null, null, null);
+        when(patrolTaskEntityStore.require(TASK_ID)).thenReturn(draft);
+        ScheduleSlotDTO leftover = slot("slot-b", RUNTIME_JOB_ID, "2099-10-27T09:00:00+08:00",
+                "2099-10-27T10:00:00+08:00", "res-2");
+        leftover.setSlotStatus(SlotStatus.COMPLETED);
+        when(patrolOpenRunMaterializeService.hasStartedLedger(TASK_ID, "slot-b")).thenReturn(false);
+        when(runtimeQueryApi.listSlotsByJobId(RUNTIME_JOB_ID))
+                .thenReturn(CommonResult.success(List.of(leftover)));
+        when(runtimeSlotWriteApi.updateSlotStatus(any())).thenReturn(CommonResult.success(true));
+
+        facadeService.rewriteMissingPendingLedgers(TASK_ID);
+
+        ArgumentCaptor<RuntimeSlotStatusUpdateReqDTO> statusCaptor =
+                ArgumentCaptor.forClass(RuntimeSlotStatusUpdateReqDTO.class);
+        verify(runtimeSlotWriteApi).updateSlotStatus(statusCaptor.capture());
+        assertEquals("slot-b", statusCaptor.getValue().getSlotId());
+        assertEquals(SlotStatus.PLANNED, statusCaptor.getValue().getSlotStatus());
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ScheduleSlotDTO>> written = ArgumentCaptor.forClass(List.class);
+        verify(patrolOpenRunMaterializeService).writeMissingPendingLedgers(eq(draft), written.capture());
+        assertEquals(List.of("slot-b"), written.getValue().stream().map(ScheduleSlotDTO::getSlotId).toList());
+        assertEquals(SlotStatus.PLANNED, written.getValue().get(0).getSlotStatus());
+        verify(runtimePersistApi, never()).persist(any());
     }
 
     @Test

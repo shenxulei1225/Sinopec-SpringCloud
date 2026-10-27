@@ -25,10 +25,14 @@ class PushPageConnectionTest {
     }
 
     @Test
-    void allowsOnlyTheThreeTopics() {
+    void allowsPageTopics() {
         assertTrue(PushPageConnection.topicAllowed("alarm/facility/12"));
         assertTrue(PushPageConnection.topicAllowed("device/88/position"));
         assertTrue(PushPageConnection.topicAllowed("device/88/status"));
+        assertTrue(PushPageConnection.topicAllowed("inspection/execution/15/#"));
+        assertTrue(PushPageConnection.topicAllowed("inspection/device/dock-1/#"));
         assertFalse(PushPageConnection.topicAllowed("device/88/alarm"));
+        assertFalse(PushPageConnection.topicAllowed("inspection/execution/0/#"));
+        assertFalse(PushPageConnection.topicAllowed("inspection/execution/15/photo"));
     }
 }

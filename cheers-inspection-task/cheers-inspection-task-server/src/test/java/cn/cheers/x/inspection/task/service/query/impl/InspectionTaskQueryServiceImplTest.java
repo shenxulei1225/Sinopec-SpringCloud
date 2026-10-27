@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
@@ -64,6 +65,7 @@ class InspectionTaskQueryServiceImplTest {
         when(readSupport.load(List.of(generated))).thenReturn(context);
         when(reviewService.review(generated, context))
                 .thenReturn(new InspectionTaskGeneratedInputReviewRespVO());
+        when(runtimeQueryApi.listSlotsByJobId("job-1")).thenReturn(CommonResult.success(List.of()));
         InspectionTaskPageReqVO req = new InspectionTaskPageReqVO();
         req.setTaskName("罐区");
         req.setStatus(1);
@@ -111,6 +113,32 @@ class InspectionTaskQueryServiceImplTest {
 
         assertEquals(1L, result.getTotal());
         assertNull(result.getList().get(0).getStatus());
+        verify(runtimeQueryApi, never()).listSlotsByJobId(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    @DisplayName("已生成任务的列表写出排期窗口和计划点数")
+    void getTaskPage_generatedTask_fillsWindowFromOccupiedSlots() {
+        PatrolTaskDraft generated = draft("job-1", "enabled", true);
+        when(store.page(null, null, 1, 10))
+                .thenReturn(new PageResult<>(List.of(generated), 1L));
+        when(readSupport.load(List.of(generated)))
+                .thenReturn(mock(GeneratedCheckInputReviewReadContext.class));
+        when(reviewService.review(org.mockito.ArgumentMatchers.eq(generated), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new InspectionTaskGeneratedInputReviewRespVO());
+        when(runtimeQueryApi.listSlotsByJobId("job-1")).thenReturn(CommonResult.success(List.of(
+                ScheduleSlotDTO.builder().slotId("a").plannedStart("2026-10-01T09:00:00+08:00").build(),
+                ScheduleSlotDTO.builder().slotId("b").plannedStart("2026-10-31T18:00:00+08:00").build())));
+        InspectionTaskPageReqVO req = new InspectionTaskPageReqVO();
+        req.setPageNo(1);
+        req.setPageSize(10);
+
+        PageResult<InspectionTaskSimpleRespVO> result = service.getTaskPage(req);
+
+        InspectionTaskSimpleRespVO row = result.getList().get(0);
+        assertEquals(LocalDate.of(2026, 10, 1), row.getHorizonStartDate());
+        assertEquals(LocalDate.of(2026, 10, 31), row.getHorizonEndDate());
+        assertEquals(2, row.getScheduleCount());
     }
 
     @Test

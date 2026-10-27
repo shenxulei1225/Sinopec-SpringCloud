@@ -2,11 +2,13 @@ package cn.cheers.x.inspection.task.api;
 
 import cn.cheers.x.device.protocolgateway.api.datacollection.CollectionSample;
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.inspection.task.api.dto.CommandEventStatusReqDTO;
 import cn.cheers.x.inspection.task.api.dto.PatrolGeneratedTaskDownlinkDTO;
 import cn.cheers.x.inspection.task.api.dto.PatrolGeneratedTaskOptionDTO;
 import cn.cheers.x.inspection.task.api.dto.ReplayPoseReqDTO;
 import cn.cheers.x.inspection.task.api.dto.TaskExchangeTranscriptReqDTO;
 import cn.cheers.x.inspection.task.api.dto.TaskExchangeTranscriptRespDTO;
+import cn.cheers.x.inspection.task.service.execution.ExecutionEventLedger;
 import cn.cheers.x.inspection.task.service.execution.InspectionDeviceUplinkService;
 import cn.cheers.x.inspection.task.service.execution.monitor.PatrolGeneratedTaskLookup;
 import cn.cheers.x.inspection.task.service.execution.monitor.TaskExchangeTranscriptService;
@@ -36,6 +38,9 @@ public class InspectionDeviceUplinkApiImpl implements InspectionDeviceUplinkApi 
     @Resource
     private TaskExchangeTranscriptService taskExchangeTranscriptService;
 
+    @Resource
+    private ExecutionEventLedger executionEventLedger;
+
     @Override
     public CommonResult<Boolean> notify(CollectionSample sample) {
         inspectionDeviceUplinkService.applyCollection(sample);
@@ -55,6 +60,16 @@ public class InspectionDeviceUplinkApiImpl implements InspectionDeviceUplinkApi 
     @Override
     public CommonResult<PatrolGeneratedTaskDownlinkDTO> generatedTaskRecord(String deviceId, long executionRecordId) {
         return success(patrolGeneratedTaskLookup.forRecord(deviceId, executionRecordId));
+    }
+
+    @Override
+    public CommonResult<Boolean> markCommandReceived(CommandEventStatusReqDTO req) {
+        if (req == null) {
+            executionEventLedger.markReceived(null, null);
+            return success(Boolean.FALSE);
+        }
+        executionEventLedger.markReceived(req.getExecutionRecordId(), req.getMsgId());
+        return success(Boolean.TRUE);
     }
 
     @Override

@@ -70,7 +70,8 @@ public class RuntimePersistServiceImpl implements RuntimePersistService {
         }
         for (ResourceReservationDTO reservation : reservations) {
             ResourceReservationDO row = RuntimeConvert.toReservationDo(reservation, facilityId);
-            // 生成任务再次落同一份试排窗口编号；上次中止留下的行必须更新，不能当新行插入。
+            // 生成任务再次落同一份试排窗口编号；上次中止或残留完成留下的行必须更新，不能当新行插入。
+            // 实测起止用 ALWAYS 策略，计划中写入时清掉错误结束时刻。
             if (StringUtils.hasText(row.getId()) && resourceReservationMapper.selectById(row.getId()) != null) {
                 resourceReservationMapper.updateById(row);
             } else {
