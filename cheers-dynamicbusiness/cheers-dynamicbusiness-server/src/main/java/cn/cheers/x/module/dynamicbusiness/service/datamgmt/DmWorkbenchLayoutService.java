@@ -43,6 +43,7 @@ import java.util.UUID;
  *   <li>模型管理页是另一份布局：分类栏和型号栏开着，实体栏关掉。不套用数据页那条。</li>
  * </ul>
  * 显示名用底座类型 / 分类种类 / 本目录中文名，不用类型编码冒充 label。
+ * 详情栏名称同样写成所属类型中文名，创建时覆盖模版占位「区段C栏」。
  * 创建时同步写好分类/型号/实体栏默认展示配置 propsId（经资源服务）；不负责打开页现造 props。
  * 不负责：按固定区段名字猜区域；读路径把旧区段语义映射成新区；另起第二套模版。
  */
@@ -383,7 +384,8 @@ public class DmWorkbenchLayoutService {
 
     /**
      * 把模版里的一栏盖上本目录的类型码后写入布局。
-     * 分类、型号、对象、详情各自写自己的类型码和区域。不改调用方已经占用的栏编号。
+     * 分类、型号、对象、详情各自写自己的类型码和区域。详情栏名称写成所属类型中文名。
+     * 不改调用方已经占用的栏编号。
      */
     private void insertStampedColumn(DmDataTabLayoutDO src,
                                      Long layoutId,
@@ -477,10 +479,10 @@ public class DmWorkbenchLayoutService {
                     ? new LinkedHashMap<>(row.getColumnMeta())
                     : new LinkedHashMap<>();
             meta.put("columnSection", sourceSectionId);
-            if (!metaHasText(meta, "label")) {
-                meta.put("label", "区段栏");
-            }
             meta.put("entityEntityTypeCode", storageCode);
+            // 关系图和栏配置都读这个名称。模版占位「区段C栏」必须换成所属类型中文名。
+            meta.put("label", DmDataTabLayoutBootstrapMeta.detailInstanceLabel(
+                    storageDisplayName, storageCode));
             if (!(meta.get("sectionWidthPx") instanceof Number)) {
                 meta.put("sectionWidthPx", DmDataTabLayoutBootstrapMeta.DETAIL_SECTION_WIDTH_PX);
             }

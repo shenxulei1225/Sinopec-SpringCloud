@@ -45,6 +45,9 @@ public class EntityRespVO {
     @Schema(description = "各 REF/REFMulti 字段的关联数据块；仅 includeAssociations=true 时填充")
     private List<AssociationsVO> associations;
 
+    @Schema(description = "点位对应字段的说明。只在这次详情返回，不写回点位。", accessMode = Schema.AccessMode.READ_ONLY)
+    private String collectionPointNote;
+
     // ---------- 兼容读路径（由 baseFields 投影，勿用于 Write） ----------
 
     @Schema(description = "业务类型编码（= baseFields.entityTypeCode）", accessMode = Schema.AccessMode.READ_ONLY)
@@ -78,7 +81,7 @@ public class EntityRespVO {
         }
     }
 
-    @Schema(description = "父实体ID（= baseFields.parentId）", accessMode = Schema.AccessMode.READ_ONLY)
+    @Schema(description = "父实体编号。基础字段里的上级若已带名称，这里仍只返回编号", accessMode = Schema.AccessMode.READ_ONLY)
     public Long getParentId() {
         return readBaseLong("parentId");
     }
@@ -96,6 +99,13 @@ public class EntityRespVO {
             return null;
         }
         Object value = baseFields.get(key);
+        if (value instanceof Map<?, ?> map) {
+            Object id = map.get("id");
+            if (id == null) {
+                id = map.get("entityId");
+            }
+            value = id;
+        }
         if (value instanceof Number number) {
             return number.longValue();
         }

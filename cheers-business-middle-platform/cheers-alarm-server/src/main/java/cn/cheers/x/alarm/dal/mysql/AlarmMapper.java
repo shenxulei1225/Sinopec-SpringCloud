@@ -42,7 +42,7 @@ public interface AlarmMapper extends BaseMapperX<AlarmDO> {
         
         // 如果只查询实时告警（未关闭）
         if (Boolean.TRUE.equals(reqVO.getRealTimeOnly())) {
-            wrapper.ne(AlarmDO::getAlarmStatus, AlarmStatusEnum.CLOSED.getStatus());
+            wrapper.notIn(AlarmDO::getAlarmStatus, AlarmStatusEnum.settled());
         }
         
         return selectPage(reqVO, wrapper);
@@ -65,7 +65,7 @@ public interface AlarmMapper extends BaseMapperX<AlarmDO> {
      */
     default List<AlarmDO> selectRealTimeAlarms() {
         return selectList(new LambdaQueryWrapperX<AlarmDO>()
-                .ne(AlarmDO::getAlarmStatus, AlarmStatusEnum.CLOSED.getStatus())
+                .notIn(AlarmDO::getAlarmStatus, AlarmStatusEnum.settled())
                 .orderByDesc(AlarmDO::getCreateTime));
     }
 
@@ -81,7 +81,7 @@ public interface AlarmMapper extends BaseMapperX<AlarmDO> {
         return selectOne(new LambdaQueryWrapperX<AlarmDO>()
                 .eq(AlarmDO::getDeviceId, deviceId)
                 .eq(AlarmDO::getAlarmTypeId, alarmTypeId)
-                .ne(AlarmDO::getAlarmStatus, AlarmStatusEnum.CLOSED.getStatus())
+                .notIn(AlarmDO::getAlarmStatus, AlarmStatusEnum.settled())
                 .ge(AlarmDO::getCreateTime, startTime)
                 .orderByDesc(AlarmDO::getCreateTime)
                 .last("LIMIT 1"));
@@ -111,7 +111,7 @@ public interface AlarmMapper extends BaseMapperX<AlarmDO> {
     default Long selectCountByLevel(String alarmLevel) {
         return selectCount(new LambdaQueryWrapperX<AlarmDO>()
                 .eq(AlarmDO::getAlarmLevel, alarmLevel)
-                .ne(AlarmDO::getAlarmStatus, AlarmStatusEnum.CLOSED.getStatus()));
+                .notIn(AlarmDO::getAlarmStatus, AlarmStatusEnum.settled()));
     }
 
     /**
@@ -157,7 +157,7 @@ public interface AlarmMapper extends BaseMapperX<AlarmDO> {
     default Long countRealTimeAlarmByLevel(String alarmLevel) {
         return selectCount(new LambdaQueryWrapperX<AlarmDO>()
                 .eq(AlarmDO::getAlarmLevel, alarmLevel)
-                .ne(AlarmDO::getAlarmStatus, AlarmStatusEnum.CLOSED.getStatus()));
+                .notIn(AlarmDO::getAlarmStatus, AlarmStatusEnum.settled()));
     }
 
     /**
@@ -208,7 +208,19 @@ public interface AlarmMapper extends BaseMapperX<AlarmDO> {
      */
     default Long countActiveAlarms() {
         return selectCount(new LambdaQueryWrapperX<AlarmDO>()
-                .ne(AlarmDO::getAlarmStatus, AlarmStatusEnum.CLOSED.getStatus()));
+                .notIn(AlarmDO::getAlarmStatus, AlarmStatusEnum.settled()));
+    }
+
+    /**
+     * 这台设备上、这条规则还亮着的告警。已关闭和已消除不算。
+     */
+    default AlarmDO selectActiveByDeviceAndRule(Long deviceId, Long ruleId) {
+        return selectOne(new LambdaQueryWrapperX<AlarmDO>()
+                .eq(AlarmDO::getDeviceId, deviceId)
+                .eq(AlarmDO::getRuleId, ruleId)
+                .notIn(AlarmDO::getAlarmStatus, AlarmStatusEnum.settled())
+                .orderByDesc(AlarmDO::getCreateTime)
+                .last("LIMIT 1"));
     }
 
 }

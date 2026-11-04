@@ -1,6 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.service.model.governance;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
@@ -22,7 +23,9 @@ import java.util.Objects;
  * 猜测身份；缺少当前用户或有效站场时直接拒绝本地型号写入。</p>
  *
  * <p>删除权威：软删型号本体并清字段分配/分类关联；有实体占用则拒绝。
- * 禁止把删除落成 {@code status=0} 停用。</p>
+ * 禁止把删除落成 {@code status=0} 停用。启用和停用走型号状态。
+ * 超级管理员可以改公司规格和场站本地型号的状态，也可以删除这两种型号。
+ * 普通用户仍按原规则：公司规格不能在普通保存里改状态，场站本地型号只能由创建人在发起站场删除。</p>
  */
 @Service
 @RequiredArgsConstructor
@@ -69,20 +72,21 @@ public class ModelGovernanceCommandServiceImpl implements ModelGovernanceCommand
     @Transactional(rollbackFor = Exception.class)
     public void deleteModel(Long modelId, Long effectiveFacilityId, Long currentUserId) {
         ModelDO model = requireModel(modelId);
-        boolean local = GOVERNANCE_LOCAL.equals(normalizeGovernanceStatus(model.getGovernanceStatus()));
-        if (local) {
-            if (currentUserId == null || !Objects.equals(currentUserId, model.getCreatorUserId())) {
-                throw new ServiceException(403, "只能删除自己创建的本地型号");
-            }
-            if (effectiveFacilityId == null) {
-                throw new ServiceException(400, "删除本地型号必须指定当前有效站场");
-            }
-            if (!Objects.equals(effectiveFacilityId, model.getOriginFacilityId())) {
-                throw new ServiceException(403, "只能在本地型号的发起站场删除");
-            }
-        } else {
-            // 公司规格或无发起站场的种子：须全网型号治理能力；删除仍是软删，不是停用
-            if (!capabilityChecker.canManageNetworkModelData()) {
+        // 超级管理员：公司规格和场站本地型号都能删。下面的占用检查仍然生效。
+        if (!SecurityFrameworkUtils.isSuperAdmin()) {
+            boolean local = GOVERNANCE_LOCAL.equals(normalizeGovernanceStatus(model.getGovernanceStatus()));
+            if (local) {
+                if (currentUserId == null || !Objects.equals(currentUserId, model.getCreatorUserId())) {
+                    throw new ServiceException(403, "只能删除自己创建的本地型号");
+                }
+                if (effectiveFacilityId == null) {
+                    throw new ServiceException(400, "删除本地型号必须指定当前有效站场");
+                }
+                if (!Objects.equals(effectiveFacilityId, model.getOriginFacilityId())) {
+                    throw new ServiceException(403, "只能在本地型号的发起站场删除");
+                }
+            } else if (!capabilityChecker.canManageNetworkModelData()) {
+                // 公司规格或无发起站场的种子：须全网型号治理能力；删除仍是软删，不是停用
                 throw new ServiceException(403, "无权删除公司规格");
             }
         }
@@ -113,7 +117,9 @@ public class ModelGovernanceCommandServiceImpl implements ModelGovernanceCommand
         if (requested != null && !Objects.equals(requested, existingModel.getGovernanceStatus())) {
             throw new ServiceException(400, "治理状态不能通过普通更新修改");
         }
-        if (GOVERNANCE_COMPANY.equals(existingModel.getGovernanceStatus())
+        // 启用、停用就是改型号状态。超级管理员对公司规格和场站本地型号都可以改。
+        if (!SecurityFrameworkUtils.isSuperAdmin()
+                && GOVERNANCE_COMPANY.equals(existingModel.getGovernanceStatus())
                 && requestedStatus != null
                 && !Objects.equals(requestedStatus, existingModel.getStatus())) {
             throw new ServiceException(400, "公司规格状态不能通过普通更新修改");

@@ -1,5 +1,6 @@
 package cn.cheers.x.alarm.api;
 
+import cn.cheers.x.alarm.api.dto.AlarmEliminateReqDTO;
 import cn.cheers.x.alarm.api.dto.AlarmTriggerReqDTO;
 import cn.cheers.x.alarm.api.dto.AlarmTriggerRespDTO;
 import cn.cheers.x.alarm.controller.admin.vo.alarm.AlarmRespVO;
@@ -42,5 +43,10 @@ public class AlarmTriggerApiImpl implements AlarmTriggerApi {
         resp.setAlarmId(created.getId());
         resp.setAlarmCode(created.getAlarmCode());
         return success(resp);
+    }
+
+    @Override
+    public CommonResult<Boolean> eliminate(AlarmEliminateReqDTO req) {
+        return success(alarmService.eliminateBySignal(req.getDeviceId(), req.getRuleId()));
     }
 }

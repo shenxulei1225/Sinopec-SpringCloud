@@ -22,6 +22,7 @@ import cn.cheers.x.module.dynamicbusiness.service.category.CategoryService;
 import cn.cheers.x.module.dynamicbusiness.service.category.EntityAssociationModeSupport;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.refcategory.EntityCategoryRefWritebackService;
+import cn.cheers.x.module.dynamicbusiness.dataprocess.AlarmFacilityNotice;
 import cn.cheers.x.module.dynamicbusiness.service.model.relation.ModelCategoryRelationService;
 import cn.cheers.x.module.dynamicbusiness.util.SparseSortUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -79,6 +80,11 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
     @Resource
     @Lazy
     private CategoryEntityLinkService categoryEntityLinkService;
+
+    /** 告警改了挂的分类后，保存完成再推这座站的统计。不管别的目录。 */
+    @Resource
+    @Lazy
+    private AlarmFacilityNotice alarmFacilityNotice;
 
     // ==================== 关联身份解析 ====================
 
@@ -545,6 +551,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                 entityId, categoryId, storageEntityTypeCode, domain);
         syncEntityModelToCategory(entityId, categoryId, storageEntityTypeCode);
         applyAssociationModeAndRefWriteback(entityId, categoryId, storageEntityTypeCode);
+        alarmFacilityNotice.schedule(storageEntityTypeCode, List.of(entityId));
         return EntityCategoryAssociationRespVO.builder()
                 .operationType("ASSOCIATE")
                 .entityId(entityId)
@@ -595,6 +602,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         unsyncModelsAfterRemovedEntityCategoryEdges(removedEdges);
         log.info("删除实体-分类关联: entityId={}, categoryId={}, entityTypeCode={}", entityId, categoryId, storageEntityTypeCode);
         entityCategoryRefWritebackService.afterDisassociated(entityId, categoryId, storageEntityTypeCode);
+        alarmFacilityNotice.schedule(storageEntityTypeCode, List.of(entityId));
         return EntityCategoryAssociationRespVO.builder()
                 .operationType("DISASSOCIATE")
                 .entityId(entityId)
@@ -698,6 +706,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             unsyncEntityModelFromCategoryIfLast(entityId, categoryId, storageEntityTypeCode);
         }
 
+        alarmFacilityNotice.schedule(storageEntityTypeCode, List.of(entityId));
         log.info("批量取消实体与分类的关联: entityId={}, categoryIds={}, entityTypeCode={}", entityId, categoryIds, storageEntityTypeCode);
         return EntityCategoryAssociationRespVO.builder()
                 .operationType("BATCH_DISASSOCIATE")
@@ -813,6 +822,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         // 目标分类上同步型号–分类（幂等；含已在目标集中的旧关联，便于补齐历史缺口）
         syncEntityModelToCategories(entityId, validCategoryIds, storageEntityTypeCode);
 
+        alarmFacilityNotice.schedule(storageEntityTypeCode, List.of(entityId));
         // Step 9: 返回执行结果（成功=有效目标分类数，失败=无效分类数）
         int successCount = validCategoryIds.size();
         return EntityCategoryAssociationRespVO.builder()
@@ -902,6 +912,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         for (Long entityId : refTargets) {
             entityCategoryRefWritebackService.afterDisassociated(entityId, categoryId, storageEntityTypeCode);
         }
+        alarmFacilityNotice.schedule(storageEntityTypeCode, entityIds);
 
         return BatchEntityCategoryAssociationRespVO.builder()
                 .operationType("BATCH_DISASSOCIATE")
@@ -1098,6 +1109,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
 
         log.info("批量关联实体到分类: entityIds={}, categoryIds={}, successEntityCount={}, failEntityCount={}",
                 entityIds, categoryIds, successEntityCount, failEntityCount);
+        alarmFacilityNotice.schedule(storageEntityTypeCode, entityIds);
 
         return BatchEntityCategoryAssociationRespVO.builder()
                 .operationType("BATCH_ASSOCIATE")
@@ -1159,6 +1171,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         }
 
         log.info("批量取消实体与分类的关联: entityIds={}, categoryIds={}, entityTypeCode={}", entityIds, categoryIds, entityTypeCode);
+        alarmFacilityNotice.schedule(storageEntityTypeCode, entityIds);
 
         return BatchEntityCategoryAssociationRespVO.builder()
                 .operationType("BATCH_DISASSOCIATE")
@@ -1626,6 +1639,7 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
 
         log.info("批量关联实体到分类: entityId={}, categoryIds={}, successCount={}, failCount={}",
                 entityId, categoryIds, successCount, failItems.size());
+        alarmFacilityNotice.schedule(storageEntityTypeCode, List.of(entityId));
         return new BatchAssociateResult(successCount, distinctSuccessCategoryIds, failItems);
     }
 

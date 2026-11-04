@@ -81,6 +81,10 @@ public class FieldServiceImpl implements FieldService {
         }
         field.setCode(code);
         field.setTenantId(tenantId);
+        // 系统字段是为了不让普通用户删掉、改坏业务。只有超级管理员可以新建。
+        if (isSystemSource(field.getSource()) && !SecurityFrameworkUtils.isSuperAdmin()) {
+            throw new ServiceException(403, "只有超级管理员可以创建系统字段");
+        }
         
         // 智能默认可查询：根据字段类型自动设置 is_searchable 和 is_sortable
         // 需求：FR-081, FR-082, FR-083, FR-084
@@ -101,8 +105,9 @@ public class FieldServiceImpl implements FieldService {
     @Override
     public void updateField(FieldUpdateReqVO reqVO) {
         FieldDO db = getFieldDO(reqVO.getId());
-        // 系统自带字段（含组织上级、种子目录字段）：创建时配好，字段库不允许改
-        if (isSystemField(db)) {
+        // 系统字段不让普通用户改。超级管理员可以改名称、选项和说明。来源仍是系统字段，不能改成自定义。
+        boolean systemField = isSystemField(db);
+        if (systemField && !SecurityFrameworkUtils.isSuperAdmin()) {
             throw new ServiceException(400, "系统字段不允许修改；引用目标仅自定义「引用数据」字段可配置");
         }
         validateUnit(reqVO.getType(), reqVO.getUnit());
@@ -113,6 +118,9 @@ public class FieldServiceImpl implements FieldService {
         applyRefModelConfig(update, reqVO.getType(), reqVO.getOptions(), reqVO.getTargetEntityType());
         applyEntityRefProvider(update, reqVO.getTargetEntityType());
         update.setTenantId(tenantId);
+        if (systemField) {
+            update.setSource(db.getSource());
+        }
         fieldMapper.updateById(update);
         evictFieldCache(reqVO.getId());
         evictFieldListCache(oldType);
@@ -362,7 +370,11 @@ public class FieldServiceImpl implements FieldService {
     }
 
     private boolean isSystemField(FieldDO db) {
-        return db != null && "SYSTEM".equalsIgnoreCase(db.getSource());
+        return db != null && isSystemSource(db.getSource());
+    }
+
+    private static boolean isSystemSource(String source) {
+        return "SYSTEM".equalsIgnoreCase(source);
     }
 
     private void toggleStatus(Long id, Integer status) {

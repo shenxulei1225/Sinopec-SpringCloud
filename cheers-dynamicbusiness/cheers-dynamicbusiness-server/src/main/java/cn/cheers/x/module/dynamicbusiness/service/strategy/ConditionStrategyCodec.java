@@ -68,14 +68,20 @@ final class ConditionStrategyCodec {
             all.add(item);
         }
         if (StringUtils.hasText(req.getCompareField())) {
-            if (!StringUtils.hasText(req.getCompareOp()) || !StringUtils.hasText(req.getCompareValue())) {
-                throw new ServiceException(400, "要比哪个数时，比较方式和阈值都要填");
-            }
+            boolean statusOnly = RegisteredActions.REFRESH_DEVICE_STATUS.equals(req.getActionCode())
+                    && !StringUtils.hasText(req.getCompareOp());
             JSONObject item = new JSONObject();
-            item.put("type", "FIELD_COMPARE");
             item.put("field", req.getCompareField().trim());
-            item.put("op", req.getCompareOp().trim());
-            item.put("value", req.getCompareValue().trim());
+            if (statusOnly) {
+                item.put("type", "POINT_FIELD");
+            } else {
+                if (!StringUtils.hasText(req.getCompareOp()) || !StringUtils.hasText(req.getCompareValue())) {
+                    throw new ServiceException(400, "要比哪个数时，比较方式和阈值都要填");
+                }
+                item.put("type", "FIELD_COMPARE");
+                item.put("op", req.getCompareOp().trim());
+                item.put("value", req.getCompareValue().trim());
+            }
             all.add(item);
         }
         if (all.isEmpty()) {
@@ -88,15 +94,35 @@ final class ConditionStrategyCodec {
 
     static String encodeActionParams(ConditionStrategySaveReqVO req) {
         if (RegisteredActions.RAISE_ALARM.equals(req.getActionCode())) {
-            if (req.getAlarmTypeId() == null || !StringUtils.hasText(req.getAlarmLevel())
-                    || req.getDeviceId() == null || req.getLocationId() == null) {
-                throw new ServiceException(400, "新增一条告警必须填告警类型、级别、设备和位置，不能空着让系统猜");
+            // 采集结果到了：设备在关联表，位置用读数所在区段。不把一台设备写进策略参数。
+            // 人点了开始：事件上的设备是逻辑编号，策略上仍要写设备和位置，缺了就失败。
+            boolean fromSample = StrategyTriggerEventDTO.EVENT_COLLECTION_RECEIVED.equals(req.getEventType());
+            if (req.getAlarmTypeId() == null || !StringUtils.hasText(req.getAlarmLevel())) {
+                throw new ServiceException(400, "新增一条告警必须填告警类型和级别");
+            }
+            if (!fromSample && (req.getDeviceId() == null || req.getLocationId() == null)) {
+                throw new ServiceException(400, "新增一条告警必须填设备和位置，不能空着让系统猜");
             }
             JSONObject params = new JSONObject();
             params.put("alarmTypeId", req.getAlarmTypeId());
             params.put("alarmLevel", req.getAlarmLevel().trim());
-            params.put("deviceId", req.getDeviceId());
-            params.put("locationId", req.getLocationId());
+            params.put("deviceFromSample", fromSample);
+            params.put("locationFromSample", fromSample);
+            if (!fromSample) {
+                params.put("deviceId", req.getDeviceId());
+                params.put("locationId", req.getLocationId());
+            }
+            if (StringUtils.hasText(req.getSignalKind())) {
+                params.put("signalKind", req.getSignalKind().trim());
+            }
+            return params.toJSONString();
+        }
+        if (RegisteredActions.REFRESH_DEVICE_STATUS.equals(req.getActionCode())) {
+            if (!StringUtils.hasText(req.getCompareField())) {
+                throw new ServiceException(400, "刷新设备状态要写明是哪个点");
+            }
+            JSONObject params = new JSONObject();
+            params.put("signalKind", PointProcessingRule.STATUS);
             return params.toJSONString();
         }
         if (RegisteredActions.UPDATE_EXECUTION_STATUS.equals(req.getActionCode())
@@ -140,7 +166,7 @@ final class ConditionStrategyCodec {
                     if ("HAS_EXECUTION_STATUS".equals(item.getString("type"))) {
                         vo.setRequireExecutionStatus(true);
                     }
-                    if ("FIELD_COMPARE".equals(item.getString("type"))) {
+                    if ("FIELD_COMPARE".equals(item.getString("type")) || "POINT_FIELD".equals(item.getString("type"))) {
                         vo.setCompareField(item.getString("field"));
                         vo.setCompareOp(item.getString("op"));
                         vo.setCompareValue(item.getString("value"));
@@ -157,6 +183,7 @@ final class ConditionStrategyCodec {
                 vo.setLocationId(params.getLong("locationId"));
                 vo.setExecutionStatus(params.getString("executionStatus"));
                 vo.setRecipientUserIds(params.getString("recipientUserIds"));
+                vo.setSignalKind(params.getString("signalKind"));
             }
         }
         vo.setConditionText(conditionText(vo));

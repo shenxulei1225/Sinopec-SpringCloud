@@ -38,11 +38,32 @@ final class PushSubscriptionTopicLinks {
                 }
                 continue;
             }
-            if (Pattern.compile(PushTopicKinds.toRegex(pattern)).matcher(value).matches()) {
+            if (Pattern.compile(toRegex(pattern)).matcher(value).matches()) {
                 ids.add(row.getId());
             }
         }
         return ids;
+    }
+
+    static String toRegex(String namePattern) {
+        StringBuilder regex = new StringBuilder("^");
+        int cursor = 0;
+        while (cursor < namePattern.length()) {
+            int open = namePattern.indexOf('{', cursor);
+            if (open < 0) {
+                regex.append(Pattern.quote(namePattern.substring(cursor)));
+                break;
+            }
+            int close = namePattern.indexOf('}', open);
+            if (close < 0) {
+                throw new IllegalArgumentException("名字规则缺少右花括号: " + namePattern);
+            }
+            regex.append(Pattern.quote(namePattern.substring(cursor, open)));
+            regex.append("[A-Za-z0-9_-]+");
+            cursor = close + 1;
+        }
+        regex.append('$');
+        return regex.toString();
     }
 
     /**

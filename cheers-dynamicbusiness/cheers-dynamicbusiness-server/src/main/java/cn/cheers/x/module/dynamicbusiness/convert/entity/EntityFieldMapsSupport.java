@@ -145,6 +145,14 @@ public final class EntityFieldMapsSupport {
         if (value instanceof Number number) {
             return number.longValue();
         }
+        // 详情读回的上级是「编号 + 名称」。保存时仍只落编号。
+        if (value instanceof Map<?, ?> map) {
+            Object id = map.get("id");
+            if (id == null) {
+                id = map.get("entityId");
+            }
+            return id == null ? null : asLong(id);
+        }
         try {
             return Long.parseLong(String.valueOf(value).trim());
         } catch (NumberFormatException ex) {

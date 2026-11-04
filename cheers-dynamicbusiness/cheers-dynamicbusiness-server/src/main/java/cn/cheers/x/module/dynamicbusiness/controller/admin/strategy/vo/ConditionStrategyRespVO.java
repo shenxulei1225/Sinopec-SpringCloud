@@ -2,6 +2,8 @@ package cn.cheers.x.module.dynamicbusiness.controller.admin.strategy.vo;
 
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * 给人看的一条策略。
  */
@@ -48,9 +50,14 @@ public class ConditionStrategyRespVO {
 
     private Long deviceId;
 
+    /** 这条策略已经挂上的设备。空表示还没挂，不会套到全部设备。 */
+    private List<Long> deviceIds;
+
     private String executionStatus;
 
     private String recipientUserIds;
+
+    private String signalKind;
 
     private Integer priority;
 }

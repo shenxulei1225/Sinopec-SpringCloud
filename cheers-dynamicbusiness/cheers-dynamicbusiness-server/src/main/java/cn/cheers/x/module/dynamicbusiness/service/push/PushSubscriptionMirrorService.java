@@ -5,8 +5,10 @@ import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityDeleteReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdateReqVO;
+import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityRpcFacadeService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
+import cn.cheers.x.module.dynamicbusiness.service.entitytype.FacilityOwningFieldEnsureService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,18 +20,20 @@ import java.util.Map;
 
 /**
  * 把页面连接的订阅、取消、断开写进事件订阅目录。
- * 调用前目录种类必须能按固定规则准备好。
+ * 目录、型号、主题行必须已经在数据管理里写好。这里只查询再写订阅行。
  * 不负责把消息送到浏览器，也不在发消息时查询这本目录。
  */
 @Service
 public class PushSubscriptionMirrorService {
 
     @Resource
-    private PushCatalogEnsure pushCatalogEnsure;
+    private PushCatalogQueryService pushCatalogQueryService;
     @Resource
     private EntityService entityService;
     @Resource
     private EntityRpcFacadeService entityRpcFacadeService;
+    @Resource
+    private FacilityOwningFieldEnsureService facilityOwningFieldEnsureService;
 
     /**
      * 页面订了一个主题。主题不在目录种类里则拒绝，不建行。
@@ -37,24 +41,29 @@ public class PushSubscriptionMirrorService {
      * 这次听的事件主题挂到这一行的引用上，详情栏读这些引用。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void onSubscribed(String clientId, long userId, String topic, String subscriberName) {
+    public void onSubscribed(String clientId, long userId, String topic, String subscriberName, Long facilityId) {
         requirePageClient(clientId);
         requireLengths(clientId, topic);
         if (subscriberName == null || subscriberName.isBlank()) {
             throw new ServiceException(400, "这场订阅还写不出订阅方，没有写入订阅");
         }
-        if (!PushTopicKinds.matches(topic)) {
-            throw new ServiceException(400, "这个主题不在推送目录的种类里，没有写入订阅");
+        if (!pushCatalogQueryService.topicCatalogExists()) {
+            throw new ServiceException(500, "事件主题目录还没有，无法写入订阅");
         }
-        pushCatalogEnsure.ensure();
+        if (!pushCatalogQueryService.pageTopicAllowed(topic)) {
+            throw new ServiceException(400, "这个主题对不上事件主题已有的名字规则，没有写入订阅");
+        }
+        if (!pushCatalogQueryService.subscriptionCatalogExists()) {
+            throw new ServiceException(500, "事件订阅目录还没有，无法写入订阅");
+        }
         String trimmedClient = clientId.trim();
         String trimmedTopic = topic.trim();
         EntityRespDTO row = findByClient(trimmedClient);
         if (row == null) {
-            createSubscriber(trimmedClient, userId, trimmedTopic, subscriberName.trim());
+            createSubscriber(trimmedClient, userId, trimmedTopic, subscriberName.trim(), facilityId);
             return;
         }
-        String current = field(row, pushCatalogEnsure.fieldCode(PushCatalogCodes.TOPIC_NAME));
+        String current = field(row, pushCatalogQueryService.fieldCode(PushCatalogCodes.TOPIC_NAME));
         String names = appendTopicName(current, trimmedTopic);
         refreshSubscriber(row, subscriberName.trim(), names);
     }
@@ -66,10 +75,10 @@ public class PushSubscriptionMirrorService {
     @Transactional(rollbackFor = Exception.class)
     public void onUnsubscribed(String clientId, String topic) {
         requirePageClient(clientId);
-        if (topic == null || topic.isBlank() || !PushTopicKinds.matches(topic)) {
-            throw new ServiceException(400, "这个主题不在推送目录的种类里，没有删除订阅");
+        if (topic == null || topic.isBlank() || !pushCatalogQueryService.pageTopicAllowed(topic)) {
+            throw new ServiceException(400, "这个主题对不上事件主题已有的名字规则，没有删除订阅");
         }
-        if (!pushCatalogEnsure.subscriptionCatalogExists()) {
+        if (!pushCatalogQueryService.subscriptionCatalogExists()) {
             return;
         }
         EntityRespDTO row = findByClient(clientId.trim());
@@ -77,7 +86,7 @@ public class PushSubscriptionMirrorService {
             return;
         }
         String remaining = removeTopicName(
-                field(row, pushCatalogEnsure.fieldCode(PushCatalogCodes.TOPIC_NAME)), topic.trim());
+                field(row, pushCatalogQueryService.fieldCode(PushCatalogCodes.TOPIC_NAME)), topic.trim());
         if (remaining.isBlank()) {
             deleteRow(row.getId());
             return;
@@ -92,7 +101,7 @@ public class PushSubscriptionMirrorService {
     @Transactional(rollbackFor = Exception.class)
     public void onDisconnected(String clientId) {
         requirePageClient(clientId);
-        if (!pushCatalogEnsure.subscriptionCatalogExists()) {
+        if (!pushCatalogQueryService.subscriptionCatalogExists()) {
             return;
         }
         List<EntityRespDTO> rows = entityRpcFacadeService.list(PushCatalogCodes.SUBSCRIPTION_TYPE, null);
@@ -104,52 +113,34 @@ public class PushSubscriptionMirrorService {
             if (row == null || row.getId() == null) {
                 continue;
             }
-            if (expected.equals(field(row, pushCatalogEnsure.fieldCode(PushCatalogCodes.CLIENT_ID)))) {
+            if (expected.equals(field(row, pushCatalogQueryService.fieldCode(PushCatalogCodes.CLIENT_ID)))) {
                 deleteRow(row.getId());
             }
         }
     }
 
-    /**
-     * 已经写过的订阅行改成订阅方名称，并补上事件主题引用。
-     * 服务准备目录之后调用。没有订阅行时什么都不做。
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public void repairSubscriberRows() {
-        if (!pushCatalogEnsure.subscriptionCatalogExists()) {
-            return;
+    private void createSubscriber(String clientId, long userId, String topic, String subscriberName, Long facilityId) {
+        Long stationId = facilityId != null && facilityId > 0
+                ? facilityId
+                : facilityOwningFieldEnsureService.onlyStationId();
+        if (stationId == null) {
+            throw new ServiceException(400, "订阅没有所属场站，不记");
         }
-        List<EntityRespDTO> rows = entityRpcFacadeService.list(PushCatalogCodes.SUBSCRIPTION_TYPE, null);
-        if (rows == null) {
-            return;
-        }
-        for (EntityRespDTO row : rows) {
-            if (row == null || row.getId() == null) {
-                continue;
-            }
-            String topic = field(row, pushCatalogEnsure.fieldCode(PushCatalogCodes.TOPIC_NAME));
-            if (topic == null) {
-                continue;
-            }
-            refreshSubscriber(row, PushCatalogCodes.STATION_LIVE_MONITOR, topic);
-        }
-    }
-
-    private void createSubscriber(String clientId, long userId, String topic, String subscriberName) {
         EntityCreateReqVO request = new EntityCreateReqVO();
         request.setRegistryCode(PushCatalogCodes.SUBSCRIPTION_TYPE);
         Map<String, Object> baseFields = new LinkedHashMap<>();
         baseFields.put("entityTypeCode", PushCatalogCodes.SUBSCRIPTION_TYPE);
-        baseFields.put("modelId", pushCatalogEnsure.subscriptionModelId());
+        baseFields.put("modelId", pushCatalogQueryService.subscriptionModelId());
         baseFields.put("name", subscriberName);
         baseFields.put("code", PushCatalogCodes.subscriberCode(clientId));
         baseFields.put("status", 1);
+        baseFields.put(FacilityOwningFieldCodes.FIELD_CODE, FacilityOwningFieldCodes.toApiRef(stationId));
         request.setBaseFields(baseFields);
         Map<String, Object> fields = new LinkedHashMap<>();
-        fields.put(pushCatalogEnsure.fieldCode(PushCatalogCodes.CLIENT_ID), clientId);
-        fields.put(pushCatalogEnsure.fieldCode(PushCatalogCodes.TOPIC_NAME), topic);
-        fields.put(pushCatalogEnsure.fieldCode(PushCatalogCodes.LISTENER_USER_ID), Long.toString(userId));
-        fields.put(pushCatalogEnsure.refFieldCode(PushCatalogCodes.SUBSCRIBED_TOPICS), refValues(coveredTopicIds(topic)));
+        fields.put(pushCatalogQueryService.fieldCode(PushCatalogCodes.CLIENT_ID), clientId);
+        fields.put(pushCatalogQueryService.fieldCode(PushCatalogCodes.TOPIC_NAME), topic);
+        fields.put(pushCatalogQueryService.fieldCode(PushCatalogCodes.LISTENER_USER_ID), Long.toString(userId));
+        fields.put(pushCatalogQueryService.refFieldCode(PushCatalogCodes.SUBSCRIBED_TOPICS), refValues(coveredTopicIds(topic)));
         request.setCustomFields(fields);
         entityService.create(request);
     }
@@ -164,16 +155,16 @@ public class PushSubscriptionMirrorService {
         }
         baseFields.put("entityTypeCode", PushCatalogCodes.SUBSCRIPTION_TYPE);
         baseFields.put("name", subscriberName);
-        baseFields.put(pushCatalogEnsure.fieldCode(PushCatalogCodes.TOPIC_NAME), topicNames);
-        baseFields.put(pushCatalogEnsure.fieldCode(PushCatalogCodes.ORIGIN_TEXT), "");
+        baseFields.put(pushCatalogQueryService.fieldCode(PushCatalogCodes.TOPIC_NAME), topicNames);
+        baseFields.put(pushCatalogQueryService.fieldCode(PushCatalogCodes.ORIGIN_TEXT), "");
         request.setBaseFields(baseFields);
         Map<String, Object> fields = new LinkedHashMap<>();
         if (row.getCustomFields() != null) {
             fields.putAll(row.getCustomFields());
         }
-        fields.put(pushCatalogEnsure.fieldCode(PushCatalogCodes.TOPIC_NAME), topicNames);
-        fields.put(pushCatalogEnsure.fieldCode(PushCatalogCodes.ORIGIN_TEXT), "");
-        fields.put(pushCatalogEnsure.refFieldCode(PushCatalogCodes.SUBSCRIBED_TOPICS), refValues(coveredTopicIds(topicNames)));
+        fields.put(pushCatalogQueryService.fieldCode(PushCatalogCodes.TOPIC_NAME), topicNames);
+        fields.put(pushCatalogQueryService.fieldCode(PushCatalogCodes.ORIGIN_TEXT), "");
+        fields.put(pushCatalogQueryService.refFieldCode(PushCatalogCodes.SUBSCRIBED_TOPICS), refValues(coveredTopicIds(topicNames)));
         request.setCustomFields(fields);
         entityService.update(request);
     }
@@ -184,7 +175,7 @@ public class PushSubscriptionMirrorService {
             return ids;
         }
         List<EntityRespDTO> topics = entityRpcFacadeService.list(PushCatalogCodes.TOPIC_TYPE, null);
-        String patternField = pushCatalogEnsure.fieldCode(PushCatalogCodes.NAME_PATTERN);
+        String patternField = pushCatalogQueryService.fieldCode(PushCatalogCodes.NAME_PATTERN);
         for (String line : topicNames.split("\n")) {
             if (line.isBlank()) {
                 continue;
@@ -216,7 +207,7 @@ public class PushSubscriptionMirrorService {
         if (rows == null) {
             return null;
         }
-        String clientField = pushCatalogEnsure.fieldCode(PushCatalogCodes.CLIENT_ID);
+        String clientField = pushCatalogQueryService.fieldCode(PushCatalogCodes.CLIENT_ID);
         for (EntityRespDTO row : rows) {
             if (row != null && clientId.equals(field(row, clientField))) {
                 return row;

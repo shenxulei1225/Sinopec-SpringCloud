@@ -80,13 +80,27 @@ public final class DmDataTabLayoutBootstrapMeta {
         return meta;
     }
 
-    /** 此栏默认进本模版第三块；跟谁展示由关系图连线决定。 */
+    /**
+     * 模版上的详情栏名称只是占位（如「区段C栏」）。
+     * 创建数据目录时必须改用 {@link #detailInstanceLabel}，否则关系图一直显示占位名。
+     */
     public static Map<String, Object> detailMeta(String sectionId, String label) {
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("columnSection", sectionId);
         meta.put("label", (label == null || label.isBlank()) ? "区段栏" : label.trim());
         meta.put("sectionWidthPx", DETAIL_SECTION_WIDTH_PX);
         return meta;
+    }
+
+    /**
+     * 创建数据目录后，详情栏卡片和 Tab 名称显示所属类型的中文名。
+     * 模版占位「区段C栏」「区段栏」不能写进这一栏。没有中文名时用类型编码。
+     */
+    public static String detailInstanceLabel(String storageDisplayName, String storageCode) {
+        if (storageDisplayName != null && !storageDisplayName.isBlank()) {
+            return storageDisplayName.trim();
+        }
+        return storageCode == null ? "" : storageCode.trim();
     }
 
     /** 实体栏默认进本模版第二块；通常作为该区域领头栏写下区段宽。 */

@@ -4,7 +4,10 @@ import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeCreateReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCreateReqVO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeBaseFieldDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
@@ -18,6 +21,7 @@ import cn.cheers.x.module.dynamicbusiness.service.model.ModelFieldAssignmentServ
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.BaseFieldLibrarySyncService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeBaseFieldService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
+import cn.cheers.x.module.dynamicbusiness.service.entitytype.FacilityOwningFieldEnsureService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -25,8 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 准备用户目录：手机、所属场站、所属部门、可进入的业务租户，以及名为「用户」的型号。
- * 只在明确准备目录时写入。打开页面、保存实体都不调用。
- * 目录作用域是全网。所属场站不由站场级类型强制必填。
+ * 启动时每个租户准备一次。打开数据管理页面不调用。
+ * 用户按场站分开。所属场站用站场级那一列。原先单独的场站引用列抄完后停用。
  * 密码是调用服务字段，只出现在创建，不写成用户表上的一列。
  */
 @Service
@@ -36,6 +40,8 @@ public class UserAccountCatalogEnsure {
     private EntityTypeMapper entityTypeMapper;
     @Resource
     private EntityTypeService entityTypeService;
+    @Resource
+    private FacilityOwningFieldEnsureService facilityOwningFieldEnsureService;
     @Resource
     private FieldMapper fieldMapper;
     @Resource
@@ -58,37 +64,59 @@ public class UserAccountCatalogEnsure {
     @Transactional(rollbackFor = Exception.class)
     public Long ensureModelId() {
         ensureCatalog();
+        facilityOwningFieldEnsureService.copyColumnIntoOwningStation(
+                UserAccountCodes.ENTITY_TYPE_CODE, UserAccountCodes.STATION);
+        facilityOwningFieldEnsureService.fillBlankOwningStationWhenTenantHasOne(UserAccountCodes.ENTITY_TYPE_CODE);
         ensureTextField(UserAccountCodes.MOBILE, "手机");
         ensureTextField(UserAccountCodes.VISIT_TENANT_IDS, "可进入的业务租户");
-        ensureEntityRefField(UserAccountCodes.STATION, "所属场站", UserAccountCodes.STATION_TARGET);
         ensureEntityRefField(UserAccountCodes.DEPARTMENT, "所属部门", UserAccountCodes.DEPARTMENT_TARGET);
         // 已有人员可能还没有手机。空着就空着。新建时页面仍要求填写。
         attachBaseField(UserAccountCodes.MOBILE, "手机", false);
-        attachBaseField(UserAccountCodes.STATION, "所属场站", false);
         attachBaseField(UserAccountCodes.DEPARTMENT, "所属部门", false);
         attachBaseField(UserAccountCodes.VISIT_TENANT_IDS, "可进入的业务租户", false);
         Long modelId = ensureModel();
         ensurePasswordField(modelId);
+        retireLegacyStationColumn();
         return modelId;
     }
 
     private void ensureCatalog() {
-        if (entityTypeMapper.selectByCode(UserAccountCodes.ENTITY_TYPE_CODE) != null) {
+        EntityTypeDO existing = entityTypeMapper.selectByCode(UserAccountCodes.ENTITY_TYPE_CODE);
+        if (existing == null) {
+            EntityTypeCreateReqVO request = new EntityTypeCreateReqVO();
+            request.setSort(80);
+            request.setName("用户");
+            request.setCode(UserAccountCodes.ENTITY_TYPE_CODE);
+            request.setAlias("用户");
+            request.setStatus("active");
+            request.setStorageType("DEDICATED");
+            request.setEntryKind("NATIVE");
+            request.setWorkScope(EntityTypeDO.WORK_SCOPE_FACILITY);
+            request.setGroupName("用户");
+            request.setDescription("用户按场站分开。每一条属于一座站。");
+            request.setAssociationFields("{}");
+            entityTypeService.create(request);
             return;
         }
-        EntityTypeCreateReqVO request = new EntityTypeCreateReqVO();
-        request.setSort(80);
-        request.setName("用户");
-        request.setCode(UserAccountCodes.ENTITY_TYPE_CODE);
-        request.setAlias("用户");
-        request.setStatus("active");
-        request.setStorageType("DEDICATED");
-        request.setEntryKind("NATIVE");
-        request.setWorkScope("NETWORK");
-        request.setGroupName("用户");
-        request.setDescription("全系统只在这里维护用户");
-        request.setAssociationFields("{}");
-        entityTypeService.create(request);
+        if (!EntityTypeDO.WORK_SCOPE_FACILITY.equalsIgnoreCase(
+                existing.getWorkScope() == null ? "" : existing.getWorkScope().trim())) {
+            EntityTypeUpdateReqVO update = new EntityTypeUpdateReqVO();
+            update.setId(existing.getId());
+            update.setWorkScope(EntityTypeDO.WORK_SCOPE_FACILITY);
+            entityTypeService.update(update);
+            return;
+        }
+        facilityOwningFieldEnsureService.ensureForEntityTypeCode(UserAccountCodes.ENTITY_TYPE_CODE);
+    }
+
+    /** 所属场站改走站场级那一列之后，停用原先的场站引用列。停用后型号上不再出现第二列。 */
+    private void retireLegacyStationColumn() {
+        EntityTypeBaseFieldDO legacy = baseFieldMapper.selectByEntityTypeCodeAndFieldCode(
+                UserAccountCodes.ENTITY_TYPE_CODE, UserAccountCodes.STATION);
+        if (legacy == null || legacy.getId() == null || legacy.getStatus() == null || legacy.getStatus() != 1) {
+            return;
+        }
+        entityTypeBaseFieldService.updateBaseFieldStatus(legacy.getId(), 0);
     }
 
     private void ensureTextField(String code, String name) {

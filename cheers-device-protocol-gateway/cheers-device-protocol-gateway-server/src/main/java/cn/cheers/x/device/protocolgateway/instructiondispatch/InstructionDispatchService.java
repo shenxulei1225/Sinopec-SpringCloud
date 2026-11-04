@@ -4,6 +4,7 @@ import cn.cheers.x.device.protocolgateway.api.message.CommandSendEnvelope;
 import cn.cheers.x.device.protocolgateway.api.message.InstructionPackageItem;
 import cn.cheers.x.device.protocolgateway.api.mission.DeviceMissionPlan;
 import cn.cheers.x.device.protocolgateway.api.mission.DispatchAction;
+import cn.cheers.x.device.protocolgateway.api.protocol.IndustrialSessionProtocols;
 import cn.cheers.x.device.protocolgateway.api.protocol.ProtocolCodes;
 import cn.cheers.x.device.protocolgateway.api.protocol.ProtocolDispatchProfile;
 import cn.cheers.x.device.protocolgateway.datacollection.CatalogLookup;
@@ -97,6 +98,9 @@ public class InstructionDispatchService {
     public MissionDownlink translate(DeviceMissionPlan plan, boolean persistWaylineFile) {
         if (plan == null || plan.deviceId() == null || plan.deviceId().isBlank()) {
             throw new IllegalArgumentException("必须提供逻辑设备标识");
+        }
+        if (IndustrialSessionProtocols.isIndustrial(plan.protocolVersion())) {
+            throw new IllegalArgumentException("工业设备按动作和点位对照下发，不填巡检指令空包");
         }
         if (!ProtocolCodes.isKnown(plan.protocolVersion())) {
             throw new IllegalArgumentException("协议版本须是机器人对接协议、无人机对接协议、大疆机场或大疆 Pilot");

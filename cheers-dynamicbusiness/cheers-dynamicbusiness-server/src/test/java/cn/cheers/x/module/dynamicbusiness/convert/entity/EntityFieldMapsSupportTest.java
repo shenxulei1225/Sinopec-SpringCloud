@@ -47,4 +47,20 @@ class EntityFieldMapsSupportTest {
         assertEquals("巡检", entity.getCustomFields().get("FLD-TSK-003"));
         assertTrue(entity.getCustomFields().containsKey("facility_id"));
     }
+
+    @Test
+    void applyWriteMaps_keepsParentIdWhenValueCarriesName() {
+        EntityDO entity = new EntityDO();
+
+        EntityFieldMapsSupport.applyWriteMapsToEntityDO(
+                entity,
+                Map.of(
+                        "entityTypeCode", "zone",
+                        "modelId", 1L,
+                        "name", "电力专用舱",
+                        "parentId", Map.of("entityTypeCode", "zone", "id", 11, "name", "3号防火区")),
+                Map.of());
+
+        assertEquals(11L, entity.getParentId());
+    }
 }

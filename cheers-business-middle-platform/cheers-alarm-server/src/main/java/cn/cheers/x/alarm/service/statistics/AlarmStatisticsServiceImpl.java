@@ -581,6 +581,8 @@ public class AlarmStatisticsServiceImpl implements AlarmStatisticsService {
             return "处理中";
         } else if (AlarmStatusEnum.CLOSED.getStatus().equals(status)) {
             return "已关闭";
+        } else if (AlarmStatusEnum.ELIMINATED.getStatus().equals(status)) {
+            return "已消除";
         }
         return status;
     }

@@ -2,6 +2,7 @@ package cn.cheers.x.alarm.service.alarm;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.cheers.x.alarm.controller.admin.vo.alarm.*;
@@ -144,6 +145,24 @@ public class AlarmServiceImpl implements AlarmService {
                 alarm.getId(), alarm.getAlarmCode(), triggerReqVO.getDeviceId(), triggerReqVO.getAlarmTypeId());
 
         return AlarmConvert.INSTANCE.convert(alarm);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean eliminateBySignal(Long deviceId, Long ruleId) {
+        if (deviceId == null || ruleId == null) {
+            throw new ServiceException(400, "消除告警要带设备和规则");
+        }
+        AlarmDO alarm = alarmMapper.selectActiveByDeviceAndRule(deviceId, ruleId);
+        if (alarm == null) {
+            return false;
+        }
+        alarm.setAlarmStatus(AlarmStatusEnum.ELIMINATED.getStatus());
+        alarmMapper.updateById(alarm);
+        alarmQueryCacheService.onAlarmStatusChange(alarm.getId());
+        alarmWebSocketService.pushAlarmStatusUpdate(alarm, "ELIMINATE", null, "报警标识已消除");
+        log.info("[eliminateBySignal][告警已消除] alarmId={} deviceId={} ruleId={}", alarm.getId(), deviceId, ruleId);
+        return true;
     }
 
     /**

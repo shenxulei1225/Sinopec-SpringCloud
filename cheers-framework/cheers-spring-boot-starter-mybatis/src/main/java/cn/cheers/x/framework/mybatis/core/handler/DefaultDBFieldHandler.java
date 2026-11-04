@@ -33,14 +33,13 @@ public class DefaultDBFieldHandler implements MetaObjectHandler {
                 baseDO.setUpdateTime(current);
             }
 
-            Long userId = SecurityFrameworkUtils.getLoginUserId();
-            // 当前登录用户不为空，创建人为空，则当前登录用户为创建人
-            if (Objects.nonNull(userId) && Objects.isNull(baseDO.getCreator())) {
-                baseDO.setCreator(userId.toString());
+            String actor = actorId();
+            // 定时投递没有登录人。表上创建人不能空，这时写成 system。
+            if (Objects.isNull(baseDO.getCreator())) {
+                baseDO.setCreator(actor);
             }
-            // 当前登录用户不为空，更新人为空，则当前登录用户为更新人
-            if (Objects.nonNull(userId) && Objects.isNull(baseDO.getUpdater())) {
-                baseDO.setUpdater(userId.toString());
+            if (Objects.isNull(baseDO.getUpdater())) {
+                baseDO.setUpdater(actor);
             }
         }
     }
@@ -53,11 +52,14 @@ public class DefaultDBFieldHandler implements MetaObjectHandler {
             setFieldValByName("updateTime", LocalDateTime.now(), metaObject);
         }
 
-        // 当前登录用户不为空，更新人为空，则当前登录用户为更新人
         Object modifier = getFieldValByName("updater", metaObject);
-        Long userId = SecurityFrameworkUtils.getLoginUserId();
-        if (Objects.nonNull(userId) && Objects.isNull(modifier)) {
-            setFieldValByName("updater", userId.toString(), metaObject);
+        if (Objects.isNull(modifier)) {
+            setFieldValByName("updater", actorId(), metaObject);
         }
+    }
+
+    private static String actorId() {
+        Long userId = SecurityFrameworkUtils.getLoginUserId();
+        return userId == null ? "system" : userId.toString();
     }
 }

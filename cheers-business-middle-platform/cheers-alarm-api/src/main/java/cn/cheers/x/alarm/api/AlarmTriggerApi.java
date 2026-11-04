@@ -1,5 +1,6 @@
 package cn.cheers.x.alarm.api;
 
+import cn.cheers.x.alarm.api.dto.AlarmEliminateReqDTO;
 import cn.cheers.x.alarm.api.dto.AlarmTriggerReqDTO;
 import cn.cheers.x.alarm.api.dto.AlarmTriggerRespDTO;
 import cn.cheers.x.alarm.enums.ApiConstants;
@@ -23,4 +24,8 @@ public interface AlarmTriggerApi {
     @PostMapping(PREFIX)
     @Operation(summary = "新增一条告警")
     CommonResult<AlarmTriggerRespDTO> trigger(@Valid @RequestBody AlarmTriggerReqDTO req);
+
+    @PostMapping(PREFIX + "/eliminate")
+    @Operation(summary = "报警标识消除后把告警改成已消除")
+    CommonResult<Boolean> eliminate(@Valid @RequestBody AlarmEliminateReqDTO req);
 }

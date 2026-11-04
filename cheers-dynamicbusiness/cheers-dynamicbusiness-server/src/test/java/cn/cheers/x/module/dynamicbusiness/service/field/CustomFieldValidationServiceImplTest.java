@@ -146,6 +146,47 @@ class CustomFieldValidationServiceImplTest {
     }
 
     @Test
+    void validateCustomFields_requiredJsonDocumentWithoutId_isFilled() {
+        FieldDO field = FieldDO.builder()
+                .id(18L)
+                .code("F-471fe2c2cedc4181987e6fcdb5afc47c")
+                .name("联动方式")
+                .type("JSON")
+                .build();
+        ModelFieldAssignmentDO assignment = ModelFieldAssignmentDO.builder()
+                .fieldId(18L)
+                .required(true)
+                .build();
+        Map<String, Object> document = new LinkedHashMap<>();
+        document.put("rows", List.of(Map.of(
+                "match", "ALL",
+                "when", List.of("device 等于 1"),
+                "steps", List.of(Map.of("actionId", 2, "equipmentId", 3)))));
+
+        assertDoesNotThrow(() -> service.validateCustomFields(
+                Map.of(18L, field), Map.of(18L, assignment), Map.of(), Map.of(field.getCode(), document)));
+    }
+
+    @Test
+    void validateCustomFields_requiredJsonEmptyObject_failsMissing() {
+        FieldDO field = FieldDO.builder()
+                .id(18L)
+                .code("F-471fe2c2cedc4181987e6fcdb5afc47c")
+                .name("联动方式")
+                .type("JSON")
+                .build();
+        ModelFieldAssignmentDO assignment = ModelFieldAssignmentDO.builder()
+                .fieldId(18L)
+                .required(true)
+                .build();
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> service.validateCustomFields(
+                Map.of(18L, field), Map.of(18L, assignment), Map.of(), Map.of(field.getCode(), Map.of())));
+        org.junit.jupiter.api.Assertions.assertTrue(
+                ex.getMessage() != null && ex.getMessage().contains("以下必填字段未填写：联动方式"));
+    }
+
+    @Test
     void validateCustomFields_enumMultiSelect_eachTokenMustBeAnOption() {
         FieldDO field = enumMeansField();
         ModelFieldAssignmentDO assignment = enumMeansAssignment();

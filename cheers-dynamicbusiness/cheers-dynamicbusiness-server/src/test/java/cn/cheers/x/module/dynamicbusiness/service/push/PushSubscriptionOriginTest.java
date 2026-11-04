@@ -15,6 +15,12 @@ class PushSubscriptionOriginTest {
         assertEquals(
                 "场站实时监控",
                 PushSubscriptionOrigin.subscriberName(null, "inspection/device/dock-1/#"));
+        assertEquals(
+                "场站实时监控",
+                PushSubscriptionOrigin.subscriberName("equipment-layer", "device/88/status"));
+        assertEquals(
+                "场站实时监控",
+                PushSubscriptionOrigin.subscriberName("alarm-layer", "alarm/facility/1"));
     }
 
     @Test

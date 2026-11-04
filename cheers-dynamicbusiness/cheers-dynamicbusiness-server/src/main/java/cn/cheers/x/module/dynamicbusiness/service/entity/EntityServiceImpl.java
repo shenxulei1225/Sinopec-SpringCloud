@@ -94,6 +94,10 @@ public class EntityServiceImpl implements EntityService {
     private EntityCacheEvictionService entityCacheEvictionService;
     @Resource
     private EntityLifecycleEventPublisher entityLifecycleEventPublisher;
+    /** 告警记录删除前记下所属场站，保存完成后再推这座站的统计。不在这里重算别的目录。 */
+    @Resource
+    @Lazy
+    private cn.cheers.x.module.dynamicbusiness.dataprocess.AlarmFacilityNotice alarmFacilityNotice;
     @Resource
     private GeneratedTaskUpdateHintNotifier generatedTaskUpdateHintNotifier;
     @Resource
@@ -659,6 +663,7 @@ public class EntityServiceImpl implements EntityService {
         if (existingEntity == null) {
             throw new ServiceException(404, ENTITY_NOT_EXISTS);
         }
+        alarmFacilityNotice.schedule(reqVO.getEntityTypeCode(), java.util.List.of(reqVO.getId()));
         catalogStationScopeService.assertWriteMatchesCurrentStation(
                 reqVO.getRegistryCode(),
                 reqVO.getEntityTypeCode(),
@@ -702,6 +707,7 @@ public class EntityServiceImpl implements EntityService {
         if (existingEntity == null) {
             return;
         }
+        alarmFacilityNotice.schedule(entityTypeCode, java.util.List.of(id));
         removeActionFromCheckItems(existingEntity, entityTypeCode);
         cleanupAssociationsOnEntityDelete(id, entityTypeCode.trim(), clearInboundRelations);
         entityCoreService.delete(id, entityTypeCode.trim());
@@ -862,6 +868,8 @@ public class EntityServiceImpl implements EntityService {
                 }
                 customFields.putAll(linkedModels);
             }
+            // 点位详情没有说明列。按点编号读字段库里已写的说明，只放在这次详情上。
+            attachCollectionPointNote(vo);
         }
         if (vo != null && ActionFieldCodes.ENTITY_TYPE_CODE.equalsIgnoreCase(entityTypeCode)) {
             // 动作详情查询：子动作已删除的不出现在这次结果里，不改已保存的父动作。
@@ -872,6 +880,40 @@ public class EntityServiceImpl implements EntityService {
             fillAssociations(vo, id, associationCategoryViews);
         }
         return vo;
+    }
+
+    /**
+     * 点位详情展示字段库说明。
+     * 说明跟点编号指向的字段走，不在点位上另存一份。
+     */
+    private void attachCollectionPointNote(EntityRespVO vo) {
+        String code = firstText(vo.getBaseFields(), "point_field_code");
+        if (!StringUtils.hasText(code)) {
+            code = firstText(vo.getCustomFields(), "point_field_code");
+        }
+        if (!StringUtils.hasText(code)) {
+            return;
+        }
+        FieldDO field = fieldMapper.selectByCode(code.trim());
+        if (field == null || !StringUtils.hasText(field.getDescription())) {
+            return;
+        }
+        String note = field.getDescription().trim();
+        vo.setCollectionPointNote(note);
+        // 放进这次详情的扩展袋，介绍区按「说明」这一行显示。不写回点位。
+        Map<String, Object> customFields = vo.getCustomFields() == null
+                ? new LinkedHashMap<>()
+                : new LinkedHashMap<>(vo.getCustomFields());
+        customFields.put("collectionPointNote", note);
+        vo.setCustomFields(customFields);
+    }
+
+    private static String firstText(Map<String, Object> values, String key) {
+        if (values == null || values.get(key) == null) {
+            return null;
+        }
+        String text = String.valueOf(values.get(key)).trim();
+        return text.isEmpty() ? null : text;
     }
 
     /**

@@ -262,4 +262,12 @@ ENTITY_SELF_REF("ENTITY_SELF_REF", "系统组织上级", true),
     public static boolean isRangedNumber(String code) {
         return RANGED_NUMBER.getCode().equalsIgnoreCase(code);
     }
+
+    /**
+     * JSON 文档。值是一份对象或数组，不是带编号的引用。
+     * 必填只看有没有这份文档，不把缺少 id 当成未填。
+     */
+    public static boolean isJson(String code) {
+        return JSON.getCode().equalsIgnoreCase(code);
+    }
 }

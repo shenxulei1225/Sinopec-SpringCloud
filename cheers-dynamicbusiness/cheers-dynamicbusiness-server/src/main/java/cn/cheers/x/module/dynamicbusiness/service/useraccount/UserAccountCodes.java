@@ -10,8 +10,8 @@ public final class UserAccountCodes {
     public static final String MOBILE = "mobile";
     public static final String VISIT_TENANT_IDS = "visit_tenant_ids";
     /**
-     * 所属场站。引用设施目录里的那条设施。
-     * 不用 facility_id：那个编码只允许挂在站场级目录上，用户目录是全网目录。
+     * 旧的场站引用列。用户目录改成站场级之后，所属场站以 facility_id 为准。
+     * 准备目录时把这一列已有的站抄过去，然后停用这一列。
      */
     public static final String STATION = "station_facility_id";
     public static final String STATION_TARGET = "facility";

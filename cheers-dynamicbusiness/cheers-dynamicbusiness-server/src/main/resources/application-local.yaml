@@ -129,6 +129,36 @@ logging:
 
 --- #################### Cheers 相关配置 ####################
 
+device-history:
+  enabled: true
+  jdbc-url: jdbc:postgresql://127.0.0.1:5432/device_history
+  username: device_history
+  password: ${DEVICE_HISTORY_DB_PASSWORD:Coolhomer}
+
+point-gateway:
+  enabled: true
+  server-url: opc.tcp://192.168.10.16:4990/FactoryTalkLinxGateway1/
+
+# 正常读数写入历史之后，按「设备状态」发给正在看这台设备的页面。
+# 消息服务没连上只记日志。页面这时仍显示上一次打开时读到的历史。
+equipment:
+  page-push:
+    enabled: true
+    broker: tcp://127.0.0.1:1883
+    client-id: equipment-page-push
+    username: platform:event
+    password: ${PAGE_MQTT_PASSWORD:}
+
+# 告警发出后走同一条消息通道。联动自己订，不让告警包直接调用联动。
+dynamicbusiness:
+  event-channel:
+    enabled: true
+    broker: tcp://127.0.0.1:1883
+    publisher-client-id: platform-event-publisher
+    subscriber-client-id: linkage-event-subscriber
+    username: platform:event
+    password: ${PAGE_MQTT_PASSWORD:}
+
 cheers:
   api-encrypt:
     enable: false

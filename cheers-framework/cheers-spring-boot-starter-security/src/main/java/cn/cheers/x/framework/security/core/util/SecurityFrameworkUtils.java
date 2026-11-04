@@ -144,6 +144,20 @@ public class SecurityFrameworkUtils {
     }
 
     /**
+     * 当前登录是超级管理员。
+     * 登录时令牌已经写上这个标记。没登录，或标记不是 true，都不是。
+     * 字段库、型号的启用停用和删除用它放行。普通用户不靠这个标记。
+     */
+    public static boolean isSuperAdmin() {
+        LoginUser loginUser = getLoginUser();
+        if (loginUser == null) {
+            return false;
+        }
+        Map<String, String> info = loginUser.getInfo();
+        return info != null && "true".equals(info.get(LoginUser.INFO_KEY_SUPER_ADMIN));
+    }
+
+    /**
      * 超级管理员进入其他租户时，角色在平台上，业务接口不再按当前租户查角色。
      * 其他系统账号不跳过。令牌上没有超级管理员标记时也不跳过。
      *

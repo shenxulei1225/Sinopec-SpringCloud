@@ -32,4 +32,7 @@ public class EmergencyCommandStepNodeRespVO {
 
     @Schema(description = "这一步挂的信息表。没挂时为空")
     private String reportFormId;
+
+    @Schema(description = "这一步的详细说明。点开查看。没有时为空")
+    private String detailDescription;
 }

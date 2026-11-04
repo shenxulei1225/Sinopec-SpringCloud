@@ -100,6 +100,13 @@ public class ModelFieldAssignmentDO extends TenantBaseDO {
     private Boolean detailVisible;
 
     /**
+     * 这个字段是该型号的采集点。
+     * 读数进历史库，行上抄字段编号。画面显示字段名称和单位。
+     * 空或 false：只是台账字段，不进历史。
+     */
+    private Boolean collectionPoint;
+
+    /**
      * 业务规则（JSON格式）
      */
     private String validationRules;

@@ -64,7 +64,7 @@ INSERT INTO dynamic_field (
   NULL, NULL,
   'SYSTEM', 1,
   NULL, 'NONE',
-  '[{"label": "设备", "value": "设备"}, {"label": "环境", "value": "环境"}, {"label": "工艺", "value": "工艺"}, {"label": "消防", "value": "消防"}, {"label": "安防", "value": "安防"}, {"label": "其他", "value": "其他"}]', NULL,
+  '[{"label": "设备", "value": "设备"}, {"label": "环境", "value": "环境"}, {"label": "工艺", "value": "工艺"}, {"label": "消防", "value": "消防"}, {"label": "安防", "value": "安防"}, {"label": "其他", "value": "其他"}, {"label": "仪表", "value": "alarm-meter"}, {"label": "滴漏", "value": "alarm-drip"}, {"label": "设备损坏", "value": "alarm-device-damage"}, {"label": "设备失联", "value": "alarm-device-lost"}, {"label": "任务异常终止", "value": "alarm-task-stop"}, {"label": "任务启动失败", "value": "alarm-task-start-failed"}]', NULL,
   NULL, 1, 'seed'
 )
 ON CONFLICT (code, tenant_id) WHERE deleted = false
@@ -133,7 +133,7 @@ INSERT INTO dynamic_field (
   NULL, NULL,
   'SYSTEM', 1,
   NULL, 'NONE',
-  '[{"label": "未处理", "value": "未处理"}, {"label": "处理中", "value": "处理中"}, {"label": "已处理", "value": "已处理"}, {"label": "已忽略", "value": "已忽略"}]', NULL,
+  '[{"label": "未处理", "value": "未处理"}, {"label": "复核中", "value": "复核中"}, {"label": "处理中", "value": "处理中"}, {"label": "维修中", "value": "维修中"}, {"label": "应急事件处理", "value": "应急事件处理"}, {"label": "已处理", "value": "已处理"}, {"label": "已忽略", "value": "已忽略"}]', NULL,
   NULL, 1, 'seed'
 )
 ON CONFLICT (code, tenant_id) WHERE deleted = false

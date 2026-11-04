@@ -10,12 +10,17 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.EntityTypeEntryKindEnum;
 import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
+import cn.cheers.x.module.dynamicbusiness.framework.tenant.TenantPhysicalTableNames;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+
+import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * 站场级类型确保挂接「所属场站」基础字段（字段库 facility_id → 设施类型；专用表列）。
@@ -25,8 +30,13 @@ import org.springframework.util.StringUtils;
 @Slf4j
 public class FacilityOwningFieldEnsureService {
 
+    private static final Pattern COLUMN_NAME = Pattern.compile("^[a-z][a-z0-9_]*$");
+
     @Resource
     private EntityTypeMapper entityTypeMapper;
+
+    @Resource
+    private JdbcTemplate jdbcTemplate;
 
     @Resource
     private EntityTypeBaseFieldMapper baseFieldMapper;
@@ -102,6 +112,106 @@ public class FacilityOwningFieldEnsureService {
         req.setDescription("站场级归属设施；创建写入、编辑只读");
         entityTypeBaseFieldService.createBaseField(req);
         log.info("[FacilityOwningFieldEnsure] attached facility_id to entityType={}", code);
+    }
+
+    /**
+     * 当前租户未删除的站，按编号排序。
+     * 没有站时返回空列表。不从里面挑一座。
+     */
+    public List<Long> listStationIds() {
+        String table = TenantPhysicalTableNames.entityPhysicalTable(FacilityOwningFieldCodes.TARGET_ENTITY_TYPE);
+        if (!tableExists(table)) {
+            return List.of();
+        }
+        return jdbcTemplate.query(
+                "SELECT id FROM dynamicbusiness." + table + " WHERE deleted = false AND id > 0 ORDER BY id",
+                (rs, row) -> rs.getLong("id"));
+    }
+
+    /**
+     * 这一租户正好只有一座站时返回它的编号。没有站，或有多座，返回空。
+     * 空着表示不能替记录挑站。
+     */
+    public Long onlyStationId() {
+        String table = TenantPhysicalTableNames.entityPhysicalTable(FacilityOwningFieldCodes.TARGET_ENTITY_TYPE);
+        if (!tableExists(table)) {
+            return null;
+        }
+        List<Long> ids = jdbcTemplate.query(
+                "SELECT id FROM dynamicbusiness." + table + " WHERE deleted = false LIMIT 2",
+                (rs, row) -> rs.getLong("id"));
+        if (ids.size() != 1) {
+            return null;
+        }
+        Long id = ids.get(0);
+        return id != null && id > 0 ? id : null;
+    }
+
+    /**
+     * 把另一列里已经写下的站抄到所属场站。所属场站已经有值的行不动。
+     * 源列名只允许字段编码。抄完后调用方再停用旧列，避免表单上出现两列所属场站。
+     */
+    public void copyColumnIntoOwningStation(String entityTypeCode, String sourceColumn) {
+        if (!StringUtils.hasText(entityTypeCode) || sourceColumn == null || !COLUMN_NAME.matcher(sourceColumn).matches()) {
+            throw new ServiceException(400, "不能从这一列抄所属场站");
+        }
+        String table = TenantPhysicalTableNames.entityPhysicalTable(entityTypeCode.trim());
+        if (!hasColumn(table, FacilityOwningFieldCodes.FIELD_CODE) || !hasColumn(table, sourceColumn)) {
+            return;
+        }
+        jdbcTemplate.update(
+                "UPDATE dynamicbusiness." + table
+                        + " SET " + FacilityOwningFieldCodes.FIELD_CODE + " = " + sourceColumn
+                        + " WHERE deleted = false AND " + FacilityOwningFieldCodes.FIELD_CODE + " IS NULL AND "
+                        + sourceColumn + " IS NOT NULL");
+    }
+
+    /**
+     * 站场级目录里还没写所属场站的行，在这一租户只有一座站时写上这座站。
+     * 有多座站时不挑，那些行继续空着，列表里不会冒出来。
+     */
+    public void fillBlankOwningStationWhenTenantHasOne(String entityTypeCode) {
+        if (!StringUtils.hasText(entityTypeCode)) {
+            return;
+        }
+        Long stationId = onlyStationId();
+        if (stationId == null) {
+            return;
+        }
+        EntityTypeDO type = entityTypeMapper.selectByCode(entityTypeCode.trim());
+        if (type == null || !EntityTypeDO.WORK_SCOPE_FACILITY.equalsIgnoreCase(
+                type.getWorkScope() == null ? "" : type.getWorkScope().trim())) {
+            return;
+        }
+        String table = TenantPhysicalTableNames.entityPhysicalTable(entityTypeCode.trim());
+        if (!hasColumn(table, FacilityOwningFieldCodes.FIELD_CODE)) {
+            return;
+        }
+        int updated = jdbcTemplate.update(
+                "UPDATE dynamicbusiness." + table
+                        + " SET facility_id = ? WHERE deleted = false AND facility_id IS NULL",
+                stationId);
+        if (updated > 0) {
+            log.info("[FacilityOwningFieldEnsure] filled facility_id entityType={} rows={} station={}",
+                    entityTypeCode, updated, stationId);
+        }
+    }
+
+    private boolean tableExists(String table) {
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'dynamicbusiness' AND table_name = ?",
+                Integer.class, table);
+        return count != null && count > 0;
+    }
+
+    private boolean hasColumn(String table, String column) {
+        if (!tableExists(table)) {
+            return false;
+        }
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM information_schema.columns WHERE table_schema = 'dynamicbusiness' AND table_name = ? AND column_name = ?",
+                Integer.class, table, column);
+        return count != null && count > 0;
     }
 
     static boolean shouldEnsure(EntityTypeDO entityType) {

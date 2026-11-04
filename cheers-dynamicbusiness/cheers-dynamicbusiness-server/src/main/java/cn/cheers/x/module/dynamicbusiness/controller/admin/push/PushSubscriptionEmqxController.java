@@ -68,7 +68,7 @@ public class PushSubscriptionEmqxController {
                         return success(true);
                     }
                     pushSubscriptionMirrorService.onSubscribed(
-                            request.getClientId(), pageUser.userId, request.getTopic(), subscriber);
+                            request.getClientId(), pageUser.userId, request.getTopic(), subscriber, null);
                 }
                 case "session.unsubscribed" -> pushSubscriptionMirrorService.onUnsubscribed(
                         request.getClientId(), request.getTopic());
@@ -116,7 +116,8 @@ public class PushSubscriptionEmqxController {
         if (subscriber == null) {
             throw new ServiceException(400, "这场订阅还写不出订阅方，没有写入订阅");
         }
-        pushSubscriptionMirrorService.onSubscribed(clientId, userId, request.getTopic(), subscriber);
+        pushSubscriptionMirrorService.onSubscribed(
+                clientId, userId, request.getTopic(), subscriber, request.getFacilityId());
         return success(true);
     }
 
@@ -137,6 +138,8 @@ public class PushSubscriptionEmqxController {
         private String clientId;
         /** 订上或取消时必填。断开整条连接时可以空着。 */
         private String topic;
+        /** 这条订阅属于哪一座站。页面右上角当前站。没传并且这一租户只有一座站时，用那一座。 */
+        private Long facilityId;
         /** 巡检图层传 patrol-layer。用来写成画面上的那一句。 */
         private String place;
     }

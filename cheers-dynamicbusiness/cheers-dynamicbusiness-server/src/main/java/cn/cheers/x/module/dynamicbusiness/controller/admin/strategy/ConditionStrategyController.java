@@ -3,6 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.controller.admin.strategy;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.strategy.vo.ConditionStrategyRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.strategy.vo.ConditionStrategySaveReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.strategy.vo.StrategyDeviceOptionVO;
 import cn.cheers.x.module.dynamicbusiness.service.strategy.ConditionStrategyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -42,6 +43,13 @@ public class ConditionStrategyController {
     @PreAuthorize("@ss.hasPermission('system:entity:query')")
     public CommonResult<List<ConditionStrategyRespVO>> list() {
         return success(conditionStrategyService.listVisible());
+    }
+
+    @GetMapping("/devices")
+    @Operation(summary = "策略页可勾选的设备")
+    @PreAuthorize("@ss.hasPermission('system:entity:query')")
+    public CommonResult<List<StrategyDeviceOptionVO>> devices() {
+        return success(conditionStrategyService.listEquipmentOptions());
     }
 
     @GetMapping("/actions")

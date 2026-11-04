@@ -219,3 +219,13 @@ cheers:
     end-code: 9999 # 这里配置 9999 的原因是,测试方便。
 
 debug: false
+
+# 平台事件发到消息通道。页面和联动都是订户。默认关（代码缺省），本地打开。
+# 不要在本文件写 enabled: false：本文件后半段会盖掉已经导入的 local。
+dynamicbusiness:
+  event-channel:
+    broker: tcp://127.0.0.1:1883
+    publisher-client-id: platform-event-publisher
+    subscriber-client-id: linkage-event-subscriber
+    username: platform:event
+    password: ${PAGE_MQTT_PASSWORD:}

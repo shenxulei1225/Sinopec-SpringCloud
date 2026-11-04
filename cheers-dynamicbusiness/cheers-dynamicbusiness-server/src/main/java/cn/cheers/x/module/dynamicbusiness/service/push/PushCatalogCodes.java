@@ -10,23 +10,13 @@ import java.security.NoSuchAlgorithmException;
  */
 public final class PushCatalogCodes {
 
-    /** 数据目录分组。侧栏只显示这一个名字。 */
-    public static final String GROUP_NAME = "事件";
-    /** 已经写成「事件分组」的分组，准备目录时改成「事件」。 */
-    public static final String LEGACY_GROUP_NAME = "事件分组";
-
     /** 给人看的主题种类目录。 */
     public static final String TOPIC_TYPE = "event_topic";
-    public static final String TOPIC_CATALOG_NAME = "事件主题";
-    public static final String LEGACY_TOPIC_TYPE = "push_topic";
-    public static final String LEGACY_TOPIC_NAME = "推送主题";
-    public static final String TOPIC_MODEL = "主题种类";
     /** 当前有哪些连接在听。断开后删除。一行是订阅方。 */
     public static final String SUBSCRIPTION_TYPE = "event_subscription";
-    public static final String SUBSCRIPTION_CATALOG_NAME = "事件订阅";
-    public static final String LEGACY_SUBSCRIPTION_TYPE = "push_subscription";
-    public static final String LEGACY_SUBSCRIPTION_NAME = "推送订阅";
-    public static final String SUBSCRIPTION_MODEL = "当前订阅";
+    /** 设备页面状态、场站告警列表已经写下的对象编码。发出时按这个编码找回名字规则。 */
+    public static final String DEVICE_STATUS_TOPIC = "device_status";
+    public static final String ALARM_FACILITY_TOPIC = "alarm_facility";
 
     /** 推送主题上的文本列。编码由字段创建生成，按这个名字找回。 */
     public static final String NAME_PATTERN = "名字规则";
@@ -46,9 +36,6 @@ public final class PushCatalogCodes {
     private PushCatalogCodes() {
     }
 
-    /**
-     * 同一条连接听同一个主题，编码固定，目录里只会有一行。
-     */
     /**
      * 同一条连接是一个订阅方，编码固定，目录里只会有一行。
      * 这一行可以引用多个事件主题。

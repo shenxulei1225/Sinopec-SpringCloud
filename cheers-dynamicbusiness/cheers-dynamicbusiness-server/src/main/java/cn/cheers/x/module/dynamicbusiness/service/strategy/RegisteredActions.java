@@ -15,6 +15,8 @@ public final class RegisteredActions {
     public static final String APPEND_PROCESS = "APPEND_PROCESS";
     public static final String RAISE_ALARM = "RAISE_ALARM";
     public static final String SEND_NOTIFICATION = "SEND_NOTIFICATION";
+    /** 这个点的状态变了，刷新正在看这台设备的页面。不生成告警。 */
+    public static final String REFRESH_DEVICE_STATUS = "REFRESH_DEVICE_STATUS";
 
     private RegisteredActions() {
     }
@@ -41,6 +43,9 @@ public final class RegisteredActions {
         if (SEND_NOTIFICATION.equals(actionCode)) {
             return "给相关人员发通知";
         }
+        if (REFRESH_DEVICE_STATUS.equals(actionCode)) {
+            return "刷新设备状态";
+        }
         return actionCode;
     }
 
@@ -53,6 +58,7 @@ public final class RegisteredActions {
         catalog.put(APPEND_PROCESS, displayName(APPEND_PROCESS));
         catalog.put(RAISE_ALARM, displayName(RAISE_ALARM));
         catalog.put(SEND_NOTIFICATION, displayName(SEND_NOTIFICATION));
+        catalog.put(REFRESH_DEVICE_STATUS, displayName(REFRESH_DEVICE_STATUS));
         return catalog;
     }
 

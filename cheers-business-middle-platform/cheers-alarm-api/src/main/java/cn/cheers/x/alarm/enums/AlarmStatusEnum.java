@@ -4,6 +4,7 @@ import cn.hutool.core.util.ArrayUtil;
 import cn.cheers.x.framework.common.core.ArrayValuable;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * 告警状态枚举
@@ -17,7 +18,12 @@ public enum AlarmStatusEnum implements ArrayValuable<String> {
     PENDING("PENDING", "待确认"),
     ACKNOWLEDGED("ACKNOWLEDGED", "已确认"),
     HANDLING("HANDLING", "处理中"),
-    CLOSED("CLOSED", "已关闭");
+    CLOSED("CLOSED", "已关闭"),
+    /**
+     * 报警标识已经灭掉。记录留在账上。
+     * 人处理完才是已关闭，这条不走待确认、已确认、处理中。
+     */
+    ELIMINATED("ELIMINATED", "已消除");
 
     public static final String[] ARRAYS = Arrays.stream(values()).map(AlarmStatusEnum::getStatus).toArray(String[]::new);
 
@@ -106,6 +112,14 @@ public enum AlarmStatusEnum implements ArrayValuable<String> {
      */
     public static boolean canClose(String status) {
         return HANDLING.getStatus().equals(status);
+    }
+
+    /**
+     * 已关闭和已消除都不再算当前告警。
+     * 已消除的记录仍留在账上，抑制和实时列表不再把它当成还亮着。
+     */
+    public static List<String> settled() {
+        return List.of(CLOSED.getStatus(), ELIMINATED.getStatus());
     }
 
 }

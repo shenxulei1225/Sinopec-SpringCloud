@@ -106,6 +106,14 @@ resolve_maven_repo_local() {
 MAVEN_REPO_LOCAL="$(resolve_maven_repo_local)"
 mkdir -p "$MAVEN_REPO_LOCAL"
 
+# 消息通道口令。平台发事件和页面连接共用这一份。
+if [ -f /opt/emqx/page-mqtt.env ]; then
+    set -a
+    # shellcheck disable=SC1091
+    . /opt/emqx/page-mqtt.env
+    set +a
+fi
+
 # 操作系统内存上限。没有 cgroup 的机器里这些函数不会改启动。
 if [ -f "$SCRIPT_DIR/scripts/cgroup-limits.sh" ]; then
     # shellcheck source=scripts/cgroup-limits.sh

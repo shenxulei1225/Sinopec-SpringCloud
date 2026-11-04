@@ -297,7 +297,8 @@ public final class EmergencyCommandSteps {
                     completedAt,
                     startedAt,
                     text(node.get(EmergencyCommandFields.STEP_STAGE_KEY)),
-                    text(node.get("reportFormId"))));
+                    text(node.get("reportFormId")),
+                    text(node.get("detailDescription"))));
             out.addAll(flattenNodes(node.getJSONArray("children"), nodeKey, status));
         }
         return out;
@@ -536,7 +537,8 @@ public final class EmergencyCommandSteps {
             String completedAt,
             String startedAt,
             String stageKey,
-            String reportFormId) {
+            String reportFormId,
+            String detailDescription) {
     }
 
     private record NodeMark(String runStatus, String completedAt, String startedAt) {

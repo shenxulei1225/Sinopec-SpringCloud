@@ -18,7 +18,10 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 列表读路径：REF 只存 id，展示名在此批量补齐（不写库）。
+ * 列表和详情读路径：引用只存编号，名称在这里补上（不写库）。
+ *
+ * <p>上级分区在库里是纯数字。补完后同一格变成「类型 + 编号 + 名称」，编号仍在 {@code id}。</p>
+ * <p>不负责：保存时改上级，或让页面自己拿编号再查名称。</p>
  */
 @Service
 @RequiredArgsConstructor
@@ -50,6 +53,7 @@ public class EntityRefDisplayEnrichServiceImpl implements EntityRefDisplayEnrich
                 continue;
             }
             collectFromBag(entity.getBaseFields(), idsByType);
+            collectBareParentId(entity.getBaseFields(), idsByType);
             collectFromBag(entity.getCustomFields(), idsByType);
             if (!CollectionUtils.isEmpty(entity.getChildren())) {
                 collectFromEntities(entity.getChildren(), idsByType);
@@ -132,9 +136,83 @@ public class EntityRefDisplayEnrichServiceImpl implements EntityRefDisplayEnrich
         }
         Map<String, Object> next = new LinkedHashMap<>(bag.size());
         for (Map.Entry<String, Object> entry : bag.entrySet()) {
+            if (isParentIdKey(entry.getKey())) {
+                next.put(entry.getKey(), enrichBareParentId(bag, entry.getValue(), nameByTypeAndId));
+                continue;
+            }
             next.put(entry.getKey(), enrichValue(entry.getValue(), nameByTypeAndId));
         }
         return next;
+    }
+
+    /**
+     * 上级分区在详情里要显示名称，编号不能丢掉。
+     * 已经是带编号的对象时，走普通引用补名称。
+     * 纯数字且查到了上级名称 → {@code {entityTypeCode, id, name}}，{@code id} 仍是原来的编号。
+     * 没有类型或没有名称 → 仍返回原来的数字，页面上缺口可见。
+     */
+    private Object enrichBareParentId(Map<String, Object> bag,
+                                      Object value,
+                                      Map<String, Map<Long, String>> nameByTypeAndId) {
+        if (value instanceof Map<?, ?> || value instanceof List<?>) {
+            return enrichValue(value, nameByTypeAndId);
+        }
+        Long id = toLong(value);
+        String typeCode = readEntityTypeCode(bag);
+        if (id == null || !StringUtils.hasText(typeCode)) {
+            return value;
+        }
+        String name = nameByTypeAndId.getOrDefault(typeCode, Map.of()).get(id);
+        if (!StringUtils.hasText(name)) {
+            return value;
+        }
+        Map<String, Object> ref = new LinkedHashMap<>();
+        ref.put("entityTypeCode", typeCode);
+        ref.put("id", id);
+        ref.put("name", name);
+        return ref;
+    }
+
+    /** 上级分区的纯编号，按本记录自己的类型去查上级名称。已是对象的交给普通引用收集。 */
+    private void collectBareParentId(Map<String, Object> bag, Map<String, Set<Long>> idsByType) {
+        if (bag == null || bag.isEmpty()) {
+            return;
+        }
+        Object raw = firstParentId(bag);
+        if (raw == null || raw instanceof Map<?, ?> || raw instanceof List<?>) {
+            return;
+        }
+        Long id = toLong(raw);
+        String typeCode = readEntityTypeCode(bag);
+        if (id == null || !StringUtils.hasText(typeCode)) {
+            return;
+        }
+        idsByType.computeIfAbsent(typeCode, k -> new HashSet<>()).add(id);
+    }
+
+    private static Object firstParentId(Map<String, Object> bag) {
+        if (bag.containsKey("parentId")) {
+            return bag.get("parentId");
+        }
+        return bag.get("parent_id");
+    }
+
+    private static boolean isParentIdKey(String key) {
+        return "parentId".equals(key) || "parent_id".equals(key);
+    }
+
+    private static String readEntityTypeCode(Map<String, Object> bag) {
+        if (bag == null) {
+            return null;
+        }
+        Object typeObj = bag.get("entityTypeCode");
+        if (typeObj == null) {
+            typeObj = bag.get("bizCode");
+        }
+        if (typeObj == null || !StringUtils.hasText(String.valueOf(typeObj))) {
+            return null;
+        }
+        return String.valueOf(typeObj).trim();
     }
 
     private Object enrichValue(Object value, Map<String, Map<Long, String>> nameByTypeAndId) {

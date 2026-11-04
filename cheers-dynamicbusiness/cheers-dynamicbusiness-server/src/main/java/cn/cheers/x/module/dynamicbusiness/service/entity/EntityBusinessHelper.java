@@ -17,6 +17,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
 import cn.cheers.x.framework.mybatis.core.type.JsonbMapTypeHandler;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.department.DepartmentCompanyCodes;
 import cn.cheers.x.module.dynamicbusiness.service.department.DepartmentCompanyOwner;
@@ -149,6 +150,9 @@ public class EntityBusinessHelper {
         }
         if (value instanceof Collection<?> collection) {
             return collection.isEmpty();
+        }
+        if (FieldTypeEnum.isJson(dataType)) {
+            return value instanceof Map<?, ?> map && map.isEmpty();
         }
         if (value instanceof Map<?, ?> map) {
             if (map.isEmpty()) {

@@ -133,6 +133,8 @@ public final class ModelCrudFormFieldAssembler {
                     addedCodes,
                     buildAssignmentField(entityTypeCode, assign, field, baseField, groups, refResolveContext));
         }
+        // 点位详情要看见字段库说明。说明内容在这次详情里，不写回点位。
+        appendPointFieldNote(fieldItems);
 
         Map<String, Object> root = new LinkedHashMap<>();
         root.put("entityTypeCode", entityTypeCode);
@@ -153,6 +155,31 @@ public final class ModelCrudFormFieldAssembler {
             root.put("formLayout", formLayout);
         }
         return root;
+    }
+
+    /**
+     * 点位型号有点编号时，详情多一行说明。
+     * 用服务调用这种只读呈现，是为了保存时跳过这一行，不把说明写回点位。
+     */
+    private static void appendPointFieldNote(LinkedHashMap<String, Map<String, Object>> fieldItems) {
+        if (!fieldItems.containsKey("point_field_code")) {
+            return;
+        }
+        Map<String, Object> note = new LinkedHashMap<>();
+        note.put("fieldCode", "collectionPointNote");
+        note.put("fieldKey", "collectionPointNote");
+        note.put("fieldName", "说明");
+        note.put("label", "说明");
+        note.put("fieldType", "TEXT");
+        note.put("renderAs", "service-call");
+        note.put("readOnly", Boolean.TRUE);
+        note.put("required", Boolean.FALSE);
+        note.put("baseField", Boolean.FALSE);
+        note.put("createVisible", Boolean.FALSE);
+        note.put("editVisible", Boolean.FALSE);
+        note.put("detailVisible", Boolean.TRUE);
+        note.put("sort", 10000);
+        fieldItems.put("collectionPointNote", note);
     }
 
     private static boolean shouldSkipField(String fieldCode, EntityTypeBaseFieldDO baseField, FieldDO field) {
@@ -290,6 +317,10 @@ public final class ModelCrudFormFieldAssembler {
             RefResolveContext refResolveContext) {
         String code = baseField.getFieldCode().trim();
         String fieldType = StringUtils.hasText(baseField.getDataType()) ? baseField.getDataType().trim().toUpperCase() : "TEXT";
+        // 长文本落成文本列。表单仍按字段库的长文本画多行，人能看完原因、后果、处理动作。
+        if (libraryField != null && "LONG_TEXT".equalsIgnoreCase(libraryField.getType())) {
+            fieldType = "LONG_TEXT";
+        }
         String label = StringUtils.hasText(baseField.getFieldName()) ? baseField.getFieldName() : code;
         Map<String, Object> item = baseFieldItem(code, label, fieldType, mapControl(fieldType));
         item.put("baseField", true);
@@ -467,7 +498,31 @@ public final class ModelCrudFormFieldAssembler {
                 item.put("relationDirection", field.getSemanticType().trim());
             }
         }
+        // 采集点没有当前值。详情这一行展示字段库里的说明，不把说明写回设备。
+        attachCollectionPointDescription(item, field, assign);
         return item;
+    }
+
+    /**
+     * 采集点在详情里展示字段说明。
+     * 这一行只读。新建和编辑不出现。保存时不写回设备。
+     */
+    private static void attachCollectionPointDescription(
+            Map<String, Object> item, FieldDO field, ModelFieldAssignmentDO assign) {
+        if (!Boolean.TRUE.equals(assign.getCollectionPoint())) {
+            return;
+        }
+        String description = field.getDescription() == null ? "" : field.getDescription().trim();
+        if (!StringUtils.hasText(description)) {
+            return;
+        }
+        item.put("collectionPoint", Boolean.TRUE);
+        item.put("description", description);
+        item.put("renderAs", "field-note");
+        item.put("readOnly", Boolean.TRUE);
+        item.put("createVisible", Boolean.FALSE);
+        item.put("editVisible", Boolean.FALSE);
+        item.put("detailVisible", Boolean.TRUE);
     }
 
     private static Map<String, Object> baseFieldItem(
@@ -499,6 +554,10 @@ public final class ModelCrudFormFieldAssembler {
     }
 
     private static String resolveFieldType(FieldDO field, EntityTypeBaseFieldDO baseField) {
+        // 长文本落成文本列。表单认字段库的长文本，画成多行。
+        if (field != null && field.getType() != null && "LONG_TEXT".equalsIgnoreCase(field.getType().trim())) {
+            return "LONG_TEXT";
+        }
         if (baseField != null && StringUtils.hasText(baseField.getDataType())) {
             return baseField.getDataType().trim().toUpperCase();
         }
@@ -527,6 +586,7 @@ public final class ModelCrudFormFieldAssembler {
             return "input";
         }
         return switch (normalizeFieldType(fieldType)) {
+            case "LONG_TEXT" -> "textarea";
             case "BOOLEAN" -> "boolean";
             case "ENUM", "MULTI_SELECT" -> "select";
             case "DATE", "DATETIME", "TIMESTAMP" -> "date";
@@ -956,6 +1016,14 @@ public final class ModelCrudFormFieldAssembler {
             Map<String, Object> option = new LinkedHashMap<>();
             option.put("value", value);
             option.put("label", StringUtils.hasText(label) ? label : String.valueOf(value));
+            String wideLabel = obj.getString("wideLabel");
+            if (StringUtils.hasText(wideLabel)) {
+                option.put("wideLabel", wideLabel);
+            }
+            Object models = obj.get("models");
+            if (models != null) {
+                option.put("models", models);
+            }
             options.add(option);
         }
         return options;

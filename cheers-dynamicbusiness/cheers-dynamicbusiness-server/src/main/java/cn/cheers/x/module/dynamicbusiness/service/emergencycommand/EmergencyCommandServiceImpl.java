@@ -595,6 +595,7 @@ public class EmergencyCommandServiceImpl implements EmergencyCommandService {
         item.setStartedAt(node.startedAt());
         item.setStageKey(node.stageKey());
         item.setReportFormId(node.reportFormId());
+        item.setDetailDescription(node.detailDescription());
         return item;
     }
 

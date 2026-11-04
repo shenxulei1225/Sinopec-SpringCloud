@@ -46,7 +46,8 @@ import java.util.stream.Collectors;
  * - 多选关联字段验证（ENTITY_REF_MULTI）：格式、数量限制、目标实体存在性
  * - 地理坐标：未填经纬度视为空；控件占位对象不得当已填坐标报缺项
  * - 枚举多选（如适用手段一次勾选人工、无人机、机器人）：按列表里的每一项对照选项，不把整段列表当成一个枚举值
- * 
+ * - JSON 文档（如联动方式一行一对）：有对象或数组就算已填，不按引用编号判空
+ *
  * 不负责：在读路径补坐标；用 0,0 冒充空值
  * 
  * @author yudao
@@ -195,6 +196,9 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
             List<Long> ids = parseEntityIdList(value);
             return CollectionUtils.isEmpty(ids);
         }
+        if (field != null && FieldTypeEnum.isJson(field.getType())) {
+            return isEmptyJsonValue(value);
+        }
         if (value instanceof Map<?, ?> map) {
             if (map.isEmpty()) {
                 return true;
@@ -204,6 +208,26 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
                 id = map.get("entityId");
             }
             return id == null || String.valueOf(id).isBlank();
+        }
+        return false;
+    }
+
+    /**
+     * JSON 文档已填：非空文本、非空对象、非空数组。
+     * 联动方式提交的是 {rows:...}，没有引用编号。不能按 id 判空。
+     */
+    private static boolean isEmptyJsonValue(Object value) {
+        if (value == null) {
+            return true;
+        }
+        if (value instanceof String text) {
+            return text.isBlank();
+        }
+        if (value instanceof Collection<?> collection) {
+            return collection.isEmpty();
+        }
+        if (value instanceof Map<?, ?> map) {
+            return map.isEmpty();
         }
         return false;
     }

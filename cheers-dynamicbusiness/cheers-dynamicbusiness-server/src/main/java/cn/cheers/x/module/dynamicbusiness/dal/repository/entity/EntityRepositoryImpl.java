@@ -17,6 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -171,6 +174,7 @@ public class EntityRepositoryImpl implements EntityRepository {
 
     /**
      * 一次 SELECT：核心列 + 启用基础字段物理列；列表热路径可省略 custom_fields。
+     * 产生时间属于核心列。告警窗口上的时间读这一列。空着就空着，不从处理脉络里摘时间。
      */
     @Override
     public List<EntityDO> findByIdsWithDedicatedBaseFields(List<Long> orderedIds, String entityTypeCode,
@@ -187,7 +191,7 @@ public class EntityRepositoryImpl implements EntityRepository {
         String table = resolvePhysicalTableName(typeCode);
 
         StringBuilder select = new StringBuilder(
-                "SELECT id, entity_type_code, model_id, name, code, status, parent_id, domain, sort");
+                "SELECT id, entity_type_code, model_id, name, code, status, parent_id, domain, sort, create_time");
         if (includeCustomFields) {
             select.append(", custom_fields");
         }
@@ -245,6 +249,7 @@ public class EntityRepositoryImpl implements EntityRepository {
         entity.setParentId(toLong(readColumn(row, "parent_id")));
         entity.setDomain(toStringVal(readColumn(row, "domain")));
         entity.setSort(toInteger(readColumn(row, "sort")));
+        entity.setCreateTime(toLocalDateTime(readColumn(row, "create_time")));
         if (includeCustomFields) {
             Object custom = readColumn(row, "custom_fields");
             if (custom != null) {
@@ -303,6 +308,23 @@ public class EntityRepositoryImpl implements EntityRepository {
 
     private static String toStringVal(Object value) {
         return value == null ? null : String.valueOf(value);
+    }
+
+    /** 名单上的产生时间。库里是时间戳，空就保持空，不另编一个时间。 */
+    private static LocalDateTime toLocalDateTime(Object value) {
+        if (value instanceof LocalDateTime time) {
+            return time;
+        }
+        if (value instanceof Timestamp timestamp) {
+            return timestamp.toLocalDateTime();
+        }
+        if (value instanceof OffsetDateTime offset) {
+            return offset.toLocalDateTime();
+        }
+        if (value instanceof java.util.Date date) {
+            return LocalDateTime.ofInstant(date.toInstant(), java.time.ZoneId.systemDefault());
+        }
+        return null;
     }
 
     /**

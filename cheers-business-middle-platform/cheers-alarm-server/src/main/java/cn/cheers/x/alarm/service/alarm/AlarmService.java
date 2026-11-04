@@ -56,6 +56,14 @@ public interface AlarmService {
     AlarmRespVO triggerAlarm(@Valid AlarmTriggerReqVO triggerReqVO);
 
     /**
+     * 报警标识灭掉后，把这台设备上这条规则还亮着的告警改成已消除。
+     * 记录留着。没有还亮着的告警时不新建。人点的关闭不走这里。
+     *
+     * @return 改到了一条则 true
+     */
+    boolean eliminateBySignal(Long deviceId, Long ruleId);
+
+    /**
      * 人工上报告警
      * 
      * <p>值班员手动上报告警，支持上传附件（最多5个，单个不超过10MB）。
