@@ -70,6 +70,14 @@ public class CategoryUserRelationServiceImpl implements CategoryUserRelationServ
         return categoryUserRelationMapper.selectUserIdsByCategoryId(categoryId);
     }
 
+    @Override
+    public List<Long> listCategoryIds(Long userId) {
+        if (userId == null || userId <= 0) {
+            return List.of();
+        }
+        return categoryUserRelationMapper.selectCategoryIdsByUserId(userId);
+    }
+
     private void assertCategory(Long categoryId) {
         if (categoryId == null || !categoryService.existsById(categoryId)) {
             throw exception(CATEGORY_NOT_EXISTS);

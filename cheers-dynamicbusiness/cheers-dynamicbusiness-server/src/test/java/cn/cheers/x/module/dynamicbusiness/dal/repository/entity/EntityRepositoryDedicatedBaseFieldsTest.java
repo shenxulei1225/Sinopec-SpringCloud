@@ -70,6 +70,7 @@ class EntityRepositoryDedicatedBaseFieldsTest {
         row2.put("parent_id", null);
         row2.put("domain", "d");
         row2.put("sort", 2);
+        row2.put("creator", "776");
         row2.put("custom_fields", "{}");
         row2.put("zone_id", 100L);
         row2.put("facility_id", 200L);
@@ -84,6 +85,7 @@ class EntityRepositoryDedicatedBaseFieldsTest {
         row1.put("parent_id", null);
         row1.put("domain", "d");
         row1.put("sort", 1);
+        row1.put("creator", "203");
         row1.put("custom_fields", "{}");
         row1.put("zone_id", 101L);
         row1.put("facility_id", null);
@@ -96,6 +98,8 @@ class EntityRepositoryDedicatedBaseFieldsTest {
         assertEquals(101L, result.get(0).getDedicatedBaseFieldValues().get("zone_id"));
         assertEquals(100L, result.get(1).getDedicatedBaseFieldValues().get("zone_id"));
         assertEquals(200L, result.get(1).getDedicatedBaseFieldValues().get("facility_id"));
+        assertEquals("203", result.get(0).getCreator());
+        assertEquals("776", result.get(1).getCreator());
 
         ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
         verify(jdbcTemplate).queryForList(sqlCaptor.capture(), eq(new Object[]{1L, 2L}));
@@ -103,6 +107,7 @@ class EntityRepositoryDedicatedBaseFieldsTest {
         assertTrue(sql.contains("zone_id"));
         assertTrue(sql.contains("facility_id"));
         assertTrue(sql.contains("custom_fields"));
+        assertTrue(sql.contains("creator"));
         assertTrue(sql.contains("FROM ent_equipment_t1"));
         assertTrue(sql.contains("deleted = false"));
     }

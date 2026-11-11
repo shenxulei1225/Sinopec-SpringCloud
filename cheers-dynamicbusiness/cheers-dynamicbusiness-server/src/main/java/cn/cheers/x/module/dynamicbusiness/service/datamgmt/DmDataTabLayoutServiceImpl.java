@@ -10,7 +10,6 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmDataTabLayoutMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.datamgmt.DmDataTabLayoutKindEnum;
-import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeCategoryBootstrapService;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,9 +35,6 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
 
     @Resource
     private DmWorkbenchLayoutService dmWorkbenchLayoutService;
-
-    @Resource
-    private EntityTypeCategoryBootstrapService entityTypeCategoryBootstrapService;
 
     @Resource
     private EntityTypeMapper entityTypeMapper;
@@ -244,7 +240,6 @@ public class DmDataTabLayoutServiceImpl implements DmDataTabLayoutService {
             throw new ServiceException(400, "layoutId 与 entityTypeCode 不能同时为空");
         }
         String code = reqVO.getEntityTypeCode().trim();
-        entityTypeCategoryBootstrapService.ensureForEntityTypeCode(code);
         return dmWorkbenchLayoutService.resolveLayoutIdForEntityType(code);
     }
 

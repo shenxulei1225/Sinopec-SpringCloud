@@ -21,7 +21,6 @@ import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.department.DepartmentCompanyCodes;
 import cn.cheers.x.module.dynamicbusiness.service.department.DepartmentCompanyOwner;
-import cn.cheers.x.module.dynamicbusiness.service.entitytype.FacilityOwningFieldEnsureService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeCapabilityService;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
 import cn.hutool.core.util.IdUtil;
@@ -46,7 +45,6 @@ public class EntityBusinessHelper {
     private final CustomFieldValidationService customFieldValidationService;
     private final EntityRepository entityRepository;
     private final EntityDedicatedColumnService entityDedicatedColumnService;
-    private final FacilityOwningFieldEnsureService facilityOwningFieldEnsureService;
     private final DepartmentCompanyOwner departmentCompanyOwner;
     private final EntityTypeCapabilityService entityTypeCapabilityService;
 
@@ -272,7 +270,6 @@ public class EntityBusinessHelper {
         if (!requiresFacilityOwning(entityTypeCode)) {
             return;
         }
-        facilityOwningFieldEnsureService.ensureForEntityTypeCode(entityTypeCode);
         Object raw = firstFacilityOwningRaw(baseFields, customFields);
         Long facilityId = FacilityOwningFieldCodes.extractId(raw);
         if (facilityId == null) {

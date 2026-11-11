@@ -51,6 +51,7 @@ import cn.cheers.x.framework.mybatis.core.dataobject.BaseDO;
 import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -1291,6 +1292,10 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
 
     /**
      * 能力全集 UPSERT。
+     *
+     * <p>读投影缺失时会触发重建；多请求并发时两边都可能看到「尚无行」并 insert。
+     * 唯一键冲突时改走 update，避免把并发写成「系统异常」。</p>
+     * <p>禁止：把冲突吞掉后不写内容，假装重建成功。</p>
      */
     private void upsertCapabilityFull(
             String entityTypeCode,
@@ -1305,7 +1310,19 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         data.setVersion(version);
         if (existing == null) {
             fillInsertAuditFields(data);
-            businessCapabilityMapper.insert(data);
+            try {
+                businessCapabilityMapper.insert(data);
+            } catch (DuplicateKeyException race) {
+                BusinessCapabilityDO raced = businessCapabilityMapper.selectByEntityTypeCode(entityTypeCode);
+                if (raced == null) {
+                    throw race;
+                }
+                log.info("[upsertCapabilityFull][并发插入冲突，改更新][entityTypeCode={}]", entityTypeCode);
+                raced.setBusinessCategory(businessCategory);
+                raced.setCapabilityFull(fullJson);
+                raced.setVersion(version);
+                businessCapabilityMapper.updateById(raced);
+            }
         } else {
             businessCapabilityMapper.updateById(data);
         }
@@ -1313,6 +1330,8 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
 
     /**
      * 投影 UPSERT。
+     *
+     * <p>与能力全集相同：并发重建可能两边都 insert，唯一键冲突时改更新。</p>
      */
     private void upsertProjection(
             String entityTypeCode,
@@ -1330,7 +1349,20 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         data.setVersion(version);
         if (existing == null) {
             fillInsertAuditFields(data);
-            capabilityComponentProjectionMapper.insert(data);
+            try {
+                capabilityComponentProjectionMapper.insert(data);
+            } catch (DuplicateKeyException race) {
+                CapabilityComponentProjectionDO raced = capabilityComponentProjectionMapper
+                        .selectByEntityTypeComponentAndDataKind(entityTypeCode, componentCode, dataKind);
+                if (raced == null) {
+                    throw race;
+                }
+                log.info("[upsertProjection][并发插入冲突，改更新][entityTypeCode={}][componentCode={}][dataKind={}]",
+                        entityTypeCode, componentCode, dataKind);
+                raced.setComponentInterface(projectionJson);
+                raced.setVersion(version);
+                capabilityComponentProjectionMapper.updateById(raced);
+            }
         } else {
             capabilityComponentProjectionMapper.updateById(data);
         }
@@ -1338,6 +1370,8 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
 
     /**
      * 模型 CRUD 表单定义 UPSERT。
+     *
+     * <p>与能力全集相同：并发重建可能两边都 insert，唯一键冲突时改更新。</p>
      */
     private void upsertModelCrudForm(String entityTypeCode, Long modelId, String formJson, Long version) {
         ModelCrudFormDefinitionDO existing = modelCrudFormDefinitionMapper
@@ -1349,7 +1383,20 @@ public class BusinessCapabilityServiceImpl implements BusinessCapabilityService 
         data.setVersion(version);
         if (existing == null) {
             fillInsertAuditFields(data);
-            modelCrudFormDefinitionMapper.insert(data);
+            try {
+                modelCrudFormDefinitionMapper.insert(data);
+            } catch (DuplicateKeyException race) {
+                ModelCrudFormDefinitionDO raced = modelCrudFormDefinitionMapper
+                        .selectByEntityTypeAndModel(entityTypeCode, modelId);
+                if (raced == null) {
+                    throw race;
+                }
+                log.info("[upsertModelCrudForm][并发插入冲突，改更新][entityTypeCode={}][modelId={}]",
+                        entityTypeCode, modelId);
+                raced.setCrudFormFields(formJson);
+                raced.setVersion(version);
+                modelCrudFormDefinitionMapper.updateById(raced);
+            }
         } else {
             modelCrudFormDefinitionMapper.updateById(data);
         }

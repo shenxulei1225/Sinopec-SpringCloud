@@ -91,16 +91,41 @@ public class WorkOrderDO extends BaseDO {
     private String businessKey;
 
     /**
-     * 指派人用户 ID
+     * 派单班组 ID（人员编组分类 id；必选路由单位）
+     */
+    private Long assigneeTeamId;
+
+    /**
+     * 执行人用户 ID（可空 = 班组待领）
      */
     private Long assigneeUserId;
 
     private Long correctiveCaseId;
 
     /**
+     * 处理时刻。报修派工写入，告诉提出方何时去处理。空着表示这张单不约定到场处理的时刻。
+     */
+    private java.time.LocalDateTime handlingTime;
+
+    /**
+     * 计划开始。只与计划结束同时有值，表示这张工单占维修班的一段档期。
+     */
+    private java.time.LocalDateTime plannedStartTime;
+
+    /**
+     * 计划结束。只与计划开始同时有值。
+     */
+    private java.time.LocalDateTime plannedFinishTime;
+
+    /**
      * 工单标题
      */
     private String title;
+
+    /**
+     * 工作内容。接单人凭这一段知道要处理什么。报修派工从报修内容写入，手工建单由建单人填写。
+     */
+    private String workContent;
 
     /**
      * 租户 ID

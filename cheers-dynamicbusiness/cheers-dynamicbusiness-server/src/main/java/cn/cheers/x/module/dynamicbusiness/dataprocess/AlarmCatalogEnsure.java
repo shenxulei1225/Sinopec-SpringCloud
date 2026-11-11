@@ -114,6 +114,9 @@ public class AlarmCatalogEnsure {
                 "这条告警成立时要启动的联动。例如温度超高启动消防。"), AlarmTypeCatalog.FIELD_ACTION);
         attachHelpText(ensureHelpField(AlarmTypeCatalog.FIELD_RESPONSE_TIME, null, false,
                 "从告警出现，到再动手也来不及阻止这个后果的时间。"), AlarmTypeCatalog.FIELD_RESPONSE_TIME);
+        attachHelpText(ensureHelpField(AlarmTypeCatalog.FIELD_SCENE_OBJECTS, null, true,
+                "这次告警已经写下的人和车，以及各自在场景上的位置点。没有就不写。"),
+                AlarmTypeCatalog.FIELD_SCENE_OBJECTS);
         attachBaseField(ensureDateTime(AlarmTypeCatalog.FIELD_SHELF_UNTIL), AlarmTypeCatalog.FIELD_SHELF_UNTIL);
         ensureModel();
         ensureModelAdmin();

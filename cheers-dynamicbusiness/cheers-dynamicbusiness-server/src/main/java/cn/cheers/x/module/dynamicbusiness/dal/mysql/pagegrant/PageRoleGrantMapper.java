@@ -5,6 +5,7 @@ import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.pagegrant.PageRoleGrantDO;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -17,6 +18,15 @@ public interface PageRoleGrantMapper extends BaseMapperX<PageRoleGrantDO> {
     default List<PageRoleGrantDO> selectListByRoleId(Long roleId) {
         return selectList(new LambdaQueryWrapperX<PageRoleGrantDO>()
                 .eq(PageRoleGrantDO::getRoleId, roleId));
+    }
+
+    /** 当前用户的角色在这些页面上已勾的动作。空角色不查。 */
+    default List<PageRoleGrantDO> selectListByRoleIds(Collection<Long> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return List.of();
+        }
+        return selectList(new LambdaQueryWrapperX<PageRoleGrantDO>()
+                .in(PageRoleGrantDO::getRoleId, roleIds));
     }
 
     default void deleteByRoleId(Long roleId) {

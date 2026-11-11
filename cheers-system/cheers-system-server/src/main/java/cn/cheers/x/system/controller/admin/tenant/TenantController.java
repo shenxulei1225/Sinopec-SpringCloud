@@ -55,7 +55,7 @@ public class TenantController {
     @GetMapping({ "simple-list" })
     @PermitAll
     @TenantIgnore
-    @Operation(summary = "获取租户精简信息列表", description = "只包含被开启的租户，用于【首页】功能的选择租户选项")
+    @Operation(summary = "获取租户精简信息列表", description = "只包含被开启的业务租户，用于登录页选择；不含平台租户")
     public CommonResult<List<TenantRespVO>> getTenantSimpleList() {
         List<TenantDO> list = tenantService.getTenantListByStatus(CommonStatusEnum.ENABLE.getStatus());
         list.removeIf(tenant -> TenantDO.SCOPE_PLATFORM.equals(tenant.getScope()));
@@ -63,6 +63,25 @@ public class TenantController {
                 new TenantRespVO().setId(tenantDO.getId()).setName(tenantDO.getName())
                         .setPortalName(tenantDO.getPortalName()).setPortalNameEn(tenantDO.getPortalNameEn())
                         .setLogoUrl(tenantDO.getLogoUrl())));
+    }
+
+    @GetMapping("/platform-login-entry")
+    @PermitAll
+    @TenantIgnore
+    @Operation(summary = "登录页「租户管理」入口", description = "返回平台租户编号；前端显示名为租户管理，不展示平台二字")
+    public CommonResult<TenantRespVO> getPlatformLoginEntry() {
+        Long platformId = tenantService.getPlatformTenantId();
+        return success(new TenantRespVO().setId(platformId).setName("租户管理"));
+    }
+
+    @GetMapping("/business-list")
+    @Operation(summary = "业务租户列表（租户管理页）")
+    @PreAuthorize("@ss.hasAnyRoles('super_admin')")
+    public CommonResult<List<TenantRespVO>> getBusinessTenantList() {
+        List<TenantDO> list = tenantService.getTenantListByStatus(CommonStatusEnum.ENABLE.getStatus());
+        // 只列业务租户；平台租户走「租户管理」入口，不出现在本列表。
+        list.removeIf(tenant -> TenantDO.SCOPE_PLATFORM.equals(tenant.getScope()));
+        return success(BeanUtils.toBean(list, TenantRespVO.class));
     }
 
     @GetMapping("/get-by-website")

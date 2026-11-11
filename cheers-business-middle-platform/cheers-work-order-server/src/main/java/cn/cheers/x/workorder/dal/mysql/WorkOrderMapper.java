@@ -61,12 +61,25 @@ public interface WorkOrderMapper extends BaseMapperX<WorkOrderDO> {
      * @return 分页结果
      */
     default PageResult<WorkOrderDO> selectPage(WorkOrderPageReqVO reqVO) {
-        return selectPage(reqVO, new LambdaQueryWrapperX<WorkOrderDO>()
+        LambdaQueryWrapperX<WorkOrderDO> wrapper = new LambdaQueryWrapperX<WorkOrderDO>()
                 .eqIfPresent(WorkOrderDO::getScope, reqVO.getScope())
                 .eqIfPresent(WorkOrderDO::getStatus, reqVO.getStatus())
                 .eqIfPresent(WorkOrderDO::getWoNo, reqVO.getWoNo())
                 .likeIfPresent(WorkOrderDO::getTitle, reqVO.getTitle())
-                .orderByDesc(WorkOrderDO::getId));
+                .eqIfPresent(WorkOrderDO::getAssigneeTeamId, reqVO.getAssigneeTeamId())
+                .eqIfPresent(WorkOrderDO::getAssigneeUserId, reqVO.getAssigneeUserId());
+        if (Boolean.TRUE.equals(reqVO.getUnassignedOnly())) {
+            wrapper.isNull(WorkOrderDO::getAssigneeUserId);
+        }
+        if (Boolean.TRUE.equals(reqVO.getScheduledOnly())) {
+            wrapper.isNotNull(WorkOrderDO::getPlannedStartTime)
+                    .isNotNull(WorkOrderDO::getPlannedFinishTime)
+                    .orderByDesc(WorkOrderDO::getPlannedStartTime);
+        } else {
+            wrapper.orderByDesc(WorkOrderDO::getCreateTime)
+                    .orderByDesc(WorkOrderDO::getId);
+        }
+        return selectPage(reqVO, wrapper);
     }
 
 }

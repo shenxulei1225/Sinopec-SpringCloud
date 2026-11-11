@@ -10,6 +10,7 @@ import cn.cheers.x.system.controller.admin.auth.vo.AuthPermissionInfoRespVO;
 import cn.cheers.x.system.controller.admin.auth.vo.AuthSmsLoginReqVO;
 import cn.cheers.x.system.controller.admin.auth.vo.AuthSmsSendReqVO;
 import cn.cheers.x.system.controller.admin.auth.vo.AuthSocialLoginReqVO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.UserAccountDTO;
 import cn.cheers.x.system.dal.dataobject.permission.MenuDO;
 import cn.cheers.x.system.dal.dataobject.permission.RoleDO;
 import cn.cheers.x.system.dal.dataobject.user.AdminUserDO;
@@ -37,6 +38,24 @@ public interface AuthConvert {
                 // 权限标识信息
                 .permissions(convertSet(menuList, MenuDO::getPermission))
                 // 菜单树
+                .menus(buildMenuTree(menuList))
+                .build();
+    }
+
+    /**
+     * 登录用户资料来自用户目录。账号字段用 account，不要再查 system_users。
+     */
+    default AuthPermissionInfoRespVO convert(UserAccountDTO user, List<RoleDO> roleList, List<MenuDO> menuList) {
+        AuthPermissionInfoRespVO.UserVO userVO = AuthPermissionInfoRespVO.UserVO.builder()
+                .id(user.getId())
+                .nickname(user.getNickname())
+                .username(user.getAccount())
+                .deptId(user.getDepartmentId())
+                .build();
+        return AuthPermissionInfoRespVO.builder()
+                .user(userVO)
+                .roles(convertSet(roleList, RoleDO::getCode))
+                .permissions(convertSet(menuList, MenuDO::getPermission))
                 .menus(buildMenuTree(menuList))
                 .build();
     }

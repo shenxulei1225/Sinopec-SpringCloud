@@ -13,8 +13,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -60,6 +62,38 @@ public class UserAccountDirectoryQueryService {
                 requested, USER_ACCOUNT_TYPE, false);
         requireAllPresent(requested, rows);
         return rows.stream().map(UserAccountDirectoryQueryService::toUserAccount).toList();
+    }
+
+    /**
+     * 按编号取出目录里还在的人的昵称。
+     * 列表和详情同一次返回要带上这个名字。缺的编号不在结果里，调用方不得另编名字。
+     */
+    public Map<Long, String> nicknamesOfExistingUsers(List<Long> ids) {
+        List<Long> requested = new ArrayList<>();
+        if (ids != null) {
+            for (Long id : ids) {
+                if (id != null && id > 0 && !requested.contains(id)) {
+                    requested.add(id);
+                }
+            }
+        }
+        if (requested.isEmpty()) {
+            return Map.of();
+        }
+        List<EntityDO> rows = entityCoreService.listByIdsWithDedicatedBaseFields(
+                requested, USER_ACCOUNT_TYPE, false);
+        Map<Long, String> names = new LinkedHashMap<>();
+        if (rows == null) {
+            return names;
+        }
+        for (EntityDO row : rows) {
+            if (row == null || row.getId() == null) {
+                continue;
+            }
+            UserAccountDTO account = toUserAccount(row);
+            names.put(account.getId(), account.getNickname() == null ? "" : account.getNickname());
+        }
+        return names;
     }
 
     /** 按租户内唯一账号读取用户。不存在时显式报错，不查询系统用户。 */

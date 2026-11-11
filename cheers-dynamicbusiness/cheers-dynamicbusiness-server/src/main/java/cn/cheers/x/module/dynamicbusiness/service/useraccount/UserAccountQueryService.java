@@ -5,8 +5,10 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespV
 import cn.cheers.x.module.dynamicbusiness.controller.admin.useraccount.vo.UserAccountDepartmentListRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.useraccount.vo.UserAccountRespVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryUserRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import jakarta.annotation.Resource;
@@ -29,7 +31,19 @@ public class UserAccountQueryService {
     @Resource
     private EntityTypeMapper entityTypeMapper;
     @Resource
+    private ModelMapper modelMapper;
+    @Resource
     private EntityService entityService;
+
+    /** 读取已经建好的用户型号。没有型号时不创建。 */
+    public Long requireModelId() {
+        ModelDO model = modelMapper.selectByNameAndEntityTypeCode(
+                UserAccountCodes.MODEL_NAME, UserAccountCodes.ENTITY_TYPE_CODE);
+        if (model == null || model.getId() == null) {
+            throw new ServiceException(400, "还没有用户型号");
+        }
+        return model.getId();
+    }
 
     public UserAccountDepartmentListRespVO listByDepartments(List<Long> categoryIds) {
         UserAccountDepartmentListRespVO result = new UserAccountDepartmentListRespVO();

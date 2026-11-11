@@ -8,7 +8,7 @@ INSERT INTO dynamic_field (
   index_strategy, options, provider_code, semantic_type, tenant_id, creator
 ) VALUES
   ('action_ref', '动作', 'ENTITY_REF', NULL, '这条对照对应哪条动作。只存动作实体 id。', 'SYSTEM', 1, 1, 'BTREE', NULL, 'dynamic-entity:action', 'action', 1, 'seed'),
-  ('mapped_protocol_version', '协议版本', 'ENUM', NULL, '这条对照适用哪一份对接协议。一条对照只选一种，不要复用指令上的多选协议版本字段。', 'SYSTEM', 1, NULL, 'BTREE', '[{"label":"机器人对接协议","value":"robot-ws"},{"label":"无人机对接协议","value":"uav-ws"},{"label":"大疆机场 1.16.1","value":"dji-dock-1.16.1"},{"label":"大疆 Pilot 1.16.1","value":"dji-pilot-1.16.1"}]', NULL, 'mapped_protocol_version', 1, 'seed'),
+  ('mapped_protocol_version', '协议版本', 'ENUM', NULL, '这条对照适用哪一份对接协议。一条对照只选一种，不要复用指令上的多选协议版本字段。', 'SYSTEM', 1, NULL, 'BTREE', '[{"label":"机器人对接协议","value":"robot-ws"},{"label":"无人机对接协议","value":"uav-ws"},{"label":"大疆机场 1.16.1","value":"dji-dock-1.16.1"},{"label":"大疆 Pilot 1.16.1","value":"dji-pilot-1.16.1"},{"label":"宇视 OpenAPI 1.23","value":"uniview-openapi-1.23"}]', NULL, 'mapped_protocol_version', 1, 'seed'),
   ('protocol_mapping_status', '处理状态', 'ENUM', NULL, '动作在这份协议下的确认结果。CONFIGURED 表示已配指令；UNSUPPORTED 表示明确不支持。', 'SYSTEM', 1, NULL, 'BTREE', '[{"label":"已配置","value":"CONFIGURED"},{"label":"不支持","value":"UNSUPPORTED"}]', NULL, 'protocol_mapping_status', 1, 'seed'),
   ('protocol_instruction_ref', '协议指令', 'ENTITY_REF', NULL, '这条对照落到协议目录里的哪一条指令。只存指令实体 id。', 'SYSTEM', 1, 1, 'BTREE', NULL, 'dynamic-entity:data_protocol', 'data_protocol', 1, 'seed'),
   ('param_slot_mapping_json', '参数对照', 'JSON', NULL, '动作参数填到指令哪一项。元素是 {slot, sourcePath, path}。引用参数用 sourcePath 写出取哪一项。不记何时返回。', 'SYSTEM', 1, NULL, 'NONE', NULL, NULL, 'PARAM_SLOT_MAPPING', 1, 'seed')

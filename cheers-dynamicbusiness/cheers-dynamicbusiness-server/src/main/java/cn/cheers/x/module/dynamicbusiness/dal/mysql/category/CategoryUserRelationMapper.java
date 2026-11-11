@@ -29,4 +29,13 @@ public interface CategoryUserRelationMapper extends BaseMapperX<CategoryUserRela
                 .map(CategoryUserRelationDO::getUserId)
                 .toList();
     }
+
+    default List<Long> selectCategoryIdsByUserId(Long userId) {
+        return selectList(new LambdaQueryWrapperX<CategoryUserRelationDO>()
+                .eq(CategoryUserRelationDO::getUserId, userId)
+                .eq(CategoryUserRelationDO::getDeleted, false))
+                .stream()
+                .map(CategoryUserRelationDO::getCategoryId)
+                .toList();
+    }
 }

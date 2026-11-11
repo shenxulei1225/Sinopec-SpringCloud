@@ -1,5 +1,6 @@
 package cn.cheers.x.workorder.controller.admin.vo.order;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -55,8 +56,26 @@ public class WorkOrderRespVO {
     @Schema(description = "业务键")
     private String businessKey;
 
-    @Schema(description = "指派人用户 ID")
+    @Schema(description = "派单班组 ID（人员编组分类 id）")
+    private Long assigneeTeamId;
+
+    @Schema(description = "执行人用户 ID（可空 = 班组待领）")
     private Long assigneeUserId;
+
+    @Schema(description = "工作内容。接单人要处理的事")
+    private String workContent;
+
+    @Schema(description = "处理时刻。报修派工写入")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime handlingTime;
+
+    @Schema(description = "计划开始。与计划结束成对")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime plannedStartTime;
+
+    @Schema(description = "计划结束。与计划开始成对")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime plannedFinishTime;
 
     @Schema(description = "步骤执行结果")
     private List<WorkOrderStepResultRespVO> steps;

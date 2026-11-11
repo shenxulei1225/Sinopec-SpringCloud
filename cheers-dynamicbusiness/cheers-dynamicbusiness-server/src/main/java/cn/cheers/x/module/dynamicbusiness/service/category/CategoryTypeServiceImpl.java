@@ -10,9 +10,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryTypeDO
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryMapper;
 import cn.cheers.x.module.dynamicbusiness.framework.category.utils.CategoryUtils;
-import cn.cheers.x.module.dynamicbusiness.service.hierarchy.OrgTreeParentFieldEnsureService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -31,15 +29,12 @@ public class CategoryTypeServiceImpl implements CategoryTypeService {
 
     private final CategoryTypeMapper categoryTypeMapper;
     private final CategoryMapper categoryMapper;
-    private final OrgTreeParentFieldEnsureService orgTreeParentFieldEnsureService;
 
     public CategoryTypeServiceImpl(
             CategoryTypeMapper categoryTypeMapper,
-            CategoryMapper categoryMapper,
-            @Lazy OrgTreeParentFieldEnsureService orgTreeParentFieldEnsureService) {
+            CategoryMapper categoryMapper) {
         this.categoryTypeMapper = categoryTypeMapper;
         this.categoryMapper = categoryMapper;
-        this.orgTreeParentFieldEnsureService = orgTreeParentFieldEnsureService;
     }
 
     @Override
@@ -89,7 +84,6 @@ public class CategoryTypeServiceImpl implements CategoryTypeService {
         update.setId(categoryTypeDO.getId());
         update.setTopLevelCategoryId(top.getId());
         categoryTypeMapper.updateById(update);
-        maybeEnsureOrgTreeParentField(categoryTypeDO.getCategoryTypeCode(), categoryTypeDO.getCategoryMode());
         return categoryTypeDO.getId();
     }
 
@@ -117,24 +111,6 @@ public class CategoryTypeServiceImpl implements CategoryTypeService {
                     EntityAssociationModeSupport.normalizeForWrite(reqVO.getEntityAssociationMode()));
         }
         categoryTypeMapper.updateById(updateDO);
-        String mode = updateDO.getCategoryMode() != null
-                ? updateDO.getCategoryMode()
-                : categoryTypeDO.getCategoryMode();
-        String typeCode = updateDO.getCategoryTypeCode() != null
-                ? updateDO.getCategoryTypeCode()
-                : categoryTypeDO.getCategoryTypeCode();
-        maybeEnsureOrgTreeParentField(typeCode, mode);
-    }
-
-    /** 高级分类：种类编码即数据类型编码时，挂上系统组织上级字段。 */
-    private void maybeEnsureOrgTreeParentField(String categoryTypeCode, String categoryMode) {
-        if (categoryTypeCode == null || categoryTypeCode.isBlank()) {
-            return;
-        }
-        if (!CategoryModeSupport.isAdvanced(CategoryModeSupport.normalizeForWrite(categoryMode))) {
-            return;
-        }
-        orgTreeParentFieldEnsureService.ensureForEntityTypeCode(categoryTypeCode.trim());
     }
 
     @Override

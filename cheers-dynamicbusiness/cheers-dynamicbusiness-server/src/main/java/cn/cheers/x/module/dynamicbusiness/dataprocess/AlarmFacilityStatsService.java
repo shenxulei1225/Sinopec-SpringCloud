@@ -44,10 +44,10 @@ public class AlarmFacilityStatsService {
     private EntityRpcFacadeService entityRpcFacadeService;
 
     /**
-     * 这一座站当前的统计。changedId 是刚写入或刚改处理的那一条，对得上才放进结果。
+     * 这一座站当前的统计。changedIds 是这次保存里写入或改了处理的告警，对得上才放进结果。
      * 分类树上还没有挂告警的分类也在结果里，数字是 0。
      */
-    public AlarmFacilityStatsView snapshot(long facilityId, Long changedId) {
+    public AlarmFacilityStatsView snapshot(long facilityId, List<Long> changedIds) {
         if (facilityId <= 0) {
             throw new ServiceException(400, "先选择这一座站，再看告警。");
         }
@@ -107,12 +107,20 @@ public class AlarmFacilityStatsService {
             rows.add(row);
         }
         view.setCategories(rows);
-        if (changedId != null) {
-            EntityRespDTO changed = entities.get(changedId);
-            if (changed != null) {
-                view.setChanged(changedOf(changed, countedOn.get(changedId), levelCode, handlingCode));
+        List<AlarmFacilityStatsView.ChangedAlarm> changed = new ArrayList<>();
+        if (changedIds != null) {
+            for (Long changedId : changedIds) {
+                if (changedId == null || changedId <= 0) {
+                    continue;
+                }
+                EntityRespDTO entity = entities.get(changedId);
+                if (entity == null) {
+                    continue;
+                }
+                changed.add(changedOf(entity, countedOn.get(changedId), levelCode, handlingCode));
             }
         }
+        view.setChanged(changed);
         return view;
     }
 

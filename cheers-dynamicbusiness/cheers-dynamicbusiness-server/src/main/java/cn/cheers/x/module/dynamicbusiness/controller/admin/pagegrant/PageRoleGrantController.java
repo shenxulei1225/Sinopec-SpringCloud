@@ -1,9 +1,13 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.pagegrant;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.pagegrant.vo.PagePermissionActionRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.pagegrant.vo.PagePermissionGroupRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.pagegrant.vo.PagePermissionPageRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.pagegrant.vo.PageRoleGrantItemReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.pagegrant.vo.PageRoleGrantItemRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.pagegrant.vo.PageRoleGrantSaveReqVO;
+import cn.cheers.x.module.dynamicbusiness.service.pagegrant.PagePermissionRegistry;
 import cn.cheers.x.module.dynamicbusiness.service.pagegrant.PageRoleGrantItem;
 import cn.cheers.x.module.dynamicbusiness.service.pagegrant.PageRoleGrantService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,6 +40,14 @@ public class PageRoleGrantController {
 
     @Resource
     private PageRoleGrantService pageRoleGrantService;
+
+    @GetMapping("/groups")
+    @Operation(summary = "读取角色页可勾页面分组（唯一登记）")
+    // 登记清单不是授权结果；已登录即可拉，避免与目录列表拆开加载时因权限码不一致只剩数据目录。
+    @PreAuthorize("isAuthenticated()")
+    public CommonResult<List<PagePermissionGroupRespVO>> groups() {
+        return success(toGroupResp(pageRoleGrantService.listGroups()));
+    }
 
     @GetMapping("/list")
     @Operation(summary = "读取角色已勾选的页面动作")
@@ -70,6 +82,32 @@ public class PageRoleGrantController {
             row.setPageCode(item.pageCode());
             row.setActions(item.actions());
             result.add(row);
+        }
+        return result;
+    }
+
+    private static List<PagePermissionGroupRespVO> toGroupResp(List<PagePermissionRegistry.GroupDef> groups) {
+        List<PagePermissionGroupRespVO> result = new ArrayList<>();
+        for (PagePermissionRegistry.GroupDef group : groups) {
+            PagePermissionGroupRespVO groupVo = new PagePermissionGroupRespVO();
+            groupVo.setTitle(group.title());
+            List<PagePermissionPageRespVO> pages = new ArrayList<>();
+            for (PagePermissionRegistry.PageDef page : group.pages()) {
+                PagePermissionPageRespVO pageVo = new PagePermissionPageRespVO();
+                pageVo.setCode(page.code());
+                pageVo.setName(page.name());
+                List<PagePermissionActionRespVO> actions = new ArrayList<>();
+                for (PagePermissionRegistry.ActionDef action : page.actions()) {
+                    PagePermissionActionRespVO actionVo = new PagePermissionActionRespVO();
+                    actionVo.setCode(action.code());
+                    actionVo.setLabel(action.label());
+                    actions.add(actionVo);
+                }
+                pageVo.setActions(actions);
+                pages.add(pageVo);
+            }
+            groupVo.setPages(pages);
+            result.add(groupVo);
         }
         return result;
     }

@@ -47,6 +47,8 @@ run "${SCRIPT_DIR}/seed/dynamic_protocol_mapping.sql"
 run "${SCRIPT_DIR}/seed/dynamic_protocol_communication_models.sql"
 # 协议版本、通讯方式升成基础字段并搬进列。须在指令种子之后，前置 Flyway V141。
 run "${SCRIPT_DIR}/seed/dynamic_protocol_field_layers.sql"
+# 宇视 OpenAPI HTTPS 说明书第一批（登录 / 保活 / 退出 / 查摄像机目录）。须在型号字段层之后。
+run "${SCRIPT_DIR}/seed/dynamic_protocol_uniview_https.sql"
 # 航线字段说明的类型和枚举取值跟字段库对齐。指令须已存在；没有航线指令时这一段不改行。
 run "${SCRIPT_DIR}/seed/dynamic_protocol_dji_wayline_field_types.sql"
 run "${SCRIPT_DIR}/seed/dynamic_group_relation.sql"

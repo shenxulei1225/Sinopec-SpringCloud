@@ -10,7 +10,6 @@ import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository
 import cn.cheers.x.module.dynamicbusiness.framework.tenant.TenantAssociationTableService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryService;
 import cn.cheers.x.module.dynamicbusiness.service.department.DepartmentCompanyCodes;
-import cn.cheers.x.module.dynamicbusiness.service.department.DepartmentCompanyFieldEnsureService;
 import jakarta.annotation.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -43,9 +42,6 @@ public class OrganizationTreeQueryServiceImpl implements OrganizationTreeQuerySe
     private TenantAssociationTableService tenantAssociationTableService;
 
     @Resource
-    private DepartmentCompanyFieldEnsureService departmentCompanyFieldEnsureService;
-
-    @Resource
     private EntityRepository entityRepository;
 
     @Resource
@@ -66,7 +62,6 @@ public class OrganizationTreeQueryServiceImpl implements OrganizationTreeQuerySe
         if (companyEntityId == null || companyEntityId <= 0) {
             throw new ServiceException(400, "所属公司不正确");
         }
-        departmentCompanyFieldEnsureService.ensure();
         String table = entityRepository.resolvePhysicalTableName(DepartmentCompanyCodes.ENTITY_TYPE);
         if (table == null || !SAFE_TABLE.matcher(table).matches()) {
             throw new ServiceException(400, "无法解析部门表");

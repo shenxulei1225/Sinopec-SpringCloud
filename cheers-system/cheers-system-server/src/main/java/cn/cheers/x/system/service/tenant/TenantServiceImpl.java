@@ -345,8 +345,12 @@ public class TenantServiceImpl implements TenantService {
         handler.handle(menuIds);
     }
 
+    /**
+     * 平台租户不可改删；业务租户即使历史残留 packageId=0 也可改套餐。
+     * 菜单全量只给 PLATFORM，不再靠 packageId=0 冒充系统租户。
+     */
     private static boolean isSystemTenant(TenantDO tenant) {
-        return Objects.equals(tenant.getPackageId(), TenantDO.PACKAGE_ID_SYSTEM);
+        return TenantDO.SCOPE_PLATFORM.equals(tenant.getScope());
     }
 
     private boolean isTenantDisable() {

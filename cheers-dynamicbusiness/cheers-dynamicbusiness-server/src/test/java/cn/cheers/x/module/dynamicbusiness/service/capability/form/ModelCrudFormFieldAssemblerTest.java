@@ -61,6 +61,29 @@ class ModelCrudFormFieldAssemblerTest {
     }
 
     @Test
+    void assignmentColumnHidesFieldOnCreate() {
+        ModelFieldAssignmentDO assignment = new ModelFieldAssignmentDO();
+        assignment.setFieldId(1L);
+        assignment.setFieldCode("analysis_capability_id");
+        assignment.setRequired(false);
+        assignment.setSort(12);
+        assignment.setCreateVisible(false);
+
+        Map<String, Object> form = ModelCrudFormFieldAssembler.buildFormRoot(
+                1930L,
+                "action",
+                true,
+                List.of(assignment),
+                Map.of(1L, capabilityField()),
+                Map.of("analysis_capability_id", capabilityBaseField()),
+                List.of(),
+                ModelCrudFormFieldAssembler.RefResolveContext.empty(),
+                Map.of());
+
+        assertEquals(Boolean.FALSE, field(form, "analysis_capability_id").get("createVisible"));
+    }
+
+    @Test
     void assignedHiddenFieldRemainsOnThatModel() {
         ModelFieldAssignmentDO assignment = new ModelFieldAssignmentDO();
         assignment.setFieldId(2L);

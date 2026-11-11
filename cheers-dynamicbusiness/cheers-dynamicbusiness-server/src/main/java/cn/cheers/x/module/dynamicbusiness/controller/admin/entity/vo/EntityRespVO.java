@@ -27,6 +27,12 @@ public class EntityRespVO {
     @Schema(description = "子实体列表")
     private List<EntityRespVO> children;
 
+    @Schema(description = "创建人用户编号。报修列表用它只显示自己上报的单。保存的是用户目录编号，不是姓名。")
+    private String creator;
+
+    @Schema(description = "创建人在用户目录里的昵称。只在这次返回里带上，不写入报修单。", accessMode = Schema.AccessMode.READ_ONLY)
+    private String creatorName;
+
     @Schema(description = "创建时间")
     private LocalDateTime createTime;
 

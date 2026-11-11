@@ -21,7 +21,8 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
         "cn.cheers.x.infra.api",
         "cn.cheers.x.module.platformresource.api",
         "cn.cheers.x.inspection.task.api",
-        "cn.cheers.x.intelligentanalysis.api"
+        "cn.cheers.x.intelligentanalysis.api",
+        "cn.cheers.x.workorder.api"
 })
 public class SystemServerApplication {
 

@@ -90,6 +90,7 @@ public final class EntityDoVoHelper {
             EntityRespVO light = new EntityRespVO();
             light.setId(entity.getId());
             light.setSort(entity.getSort());
+            light.setCreator(entity.getCreator());
             light.setBaseFields(EntityFieldMapsSupport.buildBaseFieldsFromEntityDO(entity));
             applyDedicatedCached(entity, light, dedicatedColumnService, metaByType, refTargetsByType);
             if (entity.getCustomFields() != null && !entity.getCustomFields().isEmpty()) {
@@ -134,6 +135,7 @@ public final class EntityDoVoHelper {
             if (respVO == null) {
                 continue;
             }
+            respVO.setCreator(entity.getCreator());
             applyDedicatedCached(entity, respVO, dedicatedColumnService, metaByType, refTargetsByType);
             if (hasDedicatedBaseFieldValues(entity) && dedicatedColumnService != null) {
                 stripPhysicalKeysFromCustom(respVO);
@@ -174,6 +176,9 @@ public final class EntityDoVoHelper {
     private static EntityRespVO convertWithoutPhysicalMerge(EntityDO entity,
                                                             CustomFieldValidationService customFieldValidationService) {
         EntityRespVO respVO = EntityConvert.INSTANCE.convert(entity);
+        if (respVO != null) {
+            respVO.setCreator(entity.getCreator());
+        }
         if (respVO != null && respVO.getCustomFields() != null && entity.getModelId() != null
                 && customFieldValidationService != null) {
             Map<String, Object> decrypted = customFieldValidationService.decryptCustomFields(

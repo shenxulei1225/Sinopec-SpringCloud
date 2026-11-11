@@ -9,7 +9,16 @@ import java.util.List;
  */
 public interface PageRoleGrantService {
 
+    /** 角色页可勾分组：与 {@link PagePermissionRegistry} 同一份登记。 */
+    List<PagePermissionRegistry.GroupDef> listGroups();
+
     List<PageRoleGrantItem> listByRoleId(Long roleId);
 
     void replaceRoleGrants(Long roleId, List<PageRoleGrantItem> items);
+
+    /**
+     * 给角色补上这些页面的查看类动作，保留原有其它勾选。
+     * 开通业务能力包时写给租户管理员用。不删已有动作。
+     */
+    void mergeViewActions(Long roleId, List<String> pageCodes);
 }

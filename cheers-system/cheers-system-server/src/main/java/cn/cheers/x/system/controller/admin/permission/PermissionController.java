@@ -71,6 +71,17 @@ public class PermissionController {
         return success(permissionService.getUserRoleIdListByUserId(userId));
     }
 
+    /**
+     * 租户管理列「租户管理员」：按角色反查用户，避免扫全租户用户目录。
+     */
+    @Operation(summary = "获得拥有该角色的用户编号列表")
+    @Parameter(name = "roleId", description = "角色编号", required = true)
+    @GetMapping("/list-role-users")
+    @PreAuthorize("@ss.hasPermission('system:permission:assign-user-role')")
+    public CommonResult<Set<Long>> listRoleUsers(@RequestParam("roleId") Long roleId) {
+        return success(permissionService.getUserRoleIdListByRoleId(java.util.Collections.singleton(roleId)));
+    }
+
     @Operation(summary = "赋予用户角色")
     @PostMapping("/assign-user-role")
     @PreAuthorize("@ss.hasPermission('system:permission:assign-user-role')")

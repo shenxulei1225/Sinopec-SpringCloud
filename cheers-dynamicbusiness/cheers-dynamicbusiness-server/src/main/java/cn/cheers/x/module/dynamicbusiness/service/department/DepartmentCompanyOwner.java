@@ -20,14 +20,11 @@ import java.util.Map;
 public class DepartmentCompanyOwner {
 
     @Resource
-    private DepartmentCompanyFieldEnsureService departmentCompanyFieldEnsureService;
-    @Resource
     private EntityRepository entityRepository;
     @Resource
     private EntityDedicatedColumnService entityDedicatedColumnService;
 
     public void applyOnCreate(Map<String, Object> baseFields, Map<String, Object> customFields) {
-        departmentCompanyFieldEnsureService.ensure();
         Long facilityId = readId(baseFields, customFields, FacilityOwningFieldCodes.FIELD_CODE);
         Long companyId = readId(baseFields, customFields, DepartmentCompanyCodes.FIELD_CODE);
         DepartmentOwnerRules.checkExactlyOne(facilityId, companyId);
@@ -40,7 +37,6 @@ public class DepartmentCompanyOwner {
     }
 
     public void applyOnUpdate(Map<String, Object> baseFields, Map<String, Object> customFields, EntityDO dbEntity) {
-        departmentCompanyFieldEnsureService.ensure();
         Map<String, Object> stored = new LinkedHashMap<>();
         if (dbEntity.getCustomFields() != null) {
             stored.putAll(dbEntity.getCustomFields());

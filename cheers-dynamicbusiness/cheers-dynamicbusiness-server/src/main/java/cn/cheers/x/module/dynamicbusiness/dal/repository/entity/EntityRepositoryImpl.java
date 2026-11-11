@@ -175,6 +175,7 @@ public class EntityRepositoryImpl implements EntityRepository {
     /**
      * 一次 SELECT：核心列 + 启用基础字段物理列；列表热路径可省略 custom_fields。
      * 产生时间属于核心列。告警窗口上的时间读这一列。空着就空着，不从处理脉络里摘时间。
+     * 创建人属于核心列。我的报修靠它只留下当前登录人自己的单。这一列不选出，列表会把查到的单全部滤掉。
      */
     @Override
     public List<EntityDO> findByIdsWithDedicatedBaseFields(List<Long> orderedIds, String entityTypeCode,
@@ -191,7 +192,7 @@ public class EntityRepositoryImpl implements EntityRepository {
         String table = resolvePhysicalTableName(typeCode);
 
         StringBuilder select = new StringBuilder(
-                "SELECT id, entity_type_code, model_id, name, code, status, parent_id, domain, sort, create_time");
+                "SELECT id, entity_type_code, model_id, name, code, status, parent_id, domain, sort, create_time, creator");
         if (includeCustomFields) {
             select.append(", custom_fields");
         }
@@ -250,6 +251,7 @@ public class EntityRepositoryImpl implements EntityRepository {
         entity.setDomain(toStringVal(readColumn(row, "domain")));
         entity.setSort(toInteger(readColumn(row, "sort")));
         entity.setCreateTime(toLocalDateTime(readColumn(row, "create_time")));
+        entity.setCreator(toStringVal(readColumn(row, "creator")));
         if (includeCustomFields) {
             Object custom = readColumn(row, "custom_fields");
             if (custom != null) {

@@ -46,6 +46,17 @@ public class LoginCredentialServiceImpl implements LoginCredentialService {
     }
 
     @Override
+    public void setPassword(Long userId, String rawPassword) {
+        requireUserId(userId);
+        requirePassword(rawPassword);
+        if (loginCredentialMapper.selectByUserId(userId) == null) {
+            saveNew(userId, rawPassword);
+            return;
+        }
+        replace(userId, rawPassword);
+    }
+
+    @Override
     public void change(Long userId, String oldPassword, String newPassword) {
         requireUserId(userId);
         requirePassword(newPassword);

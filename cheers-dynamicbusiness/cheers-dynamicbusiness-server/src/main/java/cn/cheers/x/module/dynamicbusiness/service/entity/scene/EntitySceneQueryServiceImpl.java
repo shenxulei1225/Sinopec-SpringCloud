@@ -1983,6 +1983,8 @@ public class EntitySceneQueryServiceImpl implements EntitySceneQueryService {
         EntityRespVO light = new EntityRespVO();
         light.setId(source.getId());
         light.setSort(source.getSort());
+        light.setCreator(source.getCreator());
+        light.setCreatorName(source.getCreatorName());
         Map<String, Object> base;
         if (source.getBaseFields() != null) {
             base = new LinkedHashMap<>(source.getBaseFields());

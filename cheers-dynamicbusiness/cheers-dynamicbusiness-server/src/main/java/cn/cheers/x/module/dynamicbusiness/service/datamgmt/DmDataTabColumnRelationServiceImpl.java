@@ -8,7 +8,6 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmDataTabColum
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datamgmt.DmDataTabLayoutDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmDataTabColumnRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datamgmt.DmDataTabLayoutMapper;
-import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeCategoryBootstrapService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -114,9 +113,6 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
 
     @Resource
     private DmWorkbenchLayoutService dmWorkbenchLayoutService;
-
-    @Resource
-    private EntityTypeCategoryBootstrapService entityTypeCategoryBootstrapService;
 
     @Override
     public List<DmDataTabColumnRelationRespVO> listByLayoutId(Long layoutId) {
@@ -304,7 +300,6 @@ public class DmDataTabColumnRelationServiceImpl implements DmDataTabColumnRelati
             throw new ServiceException(400, "layoutId 与 entityTypeCode 不能同时为空");
         }
         String code = reqVO.getEntityTypeCode().trim();
-        entityTypeCategoryBootstrapService.ensureForEntityTypeCode(code);
         return dmWorkbenchLayoutService.resolveLayoutIdForEntityType(code);
     }
 

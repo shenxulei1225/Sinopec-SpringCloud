@@ -25,10 +25,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -195,7 +197,37 @@ class WorkOrderServiceImplTest {
         req.setAssetId(1001L);
         req.setAssetTypeCode("pump");
         req.setFrequencyCode("MONTHLY");
+        req.setAssigneeTeamId(12L);
         return req;
+    }
+
+    @Test
+    @DisplayName("create：没带标准时仍建单，不写步骤")
+    void create_withoutStandard_insertsOrderWithoutSteps() {
+        when(workOrderMapper.selectLatestByWoNoPrefix(any())).thenReturn(null);
+        doAnswer(invocation -> {
+            WorkOrderDO row = invocation.getArgument(0);
+            row.setId(201L);
+            assertNull(row.getStandardId());
+            assertNull(row.getStandardSnapshotJson());
+            return 1;
+        }).when(workOrderMapper).insert(any(WorkOrderDO.class));
+
+        WorkOrderCreateReqDTO req = buildCreateReq();
+        req.setStandardId(null);
+        req.setStandardCode(null);
+        Long id = workOrderService.createFromDispatch(req);
+
+        assertEquals(201L, id);
+        verify(workOrderStepResultMapper, never()).insert(any(WorkOrderStepResultDO.class));
+    }
+
+    @Test
+    @DisplayName("create：缺班组失败")
+    void create_missingTeam_throws() {
+        WorkOrderCreateReqDTO req = buildCreateReq();
+        req.setAssigneeTeamId(null);
+        assertThrows(ServiceException.class, () -> workOrderService.createFromDispatch(req));
     }
 
     private static FieldWorkStandardDO publishedStandard() {

@@ -21,7 +21,14 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.sql.Date;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,9 +45,12 @@ import java.util.Set;
  * 专用表基础字段固定列读写：列名跟字段编码对齐；REF 列存目标实体 id。
  *
  * <p><b>管什么</b>：固定列读写；读出时把 JDBC jsonb 驱动值收成业务可用的 JSON（数组/对象），
- * 再进入 {@code dedicatedBaseFieldValues} / {@code baseFields}。</p>
+ * DATE/DATETIME 收成接口字符串（{@code yyyy-MM-dd} / {@code yyyy-MM-dd HH:mm:ss}），
+ * 再进入 {@code dedicatedBaseFieldValues} / {@code baseFields}；写入时把接口字符串转
+ * {@link Date}/{@link Timestamp} 再绑库。</p>
  * <p><b>不管什么</b>：SOP/动作等业务如何解析树与参数——它们只消费已收干净的内容。</p>
  * <p><b>禁止</b>：{@code information_schema} / 探列跳过；读路径编造业务字段；把驱动包装对象泄漏给业务层；
+ * 把 {@link Timestamp} 原样放进字段袋让 Jackson 收成 Unix 毫秒当主契约；
  * JDBC 写基表名（无 {@code _t{tenantId}}）——必须与 MyBatis 动态表名同一租户物理表，否则读不到、创建撞唯一。</p>
  */
 @Service
@@ -618,8 +628,19 @@ public class EntityDedicatedColumnService {
         return TenantPhysicalTableNames.ensureTenantSuffix(table);
     }
 
+    private static final DateTimeFormatter DB_DATE = DateTimeFormatter.ISO_LOCAL_DATE;
+    private static final DateTimeFormatter DB_DATE_TIME =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter DB_DATE_TIME_ISO = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
     /**
-     * 业务值 → JDBC 参数。jsonb 固定列须 {@link PGobject}，禁止裸 String 导致 500。
+     * 业务值 → JDBC 参数。
+     * <ul>
+     *   <li>jsonb 固定列须 {@link PGobject}，禁止裸 String 导致 500。</li>
+     *   <li>DATE / DATETIME：接口主契约是字符串；专用列是 Postgres {@code date}/{@code timestamp}；
+     *       此处统一转成 {@link Date}/{@link Timestamp} 再绑定。数字毫秒仅兼容旧客户端，不作主契约；
+     *       禁止把 varchar 直接塞进时间列。</li>
+     * </ul>
      */
     private static Object toDbValue(EntityTypeBaseFieldDO field, Object raw) {
         if (raw == null) {
@@ -631,7 +652,101 @@ public class EntityDedicatedColumnService {
         if (isJsonbStorageField(field, raw)) {
             return toJsonbPgObject(raw);
         }
+        String dataType = field == null || field.getDataType() == null
+                ? ""
+                : field.getDataType().trim().toUpperCase(Locale.ROOT).replace('-', '_');
+        if ("DATE".equals(dataType)) {
+            return toSqlDate(raw, field.getFieldName());
+        }
+        if ("DATETIME".equals(dataType) || "TIMESTAMP".equals(dataType)) {
+            return toSqlTimestamp(raw, field.getFieldName());
+        }
         return raw;
+    }
+
+    /** 接口 DATE 字符串 / 已有 Date → {@link Date}。 */
+    private static Date toSqlDate(Object raw, String fieldName) {
+        if (raw instanceof Date date) {
+            return date;
+        }
+        if (raw instanceof java.util.Date utilDate) {
+            return new Date(utilDate.getTime());
+        }
+        if (raw instanceof LocalDate localDate) {
+            return Date.valueOf(localDate);
+        }
+        if (raw instanceof String text) {
+            String trimmed = text.trim();
+            if (trimmed.isEmpty()) {
+                return null;
+            }
+            try {
+                return Date.valueOf(LocalDate.parse(trimmed, DB_DATE));
+            } catch (DateTimeParseException ex) {
+                throw new ServiceException(400,
+                        String.format("字段[%s]日期格式错误，期望格式：yyyy-MM-dd",
+                                StrUtil.blankToDefault(fieldName, "DATE")));
+            }
+        }
+        throw new ServiceException(400,
+                String.format("字段[%s]类型错误，期望日期字符串",
+                        StrUtil.blankToDefault(fieldName, "DATE")));
+    }
+
+    /**
+     * 接口 DATETIME 字符串（主契约）、已有时间对象 → {@link Timestamp}。
+     * 数字毫秒仅兼容旧袋回写，不是接口主契约。
+     */
+    private static Timestamp toSqlTimestamp(Object raw, String fieldName) {
+        if (raw instanceof Timestamp timestamp) {
+            return timestamp;
+        }
+        if (raw instanceof java.util.Date utilDate) {
+            return new Timestamp(utilDate.getTime());
+        }
+        if (raw instanceof LocalDateTime localDateTime) {
+            return Timestamp.valueOf(localDateTime);
+        }
+        if (raw instanceof Instant instant) {
+            return Timestamp.from(instant);
+        }
+        if (raw instanceof Number number) {
+            long epoch = number.longValue();
+            // 13 位按毫秒；10 位按秒（与前端 formatEntityDateTimeDisplay 一致）。
+            long millis = epoch > 1_000_000_000_000L ? epoch
+                    : epoch > 1_000_000_000L ? epoch * 1000L : epoch;
+            return new Timestamp(millis);
+        }
+        if (raw instanceof String text) {
+            String trimmed = text.trim();
+            if (trimmed.isEmpty()) {
+                return null;
+            }
+            if (trimmed.matches("^\\d{10,13}$")) {
+                return toSqlTimestamp(Long.parseLong(trimmed), fieldName);
+            }
+            try {
+                return Timestamp.valueOf(LocalDateTime.parse(trimmed, DB_DATE_TIME));
+            } catch (DateTimeParseException ignored) {
+                // fall through
+            }
+            try {
+                return Timestamp.valueOf(LocalDateTime.parse(trimmed, DB_DATE_TIME_ISO));
+            } catch (DateTimeParseException ignored) {
+                // fall through
+            }
+            try {
+                Instant instant = Instant.parse(trimmed);
+                return Timestamp.from(instant);
+            } catch (DateTimeParseException ex) {
+                throw new ServiceException(400,
+                        String.format("字段[%s]日期时间格式错误，期望格式：yyyy-MM-dd HH:mm:ss",
+                                StrUtil.blankToDefault(fieldName, "DATETIME")));
+            }
+        }
+        throw new ServiceException(400,
+                String.format("字段[%s]类型错误，期望日期时间字符串",
+                        StrUtil.blankToDefault(fieldName, "DATETIME")));
     }
 
     /** 字段元数据或命名约定表明值应落 jsonb 列（含 metadata 标 TEXT 但列实为 jsonb 的 *_json 字段）。 */
@@ -741,6 +856,11 @@ public class EntityDedicatedColumnService {
         }
     }
 
+    /**
+     * 专用列 → API 字段袋。
+     * DATE / DATETIME 统一收成字符串（{@code yyyy-MM-dd} / {@code yyyy-MM-dd HH:mm:ss}），
+     * 禁止把 {@link Timestamp} 原样放进袋里再被 Jackson 收成 Unix 毫秒主契约。
+     */
     private static Object toApiValue(EntityTypeBaseFieldDO field,
                                     Object dbVal,
                                     Map<Long, String> targetByLibraryFieldId) {
@@ -748,6 +868,17 @@ public class EntityDedicatedColumnService {
             return null;
         }
         Object value = normalizePhysicalDbValue(dbVal);
+        if (field != null) {
+            String dataType = field.getDataType() == null
+                    ? ""
+                    : field.getDataType().trim().toUpperCase(Locale.ROOT).replace('-', '_');
+            if ("DATE".equals(dataType)) {
+                return formatApiDate(value);
+            }
+            if ("DATETIME".equals(dataType) || "TIMESTAMP".equals(dataType)) {
+                return formatApiDateTime(value);
+            }
+        }
         if (field == null || !isRefType(field.getDataType())) {
             return value;
         }
@@ -769,6 +900,69 @@ public class EntityDedicatedColumnService {
         }
         ref.put("id", id);
         return ref;
+    }
+
+    /** API 主契约：日期字符串 yyyy-MM-dd。 */
+    static String formatApiDate(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof String text) {
+            String trimmed = text.trim();
+            return trimmed.isEmpty() ? null : trimmed;
+        }
+        if (value instanceof Date date) {
+            return date.toLocalDate().format(DB_DATE);
+        }
+        if (value instanceof java.util.Date utilDate) {
+            return new Date(utilDate.getTime()).toLocalDate().format(DB_DATE);
+        }
+        if (value instanceof LocalDate localDate) {
+            return localDate.format(DB_DATE);
+        }
+        if (value instanceof LocalDateTime localDateTime) {
+            return localDateTime.toLocalDate().format(DB_DATE);
+        }
+        if (value instanceof Timestamp timestamp) {
+            return timestamp.toLocalDateTime().toLocalDate().format(DB_DATE);
+        }
+        if (value instanceof Number number) {
+            return formatApiDate(toSqlTimestamp(number, "DATE"));
+        }
+        return String.valueOf(value);
+    }
+
+    /** API 主契约：日期时间字符串 yyyy-MM-dd HH:mm:ss（不是毫秒）。 */
+    static String formatApiDateTime(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof String text) {
+            String trimmed = text.trim();
+            if (trimmed.isEmpty()) {
+                return null;
+            }
+            if (trimmed.matches("^\\d{10,13}$")) {
+                return formatApiDateTime(Long.parseLong(trimmed));
+            }
+            return trimmed;
+        }
+        if (value instanceof Timestamp timestamp) {
+            return timestamp.toLocalDateTime().format(DB_DATE_TIME);
+        }
+        if (value instanceof LocalDateTime localDateTime) {
+            return localDateTime.format(DB_DATE_TIME);
+        }
+        if (value instanceof Instant instant) {
+            return Timestamp.from(instant).toLocalDateTime().format(DB_DATE_TIME);
+        }
+        if (value instanceof java.util.Date utilDate) {
+            return new Timestamp(utilDate.getTime()).toLocalDateTime().format(DB_DATE_TIME);
+        }
+        if (value instanceof Number number) {
+            return formatApiDateTime(toSqlTimestamp(number, "DATETIME"));
+        }
+        return String.valueOf(value);
     }
 
     private static boolean isMultiRefType(String dataType) {

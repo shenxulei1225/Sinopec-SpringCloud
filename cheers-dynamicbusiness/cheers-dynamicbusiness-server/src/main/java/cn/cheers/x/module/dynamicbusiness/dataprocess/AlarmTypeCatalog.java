@@ -4,7 +4,9 @@ import java.util.List;
 
 /**
  * 原先告警配置里的类型。
- * 父类是资产告警、设备告警、任务告警。子类挂在对应父类下。
+ * 父类是资产告警、设备告警、任务告警、操作告警、设备故障、安防告警。子类挂在对应父类下。
+ * 安防告警是视频、周界、入侵、门禁、通讯、广播和识别结果要记入的分类。
+ * 人员管理和巡检不是告警类型，不建在这里。
  * 「正常」不是告警类型，不建。
  * 复核、未处理、已关闭是告警记录上的处理，不建成分类型。
  */
@@ -29,6 +31,8 @@ public final class AlarmTypeCatalog {
     public static final String FIELD_TRIGGER = "触发值";
     public static final String FIELD_THRESHOLD = "告警阈值";
     public static final String FIELD_POINT = "告警点位";
+    /** 这次告警已经写下的人和车，以及各自的位置点。没有就不写。 */
+    public static final String FIELD_SCENE_OBJECTS = "现场对象";
     /** 写在告警规则上。告警记下来时把当时的原文抄到告警记录，规则上没写就空着。 */
     public static final String FIELD_CAUSE = "原因";
     /** 不处理会怎样。权威在告警规则上。 */
@@ -83,7 +87,18 @@ public final class AlarmTypeCatalog {
                 parent("alarm-device-fault", "设备故障", 5),
                 child("alarm-fault-pump", "水泵故障", "alarm-device-fault", 501),
                 child("alarm-fault-fan", "风机故障", "alarm-device-fault", 502),
-                child("alarm-fault-hatch", "液压井盖故障", "alarm-device-fault", 503)
+                child("alarm-fault-hatch", "液压井盖故障", "alarm-device-fault", 503),
+                parent("alarm-security", "安防告警", 6),
+                child("alarm-security-video", "视频监控", "alarm-security", 601),
+                child("alarm-security-perimeter", "周界报警", "alarm-security", 602),
+                child("alarm-security-intrusion", "入侵检测", "alarm-security", 603),
+                child("alarm-security-access", "门禁", "alarm-security", 604),
+                child("alarm-security-phone", "有线电话", "alarm-security", 605),
+                child("alarm-security-radio", "无线通讯", "alarm-security", 606),
+                child("alarm-security-broadcast", "广播", "alarm-security", 607),
+                child("alarm-security-person", "人员识别", "alarm-security", 608),
+                child("alarm-security-vehicle", "车辆定位", "alarm-security", 609),
+                child("alarm-security-behavior", "行为识别", "alarm-security", 610)
         );
     }
 

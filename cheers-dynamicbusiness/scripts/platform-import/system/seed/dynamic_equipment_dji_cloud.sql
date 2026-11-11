@@ -10,7 +10,7 @@ SET search_path TO dynamicbusiness;
 -- 1) 协议枚举加上大疆上云（不改东古 uav-ws 的取值）
 UPDATE dynamic_field
 SET
-  options = '[{"label":"机器人对接协议","value":"robot-ws"},{"label":"无人机对接协议","value":"uav-ws"},{"label":"大疆机场 1.16.1","value":"dji-dock-1.16.1"},{"label":"大疆 Pilot 1.16.1","value":"dji-pilot-1.16.1"}]',
+  options = '[{"label":"机器人对接协议","value":"robot-ws"},{"label":"无人机对接协议","value":"uav-ws"},{"label":"大疆机场 1.16.1","value":"dji-dock-1.16.1"},{"label":"大疆 Pilot 1.16.1","value":"dji-pilot-1.16.1"},{"label":"宇视 OpenAPI 1.23","value":"uniview-openapi-1.23"}]',
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP
 WHERE code IN ('platform_protocol', 'protocol_versions', 'mapped_protocol_version', 'protocol_version')

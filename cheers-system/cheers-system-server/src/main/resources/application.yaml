@@ -173,7 +173,13 @@ cheers:
     ignore-urls:
     ignore-visit-urls:
       - /admin-api/system/user/profile/**
-      - /admin-api/system/auth/**
+      # 登录/验证码仍按请求头 tenant-id，不看 visit。
+      # 口令保存/重置必须认 visit-tenant-id，否则平台管理员给业务租户设密会写进平台租户。
+      - /admin-api/system/auth/login
+      - /admin-api/system/auth/logout
+      - /admin-api/system/auth/refresh-token
+      - /admin-api/system/auth/register
+      - /admin-api/system/captcha/**
     ignore-tables:
     ignore-caches:
       - user_role_ids

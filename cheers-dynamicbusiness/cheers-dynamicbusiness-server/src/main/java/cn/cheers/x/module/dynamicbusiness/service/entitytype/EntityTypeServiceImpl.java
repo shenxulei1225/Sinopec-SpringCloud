@@ -400,12 +400,7 @@ public class EntityTypeServiceImpl implements EntityTypeService {
             throwOccupiedEntityTypeCode(newEntityType.getCode());
         }
 
-        // 持久化保存
         entityTypeMapper.updateById(newEntityType);
-        // 与创建目录相同：补齐缺的数据页栏和模型管理布局。已有栏不覆盖。
-        entityTypeCategoryBootstrapService.ensureForEntityTypeCode(newEntityType.getCode());
-        facilityOwningFieldEnsureService.ensureForEntityTypeCode(newEntityType.getCode());
-        orgTreeParentFieldEnsureService.ensureForEntityTypeCode(newEntityType.getCode());
     }
 
     private void updateBTFromVO(EntityTypeDO entityType, EntityTypeUpdateReqVO reqVO) {
@@ -586,7 +581,22 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         if (!StringUtils.hasText(baseEntityTypeCode)) {
             return false;
         }
-        return existsDomainEntry(baseEntityTypeCode.trim(), normalized, null);
+        String base = baseEntityTypeCode.trim();
+        if (existsDomainEntry(base, normalized, null)) {
+            return true;
+        }
+        // 这个业务域已经写在型号上时，侧栏不必再挂一本同名子目录。
+        // 工单只留一本目录，维修、巡检、保养是型号。改型号时仍认这些业务域。
+        List<ModelDO> models = modelMapper.selectByEntityTypeCode(base);
+        if (models == null) {
+            return false;
+        }
+        for (ModelDO model : models) {
+            if (model != null && normalized.equals(EntityTypeScopeContext.normalizeDomain(model.getDomain()))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

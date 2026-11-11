@@ -16,8 +16,8 @@ public class AlarmFacilityStatsView {
     private long facilityId;
     private Long rootId;
     private List<CategoryStat> categories = new ArrayList<>();
-    /** 这一次写入或改处理的那一条。没有变动时为空，画面不弹窗。 */
-    private ChangedAlarm changed;
+    /** 这一次保存里写入或改了处理的告警。没有变动时是空列表。画面按编号改左侧对应的一行。 */
+    private List<ChangedAlarm> changed = new ArrayList<>();
 
     @Data
     public static class CategoryStat {

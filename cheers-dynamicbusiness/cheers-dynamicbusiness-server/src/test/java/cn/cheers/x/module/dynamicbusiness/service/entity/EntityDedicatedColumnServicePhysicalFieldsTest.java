@@ -102,6 +102,34 @@ class EntityDedicatedColumnServicePhysicalFieldsTest {
     }
 
     @Test
+    void applyDedicatedBaseFieldValues_formatsDateAndDateTimeAsApiStrings() {
+        EntityTypeBaseFieldDO reportDate = new EntityTypeBaseFieldDO();
+        reportDate.setFieldCode("report_date");
+        reportDate.setDataType("DATE");
+        reportDate.setStatus(1);
+        EntityTypeBaseFieldDO reportTime = new EntityTypeBaseFieldDO();
+        reportTime.setFieldCode("report_time");
+        reportTime.setDataType("DATETIME");
+        reportTime.setStatus(1);
+        when(baseFieldMapper.selectByEntityTypeCode("maintanance"))
+                .thenReturn(List.of(reportDate, reportTime));
+
+        EntityDO entity = new EntityDO();
+        entity.setEntityTypeCode("maintanance");
+        Map<String, Object> dedicated = new LinkedHashMap<>();
+        dedicated.put("report_date", java.sql.Date.valueOf("2026-03-15"));
+        dedicated.put("report_time", java.sql.Timestamp.valueOf("2026-03-15 14:30:00"));
+        entity.setDedicatedBaseFieldValues(dedicated);
+
+        Map<String, Object> baseFields = new LinkedHashMap<>();
+        service.applyDedicatedBaseFieldValues(entity, baseFields);
+
+        assertEquals("2026-03-15", baseFields.get("report_date"));
+        assertEquals("2026-03-15 14:30:00", baseFields.get("report_time"));
+        verifyNoInteractions(jdbcTemplate);
+    }
+
+    @Test
     void applyDedicatedBaseFieldValues_prefersProviderCodeOverFieldCodeInfer() {
         EntityTypeBaseFieldDO methodTemplate = new EntityTypeBaseFieldDO();
         methodTemplate.setFieldCode("method_template_id");

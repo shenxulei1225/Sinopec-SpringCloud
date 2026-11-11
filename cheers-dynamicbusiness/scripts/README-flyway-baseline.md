@@ -22,7 +22,7 @@ mvn flyway:migrate
 3. 按产品需要执行 `platform-import/import-smart-corridor.sh` 或 `import-smart-station.sh`。
 4. 开发联调可 `./platform-import/import-dev-all.sh`（管廊 + 站场混装）。
 
-启动后 **system 业务能力** 仍由 `SystemCapabilityBootstrapRunner` 自动注册（不在 V2 seed 中）。
+启动后不再自动注册 system 业务能力。需要时走能力页上的重建。
 
 ## 重新生成 V2 与 platform-import
 

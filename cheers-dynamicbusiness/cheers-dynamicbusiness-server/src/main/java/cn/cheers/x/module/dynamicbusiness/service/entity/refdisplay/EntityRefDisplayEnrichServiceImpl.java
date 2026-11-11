@@ -2,6 +2,7 @@ package cn.cheers.x.module.dynamicbusiness.service.entity.refdisplay;
 
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
+import cn.cheers.x.module.dynamicbusiness.service.directory.UserAccountDirectoryQueryService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +22,8 @@ import java.util.Set;
  * 列表和详情读路径：引用只存编号，名称在这里补上（不写库）。
  *
  * <p>上级分区在库里是纯数字。补完后同一格变成「类型 + 编号 + 名称」，编号仍在 {@code id}。</p>
- * <p>不负责：保存时改上级，或让页面自己拿编号再查名称。</p>
+ * <p>创建人列存的是用户目录编号。同一次返回带上昵称，不写回报修单。</p>
+ * <p>不负责：保存时改上级，把昵称写进单据，或让页面自己拿编号再查名称。</p>
  */
 @Service
 @RequiredArgsConstructor
@@ -29,12 +31,14 @@ import java.util.Set;
 public class EntityRefDisplayEnrichServiceImpl implements EntityRefDisplayEnrichService {
 
     private final EntityCoreService entityCoreService;
+    private final UserAccountDirectoryQueryService userAccountDirectoryQueryService;
 
     @Override
     public void enrich(List<EntityRespVO> entities) {
         if (CollectionUtils.isEmpty(entities)) {
             return;
         }
+        fillCreatorNames(entities);
         Map<String, Set<Long>> idsByType = new HashMap<>();
         collectFromEntities(entities, idsByType);
         if (idsByType.isEmpty()) {
@@ -45,6 +49,54 @@ public class EntityRefDisplayEnrichServiceImpl implements EntityRefDisplayEnrich
             return;
         }
         applyToEntities(entities, nameByTypeAndId);
+    }
+
+    /** 创建人编号换成用户目录昵称，写在同一次返回的 creatorName 上。目录里没有的人留空。 */
+    private void fillCreatorNames(List<EntityRespVO> entities) {
+        List<EntityRespVO> flat = new ArrayList<>();
+        collectCreatorRows(entities, flat);
+        List<Long> ids = new ArrayList<>();
+        for (EntityRespVO entity : flat) {
+            Long userId = parseUserId(entity.getCreator());
+            if (userId != null) {
+                ids.add(userId);
+            }
+        }
+        Map<Long, String> names = ids.isEmpty()
+                ? Map.of()
+                : userAccountDirectoryQueryService.nicknamesOfExistingUsers(ids);
+        for (EntityRespVO entity : flat) {
+            Long userId = parseUserId(entity.getCreator());
+            if (userId == null || !names.containsKey(userId)) {
+                entity.setCreatorName(null);
+                continue;
+            }
+            entity.setCreatorName(names.get(userId));
+        }
+    }
+
+    private void collectCreatorRows(List<EntityRespVO> entities, List<EntityRespVO> flat) {
+        for (EntityRespVO entity : entities) {
+            if (entity == null) {
+                continue;
+            }
+            flat.add(entity);
+            if (!CollectionUtils.isEmpty(entity.getChildren())) {
+                collectCreatorRows(entity.getChildren(), flat);
+            }
+        }
+    }
+
+    private static Long parseUserId(String creator) {
+        if (!StringUtils.hasText(creator)) {
+            return null;
+        }
+        try {
+            long id = Long.parseLong(creator.trim());
+            return id > 0 ? id : null;
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 
     private void collectFromEntities(List<EntityRespVO> entities, Map<String, Set<Long>> idsByType) {

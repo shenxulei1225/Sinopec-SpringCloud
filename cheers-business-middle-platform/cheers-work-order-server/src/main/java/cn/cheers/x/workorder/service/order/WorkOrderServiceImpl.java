@@ -4,6 +4,7 @@ import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.framework.common.util.json.JsonUtils;
 import cn.cheers.x.framework.common.util.object.BeanUtils;
+import cn.cheers.x.module.dynamicbusiness.api.persongroup.PersonGroupMemberApi;
 import cn.cheers.x.maintenance.api.MaintenanceApi;
 import cn.cheers.x.maintenance.api.dto.FieldWorkStandardRespDTO;
 import cn.cheers.x.workorder.api.dto.WorkOrderCreateReqDTO;
@@ -39,7 +40,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static cn.cheers.x.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
 import static cn.cheers.x.workorder.enums.ErrorCodeConstants.FIELD_WORK_STANDARD_NOT_EXISTS;
+import static cn.cheers.x.workorder.enums.ErrorCodeConstants.WORK_ORDER_ALREADY_ASSIGNED;
+import static cn.cheers.x.workorder.enums.ErrorCodeConstants.WORK_ORDER_ASSIGN_NOT_MEMBER;
+import static cn.cheers.x.workorder.enums.ErrorCodeConstants.WORK_ORDER_CLAIM_NOT_MEMBER;
+import static cn.cheers.x.workorder.enums.ErrorCodeConstants.WORK_ORDER_CLAIM_TEAM_MISSING;
 import static cn.cheers.x.workorder.enums.ErrorCodeConstants.WORK_ORDER_NOT_EXISTS;
 import static cn.cheers.x.workorder.enums.ErrorCodeConstants.WORK_ORDER_REQUIRED_STEPS_INCOMPLETE;
 import static cn.cheers.x.workorder.enums.ErrorCodeConstants.WORK_ORDER_STANDARD_NOT_PUBLISHED;
@@ -47,9 +53,17 @@ import static cn.cheers.x.workorder.enums.ErrorCodeConstants.WORK_ORDER_STANDARD
 import static cn.cheers.x.workorder.enums.ErrorCodeConstants.WORK_ORDER_STATUS_INVALID;
 import static cn.cheers.x.workorder.enums.ErrorCodeConstants.WORK_ORDER_STEPS_EMPTY;
 import static cn.cheers.x.workorder.enums.ErrorCodeConstants.WORK_ORDER_STEP_NOT_EXISTS;
+import static cn.cheers.x.workorder.enums.ErrorCodeConstants.WORK_ORDER_CONTENT_REQUIRED;
+import static cn.cheers.x.workorder.enums.ErrorCodeConstants.WORK_ORDER_HANDLING_TIME_REQUIRED;
+import static cn.cheers.x.workorder.enums.ErrorCodeConstants.WORK_ORDER_PLAN_WINDOW_INCOMPLETE;
+import static cn.cheers.x.workorder.enums.ErrorCodeConstants.WORK_ORDER_TEAM_REQUIRED;
 
 /**
- * 工单生命周期 Service 实现
+ * 工单生命周期 Service 实现。
+ *
+ * <p>管什么：创建快照、状态流转、班组必选与执行人可选、认领/指定。</p>
+ * <p>不管什么：排班在岗。认领和指定只核对人员编组里的在册成员。</p>
+ * <p>禁止：缺班组仍创建；用 BPM 替代现场步骤快照。</p>
  */
 @Service
 @Validated
@@ -66,33 +80,64 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     private FieldWorkStandardMapper fieldWorkStandardMapper;
     @Resource
     private MaintenanceApi maintenanceApi;
+    @Resource
+    private PersonGroupMemberApi personGroupMemberApi;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createFromDispatch(WorkOrderCreateReqDTO reqDTO) {
-        FieldWorkStandardDO standard = resolvePublishedStandard(reqDTO);
-        List<FieldWorkStandardStepVO> steps = deepCopySteps(standard.getStepsJson());
-        if (steps.isEmpty()) {
+        if (reqDTO.getAssigneeTeamId() == null || reqDTO.getAssigneeTeamId() <= 0) {
+            throw exception(WORK_ORDER_TEAM_REQUIRED);
+        }
+        boolean fromRepair = reqDTO.getBusinessKey() != null && reqDTO.getBusinessKey().startsWith("repair:");
+        boolean manual = "manual".equals(reqDTO.getBusinessKey());
+        if (fromRepair && reqDTO.getHandlingTime() == null) {
+            throw exception(WORK_ORDER_HANDLING_TIME_REQUIRED);
+        }
+        if ((fromRepair || manual) && !StringUtils.hasText(reqDTO.getWorkContent())) {
+            throw exception(WORK_ORDER_CONTENT_REQUIRED);
+        }
+        boolean hasPlanStart = reqDTO.getPlannedStartTime() != null;
+        boolean hasPlanFinish = reqDTO.getPlannedFinishTime() != null;
+        if (hasPlanStart != hasPlanFinish) {
+            throw exception(WORK_ORDER_PLAN_WINDOW_INCOMPLETE);
+        }
+        // 请求带了标准编号，才抄那一本已发布流程。没带表示这一次的设备或事件还没挂流程，不套用维修域通用本。
+        boolean namedStandard = reqDTO.getStandardId() != null
+                || StringUtils.hasText(reqDTO.getStandardCode());
+        FieldWorkStandardDO standard = namedStandard ? resolvePublishedStandard(reqDTO) : null;
+        List<FieldWorkStandardStepVO> steps = standard == null
+                ? Collections.emptyList()
+                : deepCopySteps(standard.getStepsJson());
+        if (standard != null && steps.isEmpty()) {
             throw exception(WORK_ORDER_STEPS_EMPTY);
         }
 
-        String snapshotJson = JsonUtils.toJsonString(steps);
         WorkOrderDO workOrder = new WorkOrderDO();
         workOrder.setWoNo(nextWoNo());
         workOrder.setScope(reqDTO.getScope());
         workOrder.setStatus(WorkOrderStatusEnum.DISPATCHED.getStatus());
         workOrder.setTitle(reqDTO.getTitle());
+        workOrder.setWorkContent(StringUtils.hasText(reqDTO.getWorkContent()) ? reqDTO.getWorkContent().trim() : null);
         workOrder.setAssetId(reqDTO.getAssetId());
         workOrder.setAssetTypeCode(reqDTO.getAssetTypeCode());
         workOrder.setFrequencyCode(reqDTO.getFrequencyCode());
-        workOrder.setStandardId(standard.getId());
-        workOrder.setStandardVersionNo(standard.getVersionNo());
-        workOrder.setStandardSnapshotJson(snapshotJson);
+        if (standard != null) {
+            workOrder.setStandardId(standard.getId());
+            workOrder.setStandardVersionNo(standard.getVersionNo());
+            workOrder.setStandardSnapshotJson(JsonUtils.toJsonString(steps));
+        }
         workOrder.setRuntimeJobId(reqDTO.getRuntimeJobId());
         workOrder.setScheduleSlotId(reqDTO.getScheduleSlotId());
         workOrder.setBusinessKey(reqDTO.getBusinessKey());
+        workOrder.setAssigneeTeamId(reqDTO.getAssigneeTeamId());
+        // 执行人可空：空则班组待领
         workOrder.setAssigneeUserId(reqDTO.getAssigneeUserId());
         workOrder.setCorrectiveCaseId(reqDTO.getCorrectiveCaseId());
+        // 处理时刻与计划档期分开写。空着不编当前时刻。
+        workOrder.setHandlingTime(reqDTO.getHandlingTime());
+        workOrder.setPlannedStartTime(reqDTO.getPlannedStartTime());
+        workOrder.setPlannedFinishTime(reqDTO.getPlannedFinishTime());
         workOrderMapper.insert(workOrder);
 
         int order = 1;
@@ -105,8 +150,9 @@ public class WorkOrderServiceImpl implements WorkOrderService {
             workOrderStepResultMapper.insert(stepResult);
         }
 
-        log.info("[createFromDispatch][id={}, woNo={}, standardId={}, versionNo={}, steps={}]",
-                workOrder.getId(), workOrder.getWoNo(), standard.getId(), standard.getVersionNo(), steps.size());
+        log.info("[createFromDispatch][id={}, woNo={}, standardId={}, steps={}]",
+                workOrder.getId(), workOrder.getWoNo(),
+                standard == null ? null : standard.getId(), steps.size());
         return workOrder.getId();
     }
 
@@ -173,6 +219,54 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         }
         updateStatus(id, WorkOrderStatusEnum.CANCELLED.getStatus());
         log.info("[cancel][id={}, woNo={}]", id, workOrder.getWoNo());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void claim(Long id) {
+        WorkOrderDO workOrder = validateExists(id);
+        if (workOrder.getAssigneeTeamId() == null) {
+            throw exception(WORK_ORDER_CLAIM_TEAM_MISSING);
+        }
+        if (workOrder.getAssigneeUserId() != null) {
+            throw exception(WORK_ORDER_ALREADY_ASSIGNED);
+        }
+        Long userId = getLoginUserId();
+        assertTeamMember(workOrder.getAssigneeTeamId(), userId, true);
+        WorkOrderDO update = new WorkOrderDO();
+        update.setId(id);
+        update.setAssigneeUserId(userId);
+        workOrderMapper.updateById(update);
+        log.info("[claim][id={}, userId={}]", id, userId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void assign(Long id, Long assigneeUserId) {
+        if (assigneeUserId == null || assigneeUserId <= 0) {
+            throw exception(WORK_ORDER_STATUS_INVALID);
+        }
+        WorkOrderDO workOrder = validateExists(id);
+        if (workOrder.getAssigneeTeamId() == null) {
+            throw exception(WORK_ORDER_CLAIM_TEAM_MISSING);
+        }
+        assertTeamMember(workOrder.getAssigneeTeamId(), assigneeUserId, false);
+        WorkOrderDO update = new WorkOrderDO();
+        update.setId(id);
+        update.setAssigneeUserId(assigneeUserId);
+        workOrderMapper.updateById(update);
+        log.info("[assign][id={}, userId={}]", id, assigneeUserId);
+    }
+
+    /** 认领看当前登录人，指定看被指定的人。都要在这个班组的在册成员里。 */
+    private void assertTeamMember(Long teamId, Long userId, boolean claim) {
+        if (userId == null || userId <= 0) {
+            throw exception(claim ? WORK_ORDER_CLAIM_NOT_MEMBER : WORK_ORDER_ASSIGN_NOT_MEMBER);
+        }
+        Boolean member = personGroupMemberApi.contains(teamId, userId).getCheckedData();
+        if (!Boolean.TRUE.equals(member)) {
+            throw exception(claim ? WORK_ORDER_CLAIM_NOT_MEMBER : WORK_ORDER_ASSIGN_NOT_MEMBER);
+        }
     }
 
     /**

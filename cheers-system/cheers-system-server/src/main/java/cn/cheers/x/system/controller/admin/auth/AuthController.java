@@ -10,18 +10,18 @@ import cn.cheers.x.framework.security.config.SecurityProperties;
 import cn.cheers.x.framework.security.core.LoginUser;
 import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
 import cn.cheers.x.framework.tenant.core.util.TenantUtils;
+import cn.cheers.x.module.dynamicbusiness.api.directory.UserAccountApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.UserAccountDTO;
 import cn.cheers.x.system.controller.admin.auth.vo.*;
 import cn.cheers.x.system.convert.auth.AuthConvert;
 import cn.cheers.x.system.dal.dataobject.permission.MenuDO;
 import cn.cheers.x.system.dal.dataobject.permission.RoleDO;
-import cn.cheers.x.system.dal.dataobject.user.AdminUserDO;
 import cn.cheers.x.system.enums.logger.LoginLogTypeEnum;
 import cn.cheers.x.system.service.auth.AdminAuthService;
 import cn.cheers.x.system.service.permission.MenuService;
 import cn.cheers.x.system.service.permission.PermissionService;
 import cn.cheers.x.system.service.permission.RoleService;
 import cn.cheers.x.system.service.social.SocialClientService;
-import cn.cheers.x.system.service.user.AdminUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -52,7 +52,7 @@ public class AuthController {
     @Resource
     private AdminAuthService authService;
     @Resource
-    private AdminUserService userService;
+    private UserAccountApi userAccountApi;
     @Resource
     private RoleService roleService;
     @Resource
@@ -107,11 +107,8 @@ public class AuthController {
     }
 
     private AuthPermissionInfoRespVO loadPermissionInfo() {
-        // 1.1 获得用户信息
-        AdminUserDO user = userService.getUser(getLoginUserId());
-        if (user == null) {
-            return null;
-        }
+        // 登录会话里的编号是用户目录 id。资料只读用户目录，禁止再查 system_users。
+        UserAccountDTO user = userAccountApi.getUserAccount(getLoginUserId()).getCheckedData();
 
         // 1.2 获得角色列表
         Set<Long> roleIds = permissionService.getUserRoleIdListByUserId(getLoginUserId());

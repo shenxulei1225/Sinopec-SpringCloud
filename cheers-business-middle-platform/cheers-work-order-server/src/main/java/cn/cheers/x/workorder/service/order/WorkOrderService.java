@@ -66,4 +66,19 @@ public interface WorkOrderService {
      */
     void cancel(Long id);
 
+    /**
+     * 班组成员认领：执行人为空时写入当前登录用户。
+     *
+     * @param id 工单 ID
+     */
+    void claim(Long id);
+
+    /**
+     * 指定或改派执行人（班组已定前提下）。
+     *
+     * @param id             工单 ID
+     * @param assigneeUserId 执行人用户 ID
+     */
+    void assign(Long id, Long assigneeUserId);
+
 }

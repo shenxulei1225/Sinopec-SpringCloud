@@ -27,4 +27,16 @@ public class WorkOrderPageReqVO extends PageParam {
     @Schema(description = "工单标题", example = "离心泵")
     private String title;
 
+    @Schema(description = "派单班组 ID", example = "12")
+    private Long assigneeTeamId;
+
+    @Schema(description = "执行人用户 ID", example = "1")
+    private Long assigneeUserId;
+
+    @Schema(description = "仅班组待领（执行人为空）", example = "true")
+    private Boolean unassignedOnly;
+
+    @Schema(description = "只看已占档期的工单（计划开始和计划结束都有）", example = "true")
+    private Boolean scheduledOnly;
+
 }

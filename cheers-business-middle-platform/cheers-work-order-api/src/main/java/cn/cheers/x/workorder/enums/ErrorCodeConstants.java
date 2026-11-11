@@ -23,5 +23,13 @@ public interface ErrorCodeConstants {
     ErrorCode WORK_ORDER_STEP_NOT_EXISTS = new ErrorCode(1_021_001_004, "工单步骤不存在");
     ErrorCode WORK_ORDER_REQUIRED_STEPS_INCOMPLETE = new ErrorCode(1_021_001_005, "存在未完成的必填步骤，无法完工");
     ErrorCode WORK_ORDER_STEPS_EMPTY = new ErrorCode(1_021_001_006, "现场作业标准步骤不能为空，无法生成工单");
+    ErrorCode WORK_ORDER_TEAM_REQUIRED = new ErrorCode(1_021_001_007, "派单班组不能为空");
+    ErrorCode WORK_ORDER_HANDLING_TIME_REQUIRED = new ErrorCode(1_021_001_008, "请填写处理时刻");
+    ErrorCode WORK_ORDER_PLAN_WINDOW_INCOMPLETE = new ErrorCode(1_021_001_009, "占档期的工单要同时填写计划开始和计划结束");
+    ErrorCode WORK_ORDER_CONTENT_REQUIRED = new ErrorCode(1_021_001_010, "请填写工作内容");
+    ErrorCode WORK_ORDER_ALREADY_ASSIGNED = new ErrorCode(1_021_001_008, "工单已有执行人，无法认领");
+    ErrorCode WORK_ORDER_CLAIM_TEAM_MISSING = new ErrorCode(1_021_001_009, "工单未指定班组，无法认领");
+    ErrorCode WORK_ORDER_CLAIM_NOT_MEMBER = new ErrorCode(1_021_001_010, "你不在这个班组里，不能认领");
+    ErrorCode WORK_ORDER_ASSIGN_NOT_MEMBER = new ErrorCode(1_021_001_011, "只能指定这个班组里的人");
 
 }

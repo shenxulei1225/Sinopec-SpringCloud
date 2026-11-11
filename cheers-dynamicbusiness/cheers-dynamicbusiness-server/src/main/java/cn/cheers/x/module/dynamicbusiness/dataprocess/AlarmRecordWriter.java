@@ -76,7 +76,6 @@ public class AlarmRecordWriter {
             throw new ServiceException(400, "告警缺少设备或位置，不记");
         }
         inTenant(tenantId, () -> {
-            alarmCatalogEnsure.ensure();
             long stationId = stationOf(locationId);
             Long typeId = resolveType(categoryId, categoryCode);
             EntityRespDTO existing = entityRpcFacadeService.getByCode(recordCode, AlarmTypeCatalog.DIRECTORY);
@@ -127,7 +126,6 @@ public class AlarmRecordWriter {
     @Transactional(rollbackFor = Exception.class)
     public void close(long tenantId, String recordCode, Long ruleId) {
         inTenant(tenantId, () -> {
-            alarmCatalogEnsure.ensure();
             EntityRespDTO existing = entityRpcFacadeService.getByCode(recordCode, AlarmTypeCatalog.DIRECTORY);
             if (existing == null || existing.getId() == null) {
                 throw new ServiceException(404, "没有找到要关闭的告警");

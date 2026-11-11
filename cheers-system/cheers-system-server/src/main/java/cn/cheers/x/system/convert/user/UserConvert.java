@@ -4,6 +4,7 @@ import cn.cheers.x.framework.common.util.collection.CollectionUtils;
 import cn.cheers.x.framework.common.util.collection.MapUtils;
 import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.UserAccountDTO;
 import cn.cheers.x.system.controller.admin.dept.vo.post.PostSimpleRespVO;
 import cn.cheers.x.system.controller.admin.permission.vo.role.RoleSimpleRespVO;
 import cn.cheers.x.system.controller.admin.user.vo.profile.UserProfileRespVO;
@@ -46,6 +47,22 @@ public interface UserConvert {
     default UserProfileRespVO convert(AdminUserDO user, List<RoleDO> userRoles,
                                       DepartmentDTO dept, List<PostDO> posts) {
         UserProfileRespVO userVO = BeanUtils.toBean(user, UserProfileRespVO.class);
+        userVO.setRoles(BeanUtils.toBean(userRoles, RoleSimpleRespVO.class));
+        userVO.setDept(BeanUtils.toBean(dept, UserProfileRespVO.Department.class));
+        userVO.setPosts(BeanUtils.toBean(posts, PostSimpleRespVO.class));
+        return userVO;
+    }
+
+    /**
+     * 个人中心读用户目录。账号用 account，不读 system_users。
+     */
+    default UserProfileRespVO convert(UserAccountDTO user, List<RoleDO> userRoles,
+                                      DepartmentDTO dept, List<PostDO> posts) {
+        UserProfileRespVO userVO = new UserProfileRespVO();
+        userVO.setId(user.getId());
+        userVO.setUsername(user.getAccount());
+        userVO.setNickname(user.getNickname());
+        userVO.setMobile(user.getMobile());
         userVO.setRoles(BeanUtils.toBean(userRoles, RoleSimpleRespVO.class));
         userVO.setDept(BeanUtils.toBean(dept, UserProfileRespVO.Department.class));
         userVO.setPosts(BeanUtils.toBean(posts, PostSimpleRespVO.class));

@@ -116,8 +116,16 @@ public class AdminAuthServiceImpl implements AdminAuthService {
         validateCaptcha(reqVO);
 
         Long selectedTenantId = TenantContextHolder.getTenantId();
+        // 登录页「租户管理」：只认平台账号，会话留在平台租户，不进入业务租户。
         if (tenantService.isPlatformTenant(selectedTenantId)) {
-            throw exception(AUTH_LOGIN_TENANT_NOT_BUSINESS);
+            Long platformTenantId = tenantService.getPlatformTenantId();
+            UserAccountDTO platformUser = authenticatePlatformUser(reqVO.getUsername(), reqVO.getPassword());
+            if (reqVO.getSocialType() != null) {
+                socialUserService.bindSocialUser(new SocialUserBindReqDTO(platformUser.getId(), getUserType().getValue(),
+                        reqVO.getSocialType(), reqVO.getSocialCode(), reqVO.getSocialState()));
+            }
+            return TenantUtils.execute(platformTenantId, () ->
+                    issueLoginToken(platformUser, reqVO.getUsername(), platformTenantId, platformTenantId));
         }
         // 所选业务租户先查用户目录。没有时再查平台租户的用户目录。
         UserAccountDTO user = findUserAccount(reqVO.getUsername());

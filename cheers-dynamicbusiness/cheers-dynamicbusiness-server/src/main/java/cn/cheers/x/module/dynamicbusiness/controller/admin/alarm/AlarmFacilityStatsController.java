@@ -34,6 +34,6 @@ public class AlarmFacilityStatsController {
     @PreAuthorize("@catalogAccess.allow('alarm', 'query')")
     public CommonResult<AlarmFacilityStatsView> stats(@RequestParam("facilityId") Long facilityId) {
         long stationId = facilityId == null ? 0L : facilityId;
-        return success(alarmFacilityStatsService.snapshot(stationId, null));
+        return success(alarmFacilityStatsService.snapshot(stationId, java.util.List.of()));
     }
 }

@@ -4,6 +4,7 @@ import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.cheers.x.workorder.api.dto.WorkOrderCreateReqDTO;
+import cn.cheers.x.workorder.controller.admin.vo.order.WorkOrderAssignReqVO;
 import cn.cheers.x.workorder.controller.admin.vo.order.WorkOrderCreateReqVO;
 import cn.cheers.x.workorder.controller.admin.vo.order.WorkOrderPageReqVO;
 import cn.cheers.x.workorder.controller.admin.vo.order.WorkOrderRespVO;
@@ -93,6 +94,25 @@ public class WorkOrderController {
     @PreAuthorize("@ss.hasPermission('work-order:order:cancel')")
     public CommonResult<Boolean> cancel(@PathVariable("id") Long id) {
         workOrderService.cancel(id);
+        return success(true);
+    }
+
+    @PostMapping("/{id}/claim")
+    @Operation(summary = "班组待领认领（写入当前登录用户为执行人）")
+    @Parameter(name = "id", description = "工单编号", required = true, example = "1")
+    @PreAuthorize("@ss.hasPermission('work-order:order:start')")
+    public CommonResult<Boolean> claim(@PathVariable("id") Long id) {
+        workOrderService.claim(id);
+        return success(true);
+    }
+
+    @PostMapping("/{id}/assign")
+    @Operation(summary = "指定或改派执行人")
+    @Parameter(name = "id", description = "工单编号", required = true, example = "1")
+    @PreAuthorize("@ss.hasPermission('work-order:order:create')")
+    public CommonResult<Boolean> assign(@PathVariable("id") Long id,
+                                        @Valid @RequestBody WorkOrderAssignReqVO reqVO) {
+        workOrderService.assign(id, reqVO.getAssigneeUserId());
         return success(true);
     }
 

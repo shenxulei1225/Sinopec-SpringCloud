@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 /**
  * 把一座站的告警统计发到已经有的「场站告警」主题。
  * 名字是 alarm/facility/{场站编号}。一份报文给所有正在看这座站的人。
+ * 分类数字给右侧统计。changed 是这次变动的告警列表，给左侧实时名单按编号更新。
  * 不按某个人点开的级别拆开。消息服务没连上只记日志，不改告警记录。
  */
 @Component

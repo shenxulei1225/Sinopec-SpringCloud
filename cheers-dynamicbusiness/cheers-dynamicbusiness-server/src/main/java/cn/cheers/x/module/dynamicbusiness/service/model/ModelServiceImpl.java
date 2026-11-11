@@ -33,6 +33,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryDO;
 import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.BaseFieldLibrarySyncService;
+import cn.cheers.x.module.dynamicbusiness.service.tenantcapability.RepairStandardCatalogWriter;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeBaseFieldService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryService;
@@ -106,8 +107,7 @@ public class ModelServiceImpl implements ModelService {
     @Resource
     private BaseFieldLibrarySyncService baseFieldLibrarySyncService;
     @Resource
-    @Lazy
-    private cn.cheers.x.module.dynamicbusiness.service.hierarchy.OrgTreeParentFieldEnsureService orgTreeParentFieldEnsureService;
+    private RepairStandardCatalogWriter repairStandardCatalogWriter;
     @Resource
     private EntityTypeMapper entityTypeMapper;
     @Resource
@@ -250,12 +250,12 @@ public class ModelServiceImpl implements ModelService {
         defaultGroupReq.setColor("#409eff");
         modelFieldGroupService.createModelFieldGroup(defaultGroupReq);
 
-        // 高级分类：先确保系统组织上级已挂到类型，再物化进本型号的模型字段
-        if (reqVO.getEntityTypeCode() != null) {
-            orgTreeParentFieldEnsureService.ensureForEntityTypeCode(reqVO.getEntityTypeCode());
-        }
-        // 物化该业务类型已有固定列到本模型字段表（读路径不再虚合并 BASE）
+        // 型号只挂上这个目录已经有的基础字段。缺的字段不在这里补。
         baseFieldLibrarySyncService.assignAllBaseFieldsToModel(model.getId());
+        // 新的设备型号同时写下对应报修类型。报修目录还没有时，这一步不写。
+        if (RepairStandardCatalogWriter.EQUIPMENT.equals(reqVO.getEntityTypeCode())) {
+            repairStandardCatalogWriter.writeForNewEquipmentModel(model.getId(), model.getName());
+        }
 
         // 发布 Model 创建事件（用于事件驱动机制）
         // 需求：FR-BDA-005, FR-BDA-023, FR-BDA-072
@@ -334,6 +334,9 @@ public class ModelServiceImpl implements ModelService {
         }
         // 源型号若缺固定列分配，克隆后补齐（只插缺的，不覆盖已复制行的规则）
         baseFieldLibrarySyncService.assignAllBaseFieldsToModel(model.getId());
+        if (RepairStandardCatalogWriter.EQUIPMENT.equals(entityTypeCode)) {
+            repairStandardCatalogWriter.writeForNewEquipmentModel(model.getId(), model.getName());
+        }
 
         LinkedHashSet<Long> categoryIds = new LinkedHashSet<>();
         List<ModelCategoryRelationDO> sourceRels =

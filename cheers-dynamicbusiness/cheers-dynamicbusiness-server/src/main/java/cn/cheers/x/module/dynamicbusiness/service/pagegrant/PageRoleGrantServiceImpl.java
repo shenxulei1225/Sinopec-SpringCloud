@@ -16,52 +16,27 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 页面授权的写入。
- * 只接受角色页上已经列出的页面和动作。没有对应行，角色页上这项就是未勾选。
+ * 页面授权的写入与登记读取。
+ * 只接受 {@link PagePermissionRegistry} 已列出的页面和动作。没有对应行，角色页上这项就是未勾选。
  * 不在这里放行业务接口。
  */
 @Service
 public class PageRoleGrantServiceImpl implements PageRoleGrantService {
 
-    /** 与角色页分组一致。页面编码对应它允许的动作。 */
-    static final Map<String, Set<String>> PAGES = Map.ofEntries(
-            Map.entry("live-monitor", Set.of("view", "command")),
-            Map.entry("inspection-task", Set.of("view", "maintain", "enable")),
-            Map.entry("inspection-schedule", Set.of("view")),
-            Map.entry("emergency-event", Set.of("view", "create", "confirm", "assess", "start", "supplement", "command")),
-            Map.entry("emergency-resource", Set.of("view", "maintain")),
-            Map.entry("emergency-guarantee", Set.of("view", "maintain")),
-            Map.entry("emergency-command-template", Set.of("view", "maintain", "enable")),
-            Map.entry("analysis-capability", Set.of("view", "maintain", "enable")),
-            Map.entry("analysis-job", Set.of("view")),
-            Map.entry("analysis-provider", Set.of("view", "maintain", "enable")),
-            Map.entry("road-network", Set.of("view")),
-            Map.entry("facility-gis", Set.of("view")),
-            Map.entry("stats", Set.of("view")),
-            Map.entry("catalog-admin", Set.of("view", "create", "update", "delete")),
-            Map.entry("organization", Set.of("view", "maintain-dept", "maintain-user", "reset-password")),
-            Map.entry("portal", Set.of("view", "maintain")),
-            Map.entry("role-permission", Set.of("view", "maintain-role", "save-grant")),
-            Map.entry("system-account", Set.of("view", "maintain")),
-            Map.entry("resource-library", Set.of("view", "maintain")),
-            Map.entry("plugin", Set.of("view", "maintain")),
-            Map.entry("capability-config", Set.of("view", "maintain")),
-            Map.entry("station-config", Set.of("view", "maintain")),
-            Map.entry("gis-admin", Set.of("view", "maintain")),
-            Map.entry("business-list", Set.of("view", "maintain")),
-            Map.entry("mind-map", Set.of("view", "maintain")),
-            Map.entry("workflow", Set.of("view", "maintain"))
-    );
-
     @Resource
     private PageRoleGrantMapper pageRoleGrantMapper;
+
+    @Override
+    public List<PagePermissionRegistry.GroupDef> listGroups() {
+        return PagePermissionRegistry.groups();
+    }
 
     @Override
     public List<PageRoleGrantItem> listByRoleId(Long roleId) {
         Map<String, LinkedHashSet<String>> grouped = new LinkedHashMap<>();
         for (PageRoleGrantDO row : pageRoleGrantMapper.selectListByRoleId(roleId)) {
-            Set<String> allowed = PAGES.get(row.getPageCode());
-            if (allowed == null || !allowed.contains(row.getAction())) {
+            Set<String> allowed = PagePermissionRegistry.actionsOf(row.getPageCode());
+            if (allowed.isEmpty() || !allowed.contains(row.getAction())) {
                 continue;
             }
             grouped.computeIfAbsent(row.getPageCode(), key -> new LinkedHashSet<>()).add(row.getAction());
@@ -86,8 +61,8 @@ public class PageRoleGrantServiceImpl implements PageRoleGrantService {
                 throw new ServiceException(400, "请选择页面");
             }
             String pageCode = item.pageCode().trim();
-            Set<String> allowed = PAGES.get(pageCode);
-            if (allowed == null) {
+            Set<String> allowed = PagePermissionRegistry.actionsOf(pageCode);
+            if (allowed.isEmpty()) {
                 throw new ServiceException(400, "页面不在角色页分组里：" + pageCode);
             }
             Set<String> actions = new LinkedHashSet<>();
@@ -107,5 +82,34 @@ public class PageRoleGrantServiceImpl implements PageRoleGrantService {
                 pageRoleGrantMapper.insert(row);
             }
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void mergeViewActions(Long roleId, List<String> pageCodes) {
+        if (roleId == null) {
+            throw new ServiceException(400, "请选择角色");
+        }
+        if (pageCodes == null || pageCodes.isEmpty()) {
+            return;
+        }
+        Map<String, LinkedHashSet<String>> grouped = new LinkedHashMap<>();
+        for (PageRoleGrantItem existing : listByRoleId(roleId)) {
+            grouped.put(existing.pageCode(), new LinkedHashSet<>(existing.actions()));
+        }
+        for (String raw : pageCodes) {
+            if (!StringUtils.hasText(raw)) {
+                continue;
+            }
+            String pageCode = raw.trim();
+            Set<String> allowed = PagePermissionRegistry.actionsOf(pageCode);
+            if (allowed.isEmpty() || !allowed.contains("view")) {
+                continue;
+            }
+            grouped.computeIfAbsent(pageCode, key -> new LinkedHashSet<>()).add("view");
+        }
+        List<PageRoleGrantItem> merged = new ArrayList<>();
+        grouped.forEach((pageCode, actions) -> merged.add(new PageRoleGrantItem(pageCode, List.copyOf(actions))));
+        replaceRoleGrants(roleId, merged);
     }
 }

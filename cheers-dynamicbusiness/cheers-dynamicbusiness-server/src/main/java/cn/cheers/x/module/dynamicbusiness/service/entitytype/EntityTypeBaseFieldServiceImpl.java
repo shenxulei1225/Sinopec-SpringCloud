@@ -65,9 +65,6 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
     private DynamicTableService dynamicTableService;
     @Resource
     @Lazy
-    private FacilityOwningFieldEnsureService facilityOwningFieldEnsureService;
-    @Resource
-    @Lazy
     private OrgTreeParentFieldEnsureService orgTreeParentFieldEnsureService;
     @Resource
     @Qualifier("systemAsyncExecutor")
@@ -498,12 +495,6 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
     @Override
     public List<EntityTypePlatformFieldRespVO> listPlatformFields(String entityTypeCode) {
         EntityTypeDO entityType = requireEntityType(entityTypeCode);
-        // 打开基础信息时幂等补齐存量站场级类型的所属场站（写路径 create/update 也会 ensure）
-        if (FacilityOwningFieldEnsureService.shouldEnsure(entityType)) {
-            facilityOwningFieldEnsureService.ensureForEntityTypeCode(entityType.getCode());
-        }
-        // 高级分类：幂等补齐系统组织上级（parentId / 同数据类型引用）
-        orgTreeParentFieldEnsureService.ensureForEntityTypeCode(entityType.getCode());
         List<EntityTypePlatformFieldRespVO> fields = new ArrayList<>(4);
         fields.add(buildPlatformField(entityType, "name", "名称", "TEXT"));
         fields.add(buildPlatformField(entityType, "status", "状态", "NUMBER"));

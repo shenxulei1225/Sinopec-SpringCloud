@@ -12,6 +12,12 @@ public interface LoginCredentialService {
     /** 重置口令。没有凭证时拒绝，不新建一条用户。 */
     void replace(Long userId, String rawPassword);
 
+    /**
+     * 管理员设口令：已有则重置，没有则新建。
+     * 编号必须是用户目录 id。不写系统用户表。
+     */
+    void setPassword(Long userId, String rawPassword);
+
     /** 核对旧密码后再换成新密码。没有凭证或旧密码不对则拒绝，不新建口令。 */
     void change(Long userId, String oldPassword, String newPassword);
 

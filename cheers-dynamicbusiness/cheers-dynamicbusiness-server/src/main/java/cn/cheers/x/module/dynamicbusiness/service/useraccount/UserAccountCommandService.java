@@ -31,8 +31,6 @@ import java.util.Map;
 public class UserAccountCommandService {
 
     @Resource
-    private UserAccountCatalogEnsure userAccountCatalogEnsure;
-    @Resource
     private EntityService entityService;
     @Resource
     private ObjectProvider<LoginCredentialService> loginCredentialService;
@@ -45,7 +43,7 @@ public class UserAccountCommandService {
 
     public Long create(UserAccountCreateReqVO request) {
         UserAccountCreateRules.check(request);
-        Long modelId = userAccountCatalogEnsure.ensureModelId();
+        Long modelId = userAccountQueryService.requireModelId();
         Long entityId = null;
         try {
             entityId = entityService.create(toEntityCreate(request, modelId));

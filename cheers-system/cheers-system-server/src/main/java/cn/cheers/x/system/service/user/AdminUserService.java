@@ -65,18 +65,22 @@ public interface AdminUserService {
     void updateUserProfile(Long id, @Valid UserProfileUpdateReqVO reqVO);
 
     /**
-     * 修改用户个人密码
+     * 登录用户改自己的密码。
+     * {@code id} 是用户目录编号；口令读写 {@code system_login_credential}。
+     * 不查写 {@code system_users}。
      *
-     * @param id 用户编号
-     * @param reqVO 更新用户个人密码
+     * @param id 当前登录的用户目录编号
+     * @param reqVO 旧密码与新密码
      */
     void updateUserPassword(Long id, @Valid UserProfileUpdatePasswordReqVO reqVO);
 
     /**
-     * 修改密码
+     * 管理员重置口令。
+     * {@code id} 是用户目录编号；写入 {@code system_login_credential}。
+     * 不查写 {@code system_users}。
      *
-     * @param id       用户编号
-     * @param password 密码
+     * @param id       用户目录编号
+     * @param password 新口令明文
      */
     void updateUserPassword(Long id, String password);
 

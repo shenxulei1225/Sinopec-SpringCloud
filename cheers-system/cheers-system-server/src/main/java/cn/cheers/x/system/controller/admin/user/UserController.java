@@ -84,7 +84,8 @@ public class UserController {
     }
 
     @PutMapping("/update-password")
-    @Operation(summary = "重置用户密码")
+    @Operation(summary = "重置用户密码",
+            description = "id 是用户目录编号。口令写入 system_login_credential，不写 system_users。")
     @PreAuthorize("@ss.hasPermission('system:user:update-password')")
     public CommonResult<Boolean> updateUserPassword(@Valid @RequestBody UserUpdatePasswordReqVO reqVO) {
         userService.updateUserPassword(reqVO.getId(), reqVO.getPassword());

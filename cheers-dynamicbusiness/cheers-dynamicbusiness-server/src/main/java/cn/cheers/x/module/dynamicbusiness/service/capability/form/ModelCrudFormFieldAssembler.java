@@ -412,6 +412,7 @@ public final class ModelCrudFormFieldAssembler {
             putEntityRefTarget(item, entityTypeCode, libraryField, null, refResolveContext,
                     baseField != null ? baseField.getFieldCode() : null);
         }
+        attachIncomingRef(item, libraryField);
     }
 
     private static boolean codeStartsWithRel(String fieldCode) {
@@ -469,6 +470,8 @@ public final class ModelCrudFormFieldAssembler {
         }
         // 目录可以隐藏这一栏。本型号分配写了显示时，新建/编辑/详情以本型号为准。
         applyAssignmentFormVisibility(item, assign.getValidationRules());
+        // 型号字段上的三个画面开关写在分配行。有值就盖过规则 JSON，和字段配置里的开关是同一份。
+        applyAssignmentColumnVisibility(item, assign);
         applyFieldTypeExtensions(item, entityTypeCode, field, fieldType, assign, refResolveContext);
         if (FieldTypeEnum.isServiceCall(fieldType)) {
             applyServiceCall(item, field);
@@ -676,6 +679,19 @@ public final class ModelCrudFormFieldAssembler {
         copyBooleanRule(item, rules, "detailVisible", "detail_visible");
     }
 
+    /** 分配行上的创建/编辑/详情开关。没写则保持规则 JSON 或目录上的值。 */
+    private static void applyAssignmentColumnVisibility(Map<String, Object> item, ModelFieldAssignmentDO assign) {
+        if (assign.getCreateVisible() != null) {
+            item.put("createVisible", assign.getCreateVisible());
+        }
+        if (assign.getEditVisible() != null) {
+            item.put("editVisible", assign.getEditVisible());
+        }
+        if (assign.getDetailVisible() != null) {
+            item.put("detailVisible", assign.getDetailVisible());
+        }
+    }
+
     /**
      * 调用服务不往记录上写值。服务和操作记在字段 options。
      * 缺了服务或操作时，创建弹窗仍画出输入，保存后调用会拒绝。
@@ -843,6 +859,7 @@ public final class ModelCrudFormFieldAssembler {
             putStaticOptions(item, field.getOptions());
             item.put("valueShape", "array");
         }
+        attachIncomingRef(item, field);
     }
 
     private static void putEntityRefTarget(
@@ -873,6 +890,41 @@ public final class ModelCrudFormFieldAssembler {
                 "capabilityBinding", binding,
                 "valueField", "id",
                 "labelField", "name"));
+    }
+
+    /**
+     * 字段库 options 写了 incoming 时，这份引用的编号在对方记录上。
+     * 本条不存对方编号。新建和编辑不出现这一格。页签打开时再按本条去找。
+     */
+    private static void attachIncomingRef(Map<String, Object> item, FieldDO field) {
+        if (field == null || !StringUtils.hasText(field.getOptions())) {
+            return;
+        }
+        JSONObject obj;
+        try {
+            obj = JSON.parseObject(field.getOptions());
+        } catch (RuntimeException ex) {
+            return;
+        }
+        if (obj == null || !Boolean.TRUE.equals(obj.getBoolean("incoming"))) {
+            return;
+        }
+        String target = obj.getString("targetEntityTypeCode");
+        if (!StringUtils.hasText(target)) {
+            return;
+        }
+        Map<String, Object> incoming = new LinkedHashMap<>();
+        incoming.put("targetEntityTypeCode", target.trim());
+        String modelName = obj.getString("targetModelName");
+        if (StringUtils.hasText(modelName)) {
+            incoming.put("targetModelName", modelName.trim());
+        }
+        item.put("incomingRef", incoming);
+        item.put("targetEntityTypeCode", target.trim());
+        item.put("readOnly", true);
+        item.put("required", false);
+        item.put("createVisible", false);
+        item.put("editVisible", false);
     }
 
     /**

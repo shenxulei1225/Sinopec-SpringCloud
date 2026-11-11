@@ -2,12 +2,13 @@ package cn.cheers.x.module.dynamicbusiness.controller.admin.useraccount;
 
 import cn.cheers.x.framework.apilog.core.annotation.ApiAccessLog;
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.UserAccountDTO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.useraccount.vo.UserAccountCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.useraccount.vo.UserAccountDepartmentListReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.useraccount.vo.UserAccountDepartmentListRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.useraccount.vo.UserAccountProfileUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.useraccount.vo.UserAccountResetPasswordReqVO;
-import cn.cheers.x.module.dynamicbusiness.service.useraccount.UserAccountCatalogEnsure;
+import cn.cheers.x.module.dynamicbusiness.service.directory.UserAccountDirectoryQueryService;
 import cn.cheers.x.module.dynamicbusiness.service.useraccount.UserAccountCommandService;
 import cn.cheers.x.module.dynamicbusiness.service.useraccount.UserAccountQueryService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,10 +19,12 @@ import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.CREATE;
@@ -29,7 +32,8 @@ import static cn.cheers.x.framework.apilog.core.enums.OperateTypeEnum.UPDATE;
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
- * 准备用户目录。人员列表和新建走数据管理的实体接口，不走这里。
+ * 按编号读取走用户目录已有查询，不在这里新建用户。
+ * 人员列表仍走数据管理的实体接口。这里不补用户目录，也不补型号。
  * 不负责角色，不负责改部门树。
  */
 @Tag(name = "管理后台 - 用户目录")
@@ -43,13 +47,23 @@ public class UserAccountController {
     @Resource
     private UserAccountQueryService userAccountQueryService;
     @Resource
-    private UserAccountCatalogEnsure userAccountCatalogEnsure;
+    private UserAccountDirectoryQueryService userAccountDirectoryQueryService;
+
+    /**
+     * 按用户目录编号读取这个人。
+     * 报修详情里「报修人」用返回的昵称。只转已有查询，不新建用户，不读系统用户表。
+     */
+    @GetMapping("/get")
+    @Operation(summary = "按用户目录编号读取")
+    public CommonResult<UserAccountDTO> get(@RequestParam("id") Long id) {
+        return success(userAccountDirectoryQueryService.getUserAccount(id));
+    }
 
     @PostMapping("/prepare-catalog")
-    @Operation(summary = "准备用户目录和用户型号")
+    @Operation(summary = "读取已经建好的用户型号")
     @PreAuthorize("@ss.hasPermission('system:user:create')")
     public CommonResult<Long> prepareCatalog() {
-        return success(userAccountCatalogEnsure.ensureModelId());
+        return success(userAccountQueryService.requireModelId());
     }
 
     @PostMapping("/create")

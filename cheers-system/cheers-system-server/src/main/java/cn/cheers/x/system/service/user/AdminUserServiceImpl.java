@@ -14,7 +14,9 @@ import cn.cheers.x.framework.common.util.validation.ValidationUtils;
 import cn.cheers.x.framework.datapermission.core.util.DataPermissionUtils;
 import cn.cheers.x.infra.api.config.ConfigApi;
 import cn.cheers.x.module.dynamicbusiness.api.directory.DepartmentDirectoryApi;
+import cn.cheers.x.module.dynamicbusiness.api.directory.UserAccountApi;
 import cn.cheers.x.module.dynamicbusiness.api.directory.dto.DepartmentDTO;
+import cn.cheers.x.module.dynamicbusiness.api.directory.dto.UserAccountDTO;
 import cn.cheers.x.system.controller.admin.auth.vo.AuthRegisterReqVO;
 import cn.cheers.x.system.controller.admin.user.vo.profile.UserProfileUpdatePasswordReqVO;
 import cn.cheers.x.system.controller.admin.user.vo.profile.UserProfileUpdateReqVO;
@@ -26,6 +28,7 @@ import cn.cheers.x.system.dal.dataobject.dept.UserPostDO;
 import cn.cheers.x.system.dal.dataobject.user.AdminUserDO;
 import cn.cheers.x.system.dal.mysql.dept.UserPostMapper;
 import cn.cheers.x.system.dal.mysql.user.AdminUserMapper;
+import cn.cheers.x.system.service.auth.LoginCredentialService;
 import cn.cheers.x.system.service.dept.PostService;
 import cn.cheers.x.system.service.oauth2.OAuth2TokenService;
 import cn.cheers.x.system.service.permission.PermissionService;
@@ -87,6 +90,17 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     @Resource
     private ConfigApi configApi;
+
+    /**
+     * 登录口令权威表。改自己密码、管理员重置都只写这里。
+     * 禁止再写 system_users.password。
+     */
+    @Resource
+    private LoginCredentialService loginCredentialService;
+
+    /** 用户目录。登录会话里的用户编号以这里为准。 */
+    @Resource
+    private UserAccountApi userAccountApi;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -188,42 +202,29 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     @Override
     public void updateUserProfile(Long id, UserProfileUpdateReqVO reqVO) {
-        // 校验正确性
-        validateUserExists(id);
-        validateEmailUnique(id, reqVO.getEmail());
-        validateMobileUnique(id, reqVO.getMobile());
-        // 执行更新
-        userMapper.updateById(BeanUtils.toBean(reqVO, AdminUserDO.class).setId(id));
+        // id 是用户目录编号。资料权威在用户目录，禁止再写 system_users 冒充成功。
+        userAccountApi.getUserAccount(id).getCheckedData();
+        throw new ServiceException(400, "个人资料请在组织用户目录修改，这里不再写入系统用户表");
     }
 
     @Override
     public void updateUserPassword(Long id, UserProfileUpdatePasswordReqVO reqVO) {
-        // 登录用户改自己的密码：只按用户编号读写自己的账号。
-        // 不走部门可见范围。否则查自己时会去算部门权限，权限枚举加载失败就会变成「系统异常」。
-        DataPermissionUtils.executeIgnore(() -> {
-            validateOldPassword(id, reqVO.getOldPassword());
-            AdminUserDO updateObj = new AdminUserDO().setId(id);
-            updateObj.setPassword(encodePassword(reqVO.getNewPassword()));
-            userMapper.updateById(updateObj);
-        });
+        // 登录用户改自己的密码：id 是用户目录编号（与登录会话一致）。
+        // 口令只读写 system_login_credential；禁止再查写 system_users，否则目录用户会报「用户不存在」。
+        // 不走部门可见范围：改自己的口令与部门权限无关。
+        DataPermissionUtils.executeIgnore(() ->
+                loginCredentialService.change(id, reqVO.getOldPassword(), reqVO.getNewPassword()));
     }
 
     @Override
     @LogRecord(type = SYSTEM_USER_TYPE, subType = SYSTEM_USER_UPDATE_PASSWORD_SUB_TYPE, bizNo = "{{#id}}",
             success = SYSTEM_USER_UPDATE_PASSWORD_SUCCESS)
     public void updateUserPassword(Long id, String password) {
-        // 1. 校验用户存在
-        AdminUserDO user = validateUserExists(id);
-
-        // 2. 更新密码
-        AdminUserDO updateObj = new AdminUserDO();
-        updateObj.setId(id);
-        updateObj.setPassword(encodePassword(password)); // 加密密码
-        userMapper.updateById(updateObj);
-
-        // 3. 记录操作日志上下文
-        LogRecordContext.putVariable("user", user);
-        LogRecordContext.putVariable("newPassword", updateObj.getPassword());
+        // 管理员重置：id 是用户目录编号。先确认目录有人，再写口令表。
+        UserAccountDTO account = userAccountApi.getUserAccount(id).getCheckedData();
+        DataPermissionUtils.executeIgnore(() -> loginCredentialService.setPassword(id, password));
+        LogRecordContext.putVariable("user", account);
+        LogRecordContext.putVariable("newPassword", "******");
     }
 
     @Override

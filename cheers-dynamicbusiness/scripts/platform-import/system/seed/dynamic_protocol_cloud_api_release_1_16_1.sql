@@ -6,7 +6,7 @@ SET search_path TO dynamicbusiness, public;
 
 UPDATE dynamic_field
 SET
-  options = '[{"label":"机器人对接协议","value":"robot-ws"},{"label":"无人机对接协议","value":"uav-ws"},{"label":"大疆机场 1.16.1","value":"dji-dock-1.16.1"},{"label":"大疆 Pilot 1.16.1","value":"dji-pilot-1.16.1"}]',
+  options = '[{"label":"机器人对接协议","value":"robot-ws"},{"label":"无人机对接协议","value":"uav-ws"},{"label":"大疆机场 1.16.1","value":"dji-dock-1.16.1"},{"label":"大疆 Pilot 1.16.1","value":"dji-pilot-1.16.1"},{"label":"宇视 OpenAPI 1.23","value":"uniview-openapi-1.23"}]',
   description = CASE code
     WHEN 'platform_protocol' THEN '这台设备默认按哪一种平台对接协议下发。大疆机场和大疆 Pilot 的选项带上云 API 发布号 1.16.1。不是支持清单。任务里可临时改，不改就用这条。'
     WHEN 'protocol_versions' THEN '这台设备支持哪些平台对接协议。双击多选。大疆机场和大疆 Pilot 的选项带上云 API 发布号 1.16.1。不是当前正在用的那一条。'
