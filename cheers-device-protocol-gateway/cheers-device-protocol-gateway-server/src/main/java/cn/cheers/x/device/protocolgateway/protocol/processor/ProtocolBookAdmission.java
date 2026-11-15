@@ -4,6 +4,7 @@ import cn.cheers.x.device.protocolgateway.api.datacollection.CollectionSample;
 import cn.cheers.x.device.protocolgateway.datacollection.CatalogLookup;
 import cn.cheers.x.device.protocolgateway.datacollection.DeviceProtocolVersionCatalog;
 import cn.cheers.x.device.protocolgateway.datacollection.ProtocolInstructionCatalog;
+import cn.cheers.x.module.dynamicbusiness.api.security.VehiclePassEventCodes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +37,7 @@ public class ProtocolBookAdmission {
         }
         String protocolVersion = version.get();
         String messageKind = sample.messageKind() == null ? "" : sample.messageKind().trim();
-        if (messageKind.startsWith("inspection_")) {
+        if (messageKind.startsWith("inspection_") || VehiclePassEventCodes.isVehiclePass(messageKind)) {
             return Decision.admit(protocolVersion);
         }
         Integer outer = parseOpcode(sample.messageKind());

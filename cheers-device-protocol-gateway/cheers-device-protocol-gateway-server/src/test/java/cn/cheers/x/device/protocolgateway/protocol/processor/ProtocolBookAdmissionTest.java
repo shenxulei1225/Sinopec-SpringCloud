@@ -10,6 +10,7 @@ import cn.cheers.x.device.protocolgateway.datacollection.FieldDescriptionRow;
 import cn.cheers.x.device.protocolgateway.datacollection.ProtocolInstructionCatalog;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.inspection.task.api.InspectionDeviceUplinkApi;
+import cn.cheers.x.module.dynamicbusiness.api.security.VehiclePassEventCodes;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -98,6 +99,12 @@ class ProtocolBookAdmissionTest {
         dispatcher.consume(event("inspection_command_accepted", Map.of("taskId", "923543")));
 
         verify(robotApi).notify(any());
+    }
+
+    @Test
+    void vehiclePassSeen_isAdmittedWithoutLookingUpAnOpcode() {
+        ProtocolBookAdmission admission = admission(Set.of(), "parking-http");
+        assertTrue(admission.decide(event(VehiclePassEventCodes.SEEN, Map.of()).sample()).admitted());
     }
 
     private static ProtocolBookAdmission admission(Set<Integer> opcodes, String version) {

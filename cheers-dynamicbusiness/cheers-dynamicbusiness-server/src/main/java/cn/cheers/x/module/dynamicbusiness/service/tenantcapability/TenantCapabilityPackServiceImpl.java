@@ -6,6 +6,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.tenantcapability.Tenant
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.tenantcapability.TenantCapabilityPackMapper;
 import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogRoleGrantItem;
 import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogRoleGrantService;
+import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeCategoryBootstrapService;
 import cn.cheers.x.module.dynamicbusiness.service.pagegrant.PageRoleGrantService;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
@@ -23,7 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 开通编排：写开通表 → 挂目录 → 新报修目录写上标准字段和型号 → 租户管理员页面查看动作 → 目录资源授权。
+ * 开通编排：写开通表 → 挂目录 → 新报修、车辆、维抢修目录写上标准字段和型号 → 租户管理员页面查看动作 → 目录资源授权。
  * 模板目录默认从租户 1 复制注册行；目标租户已有同编码目录则跳过，也不再补字段。
  */
 @Service
@@ -49,6 +50,10 @@ public class TenantCapabilityPackServiceImpl implements TenantCapabilityPackServ
     private RepairStandardCatalogWriter repairStandardCatalogWriter;
     @Resource
     private VehicleCatalogWriter vehicleCatalogWriter;
+    @Resource
+    private RepairBaseCatalogWriter repairBaseCatalogWriter;
+    @Resource
+    private EntityTypeCategoryBootstrapService entityTypeCategoryBootstrapService;
 
     @Override
     public List<BusinessCapabilityPackDefinition> listDefinitions() {
@@ -155,6 +160,19 @@ public class TenantCapabilityPackServiceImpl implements TenantCapabilityPackServ
                 }
             }
             grantNewPages(tenantId, added);
+            // 包已经开通过，清单里多了还没有的目录时，只插入缺的那一本。已经有的目录在复制方法里直接返回，不补字段。
+            List<String> created = new ArrayList<>();
+            for (String catalogCode : pack.catalogCodes()) {
+                if (copyCatalogRowFromTemplate(tenantId, catalogCode)) {
+                    created.add(catalogCode);
+                }
+            }
+            if (!created.isEmpty()) {
+                Long adminRoleId = findTenantAdminRoleId(tenantId);
+                if (adminRoleId != null) {
+                    TenantUtils.execute(tenantId, () -> mergeCatalogGrants(adminRoleId, created));
+                }
+            }
         }
     }
 
@@ -262,12 +280,14 @@ public class TenantCapabilityPackServiceImpl implements TenantCapabilityPackServ
     /**
      * 这次开通还没有该目录时，复制模板上的目录注册行。
      * 专用表名写成当前租户自己的表，不沿用模板租户的表名。
-     * 报修目录是这次新插入的，同时写上模板上的标准字段和标准型号。
+     * 报修、车辆、维抢修目录是这次新插入的，同时写上模板上的标准字段和标准型号。
      * 已经有的目录不改。不建安防那组复用目录。
+     *
+     * @return 这次是否新插入了目录行
      */
-    private void copyCatalogRowFromTemplate(Long targetTenantId, String catalogCode) {
+    private boolean copyCatalogRowFromTemplate(Long targetTenantId, String catalogCode) {
         if (!StringUtils.hasText(catalogCode)) {
-            return;
+            return false;
         }
         String code = catalogCode.trim();
         Integer exists = jdbcTemplate.queryForObject(
@@ -279,7 +299,7 @@ public class TenantCapabilityPackServiceImpl implements TenantCapabilityPackServ
                 targetTenantId,
                 code);
         if (exists != null && exists > 0) {
-            return;
+            return false;
         }
         Integer templateCount = jdbcTemplate.queryForObject(
                 """
@@ -291,7 +311,7 @@ public class TenantCapabilityPackServiceImpl implements TenantCapabilityPackServ
                 code);
         if (templateCount == null || templateCount <= 0) {
             log.warn("[copyCatalogRowFromTemplate][target={}][code={}] 模板租户没有该目录，跳过", targetTenantId, code);
-            return;
+            return false;
         }
         // 用户目录是租户级登录身份：开通时强制 NETWORK，不跟模板里被误改成的 FACILITY 走。
         // 所属场站只属于租户内站场级目录，不进入平台租户管理的登录账号路径。
@@ -330,6 +350,13 @@ public class TenantCapabilityPackServiceImpl implements TenantCapabilityPackServ
         if (inserted > 0 && VehicleCatalogWriter.CATALOGS.contains(code)) {
             vehicleCatalogWriter.writeForNewCatalog(targetTenantId, code);
         }
+        if (inserted > 0 && RepairBaseCatalogWriter.CATALOGS.contains(code)) {
+            repairBaseCatalogWriter.writeForNewCatalog(targetTenantId, code);
+            // 分类已随目录写入。这里只挂数据页和模型页布局，不补字段。
+            TenantUtils.execute(targetTenantId, () ->
+                    entityTypeCategoryBootstrapService.ensureForEntityTypeCode(code));
+        }
+        return inserted > 0;
     }
 
     private void mergeCatalogGrants(Long roleId, List<String> catalogCodes) {

@@ -6,17 +6,10 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.FieldFilter
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.cataloggrant.CatalogRoleStationScopeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.cataloggrant.CatalogRoleGrantMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.cataloggrant.CatalogRoleStationScopeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
-import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.system.api.permission.PermissionApi;
 import cn.cheers.x.system.api.permission.RoleApi;
 import cn.cheers.x.system.enums.permission.RoleCodeEnum;
@@ -31,7 +24,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,7 +42,6 @@ public class CatalogStationScopeService {
     public static final String CURRENT = "CURRENT";
     /** 右上角当前站。只在范围是仅当前站时读取。不写入查询条件。 */
     public static final String CURRENT_FACILITY_HEADER = "X-Current-Facility-Id";
-    private static final String FACILITY_PROVIDER = "dynamic-entity:facility";
     private static final String WORK_SCOPE_FACILITY = "FACILITY";
     private static final Set<String> SCOPES = Set.of(UNRESTRICTED, ALL, CURRENT);
 
@@ -60,12 +51,6 @@ public class CatalogStationScopeService {
     private CatalogRoleGrantMapper catalogRoleGrantMapper;
     @Resource
     private EntityTypeMapper entityTypeMapper;
-    @Resource
-    private ModelMapper modelMapper;
-    @Resource
-    private ModelFieldAssignmentMapper modelFieldAssignmentMapper;
-    @Resource
-    private FieldMapper fieldMapper;
     @Resource
     private PermissionApi permissionApi;
     @Resource
@@ -258,52 +243,19 @@ public class CatalogStationScopeService {
     }
 
     /**
-     * 这个数据类型里指向场站的字段。
-     * 站场级目录认所属场站列。全网目录认字段库里目标是场站的关联字段。
+     * 这个数据类型要不要先选定一座站再看列表。
+     * 站场级目录认所属场站这一列。全网目录（管线、管道、构筑物）不把起点、终点这类引用当成所属场站，打开就能看到下属记录。
+     * 没有所属场站列时返回空，页面不挡列表，也不按一座站把下属滤掉。
      */
     public List<String> facilityFieldCodes(String entityTypeCode) {
         if (!StringUtils.hasText(entityTypeCode)) {
             return List.of();
         }
-        String code = entityTypeCode.trim();
-        Set<String> fieldCodes = new LinkedHashSet<>();
-        EntityTypeDO type = entityTypeMapper.selectByCode(code);
+        EntityTypeDO type = entityTypeMapper.selectByCode(entityTypeCode.trim());
         if (type != null && WORK_SCOPE_FACILITY.equalsIgnoreCase(type.getWorkScope())) {
-            fieldCodes.add(FacilityOwningFieldCodes.FIELD_CODE);
+            return List.of(FacilityOwningFieldCodes.FIELD_CODE);
         }
-        List<ModelDO> models = modelMapper.selectByEntityTypeCode(code);
-        if (models == null || models.isEmpty()) {
-            return List.copyOf(fieldCodes);
-        }
-        List<Long> modelIds = new ArrayList<>();
-        for (ModelDO model : models) {
-            if (model.getId() != null) {
-                modelIds.add(model.getId());
-            }
-        }
-        List<ModelFieldAssignmentDO> assignments = modelFieldAssignmentMapper.selectByModelIds(modelIds);
-        Set<Long> fieldIds = new LinkedHashSet<>();
-        for (ModelFieldAssignmentDO assignment : assignments) {
-            if (assignment.getFieldId() != null) {
-                fieldIds.add(assignment.getFieldId());
-            }
-        }
-        Map<Long, FieldDO> fields = new LinkedHashMap<>();
-        if (!fieldIds.isEmpty()) {
-            for (FieldDO field : fieldMapper.selectList(new LambdaQueryWrapperX<FieldDO>().in(FieldDO::getId, fieldIds))) {
-                fields.put(field.getId(), field);
-            }
-        }
-        for (ModelFieldAssignmentDO assignment : assignments) {
-            if (!StringUtils.hasText(assignment.getFieldCode())) {
-                continue;
-            }
-            FieldDO field = fields.get(assignment.getFieldId());
-            if (pointsAtFacility(assignment, field)) {
-                fieldCodes.add(assignment.getFieldCode().trim());
-            }
-        }
-        return List.copyOf(fieldCodes);
+        return List.of();
     }
 
     static String wider(String left, String right) {
@@ -329,20 +281,6 @@ public class CatalogStationScopeService {
             return CURRENT;
         }
         throw new ServiceException(400, "场站范围只允许全部场站、仅当前站");
-    }
-
-    private static boolean pointsAtFacility(ModelFieldAssignmentDO assignment, FieldDO field) {
-        if (FacilityOwningFieldCodes.TARGET_ENTITY_TYPE.equals(assignment.getTargetEntityType())) {
-            return true;
-        }
-        if (field == null) {
-            return FacilityOwningFieldCodes.FIELD_CODE.equals(assignment.getFieldCode());
-        }
-        if (FACILITY_PROVIDER.equals(field.getProviderCode())) {
-            return true;
-        }
-        return FacilityOwningFieldCodes.FIELD_CODE.equals(field.getCode())
-                || FacilityOwningFieldCodes.TARGET_ENTITY_TYPE.equals(field.getSemanticType());
     }
 
     private static boolean mentionsFacility(List<String> fieldCodes, Map<String, Object> first, Map<String, Object> second) {

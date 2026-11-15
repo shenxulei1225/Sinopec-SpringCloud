@@ -13,7 +13,7 @@ import java.util.Set;
 /**
  * 刚复制车辆名单、车道或车辆进出目录时，把模板上的标准字段和型号一起写上。
  *
- * 管什么：车辆进出、名单、车道、公司车辆、调度第一次插入后的字段、型号和专用表。
+ * 管什么：车辆进出、车辆登记、车道第一次插入后的字段、型号和专用表。车辆登记上的个人车辆和公司车辆是两个型号，一起复制。
  * 不管什么：目录已经在之后的再次开通。缺的栏不再补。
  * 禁止：启动、查询、打开车辆管理页时调用。
  */
@@ -21,7 +21,7 @@ import java.util.Set;
 public class VehicleCatalogWriter {
 
     static final Set<String> CATALOGS = Set.of(
-            "vehicle_pass", "vehicle_list", "vehicle_lane", "company_vehicle", "vehicle_dispatch");
+            "vehicle_pass", "vehicle_list", "vehicle_lane");
 
     private static final long TEMPLATE_TENANT_ID = 1L;
 
@@ -94,7 +94,7 @@ public class VehicleCatalogWriter {
     }
 
     private void copyModel(Long tenantId, String catalogCode) {
-        Long modelId = jdbcTemplate.query(
+        jdbcTemplate.update(
                 """
                         INSERT INTO dynamicbusiness.dynamic_model (
                             code, name, entity_type_code, description, status, sort,
@@ -105,37 +105,32 @@ public class VehicleCatalogWriter {
                         WHERE src.tenant_id = ? AND src.entity_type_code = ? AND src.deleted = false
                           AND NOT EXISTS (
                               SELECT 1 FROM dynamicbusiness.dynamic_model own
-                              WHERE own.tenant_id = ? AND own.entity_type_code = ? AND own.deleted = false)
-                        ORDER BY src.id
-                        LIMIT 1
-                        RETURNING id
+                              WHERE own.tenant_id = ? AND own.code = src.code AND own.deleted = false)
                         """,
-                rs -> rs.next() ? rs.getLong(1) : null,
-                tenantId, TEMPLATE_TENANT_ID, catalogCode, tenantId, catalogCode);
-        if (modelId == null) {
-            return;
-        }
+                tenantId, TEMPLATE_TENANT_ID, catalogCode, tenantId);
         jdbcTemplate.update(
                 """
                         INSERT INTO dynamicbusiness.dynamic_model_field_assignment (
                             model_id, field_id, required, is_searchable, is_filterable, is_sortable, sort,
                             creator, updater, deleted, tenant_id, model_code, field_code, collection_point,
                             create_visible, edit_visible, detail_visible, field_source)
-                        SELECT ?, lib.id, src.required, src.is_searchable, src.is_filterable, src.is_sortable, src.sort,
-                               'pack-open', 'pack-open', false, ?, model.code, src.field_code, false,
+                        SELECT own_model.id, lib.id, src.required, src.is_searchable, src.is_filterable, src.is_sortable, src.sort,
+                               'pack-open', 'pack-open', false, ?, own_model.code, src.field_code, false,
                                src.create_visible, src.edit_visible, src.detail_visible, src.field_source
                         FROM dynamicbusiness.dynamic_model_field_assignment src
-                        JOIN dynamicbusiness.dynamic_model model
-                          ON model.tenant_id = ? AND model.entity_type_code = ? AND model.deleted = false
+                        JOIN dynamicbusiness.dynamic_model src_model
+                          ON src_model.id = src.model_id AND src_model.tenant_id = ? AND src_model.deleted = false
+                        JOIN dynamicbusiness.dynamic_model own_model
+                          ON own_model.tenant_id = ? AND own_model.code = src_model.code AND own_model.deleted = false
                         JOIN dynamicbusiness.dynamic_field lib
                           ON lib.tenant_id = ? AND lib.code = src.field_code AND lib.deleted = false
-                        WHERE src.tenant_id = ? AND src.model_id = model.id AND src.deleted = false
+                        WHERE src.tenant_id = ? AND src_model.entity_type_code = ? AND src.deleted = false
                           AND NOT EXISTS (
                               SELECT 1 FROM dynamicbusiness.dynamic_model_field_assignment own
-                              WHERE own.tenant_id = ? AND own.model_id = ? AND own.field_code = src.field_code
+                              WHERE own.tenant_id = ? AND own.model_id = own_model.id AND own.field_code = src.field_code
                                 AND own.deleted = false)
                         """,
-                modelId, tenantId, TEMPLATE_TENANT_ID, catalogCode, tenantId, TEMPLATE_TENANT_ID, tenantId, modelId);
+                tenantId, TEMPLATE_TENANT_ID, tenantId, tenantId, TEMPLATE_TENANT_ID, catalogCode, tenantId);
     }
 
     /** 专用表和基础字段列与目录一起创建。表或列已经在时，创建方法自己跳过。 */

@@ -27,6 +27,6 @@ public class CatalogMyStationScopeRespVO {
     @Schema(description = "能否删除")
     private Boolean canDelete;
 
-    @Schema(description = "这条目录上指向场站的字段。空表示记录不按站分开")
+    @Schema(description = "站场级目录的所属场站列。空表示这本目录打开就能看，不必先点一座站")
     private List<String> stationFieldCodes;
 }

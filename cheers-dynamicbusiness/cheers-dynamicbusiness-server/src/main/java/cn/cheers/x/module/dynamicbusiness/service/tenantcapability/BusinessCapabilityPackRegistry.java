@@ -49,12 +49,20 @@ public final class BusinessCapabilityPackRegistry {
         register(new BusinessCapabilityPackDefinition(
                 "emergency",
                 "应急",
-                "应急事件办理、预案与自定义表单；资源与响应台账目录随包开通",
+                "应急事件办理、预案与自定义表单；资源、响应和维抢修台账目录随包开通",
                 List.of(
                         "emergency-event",
                         "emergency-plan",
                         "emergency-custom-form"),
-                List.of("emergency", "emergency_resource", "emergency_response", "emergentcy_plan")));
+                List.of(
+                        "emergency",
+                        "emergency_resource",
+                        "emergency_response",
+                        "emergentcy_plan",
+                        "person_certificate",
+                        "repair_scheme",
+                        "work_permit",
+                        "repair_field_record")));
         register(new BusinessCapabilityPackDefinition(
                 "intelligent-analysis",
                 "智能分析",
@@ -83,6 +91,8 @@ public final class BusinessCapabilityPackRegistry {
                         "point",
                         "Constructure",
                         "pipeline",
+                        "pipeline_pipe",
+                        "pipeline_structure",
                         "point_binding",
                         "equipment",
                         "spare_parts",
@@ -90,8 +100,6 @@ public final class BusinessCapabilityPackRegistry {
                         "route",
                         "route_network_point",
                         "fault",
-                        "company_vehicle",
-                        "vehicle_dispatch",
                         "maintanance",
                         "maintenance",
                         "task_maintenance",
@@ -132,7 +140,7 @@ public final class BusinessCapabilityPackRegistry {
         register(new BusinessCapabilityPackDefinition(
                 "security-video",
                 "安防视频",
-                "开通时在数据管理左侧建立分组「安防管理」。顶栏「安防」按人防、通信、技防分组。人防是访客登记、我的访客和人员定位。访客登记给门卫刷二代身份证，打印后面放行。被访人在我的访客里同意。人员定位打开这一座站的场景看人。车辆进出按车道上的车牌识别写下进出。门岗另开一页处理过车。车辆登记在场站管理，不在安防菜单。电话、视频、周界、入侵、门禁、广播、安全资源位置使用设备账。人员识别、车辆定位、行为识别使用告警账。告警记录和告警规则仍是告警目录、告警规则目录。实时告警仍由场站告警图层订阅。",
+                "开通时在数据管理左侧建立分组「安防管理」。顶栏「安防」按人防、通信、技防分组。人防是访客登记、我的访客和人员定位。访客登记给门卫刷二代身份证，打印后面放行。被访人在我的访客里同意。人员定位打开这一座站的场景看人。车辆进出按车道上的车牌识别写下进出。门岗另开一页处理过车。车辆登记在场站管理，不在安防菜单。电话、视频、广播、安全资源位置使用设备账。进出记录打开数据管理。门禁管理配置谁能进，并查看这一分区的门、通行和门禁告警。周界报警打开周界页，设备仍在周界报警目录。入侵检测打开入侵页，设备仍在入侵检测目录。改门仍到设备台账。人员识别、车辆定位、行为识别使用告警账。告警记录和告警规则仍是告警目录、告警规则目录。实时告警仍由场站告警图层订阅。",
                 List.of(
                         "security-visitor",
                         "security-my-visitors",
@@ -146,6 +154,7 @@ public final class BusinessCapabilityPackRegistry {
                         "security-perimeter",
                         "security-intrusion",
                         "security-access",
+                        "security-access-grant",
                         "security-broadcast",
                         "security-resource",
                         "security-person",

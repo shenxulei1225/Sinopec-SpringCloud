@@ -1,6 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.security;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.module.dynamicbusiness.api.security.dto.VehicleRestrictionPushResp;
 import cn.cheers.x.module.dynamicbusiness.service.security.VehicleRecognitionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,7 +19,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 /**
  * 车辆管理的识别写入。
  *
- * 管什么：一次识别、改正车牌、确认放行、无牌放行。
+ * 管什么：一次识别、改正车牌、确认放行、无牌放行、下发进出限制。
  * 不管什么：名单和车道的表单。那些由车辆管理页直接写入对应的账。
  * 禁止：没登录就写过车。
  */
@@ -62,6 +63,16 @@ public class VehiclePassController {
     @PreAuthorize("@catalogAccess.allow('vehicle_pass', 'update')")
     public CommonResult<VehicleRecognitionService.Outcome> unplated(@Valid @RequestBody UnplatedRequest request) {
         return success(recognitionService.unplated(request.facilityId(), request.laneId()));
+    }
+
+    @PostMapping("/push-restrictions")
+    @Operation(summary = "把这座站已经写下的进出限制发给道闸")
+    @PreAuthorize("@catalogAccess.allow('vehicle_list', 'update')")
+    public CommonResult<VehicleRestrictionPushResp> pushRestrictions(@Valid @RequestBody FacilityRequest request) {
+        return success(recognitionService.pushRestrictions(request.facilityId()));
+    }
+
+    public record FacilityRequest(@NotNull Long facilityId) {
     }
 
     public record RecognitionRequest(

@@ -66,14 +66,7 @@ public class TenantPortalMenuServiceImpl implements TenantPortalMenuService {
         List<TenantPortalMenuNode> clean = validate(nodes, opened.keySet());
         TenantUtils.execute(tenantId, () -> {
             tenantPortalMenuMapper.deleteByTenant(tenantId);
-            int sort = 0;
-            for (TenantPortalMenuNode node : clean) {
-                TenantPortalMenuDO parent = insert(tenantId, null, node, sort++);
-                int childSort = 0;
-                for (TenantPortalMenuNode child : childrenOf(node)) {
-                    insert(tenantId, parent.getId(), child, childSort++);
-                }
-            }
+            insertTree(tenantId, null, clean);
             return null;
         });
     }
@@ -213,6 +206,11 @@ public class TenantPortalMenuServiceImpl implements TenantPortalMenuService {
         return unplaced;
     }
 
+    /**
+     * 和顶栏同一棵树。一级可以是页面，也可以是分组。
+     * 分组下面可以是页面，也可以再是分组。再往下只能是页面。
+     * 安防下面的人防、技防就是这一层分组。空分组不保存。
+     */
     private List<TenantPortalMenuNode> validate(List<TenantPortalMenuNode> nodes, Set<String> opened) {
         List<TenantPortalMenuNode> clean = new ArrayList<>();
         Set<String> used = new LinkedHashSet<>();
@@ -220,35 +218,46 @@ public class TenantPortalMenuServiceImpl implements TenantPortalMenuService {
             return clean;
         }
         for (TenantPortalMenuNode node : nodes) {
-            String title = requireTitle(node.title());
-            String pageCode = blankToNull(node.pageCode());
-            List<TenantPortalMenuNode> children = childrenOf(node);
-            if (pageCode != null && !children.isEmpty()) {
-                throw new ServiceException(400, "挂了页面的一级菜单下面不能再放页面");
-            }
-            if (pageCode == null && children.isEmpty()) {
-                throw new ServiceException(400, "一级分组下面要放页面");
-            }
-            if (pageCode != null) {
-                claim(pageCode, opened, used);
-                clean.add(new TenantPortalMenuNode(title, pageCode, List.of()));
-                continue;
-            }
-            List<TenantPortalMenuNode> cleanChildren = new ArrayList<>();
-            for (TenantPortalMenuNode child : children) {
-                if (!childrenOf(child).isEmpty()) {
-                    throw new ServiceException(400, "菜单只有两级");
-                }
-                String childPage = blankToNull(child.pageCode());
-                if (childPage == null) {
-                    throw new ServiceException(400, "二级菜单要选择一个页面");
-                }
-                claim(childPage, opened, used);
-                cleanChildren.add(new TenantPortalMenuNode(requireTitle(child.title()), childPage, List.of()));
-            }
-            clean.add(new TenantPortalMenuNode(title, null, cleanChildren));
+            clean.add(validateNode(node, opened, used, 1));
         }
         return clean;
+    }
+
+    private TenantPortalMenuNode validateNode(
+            TenantPortalMenuNode node,
+            Set<String> opened,
+            Set<String> used,
+            int depth) {
+        String title = requireTitle(node.title());
+        String pageCode = blankToNull(node.pageCode());
+        List<TenantPortalMenuNode> children = childrenOf(node);
+        if (pageCode != null && !children.isEmpty()) {
+            throw new ServiceException(400, "挂了页面的菜单下面不能再放菜单");
+        }
+        if (pageCode != null) {
+            claim(pageCode, opened, used);
+            return new TenantPortalMenuNode(title, pageCode, List.of());
+        }
+        if (depth >= 3) {
+            throw new ServiceException(400, "第三级要选择一个页面");
+        }
+        if (children.isEmpty()) {
+            throw new ServiceException(400, depth == 1 ? "一级分组下面要放页面" : "分组下面要放页面");
+        }
+        List<TenantPortalMenuNode> cleanChildren = new ArrayList<>();
+        for (TenantPortalMenuNode child : children) {
+            cleanChildren.add(validateNode(child, opened, used, depth + 1));
+        }
+        return new TenantPortalMenuNode(title, null, cleanChildren);
+    }
+
+    /** 按父子把整棵菜单写下。分组下面的分组和页面都写，不在第二级停住。 */
+    private void insertTree(Long tenantId, Long parentId, List<TenantPortalMenuNode> nodes) {
+        int sort = 0;
+        for (TenantPortalMenuNode node : nodes) {
+            TenantPortalMenuDO row = insert(tenantId, parentId, node, sort++);
+            insertTree(tenantId, row.getId(), childrenOf(node));
+        }
     }
 
     private void claim(String pageCode, Set<String> opened, Set<String> used) {

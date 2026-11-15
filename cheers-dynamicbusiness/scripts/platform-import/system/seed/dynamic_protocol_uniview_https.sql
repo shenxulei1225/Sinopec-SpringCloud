@@ -1,6 +1,9 @@
 -- 宇视感知联网平台 OpenAPI pro V1.23 · HTTPS 说明书（第一批）
 -- 权威：OpenAPI pro 接口说明书（感知联网平台）V1.23 + 官方登录/资源/实况 demo
--- 只写登录、保活、退出、查摄像机目录。实况取流、云台、回放下一批再写。
+-- 写登录、保活、退出、查摄像机目录、查门禁目录。
+-- 查门禁目录与查摄像机目录同一条 GET /VIID/query。QueryType=256，一次填一个设备类型码。
+-- 类型码来自说明书附录：60 门禁、61 锁、62 门禁控制器、63 出入口设备、64 梯控、65 门磁、9013 门禁设备。
+-- 这本书没有开门、下发权限、读门开闭。实况取流、云台、回放下一批再写。
 -- 会话 / 心跳 / 目录查询不是任务动作，本文件不建动作，也不写指令协议对接。
 -- 不写入站场账号口令，不编播放地址，不自动创建设备台账。
 -- 租户：智慧巡检(1)、智慧管廊(123)。目录须已用创建接口建好（含专用表 ent_data_protocol_t{tenant}）。
@@ -282,6 +285,109 @@ INSERT INTO uniview_https_command (
         }
       }
     }$uv$::jsonb
+  ),
+  (
+    'proto-uniview-https-query-access',
+    '查门禁目录',
+    'sync_wait_result',
+    'GET',
+    '/VIID/query',
+    $uv${
+      "opcode": 0,
+      "command_direction": "downlink",
+      "exchange_mode": "sync_wait_result",
+      "protocol_version": ["uniview-openapi-1.23"],
+      "communication_protocol": "https",
+      "http_method": "GET",
+      "http_path": "/VIID/query",
+      "command_json": {
+        "outbound": {
+          "httpMethod": "GET",
+          "path": "/VIID/query",
+          "header": {"Authorization": ""},
+          "query": {
+            "org": "",
+            "condition": {
+              "ItemNum": 0,
+              "Condition": [
+                {"QueryType": 256, "LogicFlag": 0, "QueryData": ""},
+                {"QueryType": 257, "LogicFlag": 0, "QueryData": "1"},
+                {"QueryType": 1, "LogicFlag": 5, "QueryData": ""}
+              ],
+              "QueryCount": 1,
+              "PageFirstRowNumber": 0,
+              "PageRowNum": 200
+            }
+          }
+        },
+        "inboundSuccess": {
+          "ErrCode": 0,
+          "ErrMsg": "",
+          "Result": {
+            "InfoList": [
+              {"ResItemV1": {"ResName": "", "ResCode": "", "ResType": 0, "ResStatus": 0, "OrgCode": ""}}
+            ]
+          }
+        },
+        "inboundFailure": {"ErrCode": 0, "ErrMsg": ""}
+      },
+      "field_description_json": {
+        "outbound": [
+          {"code": "httpMethod", "path": "httpMethod", "type": "string", "label": "HTTP方法", "required": true, "description": "GET"},
+          {"code": "path", "path": "path", "type": "string", "label": "HTTP路径", "required": true, "description": "/VIID/query。与查摄像机目录同一条接口。"},
+          {"code": "header", "path": "header", "type": "object", "label": "请求头", "required": true, "description": "Authorization 填 AccessToken，种子留空。"},
+          {"code": "org", "path": "query.org", "type": "string", "label": "组织编码", "required": true, "description": "本地域组织编码，调用时填写，种子不预填。"},
+          {"code": "condition", "path": "query.condition", "type": "object", "label": "查询条件", "required": true, "description": "官方 demo 把 condition 序列化成 JSON 字符串作为查询参数。"},
+          {"code": "QueryType256", "path": "query.condition.Condition.0", "type": "object", "label": "资源类型条件", "required": true, "description": "QueryType=256，LogicFlag=0。QueryData 一次填一个设备类型码：60 门禁、61 锁、62 门禁控制器、63 出入口设备、64 梯控、65 门磁、9013 门禁设备。种子不预填。"},
+          {"code": "QueryType257", "path": "query.condition.Condition.1", "type": "object", "label": "是否含子组织", "required": true, "description": "QueryType=257。QueryData=1 表示包含子组织。"},
+          {"code": "QueryType1", "path": "query.condition.Condition.2", "type": "object", "label": "名称条件", "required": false, "description": "QueryType=1。按名称过滤时填写，可空。"}
+        ],
+        "inboundSuccess": [
+          {"code": "ErrCode", "path": "ErrCode", "type": "integer", "label": "错误码", "required": true, "description": "0 表示成功。"},
+          {"code": "ErrMsg", "path": "ErrMsg", "type": "string", "label": "错误说明", "required": false, "description": null},
+          {"code": "InfoList", "path": "Result.InfoList", "type": "array", "label": "资源列表", "required": true, "description": "每项含 ResItemV1。"},
+          {"code": "ResName", "path": "Result.InfoList[].ResItemV1.ResName", "type": "string", "label": "资源名称", "required": true, "description": "与设备台账名称唯一匹配时用这个字段。"},
+          {"code": "ResCode", "path": "Result.InfoList[].ResItemV1.ResCode", "type": "string", "label": "资源编码", "required": true, "description": "平台上的门禁资源编码。"},
+          {"code": "ResType", "path": "Result.InfoList[].ResItemV1.ResType", "type": "integer", "label": "资源类型", "required": false, "description": "返回值对照设备类型取值。"},
+          {"code": "ResStatus", "path": "Result.InfoList[].ResItemV1.ResStatus", "type": "integer", "label": "资源状态", "required": false, "description": "1 在线，2 离线。这是资源在线状态，不是门开闭。"},
+          {"code": "OrgCode", "path": "Result.InfoList[].ResItemV1.OrgCode", "type": "string", "label": "所属组织编码", "required": false, "description": null}
+        ],
+        "inboundFailure": [
+          {"code": "ErrCode", "path": "ErrCode", "type": "integer", "label": "错误码", "required": true, "description": null},
+          {"code": "ErrMsg", "path": "ErrMsg", "type": "string", "label": "错误说明", "required": true, "description": null}
+        ]
+      },
+      "sample_json": {
+        "outbound": {
+          "httpMethod": "GET",
+          "path": "/VIID/query",
+          "header": {"Authorization": ""},
+          "query": {
+            "org": "",
+            "condition": {
+              "ItemNum": 3,
+              "Condition": [
+                {"QueryType": 256, "LogicFlag": 0, "QueryData": ""},
+                {"QueryType": 257, "LogicFlag": 0, "QueryData": "1"},
+                {"QueryType": 1, "LogicFlag": 5, "QueryData": ""}
+              ],
+              "QueryCount": 1,
+              "PageFirstRowNumber": 0,
+              "PageRowNum": 200
+            }
+          }
+        },
+        "inboundSuccess": {
+          "ErrCode": 0,
+          "ErrMsg": "",
+          "Result": {
+            "InfoList": [
+              {"ResItemV1": {"ResName": "", "ResCode": "", "ResType": 0, "ResStatus": 1, "OrgCode": ""}}
+            ]
+          }
+        }
+      }
+    }$uv$::jsonb
   );
 
 DO $$
@@ -340,14 +446,14 @@ BEGIN
     )
     SELECT
       root_id,
-      '宇视视频',
+      '感知联网平台',
       'cat-protocol-uniview-video',
       'data_protocol',
       p.tree_path,
       COALESCE(p.level, 1) + 1,
       30,
       1,
-      '宇视感知联网平台（VM）OpenAPI HTTPS 指令',
+      '宇视感知联网平台 OpenAPI pro V1.23 的全部服务接口',
       tid,
       'seed',
       p.code
@@ -363,8 +469,8 @@ BEGIN
     UPDATE dynamic_category c
     SET
       code = 'cat-protocol-uniview-video',
-      name = '宇视视频',
-      description = '宇视感知联网平台（VM）OpenAPI HTTPS 指令',
+      name = '感知联网平台',
+      description = '宇视感知联网平台 OpenAPI pro V1.23 的全部服务接口',
       parent_id = root_id,
       parent_code = 'data_protocol_root',
       tree_path = p.tree_path || c.id || '/',
@@ -390,10 +496,10 @@ BEGIN
       code, name, entity_type_code, domain, description, status, sort, tenant_id, creator
     ) VALUES (
       'data_protocol_uniview_https',
-      '宇视视频 HTTPS',
+      'OpenAPI pro V1.23',
       'data_protocol',
       NULL,
-      '宇视感知联网平台 OpenAPI 走 HTTPS 的指令。基址为 VM:8088，路径前缀 /VIID/',
+      '宇视《OpenAPI pro 接口说明书（感知联网平台）V1.23》的服务接口。基址 http://VM:8088/VIID。通讯方式列用 HTTPS，表示这组 HTTP 接口。',
       1,
       40,
       tid,

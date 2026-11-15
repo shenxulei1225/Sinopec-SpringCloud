@@ -10,8 +10,9 @@ import lombok.EqualsAndHashCode;
 
 /**
  * 本租户顶栏上的一项。
- * 一级的 parentId 为空。二级的 parentId 指向一级。
- * pageCode 指向已开通的业务页面。一级分组可以不挂页面。
+ * 一级的 parentId 为空。下一级的 parentId 指向上一级。
+ * 安防下面的人防、技防再挂页面，所以可以有三级。
+ * pageCode 指向已开通的业务页面。分组可以不挂页面。
  * 不存角色动作，不表示这个人能不能进页面。
  */
 @TableName("tenant_portal_menu")
