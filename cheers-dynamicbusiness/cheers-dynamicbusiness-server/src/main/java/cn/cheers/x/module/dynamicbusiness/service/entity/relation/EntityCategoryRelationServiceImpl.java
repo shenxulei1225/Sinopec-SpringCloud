@@ -15,6 +15,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityCategoryRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
+import cn.cheers.x.module.dynamicbusiness.service.entity.refroute.CategoryMembershipQueryService;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeResolver;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryEntityLinkDO;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryEntityLinkService;
@@ -68,6 +69,9 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
 
     @Resource
     private EntityTypeScopeResolver entityTypeScopeResolver;
+
+    @Resource
+    private CategoryMembershipQueryService categoryMembershipQueryService;
 
     @Resource
     @Lazy
@@ -520,6 +524,22 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         validateEntitiesInEntryDomain(entityTypeCode, storageEntityTypeCode, List.of(entityId));
         validateCategoryExists(categoryId);
 
+        if (storesAsRefColumn(categoryId, storageEntityTypeCode, new HashMap<>())) {
+            entityCategoryRefWritebackService.afterAssociated(entityId, categoryId, storageEntityTypeCode);
+            syncEntityModelToCategory(entityId, categoryId, storageEntityTypeCode);
+            alarmFacilityNotice.schedule(storageEntityTypeCode, List.of(entityId));
+            return EntityCategoryAssociationRespVO.builder()
+                    .operationType("ASSOCIATE")
+                    .entityId(entityId)
+                    .entityExists(true)
+                    .totalCount(1)
+                    .successCount(1)
+                    .failCount(0)
+                    .failItems(Collections.emptyList())
+                    .executionTime(System.currentTimeMillis() - startTime)
+                    .build();
+        }
+
         // 已挂上则直接返回。解除后行已物理删除，再挂走下面的新增。
         if (existsRelation(entityId, categoryId, storageEntityTypeCode)) {
             log.debug("关联已存在: entityId={}, categoryId={}, entityTypeCode={}", entityId, categoryId, storageEntityTypeCode);
@@ -775,11 +795,19 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                 .map(EntityCategoryRelationDO::getCategoryId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+        // 经引用专用列挂着的分类也算当前已挂（摘掉时由回写清列）
+        activeCategoryIds.addAll(listColumnCategoryIds(entityId, entityTypeCode));
 
         // 差集：摘掉的物理删除，新勾上的插入。没挂过的分类不写行。
         List<Long> toDelete = activeCategoryIds.stream().filter(id -> !validCategoryIds.contains(id)).toList();
+        Map<Long, Boolean> columnCache = new HashMap<>();
+        List<Long> toWriteColumn = validCategoryIds.stream()
+                .filter(id -> !activeCategoryIds.contains(id))
+                .filter(id -> storesAsRefColumn(id, storageEntityTypeCode, columnCache))
+                .toList();
         List<Long> toInsert = validCategoryIds.stream()
                 .filter(id -> !activeCategoryIds.contains(id))
+                .filter(id -> !toWriteColumn.contains(id))
                 .toList();
 
         if (!toDelete.isEmpty()) {
@@ -804,6 +832,9 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                         .build());
             }
             relationMapper.insertBatchRelations(relationsToInsert);
+        }
+        for (Long categoryId : toWriteColumn) {
+            entityCategoryRefWritebackService.afterAssociated(entityId, categoryId, storageEntityTypeCode);
         }
 
         // 按目标顺序给新增行编号。已经挂着的不改 sort。
@@ -1030,6 +1061,9 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         Map<Long, EntityResultData> entityResultDataMap = new HashMap<>();
         // 已存在边：仅挂靠模式 / REF，不需再挂型号–分类
         List<long[]> alreadyActivePairs = new ArrayList<>();
+        // 挂上 = 写引用专用列的一对：不插行，挂型号–分类后由回写写列
+        List<long[]> columnPairs = new ArrayList<>();
+        Map<Long, Boolean> columnCache = new HashMap<>();
         AssociationPostProcessCache postCache = new AssociationPostProcessCache();
 
         for (Long entityId : entityIds) {
@@ -1046,6 +1080,10 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             for (Long categoryId : validCategoryIds) {
                 if (existedCategories.contains(categoryId)) {
                     alreadyActivePairs.add(new long[]{entityId, categoryId});
+                    continue;
+                }
+                if (storesAsRefColumn(categoryId, storageEntityTypeCode, columnCache)) {
+                    columnPairs.add(new long[]{entityId, categoryId});
                     continue;
                 }
                 relationsToInsert.add(EntityCategoryRelationDO.builder()
@@ -1074,6 +1112,11 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
 
         // 挂靠模式 + REF：分类元数据 / 台账绑定本批只解析一次
         for (long[] pair : alreadyActivePairs) {
+            applyAssociationModeAndRefWriteback(
+                    pair[0], pair[1], storageEntityTypeCode, entityAssociationMode, postCache);
+        }
+        for (long[] pair : columnPairs) {
+            syncEntityModelToCategory(pair[0], pair[1], storageEntityTypeCode);
             applyAssociationModeAndRefWriteback(
                     pair[0], pair[1], storageEntityTypeCode, entityAssociationMode, postCache);
         }
@@ -1275,17 +1318,14 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
             return new ArrayList<>();
         }
 
+        List<Long> columnCategoryIds = listColumnCategoryIds(entityId, entityTypeCode);
         List<EntityCategoryRelationDO> relations = relationMapper.selectByEntityId(entityId);
-        if (relations == null || relations.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        List<Long> categoryIds = relations.stream()
+        List<Long> categoryIds = (relations == null ? List.<EntityCategoryRelationDO>of() : relations).stream()
                 .map(EntityCategoryRelationDO::getCategoryId)
                 .filter(Objects::nonNull)
                 .toList();
         if (categoryIds.isEmpty()) {
-            return new ArrayList<>();
+            return new ArrayList<>(columnCategoryIds);
         }
 
         // 通过分类 -> entityIds(按业务过滤) 反向校验，避免返回其它业务实体关联到的分类
@@ -1296,7 +1336,25 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
                 result.add(categoryId);
             }
         }
-        return result;
+        LinkedHashSet<Long> merged = new LinkedHashSet<>(result);
+        merged.addAll(columnCategoryIds);
+        return new ArrayList<>(merged);
+    }
+
+    /**
+     * 挂这个分类 = 写记录的引用专用列（例：设备拖到「漳州站」= 设备.所属场站 写成漳州站），
+     * 不插分类-实体关联行；卸下由回写清掉该列。判定见 {@link CategoryMembershipQueryService#columnRouteForCategory}。
+     */
+    private boolean storesAsRefColumn(Long categoryId, String storageEntityTypeCode, Map<Long, Boolean> cache) {
+        return cache.computeIfAbsent(categoryId, id ->
+                categoryMembershipQueryService.columnRouteForCategory(storageEntityTypeCode, id).isPresent());
+    }
+
+    /** 引用专用列指向分类即实体时，该实体所绑的分类（如设备所属场站对应的场站分类）。 */
+    private List<Long> listColumnCategoryIds(Long entityId, String entityTypeCode) {
+        EntityTypeScopeContext scope = entityTypeScopeResolver.resolve(entityTypeCode);
+        String storageEntityTypeCode = scope != null ? scope.getStorageEntityTypeCode() : entityTypeCode.trim();
+        return categoryMembershipQueryService.listColumnCategoryIds(storageEntityTypeCode, entityId);
     }
 
     /**
@@ -1322,19 +1380,40 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         String domain = scope != null ? scope.getDomain() : null;
         List<EntityCategoryRelationDO> relations =
                 relationMapper.selectByCategoryIdAndEntityType(categoryId, storageEntityTypeCode, domain);
-        if (relations == null || relations.isEmpty()) {
-            return new ArrayList<>();
-        }
         // 把关系数据转换为entityId列表，并去重
         List<Long> orderedEntityIds = new ArrayList<>();
         Set<Long> seen = new HashSet<>();
-        for (EntityCategoryRelationDO relation : relations) {
+        for (EntityCategoryRelationDO relation : relations == null ? List.<EntityCategoryRelationDO>of() : relations) {
             Long entityId = relation.getEntityId();
             if (entityId != null && seen.add(entityId)) {
                 orderedEntityIds.add(entityId);
             }
         }
-        return orderedEntityIds;
+        return appendColumnMembers(orderedEntityIds, List.of(categoryId), storageEntityTypeCode, domain);
+    }
+
+    /**
+     * 关联行之后补上「引用专用列指向该分类即实体」的记录（如设备「所属场站」= 该站）：
+     * 这类记录不写分类-实体关联行，只在这里按分类顺序、组内按编号接在后面。
+     */
+    private List<Long> appendColumnMembers(List<Long> orderedEntityIds, List<Long> categoryIds,
+                                           String storageEntityTypeCode, String domain) {
+        List<CategoryMembershipQueryService.ColumnMember> members =
+                categoryMembershipQueryService.listColumnMembers(storageEntityTypeCode, categoryIds, domain);
+        if (members.isEmpty()) {
+            return orderedEntityIds;
+        }
+        Map<Long, Integer> rank = new HashMap<>();
+        for (int i = 0; i < categoryIds.size(); i++) {
+            rank.putIfAbsent(categoryIds.get(i), i);
+        }
+        LinkedHashSet<Long> out = new LinkedHashSet<>(orderedEntityIds);
+        members.stream()
+                .sorted(Comparator.comparingInt((CategoryMembershipQueryService.ColumnMember m) ->
+                                rank.getOrDefault(m.categoryId(), Integer.MAX_VALUE))
+                        .thenComparingLong(CategoryMembershipQueryService.ColumnMember::entityId))
+                .forEach(m -> out.add(m.entityId()));
+        return new ArrayList<>(out);
     }
 
     /**
@@ -1596,8 +1675,13 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         List<Long> toInsert = new ArrayList<>();
         int successCount = 0;
         List<Long> successCategoryIds = new ArrayList<>();
+        Map<Long, Boolean> columnCache = new HashMap<>();
         for (Long categoryId : validCategoryIds) {
             if (alreadyActive.contains(categoryId)) {
+                successCount++;
+                successCategoryIds.add(categoryId);
+            } else if (storesAsRefColumn(categoryId, storageEntityTypeCode, columnCache)) {
+                entityCategoryRefWritebackService.afterAssociated(entityId, categoryId, storageEntityTypeCode);
                 successCount++;
                 successCategoryIds.add(categoryId);
             } else {
@@ -1778,9 +1862,12 @@ public class EntityCategoryRelationServiceImpl implements EntityCategoryRelation
         if (categoryIds.size() == 1) {
             return listEntityIdsByCategoryIdOnly(categoryIds.get(0), entityTypeCode);
         }
-        // 多分类路径：按“categoryIds顺序 -> 分类内sort,id -> 稳定去重”输出
+        // 多分类路径：按“categoryIds顺序 -> 分类内sort,id -> 稳定去重”输出，再接上经专用列挂上的记录
         RelationOrderData orderData = buildRelationOrderData(categoryIds, entityTypeCode);
-        return orderData == null ? new ArrayList<>() : orderData.orderedEntityIds;
+        List<Long> ordered = orderData == null ? new ArrayList<>() : orderData.orderedEntityIds;
+        EntityTypeScopeContext scope = entityTypeScopeResolver.resolve(entityTypeCode);
+        String storageEntityTypeCode = scope != null ? scope.getStorageEntityTypeCode() : entityTypeCode.trim();
+        return appendColumnMembers(ordered, categoryIds, storageEntityTypeCode, scope != null ? scope.getDomain() : null);
     }
 
     /**

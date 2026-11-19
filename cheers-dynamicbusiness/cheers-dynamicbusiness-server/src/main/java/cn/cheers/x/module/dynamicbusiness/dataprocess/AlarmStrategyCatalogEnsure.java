@@ -1,5 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.dataprocess;
 
+import cn.cheers.x.module.dynamicbusiness.service.facility.FacilityStationQueryService;
+import cn.cheers.x.module.dynamicbusiness.service.facility.StationOwnedCatalogSetup;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
@@ -38,7 +40,6 @@ import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategory
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.BaseFieldLibrarySyncService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeBaseFieldService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
-import cn.cheers.x.module.dynamicbusiness.service.entitytype.FacilityOwningFieldEnsureService;
 import cn.cheers.x.module.dynamicbusiness.service.field.FieldService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelFieldAssignmentService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelService;
@@ -106,7 +107,9 @@ public class AlarmStrategyCatalogEnsure {
     @Resource
     private EntityTypeService entityTypeService;
     @Resource
-    private FacilityOwningFieldEnsureService facilityOwningFieldEnsureService;
+    private FacilityStationQueryService facilityStationQueryService;
+    @Resource
+    private StationOwnedCatalogSetup stationOwnedCatalogSetup;
     @Resource
     private FieldMapper fieldMapper;
     @Resource
@@ -185,7 +188,7 @@ public class AlarmStrategyCatalogEnsure {
         if (isGalleryTenant()) {
             retireGalleryRulePickers();
             alarmBehaviorCatalogEnsure.seedGallery(
-                    alarmCategoryId(), deviceCategoryId(), facilityOwningFieldEnsureService.onlyStationId());
+                    alarmCategoryId(), deviceCategoryId(), facilityStationQueryService.onlyStationId());
         }
     }
 
@@ -270,7 +273,6 @@ public class AlarmStrategyCatalogEnsure {
     private void ensureDirectory() {
         EntityTypeDO existing = entityTypeMapper.selectByCode(DIRECTORY);
         if (existing != null) {
-            facilityOwningFieldEnsureService.ensureForEntityTypeCode(DIRECTORY);
             if (!DIRECTORY_NAME.equals(existing.getName()) || !DIRECTORY_DESCRIPTION.equals(existing.getDescription())) {
                 EntityTypeUpdateReqVO update = new EntityTypeUpdateReqVO();
                 update.setId(existing.getId());
@@ -289,11 +291,11 @@ public class AlarmStrategyCatalogEnsure {
         request.setStatus("active");
         request.setStorageType("DEDICATED");
         request.setEntryKind("NATIVE");
-        request.setWorkScope(EntityTypeDO.WORK_SCOPE_FACILITY);
         request.setGroupName(AlarmTypeCatalog.GROUP_NAME);
         request.setDescription(DIRECTORY_DESCRIPTION);
         request.setAssociationFields("{}");
         entityTypeService.create(request);
+        stationOwnedCatalogSetup.setUpNewCatalog(DIRECTORY, true);
     }
 
     private void ensureAlarmCategory() {
@@ -357,7 +359,7 @@ public class AlarmStrategyCatalogEnsure {
         if (categoryId == null || modelId == null) {
             throw new ServiceException(500, "策略目录还没有巡检分类，不能归入已有策略");
         }
-        List<Long> stationIds = facilityOwningFieldEnsureService.listStationIds();
+        List<Long> stationIds = facilityStationQueryService.listStationIds();
         if (stationIds.isEmpty()) {
             throw new ServiceException(500, "智慧巡检还没有站，不能把巡检策略归到站上");
         }
@@ -398,7 +400,7 @@ public class AlarmStrategyCatalogEnsure {
      */
     private void withdrawInspectionFiling() {
         Long tenantId = TenantContextHolder.getRequiredTenantId();
-        List<Long> stationIds = facilityOwningFieldEnsureService.listStationIds();
+        List<Long> stationIds = facilityStationQueryService.listStationIds();
         for (ConditionStrategyDO strategy : conditionStrategyMapper.selectVisibleAll(tenantId)) {
             if (strategy.getId() == null) {
                 continue;

@@ -14,11 +14,13 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
  * 把指定设备、点上的读数交给正式判断入口。
- * 位置必须已经写在设备上。点必须是这台设备型号上的采集点。
+ * 位置必须已经写在设备上。站里的设备用管廊分区或场站分区。管子上的设备用管线段。
+ * 点必须是这台设备型号上的采集点。
  * 不负责：判断阈值、写告警、查找联动、下发风机。
  * 禁止：缺位置时猜场站，缺采集点时用别的字段冒充。
  */
@@ -69,34 +71,44 @@ public class PointSampleSimulateService {
         }
         DevicePointHistoryRules.requireEngineeringValue(reading.value());
         points.require(tenantId, reading.deviceId(), reading.pointCode().trim());
-        long zoneId = requireZoneId(tenantId, reading.deviceId());
+        DevicePlace place = requirePlace(tenantId, reading.deviceId());
         return new ParsedPointSample(
                 tenantId,
                 reading.deviceId(),
                 reading.pointCode().trim(),
                 reading.pointCode().trim(),
-                zoneId,
+                place.zoneId(),
                 sampledAt,
                 reading.value(),
                 DevicePointHistoryRules.QUALITY_NORMAL);
     }
 
-    private long requireZoneId(long tenantId, long deviceId) {
+    /** 确认这台设备还在。分区有就带上，没有也不拦告警。告警归属不在这里判断。 */
+    private DevicePlace requirePlace(long tenantId, long deviceId) {
         String table = tableNames.resolvePhysicalTableName(EQUIPMENT);
         if (!TABLE_NAME.matcher(table).matches()) {
             throw new ServiceException(BAD_REQUEST, "设备表名不可用");
         }
         try {
-            Long zoneId = jdbcTemplate.queryForObject(
-                    "SELECT zone_id FROM " + table + " WHERE id = ? AND tenant_id = ? AND deleted = false",
-                    Long.class, deviceId, tenantId);
-            if (zoneId == null || zoneId <= 0) {
-                throw new ServiceException(BAD_REQUEST, "这台设备没有位置，不参加告警判断");
-            }
-            return zoneId;
+            Map<String, Object> row = jdbcTemplate.queryForMap(
+                    "SELECT zone_id FROM " + table
+                            + " WHERE id = ? AND tenant_id = ? AND deleted = false",
+                    deviceId, tenantId);
+            return new DevicePlace(longOrNull(row.get("zone_id")));
         } catch (EmptyResultDataAccessException ex) {
             throw new ServiceException(BAD_REQUEST, "没有这台设备");
         }
+    }
+
+    private static Long longOrNull(Object raw) {
+        if (raw instanceof Number number) {
+            long value = number.longValue();
+            return value > 0 ? value : null;
+        }
+        return null;
+    }
+
+    private record DevicePlace(Long zoneId) {
     }
 
     /**

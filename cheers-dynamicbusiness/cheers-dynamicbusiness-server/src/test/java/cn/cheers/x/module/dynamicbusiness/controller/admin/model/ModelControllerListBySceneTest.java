@@ -4,6 +4,7 @@ import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldFilterReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelListBySceneReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelRespVO;
+import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogEntryAccessService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelFacilityFootprintQueryService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelService;
@@ -40,15 +41,20 @@ class ModelControllerListBySceneTest {
     private LocalPackagePromotionService localPackagePromotionService;
     @Mock
     private ModelFacilityFootprintQueryService modelFacilityFootprintQueryService;
+    @Mock
+    private CatalogEntryAccessService catalogEntryAccessService;
 
     @Test
     void listByScene_shouldApplyFieldFiltersAndKeywordTogether() {
         ModelListBySceneReqVO reqVO = new ModelListBySceneReqVO();
+        reqVO.setRegistryCode("equipment");
         reqVO.setEntityTypeCode("equipment");
         reqVO.setFilterMode("NONE");
         reqVO.setKeyword("泵");
         reqVO.setFieldFilters(List.of(buildFieldFilter("status", "EQ", 1)));
 
+        when(catalogEntryAccessService.bindModelQuery("equipment", "equipment", null))
+                .thenReturn(new CatalogEntryAccessService.QueryBinding("equipment", null, "equipment"));
         when(modelService.listModelsByEntityType("equipment", null, "equipment", null))
                 .thenReturn(List.of(
                         buildModel(1L, "主泵A", 1),
@@ -67,6 +73,7 @@ class ModelControllerListBySceneTest {
     @Test
     void listByScene_withCategory_shouldKeepCategorySemanticsAndApplyFilters() {
         ModelListBySceneReqVO reqVO = new ModelListBySceneReqVO();
+        reqVO.setRegistryCode("equipment");
         reqVO.setEntityTypeCode("equipment");
         reqVO.setCategoryIds(List.of(101L));
         reqVO.setIncludeDescendants(true);
@@ -74,6 +81,8 @@ class ModelControllerListBySceneTest {
         reqVO.setKeyword("泵");
         reqVO.setFieldFilters(List.of(buildFieldFilter("status", "EQ", 1)));
 
+        when(catalogEntryAccessService.bindModelQuery("equipment", "equipment", "巡检"))
+                .thenReturn(new CatalogEntryAccessService.QueryBinding("equipment", "巡检", "equipment"));
         when(modelCategoryRelationService.listModelIdsByCategoryIdWithDescendants(101L, "equipment"))
                 .thenReturn(List.of(11L, 12L, 13L));
         when(modelService.getModelsByIds(List.of(11L, 12L, 13L)))

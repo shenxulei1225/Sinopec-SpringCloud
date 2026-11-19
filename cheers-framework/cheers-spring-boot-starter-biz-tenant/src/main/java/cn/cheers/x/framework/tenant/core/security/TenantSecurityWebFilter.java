@@ -67,7 +67,8 @@ public class TenantSecurityWebFilter extends ApiRequestFilter {
         Long tenantId = TenantContextHolder.getTenantId();
         // 1. 登陆的用户，校验是否有权限访问该租户，避免越权问题。
         LoginUser user = SecurityFrameworkUtils.getLoginUser();
-        if (user != null) {
+        // 登录、注册是一次新的身份核对。请求里若还带着上一张令牌，不拿它的租户拦这次进入。
+        if (user != null && !isFreshLogin(request)) {
             // 如果获取不到租户编号，则尝试使用登陆用户的租户编号
             if (tenantId == null) {
                 tenantId = user.getTenantId();
@@ -108,6 +109,19 @@ public class TenantSecurityWebFilter extends ApiRequestFilter {
 
         // 继续过滤
         chain.doFilter(request, response);
+    }
+
+    /** 登录、注册按请求里选的租户核对账号，不把上一张令牌的租户当成越权。 */
+    private boolean isFreshLogin(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        String contextPath = request.getContextPath();
+        if (path != null && contextPath != null && !contextPath.isEmpty() && path.startsWith(contextPath)) {
+            path = path.substring(contextPath.length());
+        }
+        return "/admin-api/system/auth/login".equals(path)
+                || "/system/auth/login".equals(path)
+                || "/admin-api/system/auth/register".equals(path)
+                || "/system/auth/register".equals(path);
     }
 
     private boolean isIgnoreUrl(HttpServletRequest request) {

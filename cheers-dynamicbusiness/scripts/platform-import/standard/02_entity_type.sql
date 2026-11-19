@@ -8,7 +8,7 @@ SET search_path TO dynamicbusiness;
 INSERT INTO dynamic_entity_type (
   code, name, parent_id, description, icon, alias, sort, status, type_level,
   association_fields, storage_type, dedicated_table_name, enable_rule_engine,
-  physical_column_mapping, model_workbench_mode, group_name, work_scope,
+  physical_column_mapping, model_workbench_mode, group_name,
   tenant_id, creator
 ) VALUES (
   'standard', '规范标准', NULL,
@@ -23,7 +23,7 @@ INSERT INTO dynamic_entity_type (
     "summary":{"type":"TEXT","column":"summary"},
     "attachments":{"type":"TEXT","column":"attachments"}
   }'::jsonb,
-  'SINGLE', '知识库', 'NETWORK', 1, 'seed'
+  'SINGLE', '知识库', 1, 'seed'
 )
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
@@ -34,7 +34,6 @@ DO UPDATE SET
   physical_column_mapping = EXCLUDED.physical_column_mapping,
   model_workbench_mode = EXCLUDED.model_workbench_mode,
   group_name = EXCLUDED.group_name,
-  work_scope = EXCLUDED.work_scope,
   storage_type = EXCLUDED.storage_type,
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;

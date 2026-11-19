@@ -40,4 +40,5 @@ public class EntityTypeScopeResolver {
         EntityTypeScopeContext scope = resolve(entityTypeCode);
         return scope != null ? scope.getStorageEntityTypeCode() : entityTypeCode.trim();
     }
+
 }

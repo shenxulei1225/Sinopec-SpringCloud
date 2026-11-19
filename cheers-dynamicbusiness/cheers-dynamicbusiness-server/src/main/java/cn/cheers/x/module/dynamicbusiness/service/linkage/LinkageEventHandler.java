@@ -37,7 +37,8 @@ public class LinkageEventHandler implements PlatformEventHandler {
 
     @Override
     public void handle(PlatformEventMessage event) {
-        for (EntityDO rule : ruleQueryService.findEnabledAlarmRules(event.eventTopicId(), event.facilityId())) {
+        Map<String, Long> ownership = ownershipIds(event.payload());
+        for (EntityDO rule : ruleQueryService.findEnabledAlarmRules(event.eventTopicId(), ownership)) {
             LinkageExecutionStart started = linkageExecutionService.begin(event, rule.getId());
             if (!started.created()) {
                 continue;
@@ -53,12 +54,13 @@ public class LinkageEventHandler implements PlatformEventHandler {
                 continue;
             }
             for (LinkagePair pair : pairs) {
-                submitPair(event, rule.getId(), started.executionId(), pair);
+                submitPair(event, rule.getId(), started.executionId(), pair, ownership);
             }
         }
     }
 
-    private void submitPair(PlatformEventMessage event, long ruleId, long executionId, LinkagePair pair) {
+    private void submitPair(PlatformEventMessage event, long ruleId, long executionId, LinkagePair pair,
+                            Map<String, Long> ownership) {
         try {
             if (pair.targetEquipmentId() <= 0 || pair.actionId() <= 0) {
                 throw new ServiceException(400, "联动方式这一对缺少目标和动作");
@@ -67,7 +69,7 @@ public class LinkageEventHandler implements PlatformEventHandler {
                     event.eventId() + ":" + ruleId + ":" + pair.index(),
                     "LINKAGE",
                     "linkage-execution:" + executionId,
-                    event.facilityId(),
+                    facilityColumn(ownership),
                     pair.actionId(),
                     LinkageFieldCodes.TARGET_EQUIPMENT,
                     pair.targetEquipmentId(),
@@ -77,5 +79,30 @@ public class LinkageEventHandler implements PlatformEventHandler {
         } catch (RuntimeException failure) {
             linkageExecutionService.recordRejectedItem(executionId, pair.index(), failure.getMessage());
         }
+    }
+
+    /** 事件载荷里按声明抄过来的归属。动作表上的场站列只取字段编码 facility_id 的那一栏。 */
+    private static Map<String, Long> ownershipIds(Map<String, Object> payload) {
+        Map<String, Long> ids = new java.util.LinkedHashMap<>();
+        Object raw = payload == null ? null : payload.get("ownership");
+        if (raw instanceof List<?> rows) {
+            for (Object row : rows) {
+                if (!(row instanceof Map<?, ?> map)) {
+                    continue;
+                }
+                Object code = map.get("fieldCode");
+                Object id = map.get("id");
+                if (code == null || !(id instanceof Number number) || number.longValue() <= 0) {
+                    continue;
+                }
+                ids.put(String.valueOf(code).trim(), number.longValue());
+            }
+        }
+        return ids;
+    }
+
+    private static long facilityColumn(Map<String, Long> ownership) {
+        Long facility = ownership == null ? null : ownership.get("facility_id");
+        return facility == null || facility <= 0 ? 0L : facility;
     }
 }

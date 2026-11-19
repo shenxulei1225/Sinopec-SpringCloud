@@ -28,6 +28,8 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
  * 管什么：受理人改报修单，执行人完工后关闭报修单。
  * 不管什么：流程定义、待办箱。本接口不启动流程。
  * 禁止：上报页调用受理和派工。
+ * 权限：受理、回退、派工由服务核对「报修受理」的维护勾选，上报和交回核对「我的报修」的维护勾选。
+ * 开工、完工跟着工单走，要「我的工单」的维护勾选。领走或改派在工单中心和我的工单都能做，任一页有维护勾选即可。
  */
 @Tag(name = "管理后台 - 报修单状态")
 @RestController
@@ -99,7 +101,7 @@ public class RepairRecordController {
 
     @PostMapping("/started")
     @Operation(summary = "工单开工，报修单仍为已派工")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("@pageAccess.allow('work-order-execute', 'maintain')")
     public CommonResult<Boolean> started(@Valid @RequestBody RepairWorkOrderReqVO reqVO) {
         repairRecordService.noteStarted(reqVO.getRepairId(), reqVO.getWorkOrderId());
         return success(true);
@@ -107,7 +109,7 @@ public class RepairRecordController {
 
     @PostMapping("/assignee")
     @Operation(summary = "领走或指定到人后，给报修补一行")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("@pageAccess.allowAny('maintain', 'work-order-center', 'work-order-execute')")
     public CommonResult<Boolean> assignee(@Valid @RequestBody RepairAssigneeReqVO reqVO) {
         repairRecordService.noteAssignee(
                 reqVO.getRepairId(), reqVO.getWorkOrderId(), reqVO.getPersonName(), Boolean.TRUE.equals(reqVO.getReassign()));
@@ -116,7 +118,7 @@ public class RepairRecordController {
 
     @PostMapping("/finished")
     @Operation(summary = "工单完工并关闭报修单")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("@pageAccess.allow('work-order-execute', 'maintain')")
     public CommonResult<Boolean> finished(@Valid @RequestBody RepairWorkOrderReqVO reqVO) {
         repairRecordService.finishFromWorkOrder(reqVO.getRepairId(), reqVO.getWorkOrderId());
         return success(true);

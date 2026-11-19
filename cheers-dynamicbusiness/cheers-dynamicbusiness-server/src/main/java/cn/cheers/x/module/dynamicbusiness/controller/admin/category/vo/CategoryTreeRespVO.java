@@ -15,6 +15,9 @@ import java.util.List;
 public class CategoryTreeRespVO extends CategoryRespVO
         implements CategoryVO<Long, CategoryTreeRespVO> {
 
+    @Schema(description = "列表上看到的名称。场站里的部门写成「站名 / 部门」。不写回分类名称。")
+    private String displayName;
+
     @Schema(description = "子节点")
     @Getter
     @Setter(lombok.AccessLevel.NONE)

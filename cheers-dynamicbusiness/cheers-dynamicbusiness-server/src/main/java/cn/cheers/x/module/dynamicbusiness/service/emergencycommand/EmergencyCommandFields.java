@@ -3,7 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.service.emergencycommand;
 /**
  * 应急指挥这条链写在数据目录上的字段。
  *
- * 管什么：事件、预案、响应各自保存哪些业务值。
+ * 管什么：事件和预案各自保存哪些业务值。执行记录写在事件上。
  * 不管什么：步骤树怎么编辑。步骤仍用平台步骤管理。
  * 禁止：把这些值写进旧应急服务的事件表或预案表。
  */
@@ -11,19 +11,43 @@ public final class EmergencyCommandFields {
 
     public static final String EVENT_CATALOG = "emergency";
     public static final String PLAN_CATALOG = "emergentcy_plan";
-    public static final String RESPONSE_CATALOG = "emergency_response";
+
+    /** 事件所属管线段。线路事件填，和所属场站一起决定谁能看到这起事件。 */
+    public static final String PIPELINE_SEGMENT = "pipeline_segment_id";
+    /** 事件中心点。列周边资源的圆心，存在事件的专用列上。 */
+    public static final String LONGITUDE = "longitude";
+    public static final String LATITUDE = "latitude";
+    public static final String LOCATION_TEXT = "location_text";
+
+    /** 应急资源目录。资源位置在 coordinate_gis 里，资源分类挂在本目录的分类树上。 */
+    public static final String RESOURCE_CATALOG = "emergency_resource";
+    /** 应急队伍。周边名单可切换到这本目录，位置仍按事件中心算距离。 */
+    public static final String TEAM_CATALOG = "emergency_team";
+    /** 外部救援资源。周边名单可切换到这本目录。 */
+    public static final String EXTERNAL_CATALOG = "external_rescue_resource";
+    public static final String RESOURCE_COORDINATE = "coordinate_gis";
+    public static final String RESOURCE_AVAILABLE = "available_quantity";
+    public static final String RESOURCE_TOTAL = "total_quantity";
 
     public static final String ALERT_ID = "alert_id";
-    /** 事件发生时间。人工接报可填，告警转入可空。 */
-    public static final String OCCUR_TIME = "occur_time";
+    /** 事件发生时间。模型字段码，落在事件的发生时间列。人工接报填写。 */
+    public static final String OCCURRED_AT = "occurred_at";
+    /** 接报时上传的照片地址。只存上传后的地址，不存文件本身。 */
+    public static final String INTAKE_PHOTOS = "intake_photos";
     /** 选定预案之前的接报经过。 */
     public static final String INTAKE_NOTE = "intake_note";
     public static final String EVENT_STATUS = "event_status";
     public static final String JUDGED_REAL = "judged_real";
     public static final String EVENT_TYPE = "event_type";
     public static final String RESPONSE_LEVEL = "response_level";
+    /**
+     * 不分等级的预案，整份响应步骤放在这一档。
+     * 键和名称都是指挥阶段「应急响应」，不是 I级、II级这种响应等级。
+     */
+    public static final String UNGRADED_RESPONSE = "response";
+    public static final String UNGRADED_RESPONSE_LABEL = "应急响应";
     public static final String JUDGE_COMMENT = "judge_comment";
-    /** 提交研判的时间。启动响应的时间在响应的创建时间上，两者分开记。 */
+    /** 提交研判的时间。启动时间记在事件脉络里。 */
     public static final String ASSESS_TIME = "assess_time";
     /** 用户点「触发应急事件」的时间。没有这次点击时为空。 */
     public static final String TRIGGER_TIME = "trigger_time";

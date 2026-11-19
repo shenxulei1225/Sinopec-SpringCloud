@@ -7,7 +7,7 @@ SET search_path TO dynamicbusiness;
 INSERT INTO dynamic_entity_type (
   code, name, parent_id, description, icon, alias, sort, status, type_level,
   association_fields, storage_type, dedicated_table_name, enable_rule_engine,
-  physical_column_mapping, model_workbench_mode, group_name, work_scope,
+  physical_column_mapping, model_workbench_mode, group_name,
   tenant_id, creator
 ) VALUES (
   'sop', '标准作业流程SOP', NULL,
@@ -15,7 +15,7 @@ INSERT INTO dynamic_entity_type (
   'fa:list-check', 'SOP', 20, 'active', 'USER',
   '{}', 'DEDICATED', 'ent_sop', FALSE,
   '{"version_no":{"type":"INTEGER","column":"version_no"},"publish_status":{"type":"VARCHAR","column":"publish_status"},"steps_json":{"type":"JSONB","column":"steps_json"}}'::jsonb,
-  'SINGLE', '知识库', 'NETWORK', 1, 'seed'
+  'SINGLE', '知识库', 1, 'seed'
 )
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
@@ -26,7 +26,6 @@ DO UPDATE SET
   physical_column_mapping = EXCLUDED.physical_column_mapping,
   model_workbench_mode = EXCLUDED.model_workbench_mode,
   group_name = EXCLUDED.group_name,
-  work_scope = EXCLUDED.work_scope,
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 

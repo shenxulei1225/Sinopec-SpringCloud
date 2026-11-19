@@ -1,5 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity.relation;
 
+import cn.cheers.x.module.dynamicbusiness.dataprocess.AlarmFacilityNotice;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityCategoryRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityCategoryRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeResolver;
@@ -31,6 +32,8 @@ class EntityCategoryRelationUnlinkTest {
     private EntityCategoryRefWritebackService entityCategoryRefWritebackService;
     @Mock
     private EntityCoreService entityCoreService;
+    @Mock
+    private AlarmFacilityNotice alarmFacilityNotice;
     @InjectMocks
     private EntityCategoryRelationServiceImpl service;
 

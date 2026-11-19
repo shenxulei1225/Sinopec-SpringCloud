@@ -59,11 +59,13 @@ class TenantPortalMenuServiceImplTest {
     void galleryAndRoadNetworkShareOneGroup() {
         List<TenantPortalMenuNode> nodes = TenantPortalMenuServiceImpl.generate(List.of(
                 group("pipe-gallery", "管廊", page("gallery-facility", "管廊设施")),
-                group("facility-ops", "场站资产与运维", page("road-network", "路网管理"))
+                group("facility-ops", "场站资产与运维",
+                        page("station-scene", "三维场景"),
+                        page("road-network", "路网管理"))
         ));
         assertEquals(1, nodes.size());
         assertEquals("管廊", nodes.get(0).title());
-        assertEquals(List.of("管廊设施", "路网管理"),
+        assertEquals(List.of("管廊设施", "三维场景", "路网管理"),
                 nodes.get(0).children().stream().map(TenantPortalMenuNode::title).toList());
     }
 

@@ -5,12 +5,8 @@ import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
 import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdateReqVO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.pagegrant.PageRoleGrantDO;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.pagegrant.PageRoleGrantMapper;
+import cn.cheers.x.module.dynamicbusiness.framework.security.PageAccess;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
-import cn.cheers.x.system.api.permission.PermissionApi;
-import cn.cheers.x.system.api.permission.RoleApi;
-import cn.cheers.x.system.enums.permission.RoleCodeEnum;
 import cn.cheers.x.workorder.api.WorkOrderApi;
 import cn.cheers.x.workorder.api.dto.WorkOrderCreateReqDTO;
 import jakarta.annotation.Resource;
@@ -25,7 +21,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,8 +41,6 @@ public class LedgerStateMachineServiceImpl implements LedgerStateMachineService 
     static final String REPAIR_TYPE = "maintanance";
     static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     static final DateTimeFormatter TRACE_STAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-    static final String STARTED = "已开始维修";
-    static final String FINISHED = "维修已完工";
 
     /** 配置只能从这份名单里选。新增效果必须先加实现再加入名单。 */
     private static final Set<String> EFFECT_CODES = Set.of(
@@ -58,11 +51,7 @@ public class LedgerStateMachineServiceImpl implements LedgerStateMachineService 
     @Resource
     private EntityService entityService;
     @Resource
-    private PageRoleGrantMapper pageRoleGrantMapper;
-    @Resource
-    private PermissionApi permissionApi;
-    @Resource
-    private RoleApi roleApi;
+    private PageAccess pageAccess;
     @Resource
     private WorkOrderApi workOrderApi;
 
@@ -127,49 +116,6 @@ public class LedgerStateMachineServiceImpl implements LedgerStateMachineService 
             when = LocalDateTime.now();
         }
         insertTrace(type, entityId, version, "submitted", "已上报", when);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void appendProgress(String entityTypeCode, Long entityId, Long workOrderId, String sentence) {
-        if (!STARTED.equals(sentence) && !FINISHED.equals(sentence)) {
-            throw new ServiceException(400, "这条进度不在开工、完工之内");
-        }
-        String type = requireType(entityTypeCode);
-        EntityRespVO entity = requireEntity(entityId, type);
-        if (!"dispatched".equals(currentStatus(entity))) {
-            throw new ServiceException(400, "只有已派工的报修才记录维修进度");
-        }
-        Object linked = first(entity.getBaseFields(), "work_order_id", "workOrderId");
-        if (workOrderId == null || linked == null || !String.valueOf(workOrderId).equals(String.valueOf(linked))) {
-            throw new ServiceException(400, "这张工单不是这张报修派出去的");
-        }
-        int version = resolveVersion(type, entityId);
-        appendTrace(type, entityId, version, "dispatched", sentence);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void closeAfterAcceptance(String entityTypeCode, Long entityId) {
-        String type = requireType(entityTypeCode);
-        EntityRespVO entity = requireEntity(entityId, type);
-        long machineId = resolveMachineId(type, entityId);
-        int version = resolveVersion(type, entityId);
-        String from = currentStatus(entity);
-        TransitionRow row = null;
-        for (TransitionRow candidate : loadTransitions(machineId, from)) {
-            if ("closed".equals(candidate.toState) && !StringUtils.hasText(candidate.pageCode)) {
-                row = candidate;
-                break;
-            }
-        }
-        if (row == null) {
-            throw new ServiceException(400, "当前状态不能因验收关闭");
-        }
-        Map<String, Object> staged = new LinkedHashMap<>();
-        staged.put("handle_status", "closed");
-        writeEntity(entity, type, staged);
-        appendTrace(type, entityId, version, "closed", row.traceTemplate);
     }
 
     @Override
@@ -341,21 +287,7 @@ public class LedgerStateMachineServiceImpl implements LedgerStateMachineService 
     }
 
     private boolean allowPage(String pageCode, String action) {
-        Long userId = SecurityFrameworkUtils.getLoginUserId();
-        if (userId == null || !StringUtils.hasText(pageCode) || !StringUtils.hasText(action)) {
-            return false;
-        }
-        Boolean elevated = permissionApi.hasAnyRoles(userId, RoleCodeEnum.SUPER_ADMIN.getCode()).getCheckedData();
-        if (Boolean.TRUE.equals(elevated)) {
-            return true;
-        }
-        Collection<Long> roleIds = roleApi.getUserRoleIdListByUserId(userId).getCheckedData();
-        for (PageRoleGrantDO grant : pageRoleGrantMapper.selectListByRoleIds(roleIds)) {
-            if (pageCode.equals(grant.getPageCode()) && action.equals(grant.getAction())) {
-                return true;
-            }
-        }
-        return false;
+        return pageAccess.allow(pageCode, action);
     }
 
     private void requireFields(String required, Map<String, Object> payload) {

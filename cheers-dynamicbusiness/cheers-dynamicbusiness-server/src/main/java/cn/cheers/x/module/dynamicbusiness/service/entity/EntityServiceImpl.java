@@ -28,12 +28,16 @@ import cn.cheers.x.module.dynamicbusiness.service.entity.mount.PayloadMountParen
 import cn.cheers.x.module.dynamicbusiness.service.entity.mount.PayloadMounts;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryService;
 import cn.cheers.x.module.dynamicbusiness.framework.hierarchy.IdTreeHierarchy;
+import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityTableNameHandler;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.enums.entity.EntityQueryScene;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategoryRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.refcategory.EntityRefCategoryProjectionService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.refdisplay.EntityRefDisplayEnrichService;
+import cn.cheers.x.module.dynamicbusiness.service.entity.refroute.EntityInboundRefDeleteGuard;
+import cn.cheers.x.module.dynamicbusiness.service.entity.refroute.EntityRefColumnRouteQueryService;
+import cn.cheers.x.module.dynamicbusiness.service.entity.refroute.RefColumnRoute;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryEntityLinkService;
 import cn.cheers.x.module.dynamicbusiness.service.sop.FlowFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.util.SparseSortUtils;
@@ -55,7 +59,7 @@ import cn.cheers.x.module.dynamicbusiness.service.action.ActionCreationValidator
 import cn.cheers.x.module.dynamicbusiness.service.action.ActionFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.action.CheckItemDeletedActionRemover;
 import cn.cheers.x.module.dynamicbusiness.service.entity.scene.EntitySceneQueryService;
-import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogStationScopeService;
+import cn.cheers.x.module.dynamicbusiness.service.datapermission.DataScopeQueryService;
 
 /**
  * 实体服务实现：CRUD、关联块、批量与排序；按场景列表/树查询委托 {@link EntitySceneQueryService}。
@@ -87,9 +91,9 @@ public class EntityServiceImpl implements EntityService {
     private cn.cheers.x.module.dynamicbusiness.service.category.hierarchy.AdvancedCategoryEntityHierarchyService advancedCategoryEntityHierarchyService;
     @Resource
     private EntityBusinessHelper entityBusinessHelper;
-    /** 按目录上已配置的场站范围核对保存和详情。不按目录类型写分支。 */
+    /** 新建、修改、删除、详情按登录人在这次实际读写的目录上的数据范围核对。 */
     @Resource
-    private CatalogStationScopeService catalogStationScopeService;
+    private DataScopeQueryService dataScopeQueryService;
     @Resource
     private EntityCacheEvictionService entityCacheEvictionService;
     @Resource
@@ -108,6 +112,12 @@ public class EntityServiceImpl implements EntityService {
     private EntityCategoryRelationMapper entityCategoryRelationMapper;
     @Resource
     private EntityRelationMapper entityRelationMapper;
+    @Resource
+    private EntityTableNameHandler entityTableNameHandler;
+    @Resource
+    private EntityRefColumnRouteQueryService entityRefColumnRouteQueryService;
+    @Resource
+    private EntityInboundRefDeleteGuard entityInboundRefDeleteGuard;
     @Resource
     private EntityRepository entityRepository;
     @Resource
@@ -161,12 +171,12 @@ public class EntityServiceImpl implements EntityService {
             Integer pageNo, Integer pageSize, String keyword, String domain,
             List<FieldFilterReqVO> filters, String orderByColumn, Boolean isAsc,
             List<String> searchFieldCodes,
-            List<Long> relatedEntityIds, String relatedEntityTypeCode) {
+            List<Long> relatedEntityIds, String relatedEntityTypeCode, String scopeRegistryCode) {
         return entitySceneQueryService.queryEntities(scene, resultShape, resultDetail, categoryTypeCode, entityTypeCode,
                 modelIds, modelEntityTypeCode, categoryIds, categoryIdGroups, categoryViaRefPathCode,
                 categoryFilterMode, entityId, rootEntityId, entitySourceEntityType,
                 pageNo, pageSize, keyword, domain, filters, orderByColumn, isAsc, searchFieldCodes,
-                relatedEntityIds, relatedEntityTypeCode);
+                relatedEntityIds, relatedEntityTypeCode, scopeRegistryCode);
     }
 
     @Override
@@ -180,8 +190,44 @@ public class EntityServiceImpl implements EntityService {
     }
 
     @Override
-    public List<EntityRespVO> getEntityTreeByModelId(String entityTypeCode, Long modelId, Long facilityId) {
-        return entitySceneQueryService.getEntityTreeByModelId(entityTypeCode, modelId, facilityId);
+    public List<EntityRespVO> getVisibleEntityTree(String registryCode, String entityTypeCode, Long modelId) {
+        List<EntityRespVO> roots = getEntityTreeByModelId(entityTypeCode, modelId);
+        List<Long> all = new ArrayList<>();
+        collectTreeIds(roots, all);
+        List<Long> kept = dataScopeQueryService.retainVisible(
+                dataScopeQueryService.scopeCatalogOf(registryCode, entityTypeCode), all);
+        if (kept.size() == all.size()) {
+            return roots;
+        }
+        return pruneTree(roots, new HashSet<>(kept));
+    }
+
+    private static void collectTreeIds(List<EntityRespVO> nodes, List<Long> out) {
+        if (nodes == null) {
+            return;
+        }
+        for (EntityRespVO node : nodes) {
+            out.add(node.getId());
+            collectTreeIds(node.getChildren(), out);
+        }
+    }
+
+    /** 只留能看的节点。看不到的节点去掉，它下面能看的子树接到它原来的位置上。 */
+    private static List<EntityRespVO> pruneTree(List<EntityRespVO> nodes, Set<Long> visible) {
+        List<EntityRespVO> result = new ArrayList<>();
+        if (nodes == null) {
+            return result;
+        }
+        for (EntityRespVO node : nodes) {
+            List<EntityRespVO> children = pruneTree(node.getChildren(), visible);
+            if (visible.contains(node.getId())) {
+                node.setChildren(children);
+                result.add(node);
+            } else {
+                result.addAll(children);
+            }
+        }
+        return result;
     }
 
     @Override
@@ -207,7 +253,7 @@ public class EntityServiceImpl implements EntityService {
 
     /**
      * 创建实体（本体落库 + 关系同步 + 缓存失效 + 事件发布）。
-     * 保存前只按该目录已配置的场站范围核对所属场站。不按目录类型写分支。
+     * 保存前核对数据范围：提交的归属字段（如所属场站）必须落在登录人的范围里。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -216,12 +262,9 @@ public class EntityServiceImpl implements EntityService {
     }
 
     private Long insertEntity(EntityCreateReqVO reqVO) {
-        catalogStationScopeService.assertWriteMatchesCurrentStation(
-                reqVO.getRegistryCode(),
-                EntityFieldMapsSupport.getEntityTypeCode(reqVO.getBaseFields()),
-                reqVO.getBaseFields(),
-                reqVO.getCustomFields(),
-                null);
+        dataScopeQueryService.assertWritable(
+                dataScopeQueryService.scopeCatalogOf(reqVO.getRegistryCode(), EntityFieldMapsSupport.getEntityTypeCode(reqVO.getBaseFields())),
+                DataScopeQueryService.CREATE, null, reqVO.getBaseFields(), reqVO.getCustomFields());
         EntityDO data = entityBusinessHelper.prepareCreateEntity(reqVO);
         // prepare 后 customFields 已含全部非核心字段（含 REF）；抽固定列前先留下，供写关联表
         Map<String, Object> fieldValues = new LinkedHashMap<>(
@@ -269,6 +312,7 @@ public class EntityServiceImpl implements EntityService {
         if (!StringUtils.hasText(entityTypeCode)) {
             throw new ServiceException(400, "业务类型编码不能为空");
         }
+        dataScopeQueryService.assertVisibleInTarget(reqVO.getRegistryCode(), entityTypeCode, reqVO.getSourceEntityId());
         EntityRespVO source = get(reqVO.getSourceEntityId(), entityTypeCode);
         if (source == null) {
             throw new ServiceException(404, "源实体不存在");
@@ -298,6 +342,7 @@ public class EntityServiceImpl implements EntityService {
         }
 
         EntityCreateReqVO createReq = new EntityCreateReqVO();
+        createReq.setRegistryCode(reqVO.getRegistryCode());
         createReq.setBaseFields(baseFields);
         createReq.setCustomFields(customFields.isEmpty() ? null : customFields);
         Long newId = create(createReq);
@@ -356,12 +401,8 @@ public class EntityServiceImpl implements EntityService {
         String effectiveEntityTypeCode = StringUtils.hasText(requestedEntityTypeCode)
                 ? requestedEntityTypeCode.trim()
                 : oldEntity.getEntityTypeCode();
-        catalogStationScopeService.assertWriteMatchesCurrentStation(
-                reqVO.getRegistryCode(),
-                effectiveEntityTypeCode,
-                reqVO.getBaseFields(),
-                reqVO.getCustomFields(),
-                loadStoredForStationScope(reqVO.getId(), effectiveEntityTypeCode));
+        dataScopeQueryService.assertWritable(dataScopeQueryService.scopeCatalogOf(reqVO.getRegistryCode(), effectiveEntityTypeCode),
+                DataScopeQueryService.UPDATE, reqVO.getId(), reqVO.getBaseFields(), reqVO.getCustomFields());
         guardSopSystemFieldMutation(reqVO, oldEntity, effectiveEntityTypeCode);
 
         Long requestedModelId = EntityFieldMapsSupport.getModelId(reqVO.getBaseFields());
@@ -637,22 +678,6 @@ public class EntityServiceImpl implements EntityService {
     }
 
     /**
-     * 读出已保存的专用列，供场站范围核对所属场站。
-     * 读不到时退回普通查询。普通查询没有专用列时，核对会指出没有所属场站。
-     */
-    private EntityDO loadStoredForStationScope(Long id, String entityTypeCode) {
-        if (id == null || !StringUtils.hasText(entityTypeCode)) {
-            return null;
-        }
-        List<EntityDO> loaded = entityCoreService.listByIdsWithDedicatedBaseFields(
-                Collections.singletonList(id), entityTypeCode.trim());
-        if (loaded != null && !loaded.isEmpty()) {
-            return loaded.get(0);
-        }
-        return entityCoreService.get(id, entityTypeCode.trim());
-    }
-
-    /**
      * 删除实体（删除前约束校验 + 关系清理 + 本体删除 + 缓存/事件处理）。
      */
     @Override
@@ -664,12 +689,10 @@ public class EntityServiceImpl implements EntityService {
             throw new ServiceException(404, ENTITY_NOT_EXISTS);
         }
         alarmFacilityNotice.schedule(reqVO.getEntityTypeCode(), java.util.List.of(reqVO.getId()));
-        catalogStationScopeService.assertWriteMatchesCurrentStation(
-                reqVO.getRegistryCode(),
-                reqVO.getEntityTypeCode(),
-                null,
-                null,
-                loadStoredForStationScope(reqVO.getId(), reqVO.getEntityTypeCode()));
+        dataScopeQueryService.assertWritable(dataScopeQueryService.scopeCatalogOf(reqVO.getRegistryCode(), reqVO.getEntityTypeCode()),
+                DataScopeQueryService.DELETE, reqVO.getId(), null, null);
+        // 被别的数据的引用字段指着就不能删，强制删除也不行
+        entityInboundRefDeleteGuard.assertNotReferenced(reqVO.getEntityTypeCode(), reqVO.getId());
 
         // 非强制删除时，做最小化保护：存在子实体则拒绝删除
         if (!Boolean.TRUE.equals(reqVO.getForceDelete())
@@ -707,6 +730,7 @@ public class EntityServiceImpl implements EntityService {
         if (existingEntity == null) {
             return;
         }
+        entityInboundRefDeleteGuard.assertNotReferenced(entityTypeCode.trim(), id);
         alarmFacilityNotice.schedule(entityTypeCode, java.util.List.of(id));
         removeActionFromCheckItems(existingEntity, entityTypeCode);
         cleanupAssociationsOnEntityDelete(id, entityTypeCode.trim(), clearInboundRelations);
@@ -770,7 +794,9 @@ public class EntityServiceImpl implements EntityService {
         // 自身发出的 REF（所属设施等）→ 关系镜像表按 source 删除
         entityRelationSyncService.syncRelationsOnDelete(entityId, entityTypeCode);
         if (clearInboundRelations) {
-            entityRelationMapper.deleteByTargetEntityId(entityId);
+            // 只删指向这张表里这条记录的行，别的目录里同编号记录的入站关联不动
+            entityRelationMapper.deleteByTargetEntity(entityId,
+                    entityTableNameHandler.listCodesSharingPhysicalTable(entityTypeCode));
         }
         entityCategoryRelationService.deleteAllByEntityIdInBusiness(entityId, entityTypeCode);
         categoryEntityLinkService.unlinkEntityCategory(entityId, entityTypeCode);
@@ -851,7 +877,6 @@ public class EntityServiceImpl implements EntityService {
         if (loaded == null || loaded.isEmpty()) {
             return null;
         }
-        catalogStationScopeService.assertViewMatchesCurrentStation(entityTypeCode, loaded.get(0));
         EntityRespVO vo = EntityDoVoHelper.toRespVO(
                 loaded.get(0), customFieldValidationService, entityDedicatedColumnService);
         // 详情读路径与列表一致：REF 只存 id，展示名在此补齐（不写库）
@@ -917,26 +942,38 @@ public class EntityServiceImpl implements EntityService {
     }
 
     /**
-     * 填充 {@link EntityRespVO#setAssociations}：每个 REF/REFMulti 一块，views 的 key 为 categoryTypeCode 或 default。
+     * 填充 {@link EntityRespVO#setAssociations}：每个引用字段一块，views 的 key 为 categoryTypeCode 或 default。
+     *
+     * <p>对端来源：本记录的单值专用列引用取基础字段里的值（不再有关联行）；
+     * 多选、扩展字段引用和指向本记录的引用取实体关联表。</p>
      */
     private void fillAssociations(EntityRespVO vo, Long entityId, List<AssociationCategoryViewReqVO> associationCategoryViews) {
-        List<EntityRelationDO> relations = entityRelationMapper.selectByEntityId(entityId);
-        if (relations == null || relations.isEmpty()) {
-            return;
+        Map<String, List<PeerEdge>> byField = new LinkedHashMap<>();
+        for (RefColumnRoute route : entityRefColumnRouteQueryService.listRoutes(vo.getEntityTypeCode())) {
+            Long targetId = vo.getBaseFields() == null ? null
+                    : EntityDedicatedColumnService.extractRefId(vo.getBaseFields().get(route.fieldCode()));
+            if (targetId != null) {
+                byField.computeIfAbsent(route.fieldCode(), k -> new ArrayList<>())
+                        .add(new PeerEdge(targetId, route.targetTypeCode()));
+            }
         }
-        Map<String, List<EntityRelationDO>> byField = relations.stream()
+        List<EntityRelationDO> relations = entityRelationMapper.selectByEntityId(entityId);
+        Map<String, List<EntityRelationDO>> relationsByField = (relations == null ? List.<EntityRelationDO>of() : relations)
+                .stream()
                 .filter(r -> r.getFieldCode() != null && !r.getFieldCode().isBlank())
                 .collect(Collectors.groupingBy(EntityRelationDO::getFieldCode, LinkedHashMap::new, Collectors.toList()));
+        relationsByField.forEach((code, rels) ->
+                byField.computeIfAbsent(code, k -> new ArrayList<>()).addAll(listPeerEdges(entityId, rels)));
         if (byField.isEmpty()) {
             return;
         }
-        vo.setAssociations(buildAssociationsVoList(vo, entityId, byField, associationCategoryViews));
+        vo.setAssociations(buildAssociationsVoList(vo, byField, associationCategoryViews));
     }
 
-    private List<AssociationsVO> buildAssociationsVoList(EntityRespVO vo, Long entityId,
-            Map<String, List<EntityRelationDO>> byField,
+    private List<AssociationsVO> buildAssociationsVoList(EntityRespVO vo,
+            Map<String, List<PeerEdge>> byField,
             List<AssociationCategoryViewReqVO> associationCategoryViews) {
-        Map<String, List<EntityRelationDO>> pending = new LinkedHashMap<>(byField);
+        Map<String, List<PeerEdge>> pending = new LinkedHashMap<>(byField);
         List<AssociationsVO> ordered = new ArrayList<>();
         Long modelId = vo.getModelId();
         if (modelId != null) {
@@ -950,31 +987,31 @@ public class EntityServiceImpl implements EntityService {
                     continue;
                 }
                 String code = field.getCode();
-                List<EntityRelationDO> rels = pending.remove(code);
-                if (rels == null) {
+                List<PeerEdge> peers = pending.remove(code);
+                if (peers == null) {
                     continue;
                 }
-                ordered.add(buildAssociationsBlock(field, code, rels, entityId, associationCategoryViews));
+                ordered.add(buildAssociationsBlock(field, code, peers, associationCategoryViews));
             }
         }
         List<String> restKeys = new ArrayList<>(pending.keySet());
         Collections.sort(restKeys);
         for (String code : restKeys) {
             FieldDO field = fieldMapper.selectByCode(code);
-            ordered.add(buildAssociationsBlock(field, code, pending.get(code), entityId, associationCategoryViews));
+            ordered.add(buildAssociationsBlock(field, code, pending.get(code), associationCategoryViews));
         }
         return ordered;
     }
 
-    private AssociationsVO buildAssociationsBlock(FieldDO fieldOrNull, String fieldCode, List<EntityRelationDO> rels,
-            Long entityId, List<AssociationCategoryViewReqVO> associationCategoryViews) {
+    private AssociationsVO buildAssociationsBlock(FieldDO fieldOrNull, String fieldCode, List<PeerEdge> fieldPeers,
+            List<AssociationCategoryViewReqVO> associationCategoryViews) {
         AssociationsVO block = new AssociationsVO();
         block.setFieldCode(fieldCode);
         if (fieldOrNull != null) {
             block.setFieldName(fieldOrNull.getName());
             block.setFieldType(fieldOrNull.getType());
         }
-        List<PeerEdge> peers = listPeerEdges(entityId, rels);
+        List<PeerEdge> peers = dedupePeers(fieldPeers);
         Map<String, List<AssociationEntityRowVO>> views = new LinkedHashMap<>();
         List<AssociationCategoryViewReqVO> reqsForField = associationCategoryViews == null ? List.of()
                 : associationCategoryViews.stream().filter(v -> fieldCode.equals(v.getFieldCode())).toList();
@@ -995,24 +1032,25 @@ public class EntityServiceImpl implements EntityService {
         return block;
     }
 
-    private List<PeerEdge> listPeerEdges(Long entityId, List<EntityRelationDO> rels) {
-        Set<String> seen = new HashSet<>();
+    private static List<PeerEdge> listPeerEdges(Long entityId, List<EntityRelationDO> rels) {
         List<PeerEdge> out = new ArrayList<>();
         for (EntityRelationDO r : rels) {
             boolean asSource = entityId.equals(r.getSourceEntityId());
             Long peerId = asSource ? r.getTargetEntityId() : r.getSourceEntityId();
-            if (peerId == null) {
-                continue;
+            if (peerId != null) {
+                out.add(new PeerEdge(peerId, asSource ? r.getTargetEntityTypeCode() : r.getSourceEntityTypeCode()));
             }
-            String peerBtc = asSource ? r.getTargetEntityTypeCode() : r.getSourceEntityTypeCode();
-            String dedupe = peerId + ":" + (peerBtc == null ? "" : peerBtc);
-            if (!seen.add(dedupe)) {
-                continue;
+        }
+        return out;
+    }
+
+    private static List<PeerEdge> dedupePeers(List<PeerEdge> peers) {
+        Set<String> seen = new HashSet<>();
+        List<PeerEdge> out = new ArrayList<>();
+        for (PeerEdge p : peers) {
+            if (seen.add(p.peerId + ":" + (p.peerBtc == null ? "" : p.peerBtc))) {
+                out.add(p);
             }
-            PeerEdge e = new PeerEdge();
-            e.peerId = peerId;
-            e.peerBtc = peerBtc;
-            out.add(e);
         }
         return out;
     }
@@ -1061,9 +1099,8 @@ public class EntityServiceImpl implements EntityService {
         }
     }
 
-    private static final class PeerEdge {
-        private Long peerId;
-        private String peerBtc;
+    /** 关联块里的一个对端记录：编号 + 所属目录。 */
+    private record PeerEdge(Long peerId, String peerBtc) {
     }
 
     /**
@@ -1274,12 +1311,16 @@ public class EntityServiceImpl implements EntityService {
                     continue;
                 }
 
-                catalogStationScopeService.assertWriteMatchesCurrentStation(
-                        reqVO.getRegistryCode(),
-                        entityTypeCode,
-                        null,
-                        null,
-                        loadStoredForStationScope(id, entityTypeCode));
+                dataScopeQueryService.assertWritable(dataScopeQueryService.scopeCatalogOf(reqVO.getRegistryCode(), entityTypeCode),
+                        DataScopeQueryService.DELETE, id, null, null);
+                String inboundRefs = entityInboundRefDeleteGuard.describeInboundRefs(entityTypeCode, id);
+                if (!inboundRefs.isEmpty()) {
+                    failItems.add(EntityBatchOperationRespVO.FailItem.builder()
+                            .entityId(id).entityName(existing.getName())
+                            .reason(EntityInboundRefDeleteGuard.rejectMessage(inboundRefs))
+                            .errorCode(400).build());
+                    continue;
+                }
                 if (Boolean.FALSE.equals(forceDelete)
                         && entityCoreService.existsByParentId(id, entityTypeCode)) {
                     failItems.add(EntityBatchOperationRespVO.FailItem.builder()
@@ -1389,12 +1430,14 @@ public class EntityServiceImpl implements EntityService {
                 previewItems.add(EntityBatchOperationRespVO.FailItem.builder()
                         .entityId(id).reason(ENTITY_NOT_EXISTS).errorCode(404).build());
             } else {
-                Long relationCount = entityRelationMapper.countByEntityId(id);
-                if (relationCount != null && relationCount > 0) {
+                // 被引用的记录删不掉（强制删除也不行），预览里直接标成不可删
+                String inboundRefs = entityInboundRefDeleteGuard.describeInboundRefs(entityTypeCode, id);
+                if (!inboundRefs.isEmpty()) {
                     previewItems.add(EntityBatchOperationRespVO.FailItem.builder()
                             .entityId(id).entityName(entity.getName())
-                            .reason(String.format("存在 %d 个关联关系", relationCount))
-                            .errorCode(0).build());
+                            .reason(EntityInboundRefDeleteGuard.rejectMessage(inboundRefs))
+                            .errorCode(400).build());
+                    continue;
                 }
                 validCount++;
             }

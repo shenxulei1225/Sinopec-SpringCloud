@@ -1,5 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.dataprocess;
 
+import cn.cheers.x.module.dynamicbusiness.service.facility.FacilityStationQueryService;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
@@ -14,7 +15,6 @@ import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningField
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityRpcFacadeService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategoryRelationService;
-import cn.cheers.x.module.dynamicbusiness.service.entitytype.FacilityOwningFieldEnsureService;
 import cn.cheers.x.module.dynamicbusiness.service.strategy.StrategyPublicationReader;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -58,7 +58,7 @@ public class AlarmDomainPublication {
     @Resource
     private StrategyPublicationReader publicationReader;
     @Resource
-    private FacilityOwningFieldEnsureService facilityOwningFieldEnsureService;
+    private FacilityStationQueryService facilityStationQueryService;
 
     public void ensure() {
         ModelDO generic = modelMapper.selectByNameAndEntityTypeCode(
@@ -78,7 +78,7 @@ public class AlarmDomainPublication {
             if (row == null || row.getId() == null || !Integer.valueOf(1).equals(row.getStatus())) {
                 continue;
             }
-            migrate(row, generic.getId(), categoryId, vocabulary, facilityOwningFieldEnsureService.onlyStationId());
+            migrate(row, generic.getId(), categoryId, vocabulary, facilityStationQueryService.onlyStationId());
         }
     }
 
@@ -96,7 +96,7 @@ public class AlarmDomainPublication {
         fields.put(code(StrategyRecordFields.COMBINE), "ALL");
         fields.put(code(StrategyRecordFields.ALLOWED_MODES),
                 StrategyRecordFields.ACTION_SKIP + "、" + StrategyRecordFields.ACTION_RUN);
-        Long stationId = facilityOwningFieldEnsureService.onlyStationId();
+        Long stationId = facilityStationQueryService.onlyStationId();
         Long id = create(modelId, categoryId, "告警", StrategyRecordFields.DOMAIN_ALARM, stationId, fields);
         file(id, categoryId);
     }

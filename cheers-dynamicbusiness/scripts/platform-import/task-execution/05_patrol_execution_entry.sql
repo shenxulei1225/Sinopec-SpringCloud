@@ -7,7 +7,7 @@ INSERT INTO dynamic_entity_type (
   code, name, parent_id, description, icon, alias, sort, status, type_level,
   association_fields, storage_type, dedicated_table_name, enable_rule_engine,
   physical_column_mapping, model_workbench_mode, entry_kind, base_entity_type_code,
-  domain, group_name, work_scope, tenant_id, creator
+  domain, group_name, tenant_id, creator
 )
 SELECT
   'task_record_patrol', '巡检任务执行记录', NULL,
@@ -15,7 +15,7 @@ SELECT
   COALESCE(b.icon, 'fa:check-square-o'), '巡检执行记录', 40, 'active', 'USER',
   '{}', b.storage_type, b.dedicated_table_name, COALESCE(b.enable_rule_engine, FALSE),
   b.physical_column_mapping, COALESCE(b.model_workbench_mode, 'SINGLE'),
-  'DOMAIN', 'task_excution_record', '巡检', '巡检管理', b.work_scope, 1, 'seed'
+  'DOMAIN', 'task_excution_record', '巡检', '巡检管理', 1, 'seed'
 FROM dynamic_entity_type b
 WHERE b.deleted = false AND b.tenant_id = 1 AND b.code = 'task_excution_record'
 ON CONFLICT (code, tenant_id) WHERE deleted = false DO UPDATE SET

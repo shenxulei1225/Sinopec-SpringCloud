@@ -31,6 +31,22 @@ class EmergencyCommandStepsTest {
     }
 
     @Test
+    void hasResponseLevels_treatsTheSingleResponseBucketAsUngraded() {
+        assertFalse(EmergencyCommandSteps.hasResponseLevels(null));
+        assertFalse(EmergencyCommandSteps.hasResponseLevels(JSONObject.parseObject("{\"version\":1}")));
+        JSONObject gallery = JSONObject.parseObject("""
+                {"version":1,"methods":[{"methodKey":"response","label":"应急响应","stepTree":[{"nodeKey":"a"}]}]}
+                """);
+        assertFalse(EmergencyCommandSteps.hasResponseLevels(gallery));
+        assertEquals("response", EmergencyCommandSteps.ungradedResponseKey(gallery));
+        JSONObject graded = JSONObject.parseObject("""
+                {"version":1,"methods":[{"methodKey":"I","label":"I级","stepTree":[{"nodeKey":"a"}]}]}
+                """);
+        assertTrue(EmergencyCommandSteps.hasResponseLevels(graded));
+        assertEquals("", EmergencyCommandSteps.ungradedResponseKey(graded));
+    }
+
+    @Test
     void copyLevel_returnsNullWhenThatLevelHasNoSteps() {
         JSONObject pack = JSONObject.parseObject("""
                 {"version":1,"methods":[{"methodKey":"I","stepTree":[]}]}

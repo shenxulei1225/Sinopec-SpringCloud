@@ -586,7 +586,8 @@ public class TaskExecutionSessionServiceImpl implements TaskExecutionSessionServ
                     null,
                     null,
                     null,
-                    null);
+                    null,
+                STEP_ENTITY_TYPE);
             if (resp == null || resp.getPage() == null || CollectionUtils.isEmpty(resp.getPage().getList())) {
                 return ids;
             }

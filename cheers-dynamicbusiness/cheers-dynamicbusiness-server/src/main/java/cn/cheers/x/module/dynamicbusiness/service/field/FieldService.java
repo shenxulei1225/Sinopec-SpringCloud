@@ -12,6 +12,18 @@ public interface FieldService {
 
     Long createField(FieldCreateReqVO reqVO);
 
+    /**
+     * 新建一个指定编码的单选引用字段，指向某本数据目录。
+     * 数据资源管理里选「按某目录管理」、而字段库里还没有「目录编码_id」这个字段时调用。
+     * 编码已被占用时报 400，不改已有字段。
+     *
+     * @param code              字段编码，例如 pipeline_id
+     * @param name              字段名称，例如「所属管线」
+     * @param targetEntityType  指向的数据目录注册编码
+     * @return 新字段编号
+     */
+    Long createEntityRefField(String code, String name, String targetEntityType);
+
     void updateField(FieldUpdateReqVO reqVO);
 
     void deleteField(Long id);

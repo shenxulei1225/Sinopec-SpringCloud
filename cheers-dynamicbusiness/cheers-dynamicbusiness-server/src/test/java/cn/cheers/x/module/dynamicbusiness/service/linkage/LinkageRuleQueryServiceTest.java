@@ -1,8 +1,10 @@
 package cn.cheers.x.module.dynamicbusiness.service.linkage;
 
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datapermission.CatalogOwnershipDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
 import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
+import cn.cheers.x.module.dynamicbusiness.service.datapermission.CatalogOwnershipQueryService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityRelationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,6 +26,8 @@ class LinkageRuleQueryServiceTest {
     private EntityRelationService entityRelationService;
     @Mock
     private EntityRepository entityRepository;
+    @Mock
+    private CatalogOwnershipQueryService catalogOwnershipQueryService;
     @InjectMocks
     private LinkageRuleQueryService service;
 
@@ -40,8 +44,12 @@ class LinkageRuleQueryServiceTest {
                         linkage(103L, "alarm", 0, 9L, LinkageFieldCodes.TRIGGER_ANY),
                         linkage(104L, "alarm", 1, 10L, LinkageFieldCodes.TRIGGER_ANY),
                         linkage(105L, "alarm", 1, 9L, "ALL")));
+        CatalogOwnershipDO facility = new CatalogOwnershipDO();
+        facility.setFieldCode(FacilityOwningFieldCodes.FIELD_CODE);
+        when(catalogOwnershipQueryService.listByRegistryCode(LinkageFieldCodes.LINKAGE_DIRECTORY))
+                .thenReturn(List.of(facility));
 
-        List<EntityDO> found = service.findEnabledAlarmRules(41L, 9L);
+        List<EntityDO> found = service.findEnabledAlarmRules(41L, Map.of(FacilityOwningFieldCodes.FIELD_CODE, 9L));
 
         assertEquals(List.of(101L), found.stream().map(EntityDO::getId).toList());
         verify(entityRelationService).listSubjectEntityIdsByRefFieldAndTargetIds(

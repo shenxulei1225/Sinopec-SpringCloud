@@ -4,6 +4,7 @@ import cn.cheers.x.framework.apilog.core.annotation.ApiAccessLog;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.framework.common.pojo.PageResult;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.CategoryIdGroupReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelAvailableFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCloneReqVO;
@@ -19,6 +20,8 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFromEnt
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFromModelCategoryGroupsReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelFieldFilterReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelListBySceneReqVO;
+import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogEntryAccessService;
+import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogEntryAccessService.QueryBinding;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelFacilityFootprintQueryService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelService;
@@ -77,6 +80,10 @@ public class ModelController {
     @Resource
     private ModelFacilityFootprintQueryService modelFacilityFootprintQueryService;
 
+    /** 本页数据目录的核对：型号属不属于本页、列表按哪个底座类型和业务域查。 */
+    @Resource
+    private CatalogEntryAccessService catalogEntryAccessService;
+
     @PostMapping("/create")
     @Operation(
         summary = "创建业务模型",
@@ -87,13 +94,15 @@ public class ModelController {
             "- 可以通过 ModelFieldAssignmentController 为模型字段"
     )
     @ApiAccessLog(operateType = CREATE)
-    @PreAuthorize("@ss.hasPermission('system:model:create')")
+    @PreAuthorize("@catalogAccess.allowSubject(#reqVO.registryCode, #reqVO.entityTypeCode, 'model', 'create')")
     /**
      * 用途：创建模型。
      * Service 映射：{@link ModelService#createModel(ModelCreateReqVO)}。
      * 边界：只负责创建模型主数据，不负责字段分配与分类关系维护。
      */
     public CommonResult<Long> createModel(@Valid @RequestBody ModelCreateReqVO reqVO) {
+        catalogEntryAccessService.assertNewModelInTarget(
+                reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getDomain());
         return success(modelService.createModel(reqVO));
     }
 
@@ -106,8 +115,10 @@ public class ModelController {
             "- 新模型 code 重新生成；名称须在同业务类型下唯一"
     )
     @ApiAccessLog(operateType = CREATE)
-    @PreAuthorize("@ss.hasPermission('system:model:create')")
+    @PreAuthorize("@catalogAccess.allowSubject(#reqVO.registryCode, null, 'model', 'create')")
     public CommonResult<Long> cloneModel(@Valid @RequestBody ModelCloneReqVO reqVO) {
+        catalogEntryAccessService.assertModelsInTarget(
+                reqVO.getRegistryCode(), null, List.of(reqVO.getSourceModelId()));
         return success(modelService.cloneModel(reqVO));
     }
 
@@ -122,13 +133,20 @@ public class ModelController {
             "  - 如果传入 categoryId（兼容旧版），会添加该分类绑定（不删除现有绑定，增量添加）"
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:model:update')")
+    @PreAuthorize("@catalogAccess.allowSubject(#reqVO.registryCode, #reqVO.entityTypeCode, 'model', 'update')")
     /**
      * 用途：更新模型基本信息。
      * Service 映射：{@link ModelService#updateModel(ModelUpdateReqVO)}。
      * 边界：以 Service 的更新策略为准（包括分类关系同步策略）。
      */
     public CommonResult<Boolean> updateModel(@Valid @RequestBody ModelUpdateReqVO reqVO) {
+        catalogEntryAccessService.assertModelsInTarget(
+                reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), List.of(reqVO.getId()));
+        if (reqVO.getDomain() != null) {
+            // 带业务域会连带迁移业务域，新业务域也必须在本页数据目录里
+            catalogEntryAccessService.assertNewModelInTarget(
+                    reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getDomain());
+        }
         modelService.updateModel(reqVO);
         return success(true);
     }
@@ -143,15 +161,17 @@ public class ModelController {
     )
     @Parameter(name = "modelId", description = "型号编号", required = true, example = "1")
     @Parameter(name = "targetDomain", description = "目标业务域；留空表示未划域", example = "巡检")
-    @PreAuthorize("@ss.hasPermission('system:model:update')")
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, null, 'model', 'update')")
     /**
      * 用途：型号业务域迁移前的影响预览。
      * Service 映射：{@link ModelService#previewDomainChange(Long, String)}。
      * 边界：只读，不改动任何数据。
      */
     public CommonResult<ModelDomainChangePreviewRespVO> previewDomainChange(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
             @RequestParam("modelId") Long modelId,
             @RequestParam(value = "targetDomain", required = false) String targetDomain) {
+        assertDomainChangeInTarget(registryCode, modelId, targetDomain);
         return success(modelService.previewDomainChange(modelId, targetDomain));
     }
 
@@ -166,15 +186,17 @@ public class ModelController {
     @Parameter(name = "modelId", description = "型号编号", required = true, example = "1")
     @Parameter(name = "targetDomain", description = "目标业务域；留空表示未划域", example = "巡检")
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:model:update')")
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, null, 'model', 'update')")
     /**
      * 用途：型号业务域迁移（含级联）。
      * Service 映射：{@link ModelService#changeDomain(Long, String)}。
      * 边界：不改型号其它字段；业务域是否登记由 Service 校验。
      */
     public CommonResult<ModelDomainChangePreviewRespVO> changeDomain(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
             @RequestParam("modelId") Long modelId,
             @RequestParam(value = "targetDomain", required = false) String targetDomain) {
+        assertDomainChangeInTarget(registryCode, modelId, targetDomain);
         return success(modelService.changeDomain(modelId, targetDomain));
     }
 
@@ -190,15 +212,17 @@ public class ModelController {
     @Parameter(name = "id", description = "模型编号", required = true, example = "1")
     @Parameter(name = "effectiveFacilityId", description = "当前有效站场（删除本地型号时必填）", example = "10")
     @ApiAccessLog(operateType = DELETE)
-    @PreAuthorize("@ss.hasPermission('system:model:delete')")
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, null, 'model', 'delete')")
     /**
      * 用途：删除模型（软删）。
      * Service 映射：{@link ModelService#deleteModel(Long, Long)}。
      * 边界：是否允许删除由 Service 内部校验（实体占用、治理权限、关联清理）决定。
      */
     public CommonResult<Boolean> deleteModel(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
             @RequestParam("id") Long id,
             @RequestParam(value = "effectiveFacilityId", required = false) Long effectiveFacilityId) {
+        catalogEntryAccessService.assertModelsInTarget(registryCode, null, List.of(id));
         modelService.deleteModel(id, effectiveFacilityId);
         return success(true);
     }
@@ -224,9 +248,10 @@ public class ModelController {
             + "也可按 fieldMergeMap 合并到既有公司字段；任一步失败整体回滚。"
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:model:update')")
+    @PreAuthorize("@catalogAccess.allowSubject(#reqVO.registryCode, null, 'model', 'update')")
     public CommonResult<Boolean> promoteLocalPackage(
             @Valid @RequestBody ModelPromoteLocalPackageReqVO reqVO) {
+        catalogEntryAccessService.assertModelsInTarget(reqVO.getRegistryCode(), null, List.of(reqVO.getModelId()));
         localPackagePromotionService.promoteLocalPackage(
                 reqVO.getModelId(), reqVO.getFieldMergeMap());
         return success(true);
@@ -241,14 +266,17 @@ public class ModelController {
             "- 已分配的字段数量统计"
     )
     @Parameter(name = "id", description = "模型编号", required = true, example = "1")
-    @PreAuthorize("@ss.hasPermission('system:model:query')")
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, #entityTypeCode, 'model', 'query')")
     /**
      * 用途：查询单个模型详情。
      * Service 映射：{@link ModelService#getModel(Long, Long)}。
      */
     public CommonResult<ModelRespVO> getModel(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode,
             @RequestParam("id") Long id,
             @RequestParam(value = "effectiveFacilityId", required = false) Long effectiveFacilityId) {
+        catalogEntryAccessService.assertModelsInTarget(registryCode, entityTypeCode, List.of(id));
         return success(modelService.getModel(id, effectiveFacilityId));
     }
 
@@ -258,10 +286,12 @@ public class ModelController {
         description = "按该型号实体行上的 facility_id 去重统计；不使用型号发起设施字段。"
     )
     @Parameter(name = "id", description = "型号编号", required = true, example = "1")
-    @PreAuthorize("@ss.hasPermission('system:model:query')")
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, null, 'model', 'query')")
     public CommonResult<ModelFacilityFootprintRespVO> getFacilityFootprint(
             @PathVariable("id") Long id,
+            @RequestParam(value = "registryCode", required = false) String registryCode,
             @RequestParam(value = "effectiveFacilityId", required = false) Long effectiveFacilityId) {
+        catalogEntryAccessService.assertModelsInTarget(registryCode, null, List.of(id));
         return success(modelFacilityFootprintQueryService.getFacilityFootprint(id, effectiveFacilityId));
     }
 
@@ -278,7 +308,7 @@ public class ModelController {
     @Parameter(name = "categoryId", description = "单个分类ID（兼容旧版；categoryIds 为空时使用）", example = "1")
     @Parameter(name = "entityTypeCode", description = "业务类型编码（必填，用于关系过滤并命中索引）", required = true, example = "equipment")
     @Parameter(name = "includeDescendants", description = "是否含子树（默认 true）", example = "true")
-    @PreAuthorize("@ss.hasPermission('system:model:query')")
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, #entityTypeCode, 'model', 'query')")
     /**
      * 用途：查找指定业务下分类关联的模型（Controller 聚合接口）。
      * Service 映射：
@@ -288,10 +318,11 @@ public class ModelController {
      * 边界：本接口返回模型详情；关系服务只返回 ID 序列。
      */
     public CommonResult<List<ModelRespVO>> findModelsByCategoryInBusiness(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
             @RequestParam(value = "categoryIds", required = false) List<Long> categoryIds,
             @RequestParam(value = "categoryId", required = false) Long categoryId,
-            @RequestParam("entityTypeCode") String entityTypeCode,
-            @RequestParam(value = "domain", required = false) String domain,
+            @RequestParam("entityTypeCode") String requestedTypeCode,
+            @RequestParam(value = "domain", required = false) String requestedDomain,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "includeDescendants", required = false, defaultValue = "true")
                     Boolean includeDescendants) {
@@ -310,6 +341,9 @@ public class ModelController {
             throw new ServiceException(400, "categoryIds 或 categoryId 不能为空");
         }
 
+        QueryBinding binding = catalogEntryAccessService.bindModelQuery(registryCode, requestedTypeCode, requestedDomain);
+        String entityTypeCode = binding.entityTypeCode();
+        String domain = binding.domain();
         boolean withDescendants = includeDescendants == null || includeDescendants;
         List<Long> modelIds;
         if (withDescendants) {
@@ -337,19 +371,21 @@ public class ModelController {
     )
     @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
     @Parameter(name = "categoryTypeCode", description = "分类体系编码（可选；有则按分类树分桶排序）", example = "equipment")
-    @PreAuthorize("@ss.hasPermission('system:model:query')")
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, #entityTypeCode, 'model', 'query')")
     /**
      * 用途：按业务类型查询模型列表。
      * Service 映射：{@link ModelService#listModelsByEntityType(String, String, String)}。
      */
     public CommonResult<List<ModelRespVO>> listModelsByEntityType(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
             @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam(value = "domain", required = false) String domain,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "categoryTypeCode", required = false) String categoryTypeCode,
             @RequestParam(value = "effectiveFacilityId", required = false) Long effectiveFacilityId) {
+        QueryBinding binding = catalogEntryAccessService.bindModelQuery(registryCode, entityTypeCode, domain);
         List<ModelRespVO> models = modelService.listModelsByEntityType(
-                entityTypeCode, domain, categoryTypeCode, effectiveFacilityId);
+                binding.entityTypeCode(), binding.domain(), categoryTypeCode, effectiveFacilityId);
         return success(applyKeywordFilter(models, keyword));
     }
 
@@ -360,14 +396,16 @@ public class ModelController {
     )
     @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
     @Parameter(name = "categoryTypeCode", description = "分类体系编码（必填）", required = true, example = "equipment")
-    @PreAuthorize("@ss.hasPermission('system:model:query')")
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, #entityTypeCode, 'model', 'query')")
     public CommonResult<List<ModelRespVO>> listUncategorizedModelsByCategoryType(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
             @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam("categoryTypeCode") String categoryTypeCode,
             @RequestParam(value = "domain", required = false) String domain,
             @RequestParam(value = "keyword", required = false) String keyword) {
+        QueryBinding binding = catalogEntryAccessService.bindModelQuery(registryCode, entityTypeCode, domain);
         List<ModelRespVO> models = modelService.listUncategorizedModelsByCategoryType(
-                categoryTypeCode, entityTypeCode, domain);
+                categoryTypeCode, binding.entityTypeCode(), binding.domain());
         return success(applyKeywordFilter(models, keyword));
     }
 
@@ -378,14 +416,16 @@ public class ModelController {
     )
     @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
     @Parameter(name = "categoryTypeCode", description = "分类体系编码（必填）", required = true, example = "equipment")
-    @PreAuthorize("@ss.hasPermission('system:model:query')")
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, #entityTypeCode, 'model', 'query')")
     public CommonResult<List<ModelRespVO>> listCategorizedModelsByCategoryType(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
             @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam("categoryTypeCode") String categoryTypeCode,
             @RequestParam(value = "domain", required = false) String domain,
             @RequestParam(value = "keyword", required = false) String keyword) {
+        QueryBinding binding = catalogEntryAccessService.bindModelQuery(registryCode, entityTypeCode, domain);
         List<ModelRespVO> models = modelService.listCategorizedModelsByCategoryType(
-                categoryTypeCode, entityTypeCode, domain);
+                categoryTypeCode, binding.entityTypeCode(), binding.domain());
         return success(applyKeywordFilter(models, keyword));
     }
 
@@ -416,13 +456,16 @@ public class ModelController {
     @Parameter(name = "status", description = "模型状态（可选，1-启用，0-禁用）", example = "1")
     @Parameter(name = "pageNo", description = "页码（默认1）", example = "1")
     @Parameter(name = "pageSize", description = "每页数量（默认10）", example = "10")
-    @PreAuthorize("@ss.hasPermission('system:model:query')")
+    @PreAuthorize("@catalogAccess.allowSubject(#reqVO.registryCode, #reqVO.entityTypeCode, 'model', 'query')")
     /**
      * 用途：分页查询模型。
      * Service 映射：{@link ModelService#pageModel(ModelPageReqVO)}。
+     * 类型和业务域按本页数据目录收回后再查，不信请求另传的业务域。
      */
     public CommonResult<PageResult<ModelRespVO>> pageModelByEntityTypeCode(@Valid ModelPageReqVO reqVO) {
-        return success(modelService.pageModelByEntityTypeCode(reqVO));
+        QueryBinding binding = catalogEntryAccessService.bindModelQuery(
+                reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getDomain());
+        return success(modelService.pageModelByEntityTypeCode(boundPageReq(reqVO, binding)));
     }
 
     @PutMapping("/sort")
@@ -432,8 +475,10 @@ public class ModelController {
             + "带 categoryId 时写分类—型号关联 sort；不带时写型号主表 sort。"
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:model:update')")
+    @PreAuthorize("@catalogAccess.allowSubject(#reqVO.registryCode, #reqVO.entityTypeCode, 'model', 'update')")
     public CommonResult<Boolean> saveModelSort(@Valid @RequestBody ModelSortSaveReqVO reqVO) {
+        catalogEntryAccessService.assertModelsInTarget(
+                reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), sortModelIds(reqVO));
         modelService.saveModelSort(reqVO);
         return success(true);
     }
@@ -442,7 +487,7 @@ public class ModelController {
     @PutMapping("/sort/batch")
     @Operation(summary = "更新模型排序（保存顺序，兼容旧路径）", deprecated = true)
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:model:update')")
+    @PreAuthorize("@catalogAccess.allowSubject(#reqVO.registryCode, #reqVO.entityTypeCode, 'model', 'update')")
     public CommonResult<Boolean> saveModelSortLegacy(@Valid @RequestBody ModelSortSaveReqVO reqVO) {
         return saveModelSort(reqVO);
     }
@@ -456,14 +501,18 @@ public class ModelController {
     )
     @Parameter(name = "keyword", description = "关键词（必填，模糊匹配模型名称和描述）", required = true, example = "灭火器")
     @Parameter(name = "entityTypeCode", description = "业务类型编码（可选，如果指定则只在该业务类型下搜索）", example = "equipment")
-    @PreAuthorize("@ss.hasPermission('system:model:query')")
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, #entityTypeCode, 'model', 'query')")
     /**
      * 用途：关键词搜索模型（不分页）。
      * Service 映射：{@link ModelService#searchModels(String, String)}。
+     * 只在本页数据目录的型号里搜；子数据类型再按本页业务域收窄。
      */
-    public CommonResult<List<ModelRespVO>> searchModels(@RequestParam("keyword") String keyword,
+    public CommonResult<List<ModelRespVO>> searchModels(@RequestParam(value = "registryCode", required = false) String registryCode,
+                                                         @RequestParam("keyword") String keyword,
                                                          @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode) {
-        return success(modelService.searchModels(keyword, entityTypeCode));
+        QueryBinding binding = catalogEntryAccessService.bindModelQuery(registryCode, entityTypeCode, null);
+        return success(modelService.filterModelsByDomain(
+                modelService.searchModels(keyword, binding.entityTypeCode()), binding.domain()));
     }
 
     // ========== 模型字段查询（视图配置用）==========
@@ -474,12 +523,15 @@ public class ModelController {
         description = "获取指定模型所有可用的字段列表（包括固定列字段和扩展字段），用于前端视图配置时选择展示字段。"
     )
     @Parameter(name = "modelId", description = "模型ID", required = true, example = "1")
-    @PreAuthorize("@ss.hasPermission('system:model:query')")
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, null, 'model', 'query')")
     /**
      * 用途：查询模型可用字段（用于视图配置）。
      * Service 映射：{@link ModelService#listModelAvailableFields(Long)}。
      */
-    public CommonResult<List<ModelAvailableFieldRespVO>> listModelAvailableFields(@RequestParam("modelId") Long modelId) {
+    public CommonResult<List<ModelAvailableFieldRespVO>> listModelAvailableFields(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @RequestParam("modelId") Long modelId) {
+        catalogEntryAccessService.assertModelsInTarget(registryCode, null, List.of(modelId));
         return success(modelService.listModelAvailableFields(modelId));
     }
 
@@ -493,12 +545,17 @@ public class ModelController {
             "- 返回结果包含模型的基本信息和关联的分类信息"
     )
     @Parameter(name = "ids", description = "模型ID列表，逗号分隔", required = true, example = "1,2,3")
-    @PreAuthorize("@ss.hasPermission('system:model:query')")
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, #entityTypeCode, 'model', 'query')")
     /**
      * 用途：批量查询模型详情，避免前端 N+1。
      * Service 映射：{@link ModelService#getModelsByIds(List)}。
+     * 每个型号都要属于这次读的目录，有一个不属于就整批拒绝。
      */
-    public CommonResult<List<ModelRespVO>> getModelsByIds(@RequestParam("ids") List<Long> ids) {
+    public CommonResult<List<ModelRespVO>> getModelsByIds(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @RequestParam(value = "entityTypeCode", required = false) String entityTypeCode,
+            @RequestParam("ids") List<Long> ids) {
+        catalogEntryAccessService.assertModelsInTarget(registryCode, entityTypeCode, ids);
         return success(modelService.getModelsByIds(ids));
     }
 
@@ -508,13 +565,15 @@ public class ModelController {
         description = "数据管理级联或多分类栏：每组内按分类—型号关联取并集，组间取型号交集。"
             + "不读取分类—实体关联。"
     )
-    @PreAuthorize("@ss.hasPermission('system:model:query')")
+    @PreAuthorize("@catalogAccess.allowSubject(#reqVO.registryCode, #reqVO.entityTypeCode, 'model', 'query')")
     public CommonResult<List<ModelRespVO>> listModelsFromModelCategoryGroups(
             @Valid @RequestBody ModelFromModelCategoryGroupsReqVO reqVO) {
+        QueryBinding binding = catalogEntryAccessService.bindModelQuery(
+                reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getDomain());
         List<ModelRespVO> models = modelService.listModelsByIntersectingCategoryGroups(
                 reqVO.getCategoryIdGroups(),
-                reqVO.getEntityTypeCode(),
-                reqVO.getDomain(),
+                binding.entityTypeCode(),
+                binding.domain(),
                 reqVO.getIncludeDescendants());
         return success(applyKeywordFilter(models, reqVO.getKeyword()));
     }
@@ -525,21 +584,23 @@ public class ModelController {
         description = "数据管理多分类栏：先按 categoryIdGroups（组间 AND）得到实体候选，再去重 model_id 返回型号。"
             + "不走分类—型号关联；与实体列多维求交底集一致。"
     )
-    @PreAuthorize("@ss.hasPermission('system:model:query')")
+    @PreAuthorize("@catalogAccess.allowSubject(#reqVO.registryCode, #reqVO.entityTypeCode, 'model', 'query')")
     public CommonResult<List<ModelRespVO>> listModelsFromEntityCategoryGroups(
             @Valid @RequestBody ModelFromEntityCategoryGroupsReqVO reqVO) {
+        QueryBinding binding = catalogEntryAccessService.bindModelQuery(
+                reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getDomain());
         List<Long> modelIds = entityService.listDistinctModelIdsByCategoryScope(
-                reqVO.getEntityTypeCode(),
+                binding.entityTypeCode(),
                 reqVO.getCategoryIds(),
                 reqVO.getCategoryIdGroups(),
                 reqVO.getCategoryTypeCode(),
-                reqVO.getDomain(),
+                binding.domain(),
                 reqVO.getIncludeDescendants());
         if (modelIds.isEmpty()) {
             return success(List.of());
         }
         List<ModelRespVO> models = modelService.getModelsByIds(modelIds);
-        return success(applyKeywordFilter(modelService.filterModelsByDomain(models, reqVO.getDomain()), reqVO.getKeyword()));
+        return success(applyKeywordFilter(modelService.filterModelsByDomain(models, binding.domain()), reqVO.getKeyword()));
     }
 
     @PostMapping("/list-by-scene")
@@ -548,9 +609,12 @@ public class ModelController {
         description = "统一承接模型列表查询：分类节点、多栏分类求交、已分类/未分类、业务域与关键词可叠加。"
                 + "关键词只做附加过滤，不改变分类语义。"
     )
-    @PreAuthorize("@ss.hasPermission('system:model:query')")
+    @PreAuthorize("@catalogAccess.allowSubject(#reqVO.registryCode, #reqVO.entityTypeCode, 'model', 'query')")
     public CommonResult<List<ModelRespVO>> listModelsByScene(@Valid @RequestBody ModelListBySceneReqVO reqVO) {
-        String entityTypeCode = reqVO.getEntityTypeCode().trim();
+        QueryBinding binding = catalogEntryAccessService.bindModelQuery(
+                reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getDomain());
+        String entityTypeCode = binding.entityTypeCode();
+        String domain = binding.domain();
         String categoryTypeCode = StringUtils.hasText(reqVO.getCategoryTypeCode())
                 ? reqVO.getCategoryTypeCode().trim()
                 : entityTypeCode;
@@ -566,23 +630,49 @@ public class ModelController {
             models = resolveModelsByCategoryGroups(
                     entityTypeCode,
                     categoryTypeCode,
-                    reqVO.getDomain(),
+                    domain,
                     includeDescendants,
                     categoryFilterSource,
                     categoryGroups);
         } else if (!categoryIds.isEmpty()) {
-            models = resolveModelsByCategoryIds(entityTypeCode, reqVO.getDomain(), includeDescendants, categoryIds);
+            models = resolveModelsByCategoryIds(entityTypeCode, domain, includeDescendants, categoryIds);
         } else if ("NODE".equals(filterMode)) {
             models = List.of();
         } else if ("UNCATEGORIZED".equals(filterMode)) {
-            models = modelService.listUncategorizedModelsByCategoryType(categoryTypeCode, entityTypeCode, reqVO.getDomain());
+            models = modelService.listUncategorizedModelsByCategoryType(categoryTypeCode, entityTypeCode, domain);
         } else if ("CATEGORIZED".equals(filterMode)) {
-            models = modelService.listCategorizedModelsByCategoryType(categoryTypeCode, entityTypeCode, reqVO.getDomain());
+            models = modelService.listCategorizedModelsByCategoryType(categoryTypeCode, entityTypeCode, domain);
         } else {
-            models = modelService.listModelsByEntityType(entityTypeCode, reqVO.getDomain(), categoryTypeCode, null);
+            models = modelService.listModelsByEntityType(entityTypeCode, domain, categoryTypeCode, null);
         }
 
         return success(applyKeywordFilter(applyModelFieldFilters(models, fieldFilters), reqVO.getKeyword()));
+    }
+
+    /** 改业务域前：型号要属于本页，迁到的业务域也要在本页数据目录里（子数据类型页不能把型号迁出本页）。 */
+    private void assertDomainChangeInTarget(String registryCode, Long modelId, String targetDomain) {
+        catalogEntryAccessService.assertModelsInTarget(registryCode, null, List.of(modelId));
+        catalogEntryAccessService.assertNewModelInTarget(registryCode, null, targetDomain);
+    }
+
+    private static List<Long> sortModelIds(ModelSortSaveReqVO reqVO) {
+        List<Long> ids = new ArrayList<>();
+        if (reqVO.getItems() != null) {
+            for (ModelSortSaveReqVO.Item item : reqVO.getItems()) {
+                if (item != null && item.getModelId() != null) {
+                    ids.add(item.getModelId());
+                }
+            }
+        }
+        return ids;
+    }
+
+    /** 分页请求的副本：类型和业务域换成按本页数据目录收回后的值，其余条件不变。 */
+    private static ModelPageReqVO boundPageReq(ModelPageReqVO reqVO, QueryBinding binding) {
+        ModelPageReqVO bound = BeanUtils.toBean(reqVO, ModelPageReqVO.class);
+        bound.setEntityTypeCode(binding.entityTypeCode());
+        bound.setDomain(binding.domain());
+        return bound;
     }
 
     /**

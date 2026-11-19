@@ -42,9 +42,10 @@ class LinkageEventHandlerTest {
         PlatformEventMessage event = new PlatformEventMessage(
                 "evt-1", 41L, "alarm.water.high", PlatformEventKinds.ALARM_LIFECYCLE,
                 123L, 9L, "equipment", 77L, "RAISED",
-                Instant.parse("2026-11-02T01:00:00Z"), Map.of("reading", 12.3));
+                Instant.parse("2026-11-02T01:00:00Z"),
+                Map.of("reading", 12.3, "ownership", List.of(Map.of("fieldCode", "facility_id", "id", 9L))));
         EntityDO rule = EntityDO.builder().id(101L).status(1).domain("alarm").build();
-        when(ruleQueryService.findEnabledAlarmRules(41L, 9L)).thenReturn(List.of(rule));
+        when(ruleQueryService.findEnabledAlarmRules(41L, Map.of("facility_id", 9L))).thenReturn(List.of(rule));
         when(modeQueryService.findMatchingPairs(rule, "equipment", 77L))
                 .thenReturn(List.of(new LinkagePair(1L, 77L, 88L, 31L)));
         when(linkageExecutionService.begin(event, 101L)).thenReturn(new LinkageExecutionStart(501L, true));
@@ -66,14 +67,15 @@ class LinkageEventHandlerTest {
         PlatformEventMessage event = new PlatformEventMessage(
                 "evt-2", 41L, "alarm.water.high", PlatformEventKinds.ALARM_LIFECYCLE,
                 123L, 9L, "equipment", 77L, "RAISED",
-                Instant.parse("2026-11-02T01:00:00Z"), Map.of());
+                Instant.parse("2026-11-02T01:00:00Z"),
+                Map.of("ownership", List.of(Map.of("fieldCode", "facility_id", "id", 9L))));
         EntityDO rule = EntityDO.builder()
                 .id(101L)
                 .status(1)
                 .domain("alarm")
                 .dedicatedBaseFieldValues(Map.of(LinkageFieldCodes.EXECUTION, LinkageFieldCodes.EXECUTION_CONFIRM))
                 .build();
-        when(ruleQueryService.findEnabledAlarmRules(41L, 9L)).thenReturn(List.of(rule));
+        when(ruleQueryService.findEnabledAlarmRules(41L, Map.of("facility_id", 9L))).thenReturn(List.of(rule));
         when(linkageExecutionService.begin(event, 101L)).thenReturn(new LinkageExecutionStart(501L, true));
 
         handler.handle(event);

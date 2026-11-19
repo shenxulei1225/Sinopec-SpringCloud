@@ -9,11 +9,15 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytypescope.EntityT
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.category.CategoryEntityLinkMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityCategoryRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytypescope.EntityTypeScopeMapper;
+import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityTableNameHandler;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
+import cn.cheers.x.module.dynamicbusiness.service.entity.refroute.CategoryMembershipQueryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,7 +30,8 @@ import java.util.stream.Collectors;
 /**
  * 按分类范围（expanded categoryIds）+ 可选 modelIds / domain / 划分成员 收集有序 entityId。
  *
- * <p>实体列只认分类-实体关联（relation / link）；型号列另走分类-型号关联，不在此展开实体。</p>
+ * <p>实体列认三种挂法：分类-实体关联行、分类即实体自身绑定、单值引用专用列指向分类即实体
+ * （见 {@link CategoryMembershipQueryService}）；型号列另走分类-型号关联，不在此展开实体。</p>
  */
 @Repository
 @RequiredArgsConstructor
@@ -38,6 +43,9 @@ public class EntityScopedQueryRepository {
     private final CategoryEntityLinkMapper categoryEntityLinkMapper;
     private final EntityTypeScopeMapper entityTypeScopeMapper;
     private final EntityRepository entityRepository;
+    private final CategoryMembershipQueryService categoryMembershipQueryService;
+    private final EntityTableNameHandler entityTableNameHandler;
+    private final JdbcTemplate jdbcTemplate;
 
     /**
      * @param expandedCategoryIds 已展开子树的分类 ID（顺序即 cat_rank）
@@ -63,6 +71,7 @@ public class EntityScopedQueryRepository {
                 normalizedDomain, modelIdFilter);
         mergeLinkCandidates(bestByEntityId, categoryRank, expandedCategoryIds, entityTypeCode,
                 normalizedDomain, modelIdFilter);
+        mergeColumnRefCandidates(bestByEntityId, categoryRank, expandedCategoryIds, entityTypeCode, modelIdFilter);
         // 无 domain/scope 时也要走一遍：剔除已软删实体，避免 total 含死 id、本页行数 < pageSize
         retainByDomainAndScope(bestByEntityId, entityTypeCode, normalizedDomain, scopeRegistryCode);
 
@@ -112,9 +121,8 @@ public class EntityScopedQueryRepository {
             return List.of();
         }
         String normalizedDomain = EntityTypeScopeContext.normalizeDomain(domain);
-        List<Long> intersected = entityCategoryRelationMapper.selectEntityIdsIntersectingCategoryGroups(
-                storage, StringUtils.hasText(normalizedDomain) ? normalizedDomain : null, normalizedGroups);
-        if (intersected == null || intersected.isEmpty()) {
+        List<Long> intersected = selectEntityIdsInAllGroups(storage, normalizedGroups);
+        if (intersected.isEmpty()) {
             return List.of();
         }
 
@@ -126,6 +134,22 @@ public class EntityScopedQueryRepository {
             ordered = ordered.stream().filter(modelMatched::contains).toList();
         }
         return ordered;
+    }
+
+    /** 同时挂在每一组分类下的记录（组内三种挂法任一，组间求交），按编号排。业务域由后面的收窄处理。 */
+    private List<Long> selectEntityIdsInAllGroups(String storage, List<List<Long>> groups) {
+        StringBuilder sql = new StringBuilder("SELECT e.id FROM ")
+                .append(entityTableNameHandler.resolvePhysicalTableName(storage))
+                .append(" e WHERE e.deleted = false");
+        List<Object> args = new ArrayList<>();
+        for (List<Long> group : groups) {
+            CategoryMembershipQueryService.SqlCondition member =
+                    categoryMembershipQueryService.inCategoriesCondition(storage, group);
+            sql.append(" AND ").append(member.sql());
+            args.addAll(member.args());
+        }
+        sql.append(" ORDER BY e.id");
+        return jdbcTemplate.queryForList(sql.toString(), Long.class, args.toArray());
     }
 
     /**
@@ -278,6 +302,42 @@ public class EntityScopedQueryRepository {
                     0,
                     tieId,
                     2));
+        }
+    }
+
+    /**
+     * 单值引用专用列指向分类即实体的记录（如设备「所属场站」= 选中的站）。
+     * 这类记录不再有分类-实体关联行，排在同一分类内关联行、绑定行之后，组内按编号。
+     * 业务域、划分成员由后面的统一收窄处理。
+     */
+    private void mergeColumnRefCandidates(Map<Long, ScopeCandidate> bestByEntityId,
+                                          Map<Long, Integer> categoryRank,
+                                          List<Long> expandedCategoryIds,
+                                          String entityTypeCode,
+                                          Set<Long> modelIdFilter) {
+        List<CategoryMembershipQueryService.ColumnMember> members =
+                categoryMembershipQueryService.listColumnMembers(entityTypeCode, expandedCategoryIds, null);
+        if (members.isEmpty()) {
+            return;
+        }
+        Set<Long> modelMatched = null;
+        if (modelIdFilter != null) {
+            List<Long> entityIds = members.stream()
+                    .map(CategoryMembershipQueryService.ColumnMember::entityId)
+                    .distinct()
+                    .toList();
+            modelMatched = filterEntityIdsByModelIds(entityIds, entityTypeCode, modelIdFilter);
+        }
+        for (CategoryMembershipQueryService.ColumnMember member : members) {
+            if (modelMatched != null && !modelMatched.contains(member.entityId())) {
+                continue;
+            }
+            offerCandidate(bestByEntityId, new ScopeCandidate(
+                    member.entityId(),
+                    categoryRank.getOrDefault(member.categoryId(), Integer.MAX_VALUE),
+                    DEFAULT_SORT_FALLBACK,
+                    member.entityId(),
+                    3));
         }
     }
 

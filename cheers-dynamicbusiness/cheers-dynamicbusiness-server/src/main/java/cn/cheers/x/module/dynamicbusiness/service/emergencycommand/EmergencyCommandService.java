@@ -10,7 +10,10 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.E
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandFromAlertReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandIntakeReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandJudgementReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandLocateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandPlanRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandRenameReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyOwnershipFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandStartReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandSubmitReportReqVO;
 
@@ -19,7 +22,7 @@ import java.util.List;
 /**
  * 应急指挥写入。
  *
- * 管什么：研判时把选定预案写到事件上，启动后按这份预案读步骤，完成、上报、变级和结案都追加到事件脉络。
+ * 管什么：研判时把选定预案写到事件上，启动后按这份预案读步骤，完成、上报、变级、改名称和结案都写在这一条事件上。
  * 不管什么：预案正文怎么编排。预案在应急预案目录里写好，这里只读取。
  * 禁止：按事件分类另找一份预案。把步骤复制到响应上。变级时清掉原级别的完成和上报。
  */
@@ -29,11 +32,23 @@ public interface EmergencyCommandService {
 
     EmergencyCommandEventRespVO getEvent(String eventId);
 
-    /** 人工接报。不写告警编号。事件进入待研判。 */
+    /**
+     * 接报弹窗要出现的归属项。读当前租户对应急事件目录的归属声明。
+     * 没有声明就返回空列表，页面不出现场站或管线。
+     */
+    List<EmergencyOwnershipFieldRespVO> listOwnershipFields();
+
+    /** 人工接报。不写告警编号。归属只写这份声明里有的字段。事件进入待研判。 */
     String intake(EmergencyCommandIntakeReqVO reqVO);
 
-    /** 同一告警已转入时拒绝，并说明已经转入。 */
+    /** 同一告警已转入时拒绝，并说明已经转入。中心点留空，等人补位置。 */
     String openFromAlert(EmergencyCommandFromAlertReqVO reqVO);
+
+    /** 补上或改正事件中心点。已结案的事件拒绝。 */
+    void locate(EmergencyCommandLocateReqVO reqVO);
+
+    /** 只改这一条事件的名称。已结案的事件拒绝。不改预案，不改脉络。 */
+    void rename(EmergencyCommandRenameReqVO reqVO);
 
     void assess(EmergencyCommandAssessReqVO reqVO);
 
@@ -44,7 +59,7 @@ public interface EmergencyCommandService {
 
     List<EmergencyCommandPlanRespVO> listPlans();
 
-    EmergencyCommandDetailRespVO detail(String eventId, String facilityId);
+    EmergencyCommandDetailRespVO detail(String eventId);
 
     void changeLevel(EmergencyCommandChangeLevelReqVO reqVO);
 

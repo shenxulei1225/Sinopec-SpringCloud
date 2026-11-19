@@ -1,19 +1,16 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.cataloggrant;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.cataloggrant.vo.CatalogMyStationScopeRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.cataloggrant.vo.CatalogRoleGrantCatalogRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.cataloggrant.vo.CatalogRoleGrantItemReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.cataloggrant.vo.CatalogRoleGrantItemRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.cataloggrant.vo.CatalogRoleGrantSaveReqVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.cataloggrant.vo.CatalogRoleStationScopeReqVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.cataloggrant.vo.CatalogRoleStationScopeRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeSimpleVO;
+import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.datapermission.vo.MyCatalogOperationsRespVO;
+import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogEntityOperations;
 import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogRoleGrantItem;
 import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogRoleGrantService;
-import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogStationScope;
-import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogStationScopeDecision;
-import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogStationScopeService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -45,9 +42,6 @@ public class CatalogRoleGrantController {
 
     @Resource
     private CatalogRoleGrantService catalogRoleGrantService;
-
-    @Resource
-    private CatalogStationScopeService catalogStationScopeService;
 
     @Resource
     private EntityTypeService entityTypeService;
@@ -85,34 +79,24 @@ public class CatalogRoleGrantController {
     @Operation(summary = "整份保存角色的数据目录操作")
     @PreAuthorize("@ss.hasPermission('system:permission:assign-role-menu')")
     public CommonResult<Boolean> save(@Valid @RequestBody CatalogRoleGrantSaveReqVO reqVO) {
-        catalogRoleGrantService.saveRoleCatalogPermission(
-                reqVO.getRoleId(), toItems(reqVO.getItems()), toScopes(reqVO.getStationScopes()));
+        catalogRoleGrantService.replaceRoleGrants(reqVO.getRoleId(), toItems(reqVO.getItems()));
         return success(true);
     }
 
-    @GetMapping("/station-scopes")
-    @Operation(summary = "读取角色在各数据目录上的场站范围")
-    @PreAuthorize("@ss.hasPermission('system:role:query')")
-    public CommonResult<List<CatalogRoleStationScopeRespVO>> stationScopes(@RequestParam("roleId") Long roleId) {
-        return success(toScopeResp(catalogStationScopeService.listByRoleId(roleId)));
-    }
-
     /**
-     * 数据管理打开某个目录时，用这份结果决定列表、表单和新建、修改、删除按钮。
-     * 不在这里改角色。不从人员记录的所属场站反推。
+     * 数据管理打开某个目录时，用这份结果决定新增、修改、删除按钮。
+     * 只回答能不能做这几项。记录在不在本人数据范围里，由列表、详情和保存时核对。
      */
-    @GetMapping("/my-station-scope")
-    @Operation(summary = "当前登录人在一个数据目录上的场站范围")
-    public CommonResult<CatalogMyStationScopeRespVO> myStationScope(@RequestParam("registryCode") String registryCode) {
-        CatalogStationScopeDecision decision = catalogStationScopeService.resolveForLoginUser(registryCode);
-        CatalogMyStationScopeRespVO row = new CatalogMyStationScopeRespVO();
-        row.setViewScope(decision.viewScope());
-        row.setWriteScope(decision.writeScope());
-        row.setCanQuery(decision.canQuery());
-        row.setCanCreate(decision.canCreate());
-        row.setCanUpdate(decision.canUpdate());
-        row.setCanDelete(decision.canDelete());
-        row.setStationFieldCodes(catalogStationScopeService.facilityFieldCodes(registryCode));
+    @GetMapping("/my-operations")
+    @Operation(summary = "当前登录人在一个数据目录的实体上能做的四项操作")
+    public CommonResult<MyCatalogOperationsRespVO> myOperations(@RequestParam("registryCode") String registryCode) {
+        CatalogEntityOperations ops = catalogRoleGrantService.myEntityOperations(
+                SecurityFrameworkUtils.getLoginUserId(), registryCode);
+        MyCatalogOperationsRespVO row = new MyCatalogOperationsRespVO();
+        row.setCanQuery(ops.canQuery());
+        row.setCanCreate(ops.canCreate());
+        row.setCanUpdate(ops.canUpdate());
+        row.setCanDelete(ops.canDelete());
         return success(row);
     }
 
@@ -134,30 +118,6 @@ public class CatalogRoleGrantController {
             row.setRegistryCode(item.registryCode());
             row.setSubject(item.subject());
             row.setOperations(item.operations());
-            result.add(row);
-        }
-        return result;
-    }
-
-    /** null 表示这次保存不改场站范围。空列表表示全部改回全部场站。 */
-    private static List<CatalogStationScope> toScopes(List<CatalogRoleStationScopeReqVO> scopes) {
-        if (scopes == null) {
-            return null;
-        }
-        List<CatalogStationScope> result = new ArrayList<>();
-        for (CatalogRoleStationScopeReqVO scope : scopes) {
-            result.add(new CatalogStationScope(scope.getRegistryCode(), scope.getViewScope(), scope.getWriteScope()));
-        }
-        return result;
-    }
-
-    private static List<CatalogRoleStationScopeRespVO> toScopeResp(List<CatalogStationScope> scopes) {
-        List<CatalogRoleStationScopeRespVO> result = new ArrayList<>();
-        for (CatalogStationScope scope : scopes) {
-            CatalogRoleStationScopeRespVO row = new CatalogRoleStationScopeRespVO();
-            row.setRegistryCode(scope.registryCode());
-            row.setViewScope(scope.viewScope());
-            row.setWriteScope(scope.writeScope());
             result.add(row);
         }
         return result;

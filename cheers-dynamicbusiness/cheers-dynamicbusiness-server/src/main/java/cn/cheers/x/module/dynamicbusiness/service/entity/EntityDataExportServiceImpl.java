@@ -14,6 +14,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.field.FieldDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelFieldAssignmentDO;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
+import cn.cheers.x.module.dynamicbusiness.service.datapermission.DataScopeQueryService;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.field.FieldMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
@@ -37,6 +38,9 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
 
     @Resource
     private EntityRepository entityRepository;
+    /** 导出只留登录人范围里的记录；按范围分的目录拒绝老导入。 */
+    @Resource
+    private DataScopeQueryService dataScopeQueryService;
     @Resource
     private ModelMapper modelMapper;
     @Resource
@@ -48,9 +52,16 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public EntityImportRespVO importEntityList(List<EntityImportExcelVO> importList, Boolean updateSupport) {
+    public EntityImportRespVO importEntityList(String registryCode, List<EntityImportExcelVO> importList,
+                                               Boolean updateSupport) {
         if (CollUtil.isEmpty(importList)) {
             throw new ServiceException(400, "导入数据不能为空");
+        }
+        for (EntityImportExcelVO row : importList) {
+            if (StrUtil.isNotBlank(row.getEntityTypeCode()) && dataScopeQueryService.restrictsLoginUser(
+                    dataScopeQueryService.scopeCatalogOf(registryCode, row.getEntityTypeCode()))) {
+                throw new ServiceException(400, "这本数据目录按数据范围分，这条导入不写归属字段，请在数据页逐条新增");
+            }
         }
 
         List<String> createEntityNames = new ArrayList<>();
@@ -97,6 +108,11 @@ public class EntityDataExportServiceImpl implements EntityDataExportService {
                 .status(reqVO.getStatus())
                 .build();
         List<EntityDO> entityList = entityRepository.findAll(query);
+        // 只导出登录人数据范围里的记录
+        Set<Long> visible = new HashSet<>(dataScopeQueryService.retainVisible(
+                dataScopeQueryService.scopeCatalogOf(reqVO.getRegistryCode(), reqVO.getEntityTypeCode()),
+                entityList.stream().map(EntityDO::getId).toList()));
+        entityList = entityList.stream().filter(e -> visible.contains(e.getId())).collect(Collectors.toList());
 
         // 过滤关键词
         if (StrUtil.isNotBlank(reqVO.getKeyword())) {

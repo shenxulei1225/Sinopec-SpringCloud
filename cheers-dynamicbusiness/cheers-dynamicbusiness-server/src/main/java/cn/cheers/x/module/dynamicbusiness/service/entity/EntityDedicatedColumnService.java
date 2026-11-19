@@ -965,7 +965,8 @@ public class EntityDedicatedColumnService {
         return String.valueOf(value);
     }
 
-    private static boolean isMultiRefType(String dataType) {
+    /** 基础字段是不是多选引用。归属声明的「多值」要和它一致。 */
+    public static boolean isMultiRefType(String dataType) {
         if (dataType == null) {
             return false;
         }
@@ -975,7 +976,8 @@ public class EntityDedicatedColumnService {
                 || "BATCH_ENTITY_REF".equals(t);
     }
 
-    private static boolean isRefType(String dataType) {
+    /** 基础字段是不是引用（单选或多选）。归属声明只能选引用字段。 */
+    public static boolean isRefType(String dataType) {
         if (dataType == null) {
             return false;
         }
@@ -986,7 +988,8 @@ public class EntityDedicatedColumnService {
                 || isMultiRefType(dataType);
     }
 
-    private static Long extractRefId(Object raw) {
+    /** 字段袋里的单值引用值取被引用记录编号：数字、数字串、{id} / {entityId} 对象；认不出返回 null。 */
+    public static Long extractRefId(Object raw) {
         if (raw instanceof Number number) {
             return number.longValue();
         }

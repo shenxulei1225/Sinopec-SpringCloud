@@ -6,7 +6,11 @@ import cn.cheers.x.framework.security.core.LoginUser;
 import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
 import cn.cheers.x.framework.tenant.core.util.TenantUtils;
 import cn.cheers.x.module.dynamicbusiness.api.entity.dto.EntityRespDTO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datapermission.CatalogOwnershipDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
+import cn.cheers.x.module.dynamicbusiness.service.datapermission.CatalogOwnershipQueryService;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryDO;
@@ -28,6 +32,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,7 +41,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 把已经决定要记的告警写进告警目录。
- * 类型必须是这本目录里的分类。缺类型、缺位置、位置没有所属场站，都不写。
+ * 类型必须是这本目录里的分类。缺设备不写。
+ * 归属按这本告警目录已经声明的那一跳，从设备上已经填写的同一栏抄。必填没填就不记。
+ * 告警位置写这些归属记录的名称，给人看。不判断名称是不是分区编号。
+ * 改已有告警时，把这条上已经记下的归属原样再提交。不回设备重算，也不补一栏。
  * 同一台设备同一条规则还开着时，仍用原来那一条。
  * 新记录写下产生这一行，复核是未复核。再次出现和关闭再追加一行。
  * 产生和消除按告警规则引用的事件主题写入 outbox。告警写入不查询联动。
@@ -64,6 +72,10 @@ public class AlarmRecordWriter {
     @Resource
     private CategoryMapper categoryMapper;
     @Resource
+    private CatalogOwnershipQueryService catalogOwnershipQueryService;
+    @Resource
+    private EntityTypeMapper entityTypeMapper;
+    @Resource
     private AdminUserApi adminUserApi;
     @Resource
     private AlarmLifecycleEventPublisher alarmLifecycleEventPublisher;
@@ -72,14 +84,18 @@ public class AlarmRecordWriter {
     public void open(long tenantId, Long categoryId, String categoryCode, String recordCode,
                      String name, String level, String content, long deviceId, long locationId,
                      String triggerValue, String thresholdValue, String pointCode, Long ruleId) {
-        if (locationId <= 0 || deviceId <= 0) {
-            throw new ServiceException(400, "告警缺少设备或位置，不记");
+        if (deviceId <= 0) {
+            throw new ServiceException(400, "告警缺少设备，不记");
         }
         inTenant(tenantId, () -> {
-            long stationId = stationOf(locationId);
+            EntityRespDTO device = requireDevice(deviceId);
+            List<AlarmOwnershipCopy.Hop> hops = ownershipHops();
+            List<NamedPlace> places = namedPlaces(
+                    AlarmOwnershipCopy.fromDevice(device.getBaseFields(), device.getCustomFields(), hops),
+                    "不记告警");
             Long typeId = resolveType(categoryId, categoryCode);
             EntityRespDTO existing = entityRpcFacadeService.getByCode(recordCode, AlarmTypeCatalog.DIRECTORY);
-            Map<String, Object> fields = fields(level, content, deviceId, locationId, triggerValue, thresholdValue, pointCode,
+            Map<String, Object> fields = fields(level, content, deviceId, locationText(places), triggerValue, thresholdValue, pointCode,
                     AlarmTypeCatalog.HANDLING_OPEN, ruleId);
             String traceCode = alarmCatalogEnsure.fieldCode(AlarmTypeCatalog.FIELD_TRACE);
             String reviewCode = alarmCatalogEnsure.fieldCode(AlarmTypeCatalog.FIELD_REVIEW);
@@ -90,7 +106,7 @@ public class AlarmRecordWriter {
                 fields.put(reviewCode, previousReview.isBlank()
                         ? AlarmTypeCatalog.REVIEW_PENDING
                         : previousReview);
-                rewrite(existing.getId(), name, recordCode, fields);
+                rewrite(existing.getId(), name, recordCode, fields, existing);
                 recordId = existing.getId();
             } else {
                 fields.put(traceCode, traceLine("产生。"));
@@ -103,7 +119,7 @@ public class AlarmRecordWriter {
                 baseFields.put("name", clip(name));
                 baseFields.put("code", recordCode);
                 baseFields.put("status", 1);
-                baseFields.put(FacilityOwningFieldCodes.FIELD_CODE, FacilityOwningFieldCodes.toApiRef(stationId));
+                AlarmOwnershipCopy.writeRefs(baseFields, refsOf(places));
                 request.setBaseFields(baseFields);
                 request.setCustomFields(fields);
                 recordId = entityService.create(request);
@@ -112,9 +128,10 @@ public class AlarmRecordWriter {
             Long topicRuleId = alarmRuleId(ruleId);
             if (topicRuleId != null) {
                 alarmLifecycleEventPublisher.publish(
-                        tenantId, stationId, topicRuleId, recordId, deviceId,
+                        tenantId, facilityColumn(places),
+                        topicRuleId, recordId, deviceId,
                         AlarmTypeCatalog.PHASE_RAISED,
-                        eventFacts(level, content, deviceId, locationId, triggerValue, thresholdValue, pointCode));
+                        eventFacts(level, content, deviceId, places, triggerValue, thresholdValue, pointCode));
             }
         });
     }
@@ -140,7 +157,7 @@ public class AlarmRecordWriter {
             String traceCode = alarmCatalogEnsure.fieldCode(AlarmTypeCatalog.FIELD_TRACE);
             fields.put(traceCode, appendTrace(text(fields, traceCode), "关闭。状态改为已处理。"));
             String name = text(existing.getBaseFields(), "name");
-            rewrite(existing.getId(), name, recordCode, fields);
+            rewrite(existing.getId(), name, recordCode, fields, existing);
             publishClear(tenantId, existing, fields, ruleId);
         });
     }
@@ -151,19 +168,18 @@ public class AlarmRecordWriter {
         if (topicRuleId == null) {
             return;
         }
-        Long stationId = FacilityOwningFieldCodes.extractId(
-                existing.getBaseFields() == null ? null : existing.getBaseFields().get(FacilityOwningFieldCodes.FIELD_CODE));
-        if (stationId == null) {
-            throw new ServiceException(400, "告警消除没有所属场站，不能发布事件");
-        }
+        List<NamedPlace> places = namedPlaces(
+                AlarmOwnershipCopy.fromStored(existing.getBaseFields(), ownershipHops(), "告警消除没有填写"),
+                "不能发布事件");
         Long equipmentId = FacilityOwningFieldCodes.extractId(
                 fields.get(alarmCatalogEnsure.fieldCode(AlarmTypeCatalog.FIELD_DEVICE)));
         if (equipmentId == null) {
             throw new ServiceException(400, "告警消除没有来源设备，不能发布事件");
         }
         alarmLifecycleEventPublisher.publish(
-                tenantId, stationId, topicRuleId, existing.getId(), equipmentId,
-                AlarmTypeCatalog.PHASE_CLEARED, eventFactsFromStored(fields));
+                tenantId, facilityColumn(places),
+                topicRuleId, existing.getId(), equipmentId,
+                AlarmTypeCatalog.PHASE_CLEARED, eventFactsFromStored(fields, places));
     }
 
     /**
@@ -211,17 +227,15 @@ public class AlarmRecordWriter {
         }
     }
 
-    private Map<String, Object> eventFactsFromStored(Map<String, Object> fields) {
+    private Map<String, Object> eventFactsFromStored(Map<String, Object> fields, List<NamedPlace> places) {
         Map<String, Object> event = new LinkedHashMap<>();
         Long deviceId = FacilityOwningFieldCodes.extractId(
                 fields.get(alarmCatalogEnsure.fieldCode(AlarmTypeCatalog.FIELD_DEVICE)));
-        Long locationId = FacilityOwningFieldCodes.extractId(
-                fields.get(alarmCatalogEnsure.fieldCode(AlarmTypeCatalog.FIELD_LOCATION)));
-        if (deviceId == null || locationId == null) {
-            throw new ServiceException(400, "告警消除没有设备或位置，不能发布事件");
+        if (deviceId == null) {
+            throw new ServiceException(400, "告警消除没有设备，不能发布事件");
         }
         event.put("device", namedRef(deviceId, "equipment", "告警事件没有设备名称，不发"));
-        event.put("location", namedRef(locationId, "zone", "告警事件没有位置名称，不发"));
+        putPlaceFacts(event, places);
         copyFact(event, "level", fields, AlarmTypeCatalog.FIELD_LEVEL);
         copyFact(event, "content", fields, AlarmTypeCatalog.FIELD_CONTENT);
         copyFact(event, "pointCode", fields, AlarmTypeCatalog.FIELD_POINT);
@@ -294,16 +308,80 @@ public class AlarmRecordWriter {
         }
         return null;
     }
-    private long stationOf(long locationId) {
-        EntityRespDTO location = entityRpcFacadeService.get(locationId, "zone");
-        Long stationId = FacilityOwningFieldCodes.extractId(
-                location == null || location.getBaseFields() == null
-                        ? null
-                        : location.getBaseFields().get(FacilityOwningFieldCodes.FIELD_CODE));
-        if (stationId == null) {
-            throw new ServiceException(400, "告警位置没有所属场站，不记");
+    /**
+     * 读告警目录当前的归属声明。没声明就返回空，告警不带归属。
+     * 名称用指向的那本目录的名称。目录没有名称时用目录编码，仍不猜字段。
+     */
+    private List<AlarmOwnershipCopy.Hop> ownershipHops() {
+        List<AlarmOwnershipCopy.Hop> hops = new ArrayList<>();
+        for (CatalogOwnershipDO row : catalogOwnershipQueryService.listByRegistryCode(AlarmTypeCatalog.DIRECTORY)) {
+            if (row == null || row.getFieldCode() == null || row.getFieldCode().isBlank()
+                    || row.getTargetRegistryCode() == null || row.getTargetRegistryCode().isBlank()) {
+                continue;
+            }
+            String target = row.getTargetRegistryCode().trim();
+            EntityTypeDO catalog = entityTypeMapper.selectByCode(target);
+            String label = catalog == null || catalog.getName() == null || catalog.getName().isBlank()
+                    ? target
+                    : catalog.getName().trim();
+            hops.add(new AlarmOwnershipCopy.Hop(
+                    row.getFieldCode().trim(), label, target, Boolean.TRUE.equals(row.getRequired())));
         }
-        return stationId;
+        return List.copyOf(hops);
+    }
+
+    private EntityRespDTO requireDevice(long deviceId) {
+        EntityRespDTO device = entityRpcFacadeService.get(deviceId, "equipment");
+        if (device == null) {
+            throw new ServiceException(400, "没有这台设备，不记告警");
+        }
+        return device;
+    }
+
+    /** 给抄到的每条归属补上名称。没有名称就不记、不发。 */
+    private List<NamedPlace> namedPlaces(List<AlarmOwnershipCopy.Ref> refs, String failure) {
+        List<NamedPlace> named = new ArrayList<>();
+        for (AlarmOwnershipCopy.Ref ref : refs) {
+            EntityRespDTO row = entityRpcFacadeService.get(ref.id(), ref.targetRegistryCode());
+            String name = row == null ? "" : text(row.getBaseFields(), "name");
+            if (name.isBlank()) {
+                throw new ServiceException(400, "「" + ref.label() + "」没有名称，" + failure);
+            }
+            named.add(new NamedPlace(ref, name));
+        }
+        return List.copyOf(named);
+    }
+
+    private static String locationText(List<NamedPlace> places) {
+        StringBuilder text = new StringBuilder();
+        for (NamedPlace place : places) {
+            if (!text.isEmpty()) {
+                text.append('、');
+            }
+            text.append(place.name());
+        }
+        return text.toString();
+    }
+
+    /**
+     * 事件表上原有的场站列。抄过来的字段编码正好是 facility_id 时才有值，给已经保存的主题名字用。
+     * 没有这一栏就返回 0，列里空着。归属以载荷里的引用为准。
+     */
+    private static long facilityColumn(List<NamedPlace> places) {
+        for (NamedPlace place : places) {
+            if ("facility_id".equals(place.ref().fieldCode())) {
+                return place.ref().id();
+            }
+        }
+        return 0L;
+    }
+
+    private static List<AlarmOwnershipCopy.Ref> refsOf(List<NamedPlace> places) {
+        List<AlarmOwnershipCopy.Ref> refs = new ArrayList<>();
+        for (NamedPlace place : places) {
+            refs.add(place.ref());
+        }
+        return refs;
     }
 
     private Long resolveType(Long categoryId, String categoryCode) {
@@ -321,12 +399,12 @@ public class AlarmRecordWriter {
     }
 
     private Map<String, Object> eventFacts(
-            String level, String content, long deviceId, long locationId,
+            String level, String content, long deviceId, List<NamedPlace> places,
             String triggerValue, String thresholdValue, String pointCode
     ) {
         Map<String, Object> event = new LinkedHashMap<>();
         event.put("device", namedRef(deviceId, "equipment", "告警事件没有设备名称，不发"));
-        event.put("location", namedRef(locationId, "zone", "告警事件没有位置名称，不发"));
+        putPlaceFacts(event, places);
         putFact(event, "level", level);
         putFact(event, "content", content);
         putFact(event, "pointCode", pointCode);
@@ -372,7 +450,7 @@ public class AlarmRecordWriter {
         putFact(event, key, text(fields, alarmCatalogEnsure.fieldCode(fieldName)));
     }
 
-    private Map<String, Object> fields(String level, String content, long deviceId, long locationId,
+    private Map<String, Object> fields(String level, String content, long deviceId, String locationText,
                                        String triggerValue, String thresholdValue, String pointCode, String handling,
                                        Long ruleId) {
         Map<String, Object> fields = new LinkedHashMap<>();
@@ -380,7 +458,7 @@ public class AlarmRecordWriter {
                 alarmCatalogEnsure.fit(AlarmTypeCatalog.FIELD_LEVEL, level));
         fields.put(alarmCatalogEnsure.fieldCode(AlarmTypeCatalog.FIELD_CONTENT), textOrEmpty(content));
         fields.put(alarmCatalogEnsure.fieldCode(AlarmTypeCatalog.FIELD_DEVICE), Long.toString(deviceId));
-        fields.put(alarmCatalogEnsure.fieldCode(AlarmTypeCatalog.FIELD_LOCATION), Long.toString(locationId));
+        fields.put(alarmCatalogEnsure.fieldCode(AlarmTypeCatalog.FIELD_LOCATION), locationText);
         fields.put(alarmCatalogEnsure.fieldCode(AlarmTypeCatalog.FIELD_TRIGGER), textOrEmpty(triggerValue));
         fields.put(alarmCatalogEnsure.fieldCode(AlarmTypeCatalog.FIELD_THRESHOLD), textOrEmpty(thresholdValue));
         fields.put(alarmCatalogEnsure.fieldCode(AlarmTypeCatalog.FIELD_POINT), textOrEmpty(pointCode));
@@ -406,7 +484,11 @@ public class AlarmRecordWriter {
         }
     }
 
-    private void rewrite(Long id, String name, String recordCode, Map<String, Object> fields) {
+    /**
+     * 改已有告警。名称、编号、状态按这次结果写。
+     * 所属场站或所属管线段用这条告警上已经记下的，原样再提交。
+     */
+    private void rewrite(Long id, String name, String recordCode, Map<String, Object> fields, EntityRespDTO existing) {
         EntityUpdateReqVO request = new EntityUpdateReqVO();
         request.setId(id);
         request.setRegistryCode(AlarmTypeCatalog.DIRECTORY);
@@ -416,9 +498,36 @@ public class AlarmRecordWriter {
         baseFields.put("name", clip(name));
         baseFields.put("code", recordCode);
         baseFields.put("status", 1);
+        AlarmOwnershipCopy.writeRefs(baseFields, AlarmOwnershipCopy.fromStored(
+                existing == null ? null : existing.getBaseFields(), ownershipHops(), "这条告警没有填写"));
         request.setBaseFields(baseFields);
         request.setCustomFields(fields);
         entityService.update(request);
+    }
+
+    /** 事件载荷里的位置名称，以及按声明抄过来的归属引用。 */
+    private static void putPlaceFacts(Map<String, Object> event, List<NamedPlace> places) {
+        if (places.isEmpty()) {
+            return;
+        }
+        if (places.size() == 1) {
+            NamedPlace place = places.get(0);
+            event.put("location", namedEntityRef(place.ref().targetRegistryCode(), place.ref().id(), place.name()));
+        } else {
+            Map<String, Object> location = new LinkedHashMap<>();
+            location.put("name", locationText(places));
+            event.put("location", location);
+        }
+        List<Map<String, Object>> ownership = new ArrayList<>();
+        for (NamedPlace place : places) {
+            Map<String, Object> ref = namedEntityRef(place.ref().targetRegistryCode(), place.ref().id(), place.name());
+            ref.put("fieldCode", place.ref().fieldCode());
+            ownership.add(ref);
+        }
+        event.put("ownership", ownership);
+    }
+
+    private record NamedPlace(AlarmOwnershipCopy.Ref ref, String name) {
     }
 
     private void inTenant(long tenantId, Runnable work) {

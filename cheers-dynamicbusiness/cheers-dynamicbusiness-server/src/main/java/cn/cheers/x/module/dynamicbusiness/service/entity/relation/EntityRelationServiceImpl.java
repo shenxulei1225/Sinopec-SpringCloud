@@ -1,6 +1,8 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity.relation;
 
 import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
+import cn.cheers.x.module.dynamicbusiness.service.entity.refroute.EntityRefColumnRouteQueryService;
+import cn.cheers.x.module.dynamicbusiness.service.entity.refroute.EntityRefLookupQueryService;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
@@ -11,6 +13,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespV
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.enums.entity.EntityRelationTypeEnum;
+import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityTableNameHandler;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -37,8 +40,17 @@ public class EntityRelationServiceImpl implements EntityRelationService {
     private EntityRelationMapper entityRelationMapper;
 
     @Resource
+    private EntityRefLookupQueryService entityRefLookupQueryService;
+
+    @Resource
+    private EntityRefColumnRouteQueryService entityRefColumnRouteQueryService;
+
+    @Resource
     @Lazy // 避免循环依赖
     private EntityService entityService;
+
+    @Resource
+    private EntityTableNameHandler entityTableNameHandler;
 
     @Override
     public Long createRelation(EntityRelationCreateReqVO reqVO) {
@@ -76,6 +88,10 @@ public class EntityRelationServiceImpl implements EntityRelationService {
         String fieldCode = reqVO.getFieldCode() == null ? null : reqVO.getFieldCode().trim();
         if (fieldCode != null && fieldCode.isEmpty()) {
             fieldCode = null;
+        }
+        // 单值引用存在记录的专用列上：引用只认那一列，不在实体关系表再写一份
+        if (fieldCode != null && entityRefColumnRouteQueryService.findRoute(sourceEntityTypeCode, fieldCode).isPresent()) {
+            throw new ServiceException(400, "字段「" + fieldCode + "」的引用保存在记录上，请修改记录的该字段，不要单独建关联");
         }
         EntityRelationDO relation = EntityRelationDO.builder()
                 .sourceEntityId(reqVO.getSourceEntityId())
@@ -229,10 +245,15 @@ public class EntityRelationServiceImpl implements EntityRelationService {
 
 
 
+    /** 删这条记录发出和指向它的全部关联。只按这条记录所在的表删，不碰别的目录里同编号的记录。 */
     @Override
     public int deleteAllRelationsByEntity(Long entityId, String entityTypeCode) {
-        // entityTypeCode 参数预留用于后续扩展
-        return entityRelationMapper.deleteByEntityId(entityId);
+        if (entityId == null || entityTypeCode == null || entityTypeCode.isBlank()) {
+            throw new ServiceException(400, "删除关联要给出记录编号和数据目录编码");
+        }
+        List<String> codes = entityTableNameHandler.listCodesSharingPhysicalTable(entityTypeCode);
+        return entityRelationMapper.deleteBySourceEntity(entityId, codes)
+                + entityRelationMapper.deleteByTargetEntity(entityId, codes);
     }
 
 
@@ -265,20 +286,8 @@ public class EntityRelationServiceImpl implements EntityRelationService {
         return (long) relations.size();
     }
 
-    @Override
-    public List<EntityRelationRespVO> getRelationsByFieldCode(Long entityId, String entityTypeCode, String fieldCode) {
-        List<EntityRelationDO> relations = entityRelationMapper.selectBySourceEntityIdAndFieldCode(entityId, fieldCode);
-        return convertToRespVOList(relations, entityTypeCode, null);
-    }
 
-    @Override
-    public List<Long> listEntityIdsByRelationFieldAndRelatedIds(String fieldCode, List<Long> relatedEntityIds) {
-        if (fieldCode == null || fieldCode.isBlank() || relatedEntityIds == null || relatedEntityIds.isEmpty()) {
-            return java.util.Collections.emptyList();
-        }
-        return entityRelationMapper.selectSourceEntityIdsByFieldCodeAndTargetIds(fieldCode, relatedEntityIds);
-    }
-
+    /** 单值专用列字段查列，其余查实体关联表（见 {@link EntityRefLookupQueryService}）。 */
     @Override
     public List<Long> listSubjectEntityIdsByRefFieldAndTargetIds(String refFieldCode,
                                                                 String subjectEntityTypeCode,
@@ -288,16 +297,15 @@ public class EntityRelationServiceImpl implements EntityRelationService {
                 || targetEntityIds == null || targetEntityIds.isEmpty()) {
             return java.util.Collections.emptyList();
         }
-        return entityRelationMapper.selectSourceEntityIdsByFieldCodeTargetIdsAndSourceType(
-                refFieldCode.trim(), targetEntityIds, subjectEntityTypeCode.trim());
+        return entityRefLookupQueryService.listSubjectIds(subjectEntityTypeCode, refFieldCode, targetEntityIds);
     }
 
+    /** 专用列两个方向 + 实体关联表两个方向（见 {@link EntityRefLookupQueryService#listCounterpartIds}）。 */
     @Override
     public List<Long> listCounterpartEntityIds(List<Long> relatedEntityIds,
                                                String relatedEntityTypeCode,
                                                String listEntityTypeCode) {
-        return entityRelationMapper.selectCounterpartEntityIds(
-                relatedEntityIds, relatedEntityTypeCode, listEntityTypeCode);
+        return entityRefLookupQueryService.listCounterpartIds(relatedEntityIds, relatedEntityTypeCode, listEntityTypeCode);
     }
 
     @Override
@@ -305,7 +313,7 @@ public class EntityRelationServiceImpl implements EntityRelationService {
             List<Long> relatedEntityIds,
             String relatedEntityTypeCode,
             String listEntityTypeCode) {
-        return entityRelationMapper.selectCounterpartEntityIdsGrouped(
+        return entityRefLookupQueryService.listCounterpartIdsGrouped(
                 relatedEntityIds, relatedEntityTypeCode, listEntityTypeCode);
     }
 

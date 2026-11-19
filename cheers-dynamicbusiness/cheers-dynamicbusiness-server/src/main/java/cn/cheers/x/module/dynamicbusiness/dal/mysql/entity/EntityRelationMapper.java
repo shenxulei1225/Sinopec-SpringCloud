@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -128,36 +129,35 @@ public interface EntityRelationMapper extends BaseMapperX<EntityRelationDO> {
                         .eq(EntityRelationDO::getDeleted, false));
         }
 
-        /**
-         * 物理删除源实体发出的全部关联。
+        /*
+         * 物理删除必须带记录所属的目录编码：不同目录的记录编号会重复，
+         * 只按编号删会把别的目录同编号记录的关联一起删掉（2026-11-17 删组织机构记录时删掉了场站的所属管线段）。
+         * typeCodes 传同一存储下的全部目录编码，见 EntityTypeScopeResolver#listCodesSharingStorage。
          */
-        @Delete("DELETE FROM dynamic_entity_relation WHERE source_entity_id = #{sourceEntityId}")
-        int deleteBySourceEntityId(@Param("sourceEntityId") Long sourceEntityId);
 
-        /**
-         * 物理删除指向该实体的全部关联。
-         */
-        @Delete("DELETE FROM dynamic_entity_relation WHERE target_entity_id = #{targetEntityId}")
-        int deleteByTargetEntityId(@Param("targetEntityId") Long targetEntityId);
-
-        /**
-         * 物理删除该实体作为来源或目标的全部关联。
-         */
+        /** 物理删除这条记录发出的全部关联。 */
         @Delete("""
+                <script>
                 DELETE FROM dynamic_entity_relation
-                WHERE source_entity_id = #{entityId} OR target_entity_id = #{entityId}
+                WHERE source_entity_id = #{sourceEntityId}
+                  AND source_entity_type_code IN
+                  <foreach collection="typeCodes" item="code" open="(" separator="," close=")">#{code}</foreach>
+                </script>
                 """)
-        int deleteByEntityId(@Param("entityId") Long entityId);
+        int deleteBySourceEntity(@Param("sourceEntityId") Long sourceEntityId,
+                                 @Param("typeCodes") Collection<String> typeCodes);
 
-        /**
-         * 物理删除指定来源和目标的关联。
-         */
+        /** 物理删除指向这条记录的全部关联。 */
         @Delete("""
+                <script>
                 DELETE FROM dynamic_entity_relation
-                WHERE source_entity_id = #{sourceEntityId} AND target_entity_id = #{targetEntityId}
+                WHERE target_entity_id = #{targetEntityId}
+                  AND target_entity_type_code IN
+                  <foreach collection="typeCodes" item="code" open="(" separator="," close=")">#{code}</foreach>
+                </script>
                 """)
-        int deleteBySourceAndTarget(@Param("sourceEntityId") Long sourceEntityId,
-                                    @Param("targetEntityId") Long targetEntityId);
+        int deleteByTargetEntity(@Param("targetEntityId") Long targetEntityId,
+                                 @Param("typeCodes") Collection<String> typeCodes);
 
         /**
          * 按主键物理删除一条实体关联。
@@ -330,27 +330,7 @@ public interface EntityRelationMapper extends BaseMapperX<EntityRelationDO> {
                         .eq(EntityRelationDO::getDeleted, false));
         }
 
-        /**
-         * 按源实体和字段编码查询关联关系
-         * 用于查询源实体通过特定字段建立的所有关联
-         *
-         * @param sourceEntityId 源实体ID
-         * @param fieldCode 字段编码
-         * @return 关联关系列表
-         */
-        default List<EntityRelationDO> selectBySourceEntityIdAndFieldCode(Long sourceEntityId, String fieldCode) {
-                return selectList(new LambdaQueryWrapperX<EntityRelationDO>()
-                        .eq(EntityRelationDO::getSourceEntityId, sourceEntityId)
-                        .eq(EntityRelationDO::getFieldCode, fieldCode)
-                        .eq(EntityRelationDO::getDeleted, false));
-        }
 
-        /**
-         * 根据字段编码与目标实体ID集合，查询命中的源实体ID集合。
-         */
-        default List<Long> selectSourceEntityIdsByFieldCodeAndTargetIds(String fieldCode, List<Long> targetEntityIds) {
-                return selectSourceEntityIdsByFieldCodeTargetIdsAndSourceType(fieldCode, targetEntityIds, null);
-        }
 
         /**
          * 按 REF 字段 + 目标实体 id 反查源实体 id；可选按源实体类型编码（{@code source_entity_type_code}）收窄。
@@ -378,38 +358,23 @@ public interface EntityRelationMapper extends BaseMapperX<EntityRelationDO> {
         }
 
         /**
-         * 按源实体和字段编码删除关联关系
-         * 用于在更新实体时清除旧的关联关系
-         *
-         * @param sourceEntityId 源实体ID
-         * @param fieldCode 字段编码
-         * @return 删除的记录数
+         * 多选引用去掉一个目标时，删这一行关联。
+         * 带上来源目录编码，不碰别的目录里同编号记录的同名字段。
          */
         @Delete("""
-                DELETE FROM dynamic_entity_relation
-                WHERE source_entity_id = #{sourceEntityId} AND field_code = #{fieldCode}
-                """)
-        int deleteBySourceEntityIdAndFieldCode(@Param("sourceEntityId") Long sourceEntityId,
-                                               @Param("fieldCode") String fieldCode);
-
-        /**
-         * 按源实体、字段编码和目标实体删除关联关系
-         * 用于多选关联字段的部分删除（删除特定目标的关联）
-         *
-         * @param sourceEntityId 源实体ID
-         * @param fieldCode 字段编码
-         * @param targetEntityId 目标实体ID
-         * @return 删除的记录数
-         */
-        @Delete("""
+                <script>
                 DELETE FROM dynamic_entity_relation
                 WHERE source_entity_id = #{sourceEntityId}
+                  AND source_entity_type_code IN
+                  <foreach collection="typeCodes" item="code" open="(" separator="," close=")">#{code}</foreach>
                   AND field_code = #{fieldCode}
                   AND target_entity_id = #{targetEntityId}
+                </script>
                 """)
-        int deleteBySourceEntityIdAndFieldCodeAndTargetEntityId(@Param("sourceEntityId") Long sourceEntityId,
-                                                                @Param("fieldCode") String fieldCode,
-                                                                @Param("targetEntityId") Long targetEntityId);
+        int deleteBySourceEntityFieldTarget(@Param("sourceEntityId") Long sourceEntityId,
+                                            @Param("typeCodes") Collection<String> typeCodes,
+                                            @Param("fieldCode") String fieldCode,
+                                            @Param("targetEntityId") Long targetEntityId);
 
         /**
          * 按目标实体和源 Model 编码查询关联关系
@@ -470,52 +435,6 @@ public interface EntityRelationMapper extends BaseMapperX<EntityRelationDO> {
                         .eq(EntityRelationDO::getDeleted, false));
         }
 
-        /**
-         * 实体—实体筛选：按关联表双向取对端实体 id，不按 field_code 过滤。
-         *
-         * <p>勾选适用写入的行没有 REF 字段码。方向 1：related 作 source、list 作 target → 取 target id；
-         * 方向 2：list 作 source、related 作 target → 取 source id。</p>
-         */
-        default List<Long> selectCounterpartEntityIds(List<Long> relatedEntityIds,
-                                                      String relatedEntityTypeCode,
-                                                      String listEntityTypeCode) {
-                if (relatedEntityIds == null || relatedEntityIds.isEmpty()
-                        || relatedEntityTypeCode == null || relatedEntityTypeCode.isBlank()
-                        || listEntityTypeCode == null || listEntityTypeCode.isBlank()) {
-                        return java.util.Collections.emptyList();
-                }
-                List<Long> ids = relatedEntityIds.stream()
-                        .filter(java.util.Objects::nonNull)
-                        .distinct()
-                        .toList();
-                if (ids.isEmpty()) {
-                        return java.util.Collections.emptyList();
-                }
-                String relatedType = relatedEntityTypeCode.trim();
-                String listType = listEntityTypeCode.trim();
-                java.util.LinkedHashSet<Long> out = new java.util.LinkedHashSet<>();
-                List<EntityRelationDO> asSource = selectList(new LambdaQueryWrapperX<EntityRelationDO>()
-                        .in(EntityRelationDO::getSourceEntityId, ids)
-                        .eq(EntityRelationDO::getSourceEntityTypeCode, relatedType)
-                        .eq(EntityRelationDO::getTargetEntityTypeCode, listType)
-                        .eq(EntityRelationDO::getDeleted, false));
-                for (EntityRelationDO row : asSource) {
-                        if (row.getTargetEntityId() != null) {
-                                out.add(row.getTargetEntityId());
-                        }
-                }
-                List<EntityRelationDO> asTarget = selectList(new LambdaQueryWrapperX<EntityRelationDO>()
-                        .in(EntityRelationDO::getTargetEntityId, ids)
-                        .eq(EntityRelationDO::getTargetEntityTypeCode, relatedType)
-                        .eq(EntityRelationDO::getSourceEntityTypeCode, listType)
-                        .eq(EntityRelationDO::getDeleted, false));
-                for (EntityRelationDO row : asTarget) {
-                        if (row.getSourceEntityId() != null) {
-                                out.add(row.getSourceEntityId());
-                        }
-                }
-                return new java.util.ArrayList<>(out);
-        }
 
         /**
          * 批量查询时保留“上游实体 → 对端实体”分组，供一页任务共享两次关系查询。

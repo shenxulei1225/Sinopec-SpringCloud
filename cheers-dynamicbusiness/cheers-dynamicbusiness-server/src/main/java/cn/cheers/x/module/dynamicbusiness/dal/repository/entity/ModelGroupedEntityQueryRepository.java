@@ -3,7 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.dal.repository.entity;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityTableNameHandler;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
-import cn.cheers.x.module.dynamicbusiness.framework.tenant.TenantPhysicalTableNames;
+import cn.cheers.x.module.dynamicbusiness.service.entity.refroute.CategoryMembershipQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -30,14 +30,15 @@ public class ModelGroupedEntityQueryRepository {
 
     private final JdbcTemplate jdbcTemplate;
     private final EntityTableNameHandler entityTableNameHandler;
+    private final CategoryMembershipQueryService categoryMembershipQueryService;
 
     /** 实体范围：仅型号 / 未分类差集 / 分类范围内。 */
     public enum ScopeKind {
         /** 仅这些型号下的实体（场景 1） */
         BY_MODELS,
-        /** 未挂当前种类（relation ∪ link，保留桶不算已分类） */
+        /** 未挂当前种类（关联行、自身绑定、专用列引用都不算未分类；保留桶不算已分类） */
         UNCATEGORIZED,
-        /** 已挂 expandedCategoryIds（relation ∪ link） */
+        /** 已挂 expandedCategoryIds（关联行、自身绑定或专用列引用） */
         BY_CATEGORY
     }
 
@@ -228,69 +229,22 @@ public class ModelGroupedEntityQueryRepository {
         return new QueryParts("SELECT e.id" + fromWhere, "SELECT COUNT(*)" + fromWhere, args, innerJoin);
     }
 
+    /** 未挂当前分类种类：关联行、自身绑定、专用列引用三种挂法都排除。 */
     private void appendUncategorizedPredicates(
             StringBuilder where, List<Object> args, String entityTypeCode, String categoryTypeCode) {
-        String relationTable = TenantPhysicalTableNames.requirePhysical("dynamic_entity_category_relation");
-        String linkTable = TenantPhysicalTableNames.requirePhysical("dynamic_category_entity_link");
-        where.append("""
-                 AND NOT EXISTS (
-                    SELECT 1
-                    FROM %s ecr
-                    INNER JOIN dynamic_category c ON c.id = ecr.category_id AND c.deleted = false
-                    WHERE ecr.deleted = false
-                      AND ecr.entity_id = e.id
-                      AND ecr.entity_type_code = ?
-                      AND c.category_type_code = ?
-                      AND UPPER(c.code) NOT LIKE '%%UNCATEGORIZED%%'
-                )
-                """.formatted(relationTable));
-        args.add(entityTypeCode);
-        args.add(categoryTypeCode);
-        where.append("""
-                 AND NOT EXISTS (
-                    SELECT 1
-                    FROM %s cel
-                    INNER JOIN dynamic_category c2 ON c2.id = cel.category_id AND c2.deleted = false
-                    WHERE cel.deleted = false
-                      AND cel.entity_id = e.id
-                      AND cel.entity_type_code = ?
-                      AND c2.category_type_code = ?
-                      AND UPPER(c2.code) NOT LIKE '%%UNCATEGORIZED%%'
-                )
-                """.formatted(linkTable));
-        args.add(entityTypeCode);
-        args.add(categoryTypeCode);
+        CategoryMembershipQueryService.SqlCondition notMember =
+                categoryMembershipQueryService.notInCategoryTypeCondition(entityTypeCode, categoryTypeCode);
+        where.append(" AND ").append(notMember.sql());
+        args.addAll(notMember.args());
     }
 
+    /** 挂在这组分类（已含子树）下：一条路径，见分类成员查询服务。 */
     private void appendCategoryScopePredicates(
             StringBuilder where, List<Object> args, String entityTypeCode, List<Long> expandedCategoryIds) {
-        String relationTable = TenantPhysicalTableNames.requirePhysical("dynamic_entity_category_relation");
-        String linkTable = TenantPhysicalTableNames.requirePhysical("dynamic_category_entity_link");
-        String inClause = placeholders(expandedCategoryIds.size());
-        where.append("""
-                 AND (
-                    EXISTS (
-                        SELECT 1
-                        FROM %s ecr
-                        WHERE ecr.deleted = false
-                          AND ecr.entity_id = e.id
-                          AND ecr.entity_type_code = ?
-                          AND ecr.category_id IN (%s)
-                    )
-                    OR EXISTS (
-                        SELECT 1
-                        FROM %s cel
-                        WHERE cel.deleted = false
-                          AND cel.entity_id = e.id
-                          AND cel.entity_type_code = ?
-                          AND cel.category_id IN (%s)
-                    )
-                )
-                """.formatted(relationTable, inClause, linkTable, inClause));
-        args.add(entityTypeCode);
-        args.addAll(expandedCategoryIds);
-        args.add(entityTypeCode);
-        args.addAll(expandedCategoryIds);
+        CategoryMembershipQueryService.SqlCondition member =
+                categoryMembershipQueryService.inCategoriesCondition(entityTypeCode, expandedCategoryIds);
+        where.append(" AND ").append(member.sql());
+        args.addAll(member.args());
     }
 
     private static String placeholders(int n) {

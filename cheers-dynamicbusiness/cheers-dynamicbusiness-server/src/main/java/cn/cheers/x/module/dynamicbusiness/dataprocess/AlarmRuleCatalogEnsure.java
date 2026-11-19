@@ -1,5 +1,7 @@
 package cn.cheers.x.module.dynamicbusiness.dataprocess;
 
+import cn.cheers.x.module.dynamicbusiness.service.facility.FacilityStationQueryService;
+import cn.cheers.x.module.dynamicbusiness.service.facility.StationOwnedCatalogSetup;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
@@ -29,7 +31,6 @@ import cn.cheers.x.module.dynamicbusiness.service.entity.EntityRpcFacadeService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategoryRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
-import cn.cheers.x.module.dynamicbusiness.service.entitytype.FacilityOwningFieldEnsureService;
 import cn.cheers.x.module.dynamicbusiness.service.field.FieldService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelFieldAssignmentService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelService;
@@ -86,7 +87,9 @@ public class AlarmRuleCatalogEnsure {
     @Resource
     private EntityTypeService entityTypeService;
     @Resource
-    private FacilityOwningFieldEnsureService facilityOwningFieldEnsureService;
+    private FacilityStationQueryService facilityStationQueryService;
+    @Resource
+    private StationOwnedCatalogSetup stationOwnedCatalogSetup;
     @Resource
     private FieldMapper fieldMapper;
     @Resource
@@ -168,7 +171,7 @@ public class AlarmRuleCatalogEnsure {
     }
 
     private void seedGalleryRules(Long thresholdModelId) {
-        Long stationId = facilityOwningFieldEnsureService.onlyStationId();
+        Long stationId = facilityStationQueryService.onlyStationId();
         if (stationId == null || thresholdModelId == null) {
             throw new ServiceException(500, "智慧管廊的告警规则还不能建");
         }
@@ -437,7 +440,6 @@ public class AlarmRuleCatalogEnsure {
     private void ensureDirectory() {
         EntityTypeDO existing = entityTypeMapper.selectByCode(DIRECTORY);
         if (existing != null) {
-            facilityOwningFieldEnsureService.ensureForEntityTypeCode(DIRECTORY);
             if (!DIRECTORY_NAME.equals(existing.getName())) {
                 EntityTypeUpdateReqVO update = new EntityTypeUpdateReqVO();
                 update.setId(existing.getId());
@@ -456,11 +458,11 @@ public class AlarmRuleCatalogEnsure {
         request.setStatus("active");
         request.setStorageType("DEDICATED");
         request.setEntryKind("NATIVE");
-        request.setWorkScope(EntityTypeDO.WORK_SCOPE_FACILITY);
         request.setGroupName(AlarmTypeCatalog.GROUP_NAME);
         request.setDescription("告警规则在这本目录里建。每种判断方式一个模型。一条实体是某种设备上的一份参数。");
         request.setAssociationFields("{}");
         entityTypeService.create(request);
+        stationOwnedCatalogSetup.setUpNewCatalog(DIRECTORY, true);
     }
 
     private Long ensureModel(String name, String description) {

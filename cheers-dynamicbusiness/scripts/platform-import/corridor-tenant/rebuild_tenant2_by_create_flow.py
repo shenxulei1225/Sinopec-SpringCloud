@@ -402,7 +402,6 @@ def create_types(token: str) -> None:
             "status": "active",
             "storageType": "DEDICATED",
             "entryKind": "NATIVE",
-            "workScope": "NETWORK",
             "associationFields": "{}",
         }
         created = unwrap(
@@ -473,7 +472,7 @@ def verify(conn) -> None:
     cur = conn.cursor()
     cur.execute(
         """
-        SELECT code, name, work_scope, dedicated_table_name, data_layout_id, model_layout_id
+        SELECT code, name, dedicated_table_name, data_layout_id, model_layout_id
         FROM dynamicbusiness.dynamic_entity_type
         WHERE tenant_id = %s AND deleted = false
         ORDER BY sort, code

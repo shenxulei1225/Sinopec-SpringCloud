@@ -1,5 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.dataprocess;
 
+import cn.cheers.x.module.dynamicbusiness.service.facility.StationOwnedCatalogSetup;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
@@ -98,6 +99,8 @@ public class AlarmDomainCatalogEnsure {
     private DeviceCollectionPointQuery collectionPointQuery;
     @Resource
     private AlarmRuleCatalogEnsure alarmRuleCatalogEnsure;
+    @Resource
+    private StationOwnedCatalogSetup stationOwnedCatalogSetup;
 
     /** 子数据类型和设备告警策略型号。还没有可判断的条件时，只建入口，不建空下拉。 */
     public void ensure() {
@@ -279,11 +282,11 @@ public class AlarmDomainCatalogEnsure {
         request.setEntryKind(EntityTypeDO.ENTRY_KIND_DOMAIN);
         request.setBaseEntityTypeCode(AlarmStrategyCatalogEnsure.DIRECTORY);
         request.setDomain(DOMAIN);
-        request.setWorkScope(EntityTypeDO.WORK_SCOPE_FACILITY);
         request.setGroupName(AlarmTypeCatalog.GROUP_NAME);
         request.setDescription(entryDescription());
         request.setAssociationFields("{}");
         entityTypeService.create(request);
+        stationOwnedCatalogSetup.setUpNewCatalog(CODE, false);
     }
 
     private Long ensureModel() {

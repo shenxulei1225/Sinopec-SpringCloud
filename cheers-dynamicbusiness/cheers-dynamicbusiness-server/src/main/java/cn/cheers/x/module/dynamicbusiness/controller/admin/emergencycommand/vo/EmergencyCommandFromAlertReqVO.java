@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.util.Map;
+
 @Data
 public class EmergencyCommandFromAlertReqVO {
 
@@ -15,6 +17,6 @@ public class EmergencyCommandFromAlertReqVO {
     @NotBlank(message = "事件名称不能为空")
     private String name;
 
-    @Schema(description = "当前场站编号。写入这起事件的所属场站")
-    private String facilityId;
+    @Schema(description = "告警记录上读不到时补上的归属。键必须是应急事件目录已经声明的字段编码，没声明的不写入")
+    private Map<String, String> ownership;
 }

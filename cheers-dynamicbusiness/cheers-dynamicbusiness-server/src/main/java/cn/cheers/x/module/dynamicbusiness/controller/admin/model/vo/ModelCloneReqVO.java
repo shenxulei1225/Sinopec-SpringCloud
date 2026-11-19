@@ -14,6 +14,9 @@ import java.util.List;
 @Data
 public class ModelCloneReqVO {
 
+    @Schema(description = "这次打开的数据目录注册编码。缺省时接口不放行。")
+    private String registryCode;
+
     @Schema(description = "源模型 ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "1736")
     @NotNull(message = "源模型不能为空")
     private Long sourceModelId;
@@ -31,9 +34,9 @@ public class ModelCloneReqVO {
     @Schema(description = "额外挂接的分类 ID 列表（与源模型分类合并去重）；不传则只拷源模型已有分类")
     private List<Long> categoryIds;
 
-    @Schema(description = "新型号治理状态；无公司规格创建能力时服务端强制按 LOCAL 创建", example = "LOCAL")
+    @Schema(description = "新型号治理状态，可不传：服务端按登录人定稿，规则同新建", example = "LOCAL")
     private String governanceStatus;
 
-    @Schema(description = "当前有效站场 ID；复制为本地型号时必填", example = "1001")
+    @Schema(description = "右上角选中的站；复制为本地型号时必填", example = "1001")
     private Long effectiveFacilityId;
 }

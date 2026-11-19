@@ -19,14 +19,5 @@ public interface LedgerStateMachineService {
     /** 新建报修已写成已上报之后，补第一行脉络。状态不再改一次。 */
     void recordSubmitted(String entityTypeCode, Long entityId);
 
-    /**
-     * 工单开工或完工只追加脉络。
-     * 不改报修状态。句子只能是已开始维修、维修已完工。
-     */
-    void appendProgress(String entityTypeCode, Long entityId, Long workOrderId, String sentence);
-
-    /** 工单验收通过后，走「已派工 → 已关闭」。受理页不出现这个按钮。 */
-    void closeAfterAcceptance(String entityTypeCode, Long entityId);
-
     List<String> listTraceLines(String entityTypeCode, Long entityId);
 }

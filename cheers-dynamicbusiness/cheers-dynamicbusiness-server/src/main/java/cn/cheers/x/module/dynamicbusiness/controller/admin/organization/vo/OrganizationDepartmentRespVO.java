@@ -4,7 +4,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
- * 挂在某一家公司或分公司上的部门。
+ * 点中组织节点后中间一列的一个部门。
+ * 场站编号为空：部门直接挂在这个组织节点上。
+ * 场站编号有值：部门在「所属组织」是这个节点的场站里，页面显示成「站名 / 部门」。
  */
 @Data
 public class OrganizationDepartmentRespVO {
@@ -14,4 +16,13 @@ public class OrganizationDepartmentRespVO {
 
     @Schema(description = "部门名称")
     private String name;
+
+    @Schema(description = "上级部门编号。没有上级时为空或 0")
+    private Long parentId;
+
+    @Schema(description = "部门所在场站的记录编号。直接挂在组织节点上的部门为空")
+    private Long facilityId;
+
+    @Schema(description = "部门所在场站的名称。直接挂在组织节点上的部门为空")
+    private String facilityName;
 }

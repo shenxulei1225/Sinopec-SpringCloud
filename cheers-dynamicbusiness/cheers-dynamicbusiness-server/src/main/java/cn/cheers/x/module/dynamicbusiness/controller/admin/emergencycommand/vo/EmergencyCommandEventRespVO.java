@@ -42,8 +42,20 @@ public class EmergencyCommandEventRespVO {
     @Schema(description = "记录创建时间")
     private String createTime;
 
-    @Schema(description = "这起事件所属场站。启动时写入")
+    @Schema(description = "这起事件所属场站。接报时写入，决定谁能看到这起事件")
     private String facilityId;
+
+    @Schema(description = "这起事件所属管线段。接报时写入，决定谁能看到这起事件")
+    private String pipelineSegmentId;
+
+    @Schema(description = "事件中心点经度。为空表示还没定位，看不了周边资源")
+    private Double longitude;
+
+    @Schema(description = "事件中心点纬度")
+    private Double latitude;
+
+    @Schema(description = "地点描述")
+    private String locationText;
 
     @Schema(description = "结案状态。处置中或已结案。空着表示还没结案")
     private String caseStatus;

@@ -32,8 +32,7 @@ BEGIN
   END IF;
 
   UPDATE dynamic_entity_type
-  SET work_scope = 'NETWORK',
-      model_workbench_mode = 'SINGLE',
+  SET model_workbench_mode = 'SINGLE',
       updater = 'seed-15',
       update_time = CURRENT_TIMESTAMP
   WHERE code = 'sop' AND tenant_id = v_tenant AND deleted = false;

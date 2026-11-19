@@ -20,7 +20,8 @@ public final class BusinessCapabilityPackRegistry {
                 "租户底座",
                 "组织、门户、角色与权限、数据管理、系统账号",
                 List.of("organization", "portal", "role-permission", "catalog-admin", "system-account"),
-                List.of("user_account", "department", "duty_post")));
+                // 这四本是底座的标准目录。还没有的才新建并写上标准字段和型号。已经有的不改。
+                List.of("user_account", "department", "duty_post", "organization")));
         register(new BusinessCapabilityPackDefinition(
                 "station-live-monitor",
                 "场站实时监控",
@@ -49,15 +50,16 @@ public final class BusinessCapabilityPackRegistry {
         register(new BusinessCapabilityPackDefinition(
                 "emergency",
                 "应急",
-                "应急事件办理、预案与自定义表单；资源、响应和维抢修台账目录随包开通",
+                "应急事件办理、预案、自定义表单与应急资源三维图；资源和维抢修台账目录随包开通",
                 List.of(
                         "emergency-event",
                         "emergency-plan",
-                        "emergency-custom-form"),
+                        "emergency-custom-form",
+                        "emergency-resource-map"),
                 List.of(
                         "emergency",
                         "emergency_resource",
-                        "emergency_response",
+                        "emergency_team",
                         "emergentcy_plan",
                         "person_certificate",
                         "repair_scheme",
@@ -74,6 +76,7 @@ public final class BusinessCapabilityPackRegistry {
                 "场站资产与运维",
                 "这座站的空间与资产台账、运维与 GIS；不含客户收费与过程台账",
                 List.of(
+                        "station-scene",
                         "road-network",
                         "facility-gis",
                         "equipment-ledger",

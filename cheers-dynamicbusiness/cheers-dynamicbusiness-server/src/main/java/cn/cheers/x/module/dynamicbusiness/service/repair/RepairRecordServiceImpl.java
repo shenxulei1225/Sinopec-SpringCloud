@@ -5,14 +5,10 @@ import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
 import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdateReqVO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.pagegrant.PageRoleGrantDO;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.pagegrant.PageRoleGrantMapper;
+import cn.cheers.x.module.dynamicbusiness.framework.security.PageAccess;
 import cn.cheers.x.module.dynamicbusiness.api.directory.dto.UserAccountDTO;
 import cn.cheers.x.module.dynamicbusiness.service.directory.UserAccountDirectoryQueryService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
-import cn.cheers.x.system.api.permission.PermissionApi;
-import cn.cheers.x.system.api.permission.RoleApi;
-import cn.cheers.x.system.enums.permission.RoleCodeEnum;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.workorder.vo.WorkOrderCatalogCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.service.workorder.WorkOrderCatalogService;
 import jakarta.annotation.Resource;
@@ -27,7 +23,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -55,11 +50,7 @@ public class RepairRecordServiceImpl implements RepairRecordService {
     @Resource
     private EntityService entityService;
     @Resource
-    private PageRoleGrantMapper pageRoleGrantMapper;
-    @Resource
-    private PermissionApi permissionApi;
-    @Resource
-    private RoleApi roleApi;
+    private PageAccess pageAccess;
     @Resource
     private WorkOrderCatalogService workOrderCatalogService;
     @Resource
@@ -269,21 +260,7 @@ public class RepairRecordServiceImpl implements RepairRecordService {
     }
 
     private void requirePage(String pageCode) {
-        Long userId = SecurityFrameworkUtils.getLoginUserId();
-        if (userId == null) {
-            throw new ServiceException(403, "没有该页面的操作权限");
-        }
-        Boolean elevated = permissionApi.hasAnyRoles(userId, RoleCodeEnum.SUPER_ADMIN.getCode()).getCheckedData();
-        if (Boolean.TRUE.equals(elevated)) {
-            return;
-        }
-        Collection<Long> roleIds = roleApi.getUserRoleIdListByUserId(userId).getCheckedData();
-        for (PageRoleGrantDO grant : pageRoleGrantMapper.selectListByRoleIds(roleIds)) {
-            if (pageCode.equals(grant.getPageCode()) && MAINTAIN.equals(grant.getAction())) {
-                return;
-            }
-        }
-        throw new ServiceException(403, "没有该页面的操作权限");
+        pageAccess.require(pageCode, MAINTAIN);
     }
 
     private EntityRespVO requireRepair(Long repairId) {

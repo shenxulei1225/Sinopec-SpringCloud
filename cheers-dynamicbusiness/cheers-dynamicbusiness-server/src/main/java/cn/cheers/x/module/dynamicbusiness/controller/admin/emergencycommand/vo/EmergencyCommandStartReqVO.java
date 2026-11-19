@@ -11,10 +11,6 @@ public class EmergencyCommandStartReqVO {
     @NotBlank(message = "事件编号不能为空")
     private String eventId;
 
-    @Schema(description = "当前场站编号。响应写在该场站下")
-    @NotBlank(message = "请先选择场站")
-    private String facilityId;
-
     @Schema(description = "研判意见")
     private String comment;
 

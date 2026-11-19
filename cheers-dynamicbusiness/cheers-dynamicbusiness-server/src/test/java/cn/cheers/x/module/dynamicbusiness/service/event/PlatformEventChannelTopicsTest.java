@@ -20,7 +20,9 @@ class PlatformEventChannelTopicsTest {
     @Test
     void leftoverPlaceholderRefusesToFill() {
         assertNull(PlatformEventChannelTopics.fill("inspection/execution/{执行记录编号}/run", 1L, 88L));
-        assertNull(PlatformEventChannelTopics.fill("alarm/co2-high/{deviceId}", 0L, 13644L));
+        assertEquals("alarm/co2-high/13644",
+                PlatformEventChannelTopics.fill("alarm/co2-high/{deviceId}", 0L, 13644L));
+        assertNull(PlatformEventChannelTopics.fill("alarm/facility/{facilityId}", 0L, 13644L));
         assertNull(PlatformEventChannelTopics.fill(null, 1L, 88L));
     }
 

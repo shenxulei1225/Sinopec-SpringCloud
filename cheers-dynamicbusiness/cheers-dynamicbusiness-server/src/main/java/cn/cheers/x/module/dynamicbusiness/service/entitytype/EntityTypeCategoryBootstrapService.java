@@ -23,7 +23,11 @@ import org.springframework.util.StringUtils;
 import java.util.UUID;
 
 /**
- * 为数据类型自动创建默认分类体系，并从工作台布局模版生成「数据」页签实例。
+ * 目录第一次写入时，补上分类种类，并生成数据页和模型管理页。
+ *
+ * 管什么：没有分类种类时按目录建一个。组织机构、区域、场站、分区建成分类即实体，数据页只留分类和详情。
+ * 不管什么：种类已经在的目录。不把已有的普通分类改成高级分类，不改已经生成的数据页栏开关。
+ * 禁止：启动、查询、再次打开页面时调用。存量组织机构改成和智慧巡检一样，走迁移，不在这里补。
  */
 @Service
 @Slf4j
@@ -80,6 +84,11 @@ public class EntityTypeCategoryBootstrapService {
             }
             return;
         }
+        // 组织机构和区域、场站、分区一样：第一次建种类时就是分类即实体。
+        if (isBuiltinCategoryAsEntity(entityType.getCode())) {
+            ensureAdvancedCategoryType(entityType);
+            return;
+        }
         ensureNativeCategoryType(entityType);
     }
 
@@ -125,6 +134,7 @@ public class EntityTypeCategoryBootstrapService {
 
     private void ensureCategoryTypeRecord(EntityTypeDO entityType, String categoryMode, String descSuffix) {
         String code = entityType.getCode();
+        // 种类已在：不改模式。已建成普通分类的组织机构，由迁移改成高级分类。
         if (categoryTypeService.existsByCategoryTypeCode(code, null)) {
             return;
         }
@@ -274,22 +284,36 @@ public class EntityTypeCategoryBootstrapService {
         return refreshed.getModelLayoutId();
     }
 
+    /**
+     * 数据页按分类即实体排栏：分类和详情开着，型号和实体关掉。
+     * 组织机构、区域、场站、分区固定这样。种类已经是高级分类的，也这样。
+     */
     private boolean isCategoryAsEntityType(String entityTypeCode) {
         if (!StringUtils.hasText(entityTypeCode)) {
             return false;
         }
-        String code = entityTypeCode.trim();
-        if ("region".equalsIgnoreCase(code)
-                || "facility".equalsIgnoreCase(code)
-                || "zone".equalsIgnoreCase(code)) {
+        if (isBuiltinCategoryAsEntity(entityTypeCode)) {
             return true;
         }
+        String code = entityTypeCode.trim();
         CategoryTypeDO categoryType = categoryTypeMapper.selectByCategoryTypeCode(code);
         if (categoryType == null || !StringUtils.hasText(categoryType.getCategoryMode())) {
             return false;
         }
         String mode = categoryType.getCategoryMode().trim().toUpperCase();
         return "ADVANCED".equals(mode) || "ORG_RECORD".equals(mode) || "PATTERN_C".equals(mode);
+    }
+
+    /** 开通时就按分类即实体建种类的目录。 */
+    private static boolean isBuiltinCategoryAsEntity(String entityTypeCode) {
+        if (!StringUtils.hasText(entityTypeCode)) {
+            return false;
+        }
+        String code = entityTypeCode.trim();
+        return "organization".equalsIgnoreCase(code)
+                || "region".equalsIgnoreCase(code)
+                || "facility".equalsIgnoreCase(code)
+                || "zone".equalsIgnoreCase(code);
     }
 
     /**

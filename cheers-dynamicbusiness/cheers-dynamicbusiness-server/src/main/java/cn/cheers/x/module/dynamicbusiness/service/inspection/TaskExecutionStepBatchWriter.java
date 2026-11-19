@@ -5,10 +5,8 @@ import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.inspection.vo.TaskExecutionBootstrapReqVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryEntityLinkDO;
-import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityCategoryRelationDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
-import cn.cheers.x.module.dynamicbusiness.dal.mysql.entity.EntityCategoryRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryEntityLinkService;
@@ -29,15 +27,14 @@ import java.util.Map;
 
 /**
  * 生成任务时一次写下本批待执行账。
- * <p>管什么：每笔执行账一行。步骤图写在这行的 step_tree_json。所属场站写在场站列，并挂到该场站分类。
- * <p>不管什么：不把步骤拆成步骤行，不把所属场站写入实体关系表，不重算步骤图。
+ * <p>管什么：每笔执行账一行。步骤图写在这行的 step_tree_json。所属场站只写在场站列（场站分类筛选直接查该列）。
+ * <p>不管什么：不把步骤拆成步骤行，不把所属场站写入实体关系表或分类-实体关联表，不重算步骤图。
  */
 @Component
 @RequiredArgsConstructor
 public class TaskExecutionStepBatchWriter {
 
     private final EntityDedicatedColumnService entityDedicatedColumnService;
-    private final EntityCategoryRelationMapper entityCategoryRelationMapper;
     private final CategoryEntityLinkService categoryEntityLinkService;
     private final EntityRefCategoryCategoryProjectionService refCategoryCategoryProjectionService;
     private final EntityService entityService;
@@ -45,7 +42,7 @@ public class TaskExecutionStepBatchWriter {
     private final EntityCacheEvictionService entityCacheEvictionService;
 
     /**
-     * 所属场站只写在场站列，并挂到该场站分类。不写入实体关系表。
+     * 所属场站只写在场站列。不写入实体关系表，也不写分类-实体关联行。
      * 计划执行时间写在 planned_start。步骤图写在 step_tree_json，不另建步骤行。
      */
     public List<Long> insertPendingRecords(
@@ -114,32 +111,21 @@ public class TaskExecutionStepBatchWriter {
         if (ids.size() != accounts.size()) {
             throw new ServiceException(500, "待执行账写入数量与计划点不一致");
         }
-        attachFacilityCategory(recordModel, recordType, facilityId, ids);
+        syncModelToFacilityCategory(recordModel, recordType, facilityId);
         entityCacheEvictionService.evictEntityCaches(recordModel.getId(), recordType);
         return ids;
     }
 
-    private void attachFacilityCategory(
-            ModelDO recordModel, String recordType, Long facilityId, List<Long> recordIds) {
+    /**
+     * 场站分类下按型号能看到这批执行账：只挂型号–场站分类。
+     * 执行账本身靠场站列落在场站分类下（分类筛选直接查该列），不写分类-实体关联行。
+     */
+    private void syncModelToFacilityCategory(ModelDO recordModel, String recordType, Long facilityId) {
         CategoryEntityLinkDO link = categoryEntityLinkService.getLinkByEntityIdAndEntityTypeCode(
                 facilityId, FacilityOwningFieldCodes.TARGET_ENTITY_TYPE);
         if (link == null || link.getCategoryId() == null) {
             return;
         }
-        Long tenantId = TenantContextHolder.getTenantId();
-        List<EntityCategoryRelationDO> categoryRows = new ArrayList<>(recordIds.size());
-        for (int i = 0; i < recordIds.size(); i++) {
-            EntityCategoryRelationDO row = EntityCategoryRelationDO.builder()
-                    .entityId(recordIds.get(i))
-                    .categoryId(link.getCategoryId())
-                    .entityTypeCode(recordType)
-                    .domain(recordModel.getDomain())
-                    .sort(i)
-                    .build();
-            row.setTenantId(tenantId);
-            categoryRows.add(row);
-        }
-        entityCategoryRelationMapper.insertBatchRelations(categoryRows);
         refCategoryCategoryProjectionService.syncCategoryCategoryOnRefAssociate(
                 recordModel.getId(),
                 recordType,

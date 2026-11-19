@@ -3,6 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.controller.admin.category;
 import cn.cheers.x.framework.common.pojo.CommonResult;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.category.vo.*;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryService;
+import cn.cheers.x.module.dynamicbusiness.service.category.CategoryTreeScopeQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,6 +31,11 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
  * @author yudao
  */
 @Tag(name = "管理后台 - 分类管理", description = "提供分类的创建、更新、删除、查询、移动、排序等功能。分类用于对模型和实体进行归类与筛选，不影响字段规则")
+/*
+ * 权限：每个接口带这次打开的数据目录注册编码（registryCode）。
+ * 分类树是公共的筛选视角，不属于任何一本目录：查看要本页任一查看授权，改分类节点要本页的分类授权。
+ * 视图库的「视图分类」不是业务数据，走 ViewCategoryController，只看菜单权限，不走这里。
+ */
 @RestController
 @RequestMapping("/dynamicbusiness/category")
 @Validated
@@ -37,6 +43,8 @@ public class CategoryController {
 
     @Resource
     private CategoryService categoryService;
+    @Resource
+    private CategoryTreeScopeQueryService categoryTreeScopeQueryService;
 
     @PostMapping("/create")
     @Operation(
@@ -49,8 +57,10 @@ public class CategoryController {
             """
     )
     @ApiAccessLog(operateType = CREATE)
-    @PreAuthorize("@ss.hasPermission('system:category:create')")
-    public CommonResult<Long> createCategory(@Valid @RequestBody CategoryCreateReqVO reqVO) {
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, null, 'category', 'create')")
+    public CommonResult<Long> createCategory(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @Valid @RequestBody CategoryCreateReqVO reqVO) {
         return success(categoryService.createCategory(reqVO));
     }
 
@@ -64,8 +74,10 @@ public class CategoryController {
             """
     )
     @ApiAccessLog(operateType = CREATE)
-    @PreAuthorize("@ss.hasPermission('system:category:create')")
-    public CommonResult<Long> cloneCategory(@Valid @RequestBody CategoryCloneReqVO reqVO) {
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, null, 'category', 'create')")
+    public CommonResult<Long> cloneCategory(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @Valid @RequestBody CategoryCloneReqVO reqVO) {
         return success(categoryService.cloneCategory(reqVO));
     }
 
@@ -79,8 +91,10 @@ public class CategoryController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:category:update')")
-    public CommonResult<Boolean> updateCategory(@Valid @RequestBody CategoryUpdateReqVO reqVO) {
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, null, 'category', 'update')")
+    public CommonResult<Boolean> updateCategory(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @Valid @RequestBody CategoryUpdateReqVO reqVO) {
         categoryService.updateCategory(reqVO);
         return success(true);
     }
@@ -96,8 +110,10 @@ public class CategoryController {
             """
     )
     @ApiAccessLog(operateType = DELETE)
-    @PreAuthorize("@ss.hasPermission('system:category:delete')")
-    public CommonResult<Boolean> deleteCategory(@Valid @RequestBody CategoryDeleteReqVO reqVO) {
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, null, 'category', 'delete')")
+    public CommonResult<Boolean> deleteCategory(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @Valid @RequestBody CategoryDeleteReqVO reqVO) {
         categoryService.deleteCategory(reqVO);
         return success(true);
     }
@@ -112,8 +128,10 @@ public class CategoryController {
             """
     )
     @Parameter(name = "id", description = "分类编号", required = true, example = "1")
-    @PreAuthorize("@ss.hasPermission('system:category:query')")
-    public CommonResult<CategoryRespVO> getCategory(@RequestParam("id") Long id) {
+    @PreAuthorize("@catalogAccess.allowCategoryQuery(#registryCode)")
+    public CommonResult<CategoryRespVO> getCategory(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @RequestParam("id") Long id) {
         return success(categoryService.getCategoryVO(id));
     }
 
@@ -124,15 +142,19 @@ public class CategoryController {
             获取完整的分类树结构。
             - 返回列表结构，包含所有子分类
             - 支持按状态过滤（只返回启用或禁用的分类）
+            - 节点本身是某本目录里的记录时，登录人看不到的节点连同下级不返回。场站节点列出能看的全部站；挂在场站上的记录再收到右上角选中的站
             - 适用于下拉选择、树形展示等场景
             """
     )
     @Parameter(name = "categoryTypeCode", description = "分类类型编码", required = true, example = "equipment")
     @Parameter(name = "status", description = "状态（可选，0-禁用，1-启用）", example = "1")
-    @PreAuthorize("@ss.hasPermission('system:category:query')")
-    public CommonResult<List<CategoryTreeRespVO>> getCategoryTree(@RequestParam("categoryTypeCode") String categoryTypeCode,
+    @PreAuthorize("@catalogAccess.allowCategoryQuery(#registryCode)")
+    public CommonResult<List<CategoryTreeRespVO>> getCategoryTree(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @RequestParam("categoryTypeCode") String categoryTypeCode,
                                                                   @RequestParam(value = "status", required = false) Integer status) {
-        return success(categoryService.getCategoryTreeByType(categoryTypeCode, status));
+        return success(categoryTreeScopeQueryService.retainVisibleEntityNodes(
+                categoryService.getCategoryTreeByType(categoryTypeCode, status)));
     }
 
     @GetMapping("/tree-with-models")
@@ -146,8 +168,9 @@ public class CategoryController {
     )
     @Parameter(name = "categoryTypeCode", description = "分类类型编码", required = true, example = "equipment")
     @Parameter(name = "status", description = "状态（可选，0-禁用，1-启用）", example = "1")
-    @PreAuthorize("@ss.hasPermission('system:category:query')")
+    @PreAuthorize("@catalogAccess.allowCategoryQuery(#registryCode)")
     public CommonResult<List<CategoryTreeWithModelsRespVO>> getCategoryTreeWithModels(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
             @RequestParam("categoryTypeCode") String categoryTypeCode,
             @RequestParam(value = "status", required = false) Integer status) {
         return success(categoryService.getCategoryTreeWithModels(categoryTypeCode, status));
@@ -165,8 +188,10 @@ public class CategoryController {
     @Parameter(name = "id", description = "分类编号（子树根节点）", required = true, example = "1")
     @Parameter(name = "categoryTypeCode", description = "分类类型编码", required = true, example = "equipment")
     @Parameter(name = "status", description = "状态（可选，0-禁用，1-启用）", example = "1")
-    @PreAuthorize("@ss.hasPermission('system:category:query')")
-    public CommonResult<CategoryTreeRespVO> getCategorySubtreeWithRoot(@RequestParam("id") Long id,
+    @PreAuthorize("@catalogAccess.allowCategoryQuery(#registryCode)")
+    public CommonResult<CategoryTreeRespVO> getCategorySubtreeWithRoot(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @RequestParam("id") Long id,
                                                                @RequestParam("categoryTypeCode") String categoryTypeCode,
                                                                @RequestParam(value = "status", required = false) Integer status) {
         return success(categoryService.getCategorySubtreeWithRoot(id, categoryTypeCode, status));
@@ -186,8 +211,10 @@ public class CategoryController {
     @Parameter(name = "categoryTypeCode", description = "分类类型编码", required = true, example = "equipment")
     @Parameter(name = "status", description = "状态（可选，0-禁用，1-启用）", example = "1")
     @Parameter(name = "recursive", description = "是否递归获取所有子分类（默认false）", example = "false")
-    @PreAuthorize("@ss.hasPermission('system:category:query')")
-    public CommonResult<List<CategoryRespVO>> getChildren(@RequestParam("id") Long id,
+    @PreAuthorize("@catalogAccess.allowCategoryQuery(#registryCode)")
+    public CommonResult<List<CategoryRespVO>> getChildren(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @RequestParam("id") Long id,
                                                           @RequestParam("categoryTypeCode") String categoryTypeCode,
                                                           @RequestParam(value = "status", required = false) Integer status,
                                                           @RequestParam(value = "recursive", defaultValue = "false") Boolean recursive) {
@@ -209,8 +236,10 @@ public class CategoryController {
     )
     @Parameter(name = "id", description = "分类编号", required = true, example = "1")
     @Parameter(name = "categoryTypeCode", description = "分类类型编码", required = true, example = "equipment")
-    @PreAuthorize("@ss.hasPermission('system:category:query')")
-    public CommonResult<List<CategoryRespVO>> getPath(@RequestParam("id") Long id,
+    @PreAuthorize("@catalogAccess.allowCategoryQuery(#registryCode)")
+    public CommonResult<List<CategoryRespVO>> getPath(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @RequestParam("id") Long id,
                                                       @RequestParam("categoryTypeCode") String categoryTypeCode) {
         return success(categoryService.getPath(id, categoryTypeCode));
     }
@@ -228,8 +257,10 @@ public class CategoryController {
     )
     @Parameter(name = "id", description = "分类编号", required = true, example = "1")
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:category:update')")
-    public CommonResult<Boolean> moveCategory(@RequestParam("id") Long id,
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, null, 'category', 'update')")
+    public CommonResult<Boolean> moveCategory(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @RequestParam("id") Long id,
                                               @Valid @RequestBody CategoryMoveReqVO body) {
         categoryService.moveCategory(id, body.getTargetParentId(), body.getCategoryTypeCode());
         return success(true);
@@ -246,8 +277,10 @@ public class CategoryController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:category:update')")
-    public CommonResult<Boolean> sortCategories(@Valid @RequestBody CategorySortReqVO body) {
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, null, 'category', 'update')")
+    public CommonResult<Boolean> sortCategories(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @Valid @RequestBody CategorySortReqVO body) {
         categoryService.sortCategories(body.getParentId(), body.getCategoryIds(), body.getCategoryTypeCode());
         return success(true);
     }
@@ -264,8 +297,10 @@ public class CategoryController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:category:update')")
-    public CommonResult<Boolean> dragCategory(@Valid @RequestBody CategoryDragReqVO body) {
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, null, 'category', 'update')")
+    public CommonResult<Boolean> dragCategory(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @Valid @RequestBody CategoryDragReqVO body) {
         categoryService.dragCategory(body);
         return success(true);
     }
@@ -280,8 +315,9 @@ public class CategoryController {
     )
     @Parameter(name = "categoryTypeCode", required = true, example = "region")
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:category:update')")
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, null, 'category', 'update')")
     public CommonResult<Integer> backfillEntityHierarchy(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
             @RequestParam("categoryTypeCode") String categoryTypeCode) {
         return success(categoryService.backfillEntityHierarchyFromCategoryTree(categoryTypeCode));
     }
@@ -298,8 +334,10 @@ public class CategoryController {
     )
     @Parameter(name = "keyword", description = "关键词（必填，模糊匹配分类名称）", required = true, example = "设备")
     @Parameter(name = "categoryTypeCode", description = "分类类型编码", required = true, example = "equipment")
-    @PreAuthorize("@ss.hasPermission('system:category:query')")
-    public CommonResult<List<CategoryRespVO>> searchCategories(@RequestParam("keyword") String keyword,
+    @PreAuthorize("@catalogAccess.allowCategoryQuery(#registryCode)")
+    public CommonResult<List<CategoryRespVO>> searchCategories(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @RequestParam("keyword") String keyword,
                                                                @RequestParam("categoryTypeCode") String categoryTypeCode) {
         return success(categoryService.searchCategoryList(keyword, categoryTypeCode));
     }
@@ -316,10 +354,13 @@ public class CategoryController {
     )
     @Parameter(name = "keyword", description = "关键词（必填，模糊匹配分类名称）", required = true, example = "设备")
     @Parameter(name = "categoryTypeCode", description = "分类类型编码", required = true, example = "equipment")
-    @PreAuthorize("@ss.hasPermission('system:category:query')")
-    public CommonResult<List<CategoryTreeRespVO>> searchCategoryTree(@RequestParam("keyword") String keyword,
+    @PreAuthorize("@catalogAccess.allowCategoryQuery(#registryCode)")
+    public CommonResult<List<CategoryTreeRespVO>> searchCategoryTree(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @RequestParam("keyword") String keyword,
                                                                      @RequestParam("categoryTypeCode") String categoryTypeCode) {
-        return success(categoryService.searchCategoryTree(keyword, categoryTypeCode));
+        return success(categoryTreeScopeQueryService.retainVisibleEntityNodes(
+                categoryService.searchCategoryTree(keyword, categoryTypeCode)));
     }
 
     @PutMapping("/enable")
@@ -332,8 +373,10 @@ public class CategoryController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:category:update')")
-    public CommonResult<Boolean> enable(@Valid @RequestBody CategoryEnableDisableReqVO reqVO) {
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, null, 'category', 'update')")
+    public CommonResult<Boolean> enable(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @Valid @RequestBody CategoryEnableDisableReqVO reqVO) {
         categoryService.updateStatus(reqVO.getId(), 1, reqVO.getCategoryTypeCode());
         return success(true);
     }
@@ -348,8 +391,10 @@ public class CategoryController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:category:update')")
-    public CommonResult<Boolean> disable(@Valid @RequestBody CategoryEnableDisableReqVO reqVO) {
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, null, 'category', 'update')")
+    public CommonResult<Boolean> disable(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @Valid @RequestBody CategoryEnableDisableReqVO reqVO) {
         categoryService.updateStatus(reqVO.getId(), 0, reqVO.getCategoryTypeCode());
         return success(true);
     }
@@ -364,8 +409,10 @@ public class CategoryController {
             """
     )
     @ApiAccessLog(operateType = CREATE)
-    @PreAuthorize("@ss.hasPermission('system:category:create')")
-    public CommonResult<List<CategoryRespVO>> batchCreateCategory(@Valid @RequestBody CategoryBatchCreateReqVO reqVO) {
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, null, 'category', 'create')")
+    public CommonResult<List<CategoryRespVO>> batchCreateCategory(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @Valid @RequestBody CategoryBatchCreateReqVO reqVO) {
         return success(categoryService.batchCreateCategory(reqVO.getCategories()));
     }
 
@@ -379,8 +426,10 @@ public class CategoryController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@ss.hasPermission('system:category:update')")
-    public CommonResult<List<CategoryRespVO>> batchUpdateCategory(@Valid @RequestBody CategoryBatchUpdateReqVO reqVO) {
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, null, 'category', 'update')")
+    public CommonResult<List<CategoryRespVO>> batchUpdateCategory(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @Valid @RequestBody CategoryBatchUpdateReqVO reqVO) {
         return success(categoryService.batchUpdateCategory(reqVO.getCategories()));
     }
 
@@ -395,8 +444,10 @@ public class CategoryController {
             """
     )
     @ApiAccessLog(operateType = DELETE)
-    @PreAuthorize("@ss.hasPermission('system:category:delete')")
-    public CommonResult<CategoryBatchDeleteRespVO> batchDeleteCategory(@Valid @RequestBody CategoryBatchDeleteReqVO reqVO) {
+    @PreAuthorize("@catalogAccess.allowSubject(#registryCode, null, 'category', 'delete')")
+    public CommonResult<CategoryBatchDeleteRespVO> batchDeleteCategory(
+            @RequestParam(value = "registryCode", required = false) String registryCode,
+            @Valid @RequestBody CategoryBatchDeleteReqVO reqVO) {
         return success(categoryService.batchDeleteCategory(reqVO.getIds(), false, reqVO.getCategoryTypeCode()));
     }
 }

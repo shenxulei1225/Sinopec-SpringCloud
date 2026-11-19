@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityDedicatedColumnService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityFieldQueryEngine;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
-import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogStationScopeService;
+import cn.cheers.x.module.dynamicbusiness.service.datapermission.DataScopeQueryService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityTableDirectPagingGate;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityTreeBuilder;
@@ -114,9 +114,9 @@ public class EntitySceneQueryServiceImpl implements EntitySceneQueryService {
     @Resource
     @Lazy
     private EntityService entityService;
-    /** 查看范围是仅当前站时，给这次列表补上当前站筛选。不按目录类型写分支。 */
+    /** 列表、详情按登录人在本页数据目录上的数据范围收窄。 */
     @Resource
-    private CatalogStationScopeService catalogStationScopeService;
+    private DataScopeQueryService dataScopeQueryService;
     @Resource
     @Lazy
     private EntityRelationService entityRelationService;
@@ -187,10 +187,9 @@ public class EntitySceneQueryServiceImpl implements EntitySceneQueryService {
             Integer pageNo, Integer pageSize, String keyword, String domain,
             List<FieldFilterReqVO> filters, String orderByColumn, Boolean isAsc,
             List<String> searchFieldCodes,
-            List<Long> relatedEntityIds, String relatedEntityTypeCode) {
+            List<Long> relatedEntityIds, String relatedEntityTypeCode, String scopeRegistryCode) {
 
         if (scene == null) throw new ServiceException(400, "查询场景 scene 参数不能为空");
-        filters = catalogStationScopeService.constrainListFilters(entityTypeCode, filters);
 
         Integer effectivePageNo = (pageNo == null || pageNo < 1) ? 1 : pageNo;
         Integer effectivePageSize = (pageSize == null || pageSize < 1) ? 20 : pageSize;
@@ -198,6 +197,15 @@ public class EntitySceneQueryServiceImpl implements EntitySceneQueryService {
 
         EntityQueryResultShape shape = EntityQueryResultShape.ofNullable(resultShape);
         EntityQueryResultDetail detail = EntityQueryResultDetail.ofNullable(resultDetail);
+        // 列表只列登录人数据范围里的记录。什么都看不到就返回空页，不退回全部
+        if (isListScene(scene)) {
+            DataScopeQueryService.ScopedFilters scoped =
+                    dataScopeQueryService.constrainListFilters(scopeRegistryCode, filters);
+            if (scoped.nothingVisible()) {
+                return respondShape(shape, new PageResult<>(new ArrayList<>(), 0L), detail);
+            }
+            filters = scoped.filters();
+        }
         // 未传排序列时：PAGE 列表默认按名称；自定义顺序由前端显式传 orderByColumn=sort（实体表物理列）
         String normalizedOrderByColumn = normalizeOrderByColumn(orderByColumn);
         if (!StringUtils.hasText(normalizedOrderByColumn) && shape == EntityQueryResultShape.PAGE) {
@@ -237,11 +245,6 @@ public class EntitySceneQueryServiceImpl implements EntitySceneQueryService {
                 return respondShape(shape, new PageResult<>(new ArrayList<>(), 0L), detail);
             }
             filters = mergeIdInFilter(filters, keepIds);
-        }
-        // 站场级列表缺所属场站不得列出其他场站的点
-        if (isListScene(scene)) {
-            FacilityOwningListQueryGate.assertListHasOwningOrIdPin(
-                    requiresFacilityOwning(storageEntityTypeCode), entityId, filters);
         }
 
         switch (scene) {
@@ -377,10 +380,12 @@ public class EntitySceneQueryServiceImpl implements EntitySceneQueryService {
                 if (linked == null) {
                     throw new ServiceException(404, ENTITY_NOT_EXISTS);
                 }
+                dataScopeQueryService.assertVisible(scopeRegistryCode, linked.getId());
                 return respondOne(shape, linked, detail);
             }
 
             case ENTITIES_DETAIL: {
+                dataScopeQueryService.assertVisible(scopeRegistryCode, entityId);
                 EntityRespVO detailVo = entityService.get(entityId, storageEntityTypeCode, true, null);
                 if (detailVo == null) {
                     throw new ServiceException(404, ENTITY_NOT_EXISTS);
@@ -1829,20 +1834,10 @@ public class EntitySceneQueryServiceImpl implements EntitySceneQueryService {
      */
     @Override
     public List<EntityRespVO> getEntityTreeByModelId(String entityTypeCode, Long modelId) {
-        return buildEntityTreeByModelId(entityTypeCode, modelId, null, false);
+        return buildEntityTreeByModelId(entityTypeCode, modelId);
     }
 
-    /**
-     * 上级树入口（hierarchy-tree）：站场级必须带所属场站。
-     * 两参快捷路径不走强制所属场站，避免 query-by-scene 无筛时的树捷径被误拦。
-     */
-    @Override
-    public List<EntityRespVO> getEntityTreeByModelId(String entityTypeCode, Long modelId, Long facilityId) {
-        return buildEntityTreeByModelId(entityTypeCode, modelId, facilityId, true);
-    }
-
-    private List<EntityRespVO> buildEntityTreeByModelId(
-            String entityTypeCode, Long modelId, Long facilityId, boolean requireOwningFacility) {
+    private List<EntityRespVO> buildEntityTreeByModelId(String entityTypeCode, Long modelId) {
         List<EntityDO> entities = entityCoreService.listTreeEntities(entityTypeCode, modelId);
         List<Long> orderedIds = entities == null ? List.of() : entities.stream()
                 .map(EntityDO::getId)
@@ -1851,55 +1846,7 @@ public class EntitySceneQueryServiceImpl implements EntitySceneQueryService {
         List<EntityDO> loaded = entityCoreService.listByIdsWithDedicatedBaseFields(orderedIds, entityTypeCode);
         List<EntityRespVO> respVOList = EntityDoVoHelper.toRespVOList(
                 loaded, customFieldValidationService, entityDedicatedColumnService);
-        if (requireOwningFacility) {
-            respVOList = retainHierarchyTreeByOwningFacility(entityTypeCode, respVOList, facilityId);
-        }
         return EntityTreeBuilder.buildTree(respVOList, EntityTreeBuilder.SortMode.LOCAL_SIBLING_SORT);
-    }
-
-    /**
-     * hierarchy-tree 传入的所属场站：站场级必须有、并按 facility_id 留下本站节点。
-     * 全网类型忽略 facilityId。未传 facilityId 且是站场级 → 报错，禁止全租户树。
-     */
-    private List<EntityRespVO> retainHierarchyTreeByOwningFacility(
-            String entityTypeCode, List<EntityRespVO> rows, Long facilityId) {
-        if (!requiresFacilityOwning(entityTypeCode)) {
-            return rows;
-        }
-        if (facilityId == null || facilityId <= 0) {
-            throw new ServiceException(400, "站场级列表须指定所属场站");
-        }
-        if (rows == null || rows.isEmpty()) {
-            return rows == null ? List.of() : rows;
-        }
-        List<EntityRespVO> kept = new ArrayList<>(rows.size());
-        for (EntityRespVO row : rows) {
-            Map<String, Object> base = row.getBaseFields();
-            Long rowFacility = FacilityOwningFieldCodes.extractId(
-                    base == null ? null : base.get(FacilityOwningFieldCodes.FIELD_CODE));
-            if (facilityId.equals(rowFacility)) {
-                kept.add(row);
-            }
-        }
-        return kept;
-    }
-
-    private boolean requiresFacilityOwning(String entityTypeCode) {
-        if (!StringUtils.hasText(entityTypeCode)) {
-            return false;
-        }
-        EntityTypeDO type = entityTypeMapper.selectByCode(entityTypeCode.trim());
-        if (type == null) {
-            return false;
-        }
-        if (FacilityOwningFieldCodes.TARGET_ENTITY_TYPE.equalsIgnoreCase(type.getCode())) {
-            return false;
-        }
-        String scope = type.getWorkScope();
-        if (!StringUtils.hasText(scope)) {
-            scope = EntityTypeDO.WORK_SCOPE_FACILITY;
-        }
-        return EntityTypeDO.WORK_SCOPE_FACILITY.equalsIgnoreCase(scope.trim());
     }
 
     // ==================== 场景响应形状输出（PAGE/TREE/LIST） ====================

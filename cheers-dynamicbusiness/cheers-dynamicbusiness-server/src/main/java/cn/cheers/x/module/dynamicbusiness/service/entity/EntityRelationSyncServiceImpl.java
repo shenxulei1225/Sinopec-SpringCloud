@@ -16,11 +16,11 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelRelationMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.relation.RelationFieldLibraryMapper;
 import cn.cheers.x.framework.common.exception.ServiceException;
+import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityTableNameHandler;
 import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
-import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
+import cn.cheers.x.module.dynamicbusiness.service.entity.refroute.EntityRefColumnRouteQueryService;
 import cn.cheers.x.module.dynamicbusiness.service.capability.form.ModelCrudFormFieldAssembler;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
-import cn.cheers.x.module.dynamicbusiness.service.relation.BidirectionalRelationService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +38,8 @@ import java.util.*;
  *
  * <p>在 Entity 创建/更新/删除时,自动同步 ENTITY_REF 和 ENTITY_REF_MULTI 字段的关联关系到 EntityRelationDO 表。</p>
  * <p>权威：型号上已分配的引用字段声明了指向哪类业务。禁止再查旧的业务类型关联许可表。</p>
- * <p>所属场站不写入关系表。列表已经按请求里的场站编号过滤行上的所属场站列。</p>
+ * <p>单值引用落在专用列上的字段（如所属场站、所属管线段）不写入关系表：值只在专用列上，
+ * 反查、分类筛选查列（见 {@link EntityRefColumnRouteQueryService}）。多选引用、扩展字段引用照常写。</p>
  */
 @Service
 @Slf4j
@@ -52,12 +53,11 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
     private final ModelRelationMapper modelRelationMapper;
     private final RelationFieldLibraryMapper relationFieldLibraryMapper;
     private final EntityTypeBaseFieldMapper entityTypeBaseFieldMapper;
+    private final EntityRefColumnRouteQueryService entityRefColumnRouteQueryService;
+    private final EntityTableNameHandler entityTableNameHandler;
 
     @Lazy
     private final EntityCoreService entityCoreService;
-
-    @Lazy // 避免循环依赖
-    private final BidirectionalRelationService bidirectionalRelationService;
 
     private final ObjectProvider<EntityRelationSyncServiceImpl> selfProvider;
 
@@ -112,7 +112,6 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
         List<EntityRefValue> validRefs = validateTargetEntitiesExist(refs, fieldInfo);
         validRefs.forEach(ref -> {
             createRelation(entity, model, fieldInfo, ref, fieldInfo.isMultiRef());
-            clearStatisticsCacheForTarget(ref.getId());
         });
     }
 
@@ -156,21 +155,15 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
         Long oldTargetId = oldRef == null ? null : oldRef.getId();
 
         if (Objects.equals(newTargetId, oldTargetId)) {
-            // 目标未变时仍补齐缺失的关联行（例如历史只写了固定列）
-            if (newRef != null && validateTargetEntityExists(newRef, fieldInfo)) {
-                createRelation(entity, model, fieldInfo, newRef, false);
-            }
             return;
         }
 
         if (oldTargetId != null) {
-            deleteRelationByTarget(entity.getId(), fieldInfo.getFieldCode(), oldTargetId);
-            clearStatisticsCacheForTarget(oldTargetId);
+            deleteRelationByTarget(entity, fieldInfo.getFieldCode(), oldTargetId);
         }
 
         if (newRef != null && validateTargetEntityExists(newRef, fieldInfo)) {
             createRelation(entity, model, fieldInfo, newRef, false);
-            clearStatisticsCacheForTarget(newRef.getId());
         }
     }
 
@@ -205,8 +198,7 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
         toAdd.removeAll(oldIdSet);
 
         toDelete.forEach(targetId -> {
-            deleteRelationByTarget(entity.getId(), fieldInfo.getFieldCode(), targetId);
-            clearStatisticsCacheForTarget(targetId);
+            deleteRelationByTarget(entity, fieldInfo.getFieldCode(), targetId);
         });
 
         toAdd.stream()
@@ -215,18 +207,25 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
                 .filter(ref -> validateTargetEntityExists(ref, fieldInfo))
                 .forEach(ref -> {
                     createRelation(entity, model, fieldInfo, ref, true);
-                    clearStatisticsCacheForTarget(ref.getId());
                 });
     }
 
     /**
-     * 场景：实体删除时清理其作为 source 的全部关系。
+     * 场景：实体删除时清理这条记录发出的全部关系。
+     * 只删来源目录和这条记录同一张表的行；不知道是哪本目录时报错，不按编号全删。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void syncRelationsOnDelete(Long entityId, String entityTypeCode) {
         if (entityId == null) return;
-        entityRelationMapper.deleteBySourceEntityId(entityId);
+        entityRelationMapper.deleteBySourceEntity(entityId, requireTypeCodes(entityTypeCode));
+    }
+
+    private List<String> requireTypeCodes(String entityTypeCode) {
+        if (!StringUtils.hasText(entityTypeCode)) {
+            throw new ServiceException(400, "清理关联时缺少数据目录编码");
+        }
+        return entityTableNameHandler.listCodesSharingPhysicalTable(entityTypeCode);
     }
 
     @Override
@@ -236,7 +235,7 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
                                             boolean clearExisting) {
         if (entity == null || model == null) return;
         if (clearExisting) {
-            entityRelationMapper.deleteBySourceEntityId(entity.getId());
+            entityRelationMapper.deleteBySourceEntity(entity.getId(), requireTypeCodes(entity.getEntityTypeCode()));
         }
         if (!CollectionUtils.isEmpty(customFields)) {
             EntityRelationSyncServiceImpl self = selfProvider.getIfAvailable();
@@ -264,6 +263,11 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
                 ? model.getEntityTypeCode().trim()
                 : null;
         Map<String, EntityTypeBaseFieldDO> baseFieldByCode = loadBaseFieldsByCode(entityTypeCode);
+        Set<String> columnStoredFields = new HashSet<>();
+        if (entityTypeCode != null) {
+            entityRefColumnRouteQueryService.listRoutes(entityTypeCode)
+                    .forEach(route -> columnStoredFields.add(route.fieldCode()));
+        }
 
         List<Long> fieldIds = assignments.stream()
                 .map(ModelFieldAssignmentDO::getFieldId)
@@ -283,8 +287,8 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
                 continue;
             }
             EntityTypeBaseFieldDO baseField = baseFieldByCode.get(field.getCode().trim());
-            // 所属场站是查询条件，不因为字段类型是引用就再抄一条关系。
-            if (!copiesRefIntoRelationTable(field.getCode())) {
+            // 值落在专用列上的单值引用只存列，不再抄一条关系
+            if (columnStoredFields.contains(field.getCode().trim())) {
                 continue;
             }
             // 字段库或固定列配成引用，均纳入同步
@@ -302,17 +306,6 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
             result.add(info);
         }
         return result;
-    }
-
-    /**
-     * 所属场站不进关系表。其它引用字段仍同步。
-     * 空编码不同步。
-     */
-    static boolean copiesRefIntoRelationTable(String fieldCode) {
-        if (!StringUtils.hasText(fieldCode)) {
-            return false;
-        }
-        return !FacilityOwningFieldCodes.FIELD_CODE.equals(fieldCode.trim());
     }
 
     private Map<String, EntityTypeBaseFieldDO> loadBaseFieldsByCode(String entityTypeCode) {
@@ -450,9 +443,9 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
         entityRelationMapper.insert(relation);
     }
 
-    private void deleteRelationByTarget(Long sourceEntityId, String fieldCode, Long targetEntityId) {
-        entityRelationMapper.deleteBySourceEntityIdAndFieldCodeAndTargetEntityId(
-                sourceEntityId, fieldCode, targetEntityId);
+    private void deleteRelationByTarget(EntityDO entity, String fieldCode, Long targetEntityId) {
+        entityRelationMapper.deleteBySourceEntityFieldTarget(entity.getId(),
+                requireTypeCodes(entity.getEntityTypeCode()), fieldCode, targetEntityId);
     }
 
     private EntityRefValue parseEntityRef(Object value) {
@@ -502,15 +495,6 @@ public class EntityRelationSyncServiceImpl implements EntityRelationSyncService 
             try { return Long.parseLong(s); } catch (NumberFormatException ignored) {}
         }
         return null;
-    }
-
-    private void clearStatisticsCacheForTarget(Long targetEntityId) {
-        if (targetEntityId == null || bidirectionalRelationService == null) return;
-        try {
-            bidirectionalRelationService.clearStatisticsCache(targetEntityId);
-        } catch (Exception e) {
-            log.warn("[clearStatisticsCacheForTarget] 清除缓存失败,targetEntityId={}", targetEntityId, e);
-        }
     }
 
     @lombok.Data

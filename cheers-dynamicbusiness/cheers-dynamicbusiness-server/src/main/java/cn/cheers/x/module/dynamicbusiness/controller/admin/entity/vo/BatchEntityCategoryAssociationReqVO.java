@@ -18,6 +18,9 @@ import java.util.List;
 @Data
 public class BatchEntityCategoryAssociationReqVO {
 
+    @Schema(description = "这次打开的数据目录注册编码。缺省时接口不放行。")
+    private String registryCode;
+
     @Schema(description = "实体ID列表", requiredMode = Schema.RequiredMode.REQUIRED, example = "[1001, 1002, 1003]")
     @NotEmpty(message = "实体ID列表不能为空")
     private List<Long> entityIds;

@@ -17,6 +17,9 @@ import lombok.ToString;
 @ToString(callSuper = true)
 public class ModelPageReqVO extends PageParam {
 
+    @Schema(description = "这次打开的数据目录注册编码。缺省时接口不放行。")
+    private String registryCode;
+
     @Schema(description = "业务类型编码", example = "equipment")
     private String entityTypeCode;
 

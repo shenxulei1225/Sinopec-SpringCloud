@@ -128,6 +128,18 @@ class PointDataProcessorTest {
     }
 
     @Test
+    void failedClearLeavesTheSameReadingAbleToRetry() {
+        rules.rows.add(named(9L, "F-temp", PointProcessingRule.THRESHOLD, "GT", 1000d,
+                3L, "WARNING", null, 1000d, 9L));
+        alarms.failEliminate = true;
+        processor.accept(List.of(sample("F-temp", 800)));
+        assertEquals(1, alarms.cleared);
+        alarms.failEliminate = false;
+        processor.accept(List.of(sample("F-temp", 800)));
+        assertEquals(2, alarms.cleared);
+    }
+
+    @Test
     void thresholdClearsOnlyAfterRecovery() {
         rules.rows.add(named(9L, "F-temp", PointProcessingRule.THRESHOLD, "GT", 40d,
                 3L, "WARNING", null, 38d, 9L));
@@ -135,9 +147,9 @@ class PointDataProcessorTest {
         processor.accept(List.of(sample("F-temp", 41)));
         processor.accept(List.of(sample("F-temp", 39)));
         assertEquals(1, alarms.raised);
-        assertEquals(0, alarms.cleared);
-        processor.accept(List.of(sample("F-temp", 37)));
         assertEquals(1, alarms.cleared);
+        processor.accept(List.of(sample("F-temp", 37)));
+        assertEquals(2, alarms.cleared);
     }
 
     @Test
@@ -397,6 +409,7 @@ class PointDataProcessorTest {
         private int raised;
         private int cleared;
         private int abnormal;
+        private boolean failEliminate;
         private String lastName;
         private String lastContent;
         private final Set<Long> open = new java.util.HashSet<>();
@@ -414,6 +427,9 @@ class PointDataProcessorTest {
         @Override
         public void eliminate(long tenantId, long deviceId, long ruleId) {
             cleared++;
+            if (failEliminate) {
+                throw new RuntimeException("以下必填字段未填写：所属场站");
+            }
             open.remove(ruleId);
         }
 

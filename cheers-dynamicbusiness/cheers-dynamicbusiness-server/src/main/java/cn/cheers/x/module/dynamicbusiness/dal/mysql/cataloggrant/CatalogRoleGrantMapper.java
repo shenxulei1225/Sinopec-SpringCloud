@@ -25,6 +25,11 @@ public interface CatalogRoleGrantMapper extends BaseMapperX<CatalogRoleGrantDO> 
                 .eq(CatalogRoleGrantDO::getRoleId, roleId));
     }
 
+    default void deleteByRegistryCode(String registryCode) {
+        delete(new LambdaQueryWrapperX<CatalogRoleGrantDO>()
+                .eq(CatalogRoleGrantDO::getRegistryCode, registryCode));
+    }
+
     /**
      * 当前用户任一角色是否拥有该目录、该对象上的这一项操作。
      * 角色编号为空时不放行。对象必须一并传入，避免分类勾选放行实体。

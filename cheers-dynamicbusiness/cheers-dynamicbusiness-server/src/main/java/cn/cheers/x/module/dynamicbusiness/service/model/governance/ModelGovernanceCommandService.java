@@ -17,8 +17,9 @@ public interface ModelGovernanceCommandService {
      * 在型号首次写入前定稿治理身份。
      *
      * @param model 待创建型号；本方法只写治理字段，不落库
-     * @param requestedGovernanceStatus 客户端期望身份；无公司规格能力时强制按本地型号创建
-     * @param effectiveFacilityId 当前有效站场；创建本地型号时必填
+     * @param requestedGovernanceStatus 客户端期望身份，可不传。身份由登录人定：能建公司规格的人建公司规格，
+     *                                  其余的人建本地型号。不能建公司规格的人请求公司规格时拒绝
+     * @param effectiveFacilityId 右上角选中的站；建本地型号时必填
      * @param currentUserId 当前登录用户；创建时必填
      */
     void prepareForCreate(ModelDO model, String requestedGovernanceStatus,

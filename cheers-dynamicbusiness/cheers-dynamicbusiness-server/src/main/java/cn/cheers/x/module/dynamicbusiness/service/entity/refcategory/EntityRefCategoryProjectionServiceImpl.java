@@ -19,6 +19,8 @@ import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityBaseFieldColumn
 import cn.cheers.x.module.dynamicbusiness.service.capability.form.ModelCrudFormFieldAssembler;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryEntityLinkService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategoryRelationService;
+import cn.cheers.x.module.dynamicbusiness.service.entity.refroute.CategoryMembershipQueryService;
+import cn.cheers.x.module.dynamicbusiness.service.entity.refroute.EntityRefColumnRouteQueryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -39,6 +41,9 @@ import java.util.Set;
 /**
  * 通用 REF → 分类即实体投影：扫描主体上全部 REF 字段，目标有 link 则写分类–实体；
  * 组合 3 时再委托 {@link EntityRefCategoryCategoryProjectionService} 写分类–分类。
+ *
+ * <p>单值引用落在专用列上的字段（如所属场站）不写分类–实体：按分类筛选时直接查列
+ * （见 {@link CategoryMembershipQueryService}）。多选引用、扩展字段引用照常写。</p>
  */
 @Service
 @Slf4j
@@ -57,6 +62,7 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
     private final EntityTypeBaseFieldMapper entityTypeBaseFieldMapper;
     private final RelationFieldLibraryMapper relationFieldLibraryMapper;
     private final ModelRelationMapper modelRelationMapper;
+    private final EntityRefColumnRouteQueryService entityRefColumnRouteQueryService;
 
     public EntityRefCategoryProjectionServiceImpl(
             CategoryEntityLinkService categoryEntityLinkService,
@@ -68,7 +74,8 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
             FieldMapper fieldMapper,
             EntityTypeBaseFieldMapper entityTypeBaseFieldMapper,
             RelationFieldLibraryMapper relationFieldLibraryMapper,
-            ModelRelationMapper modelRelationMapper) {
+            ModelRelationMapper modelRelationMapper,
+            EntityRefColumnRouteQueryService entityRefColumnRouteQueryService) {
         this.categoryEntityLinkService = categoryEntityLinkService;
         this.entityCategoryRelationService = entityCategoryRelationService;
         this.refCategoryCategoryProjectionService = refCategoryCategoryProjectionService;
@@ -79,6 +86,7 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
         this.entityTypeBaseFieldMapper = entityTypeBaseFieldMapper;
         this.relationFieldLibraryMapper = relationFieldLibraryMapper;
         this.modelRelationMapper = modelRelationMapper;
+        this.entityRefColumnRouteQueryService = entityRefColumnRouteQueryService;
     }
 
     @Override
@@ -88,13 +96,15 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
             return;
         }
         String subjectType = entity.getEntityTypeCode().trim();
+        Set<String> columnStored = columnStoredFieldCodes(subjectType);
         for (RefFieldSpec field : listRefFields(entity.getModelId(), subjectType)) {
             if (!fieldValues.containsKey(field.fieldCode())) {
                 continue;
             }
+            boolean writeMembership = !columnStored.contains(field.fieldCode());
             Set<TargetRef> targets = extractTargets(fieldValues.get(field.fieldCode()), field.defaultTargetType());
             for (TargetRef target : targets) {
-                associateIfLinked(entity, subjectType, target);
+                associateIfLinked(entity, subjectType, target, writeMembership);
             }
         }
     }
@@ -107,10 +117,12 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
         }
         String subjectType = entity.getEntityTypeCode().trim();
         Map<String, Object> oldBag = oldFieldValues != null ? oldFieldValues : Map.of();
+        Set<String> columnStored = columnStoredFieldCodes(subjectType);
         for (RefFieldSpec field : listRefFields(entity.getModelId(), subjectType)) {
             if (!newFieldValues.containsKey(field.fieldCode())) {
                 continue;
             }
+            boolean writeMembership = !columnStored.contains(field.fieldCode());
             Set<TargetRef> newTargets = extractTargets(newFieldValues.get(field.fieldCode()), field.defaultTargetType());
             Set<TargetRef> oldTargets = extractTargets(oldBag.get(field.fieldCode()), field.defaultTargetType());
             if (field.multiRef()) {
@@ -118,7 +130,7 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
                     disassociateIfLinked(entity.getId(), subjectType, removed);
                 }
                 for (TargetRef added : difference(newTargets, oldTargets)) {
-                    associateIfLinked(entity, subjectType, added);
+                    associateIfLinked(entity, subjectType, added, true);
                 }
             } else {
                 TargetRef oldOne = oldTargets.isEmpty() ? null : oldTargets.iterator().next();
@@ -126,11 +138,11 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
                 if (sameTarget(oldOne, newOne)) {
                     continue;
                 }
-                if (oldOne != null) {
+                if (oldOne != null && writeMembership) {
                     disassociateIfLinked(entity.getId(), subjectType, oldOne);
                 }
                 if (newOne != null) {
-                    associateIfLinked(entity, subjectType, newOne);
+                    associateIfLinked(entity, subjectType, newOne, writeMembership);
                 }
             }
         }
@@ -171,12 +183,17 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
         return ok;
     }
 
-    private void associateIfLinked(EntityDO entity, String subjectType, TargetRef target) {
+    /**
+     * @param writeMembership false：值在专用列上，不写分类–实体关联行（分类筛选查列）；分类–分类仍同步
+     */
+    private void associateIfLinked(EntityDO entity, String subjectType, TargetRef target, boolean writeMembership) {
         Long categoryId = resolveCategoryId(target);
         if (categoryId == null) {
             return;
         }
-        entityCategoryRelationService.associate(entity.getId(), categoryId, subjectType);
+        if (writeMembership) {
+            entityCategoryRelationService.associate(entity.getId(), categoryId, subjectType);
+        }
         log.info("[ref→category] 关联: subjectId={}, subjectType={}, categoryId={}, targetType={}, targetId={}",
                 entity.getId(), subjectType, categoryId, target.entityTypeCode(), target.id());
 
@@ -185,6 +202,12 @@ public class EntityRefCategoryProjectionServiceImpl implements EntityRefCategory
                 : null;
         refCategoryCategoryProjectionService.syncCategoryCategoryOnRefAssociate(
                 entity.getModelId(), subjectType, categoryId, hostCategoryTypeCode);
+    }
+
+    private Set<String> columnStoredFieldCodes(String subjectType) {
+        Set<String> codes = new LinkedHashSet<>();
+        entityRefColumnRouteQueryService.listRoutes(subjectType).forEach(route -> codes.add(route.fieldCode()));
+        return codes;
     }
 
     private void disassociateIfLinked(Long subjectId, String subjectType, TargetRef target) {

@@ -13,16 +13,15 @@ DECLARE
   v_entity_props_id bigint;
   v_ds jsonb;
 BEGIN
-  -- 1) 标准库：全网
+  -- 1) 标准库：单型号工作台
   UPDATE dynamic_entity_type
-  SET work_scope = 'NETWORK',
-      model_workbench_mode = 'SINGLE',
+  SET model_workbench_mode = 'SINGLE',
       updater = 'seed-14',
       update_time = CURRENT_TIMESTAMP
   WHERE code = 'sop'
     AND tenant_id = v_tenant
     AND deleted = false
-    AND (work_scope IS DISTINCT FROM 'NETWORK' OR model_workbench_mode IS DISTINCT FROM 'SINGLE');
+    AND model_workbench_mode IS DISTINCT FROM 'SINGLE';
 
   SELECT data_layout_id INTO v_layout_id
   FROM dynamic_entity_type

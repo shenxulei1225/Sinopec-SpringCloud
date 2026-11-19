@@ -390,6 +390,68 @@ public final class EmergencyCommandSteps {
         return levels;
     }
 
+    /**
+     * 这一档是整份响应步骤，不是响应等级。
+     * 只认键为 response、名称是「应急响应」或没写名称。I级、II级不算这一档。
+     */
+    public static boolean isUngradedResponseBucket(String methodKey, String label) {
+        if (!EmergencyCommandFields.UNGRADED_RESPONSE.equals(methodKey)) {
+            return false;
+        }
+        String name = label == null ? "" : label.trim();
+        return name.isEmpty() || EmergencyCommandFields.UNGRADED_RESPONSE_LABEL.equals(name);
+    }
+
+    /**
+     * 这份预案的响应步骤是否按等级分成了几档。
+     * 写成 I级、II级这种才算分了等级，指挥必须单独选一档。
+     * 只有「应急响应」这一档时不分等级，不要求选等级。
+     * 不按预案名称猜测。
+     */
+    public static boolean hasResponseLevels(Object planRaw) {
+        JSONObject plan = asObject(planRaw);
+        JSONArray methods = plan == null ? null : plan.getJSONArray("methods");
+        if (methods == null) {
+            return false;
+        }
+        for (int i = 0; i < methods.size(); i++) {
+            JSONObject method = methods.getJSONObject(i);
+            if (method == null) {
+                continue;
+            }
+            String key = text(method.get("methodKey"));
+            if (key.isEmpty() || isUngradedResponseBucket(key, text(method.get("label")))) {
+                continue;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 不分等级时，步骤所在的那一档。
+     * 已经分成等级时返回空，不能用这一档代替用户要选的等级。
+     */
+    public static String ungradedResponseKey(Object planRaw) {
+        if (hasResponseLevels(planRaw)) {
+            return "";
+        }
+        JSONObject plan = asObject(planRaw);
+        JSONArray methods = plan == null ? null : plan.getJSONArray("methods");
+        if (methods == null || methods.size() != 1) {
+            return "";
+        }
+        JSONObject method = methods.getJSONObject(0);
+        if (method == null) {
+            return "";
+        }
+        String key = text(method.get("methodKey"));
+        if (!isUngradedResponseBucket(key, text(method.get("label")))) {
+            return "";
+        }
+        return key;
+    }
+
     /** 这一级在预案上有步骤。预警阶段用 warning。 */
     public static boolean levelHasSteps(Object planRaw, Object warningRaw, String level) {
         return !nodesOf(planRaw, warningRaw, level).isEmpty();

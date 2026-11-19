@@ -11,11 +11,16 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.E
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandFromAlertReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandIntakeReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandJudgementReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandLocateReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyNearbyResourceRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandPlanRespVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandRenameReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyOwnershipFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandStartReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandSubmitReportReqVO;
 import cn.cheers.x.module.dynamicbusiness.service.emergencycommand.EmergencyCommandFields;
 import cn.cheers.x.module.dynamicbusiness.service.emergencycommand.EmergencyCommandService;
+import cn.cheers.x.module.dynamicbusiness.service.emergencycommand.EmergencyNearbyResourceQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -36,7 +41,7 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 /**
  * 应急指挥入口。
  *
- * 管什么：研判选定预案、按事件上的预案启动、完成步骤、上报、改变级别、结案。
+ * 管什么：研判选定预案、按事件上的预案启动、完成步骤、上报、改变级别、改事件名称、结案。
  * 不管什么：预案怎么编写。预案在应急预案目录里维护。
  * 禁止：启动时复制步骤，或按事件分类另找一份预案。
  */
@@ -48,6 +53,8 @@ public class EmergencyCommandController {
 
     @Resource
     private EmergencyCommandService emergencyCommandService;
+    @Resource
+    private EmergencyNearbyResourceQueryService emergencyNearbyResourceQueryService;
 
     @GetMapping("/events")
     @Operation(summary = "应急事件列表")
@@ -67,6 +74,13 @@ public class EmergencyCommandController {
         return success(emergencyCommandService.getEvent(eventId));
     }
 
+    @GetMapping("/ownership-fields")
+    @Operation(summary = "接报要填的归属", description = "按当前租户对应急事件目录的归属声明返回。没有声明时为空，页面不出现场站或管线")
+    @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.EVENT_CATALOG + "', 'query')")
+    public CommonResult<List<EmergencyOwnershipFieldRespVO>> ownershipFields() {
+        return success(emergencyCommandService.listOwnershipFields());
+    }
+
     @PostMapping("/intake")
     @Operation(summary = "人工接报，新建待研判事件")
     @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.EVENT_CATALOG + "', 'create')")
@@ -79,6 +93,35 @@ public class EmergencyCommandController {
     @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.EVENT_CATALOG + "', 'create')")
     public CommonResult<String> openFromAlert(@Valid @RequestBody EmergencyCommandFromAlertReqVO reqVO) {
         return success(emergencyCommandService.openFromAlert(reqVO));
+    }
+
+    @PostMapping("/rename")
+    @Operation(summary = "改事件名称", description = "只改这一条事件的名称。已结案拒绝。不改预案，不改脉络")
+    @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.EVENT_CATALOG + "', 'update')")
+    public CommonResult<Boolean> rename(@Valid @RequestBody EmergencyCommandRenameReqVO reqVO) {
+        emergencyCommandService.rename(reqVO);
+        return success(true);
+    }
+
+    @PostMapping("/locate")
+    @Operation(summary = "补上或改正事件中心点", description = "告警转入的事件没有位置，补上后才能看周边资源")
+    @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.EVENT_CATALOG + "', 'update')")
+    public CommonResult<Boolean> locate(@Valid @RequestBody EmergencyCommandLocateReqVO reqVO) {
+        emergencyCommandService.locate(reqVO);
+        return success(true);
+    }
+
+    @GetMapping("/nearby-resources")
+    @Operation(summary = "事件周边的资源名单",
+            description = "以事件中心为圆心按直线距离从近到远列出一本目录。"
+                    + "catalog 取应急资源、外部救援资源或应急队伍，不传则打开应急资源。"
+                    + "能看到这起事件的人就能看到全部记录，不按所属场站或登录人的数据范围收窄。半径不传表示不限")
+    @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.EVENT_CATALOG + "', 'query')")
+    public CommonResult<List<EmergencyNearbyResourceRespVO>> nearbyResources(
+            @RequestParam("eventId") String eventId,
+            @RequestParam(value = "radiusKm", required = false) Double radiusKm,
+            @RequestParam(value = "catalog", required = false) String catalog) {
+        return success(emergencyNearbyResourceQueryService.listNearby(eventId, radiusKm, catalog));
     }
 
     @PostMapping("/confirm-judgement")
@@ -106,14 +149,14 @@ public class EmergencyCommandController {
 
     @PostMapping("/start")
     @Operation(summary = "按事件上已选定的预案启动响应")
-    @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.RESPONSE_CATALOG + "', 'create')")
+    @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.EVENT_CATALOG + "', 'update')")
     public CommonResult<String> start(@Valid @RequestBody EmergencyCommandStartReqVO reqVO) {
         return success(emergencyCommandService.start(reqVO));
     }
 
     @PostMapping("/change-level")
     @Operation(summary = "改变当前响应级别，原级别的完成和上报仍保留")
-    @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.RESPONSE_CATALOG + "', 'update')")
+    @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.EVENT_CATALOG + "', 'update')")
     public CommonResult<Boolean> changeLevel(@Valid @RequestBody EmergencyCommandChangeLevelReqVO reqVO) {
         emergencyCommandService.changeLevel(reqVO);
         return success(true);
@@ -121,7 +164,7 @@ public class EmergencyCommandController {
 
     @PostMapping("/submit-report")
     @Operation(summary = "记下某一步的信息上报，级别可以是已经离开的级别")
-    @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.RESPONSE_CATALOG + "', 'update')")
+    @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.EVENT_CATALOG + "', 'update')")
     public CommonResult<Boolean> submitReport(@Valid @RequestBody EmergencyCommandSubmitReportReqVO reqVO) {
         emergencyCommandService.submitReport(reqVO);
         return success(true);
@@ -129,16 +172,14 @@ public class EmergencyCommandController {
 
     @GetMapping("/detail")
     @Operation(summary = "指挥页：事件和已启动的响应步骤")
-    @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.RESPONSE_CATALOG + "', 'query')")
-    public CommonResult<EmergencyCommandDetailRespVO> detail(
-            @RequestParam("eventId") String eventId,
-            @RequestParam("facilityId") String facilityId) {
-        return success(emergencyCommandService.detail(eventId, facilityId));
+    @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.EVENT_CATALOG + "', 'query')")
+    public CommonResult<EmergencyCommandDetailRespVO> detail(@RequestParam("eventId") String eventId) {
+        return success(emergencyCommandService.detail(eventId));
     }
 
     @PostMapping("/start-step")
     @Operation(summary = "开始执行响应上的一步")
-    @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.RESPONSE_CATALOG + "', 'update')")
+    @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.EVENT_CATALOG + "', 'update')")
     public CommonResult<Boolean> startStep(@Valid @RequestBody EmergencyCommandCompleteStepReqVO reqVO) {
         emergencyCommandService.startStep(reqVO);
         return success(true);
@@ -146,7 +187,7 @@ public class EmergencyCommandController {
 
     @PostMapping("/complete-step")
     @Operation(summary = "完成响应上的一步")
-    @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.RESPONSE_CATALOG + "', 'update')")
+    @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.EVENT_CATALOG + "', 'update')")
     public CommonResult<Boolean> completeStep(@Valid @RequestBody EmergencyCommandCompleteStepReqVO reqVO) {
         emergencyCommandService.completeStep(reqVO);
         return success(true);

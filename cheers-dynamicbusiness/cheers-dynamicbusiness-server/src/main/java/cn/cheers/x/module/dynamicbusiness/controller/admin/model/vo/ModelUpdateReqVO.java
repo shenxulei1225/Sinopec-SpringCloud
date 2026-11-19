@@ -16,6 +16,9 @@ import java.util.List;
 @Data
 public class ModelUpdateReqVO {
 
+    @Schema(description = "这次打开的数据目录注册编码。缺省时接口不放行。")
+    private String registryCode;
+
     @Schema(description = "模型ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     @NotNull(message = "模型ID不能为空")
     private Long id;

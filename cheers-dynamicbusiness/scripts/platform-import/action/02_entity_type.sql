@@ -8,7 +8,7 @@ SET search_path TO dynamicbusiness;
 INSERT INTO dynamic_entity_type (
   code, name, parent_id, description, icon, alias, sort, status, type_level,
   association_fields, storage_type, dedicated_table_name, enable_rule_engine,
-  physical_column_mapping, model_workbench_mode, group_name, work_scope,
+  physical_column_mapping, model_workbench_mode, group_name,
   tenant_id, creator
 ) VALUES (
   'action', '动作库', NULL,
@@ -21,7 +21,7 @@ INSERT INTO dynamic_entity_type (
     "child_action_ids_json":{"type":"JSONB","column":"child_action_ids_json"},
     "is_composite":{"type":"BOOLEAN","column":"is_composite"}
   }'::jsonb,
-  'SINGLE', '知识库', 'NETWORK', 1, 'seed'
+  'SINGLE', '知识库', 1, 'seed'
 )
 ON CONFLICT (code, tenant_id) WHERE deleted = false
 DO UPDATE SET
@@ -32,7 +32,6 @@ DO UPDATE SET
   physical_column_mapping = EXCLUDED.physical_column_mapping,
   model_workbench_mode = EXCLUDED.model_workbench_mode,
   group_name = EXCLUDED.group_name,
-  work_scope = EXCLUDED.work_scope,
   updater = 'seed',
   update_time = CURRENT_TIMESTAMP;
 

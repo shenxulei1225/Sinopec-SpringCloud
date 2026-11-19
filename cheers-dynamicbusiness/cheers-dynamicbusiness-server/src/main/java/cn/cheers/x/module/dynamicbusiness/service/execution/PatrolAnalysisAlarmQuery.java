@@ -104,7 +104,8 @@ public class PatrolAnalysisAlarmQuery {
                 null,
                 null,
                 null,
-                null);
+                null,
+                PatrolAnalysisAlarmRecorder.ANOMALY_TYPE);
         PageResult<EntityRespVO> page = queried == null ? null : queried.getPage();
         if (page == null || page.getList() == null) {
             return List.of();

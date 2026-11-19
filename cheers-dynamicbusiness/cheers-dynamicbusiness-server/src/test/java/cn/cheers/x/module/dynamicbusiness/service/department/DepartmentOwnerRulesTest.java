@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class DepartmentOwnerRulesTest {
 
     @Test
-    void 只写场站或只写公司可以通过() {
+    void 只写场站或只写组织可以通过() {
         DepartmentOwnerRules.checkExactlyOne(44L, null);
         DepartmentOwnerRules.checkExactlyOne(null, 100012L);
     }

@@ -24,7 +24,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 开通编排：写开通表 → 挂目录 → 新报修、车辆、维抢修目录写上标准字段和型号 → 租户管理员页面查看动作 → 目录资源授权。
+ * 开通编排：写开通表 → 挂目录 → 新报修、车辆、维抢修目录，以及新的用户、部门、职务、组织机构目录，写上标准字段和型号 → 新目录建分类种类和数据页 → 租户管理员页面查看动作 → 目录资源授权。
+ * 组织机构第一次建成分类即实体，数据页只留分类和详情。目录已经在的，不再改种类，也不再改数据页。
  * 模板目录默认从租户 1 复制注册行；目标租户已有同编码目录则跳过，也不再补字段。
  */
 @Service
@@ -52,6 +53,8 @@ public class TenantCapabilityPackServiceImpl implements TenantCapabilityPackServ
     private VehicleCatalogWriter vehicleCatalogWriter;
     @Resource
     private RepairBaseCatalogWriter repairBaseCatalogWriter;
+    @Resource
+    private FoundationCatalogWriter foundationCatalogWriter;
     @Resource
     private EntityTypeCategoryBootstrapService entityTypeCategoryBootstrapService;
 
@@ -280,7 +283,7 @@ public class TenantCapabilityPackServiceImpl implements TenantCapabilityPackServ
     /**
      * 这次开通还没有该目录时，复制模板上的目录注册行。
      * 专用表名写成当前租户自己的表，不沿用模板租户的表名。
-     * 报修、车辆、维抢修目录是这次新插入的，同时写上模板上的标准字段和标准型号。
+     * 报修、车辆、维抢修，以及用户、部门、职务、组织机构，是这次新插入的，同时写上模板上的标准字段和标准型号。
      * 已经有的目录不改。不建安防那组复用目录。
      *
      * @return 这次是否新插入了目录行
@@ -313,15 +316,13 @@ public class TenantCapabilityPackServiceImpl implements TenantCapabilityPackServ
             log.warn("[copyCatalogRowFromTemplate][target={}][code={}] 模板租户没有该目录，跳过", targetTenantId, code);
             return false;
         }
-        // 用户目录是租户级登录身份：开通时强制 NETWORK，不跟模板里被误改成的 FACILITY 走。
-        // 所属场站只属于租户内站场级目录，不进入平台租户管理的登录账号路径。
         int inserted = jdbcTemplate.update(
                 """
                         INSERT INTO dynamicbusiness.dynamic_entity_type (
                             code, name, parent_id, description, icon, alias, sort, status, type_level,
                             association_fields, storage_type, dedicated_table_name, enable_rule_engine,
                             physical_column_mapping, creator, updater, deleted, tenant_id, group_name,
-                            entry_kind, base_entity_type_code, domain, model_workbench_mode, work_scope,
+                            entry_kind, base_entity_type_code, domain, model_workbench_mode,
                             data_layout_id, model_layout_id
                         )
                         SELECT
@@ -333,7 +334,6 @@ public class TenantCapabilityPackServiceImpl implements TenantCapabilityPackServ
                             enable_rule_engine,
                             physical_column_mapping, 'pack-open', 'pack-open', false, ?, group_name,
                             entry_kind, base_entity_type_code, domain, model_workbench_mode,
-                            CASE WHEN code = 'user_account' THEN 'NETWORK' ELSE work_scope END,
                             NULL, NULL
                         FROM dynamicbusiness.dynamic_entity_type
                         WHERE tenant_id = ? AND code = ? AND deleted = false
@@ -353,6 +353,12 @@ public class TenantCapabilityPackServiceImpl implements TenantCapabilityPackServ
         if (inserted > 0 && RepairBaseCatalogWriter.CATALOGS.contains(code)) {
             repairBaseCatalogWriter.writeForNewCatalog(targetTenantId, code);
             // 分类已随目录写入。这里只挂数据页和模型页布局，不补字段。
+            TenantUtils.execute(targetTenantId, () ->
+                    entityTypeCategoryBootstrapService.ensureForEntityTypeCode(code));
+        }
+        if (inserted > 0 && FoundationCatalogWriter.CATALOGS.contains(code)) {
+            foundationCatalogWriter.writeForNewCatalog(targetTenantId, code);
+            // 只在这本目录刚插入之后建分类种类和数据页。组织机构在这里是分类即实体。已有目录不进这个分支。
             TenantUtils.execute(targetTenantId, () ->
                     entityTypeCategoryBootstrapService.ensureForEntityTypeCode(code));
         }

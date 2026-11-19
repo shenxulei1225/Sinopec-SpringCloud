@@ -26,7 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * 当前读数已经越过限值就开告警。不要求先有一条未越过的读数。
  * 告警策略先看系统条件成不成立。选了不执行时，这条不再新开。没有读到条件对应的点时，仍按规则判断。
  * 已经开着的仍可关掉。人搁置未到期的也不新开。
- * 告警位置用这条读数所在的区段。
+ * 告警归属由告警目录的声明从设备上抄。这里不判断设备归在哪。
+ * 开告警或消警没写完时，不把这次读数记成上一次。下一次同样的读数还会再试。
  * 不订阅网关，也不把样本交回条件策略去跑。
  * 异常质量不发给页面，也不参加阈值判断。有位置时记一条告警。没有位置只记日志。
  */
@@ -69,6 +70,7 @@ public class PointDataProcessor implements PointSampleBatchReporter {
             }
             String key = sample.tenantId() + ":" + sample.deviceId() + ":" + sample.pointCode();
             Double previous = lastValue.get(key);
+            boolean unfinished = false;
             for (PointProcessingRule rule : current.byField.getOrDefault(sample.pointCode(), List.of())) {
                 if (PointProcessingRule.THRESHOLD.equals(rule.getSignalKind())
                         || PointProcessingRule.ALARM_FLAG.equals(rule.getSignalKind())) {
@@ -76,9 +78,11 @@ public class PointDataProcessor implements PointSampleBatchReporter {
                         continue;
                     }
                 }
-                apply(current, sample, rule, previous);
+                unfinished |= apply(current, sample, rule, previous);
             }
-            lastValue.put(key, sample.engineeringValue());
+            if (!unfinished) {
+                lastValue.put(key, sample.engineeringValue());
+            }
             tellPage(sample);
         }
     }
@@ -107,15 +111,19 @@ public class PointDataProcessor implements PointSampleBatchReporter {
         return writes;
     }
 
-    private void apply(RuleSnapshot current, ParsedPointSample sample, PointProcessingRule rule, Double previous) {
+    /**
+     * 按这一条规则处理这次读数。
+     * 返回 true：开告警或消警没写完。调用方不把这次读数记成上一次。
+     */
+    private boolean apply(RuleSnapshot current, ParsedPointSample sample, PointProcessingRule rule, Double previous) {
         PointProcessingRule effective = adjusted(current, sample, rule);
         if (effective == null) {
-            return;
+            return false;
         }
         PointSignalDecider.Outcome outcome = PointSignalDecider.decide(effective, previous, sample.engineeringValue());
         if (outcome == PointSignalDecider.Outcome.RAISE
                 && (held(current, sample, effective) || policySkips(current, sample, effective))) {
-            return;
+            return false;
         }
         try {
             switch (outcome) {
@@ -126,8 +134,10 @@ public class PointDataProcessor implements PointSampleBatchReporter {
                 case NONE -> {
                 }
             }
+            return false;
         } catch (RuntimeException ex) {
             log.warn("点位 {} 规则 {} 没有处理完：{}", sample.bindingCode(), rule.getId(), ex.getMessage());
+            return true;
         }
     }
 
@@ -311,9 +321,8 @@ public class PointDataProcessor implements PointSampleBatchReporter {
     }
 
     private void raise(ParsedPointSample sample, PointProcessingRule rule) {
-        Long locationId = sample.zoneId();
-        if (locationId == null || rule.getAlarmTypeId() == null || rule.getAlarmLevel() == null) {
-            log.warn("点位 {} 规则 {} 缺少告警类型、级别或位置，不记告警", sample.bindingCode(), rule.getId());
+        if (sample.deviceId() <= 0 || rule.getAlarmTypeId() == null || rule.getAlarmLevel() == null) {
+            log.warn("点位 {} 规则 {} 缺少告警类型、级别或设备，不记告警", sample.bindingCode(), rule.getId());
             return;
         }
         String alarmName = rule.getName() == null ? "" : rule.getName().trim();
@@ -323,14 +332,15 @@ public class PointDataProcessor implements PointSampleBatchReporter {
         }
         String value = Double.toString(sample.engineeringValue());
         String threshold = rule.getThreshold() == null ? null : Double.toString(rule.getThreshold());
+        long locationId = sample.zoneId() == null ? 0L : sample.zoneId();
         alarms.raise(sample.tenantId(), rule.getAlarmTypeId(), rule.getAlarmLevel(), alarmName, content(sample, rule),
                 sample.deviceId(), locationId, value, threshold, rule.getSignalKey(), sample.pointCode());
     }
 
-    /** 质量不合格单独记账。没有分区时不记，避免造一条没有位置的告警。 */
+    /** 质量不合格单独记账。没有设备时不记。归属由告警写入按声明判断。 */
     private void recordAbnormalQuality(ParsedPointSample sample) {
-        if (sample.zoneId() == null) {
-            log.warn("点位 {} 质量异常但没有位置，不记告警", sample.bindingCode());
+        if (sample.deviceId() <= 0) {
+            log.warn("点位 {} 质量异常但没有设备，不记告警", sample.bindingCode());
             return;
         }
         try {

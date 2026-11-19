@@ -37,7 +37,7 @@ public class PlatformEventOutboxService {
         row.setEventTopicId(event.eventTopicId());
         row.setEventCode(event.eventCode());
         row.setEventKind(eventKind);
-        row.setFacilityId(event.facilityId());
+        row.setFacilityId(event.facilityId() > 0 ? event.facilityId() : null);
         row.setSourceEntityTypeCode(event.sourceEntityTypeCode());
         row.setSourceEntityId(event.sourceEntityId());
         row.setPhase(event.phase());

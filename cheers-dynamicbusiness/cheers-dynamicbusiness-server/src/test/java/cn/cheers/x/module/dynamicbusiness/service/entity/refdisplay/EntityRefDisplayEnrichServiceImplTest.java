@@ -3,6 +3,8 @@ package cn.cheers.x.module.dynamicbusiness.service.entity.refdisplay;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
+import cn.cheers.x.module.dynamicbusiness.service.directory.UserAccountDirectoryQueryService;
+import cn.cheers.x.module.dynamicbusiness.service.organization.OrganizationTreeQueryService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -27,9 +29,16 @@ class EntityRefDisplayEnrichServiceImplTest {
     @Mock
     private EntityCoreService entityCoreService;
 
+    @Mock
+    private UserAccountDirectoryQueryService userAccountDirectoryQueryService;
+
+    @Mock
+    private OrganizationTreeQueryService organizationTreeQueryService;
+
     @Test
     void enrich_keepsParentIdAndAddsName() {
-        EntityRefDisplayEnrichServiceImpl service = new EntityRefDisplayEnrichServiceImpl(entityCoreService);
+        EntityRefDisplayEnrichServiceImpl service = new EntityRefDisplayEnrichServiceImpl(
+                entityCoreService, userAccountDirectoryQueryService, organizationTreeQueryService);
         EntityRespVO row = new EntityRespVO();
         Map<String, Object> base = new LinkedHashMap<>();
         base.put("entityTypeCode", "zone");
@@ -53,7 +62,8 @@ class EntityRefDisplayEnrichServiceImplTest {
 
     @Test
     void enrich_keepsBareParentIdWhenNameMissing() {
-        EntityRefDisplayEnrichServiceImpl service = new EntityRefDisplayEnrichServiceImpl(entityCoreService);
+        EntityRefDisplayEnrichServiceImpl service = new EntityRefDisplayEnrichServiceImpl(
+                entityCoreService, userAccountDirectoryQueryService, organizationTreeQueryService);
         EntityRespVO row = new EntityRespVO();
         Map<String, Object> base = new LinkedHashMap<>();
         base.put("entityTypeCode", "zone");

@@ -5,14 +5,14 @@ SET search_path TO dynamicbusiness;
 INSERT INTO dynamic_entity_type (
   code, name, parent_id, description, icon, alias, sort, status, type_level,
   association_fields, storage_type, dedicated_table_name, enable_rule_engine,
-  physical_column_mapping, model_workbench_mode, entry_kind, group_name, work_scope,
+  physical_column_mapping, model_workbench_mode, entry_kind, group_name,
   tenant_id, creator
 ) VALUES (
   'task_execution_step', '任务执行步骤', NULL,
   '过程明细：执行记录下各步完成情况；开跑批量创建；REF execution_record_id',
   'fa:list-ol', '执行步骤', 41, 'active', 'USER',
   '{}', 'DEDICATED', 'ent_task_execution_step', FALSE,
-  NULL, 'SINGLE', 'NATIVE', '任务管理', 'FACILITY', 1, 'seed'
+  NULL, 'SINGLE', 'NATIVE', '任务管理', 1, 'seed'
 )
 ON CONFLICT (code, tenant_id) WHERE deleted = false DO UPDATE SET
   name = EXCLUDED.name, description = EXCLUDED.description,

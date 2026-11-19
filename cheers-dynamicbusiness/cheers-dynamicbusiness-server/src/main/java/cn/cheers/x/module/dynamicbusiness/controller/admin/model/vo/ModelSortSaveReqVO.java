@@ -13,6 +13,9 @@ import java.util.List;
 @Schema(description = "管理后台 - 更新模型排序（保存顺序）")
 public class ModelSortSaveReqVO {
 
+    @Schema(description = "这次打开的数据目录注册编码。缺省时接口不放行。")
+    private String registryCode;
+
     @Schema(description = "业务类型编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "equipment")
     @NotBlank(message = "业务类型编码不能为空")
     private String entityTypeCode;

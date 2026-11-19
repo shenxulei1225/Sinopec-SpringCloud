@@ -29,7 +29,7 @@
 | `10_domain_equipment_inspection_item.sql` | **已废**：曾建 DOMAIN「设备检查内容」并填 `domain=equipment`（由 12 收口） |
 | `11_flip_inspection_catalog_ia.sql` | **已废**：曾把 NATIVE/DOMAIN 分挂知识库与设备·管线（由 12 收口） |
 | `12_retire_inspection_item_domains.sql` | **定稿**：软删检查内容 DOMAIN 入口；清空检查内容实体 `domain`；保留知识库 NATIVE |
-| `13_fix_inspection_method_catalog.sql` | **定稿**：`inspection_method` 名称「检查方法」、分组「知识库」、`work_scope=NETWORK`（纠正误标「检查内容」/站场管理） |
+| `13_fix_inspection_method_catalog.sql` | **定稿**：`inspection_method` 名称「检查方法」、分组「知识库」（纠正误标「检查内容」/站场管理） |
 | `14_seed_inspection_method_categories.py` | **定稿**：检查方法分类树（手段分组）+ `dynamic_entity_category_relation` 关联模板 |
 | `15_instance_fields.sql` | **Wave 2**：字段库/基础字段/模型字段 `equipment_id`、`inspection_item_id`（前置 Flyway V50） |
 

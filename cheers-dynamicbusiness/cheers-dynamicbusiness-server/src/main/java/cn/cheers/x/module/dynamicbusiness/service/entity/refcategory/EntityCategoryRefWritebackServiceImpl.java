@@ -1,5 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.entity.refcategory;
 
+import cn.cheers.x.module.dynamicbusiness.service.entity.refroute.CategoryMembershipQueryService;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryEntityLinkDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.category.CategoryTypeDO;
@@ -61,6 +62,7 @@ public class EntityCategoryRefWritebackServiceImpl implements EntityCategoryRefW
     private final ModelFieldAssignmentMapper modelFieldAssignmentMapper;
     private final FieldMapper fieldMapper;
     private final EntityTypeBaseFieldMapper entityTypeBaseFieldMapper;
+    private final CategoryMembershipQueryService categoryMembershipQueryService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -151,7 +153,11 @@ public class EntityCategoryRefWritebackServiceImpl implements EntityCategoryRefW
             return null;
         }
         MatchedRefField matched = null;
-        if (StringUtils.hasText(targetType)) {
+        // 挂这个分类就是写某一列单值引用时，回写这一列（与分类挂接只写列、不写关联行同一判定）
+        var columnRoute = categoryMembershipQueryService.columnRouteForCategory(storageType, categoryId);
+        if (columnRoute.isPresent()) {
+            matched = new MatchedRefField(columnRoute.get().fieldCode(), false);
+        } else if (StringUtils.hasText(targetType)) {
             matched = resolveUniqueRefField(storageType, entity.getModelId(), targetType);
         }
         return new WritebackContext(

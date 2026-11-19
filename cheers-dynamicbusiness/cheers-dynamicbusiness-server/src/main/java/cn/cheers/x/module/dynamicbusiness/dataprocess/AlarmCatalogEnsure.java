@@ -1,5 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.dataprocess;
 
+import cn.cheers.x.module.dynamicbusiness.service.facility.StationOwnedCatalogSetup;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
@@ -9,7 +10,6 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmModelTa
 import cn.cheers.x.module.dynamicbusiness.controller.admin.datamgmt.vo.DmModelTabCategorySaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeBaseFieldSaveReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeCreateReqVO;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.field.vo.FieldUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.model.vo.ModelCreateReqVO;
@@ -30,7 +30,6 @@ import cn.cheers.x.module.dynamicbusiness.service.datamgmt.DmModelTabCategorySer
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.BaseFieldLibrarySyncService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeBaseFieldService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
-import cn.cheers.x.module.dynamicbusiness.service.entitytype.FacilityOwningFieldEnsureService;
 import cn.cheers.x.module.dynamicbusiness.service.field.FieldService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelService;
 import cn.cheers.x.module.platformresource.api.component.ComponentPropsApi;
@@ -41,6 +40,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +61,7 @@ public class AlarmCatalogEnsure {
     @Resource
     private EntityTypeService entityTypeService;
     @Resource
-    private FacilityOwningFieldEnsureService facilityOwningFieldEnsureService;
+    private StationOwnedCatalogSetup stationOwnedCatalogSetup;
     @Resource
     private FieldMapper fieldMapper;
     @Resource
@@ -188,21 +188,12 @@ public class AlarmCatalogEnsure {
             request.setStatus("active");
             request.setStorageType("DEDICATED");
             request.setEntryKind("NATIVE");
-            request.setWorkScope(EntityTypeDO.WORK_SCOPE_FACILITY);
             request.setGroupName(AlarmTypeCatalog.GROUP_NAME);
             request.setDescription("告警记录。分类是告警类型。新记录的处理状态是未处理。每一条属于一座站。");
             request.setAssociationFields("{}");
             entityTypeService.create(request);
-        } else if (!EntityTypeDO.WORK_SCOPE_FACILITY.equalsIgnoreCase(
-                existing.getWorkScope() == null ? "" : existing.getWorkScope().trim())) {
-            EntityTypeUpdateReqVO update = new EntityTypeUpdateReqVO();
-            update.setId(existing.getId());
-            update.setWorkScope(EntityTypeDO.WORK_SCOPE_FACILITY);
-            entityTypeService.update(update);
-        } else {
-            facilityOwningFieldEnsureService.ensureForEntityTypeCode(AlarmTypeCatalog.DIRECTORY);
+            stationOwnedCatalogSetup.setUpNewCatalog(AlarmTypeCatalog.DIRECTORY, true);
         }
-        facilityOwningFieldEnsureService.fillBlankOwningStationWhenTenantHasOne(AlarmTypeCatalog.DIRECTORY);
     }
 
     /**
@@ -289,6 +280,11 @@ public class AlarmCatalogEnsure {
         return created.getCode();
     }
 
+    /**
+     * 告警读写认告警目录上已经挂好的那一列。
+     * 字段库里别的目录也可以叫同一个中文名。目录已挂上时，不再按中文名在库里挑。
+     * 目录上还没有这一列时，才按中文名到字段库找（准备目录时用）。库里同名超过一条，仍报错，不挑第一条。
+     */
     private FieldDO findField(String name, String preferredCode) {
         Long tenantId = TenantContextHolder.getRequiredTenantId();
         if (StringUtils.hasText(preferredCode)) {
@@ -299,6 +295,10 @@ public class AlarmCatalogEnsure {
             if (byCode.size() == 1) {
                 return byCode.get(0);
             }
+        }
+        FieldDO bound = fieldBoundOnAlarmCatalog(name, tenantId);
+        if (bound != null) {
+            return bound;
         }
         List<FieldDO> byName = fieldMapper.selectList(new LambdaQueryWrapperX<FieldDO>()
                 .eq(FieldDO::getName, name)
@@ -311,6 +311,40 @@ public class AlarmCatalogEnsure {
             throw new ServiceException(500, "字段「" + name + "」有多条，对不上");
         }
         return byName.get(0);
+    }
+
+    /**
+     * 告警目录这一列的中文名已经对上时，返回字段库里的那一行。
+     * 目录上没有这个名字，返回 null。
+     * 同一名字挂了两列不同编码，报错。不从这两列里挑一条。
+     */
+    private FieldDO fieldBoundOnAlarmCatalog(String name, Long tenantId) {
+        List<EntityTypeBaseFieldDO> rows = baseFieldMapper.selectByEntityTypeCode(AlarmTypeCatalog.DIRECTORY);
+        List<String> codes = new ArrayList<>();
+        if (rows != null) {
+            for (EntityTypeBaseFieldDO row : rows) {
+                if (row == null || !name.equals(row.getFieldName()) || !StringUtils.hasText(row.getFieldCode())) {
+                    continue;
+                }
+                if (!codes.contains(row.getFieldCode())) {
+                    codes.add(row.getFieldCode());
+                }
+            }
+        }
+        if (codes.isEmpty()) {
+            return null;
+        }
+        if (codes.size() > 1) {
+            throw new ServiceException(500, "告警目录上字段「" + name + "」有多条，对不上");
+        }
+        FieldDO field = fieldMapper.selectOne(new LambdaQueryWrapperX<FieldDO>()
+                .eq(FieldDO::getCode, codes.get(0))
+                .eq(FieldDO::getTenantId, tenantId)
+                .eq(FieldDO::getDeleted, false));
+        if (field == null || !StringUtils.hasText(field.getCode())) {
+            throw new ServiceException(500, "告警目录上的字段「" + name + "」在字段库里没有");
+        }
+        return field;
     }
 
     private static String preferredCode(String name) {

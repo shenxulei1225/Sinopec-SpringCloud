@@ -203,9 +203,13 @@ public interface EntityService {
     List<EntityRespVO> getEntityTreeByModelId(String entityTypeCode, Long modelId);
 
     /**
-     * 同类型上级树。站场级必须带所属场站，禁止全租户树。
+     * 数据页「上级」树状选择：同 {@link #getEntityTreeByModelId(String, Long)}，但只留登录人能看的、
+     * 且属于右上角选中那座站的节点。
+     * 去掉的节点下面还有留下的节点时，接到最近一个留下的上级下面，都没有就放在树根。
+     *
+     * @param registryCode 本页数据目录注册编码
      */
-    List<EntityRespVO> getEntityTreeByModelId(String entityTypeCode, Long modelId, Long facilityId);
+    List<EntityRespVO> getVisibleEntityTree(String registryCode, String entityTypeCode, Long modelId);
 
     /**
      * 获取实体路径
@@ -240,6 +244,8 @@ public interface EntityService {
      *
      * @param categoryIdGroups 多独立栏分类求交；非空时优先于 categoryIds
      * @param categoryViaRefPathCode 经 REF 反查路径；非空时走 Category-via-Ref（与直接挂靠互斥）
+     * @param scopeRegistryCode 数据范围按哪本数据目录算（这次实际读的目录注册编码，必填）。
+     *                          列表按登录人在这本目录上的数据范围收窄，详情不在范围里就 403
      */
     EntitySceneQueryRespVO queryEntities(EntityQueryScene scene, String resultShape, String resultDetail, String categoryTypeCode, String entityTypeCode,
             List<Long> modelIds, String modelEntityTypeCode, List<Long> categoryIds, List<CategoryIdGroupReqVO> categoryIdGroups, String categoryViaRefPathCode,
@@ -248,7 +254,7 @@ public interface EntityService {
             Integer pageNo, Integer pageSize, String keyword, String domain,
             List<FieldFilterReqVO> filters, String orderByColumn, Boolean isAsc,
             List<String> searchFieldCodes,
-            List<Long> relatedEntityIds, String relatedEntityTypeCode);
+            List<Long> relatedEntityIds, String relatedEntityTypeCode, String scopeRegistryCode);
 
 
     /**

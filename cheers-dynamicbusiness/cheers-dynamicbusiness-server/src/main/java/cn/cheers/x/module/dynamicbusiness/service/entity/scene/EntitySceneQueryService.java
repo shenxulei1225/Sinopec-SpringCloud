@@ -18,6 +18,12 @@ import java.util.List;
  */
 public interface EntitySceneQueryService {
 
+    /**
+     * 按场景查实体。
+     *
+     * @param scopeRegistryCode 数据范围按哪本数据目录算（这次实际读的目录注册编码，必填）。
+     *                          列表只返回登录人数据范围里的记录，什么都看不到时返回空页；详情不在范围里就 403
+     */
     EntitySceneQueryRespVO queryEntities(EntityQueryScene scene, String resultShape, String resultDetail,
             String categoryTypeCode, String entityTypeCode,
             List<Long> modelIds, String modelEntityTypeCode, List<Long> categoryIds,
@@ -27,14 +33,11 @@ public interface EntitySceneQueryService {
             Integer pageNo, Integer pageSize, String keyword, String domain,
             List<FieldFilterReqVO> filters, String orderByColumn, Boolean isAsc,
             List<String> searchFieldCodes,
-            List<Long> relatedEntityIds, String relatedEntityTypeCode);
+            List<Long> relatedEntityIds, String relatedEntityTypeCode, String scopeRegistryCode);
 
     EntityRespVO getCategoryLinkedEntity(Long categoryId, String entityTypeCode);
 
     List<EntityRespVO> getEntityTreeByModelId(String entityTypeCode, Long modelId);
-
-    /** 上级树：站场级必须带所属场站。 */
-    List<EntityRespVO> getEntityTreeByModelId(String entityTypeCode, Long modelId, Long facilityId);
 
     List<Long> listDistinctModelIdsByCategoryScope(String entityTypeCode,
                                                    List<Long> categoryIds,

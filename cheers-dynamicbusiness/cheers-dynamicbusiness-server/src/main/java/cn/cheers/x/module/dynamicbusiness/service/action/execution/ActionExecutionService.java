@@ -47,7 +47,7 @@ public class ActionExecutionService {
         row.setIdempotencyKey(request.idempotencyKey().trim());
         row.setCallerType(request.callerType().trim());
         row.setCallerReference(request.callerReference().trim());
-        row.setFacilityId(request.facilityId());
+        row.setFacilityId(request.facilityId() > 0 ? request.facilityId() : null);
         row.setActionId(request.actionId());
         row.setTargetEntityTypeCode(request.targetEntityTypeCode().trim());
         row.setTargetEntityId(request.targetEntityId());
@@ -65,7 +65,6 @@ public class ActionExecutionService {
                 || !StringUtils.hasText(request.idempotencyKey())
                 || !StringUtils.hasText(request.callerType())
                 || !StringUtils.hasText(request.callerReference())
-                || request.facilityId() <= 0
                 || request.actionId() <= 0
                 || !StringUtils.hasText(request.targetEntityTypeCode())
                 || request.targetEntityId() <= 0) {

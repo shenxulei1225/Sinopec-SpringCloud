@@ -84,7 +84,6 @@ public class UserAccountCatalogEnsure {
         request.setStatus("active");
         request.setStorageType("DEDICATED");
         request.setEntryKind("NATIVE");
-        request.setWorkScope(EntityTypeDO.WORK_SCOPE_NETWORK);
         request.setGroupName("用户");
         request.setDescription("登录账号按租户分开。不按场站拆开。");
         request.setAssociationFields("{}");

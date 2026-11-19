@@ -8,7 +8,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdat
 import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityRpcFacadeService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
-import cn.cheers.x.module.dynamicbusiness.service.entitytype.FacilityOwningFieldEnsureService;
+import cn.cheers.x.module.dynamicbusiness.service.facility.FacilityStationQueryService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,7 +33,7 @@ public class PushSubscriptionMirrorService {
     @Resource
     private EntityRpcFacadeService entityRpcFacadeService;
     @Resource
-    private FacilityOwningFieldEnsureService facilityOwningFieldEnsureService;
+    private FacilityStationQueryService facilityStationQueryService;
 
     /**
      * 页面订了一个主题。主题不在目录种类里则拒绝，不建行。
@@ -122,7 +122,7 @@ public class PushSubscriptionMirrorService {
     private void createSubscriber(String clientId, long userId, String topic, String subscriberName, Long facilityId) {
         Long stationId = facilityId != null && facilityId > 0
                 ? facilityId
-                : facilityOwningFieldEnsureService.onlyStationId();
+                : facilityStationQueryService.onlyStationId();
         if (stationId == null) {
             throw new ServiceException(400, "订阅没有所属场站，不记");
         }

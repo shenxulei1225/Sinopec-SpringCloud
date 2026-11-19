@@ -17,6 +17,11 @@ import cn.cheers.x.module.dynamicbusiness.enums.entitytype.StorageTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
+import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogRoleGrantService;
+import cn.cheers.x.module.dynamicbusiness.service.datapermission.CatalogManagementQueryService;
+import cn.cheers.x.module.dynamicbusiness.service.datapermission.CatalogOwnershipService;
+import cn.cheers.x.module.dynamicbusiness.service.datapermission.ManagementMethodService;
+import cn.cheers.x.module.dynamicbusiness.service.datapermission.ManagementUnitCatalogService;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
 import cn.cheers.x.module.dynamicbusiness.service.field.FieldService;
 import cn.cheers.x.module.dynamicbusiness.service.model.ModelFieldAssignmentService;
@@ -79,7 +84,16 @@ public class EntityTypeServiceImpl implements EntityTypeService {
     private DomainEntityTypeRetireService domainEntityTypeRetireService;
 
     @Resource
-    private FacilityOwningFieldEnsureService facilityOwningFieldEnsureService;
+    private CatalogRoleGrantService catalogRoleGrantService;
+
+    @Resource
+    private CatalogOwnershipService catalogOwnershipService;
+
+    @Resource
+    private ManagementMethodService managementMethodService;
+
+    @Resource
+    private ManagementUnitCatalogService managementUnitCatalogService;
 
     @Resource
     private cn.cheers.x.module.dynamicbusiness.service.hierarchy.OrgTreeParentFieldEnsureService orgTreeParentFieldEnsureService;
@@ -104,6 +118,12 @@ public class EntityTypeServiceImpl implements EntityTypeService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long create(EntityTypeCreateReqVO reqVO) {
+        Long id = createByEntryKind(reqVO);
+        applyManagementOnCreate(id, reqVO.getManagementTargetRegistryCode());
+        return id;
+    }
+
+    private Long createByEntryKind(EntityTypeCreateReqVO reqVO) {
         EntityTypeEntryKindEnum entryKind = EntityTypeEntryKindEnum.fromCode(reqVO.getEntryKind());
         if (entryKind.isReuseEntry()) {
             return createReuseEntityType(reqVO);
@@ -118,6 +138,19 @@ public class EntityTypeServiceImpl implements EntityTypeService {
             return createCategoryEntityType(reqVO);
         }
         return createNativeEntityType(reqVO);
+    }
+
+    /**
+     * 新建表单里选了「数据怎么管」：目录建好后，在同一事务里按这个方式保存（缺字段就挂上或新建）。
+     * 和「数据资源管理」里改管理方式走同一条保存；保存失败整本目录不建。没选就不分单位，公开。
+     */
+    private void applyManagementOnCreate(Long id, String managementTargetRegistryCode) {
+        if (!StringUtils.hasText(managementTargetRegistryCode)) {
+            return;
+        }
+        EntityTypeDO created = entityTypeMapper.selectById(id);
+        catalogOwnershipService.applyManagement(created.getCode(), List.of(
+                new CatalogManagementQueryService.ManagementChoice(managementTargetRegistryCode.trim(), null)));
     }
 
     private Long createNativeEntityType(EntityTypeCreateReqVO reqVO) {
@@ -155,7 +188,6 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         ensureTenantAssociationTablesQuietly();
         entityTypeCategoryBootstrapService.ensureForEntityTypeCode(entityType.getCode());
         entityTypeOrchestrationBootstrapService.ensureForEntityTypeCode(entityType.getCode());
-        facilityOwningFieldEnsureService.ensureForEntityTypeCode(entityType.getCode());
         orgTreeParentFieldEnsureService.ensureForEntityTypeCode(entityType.getCode());
 
         return entityType.getId();
@@ -296,7 +328,6 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         ensureTenantAssociationTablesQuietly();
         entityTypeCategoryBootstrapService.ensureForEntityTypeCode(entityType.getCode());
         entityTypeOrchestrationBootstrapService.ensureForEntityTypeCode(entityType.getCode());
-        facilityOwningFieldEnsureService.ensureForEntityTypeCode(entityType.getCode());
         orgTreeParentFieldEnsureService.ensureForEntityTypeCode(entityType.getCode());
 
         return entityType.getId();
@@ -385,7 +416,6 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         newEntityType.setDedicatedTableName(oldEntityType.getDedicatedTableName());
         newEntityType.setPhysicalColumnMapping(oldEntityType.getPhysicalColumnMapping());
         newEntityType.setEnableRuleEngine(oldEntityType.getEnableRuleEngine());
-        newEntityType.setWorkScope(oldEntityType.getWorkScope());
 
         updateBTFromVO(newEntityType, reqVO);
 
@@ -452,9 +482,6 @@ public class EntityTypeServiceImpl implements EntityTypeService {
                 entityType.setModelWorkbenchMode(mode);
             }
         }
-        if (reqVO.getWorkScope() != null) {
-            entityType.setWorkScope(resolveWorkScope(reqVO.getWorkScope()));
-        }
     }
 
     /**
@@ -463,6 +490,9 @@ public class EntityTypeServiceImpl implements EntityTypeService {
      * <p>子数据类型（DOMAIN）：走 {@link DomainEntityTypeRetireService}——型号归回底座未划域，
      * 实例保留；只拆注册门/门户/布局/域分组。禁止在此路径删型号或实例。
      * 其它入口种类：仍按原逻辑对注册项逻辑删（不级联清底座台账）。</p>
+     *
+     * <p>两种都先清掉按目录注册编码存的权限配置：角色授权、本目录的归属声明、可管目录里的这一本。
+     * 这本目录是管理单元目录，或别的目录的归属声明还指向它时，拒绝删除，不替它改别处的配置。</p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -475,6 +505,12 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         if (EntityTypeDO.TYPE_LEVEL_SYSTEM.equals(entityType.getTypeLevel())) {
             throw new ServiceException(403, "系统级业务类型不可删除");
         }
+
+        String registryCode = entityType.getCode();
+        managementUnitCatalogService.deleteRegistrationsOfDeletedCatalog(registryCode);
+        catalogOwnershipService.deleteDeclarationsOfDeletedCatalog(registryCode);
+        managementMethodService.deleteMethodOfDeletedCatalog(registryCode);
+        catalogRoleGrantService.deleteGrantsOfDeletedCatalog(registryCode);
 
         EntityTypeEntryKindEnum kind = EntityTypeEntryKindEnum.fromCode(entityType.getEntryKind());
         if (kind.isDomainEntry()) {
@@ -964,7 +1000,6 @@ public class EntityTypeServiceImpl implements EntityTypeService {
                 StringUtils.hasText(reqVO.getEntryKind())
                         ? EntityTypeEntryKindEnum.fromCode(reqVO.getEntryKind()).getCode()
                         : EntityTypeDO.ENTRY_KIND_NATIVE);
-        entityType.setWorkScope(resolveWorkScope(reqVO.getWorkScope()));
         entityType.setBaseEntityTypeCode(
                 StringUtils.hasText(reqVO.getBaseEntityTypeCode()) ? reqVO.getBaseEntityTypeCode().trim() : null);
         entityType.setDomain(EntityTypeScopeContext.normalizeDomain(reqVO.getDomain()));
@@ -981,21 +1016,6 @@ public class EntityTypeServiceImpl implements EntityTypeService {
             }
         }
         requireDedicatedStorage(entityType);
-    }
-
-    /**
-     * 解析目录作用域：空 → FACILITY；仅允许 NETWORK / FACILITY；非法值 400。
-     */
-    private String resolveWorkScope(String raw) {
-        if (!StringUtils.hasText(raw)) {
-            return EntityTypeDO.WORK_SCOPE_FACILITY;
-        }
-        String scope = raw.trim().toUpperCase();
-        if (EntityTypeDO.WORK_SCOPE_NETWORK.equals(scope)
-                || EntityTypeDO.WORK_SCOPE_FACILITY.equals(scope)) {
-            return scope;
-        }
-        throw new ServiceException(400, "目录作用域仅支持 NETWORK 或 FACILITY");
     }
 
     /** 动态业务仅允许专用表；显式 GENERIC 拒绝，缺省补为 DEDICATED。 */
@@ -1033,10 +1053,6 @@ public class EntityTypeServiceImpl implements EntityTypeService {
         vo.setParentId(entityType.getParentId());
         vo.setGroupName(entityType.getGroupName());
         vo.setEntryKind(entityType.getEntryKind());
-        vo.setWorkScope(
-                StringUtils.hasText(entityType.getWorkScope())
-                        ? entityType.getWorkScope()
-                        : EntityTypeDO.WORK_SCOPE_FACILITY);
         vo.setBaseEntityTypeCode(entityType.getBaseEntityTypeCode());
         vo.setDomain(entityType.getDomain());
         vo.setCreateTime(entityType.getCreateTime());

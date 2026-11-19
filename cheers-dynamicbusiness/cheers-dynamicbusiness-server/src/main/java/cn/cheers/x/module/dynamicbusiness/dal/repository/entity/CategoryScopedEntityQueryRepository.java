@@ -3,7 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.dal.repository.entity;
 import cn.cheers.x.framework.common.pojo.PageResult;
 import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityTableNameHandler;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeContext;
-import cn.cheers.x.module.dynamicbusiness.framework.tenant.TenantPhysicalTableNames;
+import cn.cheers.x.module.dynamicbusiness.service.entity.refroute.CategoryMembershipQueryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -18,9 +18,10 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * 分类范围内实体：EXISTS（relation ∪ link）+ 库内 ORDER BY + LIMIT。
+ * 分类范围内实体：每组分类的成员条件（见 {@link CategoryMembershipQueryService}）+ 库内 ORDER BY + LIMIT。
  *
  * <p>单组与多组求交共用同一套分页快路径，避免先拉全量候选再内存重排。</p>
+ * <p>不负责：判断记录经哪条引用挂在分类下（由分类成员查询服务决定）。</p>
  */
 @Repository
 @RequiredArgsConstructor
@@ -32,6 +33,7 @@ public class CategoryScopedEntityQueryRepository {
 
     private final JdbcTemplate jdbcTemplate;
     private final EntityTableNameHandler entityTableNameHandler;
+    private final CategoryMembershipQueryService categoryMembershipQueryService;
 
     /**
      * 单组分类范围：COUNT + ORDER BY + LIMIT，只回本页 id。
@@ -184,8 +186,6 @@ public class CategoryScopedEntityQueryRepository {
             return null;
         }
         String entityTable = entityTableNameHandler.resolvePhysicalTableName(entityTypeCode);
-        String relationTable = TenantPhysicalTableNames.requirePhysical("dynamic_entity_category_relation");
-        String linkTable = TenantPhysicalTableNames.requirePhysical("dynamic_category_entity_link");
 
         List<Object> args = new ArrayList<>();
         StringBuilder where = new StringBuilder(" WHERE e.deleted = false");
@@ -215,32 +215,12 @@ public class CategoryScopedEntityQueryRepository {
             args.add(scopeRegistryCode.trim());
         }
 
+        // 每组分类一条路径（专用列 / 关联集合），组间求交；不在这里拼 EXISTS OR
         for (List<Long> cats : groups) {
-            String inClause = placeholders(cats.size());
-            where.append("""
-                     AND (
-                        EXISTS (
-                            SELECT 1
-                            FROM %s ecr
-                            WHERE ecr.deleted = false
-                              AND ecr.entity_id = e.id
-                              AND ecr.entity_type_code = ?
-                              AND ecr.category_id IN (%s)
-                        )
-                        OR EXISTS (
-                            SELECT 1
-                            FROM %s cel
-                            WHERE cel.deleted = false
-                              AND cel.entity_id = e.id
-                              AND cel.entity_type_code = ?
-                              AND cel.category_id IN (%s)
-                        )
-                    )
-                    """.formatted(relationTable, inClause, linkTable, inClause));
-            args.add(entityTypeCode);
-            args.addAll(cats);
-            args.add(entityTypeCode);
-            args.addAll(cats);
+            CategoryMembershipQueryService.SqlCondition member =
+                    categoryMembershipQueryService.inCategoriesCondition(entityTypeCode, cats);
+            where.append(" AND ").append(member.sql());
+            args.addAll(member.args());
         }
 
         KeywordSearchSql.appendToNativeWhere(where, args, keyword, keywordSearch);

@@ -43,25 +43,11 @@ public interface EntityRelationService {
 
     Long countRelationsByTargetEntity(Long targetEntityId, String entityTypeCode);
 
-    List<EntityRelationRespVO> getRelationsByFieldCode(Long entityId, String entityTypeCode, String fieldCode);
-
     /**
-     * 根据关联字段编码和关联实体ID列表，查询当前实体ID列表。
-     *
-     * <p>用于实体筛选场景：当 filter 作用于 REF/REF_MULTI 字段时，
-     * 通过 dynamic_entity_relation 快速定位命中的 current_entity_id。</p>
-     *
-     * @param fieldCode 关联字段编码
-     * @param relatedEntityIds 关联实体ID列表
-     * @return 命中的当前实体ID列表（去重）
-     */
-    List<Long> listEntityIdsByRelationFieldAndRelatedIds(String fieldCode, List<Long> relatedEntityIds);
-
-    /**
-     * 经 REF 反查主体：在 {@link #listEntityIdsByRelationFieldAndRelatedIds} 基础上按源实体类型编码过滤。
+     * 经引用字段反查主体：单值专用列字段查引用方专用表的那一列，其余查实体关联表。
      *
      * @param refFieldCode          主体实体上的 REF 字段编码（{@code dynamic_field.code}）
-     * @param subjectEntityTypeCode 主体实体类型编码（{@code dynamic_entity_relation.source_entity_type_code}）
+     * @param subjectEntityTypeCode 主体实体类型编码（决定去哪张专用表查列；也是关联表的源类型）
      * @param targetEntityIds       REF 指向的目标实体 id 集合
      */
     List<Long> listSubjectEntityIdsByRefFieldAndTargetIds(String refFieldCode,
@@ -69,10 +55,9 @@ public interface EntityRelationService {
                                                           List<Long> targetEntityIds);
 
     /**
-     * 实体—实体筛选：按关联表双向取对端实体 id，不按 field_code 过滤。
+     * 实体—实体筛选：两类记录互相挂了哪些，不按字段编码过滤。
      *
-     * <p>勾选适用写入的行没有 REF 字段码。方向 1：related 作 source、list 作 target → 取 target id；
-     * 方向 2：list 作 source、related 作 target → 取 source id。</p>
+     * <p>来源：两边的单值引用专用列（双向），实体关联表（双向，含勾选适用写入的无字段码行）。</p>
      *
      * @param relatedEntityIds 上游已选实体 id
      * @param relatedEntityTypeCode 上游实体存储类型

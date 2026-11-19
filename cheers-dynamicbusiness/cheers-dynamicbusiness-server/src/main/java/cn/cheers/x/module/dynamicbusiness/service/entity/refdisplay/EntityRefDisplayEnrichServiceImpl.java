@@ -2,8 +2,10 @@ package cn.cheers.x.module.dynamicbusiness.service.entity.refdisplay;
 
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
+import cn.cheers.x.module.dynamicbusiness.service.department.DepartmentOrganizationCodes;
 import cn.cheers.x.module.dynamicbusiness.service.directory.UserAccountDirectoryQueryService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
+import cn.cheers.x.module.dynamicbusiness.service.organization.OrganizationTreeQueryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ import java.util.Set;
  *
  * <p>上级分区在库里是纯数字。补完后同一格变成「类型 + 编号 + 名称」，编号仍在 {@code id}。</p>
  * <p>创建人列存的是用户目录编号。同一次返回带上昵称，不写回报修单。</p>
+ * <p>部门引用带上所在场站，写成「站名 / 部门」。不改部门名称。</p>
  * <p>不负责：保存时改上级，把昵称写进单据，或让页面自己拿编号再查名称。</p>
  */
 @Service
@@ -32,6 +35,7 @@ public class EntityRefDisplayEnrichServiceImpl implements EntityRefDisplayEnrich
 
     private final EntityCoreService entityCoreService;
     private final UserAccountDirectoryQueryService userAccountDirectoryQueryService;
+    private final OrganizationTreeQueryService organizationTreeQueryService;
 
     @Override
     public void enrich(List<EntityRespVO> entities) {
@@ -153,11 +157,16 @@ public class EntityRefDisplayEnrichServiceImpl implements EntityRefDisplayEnrich
                     continue;
                 }
                 Map<Long, String> nameById = out.computeIfAbsent(typeCode, k -> new HashMap<>());
+                Map<Long, String> departmentLabels = DepartmentOrganizationCodes.isDepartment(typeCode)
+                        ? organizationTreeQueryService.displayNames(ids)
+                        : Map.of();
                 for (EntityDO row : rows) {
                     if (row == null || row.getId() == null || !StringUtils.hasText(row.getName())) {
                         continue;
                     }
-                    nameById.put(row.getId(), row.getName().trim());
+                    String departmentLabel = departmentLabels.get(row.getId());
+                    nameById.put(row.getId(),
+                            StringUtils.hasText(departmentLabel) ? departmentLabel.trim() : row.getName().trim());
                 }
             } catch (Exception ex) {
                 log.warn("[REF name enrich] 批量查名称失败 type={}, size={}, err={}",

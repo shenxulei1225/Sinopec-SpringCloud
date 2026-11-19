@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -70,8 +72,8 @@ public class PlatformEventOutboxDeliveryService {
         }
         String filled = PlatformEventChannelTopics.fill(
                 pushCatalogQueryService.namePatternByTopicId(message.eventTopicId()),
-                message.facilityId(),
-                message.sourceEntityId());
+                message.sourceEntityId(),
+                ownershipIds(message));
         if (filled == null) {
             throw new ServiceException(400, "事件主题没有名字规则，没有发出");
         }
@@ -85,12 +87,38 @@ public class PlatformEventOutboxDeliveryService {
                 row.getEventCode(),
                 row.getEventKind(),
                 row.getTenantId() == null ? 0L : row.getTenantId(),
-                row.getFacilityId(),
+                row.getFacilityId() == null ? 0L : row.getFacilityId(),
                 row.getSourceEntityTypeCode(),
                 row.getSourceEntityId(),
                 row.getPhase(),
                 row.getOccurredAt().toInstant(ZoneOffset.UTC),
                 row.getPayload() == null ? Map.of() : Map.copyOf(row.getPayload()));
+    }
+
+    /**
+     * 主题名字用载荷里按声明抄过来的归属编号。
+     * 旧事件载荷里没有这份引用时，才用当时写下的场站列。
+     */
+    private static Map<String, Long> ownershipIds(PlatformEventMessage message) {
+        Map<String, Long> ids = new LinkedHashMap<>();
+        Object raw = message.payload() == null ? null : message.payload().get("ownership");
+        if (raw instanceof List<?> rows) {
+            for (Object row : rows) {
+                if (!(row instanceof Map<?, ?> map)) {
+                    continue;
+                }
+                Object code = map.get("fieldCode");
+                Object id = map.get("id");
+                if (code == null || !(id instanceof Number number) || number.longValue() <= 0) {
+                    continue;
+                }
+                ids.put(String.valueOf(code).trim(), number.longValue());
+            }
+        }
+        if (ids.isEmpty() && message.facilityId() > 0) {
+            ids.put("facility_id", message.facilityId());
+        }
+        return ids;
     }
 
     private static String clip(String value) {

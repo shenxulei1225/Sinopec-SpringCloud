@@ -6,25 +6,28 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * 组织架构页左侧的一行。
- * region 来自运营区域分类。station 是按已有区域关联挂上的场站，不写回分类。
+ * 组织架构页左侧的一行：组织机构里的一级（集团、省公司、分公司、作业区）。
+ * 场站不在这棵树上。
  */
 @Schema(description = "组织树节点")
 @Data
 public class OrganizationTreeNodeRespVO {
 
-    @Schema(description = "分类节点编号")
-    private Long id;
+    @Schema(description = "节点主键，类型加记录编号，例如 organization:86")
+    private String key;
 
     @Schema(description = "名称")
     private String name;
 
-    @Schema(description = "region 运营区域，station 场站")
+    @Schema(description = "节点类型，固定为 organization")
     private String kind;
 
-    @Schema(description = "这条分类绑定的实体编号。场站用它查部门。")
+    @Schema(description = "组织机构记录编号，用它查这个节点的部门")
     private Long entityId;
 
-    @Schema(description = "子节点。场站挂在对应的区域节点下。")
+    @Schema(description = "组织类型（型号编号）。点这个组织时，职务清单按它筛选")
+    private Long modelId;
+
+    @Schema(description = "下级组织节点")
     private List<OrganizationTreeNodeRespVO> children;
 }

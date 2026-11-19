@@ -10,4 +10,7 @@ import lombok.ToString;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class EntityTypeCreateReqVO extends EntityTypeBaseVO {
+
+    @Schema(description = "新建表单「数据怎么管」：按哪本目录管理（数据目录注册编码）。不传表示不分组织，公开", example = "facility")
+    private String managementTargetRegistryCode;
 }

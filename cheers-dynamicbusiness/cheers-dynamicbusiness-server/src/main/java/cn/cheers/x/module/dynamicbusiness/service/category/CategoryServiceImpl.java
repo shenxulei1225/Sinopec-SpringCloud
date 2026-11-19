@@ -1,5 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.service.category;
 
+import cn.cheers.x.module.dynamicbusiness.service.entity.refroute.EntityInboundRefDeleteGuard;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.cheers.x.framework.common.exception.ServiceException;
@@ -40,7 +41,9 @@ import cn.cheers.x.module.dynamicbusiness.service.entity.EntityLifecycleEventPub
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityRelationSyncService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
+import cn.cheers.x.module.dynamicbusiness.service.department.DepartmentOrganizationCodes;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
+import cn.cheers.x.module.dynamicbusiness.service.organization.OrganizationTreeQueryService;
 import cn.cheers.x.module.dynamicbusiness.service.category.hierarchy.AdvancedCategoryEntityHierarchyService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategoryRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.model.relation.ModelCategoryRelationService;
@@ -80,6 +83,8 @@ public class CategoryServiceImpl implements CategoryService {
      */
     private static final int MAX_SORT_RETRY = 3;
 
+    @Resource
+    private EntityInboundRefDeleteGuard entityInboundRefDeleteGuard;
     @Resource
     private CategoryMapper categoryMapper;
     @Resource
@@ -124,6 +129,10 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Resource
     private CategoryEntityLinkService categoryEntityLinkService;
+
+    @Resource
+    @Lazy
+    private OrganizationTreeQueryService organizationTreeQueryService;
 
     @Resource
     private AdvancedCategoryEntityHierarchyService advancedCategoryEntityHierarchyService;
@@ -948,6 +957,38 @@ public class CategoryServiceImpl implements CategoryService {
                 vo.setEntityModelId(null);
             }
         }
+        fillDepartmentDisplayNames(flat);
+    }
+
+    /**
+     * 部门分类在选用页上要能分清场站。
+     * 场站里的部门显示「站名 / 部门」。分类自己的名称不改，编辑仍用短名称。
+     */
+    private void fillDepartmentDisplayNames(List<CategoryTreeRespVO> flat) {
+        List<Long> ids = new ArrayList<>();
+        for (CategoryTreeRespVO vo : flat) {
+            if (vo == null || vo.getEntityId() == null || vo.getEntityId() <= 0) {
+                continue;
+            }
+            if (!DepartmentOrganizationCodes.isDepartment(vo.getCategoryTypeCode())) {
+                continue;
+            }
+            ids.add(vo.getEntityId());
+        }
+        if (ids.isEmpty()) {
+            return;
+        }
+        Map<Long, String> labels = organizationTreeQueryService.displayNames(ids);
+        for (CategoryTreeRespVO vo : flat) {
+            if (vo == null || vo.getEntityId() == null
+                    || !DepartmentOrganizationCodes.isDepartment(vo.getCategoryTypeCode())) {
+                continue;
+            }
+            String label = labels.get(vo.getEntityId());
+            if (label != null && !label.isBlank()) {
+                vo.setDisplayName(label);
+            }
+        }
     }
 
     /** 深度优先展平分类树，供缓存命中后重新补齐 link 展示字段。 */
@@ -1535,7 +1576,10 @@ public class CategoryServiceImpl implements CategoryService {
             return;
         }
 
-        // 2. 未二次确认时：仅拦「别人指向本台账」的入站关联。
+        // 2. 被别的数据的引用字段指着（如设备的所属场站）：不能删，二次确认也不行
+        entityInboundRefDeleteGuard.assertNotReferenced(entityTypeCode, id);
+
+        // 3. 未二次确认时：拦剩下的手工关联（不带引用字段的入站关联）。
         // 自身发出的 REF（如所属设施）不在此拦：交给实体删除清理（syncRelationsOnDelete）必清。
         boolean clearInbound = Boolean.TRUE.equals(forceDelete);
         if (!clearInbound) {
@@ -1547,7 +1591,7 @@ public class CategoryServiceImpl implements CategoryService {
             }
         }
 
-        // 3. 走实体删除统一清理：先清自身 REF 关系镜像（所属设施等）→ 再删存储行（行内 REF 列随行删除）
+        // 4. 走实体删除统一清理：先清自身 REF 关系镜像（所属设施等）→ 再删存储行（行内 REF 列随行删除）
         entityService.deleteEntityWithAssociationCleanup(id, entityTypeCode, clearInbound);
     }
 

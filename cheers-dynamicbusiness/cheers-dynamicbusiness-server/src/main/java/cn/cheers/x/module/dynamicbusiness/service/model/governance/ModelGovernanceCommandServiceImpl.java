@@ -51,18 +51,20 @@ public class ModelGovernanceCommandServiceImpl implements ModelGovernanceCommand
             throw new ServiceException(401, "未获取到当前登录用户");
         }
 
+        // 建公司级还是本站由登录人定：管公司的人建公司级，只管站的人建右上角选中站的本地型号。
+        boolean companyCreator = capabilityChecker.canCreateCompanyStandard();
         boolean requestsCompany = GOVERNANCE_COMPANY.equals(normalizeGovernanceStatus(requestedGovernanceStatus));
-        if (requestsCompany && !capabilityChecker.canCreateCompanyStandard()) {
+        if (requestsCompany && !companyCreator) {
             throw new ServiceException(403, "无权创建公司规格");
         }
         model.setCreatorUserId(currentUserId);
-        if (requestsCompany) {
+        if (companyCreator) {
             model.setGovernanceStatus(GOVERNANCE_COMPANY);
             model.setOriginFacilityId(null);
             return;
         }
         if (effectiveFacilityId == null) {
-            throw new ServiceException(400, "创建本地型号必须指定当前有效站场");
+            throw new ServiceException(400, "请先在右上角选择场站后再创建型号");
         }
         model.setGovernanceStatus(GOVERNANCE_LOCAL);
         model.setOriginFacilityId(effectiveFacilityId);

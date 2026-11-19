@@ -21,11 +21,14 @@ import cn.cheers.x.module.dynamicbusiness.enums.field.FieldTypeEnum;
 import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityBaseFieldColumnNames;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypePlatformFieldSupport;
 import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
+import cn.cheers.x.module.dynamicbusiness.enums.entitytype.EntityTypeEntryKindEnum;
 import cn.cheers.x.module.dynamicbusiness.framework.hierarchy.OrgTreeParentFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.capability.BusinessCapabilityService;
 import cn.cheers.x.module.dynamicbusiness.service.dynamictable.DynamicTableService;
 import cn.cheers.x.module.dynamicbusiness.service.hierarchy.OrgTreeParentFieldEnsureService;
 import cn.hutool.core.util.StrUtil;
+import cn.cheers.x.module.dynamicbusiness.service.datapermission.CatalogOwnershipQueryService;
+import cn.cheers.x.module.dynamicbusiness.service.entity.refroute.EntityRefColumnRouteQueryService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -66,6 +69,12 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
     @Resource
     @Lazy
     private OrgTreeParentFieldEnsureService orgTreeParentFieldEnsureService;
+    @Resource
+    @Lazy
+    private CatalogOwnershipQueryService catalogOwnershipQueryService;
+    @Resource
+    @Lazy
+    private EntityRefColumnRouteQueryService entityRefColumnRouteQueryService;
     @Resource
     @Qualifier("systemAsyncExecutor")
     private Executor systemAsyncExecutor;
@@ -279,7 +288,7 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
         if (field == null) {
             return;
         }
-        assertFacilityOwningFieldDeletable(field);
+        assertFieldNotDeclaredAsOwnership(field);
         String entityTypeCode = field.getEntityTypeCode();
         // library_field_id 可能为空（seed 只写了 field_code），须按编码解析后再卸型号
         Long libraryFieldId = resolveLibraryFieldIdForSync(field);
@@ -311,15 +320,19 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
         return libraryField != null ? libraryField.getId() : null;
     }
 
-    /** 站场级类型的所属场站系统字段不可删。 */
-    private void assertFacilityOwningFieldDeletable(EntityTypeBaseFieldDO field) {
-        if (field == null || !FacilityOwningFieldCodes.FIELD_CODE.equals(
-                field.getFieldCode() == null ? "" : field.getFieldCode().trim())) {
+    /**
+     * 归属声明用到的字段不能删：删了这本目录的记录就归不到场站、管线，数据权限算不出来。
+     * 共用这份存储的目录（子数据类型、使用已有数据）上的声明也算。
+     */
+    private void assertFieldNotDeclaredAsOwnership(EntityTypeBaseFieldDO field) {
+        if (field == null || !StringUtils.hasText(field.getFieldCode())) {
             return;
         }
-        EntityTypeDO entityType = entityTypeMapper.selectByCode(field.getEntityTypeCode());
-        if (FacilityOwningFieldEnsureService.shouldEnsure(entityType)) {
-            throw new ServiceException(400, "站场级类型不可删除所属场站系统字段");
+        if (catalogOwnershipQueryService.isFieldDeclared(
+                entityRefColumnRouteQueryService.catalogCodesSharingStorage(field.getEntityTypeCode()),
+                field.getFieldCode())) {
+            throw new ServiceException(400,
+                    "这本目录按「" + field.getFieldName() + "」管理数据，请先在「数据资源管理」的「数据管理方式」里改掉");
         }
     }
 
@@ -498,7 +511,9 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
         List<EntityTypePlatformFieldRespVO> fields = new ArrayList<>(4);
         fields.add(buildPlatformField(entityType, "name", "名称", "TEXT"));
         fields.add(buildPlatformField(entityType, "status", "状态", "NUMBER"));
-        if (FacilityOwningFieldEnsureService.shouldEnsure(entityType)) {
+        // 所属场站在这本目录上挂了，才在系统区显示。是否必填看归属声明，不看目录原来是全网还是站场
+        if (baseFieldMapper.selectByEntityTypeCodeAndFieldCode(
+                entityType.getCode(), FacilityOwningFieldCodes.FIELD_CODE) != null) {
             String owningLabel = FacilityOwningFieldCodes.DISPLAY_NAME;
             FieldDO libraryField = fieldMapper.selectByCode(FacilityOwningFieldCodes.FIELD_CODE);
             if (libraryField != null && StringUtils.hasText(libraryField.getName())) {
@@ -745,7 +760,8 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
     }
 
     /**
-     * 系统独占基础字段：所属场站 / 组织上级。禁止用户从字段库重复添加；仅 ensure 可挂。
+     * 系统区基础字段：所属场站 / 组织上级。同一目录只能挂一次。
+     * 所属场站由管理员按需加在自有存储的目录上，再在「数据归属」里声明。
      */
     private void assertPlatformOwnedBaseFieldCreatable(String entityTypeCode, FieldDO libraryField) {
         if (libraryField == null
@@ -765,14 +781,28 @@ public class EntityTypeBaseFieldServiceImpl implements EntityTypeBaseFieldServic
             return;
         }
         EntityTypeDO entityType = entityTypeMapper.selectByCode(entityTypeCode.trim());
-        if (!FacilityOwningFieldEnsureService.shouldEnsure(entityType)) {
-            throw new ServiceException(400, "所属场站仅适用于站场级（非网络级）且自有存储的数据类型");
+        if (!canOwnFacilityField(entityType)) {
+            throw new ServiceException(400, "所属场站只能加在自有存储的数据类型上，场站目录本身不能加");
         }
         EntityTypeBaseFieldDO existing = baseFieldMapper.selectByEntityTypeCodeAndFieldCode(
                 entityTypeCode.trim(), libraryField.getCode().trim());
         if (existing != null) {
-            throw new ServiceException(400, "所属场站为系统字段，已由平台自动挂接");
+            throw new ServiceException(400, "这本目录已经有所属场站");
         }
+    }
+
+    /**
+     * 能不能手工加「所属场站」：场站目录本身不能，共用底座存储的子类型、划分数据不能（字段登记在底座上）。
+     * 不看工作范围：全网目录（如应急事件）也可以按发生的场站归属，必填与否由归属声明决定。
+     */
+    private static boolean canOwnFacilityField(EntityTypeDO entityType) {
+        if (entityType == null || !StringUtils.hasText(entityType.getCode())) {
+            return false;
+        }
+        if (FacilityOwningFieldCodes.TARGET_ENTITY_TYPE.equalsIgnoreCase(entityType.getCode().trim())) {
+            return false;
+        }
+        return !EntityTypeEntryKindEnum.fromCode(entityType.getEntryKind()).reusesBaseStorage();
     }
 
     private EntityTypeBaseFieldDO resolveRegisteredBaseField(

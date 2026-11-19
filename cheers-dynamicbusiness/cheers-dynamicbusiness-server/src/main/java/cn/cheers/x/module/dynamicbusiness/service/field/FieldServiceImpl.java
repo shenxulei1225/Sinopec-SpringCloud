@@ -103,6 +103,30 @@ public class FieldServiceImpl implements FieldService {
     }
 
     @Override
+    public Long createEntityRefField(String code, String name, String targetEntityType) {
+        if (StringUtils.isAnyBlank(code, name, targetEntityType)) {
+            throw new ServiceException(400, "新建引用字段要有编码、名称和指向的数据目录");
+        }
+        if (fieldMapper.selectByCode(code.trim()) != null) {
+            throw new ServiceException(400, "字段库里已有编码为 " + code.trim() + " 的字段");
+        }
+        FieldDO field = new FieldDO();
+        field.setCode(code.trim());
+        field.setName(name.trim());
+        field.setType(FieldTypeEnum.ENTITY_REF.getCode());
+        field.setSource("CUSTOM");
+        field.setStatus(1);
+        field.setDescription("这条数据由哪一条「" + name.trim().replaceFirst("^所属", "") + "」管理");
+        applyEntityRefProvider(field, targetEntityType);
+        applyGovernanceForCreate(field, null);
+        field.setTenantId(getTenantId());
+        applySmartSearchableDefaults(field);
+        fieldMapper.insert(field);
+        evictFieldListCache(field.getType());
+        return field.getId();
+    }
+
+    @Override
     public void updateField(FieldUpdateReqVO reqVO) {
         FieldDO db = getFieldDO(reqVO.getId());
         // 系统字段不让普通用户改。超级管理员可以改名称、选项和说明。来源仍是系统字段，不能改成自定义。

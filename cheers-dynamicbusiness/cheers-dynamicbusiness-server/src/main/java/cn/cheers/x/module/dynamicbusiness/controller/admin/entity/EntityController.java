@@ -12,6 +12,10 @@ import cn.cheers.x.module.dynamicbusiness.enums.entity.EntityQueryResultDetail;
 import cn.cheers.x.module.dynamicbusiness.enums.entity.EntityQueryResultShape;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityDataExportService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
+import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogEntryAccessService;
+import cn.cheers.x.module.dynamicbusiness.service.datapermission.DataScopeQueryService;
+import cn.cheers.x.module.dynamicbusiness.framework.security.CatalogAccess;
+import cn.cheers.x.module.dynamicbusiness.convert.entity.EntityFieldMapsSupport;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -62,14 +66,26 @@ public class EntityController {
     @Resource
     private cn.cheers.x.module.dynamicbusiness.service.entity.modelchange.EntityModelChangeService entityModelChangeService;
 
+    /** 这次实际读写的目录：记录要属于它，型号要在它的业务域里，列表收回到本页。注解只核对授权。 */
+    @Resource
+    private CatalogEntryAccessService catalogEntryAccessService;
+
+    @Resource
+    private CatalogAccess catalogAccess;
+    /** 详情、路径、按分类取单条：记录必须在登录人这次实际读的目录的数据范围里。 */
+    @Resource
+    private DataScopeQueryService dataScopeQueryService;
+
     @PostMapping("/change-model/preview")
     @Operation(
         summary = "变更模型 - 预览字段迁移",
         description = "按 fieldCode 交集计算保留/需补填/归档字段，不写入数据库。"
     )
-    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, #reqVO.entityTypeCode, 'update')")
     public CommonResult<EntityChangeModelPreviewRespVO> previewChangeModel(
             @Valid @RequestBody EntityChangeModelPreviewReqVO reqVO) {
+        catalogEntryAccessService.assertRecordsInTarget(reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), List.of(reqVO.getEntityId()));
+        catalogEntryAccessService.assertModelInTarget(reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getTargetModelId());
         return success(entityModelChangeService.preview(reqVO));
     }
 
@@ -82,9 +98,11 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, #reqVO.entityTypeCode, 'update')")
     public CommonResult<EntityChangeModelCommitRespVO> commitChangeModel(
             @Valid @RequestBody EntityChangeModelCommitReqVO reqVO) {
+        catalogEntryAccessService.assertRecordsInTarget(reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), List.of(reqVO.getEntityId()));
+        catalogEntryAccessService.assertModelInTarget(reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getTargetModelId());
         return success(entityModelChangeService.commit(reqVO));
     }
 
@@ -93,9 +111,11 @@ public class EntityController {
         summary = "变更模型 - 批量预览",
         description = "按勾选的实体 ID 列表逐条预览，汇总可迁 / 需补填 / 不可迁。不使用当前高亮单行。"
     )
-    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, #reqVO.entityTypeCode, 'update')")
     public CommonResult<EntityChangeModelBatchPreviewRespVO> batchPreviewChangeModel(
             @Valid @RequestBody EntityChangeModelBatchPreviewReqVO reqVO) {
+        catalogEntryAccessService.assertRecordsInTarget(reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getEntityIds());
+        catalogEntryAccessService.assertModelInTarget(reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getTargetModelId());
         return success(entityModelChangeService.batchPreview(reqVO));
     }
 
@@ -105,9 +125,11 @@ public class EntityController {
         description = "按实体 ID 列表逐条提交；单条失败不影响其余。入参应为预览中的可迁及已补填项。"
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, #reqVO.entityTypeCode, 'update')")
     public CommonResult<EntityChangeModelBatchCommitRespVO> batchCommitChangeModel(
             @Valid @RequestBody EntityChangeModelBatchCommitReqVO reqVO) {
+        catalogEntryAccessService.assertRecordsInTarget(reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getEntityIds());
+        catalogEntryAccessService.assertModelInTarget(reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getTargetModelId());
         return success(entityModelChangeService.batchCommit(reqVO));
     }
 
@@ -123,8 +145,11 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = CREATE)
-    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'create')")
+    @PreAuthorize("@catalogAccess.allowBaseFields(#reqVO.registryCode, #reqVO.baseFields, 'create')")
     public CommonResult<Long> create(@Valid @RequestBody EntityCreateReqVO reqVO) {
+        catalogEntryAccessService.assertModelInTarget(reqVO.getRegistryCode(),
+                EntityFieldMapsSupport.getEntityTypeCode(reqVO.getBaseFields()),
+                EntityFieldMapsSupport.getModelId(reqVO.getBaseFields()));
         return success(entityService.create(reqVO));
     }
 
@@ -139,8 +164,9 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = CREATE)
-    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'create')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, #reqVO.entityTypeCode, 'create')")
     public CommonResult<Long> cloneEntity(@Valid @RequestBody EntityCloneReqVO reqVO) {
+        catalogEntryAccessService.assertRecordsInTarget(reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), List.of(reqVO.getSourceEntityId()));
         return success(entityService.cloneEntity(reqVO));
     }
 
@@ -155,8 +181,12 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
+    @PreAuthorize("@catalogAccess.allowBaseFields(#reqVO.registryCode, #reqVO.baseFields, 'update')")
     public CommonResult<Boolean> update(@Valid @RequestBody EntityUpdateReqVO reqVO) {
+        String typeCode = EntityFieldMapsSupport.getEntityTypeCode(reqVO.getBaseFields());
+        catalogEntryAccessService.assertRecordsInTarget(reqVO.getRegistryCode(), typeCode, List.of(reqVO.getId()));
+        catalogEntryAccessService.assertModelInTarget(reqVO.getRegistryCode(), typeCode,
+                EntityFieldMapsSupport.getModelId(reqVO.getBaseFields()));
         entityService.update(reqVO);
         return success(true);
     }
@@ -177,11 +207,12 @@ public class EntityController {
     @Parameter(name = "entityTypeCode", description = "业务类型编码（必填，用于路由到对应存储策略）", required = true, example = "equipment")
     @Parameter(name = "forceDelete", description = "是否强制删除（同时删除所有关联关系）", example = "false")
     @ApiAccessLog(operateType = DELETE)
-    @PreAuthorize("@catalogAccess.allow(#registryCode, 'delete')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, #entityTypeCode, 'delete')")
     public CommonResult<Boolean> delete(@RequestParam("id") Long id,
                                         @RequestParam("entityTypeCode") String entityTypeCode,
                                         @RequestParam(value = "forceDelete", required = false, defaultValue = "false") Boolean forceDelete,
             @RequestParam(value = "registryCode", required = false) String registryCode) {
+        catalogEntryAccessService.assertRecordsInTarget(registryCode, entityTypeCode, List.of(id));
         EntityDeleteReqVO reqVO = new EntityDeleteReqVO();
         reqVO.setId(id);
         reqVO.setEntityTypeCode(entityTypeCode);
@@ -210,12 +241,14 @@ public class EntityController {
     @Parameter(name = "entityTypeCode", description = "业务类型编码（必填，用于路由到对应存储策略）", required = true, example = "equipment")
     @Parameter(name = "includeAssociations", description = "是否包含关联字段展示数据（默认 false）")
     @Parameter(name = "associationCategoryViews", description = "可选，JSON 数组：[{fieldCode,categoryTypeCode},...]")
-    @PreAuthorize("@catalogAccess.allow(#registryCode, 'query')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, #entityTypeCode, 'query')")
     public CommonResult<EntityRespVO> get(@RequestParam("id") Long id,
                                           @RequestParam("entityTypeCode") String entityTypeCode,
                                           @RequestParam(value = "includeAssociations", required = false, defaultValue = "false") Boolean includeAssociations,
                                           @RequestParam(value = "associationCategoryViews", required = false) String associationCategoryViewsJson,
             @RequestParam(value = "registryCode", required = false) String registryCode) {
+        catalogEntryAccessService.assertRecordsInTarget(registryCode, entityTypeCode, List.of(id));
+        dataScopeQueryService.assertVisibleInTarget(registryCode, entityTypeCode, id);
         List<AssociationCategoryViewReqVO> views = null;
         if (associationCategoryViewsJson != null && !associationCategoryViewsJson.isBlank()) {
             try {
@@ -236,10 +269,11 @@ public class EntityController {
             - 业务范围：指定业务（必须传 entityTypeCode）
             """
     )
-    @PreAuthorize("@catalogAccess.allow(#registryCode, 'query')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, #entityTypeCode, 'query')")
     public CommonResult<Boolean> exists(@RequestParam("id") Long id,
                                         @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam(value = "registryCode", required = false) String registryCode) {
+        catalogEntryAccessService.assertRecordsInTarget(registryCode, entityTypeCode, List.of(id));
         return success(entityService.get(id, entityTypeCode) != null);
     }
 
@@ -258,7 +292,7 @@ public class EntityController {
     @Parameter(name = "fieldKey", required = true, example = "name")
     @Parameter(name = "value", required = true, example = "测试设备")
     @Parameter(name = "excludeId", description = "编辑时排除的实体 id")
-    @PreAuthorize("@catalogAccess.allow(#registryCode, 'query')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, #entityTypeCode, 'query')")
     public CommonResult<EntityFieldAvailabilityRespVO> checkFieldUnique(
             @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam(value = "modelId", required = false) Long modelId,
@@ -279,11 +313,13 @@ public class EntityController {
             - 业务范围：指定业务（必须传 entityTypeCode）
             """
     )
-    @PreAuthorize("@catalogAccess.allow(#registryCode, 'update')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, #entityTypeCode, 'update')")
     public CommonResult<Boolean> moveEntity(@RequestParam("entityId") Long entityId,
                                             @RequestParam("entityTypeCode") String entityTypeCode,
                                             @RequestParam(value = "newParentId", required = false) Long newParentId,
             @RequestParam(value = "registryCode", required = false) String registryCode) {
+        catalogEntryAccessService.assertRecordsInTarget(registryCode, entityTypeCode,
+                newParentId == null ? List.of(entityId) : List.of(entityId, newParentId));
         entityService.moveEntity(entityId, entityTypeCode, newParentId);
         return success(true);
     }
@@ -294,19 +330,18 @@ public class EntityController {
         description = """
             按实体类型返回 parentId 组装的树，供「上级」树状选择。
             可选 modelId：有则限定该型号；无则该类型下全部实体。
-            站场级类型必须带 facilityId（所属场站），禁止拉全租户树。
+            只留登录人数据范围里、且属于右上角选中那座站的节点。
             """
     )
     @Parameter(name = "entityTypeCode", required = true)
     @Parameter(name = "modelId", description = "可选，限定型号")
-    @Parameter(name = "facilityId", description = "站场级类型必填所属场站")
-    @PreAuthorize("@catalogAccess.allow(#registryCode, 'query')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, #entityTypeCode, 'query')")
     public CommonResult<List<EntityRespVO>> getHierarchyTree(
             @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam(value = "modelId", required = false) Long modelId,
-            @RequestParam(value = "facilityId", required = false) Long facilityId,
             @RequestParam(value = "registryCode", required = false) String registryCode) {
-        return success(entityService.getEntityTreeByModelId(entityTypeCode, modelId, facilityId));
+        catalogEntryAccessService.assertWholeTypeTreeAllowed(registryCode, entityTypeCode, modelId);
+        return success(entityService.getVisibleEntityTree(registryCode, entityTypeCode, modelId));
     }
 
     @GetMapping("/path-by-entity-id")
@@ -318,10 +353,12 @@ public class EntityController {
             - 业务范围：指定业务（必须传 entityTypeCode）
             """
     )
-    @PreAuthorize("@catalogAccess.allow(#registryCode, 'query')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, #entityTypeCode, 'query')")
     public CommonResult<List<String>> getEntityPath(@RequestParam("entityId") Long entityId,
                                                      @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam(value = "registryCode", required = false) String registryCode) {
+        catalogEntryAccessService.assertRecordsInTarget(registryCode, entityTypeCode, List.of(entityId));
+        dataScopeQueryService.assertVisibleInTarget(registryCode, entityTypeCode, entityId);
         return success(entityService.getEntityPath(entityId, entityTypeCode));
     }
 
@@ -337,11 +374,16 @@ public class EntityController {
     )
     @Parameter(name = "categoryId", description = "分类ID（必填）", required = true, example = "1")
     @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
-    @PreAuthorize("@catalogAccess.allow(#registryCode, 'query')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, #entityTypeCode, 'query')")
     public CommonResult<EntityRespVO> getCategoryLinkedEntity(@RequestParam("categoryId") Long categoryId,
                                                                 @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam(value = "registryCode", required = false) String registryCode) {
-        return success(entityService.getCategoryLinkedEntity(categoryId, entityTypeCode));
+        EntityRespVO linked = entityService.getCategoryLinkedEntity(categoryId, entityTypeCode);
+        if (linked != null) {
+            catalogEntryAccessService.assertRecordsInTarget(registryCode, entityTypeCode, List.of(linked.getId()));
+            dataScopeQueryService.assertVisibleInTarget(registryCode, entityTypeCode, linked.getId());
+        }
+        return success(linked);
     }
 
 
@@ -362,7 +404,7 @@ public class EntityController {
             - ENTITIES_DETAIL：实体详情
             """
     )
-    @PreAuthorize("@catalogAccess.allow(#registryCode, 'query')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, #entityTypeCode, 'query')")
     public CommonResult<EntitySceneQueryRespVO> queryEntities(
             @RequestParam("scene") EntityQueryScene scene,
             @RequestParam(value = "resultShape", required = false, defaultValue = "PAGE") String resultShape,
@@ -388,13 +430,15 @@ public class EntityController {
             @RequestParam(value = "relatedEntityTypeCode", required = false) String relatedEntityTypeCode,
             @RequestBody(required = false) List<FieldFilterReqVO> filters,
             @RequestParam(value = "registryCode", required = false) String registryCode) {
-        return queryEntitiesInternal(scene, resultShape, resultDetail, categoryTypeCode, entityTypeCode,
+        CatalogEntryAccessService.QueryBinding binding =
+                catalogEntryAccessService.bindQuery(registryCode, entityTypeCode, domain);
+        return queryEntitiesInternal(scene, resultShape, resultDetail, categoryTypeCode, binding.entityTypeCode(),
                 parseFlexibleIdList(modelIds), modelEntityTypeCode, parseFlexibleIdList(categoryIds),
                 null,
                 categoryViaRefPathCode, categoryFilterMode,
-                entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword, domain,
+                entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword, binding.domain(),
                 filters, orderByColumn, isAsc, searchFieldCodes,
-                parseFlexibleIdList(relatedEntityIds), relatedEntityTypeCode);
+                parseFlexibleIdList(relatedEntityIds), relatedEntityTypeCode, binding.scopeRegistryCode());
     }
 
     private CommonResult<EntitySceneQueryRespVO> queryEntitiesInternal(
@@ -421,7 +465,8 @@ public class EntityController {
             Boolean isAsc,
             List<String> searchFieldCodes,
             List<Long> relatedEntityIds,
-            String relatedEntityTypeCode) {
+            String relatedEntityTypeCode,
+            String scopeRegistryCode) {
         if (StringUtils.hasText(keyword)) {
             log.warn(
                     "[SEARCH-DIAG][ENTRY] scene={} entityTypeCode={} categoryTypeCode={} keyword={} searchFieldCodes={} modelIds={} categoryIds={} orderBy={} isAsc={} pageNo={} pageSize={}",
@@ -435,7 +480,7 @@ public class EntityController {
                 categoryFilterMode,
                 entityId, rootEntityId, entitySourceEntityType, pageNo, pageSize, keyword,
                 domain, filters, orderByColumn, isAsc, searchFieldCodes,
-                relatedEntityIds, relatedEntityTypeCode);
+                relatedEntityIds, relatedEntityTypeCode, scopeRegistryCode);
         if (StringUtils.hasText(keyword)) {
             Long total = resp == null || resp.getPage() == null ? null : resp.getPage().getTotal();
             int listSize = resp == null || resp.getPage() == null || resp.getPage().getList() == null
@@ -458,17 +503,19 @@ public class EntityController {
             - 划分数据：entityTypeCode 传 SCOPE 入口编码，后端按成员表收窄，勿再传 scopeEntityTypeCode
             """
     )
-    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'query')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, #reqVO.entityTypeCode, 'query')")
     public CommonResult<EntitySceneQueryRespVO> queryEntitiesByBody(@Valid @RequestBody EntitySceneQueryReqVO reqVO) {
+        CatalogEntryAccessService.QueryBinding binding = catalogEntryAccessService.bindQuery(
+                reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getDomain());
         return queryEntitiesInternal(reqVO.getScene(), reqVO.getResultShape(), reqVO.getResultDetail(),
-                reqVO.getCategoryTypeCode(), reqVO.getEntityTypeCode(),
+                reqVO.getCategoryTypeCode(), binding.entityTypeCode(),
                 reqVO.getModelIds(), reqVO.getModelEntityTypeCode(), reqVO.getCategoryIds(), reqVO.getCategoryIdGroups(),
                 reqVO.getCategoryViaRefPathCode(), reqVO.getCategoryFilterMode(),
                 reqVO.getEntityId(), reqVO.getRootEntityId(), reqVO.getEntitySourceEntityType(),
-                reqVO.getPageNo(), reqVO.getPageSize(), reqVO.getKeyword(), reqVO.getDomain(),
+                reqVO.getPageNo(), reqVO.getPageSize(), reqVO.getKeyword(), binding.domain(),
                 reqVO.getFieldFilters(), reqVO.getOrderByColumn(), reqVO.getIsAsc(),
                 reqVO.getSearchFieldCodes(),
-                reqVO.getRelatedEntityIds(), reqVO.getRelatedEntityTypeCode());
+                reqVO.getRelatedEntityIds(), reqVO.getRelatedEntityTypeCode(), binding.scopeRegistryCode());
     }
 
     /**
@@ -510,7 +557,7 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = EXPORT)
-    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'query')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, #reqVO.entityTypeCode, 'query')")
     public void exportExcel(@Valid EntityExportReqVO reqVO, HttpServletResponse response) throws IOException {
         List<EntityExportExcelVO> list = entityDataExportService.exportEntityList(reqVO);
         ExcelUtils.write(response, "业务实体.xls", "数据", EntityExportExcelVO.class, list);
@@ -526,7 +573,7 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = EXPORT)
-    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'query')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, #reqVO.entityTypeCode, 'query')")
     public void exportCsv(@Valid EntityExportReqVO reqVO, HttpServletResponse response) throws IOException {
         String csvContent = entityDataExportService.exportToCsv(reqVO);
         response.setContentType("text/csv;charset=UTF-8");
@@ -543,7 +590,7 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = EXPORT)
-    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'query')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, #reqVO.entityTypeCode, 'query')")
     public void exportJson(@Valid EntityExportReqVO reqVO, HttpServletResponse response) throws IOException {
         String jsonContent = entityDataExportService.exportToJson(reqVO);
         response.setContentType("application/json;charset=UTF-8");
@@ -563,7 +610,7 @@ public class EntityController {
     )
     @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
     @Parameter(name = "modelId", description = "模型ID（可选，用于生成带字段说明的模板）", example = "1")
-    @PreAuthorize("@catalogAccess.allow(#registryCode, 'create')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, #entityTypeCode, 'create')")
     public void getImportTemplate(@RequestParam("entityTypeCode") String entityTypeCode,
                                     @RequestParam(value = "modelId", required = false) Long modelId,
                                     @RequestParam(value = "registryCode", required = false) String registryCode,
@@ -591,7 +638,9 @@ public class EntityController {
             @RequestParam(value = "updateSupport", required = false, defaultValue = "false") Boolean updateSupport,
             @RequestParam(value = "registryCode", required = false) String registryCode) throws IOException {
         List<EntityImportExcelVO> list = ExcelUtils.read(file, EntityImportExcelVO.class);
-        return success(entityDataExportService.importEntityList(list, updateSupport));
+        catalogAccess.assertAllowTypes(registryCode,
+                list.stream().map(EntityImportExcelVO::getEntityTypeCode).toList(), "create");
+        return success(entityDataExportService.importEntityList(registryCode, list, updateSupport));
     }
 
     // ==================== 批量操作相关 API ====================
@@ -607,8 +656,10 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, #reqVO.entityTypeCode, 'update')")
     public CommonResult<EntityBatchOperationRespVO> batchUpdate(@Valid @RequestBody EntityBatchUpdateReqVO reqVO) {
+        catalogEntryAccessService.assertRecordsInTarget(reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getIds());
+        catalogEntryAccessService.assertModelInTarget(reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getModelId());
         return success(entityService.batchUpdate(reqVO));
     }
 
@@ -624,6 +675,14 @@ public class EntityController {
     @ApiAccessLog(operateType = CREATE)
     @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'create')")
     public CommonResult<List<Long>> batchCreate(@Valid @RequestBody EntityBatchCreateReqVO reqVO) {
+        if (reqVO.getItems() != null) {
+            for (EntityBatchCreateReqVO.Item item : reqVO.getItems()) {
+                String typeCode = EntityFieldMapsSupport.getEntityTypeCode(item.getBaseFields());
+                catalogAccess.assertAllowTypes(reqVO.getRegistryCode(), List.of(typeCode == null ? "" : typeCode), "create");
+                catalogEntryAccessService.assertModelInTarget(reqVO.getRegistryCode(), typeCode,
+                        EntityFieldMapsSupport.getModelId(item.getBaseFields()));
+            }
+        }
         return success(entityService.batchCreate(reqVO));
     }
 
@@ -640,8 +699,9 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = DELETE)
-    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'delete')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, #reqVO.entityTypeCode, 'delete')")
     public CommonResult<EntityBatchOperationRespVO> batchDelete(@Valid @RequestBody EntityBatchDeleteReqVO reqVO) {
+        catalogEntryAccessService.assertRecordsInTarget(reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getIds());
         return success(entityService.batchDelete(reqVO));
     }
 
@@ -657,8 +717,9 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, #reqVO.entityTypeCode, 'update')")
     public CommonResult<EntityBatchOperationRespVO> batchRelocateCategory(@Valid @RequestBody EntityBatchMoveReqVO reqVO) {
+        catalogEntryAccessService.assertRecordsInTarget(reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getIds());
         return success(entityService.batchRelocateCategory(reqVO));
     }
 
@@ -672,9 +733,10 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, #reqVO.entityTypeCode, 'update')")
     public CommonResult<BatchEntityCategoryAssociationRespVO> batchAppendCategory(
             @Valid @RequestBody EntityBatchCategoryRelationReqVO reqVO) {
+        catalogEntryAccessService.assertRecordsInTarget(reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getEntityIds());
         return success(entityService.batchAppendCategory(reqVO));
     }
 
@@ -688,9 +750,10 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, #reqVO.entityTypeCode, 'update')")
     public CommonResult<BatchEntityCategoryAssociationRespVO> batchRemoveCategory(
             @Valid @RequestBody EntityBatchCategoryRelationReqVO reqVO) {
+        catalogEntryAccessService.assertRecordsInTarget(reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getEntityIds());
         return success(entityService.batchRemoveCategory(reqVO));
     }
 
@@ -704,9 +767,10 @@ public class EntityController {
             """
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, #reqVO.entityTypeCode, 'update')")
     public CommonResult<BatchEntityCategoryAssociationRespVO> batchReplaceCategories(
             @Valid @RequestBody EntityBatchReplaceCategoriesReqVO reqVO) {
+        catalogEntryAccessService.assertRecordsInTarget(reqVO.getRegistryCode(), reqVO.getEntityTypeCode(), reqVO.getEntityIds());
         return success(entityService.batchReplaceCategories(reqVO));
     }
 
@@ -716,8 +780,12 @@ public class EntityController {
         description = "拖拽调整列表顺序后重写排序。有 categoryId 时写分类—实体关联 sort；否则写实体 sort。"
     )
     @ApiAccessLog(operateType = UPDATE)
-    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, 'update')")
+    @PreAuthorize("@catalogAccess.allow(#reqVO.registryCode, #reqVO.entityTypeCode, 'update')")
     public CommonResult<Boolean> saveEntitySort(@Valid @RequestBody EntitySortSaveReqVO reqVO) {
+        if (reqVO.getItems() != null) {
+            catalogEntryAccessService.assertRecordsInTarget(reqVO.getRegistryCode(), reqVO.getEntityTypeCode(),
+                    reqVO.getItems().stream().map(EntitySortSaveReqVO.Item::getEntityId).toList());
+        }
         entityService.saveEntitySort(reqVO);
         return success(true);
     }
@@ -734,11 +802,12 @@ public class EntityController {
             """
     )
     @Parameter(name = "entityTypeCode", description = "业务类型编码（必填）", required = true, example = "equipment")
-    @PreAuthorize("@catalogAccess.allow(#registryCode, 'query')")
+    @PreAuthorize("@catalogAccess.allow(#registryCode, #entityTypeCode, 'query')")
     public CommonResult<EntityBatchOperationRespVO> batchPreview(
             @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestBody List<Long> ids,
             @RequestParam(value = "registryCode", required = false) String registryCode) {
+        catalogEntryAccessService.assertRecordsInTarget(registryCode, entityTypeCode, ids);
         return success(entityService.getBatchOperationPreview(entityTypeCode, ids));
     }
 

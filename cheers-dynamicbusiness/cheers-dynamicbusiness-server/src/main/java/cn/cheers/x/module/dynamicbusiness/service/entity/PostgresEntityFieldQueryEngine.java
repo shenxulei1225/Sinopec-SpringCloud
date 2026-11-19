@@ -328,7 +328,7 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
                     return Collections.emptySet();
                 }
                 List<Long> matched = entityRelationService
-                        .listEntityIdsByRelationFieldAndRelatedIds(filter.getFieldCode(), relatedIds);
+                        .listSubjectEntityIdsByRefFieldAndTargetIds(filter.getFieldCode(), entityTypeCode, relatedIds);
                 if (matched == null || matched.isEmpty()) {
                     if (isNegativeOp) {
                         continue;

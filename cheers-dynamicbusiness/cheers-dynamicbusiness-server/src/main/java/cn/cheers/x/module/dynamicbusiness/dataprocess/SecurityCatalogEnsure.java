@@ -4,6 +4,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityT
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeService;
+import cn.cheers.x.module.dynamicbusiness.service.facility.StationOwnedCatalogSetup;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,25 +26,27 @@ public class SecurityCatalogEnsure {
     public static final String GROUP_NAME = "安防管理";
 
     private static final List<Catalog> CATALOGS = List.of(
-            new Catalog("security_personnel", "人员管理", "user_account", EntityTypeDO.WORK_SCOPE_NETWORK, 701),
-            new Catalog("security_patrol", "巡检", "task", EntityTypeDO.WORK_SCOPE_FACILITY, 702),
-            new Catalog("security_phone", "有线电话", "equipment", EntityTypeDO.WORK_SCOPE_FACILITY, 711),
-            new Catalog("security_radio", "无线通讯", "equipment", EntityTypeDO.WORK_SCOPE_FACILITY, 712),
-            new Catalog("security_video", "视频监控", "equipment", EntityTypeDO.WORK_SCOPE_FACILITY, 713),
-            new Catalog("security_perimeter", "周界报警", "equipment", EntityTypeDO.WORK_SCOPE_FACILITY, 714),
-            new Catalog("security_intrusion", "入侵检测", "equipment", EntityTypeDO.WORK_SCOPE_FACILITY, 715),
-            new Catalog("security_access", "门禁", "equipment", EntityTypeDO.WORK_SCOPE_FACILITY, 716),
-            new Catalog("security_broadcast", "广播", "equipment", EntityTypeDO.WORK_SCOPE_FACILITY, 717),
-            new Catalog("security_resource", "安全资源位置", "equipment", EntityTypeDO.WORK_SCOPE_FACILITY, 718),
-            new Catalog("security_person", "人员识别", "alarm", EntityTypeDO.WORK_SCOPE_FACILITY, 721),
-            new Catalog("security_vehicle", "车辆定位", "alarm", EntityTypeDO.WORK_SCOPE_FACILITY, 722),
-            new Catalog("security_behavior", "行为识别", "alarm", EntityTypeDO.WORK_SCOPE_FACILITY, 723)
+            new Catalog("security_personnel", "人员管理", "user_account", false, 701),
+            new Catalog("security_patrol", "巡检", "task", true, 702),
+            new Catalog("security_phone", "有线电话", "equipment", true, 711),
+            new Catalog("security_radio", "无线通讯", "equipment", true, 712),
+            new Catalog("security_video", "视频监控", "equipment", true, 713),
+            new Catalog("security_perimeter", "周界报警", "equipment", true, 714),
+            new Catalog("security_intrusion", "入侵检测", "equipment", true, 715),
+            new Catalog("security_access", "门禁", "equipment", true, 716),
+            new Catalog("security_broadcast", "广播", "equipment", true, 717),
+            new Catalog("security_resource", "安全资源位置", "equipment", true, 718),
+            new Catalog("security_person", "人员识别", "alarm", true, 721),
+            new Catalog("security_vehicle", "车辆定位", "alarm", true, 722),
+            new Catalog("security_behavior", "行为识别", "alarm", true, 723)
     );
 
     @Resource
     private EntityTypeMapper entityTypeMapper;
     @Resource
     private EntityTypeService entityTypeService;
+    @Resource
+    private StationOwnedCatalogSetup stationOwnedCatalogSetup;
 
     /** 侧边栏要出现的目录。测试核对名称和所用的账，不连数据库。 */
     public static List<Catalog> catalogs() {
@@ -73,11 +76,13 @@ public class SecurityCatalogEnsure {
             request.setStatus("active");
             request.setEntryKind(EntityTypeDO.ENTRY_KIND_REUSE);
             request.setBaseEntityTypeCode(catalog.baseCode());
-            request.setWorkScope(catalog.workScope());
             request.setGroupName(GROUP_NAME);
             request.setDescription(description(catalog));
             request.setAssociationFields("{}");
             entityTypeService.create(request);
+            if (catalog.stationOwned()) {
+                stationOwnedCatalogSetup.setUpNewCatalog(catalog.code(), false);
+            }
         }
         if (!missing.isEmpty()) {
             log.error("安防目录没有全部登记：{}", String.join("；", missing));
@@ -101,9 +106,9 @@ public class SecurityCatalogEnsure {
      * @param code 目录注册编码
      * @param name 侧边栏上的名字
      * @param baseCode 打开后读写的那本已有账
-     * @param workScope 管网级还是站场级
+     * @param stationOwned 每条记录属于一座站：建好后写归属声明「所属场站 → 场站」
      * @param sort 分组内顺序
      */
-    public record Catalog(String code, String name, String baseCode, String workScope, int sort) {
+    public record Catalog(String code, String name, String baseCode, boolean stationOwned, int sort) {
     }
 }

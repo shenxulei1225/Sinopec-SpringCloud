@@ -15,11 +15,15 @@ public interface EntityDataExportService {
     /**
      * 导入业务实体数据
      *
+     * 这条导入只写名称、型号、状态和扩展字段，不写所属场站等归属列。
+     * 所以按数据范围分的目录拒绝这条导入：导进去的记录谁都看不到。
+     *
+     * @param registryCode  本页数据目录注册编码
      * @param importList    导入数据列表
      * @param updateSupport 保留入参。名称可以重复，导入不按名称查找或覆盖已有记录
      * @return 导入结果
      */
-    EntityImportRespVO importEntityList(List<EntityImportExcelVO> importList, Boolean updateSupport);
+    EntityImportRespVO importEntityList(String registryCode, List<EntityImportExcelVO> importList, Boolean updateSupport);
 
     /**
      * 导出业务实体数据

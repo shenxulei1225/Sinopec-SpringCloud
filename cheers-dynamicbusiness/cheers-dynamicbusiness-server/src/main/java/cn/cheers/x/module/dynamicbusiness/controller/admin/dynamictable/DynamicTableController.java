@@ -15,9 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
@@ -25,7 +23,9 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 /**
  * 动态表管理 Controller
  * 
- * 提供 DEDICATED_DYNAMIC 存储类型的动态表管理接口
+ * 提供 DEDICATED_DYNAMIC 存储类型的动态表管理接口：建表、同步字段、看列和审计日志。
+ * 只管表结构，属于平台配置，看菜单权限。
+ * 不提供按型号直接读写表里数据的接口：业务数据只走实体接口，由目录授权核对。
  * 
  * @author yudao
  */
@@ -88,6 +88,7 @@ public class DynamicTableController {
     @GetMapping("/has-dynamic-table")
     @Operation(summary = "检查模型是否已创建动态表")
     @Parameter(name = "modelId", description = "模型ID", required = true, example = "1")
+    @PreAuthorize("@ss.hasPermission('system:dynamic-table:query')")
     public CommonResult<Boolean> hasDynamicTable(@RequestParam("modelId") Long modelId) {
         return success(dynamicTableService.hasDynamicTable(modelId));
     }
@@ -111,61 +112,6 @@ public class DynamicTableController {
             @RequestParam("dynamicTableId") Long dynamicTableId) {
         List<DynamicTableColumnDO> columns = dynamicTableService.listDynamicTableColumns(dynamicTableId);
         return success(columns.stream().map(this::convertColumnToRespVO).collect(Collectors.toList()));
-    }
-
-    // ==================== 数据操作接口 ====================
-
-    @PostMapping("/data/insert")
-    @Operation(summary = "插入数据到动态表")
-    @PreAuthorize("@ss.hasPermission('system:dynamic-table:create')")
-    public CommonResult<Long> insertData(@Valid @RequestBody DynamicTableDataReqVO reqVO) {
-        Map<Long, Object> data = convertDataMap(reqVO.getData());
-        return success(dynamicTableService.insertData(reqVO.getModelId(), data));
-    }
-
-    @PutMapping("/data/update")
-    @Operation(summary = "更新动态表数据")
-    @PreAuthorize("@ss.hasPermission('system:dynamic-table:update')")
-    public CommonResult<Boolean> updateData(@Valid @RequestBody DynamicTableDataUpdateReqVO reqVO) {
-        Map<Long, Object> data = convertDataMap(reqVO.getData());
-        dynamicTableService.updateData(reqVO.getModelId(), reqVO.getRecordId(), data);
-        return success(true);
-    }
-
-    @DeleteMapping("/data/delete")
-    @Operation(summary = "删除动态表数据")
-    @PreAuthorize("@ss.hasPermission('system:dynamic-table:delete')")
-    public CommonResult<Boolean> deleteData(
-            @RequestParam("modelId") Long modelId,
-            @RequestParam("recordId") Long recordId) {
-        dynamicTableService.deleteData(modelId, recordId);
-        return success(true);
-    }
-
-    @GetMapping("/data/get")
-    @Operation(summary = "获取动态表单条数据")
-    @PreAuthorize("@ss.hasPermission('system:dynamic-table:query')")
-    public CommonResult<Map<String, Object>> getData(
-            @RequestParam("modelId") Long modelId,
-            @RequestParam("recordId") Long recordId) {
-        Map<Long, Object> data = dynamicTableService.getData(modelId, recordId);
-        return success(convertDataMapToString(data));
-    }
-
-    @GetMapping("/data/list")
-    @Operation(summary = "查询动态表数据列表")
-    @PreAuthorize("@ss.hasPermission('system:dynamic-table:query')")
-    public CommonResult<DynamicTableDataListRespVO> listData(
-            @RequestParam("modelId") Long modelId,
-            @RequestParam(value = "pageNo", defaultValue = "1") Integer pageNo,
-            @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize) {
-        List<Map<Long, Object>> list = dynamicTableService.listData(modelId, pageNo, pageSize, null);
-        long total = dynamicTableService.countData(modelId, null);
-        
-        DynamicTableDataListRespVO respVO = new DynamicTableDataListRespVO();
-        respVO.setList(list.stream().map(this::convertDataMapToString).collect(Collectors.toList()));
-        respVO.setTotal(total);
-        return success(respVO);
     }
 
     // ==================== 审计日志接口 ====================
@@ -231,32 +177,5 @@ public class DynamicTableController {
         respVO.setOperationTime(log.getOperationTime());
         respVO.setOperatorName(log.getOperatorName());
         return respVO;
-    }
-
-    private Map<Long, Object> convertDataMap(Map<String, Object> data) {
-        if (data == null) {
-            return new HashMap<>();
-        }
-        Map<Long, Object> result = new HashMap<>();
-        for (Map.Entry<String, Object> entry : data.entrySet()) {
-            try {
-                Long fieldId = Long.parseLong(entry.getKey());
-                result.put(fieldId, entry.getValue());
-            } catch (NumberFormatException e) {
-                // 忽略非数字的 key
-            }
-        }
-        return result;
-    }
-
-    private Map<String, Object> convertDataMapToString(Map<Long, Object> data) {
-        if (data == null) {
-            return new HashMap<>();
-        }
-        Map<String, Object> result = new HashMap<>();
-        for (Map.Entry<Long, Object> entry : data.entrySet()) {
-            result.put(String.valueOf(entry.getKey()), entry.getValue());
-        }
-        return result;
     }
 }

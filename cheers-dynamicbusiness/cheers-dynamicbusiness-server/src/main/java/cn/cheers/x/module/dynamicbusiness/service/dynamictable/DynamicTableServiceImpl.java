@@ -742,6 +742,7 @@ public class DynamicTableServiceImpl implements DynamicTableService {
             try {
                 jdbcTemplate.execute(renameSql);
                 log.info("恢复废弃列 {} -> {} (表: {})", deprecatedColumnName, columnName, tableName);
+                createSingleRefIndexIfNeeded(tableName, columnName, baseField.getDataType());
             } catch (Exception e) {
                 log.error("恢复废弃列失败: {}", renameSql, e);
                 throw new ServiceException(500, "恢复废弃列失败: " + e.getMessage());
@@ -783,10 +784,26 @@ public class DynamicTableServiceImpl implements DynamicTableService {
             String commentSql = String.format("COMMENT ON COLUMN %s.%s IS '%s'",
                     tableName, columnName, comment.replace("'", "''"));
             jdbcTemplate.execute(commentSql);
+            createSingleRefIndexIfNeeded(tableName, columnName, baseField.getDataType());
         } catch (Exception e) {
             log.error("添加列失败: {}", executedSql, e);
             throw new ServiceException(500, "添加列失败: " + e.getMessage());
         }
+    }
+
+    /**
+     * 单值引用列（如所属场站、所属管线段）必须带索引：按场站筛记录、反查谁引用了这座站、删除前计数都直接查这一列，
+     * 不再经分类-实体关联表或实体关系表。多选引用不走列，不建。
+     */
+    private void createSingleRefIndexIfNeeded(String tableName, String columnName, String dataType) {
+        if (!cn.cheers.x.module.dynamicbusiness.service.entity.refroute.EntityRefColumnRouteQueryService.isSingleRef(dataType)) {
+            return;
+        }
+        String safeTableName = tableName.replace(".", "_").replace("-", "_");
+        String indexSql = String.format("CREATE INDEX IF NOT EXISTS idx_%s_%s ON %s(%s) WHERE deleted = false",
+                safeTableName, columnName, tableName, columnName);
+        jdbcTemplate.execute(indexSql);
+        log.info("单值引用列 {}.{} 已建索引", tableName, columnName);
     }
 
     @Override

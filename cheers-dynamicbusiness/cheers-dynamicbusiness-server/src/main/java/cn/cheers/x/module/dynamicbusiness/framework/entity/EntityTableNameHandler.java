@@ -11,6 +11,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -78,6 +82,27 @@ public class EntityTableNameHandler implements TableNameHandler {
         return isDedicatedStorage(entityType);
     }
 
+    /**
+     * 记录存在同一张物理表里的全部数据目录编码（含这个编码自己）。
+     *
+     * <p>不同表的记录编号会重复，关联表里只有「记录编号 + 目录编码」能定位到一条记录。
+     * 删一条记录的关联时，按这组编码限定，不会删到别的表里同编号记录的关联。
+     * 同表判断只认找表规则（专用表名优先，其次底座类型），不另猜：例如订阅目录自己是原生目录，
+     * 但它的表登记的是推送订阅表。</p>
+     */
+    public List<String> listCodesSharingPhysicalTable(String entityTypeCode) {
+        String table = resolvePhysicalTableName(entityTypeCode);
+        Set<String> codes = new LinkedHashSet<>();
+        codes.add(entityTypeCode.trim());
+        for (EntityTypeDO type : entityTypeMapper.selectList()) {
+            if (StringUtils.hasText(type.getCode()) && isDedicatedStorage(type)
+                    && table.equals(tableOf(type, type.getCode().trim()))) {
+                codes.add(type.getCode().trim());
+            }
+        }
+        return new ArrayList<>(codes);
+    }
+
     private String validateAndResolveTableName(String entityTypeCode) {
         if (!VALID_CODE_PATTERN.matcher(entityTypeCode).matches()) {
             throw new IllegalArgumentException("非法的 entityTypeCode: " + entityTypeCode);
@@ -90,17 +115,21 @@ public class EntityTableNameHandler implements TableNameHandler {
                         "实体类型未使用专用表存储，已禁止 GENERIC/dynamic_entity：code=" + entityTypeCode
                                 + ", storageType=" + entityType.getStorageType());
             }
-            if (StringUtils.hasText(entityType.getDedicatedTableName())) {
-                return TenantPhysicalTableNames.ensureTenantSuffix(entityType.getDedicatedTableName().trim());
-            }
-            String baseCode = StringUtils.hasText(entityType.getBaseEntityTypeCode())
-                    ? entityType.getBaseEntityTypeCode().trim()
-                    : entityTypeCode;
-            return TenantPhysicalTableNames.entityPhysicalTable(baseCode);
+            return tableOf(entityType, entityTypeCode);
         }
 
         // 创建过程中元数据可能尚未可见：按约定路由到当前租户物理表
         return TenantPhysicalTableNames.entityPhysicalTable(entityTypeCode);
+    }
+
+    private String tableOf(EntityTypeDO entityType, String entityTypeCode) {
+        if (StringUtils.hasText(entityType.getDedicatedTableName())) {
+            return TenantPhysicalTableNames.ensureTenantSuffix(entityType.getDedicatedTableName().trim());
+        }
+        String baseCode = StringUtils.hasText(entityType.getBaseEntityTypeCode())
+                ? entityType.getBaseEntityTypeCode().trim()
+                : entityTypeCode;
+        return TenantPhysicalTableNames.entityPhysicalTable(baseCode);
     }
 
     private boolean isDedicatedStorage(EntityTypeDO entityType) {

@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * 把已经作出的决定写进数据管理里的告警目录。
- * 缺了类型、设备或位置就让写入拒绝，这里不补。
+ * 缺了类型或设备就让写入拒绝。归属由告警目录的声明判断，这里不补。
  */
 @Component
 public class AlarmSignalGatewayImpl implements AlarmSignalGateway {
@@ -34,13 +34,14 @@ public class AlarmSignalGatewayImpl implements AlarmSignalGateway {
 
     @Override
     public void recordAbnormalQuality(ParsedPointSample sample) {
-        if (sample.zoneId() == null || sample.zoneId() <= 0) {
-            throw new ServiceException(400, "质量异常的读数没有位置，不记告警");
+        if (sample.deviceId() <= 0) {
+            throw new ServiceException(400, "质量异常的读数没有设备，不记告警");
         }
+        long placeId = sample.zoneId() == null ? 0L : sample.zoneId();
         String content = sample.bindingCode() + " 质量不合格";
         records.open(sample.tenantId(), null, AlarmTypeCatalog.DEVICE_MALFUNCTION,
                 qualityCode(sample.deviceId(), sample.pointCode()), content, AlarmTypeCatalog.LEVEL_ABNORMAL, content,
-                sample.deviceId(), sample.zoneId(), Double.toString(sample.engineeringValue()), null, sample.pointCode(), null);
+                sample.deviceId(), placeId, Double.toString(sample.engineeringValue()), null, sample.pointCode(), null);
     }
 
     @Override

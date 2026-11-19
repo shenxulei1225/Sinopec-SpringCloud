@@ -65,6 +65,28 @@ class ModelGovernanceCommandServiceImplTest {
     }
 
     @Test
+    void companyCreatorGetsCompanyWithoutAsking() {
+        ModelDO model = new ModelDO();
+        when(capabilityChecker.canCreateCompanyStandard()).thenReturn(true);
+
+        service.prepareForCreate(model, null, 10L, 100L);
+
+        assertEquals("COMPANY", model.getGovernanceStatus());
+        assertNull(model.getOriginFacilityId());
+    }
+
+    @Test
+    void stationUserGetsLocalAtSelectedFacility() {
+        ModelDO model = new ModelDO();
+        when(capabilityChecker.canCreateCompanyStandard()).thenReturn(false);
+
+        service.prepareForCreate(model, null, 10L, 100L);
+
+        assertEquals("LOCAL", model.getGovernanceStatus());
+        assertEquals(10L, model.getOriginFacilityId());
+    }
+
+    @Test
     void localCreateRequiresEffectiveFacility() {
         ModelDO model = new ModelDO();
 

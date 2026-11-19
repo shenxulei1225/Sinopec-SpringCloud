@@ -132,7 +132,7 @@ psql "$DATABASE_URL" -f recipes/inspection/13_add_sop_universal_definition_field
 - **分类区**：按运维需要配置多个分类维 Tab（分区、专业、检查项视角等）
 - **实体列多 Tab**：每 Tab 一种底座类型（如 `equipment`、`pipeline`、`building`、摄像机类型等）
 - **数据关系图**：配置分类→实体、型号→实体等查数边（任务嵌入内可打开关系图维护）
-- **SCOPE 成员**：仅圈内、且任务页叠当前站场（`workScope=FACILITY` + `pageScopeMember`）
+- **SCOPE 成员**：仅圈内（`pageScopeMember`）。按站收窄由顶栏选中的站和所属场站归属声明决定
 
 可执行 `06_patrol_target_layout_default_identities.sql` 整理栏身份；多实体 Tab 须在数据管理「巡检目标管理」布局中自行添加实体列并保存关系图。
 

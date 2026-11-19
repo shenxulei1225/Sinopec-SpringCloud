@@ -27,6 +27,7 @@ public record PlatformEventEnvelope(
 
     /**
      * 校验系统边界并复制载荷，防止发布后被调用方继续修改。
+     * 所属场站这一列可以空着。归属在载荷里，按目录声明抄过来。
      */
     public static PlatformEventEnvelope require(
             String eventId,
@@ -42,7 +43,6 @@ public record PlatformEventEnvelope(
     ) {
         if (blank(eventId) || eventTopicId == null || eventTopicId <= 0
                 || blank(eventCode) || tenantId == null || tenantId <= 0
-                || facilityId == null || facilityId <= 0
                 || blank(sourceEntityTypeCode) || sourceEntityId == null || sourceEntityId <= 0
                 || occurredAt == null) {
             throw new ServiceException(400, "事件缺少主题、来源或发生时间");
@@ -55,7 +55,7 @@ public record PlatformEventEnvelope(
                 eventTopicId,
                 eventCode.trim(),
                 tenantId,
-                facilityId,
+                facilityId == null ? 0L : facilityId,
                 sourceEntityTypeCode.trim(),
                 sourceEntityId,
                 blank(phase) ? null : phase.trim(),

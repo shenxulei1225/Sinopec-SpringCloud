@@ -25,8 +25,7 @@ DECLARE
   v_list_ui text := $p${"displayContent":["standard_no","name"],"emptyText":"暂无标准条目","search":{"showSearch":true,"searchPlaceholder":"搜索标准编号或名称…","searchScopeSelectedOptions":["standard_no","name"]}}$p$;
 BEGIN
   UPDATE dynamic_entity_type
-  SET work_scope = 'NETWORK',
-      model_workbench_mode = 'SINGLE',
+  SET model_workbench_mode = 'SINGLE',
       updater = 'seed-standard-07',
       update_time = CURRENT_TIMESTAMP
   WHERE code = 'standard'

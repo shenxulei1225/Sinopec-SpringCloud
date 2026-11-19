@@ -1,7 +1,6 @@
 package cn.cheers.x.module.dynamicbusiness.controller.admin.ledgerstate;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
-import cn.cheers.x.module.dynamicbusiness.controller.admin.ledgerstate.vo.LedgerStateAppendReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.ledgerstate.vo.LedgerStateExecuteReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.ledgerstate.vo.LedgerTransitionRespVO;
 import cn.cheers.x.module.dynamicbusiness.service.ledgerstate.LedgerStateMachineService;
@@ -30,6 +29,9 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
  * 管什么：按已发布定义列出当前页按钮，执行一跳，读已写下的脉络。
  * 不管什么：角色勾选本身、作业标准步骤、审批设计器。
  * 禁止：在这里写死谁能受理；页面权限仍只认角色授权。
+ * 权限：列可做的转移要这一页的查看勾选。执行和补「已上报」由服务按转移配置的页面核对维护勾选。
+ * 脉络在我的报修、报修受理、故障台账、工单中心、我的工单都显示，任一页有查看勾选即可读。
+ * 工单开工、完工、关闭报修只走报修接口（RepairRecordController），这里不再提供第二条写入。
  */
 @Tag(name = "管理后台 - 办事状态")
 @RestController
@@ -42,7 +44,7 @@ public class LedgerStateMachineController {
 
     @GetMapping("/available")
     @Operation(summary = "当前页在这张单上能做的转移")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("@pageAccess.allow(#pageCode, 'view')")
     public CommonResult<List<LedgerTransitionRespVO>> available(
             @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam("entityId") Long entityId,
@@ -76,26 +78,10 @@ public class LedgerStateMachineController {
         return success(true);
     }
 
-    @PostMapping("/append-progress")
-    @Operation(summary = "工单开工或完工追加脉络，不改报修状态")
-    @PreAuthorize("isAuthenticated()")
-    public CommonResult<Boolean> appendProgress(@Valid @RequestBody LedgerStateAppendReqVO reqVO) {
-        ledgerStateMachineService.appendProgress(reqVO.getEntityTypeCode(), reqVO.getEntityId(),
-                reqVO.getWorkOrderId(), reqVO.getSentence());
-        return success(true);
-    }
-
-    @PostMapping("/close-after-acceptance")
-    @Operation(summary = "验收通过后关闭报修")
-    @PreAuthorize("isAuthenticated()")
-    public CommonResult<Boolean> closeAfterAcceptance(@Valid @RequestBody LedgerStateExecuteReqVO reqVO) {
-        ledgerStateMachineService.closeAfterAcceptance(reqVO.getEntityTypeCode(), reqVO.getEntityId());
-        return success(true);
-    }
-
     @GetMapping("/trace")
     @Operation(summary = "已发生的脉络行")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("@pageAccess.allowAny('view', 'repair-request', 'repair-accept', 'fault-ledger', "
+            + "'work-order-center', 'work-order-execute')")
     public CommonResult<List<String>> trace(
             @RequestParam("entityTypeCode") String entityTypeCode,
             @RequestParam("entityId") Long entityId) {

@@ -1113,6 +1113,7 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
      * <p>支持以下格式：</p>
      * <ul>
      *   <li>List&lt;Long&gt; 或 List&lt;Integer&gt;</li>
+     *   <li>写入契约的对象数组 [{entityTypeCode, id}]（表单保存多选关联时提交的就是这种）</li>
      *   <li>JSON 数组字符串，如 "[301, 302]"</li>
      *   <li>逗号分隔的字符串，如 "301,302"</li>
      * </ul>
@@ -1213,6 +1214,11 @@ public class CustomFieldValidationServiceImpl implements CustomFieldValidationSe
 
         if (value instanceof Number) {
             return ((Number) value).longValue();
+        }
+
+        // 写入契约里多选关联的每一项是 {entityTypeCode, id}；不认它，必填多选（如场站「所属区域」）永远被判未填
+        if (value instanceof Map<?, ?> ref) {
+            return parseEntityId(ref.get("id"));
         }
 
         if (value instanceof String) {

@@ -1,39 +1,41 @@
 package cn.cheers.x.module.dynamicbusiness.service.model.governance;
 
+import cn.cheers.x.framework.security.core.service.SecurityFrameworkService;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class DefaultMasterDataCapabilityCheckerTest {
 
-    @Test
-    void defaultsCanDenyEveryNetworkGovernanceCapability() {
-        DefaultMasterDataCapabilityChecker checker =
-                new DefaultMasterDataCapabilityChecker(false, false, false, false);
+    private final SecurityFrameworkService security = mock(SecurityFrameworkService.class);
 
-        assertFalse(checker.canCreateCompanyStandard());
-        assertFalse(checker.canPromotePackage());
-        assertFalse(checker.canDeactivateCompanyStandard());
+    private DefaultMasterDataCapabilityChecker checker(boolean mock, boolean promote, boolean deactivate) {
+        return new DefaultMasterDataCapabilityChecker(mock, promote, deactivate, security);
     }
 
     @Test
-    void explicitConfigurationCanEnableAcceptanceCapabilities() {
-        DefaultMasterDataCapabilityChecker checker =
-                new DefaultMasterDataCapabilityChecker(false, true, true, true);
+    void nonAdminCannotCreateCompanyStandard() {
+        when(security.hasAnyRoles(any(String[].class))).thenReturn(false);
 
-        assertTrue(checker.canCreateCompanyStandard());
-        assertTrue(checker.canPromotePackage());
-        assertTrue(checker.canDeactivateCompanyStandard());
+        assertFalse(checker(true, false, false).canCreateCompanyStandard());
     }
 
     @Test
-    void mockSecurityEnabledGrantsCapabilitiesBeforeRbac() {
-        DefaultMasterDataCapabilityChecker checker =
-                new DefaultMasterDataCapabilityChecker(true, false, false, false);
+    void adminCanCreateCompanyStandard() {
+        when(security.hasAnyRoles(any(String[].class))).thenReturn(true);
 
-        assertTrue(checker.canCreateCompanyStandard());
-        assertTrue(checker.canPromotePackage());
-        assertTrue(checker.canDeactivateCompanyStandard());
+        assertTrue(checker(false, false, false).canCreateCompanyStandard());
+    }
+
+    @Test
+    void otherCapabilitiesStillFollowConfiguration() {
+        assertFalse(checker(false, false, false).canPromotePackage());
+        assertFalse(checker(false, false, false).canDeactivateCompanyStandard());
+        assertTrue(checker(false, true, true).canPromotePackage());
+        assertTrue(checker(true, false, false).canDeactivateCompanyStandard());
     }
 }

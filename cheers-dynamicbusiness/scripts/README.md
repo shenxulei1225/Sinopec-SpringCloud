@@ -12,7 +12,6 @@
 | `generate-smart-station-import.py` | 生成 `platform-import/smart-station/` |
 | `generate-field-group-seed.py` | 字段分组 seed 辅助 |
 | `apply-base-fields.py` | 运维：按 canonical 补实体类型基础字段 |
-| `rebuild-capability-projections.py` | 运维：重建能力投影 |
 | `sanitize-entity-inserts.py` | 实体实例 SQL 清洗 |
 | `normalize-platform-import-seeds.py` | 将 seed 中遗留拼音 entity_type_code / 拼音 dedicated_table_name 规范为英文 |
 | `entity_type_canonical.py` | 拼音→英文映射（导出与 seed 规范化共用） |
