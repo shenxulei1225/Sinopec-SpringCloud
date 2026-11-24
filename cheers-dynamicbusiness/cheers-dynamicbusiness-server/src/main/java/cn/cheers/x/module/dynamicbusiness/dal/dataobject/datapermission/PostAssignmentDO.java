@@ -14,7 +14,7 @@ import java.time.LocalDate;
 
 /**
  * 任职：某人在某个管理单元担任某个职务，带起止日期。
- * 人的功能来自职务绑定的角色，范围来自这个单元和它的下级单元。任职直接生效，不生成别的记录。
+ * 人的功能来自职务绑定的角色。能看哪些单元写在人员数据范围里，不读这张表。
  * 不是所属部门。所属部门只表示审批归哪里，不参与数据权限。
  */
 @TableName("dynamic_post_assignment")
@@ -32,7 +32,13 @@ public class PostAssignmentDO extends TenantBaseDO {
     /** 职务目录（duty_post）里的职务编号 */
     private Long dutyPostId;
 
-    /** 任职所在的管理单元：管理单元目录里的记录编号 */
+    /**
+     * 管理单元所在目录。组织、场站、管线各自一本。
+     * 空值在迁移里收成 organization。
+     */
+    private String managementUnitRegistry;
+
+    /** 任职所在的管理单元：上面那本目录里的记录编号 */
     private Long managementUnitId;
 
     /** 起始日期；空表示立即 */

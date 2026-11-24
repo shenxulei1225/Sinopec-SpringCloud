@@ -17,6 +17,7 @@ import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.framework.tenant.TenantPhysicalTableNames;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryUserRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
+import cn.cheers.x.module.dynamicbusiness.service.tenantcapability.CatalogBusinessEnablementGate;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -73,6 +74,8 @@ public class WorkOrderCatalogServiceImpl implements WorkOrderCatalogService {
 
     @Resource
     private EntityService entityService;
+    @Resource
+    private CatalogBusinessEnablementGate catalogBusinessEnablementGate;
     @Resource
     private ModelMapper modelMapper;
     @Resource
@@ -160,6 +163,7 @@ public class WorkOrderCatalogServiceImpl implements WorkOrderCatalogService {
 
     @Override
     public PageResult<WorkOrderCatalogRespVO> page(WorkOrderCatalogPageReqVO reqVO) {
+        catalogBusinessEnablementGate.assertOpenedAtFacility(CATALOG, reqVO.getFacilityId());
         String domain = requireDomain(reqVO.getDomain());
         int pageSize = reqVO.getPageSize() == null ? 200 : Math.min(reqVO.getPageSize(), 200);
         String table = TenantPhysicalTableNames.entityPhysicalTable(CATALOG);
@@ -487,6 +491,7 @@ public class WorkOrderCatalogServiceImpl implements WorkOrderCatalogService {
         if (entity == null) {
             throw new ServiceException(404, "工单不存在");
         }
+        catalogBusinessEnablementGate.assertRecord(CATALOG, id);
         return entity;
     }
 

@@ -10,21 +10,28 @@ import java.util.Map;
 
 /**
  * 组织架构页左侧的组织树，和中间一列的部门。
- * 负责：读组织机构目录的上下级，一次返回拼好的树。
+ * 负责：读组织架构这本数据目录的上下级，一次返回拼好的树。
  *       点中一个组织节点时，列出挂在这个节点上的部门，以及「所属组织」是这个节点的场站里的部门。
-     * 不负责：展开收起、新建部门、改场站或部门的归属。不按登录人的数据范围裁树，部门和人员目录不声明归属。
-     * 禁止：把场站放进组织树。场站部门只按场站上已填的「所属组织」列出，没填的站不替它挑节点。读时不补建任何列。
-     * 场站目录只有一条启用记录时，组织列不显示，部门改按这一条的所属场站列出。
-     */
+ * 不负责：管理单元登记、展开收起、新建部门、改场站或部门的归属。不按登录人的数据范围裁树。
+ * 禁止：用管理单元登记决定这棵树读哪本目录。禁止把场站放进组织树。读时不补建任何列。
+ * 场站目录只有一条启用记录时，组织列不显示，部门改按这一条的所属场站列出。
+ */
 public interface OrganizationTreeQueryService {
 
+    /** 组织架构页左侧。固定读组织架构目录，不看管理单元登记。 */
     List<OrganizationTreeNodeRespVO> getTree();
+
+    /**
+     * 把一本有上下级的目录拼成树。
+     * 组织架构页不调用这方法。管理单元页传入自己登记的目录编码。
+     * 目录编码为空时返回空树。不负责判断这本目录是不是管理单元目录。
+     */
+    List<OrganizationTreeNodeRespVO> listParentChild(String registryCode);
 
     /**
      * 点中组织节点后中间一列的部门：
      * - 直接挂在这个节点上的部门（所属组织是它），场站名为空。
-     * - 「所属组织」是这个节点的场站里的部门，带场站名，页面显示成「站名 / 部门」。
-     *   这是场站部门还没决定挂到哪一级之前的过渡显示，只读，不改部门的所属场站。
+     * - 「所属组织」是这个节点的场站里的部门：返回 facilityId/facilityName，前端按站分组行展示，部门名仍是短名。
      */
     List<OrganizationDepartmentRespVO> listDepartments(Long organizationEntityId);
 
@@ -36,9 +43,7 @@ public interface OrganizationTreeQueryService {
     SolePlaceDepartmentsRespVO listSolePlaceDepartments();
 
     /**
-     * 部门在列表里怎么写。
-     * 部门在场站里：站名 / 部门。没有场站：只写部门名。
-     * 只用于展示，不改部门自己的名称。
+     * 部门在引用展示里写什么：只返回部门短名，不叠场站前缀。
      */
     Map<Long, String> displayNames(Collection<Long> departmentEntityIds);
 }

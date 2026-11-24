@@ -46,7 +46,8 @@ import java.util.Map;
 
 /**
  * 在数据管理里准备告警规则目录。
- * 一本目录，四种判断方式各是一个模型。实体是某种设备上的一份具体参数。
+ * 一本目录。高限、低限、开关量各是一个模型，详情只出现这一类要填的数。
+ * 实体是某种设备上的一份具体参数。氧气过高、过低各一条。二氧化碳只建过高。
  * 分类沿用告警目录那棵树的名称。每条规则归到其中一个分类。
  * 不在策略上写高于、低于或比较值。策略只去选这里的实体。
  * 原因、后果、联动、允许响应时间写在规则上，不参与比较。
@@ -59,6 +60,12 @@ public class AlarmRuleCatalogEnsure {
     public static final String DIRECTORY = "alarm_rule";
     public static final String DIRECTORY_NAME = "告警规则";
     public static final String MODEL_THRESHOLD = "阈值告警";
+    /** 读数升高才告警。详情只有「高于这个数告警」和「回落到此数恢复」。 */
+    public static final String MODEL_HIGH = "高限告警";
+    /** 读数降低才告警。详情只有「低于这个数告警」和「回升到此数恢复」。 */
+    public static final String MODEL_LOW = "低限告警";
+    /** 等于或不等于一个数才告警。故障、水位开关用这个。 */
+    public static final String MODEL_SWITCH = "开关量告警";
     public static final String MODEL_RATE = "变化率告警";
     public static final String MODEL_PATTERN = "异常模式告警";
     public static final String MODEL_COMBINATION = "组合条件告警";
@@ -126,12 +133,18 @@ public class AlarmRuleCatalogEnsure {
         }
         alarmCatalogEnsure.ensure();
         ensureDirectory();
-        Long thresholdId = ensureModel(MODEL_THRESHOLD, "数值或开关量越过设定的限值");
+        Long highId = ensureModel(MODEL_HIGH, "读数升高才告警。只填高于这个数告警，和回落后的恢复。");
+        Long lowId = ensureModel(MODEL_LOW, "读数降低才告警。只填低于这个数告警，和回升后的恢复。");
+        Long switchId = ensureModel(MODEL_SWITCH, "开关量。读数等于或不等于一个数才告警。");
         Long rateId = ensureModel(MODEL_RATE, "读数在一段时间里变得太快");
         Long patternId = ensureModel(MODEL_PATTERN, "读数对上设定的模式");
         Long combinationId = ensureModel(MODEL_COMBINATION, "几条已有规则按并且、或者一起成立");
-        assignShared(thresholdId, true);
-        assignThreshold(thresholdId);
+        assignLimit(highId, FIELD_HIGH, "高于这个数告警", FIELD_HIGH_RECOVER, "回落到此数恢复");
+        assignLimit(lowId, FIELD_LOW, "低于这个数告警", FIELD_LOW_RECOVER, "回升到此数恢复");
+        assignShared(switchId, true);
+        assign(switchId, ensureEnum(FIELD_OP, OP_OPTIONS));
+        assign(switchId, ensureText(FIELD_VALUE));
+        moveCombinedThresholdRules(highId, lowId, switchId);
         assignShared(rateId, true);
         assign(rateId, ensureText(FIELD_RATE));
         assign(rateId, ensureText(FIELD_WINDOW));
@@ -141,7 +154,9 @@ public class AlarmRuleCatalogEnsure {
         assignShared(combinationId, false);
         assign(combinationId, ensureEnum(FIELD_LOGIC, LOGIC_OPTIONS));
         assign(combinationId, ensureChildren());
-        businessCapabilityService.refreshModelCrudFormDefinition(thresholdId);
+        businessCapabilityService.refreshModelCrudFormDefinition(highId);
+        businessCapabilityService.refreshModelCrudFormDefinition(lowId);
+        businessCapabilityService.refreshModelCrudFormDefinition(switchId);
         businessCapabilityService.refreshModelCrudFormDefinition(rateId);
         businessCapabilityService.refreshModelCrudFormDefinition(patternId);
         businessCapabilityService.refreshModelCrudFormDefinition(combinationId);
@@ -149,7 +164,7 @@ public class AlarmRuleCatalogEnsure {
         businessCapabilityService.refreshModelCrudFormDefinition(alarmCatalogEnsure.modelId());
         ensureCategories();
         if (isGalleryTenant()) {
-            seedGalleryRules(thresholdId);
+            seedGalleryRules();
         }
     }
 
@@ -170,13 +185,13 @@ public class AlarmRuleCatalogEnsure {
         return field.getCode();
     }
 
-    private void seedGalleryRules(Long thresholdModelId) {
+    private void seedGalleryRules() {
         Long stationId = facilityStationQueryService.onlyStationId();
-        if (stationId == null || thresholdModelId == null) {
+        if (stationId == null) {
             throw new ServiceException(500, "智慧管廊的告警规则还不能建");
         }
         for (RuleSeed seed : thresholdSeeds()) {
-            fileRule(thresholdModelId, stationId, seed);
+            fileRule(modelIdFor(seed), stationId, seed);
         }
     }
 
@@ -391,13 +406,18 @@ public class AlarmRuleCatalogEnsure {
                     "立即，不超过 1 分钟",
                     null);
             case "rule-co2" -> new HelpText(
-                    "二氧化碳浓度偏离人员可停留的范围。",
+                    "二氧化碳浓度高于每立方米 1000PPM。",
                     "人员停留有窒息风险。",
                     "5 分钟内",
                     null);
             case "rule-o2" -> new HelpText(
-                    "氧气浓度偏离人员可停留的范围。",
-                    "人员缺氧或富氧，不能继续停留。",
+                    "氧气浓度高于 23.5%。",
+                    "富氧，不能继续停留。",
+                    "立即，不超过 1 分钟",
+                    null);
+            case "rule-o2-low" -> new HelpText(
+                    "氧气浓度低于 19.5%。",
+                    "缺氧，不能继续停留。",
                     "立即，不超过 1 分钟",
                     null);
             default -> null;
@@ -420,13 +440,82 @@ public class AlarmRuleCatalogEnsure {
         }
     }
 
-    private void assignThreshold(Long modelId) {
-        assign(modelId, ensureText(FIELD_HIGH));
-        assign(modelId, ensureText(FIELD_LOW));
-        assign(modelId, ensureText(FIELD_HIGH_RECOVER));
-        assign(modelId, ensureText(FIELD_LOW_RECOVER));
-        assign(modelId, ensureEnum(FIELD_OP, OP_OPTIONS));
-        assign(modelId, ensureText(FIELD_VALUE));
+    /** 高限或低限：共用栏加上这一侧的报警线和恢复线。别的一侧和比较方式不挂。 */
+    private void assignLimit(Long modelId, String limitName, String limitAlias, String recoverName, String recoverAlias) {
+        assignShared(modelId, true);
+        assign(modelId, ensureText(limitName));
+        assign(modelId, ensureText(recoverName));
+        label(modelId, limitName, limitAlias);
+        label(modelId, recoverName, recoverAlias);
+    }
+
+    /** 详情上的字。字段库名字仍是高于、低于，判断按名字取列。 */
+    private void label(Long modelId, String fieldName, String alias) {
+        jdbcTemplate.update(
+                "UPDATE dynamicbusiness.dynamic_model_field_assignment SET alias = ? "
+                        + "WHERE model_id = ? AND field_code = ? AND deleted = false",
+                alias, modelId, fieldCode(fieldName));
+    }
+
+    /**
+     * 旧的阈值告警把两侧和比较方式放在同一条上。
+     * 已经写了高于的挪到高限，只写了低于的挪到低限，只写了比较的挪到开关量。
+     * 两侧都空、比较也空的留在原模型，不猜它属于哪一类。
+     */
+    private void moveCombinedThresholdRules(Long highId, Long lowId, Long switchId) {
+        ModelDO old = modelMapper.selectByNameAndEntityTypeCode(MODEL_THRESHOLD, DIRECTORY);
+        if (old == null || old.getId() == null) {
+            return;
+        }
+        Long tenantId = TenantContextHolder.getRequiredTenantId();
+        String table = "dynamicbusiness.ent_alarm_rule_t" + tenantId;
+        String high = fieldCode(FIELD_HIGH);
+        String low = fieldCode(FIELD_LOW);
+        String op = fieldCode(FIELD_OP);
+        String value = fieldCode(FIELD_VALUE);
+        String filled = "coalesce(btrim(custom_fields ->> ?), '') <> ''";
+        String blank = "coalesce(btrim(custom_fields ->> ?), '') = ''";
+        jdbcTemplate.update(
+                "UPDATE " + table + " SET model_id = ? WHERE deleted = false AND model_id = ? AND " + filled + " AND " + blank,
+                highId, old.getId(), high, low);
+        jdbcTemplate.update(
+                "UPDATE " + table + " SET model_id = ? WHERE deleted = false AND model_id = ? AND " + filled + " AND " + blank,
+                lowId, old.getId(), low, high);
+        jdbcTemplate.update(
+                "UPDATE " + table + " SET model_id = ? WHERE deleted = false AND model_id = ? AND " + blank + " AND " + blank
+                        + " AND (" + filled + " OR " + filled + ")",
+                switchId, old.getId(), high, low, op, value);
+        Integer left = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM " + table + " WHERE deleted = false AND model_id = ?",
+                Integer.class, old.getId());
+        if (left != null && left == 0) {
+            jdbcTemplate.update(
+                    "UPDATE dynamicbusiness.dynamic_model SET status = 0, description = ? WHERE id = ?",
+                    "已拆成高限告警、低限告警、开关量告警。不再在这一条上同时填两侧和比较方式。",
+                    old.getId());
+        }
+    }
+
+    /** 采集判断和策略名单要扫的模型。含尚未挪走的旧阈值告警。 */
+    public java.util.List<Long> judgedModelIds() {
+        java.util.List<Long> ids = new java.util.ArrayList<>();
+        for (String name : java.util.List.of(MODEL_HIGH, MODEL_LOW, MODEL_SWITCH, MODEL_THRESHOLD)) {
+            ModelDO model = modelMapper.selectByNameAndEntityTypeCode(name, DIRECTORY);
+            if (model != null && model.getId() != null && !ids.contains(model.getId())) {
+                ids.add(model.getId());
+            }
+        }
+        return ids;
+    }
+
+    private Long modelIdFor(RuleSeed seed) {
+        if (StringUtils.hasText(seed.high())) {
+            return ensureModel(MODEL_HIGH, "读数升高才告警。只填高于这个数告警，和回落后的恢复。");
+        }
+        if (StringUtils.hasText(seed.low())) {
+            return ensureModel(MODEL_LOW, "读数降低才告警。只填低于这个数告警，和回升后的恢复。");
+        }
+        return ensureModel(MODEL_SWITCH, "开关量。读数等于或不等于一个数才告警。");
     }
 
     private void assign(Long modelId, String fieldCode) {
@@ -577,12 +666,15 @@ public class AlarmRuleCatalogEnsure {
                 new RuleSeed("rule-hatch-estop", "液压井盖急停", "液压井盖",
                         "F-614f06636e414cfa9a2781722ccd3e71", "EQ", "1", "alarm-operation", "紧急",
                         null, null, null, null, "alarm-operation"),
-                new RuleSeed("rule-co2", "二氧化碳检测仪", "二氧化碳检测仪",
+                new RuleSeed("rule-co2", "二氧化碳浓度过高", "二氧化碳检测仪",
                         "F-99a0879197624d6abe13599826a90a00", null, null, "alarm-gas", "重要",
-                        null, null, null, null, "alarm-gas"),
-                new RuleSeed("rule-o2", "氧气检测仪", "氧气检测仪",
+                        "1000", null, "1000", null, "alarm-gas"),
+                new RuleSeed("rule-o2", "氧气浓度过高", "氧气检测仪",
                         "F-b3e866f11e764999914644a024eb01fc", null, null, "alarm-gas", "紧急",
-                        null, null, null, null, "alarm-gas")
+                        "23.5", null, "23.5", null, "alarm-gas"),
+                new RuleSeed("rule-o2-low", "氧气浓度过低", "氧气检测仪",
+                        "F-b3e866f11e764999914644a024eb01fc", null, null, "alarm-gas", "紧急",
+                        null, "19.5", null, "19.5", "alarm-gas")
         );
     }
 

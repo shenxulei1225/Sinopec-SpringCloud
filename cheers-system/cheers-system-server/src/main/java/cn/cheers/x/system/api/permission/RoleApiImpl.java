@@ -1,7 +1,9 @@
 package cn.cheers.x.system.api.permission;
 
 import cn.cheers.x.framework.common.pojo.CommonResult;
+import cn.cheers.x.framework.common.util.object.BeanUtils;
 import cn.cheers.x.system.api.permission.dto.RoleRespDTO;
+import cn.cheers.x.system.dal.dataobject.permission.RoleDO;
 import cn.cheers.x.system.service.permission.PermissionService;
 import cn.cheers.x.system.service.permission.RoleService;
 import jakarta.annotation.Resource;
@@ -28,14 +30,20 @@ public class RoleApiImpl implements RoleApi {
         return success(true);
     }
 
+    /**
+     * 按编号读取角色记录，名称在 {@link RoleRespDTO#getName()}。
+     * 编号没有对应角色时返回空。不负责这个人直接分配了哪些角色。
+     */
     @Override
     public CommonResult<RoleRespDTO> getRole(Long id) {
-        return success(null);
+        RoleDO role = roleService.getRole(id);
+        return success(role == null ? null : BeanUtils.toBean(role, RoleRespDTO.class));
     }
 
+    /** 按编号批量读取角色记录，供其它服务在自己的接口里带上角色名称。 */
     @Override
     public CommonResult<List<RoleRespDTO>> getRoleList(Collection<Long> ids) {
-        return success(List.of());
+        return success(BeanUtils.toBean(roleService.getRoleList(ids), RoleRespDTO.class));
     }
 
     /**

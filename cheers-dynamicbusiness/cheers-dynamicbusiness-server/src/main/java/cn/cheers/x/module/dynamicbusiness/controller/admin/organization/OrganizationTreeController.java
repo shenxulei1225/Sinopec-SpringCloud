@@ -20,7 +20,7 @@ import java.util.List;
 import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 
 /**
- * 组织架构页左侧的组织树和中间一列的部门。只读，不新建部门，不改场站或部门的归属。
+ * 组织架构页左侧的组织树和中间一列的部门（查询）。组织与部门的写入走实体目录接口。
  */
 @Tag(name = "管理后台 - 组织树")
 @RestController

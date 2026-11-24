@@ -88,7 +88,8 @@ public class PostAssignmentController {
     @PreAuthorize("@ss.hasPermission('system:permission:assign-user-role')")
     public CommonResult<List<Long>> createForUser(@Valid @RequestBody PostAssignmentUserCreateReqVO reqVO) {
         return success(postAssignmentService.createAtUnit(new PostAssignmentService.UnitPostsBatch(reqVO.getUserId(),
-                reqVO.getManagementUnitId(), reqVO.getDutyPostIds(), reqVO.getValidFrom(), reqVO.getValidTo())));
+                reqVO.getManagementUnitId(), reqVO.getManagementUnitRegistry(), reqVO.getDutyPostIds(),
+                reqVO.getValidFrom(), reqVO.getValidTo())));
     }
 
     @PostMapping("/post-assignment/create")
@@ -96,7 +97,8 @@ public class PostAssignmentController {
     @PreAuthorize("@ss.hasPermission('system:permission:assign-user-role')")
     public CommonResult<List<Long>> create(@Valid @RequestBody PostAssignmentCreateReqVO reqVO) {
         return success(postAssignmentService.createBatch(new PostAssignmentService.Batch(reqVO.getManagementUnitId(),
-                reqVO.getDutyPostId(), reqVO.getUserIds(), reqVO.getValidFrom(), reqVO.getValidTo())));
+                reqVO.getManagementUnitRegistry(), reqVO.getDutyPostId(), reqVO.getUserIds(),
+                reqVO.getValidFrom(), reqVO.getValidTo())));
     }
 
     @PutMapping("/post-assignment/update")

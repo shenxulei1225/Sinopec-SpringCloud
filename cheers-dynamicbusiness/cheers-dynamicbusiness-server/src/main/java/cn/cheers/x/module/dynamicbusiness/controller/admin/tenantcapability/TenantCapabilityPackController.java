@@ -62,6 +62,7 @@ public class TenantCapabilityPackController {
             }
             row.setPages(pages);
             row.setCatalogCodes(pack.catalogCodes());
+            row.setUnitEnablementRegistryCodes(pack.unitEnablementRegistryCodes());
             rows.add(row);
         }
         return success(rows);

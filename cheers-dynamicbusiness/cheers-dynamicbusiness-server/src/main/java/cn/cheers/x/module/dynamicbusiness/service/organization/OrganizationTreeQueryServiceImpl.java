@@ -6,7 +6,6 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.organization.vo.Organ
 import cn.cheers.x.module.dynamicbusiness.controller.admin.organization.vo.SolePlaceDepartmentsRespVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entity.EntityDO;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
-import cn.cheers.x.module.dynamicbusiness.service.datapermission.ManagementUnitCatalogQueryService;
 import cn.cheers.x.module.dynamicbusiness.service.department.DepartmentOrganizationCodes;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
 import jakarta.annotation.Resource;
@@ -22,8 +21,8 @@ import java.util.regex.Pattern;
 
 /**
  * 组织树只读。展开收起由组织架构页记住，这里不按层级分页。
- * 组织树就是管理单元目录的上下级：管理单元目录由「数据资源管理」里登记的管理单元类型推出，代码不写死是哪一本。
- * 还没登记任何管理单元类型时返回空树，页面显示空态。部门按部门上的「所属组织」列出。
+ * 组织架构页的树固定读组织架构这本数据目录。管理单元登记选了哪本目录，不改变这一栏。
+ * 部门按部门上的「所属组织」列出。
  * 场站部门按场站上的「所属组织」带出（单选引用，权威是场站表上的专用列）。
  */
 @Service
@@ -44,22 +43,23 @@ public class OrganizationTreeQueryServiceImpl implements OrganizationTreeQuerySe
     @Resource
     private JdbcTemplate jdbcTemplate;
 
-    @Resource
-    private ManagementUnitCatalogQueryService managementUnitCatalogQueryService;
-
     @Override
     public List<OrganizationTreeNodeRespVO> getTree() {
-        String unitCatalog = managementUnitCatalogQueryService.findManagementUnitRegistryCode();
-        if (unitCatalog == null) {
+        return listParentChild(DepartmentOrganizationCodes.TARGET);
+    }
+
+    @Override
+    public List<OrganizationTreeNodeRespVO> listParentChild(String registryCode) {
+        if (registryCode == null || registryCode.isBlank()) {
             return List.of();
         }
         List<OrganizationNodeRow> rows = entityCoreService
-                .listEntities(unitCatalog, null, null)
+                .listEntities(registryCode.trim(), null, null)
                 .stream()
                 .sorted(BY_SORT_THEN_ID)
                 .map(row -> new OrganizationNodeRow(row.getId(), row.getName(), row.getParentId(), row.getModelId()))
                 .toList();
-        return OrganizationTreeComposer.compose(rows);
+        return OrganizationTreeComposer.compose(registryCode.trim(), rows);
     }
 
     @Override
@@ -71,15 +71,15 @@ public class OrganizationTreeQueryServiceImpl implements OrganizationTreeQuerySe
         String facilityTable = requireTable(FACILITY_CATALOG, "场站");
         // 1) 直接挂在这个组织节点上的部门；2) 所属组织是这个节点的场站里的部门（过渡显示，带站名）
         return jdbcTemplate.query(
-                "SELECT d.id, d.name, d.parent_id, NULL::bigint AS facility_id, NULL AS facility_name, 0 AS grp, 0::bigint AS fid"
+                "SELECT d.id, d.name, d.parent_id, NULL::bigint AS facility_id, NULL AS facility_name, 0 AS grp, 0::bigint AS fid, d.sort"
                         + " FROM " + departmentTable + " d"
                         + " WHERE d.deleted = false AND d.organization_id = ? AND d.facility_id IS NULL"
                         + " UNION ALL"
-                        + " SELECT d.id, d.name, d.parent_id, f.id, f.name, 1, f.id"
+                        + " SELECT d.id, d.name, d.parent_id, f.id, f.name, 1, f.id, d.sort"
                         + " FROM " + departmentTable + " d"
                         + " JOIN " + facilityTable + " f ON f.id = d.facility_id AND f.deleted = false"
                         + " WHERE d.deleted = false AND f.organization_id = ?"
-                        + " ORDER BY grp, fid, id",
+                        + " ORDER BY grp, fid, sort NULLS LAST, id",
                 (rs, row) -> {
                     OrganizationDepartmentRespVO item = new OrganizationDepartmentRespVO();
                     item.setId(rs.getLong("id"));
@@ -139,13 +139,9 @@ public class OrganizationTreeQueryServiceImpl implements OrganizationTreeQuerySe
             return Map.of();
         }
         String departmentTable = requireTable(DepartmentOrganizationCodes.ENTITY_TYPE, "部门");
-        String facilityTable = requireTable(FACILITY_CATALOG, "场站");
         String placeholders = String.join(",", ids.stream().map(id -> "?").toList());
-        // 场站里的部门写成「站名 / 部门」。没有场站的只写部门名。不改部门名称。
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT d.id, d.name, f.name AS facility_name"
-                        + " FROM " + departmentTable + " d"
-                        + " LEFT JOIN " + facilityTable + " f ON f.id = d.facility_id AND f.deleted = false"
+                "SELECT d.id, d.name FROM " + departmentTable + " d"
                         + " WHERE d.deleted = false AND d.id IN (" + placeholders + ")",
                 ids.toArray());
         Map<Long, String> labels = new LinkedHashMap<>();
@@ -155,13 +151,10 @@ public class OrganizationTreeQueryServiceImpl implements OrganizationTreeQuerySe
                 continue;
             }
             String name = row.get("name") == null ? "" : String.valueOf(row.get("name")).trim();
-            String facility = row.get("facility_name") == null
-                    ? ""
-                    : String.valueOf(row.get("facility_name")).trim();
             if (name.isEmpty()) {
                 continue;
             }
-            labels.put(number.longValue(), facility.isEmpty() ? name : facility + " / " + name);
+            labels.put(number.longValue(), name);
         }
         return labels;
     }

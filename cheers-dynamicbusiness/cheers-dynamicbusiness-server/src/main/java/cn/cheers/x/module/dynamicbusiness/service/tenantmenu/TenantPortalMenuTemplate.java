@@ -6,7 +6,7 @@ import java.util.Map;
 
 /**
  * 还没保存过菜单时，各租户顶栏共用的排法。
- * 负责：按已开通页面排出一级名称和下面的页面。安防下面再分人防、通信、技防。某一组一页都没开通时，这一级不出现。
+ * 负责：按已开通页面排出一级名称和下面的页面。管廊管理下面分设备、构筑物、管线、客户管理。安防下面再分人防、通信、技防。告警记录、告警规则、告警策略、告警联动排在告警管理。某一组一页都没开通时，这一级不出现。
  * 不负责：写入租户菜单表。租户管理员以后在菜单管理里改的顺序，以他保存的那份为准。
  * 平台扩展配置、系统账号、站场地理信息核对不在这份排法里。要给某个租户看时，再从菜单管理拖进去。
  * 维修任务、维修排期、维修记录不单列。维修过程在工单里，设备上看到的是维修工单。
@@ -30,20 +30,26 @@ final class TenantPortalMenuTemplate {
     /** 一级顺序。自己就是页面的，下面不再挂页面。 */
     private static final List<Slot> SLOTS = List.of(
             Slot.page("场站实时监控", "live-monitor"),
-            Slot.group("管廊",
-                    Slot.page("管廊设施", "gallery-facility"),
-                    Slot.page("运营区域", "gallery-region"),
-                    Slot.page("分区", "gallery-zone"),
-                    Slot.page("构筑物", "gallery-structure"),
-                    Slot.page("点位", "gallery-point"),
-                    Slot.page("管线", "gallery-pipeline"),
-                    Slot.page("数据点位对照", "gallery-point-binding"),
+            Slot.group("管廊管理",
+                    Slot.group("设备",
+                            Slot.page("设备台账", "equipment-ledger"),
+                            Slot.page("备品备件", "spare-parts"),
+                            Slot.page("远控", "security-remote-control"),
+                            Slot.page("车辆登记", "station-vehicle-register")),
+                    Slot.group("构筑物",
+                            Slot.page("管廊设施", "gallery-facility"),
+                            Slot.page("运营区域", "gallery-region"),
+                            Slot.page("分区", "gallery-zone"),
+                            Slot.page("构筑物", "gallery-structure")),
+                    Slot.group("管线",
+                            Slot.page("管线", "gallery-pipeline"),
+                            Slot.page("点位", "gallery-point"),
+                            Slot.page("数据点位对照", "gallery-point-binding")),
+                    Slot.group("客户管理",
+                            Slot.page("入廊客户管理", "gallery-customer"),
+                            Slot.page("收费管理", "gallery-billing")),
                     Slot.page("三维场景", "station-scene"),
                     Slot.page("路网管理", "road-network")),
-            Slot.group("设备管理",
-                    Slot.page("设备台账", "equipment-ledger"),
-                    Slot.page("备品备件", "spare-parts"),
-                    Slot.page("车辆登记", "station-vehicle-register")),
             Slot.group("报修管理",
                     Slot.page("我的报修", "repair-request"),
                     Slot.page("报修受理", "repair-accept"),
@@ -76,9 +82,7 @@ final class TenantPortalMenuTemplate {
                             Slot.page("广播", "security-broadcast"),
                             Slot.page("人员识别", "security-person"),
                             Slot.page("车辆定位", "security-vehicle"),
-                            Slot.page("行为识别", "security-behavior"),
-                            Slot.page("告警记录", "security-alarm"),
-                            Slot.page("告警规则", "security-alarm-rule")),
+                            Slot.page("行为识别", "security-behavior")),
                     Slot.page("安全资源位置", "security-resource"),
                     Slot.page("巡检", "security-patrol")),
             Slot.group("应急",
@@ -86,15 +90,24 @@ final class TenantPortalMenuTemplate {
                     Slot.page("应急预案", "emergency-plan"),
                     Slot.page("自定义表单", "emergency-custom-form"),
                     Slot.page("应急资源", "emergency-resource-map")),
+            Slot.group("告警管理",
+                    Slot.page("告警记录", "security-alarm"),
+                    Slot.page("告警规则", "security-alarm-rule"),
+                    Slot.page("告警策略", "alarm-strategy"),
+                    Slot.page("告警联动", "alarm-linkage")),
             Slot.group("智能分析",
                     Slot.page("分析能力", "analysis-capability"),
                     Slot.page("分析任务", "analysis-job"),
                     Slot.page("服务接入", "analysis-provider")),
-            Slot.group("系统配置",
+            Slot.group("系统管理",
                     Slot.page("组织架构", "organization"),
+                    Slot.page("菜单管理", "menu-admin"),
                     Slot.page("门户", "portal"),
                     Slot.page("角色与权限", "role-permission"),
-                    Slot.page("数据管理", "catalog-admin")));
+                    Slot.page("职务管理", "duty-management"),
+                    Slot.page("数据管理", "catalog-admin"),
+                    Slot.page("管理单元与业务启用", "management-unit"),
+                    Slot.page("数据资源管理", "data-resources")));
 
     /**
      * 按这份排法，只留下已经开通的页面。

@@ -41,9 +41,7 @@ import cn.cheers.x.module.dynamicbusiness.service.entity.EntityLifecycleEventPub
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityRelationSyncService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import cn.cheers.x.module.dynamicbusiness.service.field.CustomFieldValidationService;
-import cn.cheers.x.module.dynamicbusiness.service.department.DepartmentOrganizationCodes;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
-import cn.cheers.x.module.dynamicbusiness.service.organization.OrganizationTreeQueryService;
 import cn.cheers.x.module.dynamicbusiness.service.category.hierarchy.AdvancedCategoryEntityHierarchyService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategoryRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.model.relation.ModelCategoryRelationService;
@@ -129,10 +127,6 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Resource
     private CategoryEntityLinkService categoryEntityLinkService;
-
-    @Resource
-    @Lazy
-    private OrganizationTreeQueryService organizationTreeQueryService;
 
     @Resource
     private AdvancedCategoryEntityHierarchyService advancedCategoryEntityHierarchyService;
@@ -957,36 +951,9 @@ public class CategoryServiceImpl implements CategoryService {
                 vo.setEntityModelId(null);
             }
         }
-        fillDepartmentDisplayNames(flat);
-    }
-
-    /**
-     * 部门分类在选用页上要能分清场站。
-     * 场站里的部门显示「站名 / 部门」。分类自己的名称不改，编辑仍用短名称。
-     */
-    private void fillDepartmentDisplayNames(List<CategoryTreeRespVO> flat) {
-        List<Long> ids = new ArrayList<>();
         for (CategoryTreeRespVO vo : flat) {
-            if (vo == null || vo.getEntityId() == null || vo.getEntityId() <= 0) {
-                continue;
-            }
-            if (!DepartmentOrganizationCodes.isDepartment(vo.getCategoryTypeCode())) {
-                continue;
-            }
-            ids.add(vo.getEntityId());
-        }
-        if (ids.isEmpty()) {
-            return;
-        }
-        Map<Long, String> labels = organizationTreeQueryService.displayNames(ids);
-        for (CategoryTreeRespVO vo : flat) {
-            if (vo == null || vo.getEntityId() == null
-                    || !DepartmentOrganizationCodes.isDepartment(vo.getCategoryTypeCode())) {
-                continue;
-            }
-            String label = labels.get(vo.getEntityId());
-            if (label != null && !label.isBlank()) {
-                vo.setDisplayName(label);
+            if (vo != null) {
+                vo.setDisplayName(null);
             }
         }
     }

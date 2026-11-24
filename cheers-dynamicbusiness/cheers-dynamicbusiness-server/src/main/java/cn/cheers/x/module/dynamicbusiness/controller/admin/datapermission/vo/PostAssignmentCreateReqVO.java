@@ -12,6 +12,9 @@ import java.util.List;
 @Data
 public class PostAssignmentCreateReqVO {
 
+    @Schema(description = "管理单元所在目录。空则按组织目录。")
+    private String managementUnitRegistry;
+
     @Schema(description = "管理单元：管理单元目录里的记录编号", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "请选择管理单元")
     private Long managementUnitId;

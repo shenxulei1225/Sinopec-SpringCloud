@@ -1,12 +1,16 @@
 package cn.cheers.x.module.dynamicbusiness.service.datapermission;
 
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datapermission.DutyPostUserDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datapermission.DutyPostRoleDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datapermission.PostAssignmentDO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.entitytype.EntityTypeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.cataloggrant.CatalogRoleGrantMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datapermission.DutyPostRoleMapper;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.datapermission.DutyPostUserMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.datapermission.PostAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.entitytype.EntityTypeMapper;
+import cn.cheers.x.system.api.permission.RoleApi;
+import cn.cheers.x.system.api.permission.dto.RoleRespDTO;
 import cn.cheers.x.system.api.user.AdminUserApi;
 import cn.cheers.x.system.api.user.dto.AdminUserRespDTO;
 import jakarta.annotation.Resource;
@@ -20,6 +24,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 任职与职务绑定角色的读取。
@@ -29,7 +34,7 @@ import java.util.Set;
  *   <li>人员详情只读列出这个人的任职，以及每条任职能看哪些目录 → {@link #listViewsByUserId}</li>
  *   <li>组织架构页选中一个单元，列出单元里的任职 → {@link #listViewsByManagementUnitId}</li>
  *   <li>判断目录功能和算数据范围：登录人此刻有效的任职，带各自的角色和单元类型 → {@link #listActivePosts}</li>
- *   <li>页面授权：有效任职带来的全部角色 → {@link #listActivePostRoleIds}</li>
+   *   <li>页面授权：担任的职务和有效任职换成的角色 → {@link #listActivePostRoleIds}</li>
  *   <li>角色页回显这个角色绑定的职务 → {@link #listDutyPostIdsByRoleId}</li>
  * </ul>
  *
@@ -41,6 +46,8 @@ public class PostAssignmentQueryService {
     private static final String ENTITY = "entity";
     private static final String QUERY = "query";
 
+    @Resource
+    private DutyPostUserMapper dutyPostUserMapper;
     @Resource
     private PostAssignmentMapper postAssignmentMapper;
     @Resource
@@ -55,6 +62,8 @@ public class PostAssignmentQueryService {
     private EntityTypeMapper entityTypeMapper;
     @Resource
     private AdminUserApi adminUserApi;
+    @Resource
+    private RoleApi roleApi;
 
     /**
      * 一条此刻有效的任职，判断功能和范围用。
@@ -80,23 +89,31 @@ public class PostAssignmentQueryService {
     }
 
     /**
-     * 登录人此刻有效的任职。租户还没有管理单元目录、或单元已删除的任职不返回：它们不给任何范围。
+     * 登录人此刻有效的任职。单元记录已删除的不返回。
+     * 每条按自己的目录核对，场站编号不会被当成组织编号。
      */
     public List<ActivePost> listActivePosts(Long userId) {
         if (userId == null) {
             return List.of();
         }
         List<PostAssignmentDO> rows = postAssignmentMapper.selectActiveListByUserId(userId, LocalDate.now());
-        String unitCatalog = managementUnitCatalogQueryService.findManagementUnitRegistryCode();
-        if (rows.isEmpty() || unitCatalog == null) {
+        if (rows.isEmpty()) {
             return List.of();
         }
-        Map<Long, Long> unitModels = conditionResolver.selectModelIds(unitCatalog,
-                rows.stream().map(PostAssignmentDO::getManagementUnitId).toList());
+        Map<String, List<Long>> idsByRegistry = new HashMap<>();
+        for (PostAssignmentDO row : rows) {
+            String registry = registryOf(row);
+            idsByRegistry.computeIfAbsent(registry, key -> new ArrayList<>()).add(row.getManagementUnitId());
+        }
+        Map<String, Map<Long, Long>> modelsByRegistry = new HashMap<>();
+        for (Map.Entry<String, List<Long>> entry : idsByRegistry.entrySet()) {
+            modelsByRegistry.put(entry.getKey(), conditionResolver.selectModelIds(entry.getKey(), entry.getValue()));
+        }
         Map<Long, Set<Long>> rolesByDuty = rolesByDutyPost(rows);
         List<ActivePost> posts = new ArrayList<>();
         for (PostAssignmentDO row : rows) {
-            Long modelId = unitModels.get(row.getManagementUnitId());
+            String registry = registryOf(row);
+            Long modelId = modelsByRegistry.getOrDefault(registry, Map.of()).get(row.getManagementUnitId());
             if (modelId != null) {
                 posts.add(new ActivePost(row.getId(), row.getManagementUnitId(), modelId,
                         rolesByDuty.getOrDefault(row.getDutyPostId(), Set.of())));
@@ -105,15 +122,30 @@ public class PostAssignmentQueryService {
         return posts;
     }
 
-    /** 有效任职带来的全部角色。页面授权用：页面不属于任何目录，和单元无关。 */
+    /** 担任的职务、以及有效任职上的职务，换成的全部角色。直接分配的角色由调用方并入。 */
     public Set<Long> listActivePostRoleIds(Long userId) {
         if (userId == null) {
             return Set.of();
         }
+        Set<Long> dutyIds = new LinkedHashSet<>();
+        postAssignmentMapper.selectActiveListByUserId(userId, LocalDate.now())
+                .forEach(row -> dutyIds.add(row.getDutyPostId()));
+        for (DutyPostUserDO holder : dutyPostUserMapper.selectListByUserId(userId)) {
+            dutyIds.add(holder.getDutyPostId());
+        }
+        dutyIds.remove(null);
         Set<Long> roleIds = new LinkedHashSet<>();
-        rolesByDutyPost(postAssignmentMapper.selectActiveListByUserId(userId, LocalDate.now()))
-                .values().forEach(roleIds::addAll);
+        if (!dutyIds.isEmpty()) {
+            for (DutyPostRoleDO binding : dutyPostRoleMapper.selectListByDutyPostIds(dutyIds)) {
+                roleIds.add(binding.getRoleId());
+            }
+        }
         return roleIds;
+    }
+
+    private static String registryOf(PostAssignmentDO row) {
+        String registry = row.getManagementUnitRegistry();
+        return registry == null || registry.isBlank() ? "organization" : registry.trim();
     }
 
     /** 人员详情里列出这个人全部任职，含已结束的。 */
@@ -154,21 +186,27 @@ public class PostAssignmentQueryService {
     /**
      * 「改权限」弹窗：这个职务绑定的一个角色，以及绑定这个角色的全部职务。
      * 职务多于一个时，改这个角色会同时改其它职务的权限，弹窗据此提示。
+     *
+     * @param roleName 角色名称。角色记录已删除时为空，页面不要再用编号代替名称。
      */
-    public record DutyPostRoleBinding(Long roleId, List<DutyPostRef> dutyPosts) {
+    public record DutyPostRoleBinding(Long roleId, String roleName, List<DutyPostRef> dutyPosts) {
     }
 
     /** 一个职务的编号和名称。 */
     public record DutyPostRef(Long id, String name) {
     }
 
-    /** 这个职务绑定的角色，每个角色带上绑定它的全部职务（含这个职务本身）。职务已删除的名称为空。 */
+    /**
+     * 这个职务绑定的角色。每个角色带上角色名称，以及绑定它的全部职务（含这个职务本身）。
+     * 名称来自角色记录。角色已删除时名称为空。职务已删除时职务名称为空。
+     */
     public List<DutyPostRoleBinding> listRoleBindingsOfDutyPost(Long dutyPostId) {
         if (dutyPostId == null) {
             return List.of();
         }
         List<Long> roleIds = dutyPostRoleMapper.selectListByDutyPostId(dutyPostId).stream()
                 .map(DutyPostRoleDO::getRoleId).distinct().toList();
+        Map<Long, String> roleNames = roleNames(roleIds);
         Map<Long, List<Long>> postsByRole = new HashMap<>();
         List<Map.Entry<String, Long>> refs = new ArrayList<>();
         for (Long roleId : roleIds) {
@@ -179,8 +217,23 @@ public class PostAssignmentQueryService {
         }
         Map<Long, String> names = refs.isEmpty() ? Map.of()
                 : conditionResolver.selectNamesByCatalog(refs).getOrDefault(PostAssignmentService.DUTY_POST_CATALOG, Map.of());
-        return roleIds.stream().map(roleId -> new DutyPostRoleBinding(roleId, postsByRole.get(roleId).stream()
-                .map(id -> new DutyPostRef(id, names.get(id))).toList())).toList();
+        return roleIds.stream().map(roleId -> new DutyPostRoleBinding(roleId, roleNames.get(roleId),
+                postsByRole.get(roleId).stream()
+                        .map(id -> new DutyPostRef(id, names.get(id))).toList())).toList();
+    }
+
+    /** 角色编号对应的名称。没有记录的编号不在结果里。 */
+    private Map<Long, String> roleNames(List<Long> roleIds) {
+        if (roleIds.isEmpty()) {
+            return Map.of();
+        }
+        List<RoleRespDTO> roles = roleApi.getRoleList(roleIds).getCheckedData();
+        if (roles == null || roles.isEmpty()) {
+            return Map.of();
+        }
+        return roles.stream()
+                .filter(role -> role.getId() != null)
+                .collect(Collectors.toMap(RoleRespDTO::getId, RoleRespDTO::getName, (left, right) -> left));
     }
 
     /** 某个角色绑定了哪些职务。角色页「绑定职务」回显。 */
@@ -199,26 +252,25 @@ public class PostAssignmentQueryService {
         if (rows.isEmpty()) {
             return List.of();
         }
-        String unitCatalog = managementUnitCatalogQueryService.findManagementUnitRegistryCode();
         List<Map.Entry<String, Long>> refs = new ArrayList<>();
         for (PostAssignmentDO row : rows) {
             refs.add(Map.entry(PostAssignmentService.DUTY_POST_CATALOG, row.getDutyPostId()));
-            if (unitCatalog != null) {
-                refs.add(Map.entry(unitCatalog, row.getManagementUnitId()));
+            String registry = registryOf(row);
+            if (registry != null) {
+                refs.add(Map.entry(registry, row.getManagementUnitId()));
             }
         }
         Map<String, Map<Long, String>> names = conditionResolver.selectNamesByCatalog(refs);
         Map<Long, String> dutyNames = names.getOrDefault(PostAssignmentService.DUTY_POST_CATALOG, Map.of());
-        Map<Long, String> unitNames = unitCatalog == null ? Map.of() : names.getOrDefault(unitCatalog, Map.of());
         Map<Long, String> userNames = userNames(rows);
-        Map<Long, Long> unitModels = unitCatalog == null || !withCatalogs ? Map.of()
-                : conditionResolver.selectModelIds(unitCatalog, rows.stream().map(PostAssignmentDO::getManagementUnitId).toList());
-        Map<Long, Set<String>> catalogsByModel = withCatalogs ? managementUnitCatalogQueryService.loadCatalogsByModelId() : Map.of();
         Map<Long, Set<Long>> rolesByDuty = withCatalogs ? rolesByDutyPost(rows) : Map.of();
         List<PostAssignmentView> views = new ArrayList<>();
         for (PostAssignmentDO row : rows) {
+            String registry = registryOf(row);
+            Map<Long, String> unitNames = names.getOrDefault(registry, Map.of());
             List<CatalogName> visible = withCatalogs
-                    ? visibleCatalogs(catalogsByModel.getOrDefault(unitModels.get(row.getManagementUnitId()), Set.of()),
+                    ? visibleCatalogs(
+                    managementUnitCatalogQueryService.loadCatalogsForUnit(registry, row.getManagementUnitId()),
                     rolesByDuty.getOrDefault(row.getDutyPostId(), Set.of()))
                     : List.of();
             views.add(new PostAssignmentView(row, dutyNames.get(row.getDutyPostId()),

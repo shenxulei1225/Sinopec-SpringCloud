@@ -17,6 +17,11 @@ public interface DutyPostUserMapper extends BaseMapperX<DutyPostUserDO> {
                 .orderByAsc(DutyPostUserDO::getId));
     }
 
+    default List<DutyPostUserDO> selectListByUserId(Long userId) {
+        return selectList(new LambdaQueryWrapperX<DutyPostUserDO>()
+                .eq(DutyPostUserDO::getUserId, userId));
+    }
+
     default DutyPostUserDO selectByDutyAndUser(Long dutyPostId, Long userId) {
         return selectOne(new LambdaQueryWrapperX<DutyPostUserDO>()
                 .eq(DutyPostUserDO::getDutyPostId, dutyPostId)

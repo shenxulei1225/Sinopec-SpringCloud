@@ -10,6 +10,7 @@ import cn.cheers.x.module.dynamicbusiness.service.pagegrant.PagePermissionRegist
 import cn.cheers.x.module.dynamicbusiness.service.tenantmenu.TenantPortalMenuNode;
 import cn.cheers.x.module.dynamicbusiness.service.tenantmenu.TenantPortalMenuPage;
 import cn.cheers.x.module.dynamicbusiness.service.tenantmenu.TenantPortalMenuPageGroup;
+import cn.cheers.x.module.dynamicbusiness.service.tenantcapability.LoginBusinessAccessQueryService;
 import cn.cheers.x.module.dynamicbusiness.service.tenantmenu.TenantPortalMenuService;
 import cn.cheers.x.module.dynamicbusiness.service.tenantmenu.TenantPortalMenuView;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
@@ -32,7 +34,8 @@ import static cn.cheers.x.framework.common.pojo.CommonResult.success;
 /**
  * 平台配置「菜单管理」。
  * 读给本租户登录用户看顶栏。写只给租户管理员和超级管理员。
- * 不读取角色动作，不改开通结果。
+ * forNavigation 为 true 时，按登录人的职务和任职覆盖的管理单元开通结果裁顶栏。
+ * 菜单管理不传这个参数，仍看全部已开通页面。不改开通结果。
  */
 @Tag(name = "管理后台 - 租户菜单")
 @RestController
@@ -42,12 +45,19 @@ public class TenantPortalMenuController {
 
     @Resource
     private TenantPortalMenuService tenantPortalMenuService;
+    @Resource
+    private LoginBusinessAccessQueryService loginBusinessAccessQueryService;
 
     @GetMapping
     @Operation(summary = "读取当前租户的顶栏菜单")
     @PreAuthorize("isAuthenticated()")
-    public CommonResult<TenantPortalMenuRespVO> load() {
-        return success(toResp(tenantPortalMenuService.loadCurrent()));
+    public CommonResult<TenantPortalMenuRespVO> load(
+            @RequestParam(value = "forNavigation", defaultValue = "false") boolean forNavigation) {
+        TenantPortalMenuView view = tenantPortalMenuService.loadCurrent();
+        if (forNavigation) {
+            view = loginBusinessAccessQueryService.filterNavigation(view);
+        }
+        return success(toResp(view));
     }
 
     @PutMapping

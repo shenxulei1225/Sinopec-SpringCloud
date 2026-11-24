@@ -14,6 +14,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityRespV
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.EntityUpdateReqVO;
 import cn.cheers.x.module.dynamicbusiness.dataprocess.AlarmRecordWriter;
 import cn.cheers.x.module.dynamicbusiness.dataprocess.AlarmTypeCatalog;
+import cn.cheers.x.module.dynamicbusiness.dataprocess.VehiclePassDonePublisher;
 import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -37,6 +38,7 @@ import java.util.Set;
  * 网关的识别到车只写进出账，不写门禁告警。允许放行时由网关按对照发抬杆，厂商接受后才写时间。
  * 已经进出按厂商时间写入，不发抬杆。下发限制读车辆登记和还没离开的外来车，按对照发给道闸。
  * 不管什么：车辆在场内的位置。名单和车道的日常维护由车辆管理页写入。厂商主机不写在这里。
+ * 已经进出写上时间后，发到已经有的「已经进出」主题。识别到车、还没放行时不发。
  * 禁止：摄像机不在时造一条过车；没有抬杆指令时写成已经抬杆；把禁止进入写成车辆定位告警；把限制读数写成一条进出。
  */
 @Service
@@ -73,14 +75,17 @@ public class VehicleRecognitionService {
     private final EntityService entityService;
     private final AlarmRecordWriter alarmRecordWriter;
     private final VehicleGateCommandApi vehicleGateCommandApi;
+    private final VehiclePassDonePublisher vehiclePassDonePublisher;
 
     public VehicleRecognitionService(JdbcTemplate jdbcTemplate, EntityService entityService,
                                      AlarmRecordWriter alarmRecordWriter,
-                                     VehicleGateCommandApi vehicleGateCommandApi) {
+                                     VehicleGateCommandApi vehicleGateCommandApi,
+                                     VehiclePassDonePublisher vehiclePassDonePublisher) {
         this.jdbcTemplate = jdbcTemplate;
         this.entityService = entityService;
         this.alarmRecordWriter = alarmRecordWriter;
         this.vehicleGateCommandApi = vehicleGateCommandApi;
+        this.vehiclePassDonePublisher = vehiclePassDonePublisher;
     }
 
     public record Outcome(long id, String matchResult, String barrierResult, String message) {
@@ -160,6 +165,14 @@ public class VehicleRecognitionService {
             }
         }
         merge(PASS, passId, null, Map.of("抬杆结果", "已抬杆", "放行原因", "自动放行"));
+        Lane lane = requireLane(row.facilityId(), row.laneId());
+        vehiclePassDonePublisher.publish(
+                row.facilityId(),
+                row.plate(),
+                enter ? VehiclePassDecision.IN : VehiclePassDecision.OUT,
+                lane.name(),
+                STAMP.format(now),
+                lane.cameraId());
     }
 
     /**
@@ -192,6 +205,7 @@ public class VehicleRecognitionService {
             if (open != null) {
                 stamp(open.id(), "离开时间", when);
             }
+            publishDone(lane, normalized, when);
             return id;
         }
         if (open != null) {
@@ -199,7 +213,14 @@ public class VehicleRecognitionService {
         }
         long id = save(lane.facilityId(), null, normalized, values);
         stamp(id, "进入时间", when);
+        publishDone(lane, normalized, when);
         return id;
+    }
+
+    /** 进出时间已经落在进出账上。主题没有名字规则时发布器自己跳过。 */
+    private void publishDone(Lane lane, String plate, LocalDateTime when) {
+        vehiclePassDonePublisher.publish(
+                lane.facilityId(), plate, lane.direction(), lane.name(), STAMP.format(when), lane.cameraId());
     }
 
     /**

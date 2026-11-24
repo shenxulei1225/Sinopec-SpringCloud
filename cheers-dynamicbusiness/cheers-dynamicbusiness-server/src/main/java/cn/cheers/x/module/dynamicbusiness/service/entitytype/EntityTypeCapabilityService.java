@@ -24,6 +24,11 @@ public interface EntityTypeCapabilityService {
     /** 协议解析能力码 */
     String CAPABILITY_PROTOCOL_PARSER = "protocol-parser";
     /**
+     * 管线走向。打开后型号上能看到这一列，详情用已登记的控件画地图和沿线场站。
+     * 不另建列。关掉只卸详情里的地图，不删列、不删已填线路。
+     */
+    String CAPABILITY_PIPELINE_ROUTE = "pipeline-route";
+    /**
      * 实参配置能力码。
      * 启用后只改这个目录的详情展示（给当前对象填已有步骤/动作的真实参数）。
      * 不给本目录补步骤树列，也不改编标准步骤树。

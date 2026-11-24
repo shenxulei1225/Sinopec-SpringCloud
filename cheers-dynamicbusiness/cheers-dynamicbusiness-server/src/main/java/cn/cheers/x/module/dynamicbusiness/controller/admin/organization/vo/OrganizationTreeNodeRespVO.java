@@ -19,7 +19,7 @@ public class OrganizationTreeNodeRespVO {
     @Schema(description = "名称")
     private String name;
 
-    @Schema(description = "节点类型，固定为 organization")
+    @Schema(description = "这棵树所属数据目录的注册编码。组织架构页为 organization")
     private String kind;
 
     @Schema(description = "组织机构记录编号，用它查这个节点的部门")

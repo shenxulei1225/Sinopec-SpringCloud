@@ -31,6 +31,11 @@ class PushPageConnectionTest {
         assertTrue(PushPageConnection.topicAllowed("device/88/status"));
         assertTrue(PushPageConnection.topicAllowed("inspection/execution/15/#"));
         assertTrue(PushPageConnection.topicAllowed("inspection/device/dock-1/#"));
+        assertTrue(PushPageConnection.topicAllowed("access/door/open/#"));
+        assertTrue(PushPageConnection.topicAllowed("access/door/close/#"));
+        assertTrue(PushPageConnection.topicAllowed("vehicle/pass/done/12"));
+        assertFalse(PushPageConnection.topicAllowed("access/door/open/12"));
+        assertFalse(PushPageConnection.topicAllowed("vehicle/pass/seen/12"));
         assertFalse(PushPageConnection.topicAllowed("device/88/alarm"));
         assertFalse(PushPageConnection.topicAllowed("inspection/execution/0/#"));
         assertFalse(PushPageConnection.topicAllowed("inspection/execution/15/photo"));

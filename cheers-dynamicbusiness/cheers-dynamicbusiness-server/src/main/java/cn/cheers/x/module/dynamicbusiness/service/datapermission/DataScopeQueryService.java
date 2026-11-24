@@ -4,11 +4,19 @@ import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entity.vo.FieldFilterReqVO;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datapermission.CatalogOwnershipDO;
+import cn.cheers.x.module.dynamicbusiness.dal.dataobject.datapermission.UserDataScopeDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.cataloggrant.CatalogRoleGrantMapper;
 import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
+import cn.cheers.x.module.dynamicbusiness.framework.entity.EntityTableNameHandler;
+import cn.cheers.x.module.dynamicbusiness.service.department.DepartmentOrganizationCodes;
+import cn.cheers.x.module.dynamicbusiness.service.department.DepartmentOwnerRules;
 import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogEntryAccessService;
+import cn.cheers.x.module.dynamicbusiness.service.tenantcapability.CatalogBusinessEnablementGate;
+import cn.cheers.x.module.dynamicbusiness.service.tenantcapability.CatalogBusinessEnablementGate.ListCut;
+import cn.cheers.x.system.api.permission.RoleApi;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestAttributes;
@@ -28,9 +36,11 @@ import java.util.Set;
  * <p>规则（权威：docs/中台/能力定义/数据权限能力/数据权限能力（权威）.md 第 2.4、2.6、3 节）：</p>
  * <ul>
  *   <li>目录既不是管理单元目录、也没写归属声明：不按单元分，有功能就能看全部。</li>
- *   <li>否则逐条看登录人有效的任职：这条任职所在单元的类型登记了这本目录，并且职务绑定的角色有这项实体操作，
- *       才按这个单元和它的下级单元换算条件。条与条之间取并集，不交叉组合。</li>
- *   <li>一条都不起作用：列表为空，详情和写入拒绝。不猜一个单元，也不退回不核对。直接分配给人的角色不给范围。</li>
+ *   <li>否则看用户目录里这个人单独保存的数据范围。登录后按登录账号对上人员再读。
+ *       角色（直接分配的，以及担任的职务换成的）在这本目录上有这项操作，
+ *       才按每个选中的单元和它的下级换算条件。条与条之间取并集。</li>
+ *   <li>没有数据范围，或角色没有这项操作：列表为空，详情和写入拒绝。不按操作者自己的部门猜一个单元。</li>
+ *   <li>人员目录不声明归属，列表仍看全部。新建、修改、删除挂了部门的人员时，按这个部门所在的组织或场站核对登录人保存的数据范围。</li>
  *   <li>没有登录人（定时任务、消息消费等系统调用）：不按人员授权核对，读写都不收窄。</li>
  *   <li>右上角选中的站（请求头 {@value #BROWSE_FACILITY_HEADER}）：列表、上级树、导出再收窄到属于这座站的记录。
  *       它当作一行「场站目录 · 这座站 · 不含下级」的范围换算，和授权范围取交集，只缩小不扩大。
@@ -49,6 +59,7 @@ import java.util.Set;
      *   <li>应急资源地图判断画面盖住哪段 → {@link #listMapStations}</li>
  * </ul>
  *
+ * 列表、详情、写入在数据范围之后，再交给 {@link CatalogBusinessEnablementGate} 核对这场站有没有开通这本目录所属业务。
  * 不负责：功能授权本身（见 {@code CatalogAccess}）；写任何数据；补归属声明或归属字段值。
  */
 @Service
@@ -62,19 +73,31 @@ public class DataScopeQueryService {
     public static final String BROWSE_FACILITY_HEADER = "X-Browse-Facility-Id";
     private static final String ENTITY = "entity";
     private static final String ID = "id";
+    /** 人员目录。本身不声明归属，写入时改看它所挂部门的管理单位。 */
+    private static final String USER_ACCOUNT = "user_account";
+    private static final String DEPARTMENT = "department";
+    private static final String ORGANIZATION = "organization";
 
     @Resource
     private PostAssignmentQueryService postAssignmentQueryService;
     @Resource
-    private ManagementUnitCatalogQueryService managementUnitCatalogQueryService;
-    @Resource
     private CatalogOwnershipQueryService catalogOwnershipQueryService;
+    @Resource
+    private CatalogBusinessEnablementGate catalogBusinessEnablementGate;
+    @Resource
+    private UserDataScopeQueryService userDataScopeQueryService;
+    @Resource
+    private RoleApi roleApi;
     @Resource
     private CatalogRoleGrantMapper catalogRoleGrantMapper;
     @Resource
     private DataScopeConditionResolver conditionResolver;
     @Resource
     private CatalogEntryAccessService catalogEntryAccessService;
+    @Resource
+    private EntityTableNameHandler entityTableNameHandler;
+    @Resource
+    private JdbcTemplate jdbcTemplate;
 
     /**
      * 列表筛选加上数据范围，再收窄到右上角选中的站。
@@ -88,10 +111,10 @@ public class DataScopeQueryService {
             scoped = narrowList(catalog, conditionsForLoginUser(catalog, QUERY), scoped.filters());
         }
         List<DataScopeCondition> browse = browseConditions(catalog);
-        if (scoped.nothingVisible() || browse.isEmpty()) {
-            return scoped;
+        if (!scoped.nothingVisible() && !browse.isEmpty()) {
+            scoped = narrowList(catalog, browse, scoped.filters());
         }
-        return narrowList(catalog, browse, scoped.filters());
+        return applyEnablement(catalog, scoped);
     }
 
     /**
@@ -120,15 +143,37 @@ public class DataScopeQueryService {
         return ScopedFilters.of(next);
     }
 
+    /** 数据范围收窄之后，再去掉所在场站没开通这项业务的记录。 */
+    private ScopedFilters applyEnablement(String catalog, ScopedFilters scoped) {
+        if (scoped.nothingVisible() || isSystemCall()) {
+            return scoped;
+        }
+        ListCut cut = catalogBusinessEnablementGate.listCut(catalog);
+        if (!cut.apply()) {
+            return scoped;
+        }
+        if (cut.allowedIds().isEmpty()) {
+            return ScopedFilters.nothing();
+        }
+        ScopedFilters narrowed = narrowField(cut.fieldCode(), new LinkedHashSet<>(cut.allowedIds()), scoped.filters());
+        if (narrowed != null) {
+            return narrowed;
+        }
+        List<FieldFilterReqVO> next = new ArrayList<>(scoped.filters());
+        next.add(inFilter(cut.fieldCode(), cut.allowedIds()));
+        return ScopedFilters.of(next);
+    }
+
     /** 看详情：这条记录必须落在登录人的查看范围里，否则 403。 */
     public void assertVisible(String registryCode, Long entityId) {
         String catalog = requireCatalog(registryCode);
-        if (entityId == null || isSystemCall() || !catalogOwnershipQueryService.isRestricted(catalog)) {
+        if (entityId == null || isSystemCall()) {
             return;
         }
-        if (!recordInScope(catalog, QUERY, entityId)) {
+        if (catalogOwnershipQueryService.isRestricted(catalog) && !recordInScope(catalog, QUERY, entityId)) {
             throw new ServiceException(403, "这条记录不在你的数据范围里");
         }
+        catalogBusinessEnablementGate.assertRecord(catalog, entityId);
     }
 
     /**
@@ -161,7 +206,10 @@ public class DataScopeQueryService {
             kept = retainMatching(catalog, conditionsForLoginUser(catalog, QUERY), kept);
         }
         List<DataScopeCondition> browse = browseConditions(catalog);
-        return browse.isEmpty() || kept.isEmpty() ? kept : retainMatching(catalog, browse, kept);
+        if (!browse.isEmpty() && !kept.isEmpty()) {
+            kept = retainMatching(catalog, browse, kept);
+        }
+        return catalogBusinessEnablementGate.retain(catalog, kept);
     }
 
     private List<Long> retainMatching(String catalog, List<DataScopeCondition> conditions, List<Long> ids) {
@@ -198,8 +246,10 @@ public class DataScopeQueryService {
         if (covered.isEmpty()) {
             return covered;
         }
-        List<DataScopeCondition> browse = browseConditions(requireCatalog(registryCode));
-        return browse.isEmpty() ? covered : retainMatching(requireCatalog(registryCode), browse, covered);
+        String catalog = requireCatalog(registryCode);
+        List<DataScopeCondition> browse = browseConditions(catalog);
+        List<Long> kept = browse.isEmpty() ? covered : retainMatching(catalog, browse, covered);
+        return catalogBusinessEnablementGate.retain(catalog, kept);
     }
 
     /** 这本目录按数据范围分，且这次是登录人在操作。 */
@@ -212,6 +262,7 @@ public class DataScopeQueryService {
      * <ul>
      *   <li>修改、删除：库里这条记录必须在这项操作的范围里。</li>
      *   <li>新建、或修改时提交了归属字段：新值必须在范围里；必填的归属字段不能缺。</li>
+     *   <li>人员：按所挂部门的组织或场站核对。不在登录人的数据范围里就拒绝。</li>
      * </ul>
      *
      * @param storedEntityId 修改、删除时库里的记录编号；新建传 null
@@ -219,21 +270,114 @@ public class DataScopeQueryService {
     public void assertWritable(String registryCode, String operation, Long storedEntityId,
                                Map<String, Object> baseFields, Map<String, Object> customFields) {
         String catalog = requireCatalog(registryCode);
-        if (isSystemCall() || !catalogOwnershipQueryService.isRestricted(catalog)) {
+        if (isSystemCall()) {
             return;
         }
-        List<DataScopeCondition> conditions = conditionsForLoginUser(catalog, operation);
-        if (conditions.isEmpty()) {
-            throw new ServiceException(403, "你在这本数据目录上没有可写的数据范围");
+        if (USER_ACCOUNT.equals(catalog)) {
+            assertPersonDepartmentInScope(operation, storedEntityId, baseFields, customFields);
         }
-        if (storedEntityId != null
-                && conditionResolver.selectIds(catalog, conditions, storedEntityId).isEmpty()) {
-            throw new ServiceException(403, "这条记录不在你的数据范围里");
+        if (catalogOwnershipQueryService.isRestricted(catalog)) {
+            List<DataScopeCondition> conditions = conditionsForLoginUser(catalog, operation);
+            if (conditions.isEmpty()) {
+                throw new ServiceException(403, "你在这本数据目录上没有可写的数据范围");
+            }
+            if (storedEntityId != null
+                    && conditionResolver.selectIds(catalog, conditions, storedEntityId).isEmpty()) {
+                throw new ServiceException(403, "这条记录不在你的数据范围里");
+            }
+            if (!DELETE.equals(operation)) {
+                assertOwnershipValues(catalog, conditions, storedEntityId, baseFields, customFields);
+            }
         }
         if (DELETE.equals(operation)) {
+            catalogBusinessEnablementGate.assertRecord(catalog, storedEntityId);
             return;
         }
-        assertOwnershipValues(catalog, conditions, storedEntityId, baseFields, customFields);
+        catalogBusinessEnablementGate.assertWrite(catalog, storedEntityId, baseFields, customFields);
+    }
+
+    /**
+     * 人员挂在部门上。部门挂在组织或场站上。
+     * 新建、修改、删除这个人时，这个单位必须落在登录人保存的数据范围里（含下级）。
+     * 没有挂部门的人员不按单元核对。不按操作者自己的部门猜范围。
+     */
+    private void assertPersonDepartmentInScope(String operation, Long storedEntityId,
+                                                Map<String, Object> baseFields, Map<String, Object> customFields) {
+        Long submitted = firstRefId(valueOf(baseFields, customFields, "department_id"));
+        Long stored = CREATE.equals(operation) ? null : columnId(USER_ACCOUNT, storedEntityId, "department_id");
+        Set<Long> departmentIds = new LinkedHashSet<>();
+        if (submitted != null) {
+            departmentIds.add(submitted);
+        }
+        if (stored != null) {
+            departmentIds.add(stored);
+        }
+        for (Long departmentId : departmentIds) {
+            assertDepartmentCovered(departmentId);
+        }
+    }
+
+    /** 这个部门所在的组织或场站，必须在登录人的数据范围里。两处都没挂就拒绝。 */
+    private void assertDepartmentCovered(Long departmentId) {
+        DepartmentHang hang = departmentHang(departmentId);
+        if (hang == null) {
+            throw new ServiceException(403, "这个部门不存在");
+        }
+        if (hang.organizationId() == null && hang.facilityId() == null) {
+            throw new ServiceException(403, "这个部门没有挂到管理单位");
+        }
+        if (hang.organizationId() != null && !unitCovered(ORGANIZATION, hang.organizationId())) {
+            throw new ServiceException(403, "这个部门不在你的数据范围里");
+        }
+        if (hang.facilityId() != null && !unitCovered(FacilityOwningFieldCodes.TARGET_ENTITY_TYPE, hang.facilityId())) {
+            throw new ServiceException(403, "这个部门不在你的数据范围里");
+        }
+    }
+
+    /** 登录人保存的数据范围（含下级）是否盖住这一条组织或场站。不看角色在这本目录上的操作。 */
+    private boolean unitCovered(String catalog, Long unitId) {
+        List<DataScopeCondition> conditions = conditionsCoveredByPosts(catalog);
+        return !conditions.isEmpty() && !conditionResolver.selectIds(catalog, conditions, unitId).isEmpty();
+    }
+
+    private DepartmentHang departmentHang(Long departmentId) {
+        if (departmentId == null) {
+            return null;
+        }
+        List<DepartmentHang> rows = jdbcTemplate.query(
+                "SELECT organization_id, facility_id FROM " + physicalTable(DEPARTMENT)
+                        + " WHERE deleted = false AND id = ?",
+                (rs, rowNum) -> new DepartmentHang(readLong(rs, 1), readLong(rs, 2)),
+                departmentId);
+        return rows.isEmpty() ? null : rows.get(0);
+    }
+
+    private Long columnId(String registryCode, Long entityId, String column) {
+        if (entityId == null || !"department_id".equals(column)) {
+            return null;
+        }
+        List<Long> values = jdbcTemplate.query(
+                "SELECT " + column + " FROM " + physicalTable(registryCode) + " WHERE deleted = false AND id = ?",
+                (rs, rowNum) -> readLong(rs, 1),
+                entityId);
+        return values.isEmpty() ? null : values.get(0);
+    }
+
+    private String physicalTable(String registryCode) {
+        String table = entityTableNameHandler.resolvePhysicalTableName(registryCode);
+        if (!StringUtils.hasText(table) || !table.matches("[A-Za-z_][A-Za-z0-9_]*")) {
+            throw new ServiceException(403, "无法核对这些人所在部门的管理单位");
+        }
+        return table;
+    }
+
+    private static Long readLong(java.sql.ResultSet rs, int index) throws java.sql.SQLException {
+        long value = rs.getLong(index);
+        return rs.wasNull() ? null : value;
+    }
+
+    /** 部门挂在组织上，或挂在场站上。两列都空表示没挂管理单位。 */
+    private record DepartmentHang(Long organizationId, Long facilityId) {
     }
 
     /**
@@ -293,6 +437,14 @@ public class DataScopeQueryService {
                 new ScopeNode(FacilityOwningFieldCodes.TARGET_ENTITY_TYPE, facilityId, false));
     }
 
+    /**
+     * 这次请求是否按某一座站浏览台账（数据页左侧场站列或右上角选站框）。
+     * 没带请求头时返回 null。
+     */
+    public Long currentBrowseFacilityId() {
+        return browseFacilityId();
+    }
+
     private static Long browseFacilityId() {
         RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
         if (!(attributes instanceof ServletRequestAttributes servlet)) {
@@ -338,29 +490,40 @@ public class DataScopeQueryService {
     }
 
     /**
-     * @param operation 要核对的实体操作；null 表示不看角色功能，只看任职所在单元和可管目录
+     * 这个人保存的数据范围。有这项操作的角色才换算条件；operation 为空时只看范围，不看角色。
      */
     private List<DataScopeCondition> conditionsOfPosts(String catalog, String operation) {
-        List<PostAssignmentQueryService.ActivePost> posts =
-                postAssignmentQueryService.listActivePosts(SecurityFrameworkUtils.getLoginUserId());
-        if (posts.isEmpty()) {
+        Long userId = SecurityFrameworkUtils.getLoginUserId();
+        List<UserDataScopeDO> rows = userDataScopeQueryService.listForLoginUser(userId);
+        if (rows.isEmpty()) {
             return List.of();
         }
-        String unitCatalog = managementUnitCatalogQueryService.findManagementUnitRegistryCode();
-        Map<Long, Set<String>> catalogsByModel = managementUnitCatalogQueryService.loadCatalogsByModelId();
-        List<DataScopeCondition> conditions = new ArrayList<>();
-        for (PostAssignmentQueryService.ActivePost post : posts) {
-            if (!catalogsByModel.getOrDefault(post.unitModelId(), Set.of()).contains(catalog)) {
-                continue;
+        if (operation != null) {
+            Set<Long> roleIds = capabilityRoleIds(userId);
+            if (roleIds.isEmpty() || !catalogRoleGrantMapper.existsGrant(roleIds, catalog, ENTITY, operation)) {
+                return List.of();
             }
-            if (operation != null && (post.roleIds().isEmpty()
-                    || !catalogRoleGrantMapper.existsGrant(post.roleIds(), catalog, ENTITY, operation))) {
+        }
+        List<DataScopeCondition> conditions = new ArrayList<>();
+        for (UserDataScopeDO row : rows) {
+            if (row.getUnitId() == null || !StringUtils.hasText(row.getRegistryCode())) {
                 continue;
             }
             conditions.addAll(conditionResolver.conditionsFor(catalog,
-                    new ScopeNode(unitCatalog, post.managementUnitId(), true)));
+                    new ScopeNode(row.getRegistryCode().trim(), row.getUnitId(), true)));
         }
         return conditions;
+    }
+
+    /** 直接分配的角色，加上担任的职务和有效任职换成的角色。 */
+    private Set<Long> capabilityRoleIds(Long userId) {
+        Set<Long> roleIds = new LinkedHashSet<>();
+        Collection<Long> direct = roleApi.getUserRoleIdListByUserId(userId).getCheckedData();
+        if (direct != null) {
+            roleIds.addAll(direct);
+        }
+        roleIds.addAll(postAssignmentQueryService.listActivePostRoleIds(userId));
+        return roleIds;
     }
 
     /**
@@ -373,10 +536,22 @@ public class DataScopeQueryService {
     private void assertOwnershipValues(String catalog, List<DataScopeCondition> conditions, Long storedEntityId,
                                        Map<String, Object> baseFields, Map<String, Object> customFields) {
         boolean creating = storedEntityId == null;
+        if (creating && DepartmentOrganizationCodes.ENTITY_TYPE.equals(catalog)) {
+            Long facilityId = firstRefId(valueOf(baseFields, customFields, FacilityOwningFieldCodes.FIELD_CODE));
+            Long organizationId = firstRefId(valueOf(baseFields, customFields, DepartmentOrganizationCodes.FIELD_CODE));
+            if (facilityId == null && organizationId == null) {
+                throw new ServiceException(400, DepartmentOwnerRules.NEITHER);
+            }
+        }
         for (CatalogOwnershipDO declaration : catalogOwnershipQueryService.listByRegistryCode(catalog)) {
             String field = declaration.getFieldCode();
             boolean submitted = contains(baseFields, field) || contains(customFields, field);
             boolean empty = refIds(valueOf(baseFields, customFields, field)).isEmpty();
+            if (creating && DepartmentOrganizationCodes.ENTITY_TYPE.equals(catalog)
+                    && (FacilityOwningFieldCodes.FIELD_CODE.equals(field)
+                    || DepartmentOrganizationCodes.FIELD_CODE.equals(field))) {
+                continue;
+            }
             if (Boolean.TRUE.equals(declaration.getRequired()) && empty && (creating || submitted)) {
                 throw new ServiceException(400, "缺少归属字段：" + field);
             }
@@ -514,6 +689,13 @@ public class DataScopeQueryService {
             ids.add(id);
         }
         return ids;
+    }
+
+    private static Long firstRefId(Object raw) {
+        for (Long id : refIds(raw)) {
+            return id;
+        }
+        return null;
     }
 
     /**

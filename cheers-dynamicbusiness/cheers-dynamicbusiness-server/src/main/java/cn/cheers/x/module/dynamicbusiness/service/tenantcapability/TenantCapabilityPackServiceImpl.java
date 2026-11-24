@@ -4,8 +4,6 @@ import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.tenant.core.util.TenantUtils;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.tenantcapability.TenantCapabilityPackDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.tenantcapability.TenantCapabilityPackMapper;
-import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogRoleGrantItem;
-import cn.cheers.x.module.dynamicbusiness.service.cataloggrant.CatalogRoleGrantService;
 import cn.cheers.x.module.dynamicbusiness.service.entitytype.EntityTypeCategoryBootstrapService;
 import cn.cheers.x.module.dynamicbusiness.service.pagegrant.PageRoleGrantService;
 import jakarta.annotation.Resource;
@@ -24,7 +22,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 开通编排：写开通表 → 挂目录 → 新报修、车辆、维抢修目录，以及新的用户、部门、职务、组织机构目录，写上标准字段和型号 → 新目录建分类种类和数据页 → 租户管理员页面查看动作 → 目录资源授权。
+ * 开通编排：写开通表 → 挂目录 → 新报修、车辆、维抢修目录，以及新的用户、部门、职务、组织机构目录，写上标准字段和型号 → 新目录建分类种类和数据页 → 租户管理员页面查看动作。
+ * 目录授权不在开通时按业务包整包写入。页面查看保存后，按这一页登记的目录写成查看。
  * 组织机构第一次建成分类即实体，数据页只留分类和详情。目录已经在的，不再改种类，也不再改数据页。
  * 模板目录默认从租户 1 复制注册行；目标租户已有同编码目录则跳过，也不再补字段。
  */
@@ -36,15 +35,10 @@ public class TenantCapabilityPackServiceImpl implements TenantCapabilityPackServ
     /** 目录模板来源租户。现网智慧巡检目录最全。 */
     private static final long TEMPLATE_TENANT_ID = 1L;
 
-    private static final List<String> CATALOG_SUBJECTS = List.of("category", "model", "entity", "detail");
-    private static final List<String> CATALOG_OPS = List.of("query", "create", "update", "delete");
-
     @Resource
     private TenantCapabilityPackMapper tenantCapabilityPackMapper;
     @Resource
     private PageRoleGrantService pageRoleGrantService;
-    @Resource
-    private CatalogRoleGrantService catalogRoleGrantService;
     @Resource
     private JdbcTemplate jdbcTemplate;
     @Resource
@@ -100,7 +94,7 @@ public class TenantCapabilityPackServiceImpl implements TenantCapabilityPackServ
             }
             packCodes.add(pack.code());
             pages.addAll(selection.pageCodes());
-            for (String catalogCode : pack.catalogCodes()) {
+            for (String catalogCode : BusinessCapabilityPackRegistry.catalogsForOpenedPages(pack, selection.pageCodes())) {
                 if (StringUtils.hasText(catalogCode)) {
                     catalogs.add(catalogCode.trim());
                 }
@@ -162,20 +156,11 @@ public class TenantCapabilityPackServiceImpl implements TenantCapabilityPackServ
                     added.add(pageCode);
                 }
             }
+            // 先挂上这次勾选页面打开的目录，再补页面查看。查看保存时会按页面写成目录权限，目录必须已经在。
+            for (String catalogCode : BusinessCapabilityPackRegistry.catalogsForOpenedPages(pack, pages)) {
+                copyCatalogRowFromTemplate(tenantId, catalogCode);
+            }
             grantNewPages(tenantId, added);
-            // 包已经开通过，清单里多了还没有的目录时，只插入缺的那一本。已经有的目录在复制方法里直接返回，不补字段。
-            List<String> created = new ArrayList<>();
-            for (String catalogCode : pack.catalogCodes()) {
-                if (copyCatalogRowFromTemplate(tenantId, catalogCode)) {
-                    created.add(catalogCode);
-                }
-            }
-            if (!created.isEmpty()) {
-                Long adminRoleId = findTenantAdminRoleId(tenantId);
-                if (adminRoleId != null) {
-                    TenantUtils.execute(tenantId, () -> mergeCatalogGrants(adminRoleId, created));
-                }
-            }
         }
     }
 
@@ -266,7 +251,8 @@ public class TenantCapabilityPackServiceImpl implements TenantCapabilityPackServ
     }
 
     private void provisionPack(Long tenantId, BusinessCapabilityPackDefinition pack, List<String> pageCodes) {
-        for (String catalogCode : pack.catalogCodes()) {
+        List<String> catalogs = BusinessCapabilityPackRegistry.catalogsForOpenedPages(pack, pageCodes);
+        for (String catalogCode : catalogs) {
             copyCatalogRowFromTemplate(tenantId, catalogCode);
         }
         Long adminRoleId = findTenantAdminRoleId(tenantId);
@@ -274,10 +260,7 @@ public class TenantCapabilityPackServiceImpl implements TenantCapabilityPackServ
             log.warn("[provisionPack][tenantId={}][pack={}] 没有租户管理员角色，跳过页面与目录授权", tenantId, pack.code());
             return;
         }
-        TenantUtils.execute(tenantId, () -> {
-            pageRoleGrantService.mergeViewActions(adminRoleId, pageCodes);
-            mergeCatalogGrants(adminRoleId, pack.catalogCodes());
-        });
+        TenantUtils.execute(tenantId, () -> pageRoleGrantService.mergeViewActions(adminRoleId, pageCodes));
     }
 
     /**
@@ -363,32 +346,6 @@ public class TenantCapabilityPackServiceImpl implements TenantCapabilityPackServ
                     entityTypeCategoryBootstrapService.ensureForEntityTypeCode(code));
         }
         return inserted > 0;
-    }
-
-    private void mergeCatalogGrants(Long roleId, List<String> catalogCodes) {
-        if (catalogCodes == null || catalogCodes.isEmpty()) {
-            return;
-        }
-        List<CatalogRoleGrantItem> current = new ArrayList<>(catalogRoleGrantService.listByRoleId(roleId));
-        Set<String> have = new LinkedHashSet<>();
-        for (CatalogRoleGrantItem item : current) {
-            have.add(item.registryCode() + "::" + item.subject());
-        }
-        for (String catalogCode : catalogCodes) {
-            if (!StringUtils.hasText(catalogCode)) {
-                continue;
-            }
-            String code = catalogCode.trim();
-            for (String subject : CATALOG_SUBJECTS) {
-                String key = code + "::" + subject;
-                if (have.contains(key)) {
-                    continue;
-                }
-                current.add(new CatalogRoleGrantItem(code, subject, CATALOG_OPS));
-                have.add(key);
-            }
-        }
-        catalogRoleGrantService.replaceRoleGrants(roleId, current);
     }
 
     private Long findTenantAdminRoleId(Long tenantId) {

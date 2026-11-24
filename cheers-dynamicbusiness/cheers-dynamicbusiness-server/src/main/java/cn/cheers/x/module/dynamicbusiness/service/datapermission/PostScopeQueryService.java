@@ -100,7 +100,8 @@ public class PostScopeQueryService {
         List<CatalogAccess> scoped = new ArrayList<>();
         List<CatalogAccess> open = new ArrayList<>();
         List<ManageableCatalog> manageable = new ArrayList<>();
-        for (String code : unitType.registryCodes()) {
+        String unitCatalogCode = unitCatalog;
+        for (String code : managementUnitCatalogQueryService.loadCatalogsForUnit(unitCatalogCode, managementUnitId)) {
             EntityTypeDO type = entityTypeMapper.selectByCode(code);
             manageable.add(new ManageableCatalog(code, type == null ? null : type.getName(),
                     type == null ? null : type.getGroupName()));

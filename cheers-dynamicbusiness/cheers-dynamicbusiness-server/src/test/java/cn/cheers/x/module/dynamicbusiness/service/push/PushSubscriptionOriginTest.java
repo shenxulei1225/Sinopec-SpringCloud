@@ -21,11 +21,21 @@ class PushSubscriptionOriginTest {
         assertEquals(
                 "场站实时监控",
                 PushSubscriptionOrigin.subscriberName("alarm-layer", "alarm/facility/1"));
+        assertEquals(
+                "场站实时监控",
+                PushSubscriptionOrigin.subscriberName("security-layer", "vehicle/pass/done/12"));
+        assertEquals(
+                "场站实时监控",
+                PushSubscriptionOrigin.subscriberName(null, "access/door/open/#"));
+        assertEquals(
+                "场站实时监控",
+                PushSubscriptionOrigin.subscriberName(null, "access/door/close/18"));
     }
 
     @Test
     void unknownPlaceIsNotWritten() {
         assertNull(PushSubscriptionOrigin.subscriberName("other-page", "inspection/execution/15/#"));
         assertNull(PushSubscriptionOrigin.subscriberName(null, "alarm/facility/12"));
+        assertNull(PushSubscriptionOrigin.subscriberName(null, "vehicle/pass/seen/12"));
     }
 }

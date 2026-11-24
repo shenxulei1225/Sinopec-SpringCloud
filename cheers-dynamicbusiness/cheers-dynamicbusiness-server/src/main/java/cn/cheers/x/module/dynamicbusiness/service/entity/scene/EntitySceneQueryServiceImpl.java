@@ -36,6 +36,8 @@ import cn.cheers.x.module.dynamicbusiness.service.model.ModelService;
 import cn.cheers.x.module.dynamicbusiness.service.model.relation.ModelEntityRelationService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryEntityLinkService;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryTypeService;
+import cn.cheers.x.module.dynamicbusiness.service.alarm.AlarmRecordAccess;
+import cn.cheers.x.module.dynamicbusiness.dataprocess.AlarmTypeCatalog;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -117,6 +119,9 @@ public class EntitySceneQueryServiceImpl implements EntitySceneQueryService {
     /** 列表、详情按登录人在本页数据目录上的数据范围收窄。 */
     @Resource
     private DataScopeQueryService dataScopeQueryService;
+    /** 告警名单再按业务大类收窄。不选大类就空页。 */
+    @Resource
+    private AlarmRecordAccess alarmRecordAccess;
     @Resource
     @Lazy
     private EntityRelationService entityRelationService;
@@ -226,6 +231,14 @@ public class EntitySceneQueryServiceImpl implements EntitySceneQueryService {
         String storageEntityTypeCode = resolved.entityTypeCode();
         String normalizedDomain = resolved.domain();
         String normalizedScopeCode = resolved.scopeRegistryCode();
+        if (isAlarmBusinessList(scene, storageEntityTypeCode, normalizedScopeCode)) {
+            AlarmRecordAccess.Constraint constrained = alarmRecordAccess.constrainList(categoryIds, categoryIdGroups);
+            if (constrained.nothing()) {
+                return respondShape(shape, new PageResult<>(new ArrayList<>(), 0L), detail);
+            }
+            categoryIds = constrained.categoryIds();
+            categoryIdGroups = constrained.groups();
+        }
         KeywordSearchSpec keywordSearch = resolveKeywordSearchSpec(storageEntityTypeCode, searchFieldCodes);
         if (StringUtils.hasText(keyword)) {
             log.warn(
@@ -386,6 +399,9 @@ public class EntitySceneQueryServiceImpl implements EntitySceneQueryService {
 
             case ENTITIES_DETAIL: {
                 dataScopeQueryService.assertVisible(scopeRegistryCode, entityId);
+                if (AlarmTypeCatalog.DIRECTORY.equals(storageEntityTypeCode)) {
+                    alarmRecordAccess.assertDetail(entityId);
+                }
                 EntityRespVO detailVo = entityService.get(entityId, storageEntityTypeCode, true, null);
                 if (detailVo == null) {
                     throw new ServiceException(404, ENTITY_NOT_EXISTS);
@@ -447,6 +463,13 @@ public class EntitySceneQueryServiceImpl implements EntitySceneQueryService {
             return List.of();
         }
         return modelIds.stream().filter(Objects::nonNull).distinct().toList();
+    }
+
+    /** 告警名单必须带上能看的业务大类。没挂分类的名单不走这里。 */
+    private static boolean isAlarmBusinessList(EntityQueryScene scene, String storageEntityTypeCode, String scopeRegistryCode) {
+        boolean alarm = AlarmTypeCatalog.DIRECTORY.equals(storageEntityTypeCode)
+                || AlarmTypeCatalog.DIRECTORY.equals(scopeRegistryCode);
+        return alarm && (scene == EntityQueryScene.ENTITIES_BY_CATEGORY || scene == EntityQueryScene.ENTITIES_BY_MODEL);
     }
 
     /** 列表场景才叠实体—实体筛选；详情/分类绑定单实体不消费该维。 */

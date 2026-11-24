@@ -24,6 +24,18 @@ class PostgresEntityFieldQueryEngineTest {
     }
 
     @Test
+    void dateTimeInFilterRange_keepsAlarmInsideTheChosenSpan() {
+        assertTrue(PostgresEntityFieldQueryEngine.dateTimeInFilterRange(
+                "2026-11-09 18:43:07",
+                "BETWEEN",
+                List.of("2026-11-09 00:00:00", "2026-11-09 23:59:59")));
+        assertFalse(PostgresEntityFieldQueryEngine.dateTimeInFilterRange(
+                "2026-11-13 03:47:21",
+                "BETWEEN",
+                List.of("2026-11-09 00:00:00", "2026-11-09 23:59:59")));
+    }
+
+    @Test
     void storedCustomTextMatches_readsPlannedStartAndStatus() {
         assertTrue(PostgresEntityFieldQueryEngine.storedCustomTextMatches(
                 "2026-10-02T01:00:00Z", "CONTAINS", "2026-10-02"));

@@ -9,6 +9,7 @@ import cn.cheers.x.module.dynamicbusiness.framework.security.PageAccess;
 import cn.cheers.x.module.dynamicbusiness.api.directory.dto.UserAccountDTO;
 import cn.cheers.x.module.dynamicbusiness.service.directory.UserAccountDirectoryQueryService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
+import cn.cheers.x.module.dynamicbusiness.service.tenantcapability.CatalogBusinessEnablementGate;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.workorder.vo.WorkOrderCatalogCreateReqVO;
 import cn.cheers.x.module.dynamicbusiness.service.workorder.WorkOrderCatalogService;
 import jakarta.annotation.Resource;
@@ -51,6 +52,8 @@ public class RepairRecordServiceImpl implements RepairRecordService {
     private EntityService entityService;
     @Resource
     private PageAccess pageAccess;
+    @Resource
+    private CatalogBusinessEnablementGate catalogBusinessEnablementGate;
     @Resource
     private WorkOrderCatalogService workOrderCatalogService;
     @Resource
@@ -271,6 +274,7 @@ public class RepairRecordServiceImpl implements RepairRecordService {
         if (entity == null) {
             throw new ServiceException(404, "报修单不存在");
         }
+        catalogBusinessEnablementGate.assertRecord(REPAIR_TYPE, repairId);
         return entity;
     }
 

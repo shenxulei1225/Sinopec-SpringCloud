@@ -42,9 +42,10 @@ public interface PostAssignmentMapper extends BaseMapperX<PostAssignmentDO> {
                 .orderByAsc(PostAssignmentDO::getId));
     }
 
-    default boolean existsSame(Long userId, Long managementUnitId, Long dutyPostId) {
+    default boolean existsSame(Long userId, String managementUnitRegistry, Long managementUnitId, Long dutyPostId) {
         return selectCount(new LambdaQueryWrapperX<PostAssignmentDO>()
                 .eq(PostAssignmentDO::getUserId, userId)
+                .eq(PostAssignmentDO::getManagementUnitRegistry, managementUnitRegistry)
                 .eq(PostAssignmentDO::getManagementUnitId, managementUnitId)
                 .eq(PostAssignmentDO::getDutyPostId, dutyPostId)) > 0;
     }

@@ -16,6 +16,9 @@ public class PostAssignmentUserCreateReqVO {
     @NotNull(message = "请选择人员")
     private Long userId;
 
+    @Schema(description = "管理单元所在目录。空则按组织目录。")
+    private String managementUnitRegistry;
+
     @Schema(description = "组织：管理单元目录里的记录编号", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "请选择组织")
     private Long managementUnitId;

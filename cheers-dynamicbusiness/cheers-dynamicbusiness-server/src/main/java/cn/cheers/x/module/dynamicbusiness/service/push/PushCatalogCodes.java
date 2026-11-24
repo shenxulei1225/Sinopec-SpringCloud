@@ -17,6 +17,8 @@ public final class PushCatalogCodes {
     /** 设备页面状态、场站告警列表已经写下的对象编码。发出时按这个编码找回名字规则。 */
     public static final String DEVICE_STATUS_TOPIC = "device_status";
     public static final String ALARM_FACILITY_TOPIC = "alarm_facility";
+    /** 安防图层订的「已经进出」。发出时按这个编码找回名字规则。识别到车不用这一句。 */
+    public static final String VEHICLE_PASS_DONE_TOPIC = "vehicle_pass_done";
 
     /** 推送主题上的文本列。编码由字段创建生成，按这个名字找回。 */
     public static final String NAME_PATTERN = "名字规则";

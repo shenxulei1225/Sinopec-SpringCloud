@@ -16,6 +16,9 @@ public class TenantCapabilityPackDefRespVO {
     private List<PageItem> pages;
     private List<String> catalogCodes;
 
+    @Schema(description = "非空时须在对应目录的锚点记录上登记启用")
+    private List<String> unitEnablementRegistryCodes;
+
     @Schema(description = "这一包下可单独开通的页面")
     @Data
     public static class PageItem {

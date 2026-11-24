@@ -12,20 +12,23 @@ public final class PushSubscriptionOrigin {
     static final String EQUIPMENT_LAYER = "equipment-layer";
     /** 场站实时监控里的告警图层。订阅方仍是这个菜单。 */
     static final String ALARM_LAYER = "alarm-layer";
+    /** 场站实时监控里的安防图层。订阅方仍是这个菜单。 */
+    static final String SECURITY_LAYER = "security-layer";
 
     private PushSubscriptionOrigin() {
     }
 
     /**
-     * 巡检图层和设备图层的订阅方都是菜单「场站实时监控」。
-     * 网关回调没有画面名时，巡检执行或巡检设备主题仍算这个画面。
+     * 巡检、设备、告警、安防图层的订阅方都是菜单「场站实时监控」。
+     * 网关回调没有画面名时，巡检主题，以及开门、关门、已经进出，仍算这个画面。
      * 认不出的画面返回空，调用方不写入订阅行。
      */
     public static String subscriberName(String place, String topic) {
-        if (PATROL_LAYER.equals(place) || EQUIPMENT_LAYER.equals(place) || ALARM_LAYER.equals(place)) {
+        if (PATROL_LAYER.equals(place) || EQUIPMENT_LAYER.equals(place) || ALARM_LAYER.equals(place)
+                || SECURITY_LAYER.equals(place)) {
             return PushCatalogCodes.STATION_LIVE_MONITOR;
         }
-        if ((place == null || place.isBlank()) && isPatrolTopic(topic)) {
+        if ((place == null || place.isBlank()) && (isPatrolTopic(topic) || isSecurityTopic(topic))) {
             return PushCatalogCodes.STATION_LIVE_MONITOR;
         }
         return null;
@@ -37,5 +40,16 @@ public final class PushSubscriptionOrigin {
         }
         String value = topic.trim();
         return value.startsWith("inspection/execution/") || value.startsWith("inspection/device/");
+    }
+
+    /** 开门、关门、已经进出。识别到车还没放行的那一句不算安防图层。 */
+    private static boolean isSecurityTopic(String topic) {
+        if (topic == null || topic.isBlank()) {
+            return false;
+        }
+        String value = topic.trim();
+        return value.startsWith("access/door/open/")
+                || value.startsWith("access/door/close/")
+                || value.startsWith("vehicle/pass/done/");
     }
 }

@@ -22,9 +22,15 @@ public final class OrganizationTreeComposer {
     }
 
     public static List<OrganizationTreeNodeRespVO> compose(List<OrganizationNodeRow> rows) {
+        return compose(KIND_ORGANIZATION, rows);
+    }
+
+    /** kind 是这本目录的注册编码，写进节点上，方便调用方分辨树从哪本目录来。 */
+    public static List<OrganizationTreeNodeRespVO> compose(String kind, List<OrganizationNodeRow> rows) {
+        String nodeKind = kind == null || kind.isBlank() ? KIND_ORGANIZATION : kind.trim();
         Map<Long, OrganizationTreeNodeRespVO> byId = new LinkedHashMap<>();
         for (OrganizationNodeRow row : rows) {
-            byId.put(row.entityId(), node(row.entityId(), row.name(), row.modelId()));
+            byId.put(row.entityId(), node(nodeKind, row.entityId(), row.name(), row.modelId()));
         }
         List<OrganizationTreeNodeRespVO> roots = new ArrayList<>();
         for (OrganizationNodeRow row : rows) {
@@ -40,10 +46,10 @@ public final class OrganizationTreeComposer {
         return roots;
     }
 
-    private static OrganizationTreeNodeRespVO node(long entityId, String name, Long modelId) {
+    private static OrganizationTreeNodeRespVO node(String kind, long entityId, String name, Long modelId) {
         OrganizationTreeNodeRespVO node = new OrganizationTreeNodeRespVO();
-        node.setKey(KIND_ORGANIZATION + ":" + entityId);
-        node.setKind(KIND_ORGANIZATION);
+        node.setKey(kind + ":" + entityId);
+        node.setKind(kind);
         node.setEntityId(entityId);
         node.setName(name);
         node.setModelId(modelId);

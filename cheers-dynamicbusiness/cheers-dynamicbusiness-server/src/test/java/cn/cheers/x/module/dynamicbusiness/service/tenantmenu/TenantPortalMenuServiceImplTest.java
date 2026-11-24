@@ -44,10 +44,12 @@ class TenantPortalMenuServiceImplTest {
                         page("work-order-center", "工单中心"),
                         page("work-order-execute", "我的工单"))
         ));
-        assertEquals(List.of("设备管理", "报修管理", "工单"),
+        assertEquals(List.of("管廊管理", "报修管理", "工单"),
                 nodes.stream().map(TenantPortalMenuNode::title).toList());
-        assertEquals(List.of("设备台账", "备品备件"),
+        assertEquals(List.of("设备"),
                 nodes.get(0).children().stream().map(TenantPortalMenuNode::title).toList());
+        assertEquals(List.of("设备台账", "备品备件"),
+                nodes.get(0).children().get(0).children().stream().map(TenantPortalMenuNode::title).toList());
         assertEquals(List.of("我的报修", "报修受理", "故障台账"),
                 nodes.get(1).children().stream().map(TenantPortalMenuNode::title).toList());
         assertNull(nodes.get(2).pageCode());
@@ -64,20 +66,42 @@ class TenantPortalMenuServiceImplTest {
                         page("road-network", "路网管理"))
         ));
         assertEquals(1, nodes.size());
-        assertEquals("管廊", nodes.get(0).title());
-        assertEquals(List.of("管廊设施", "三维场景", "路网管理"),
+        assertEquals("管廊管理", nodes.get(0).title());
+        assertEquals(List.of("构筑物", "三维场景", "路网管理"),
                 nodes.get(0).children().stream().map(TenantPortalMenuNode::title).toList());
+        assertEquals(List.of("管廊设施"),
+                nodes.get(0).children().get(0).children().stream().map(TenantPortalMenuNode::title).toList());
+    }
+
+    @Test
+    void galleryCustomerGroupHoldsCorridorCustomerAndBilling() {
+        List<TenantPortalMenuNode> nodes = TenantPortalMenuServiceImpl.generate(List.of(
+                group("pipe-gallery", "管廊",
+                        page("gallery-customer", "入廊客户管理"),
+                        page("gallery-billing", "收费管理"))
+        ));
+        assertEquals(1, nodes.size());
+        assertEquals("管廊管理", nodes.get(0).title());
+        assertEquals(List.of("客户管理"),
+                nodes.get(0).children().stream().map(TenantPortalMenuNode::title).toList());
+        assertEquals(List.of("入廊客户管理", "收费管理"),
+                nodes.get(0).children().get(0).children().stream().map(TenantPortalMenuNode::title).toList());
+        assertEquals("gallery-customer", nodes.get(0).children().get(0).children().get(0).pageCode());
+        assertEquals("gallery-billing", nodes.get(0).children().get(0).children().get(1).pageCode());
     }
 
     @Test
     void platformPagesStayOffTheDefaultMenu() {
         List<TenantPortalMenuNode> nodes = TenantPortalMenuServiceImpl.generate(List.of(
                 group("platform-extensions", "平台扩展配置", page("resource-library", "资源库")),
-                group("tenant-foundation", "租户底座", page("organization", "组织架构"))
+                group("tenant-foundation", "租户底座",
+                        page("organization", "组织架构"),
+                        page("menu-admin", "菜单管理"),
+                        page("data-resources", "数据资源管理"))
         ));
         assertEquals(1, nodes.size());
-        assertEquals("系统配置", nodes.get(0).title());
-        assertEquals(List.of("组织架构"),
+        assertEquals("系统管理", nodes.get(0).title());
+        assertEquals(List.of("组织架构", "菜单管理", "数据资源管理"),
                 nodes.get(0).children().stream().map(TenantPortalMenuNode::title).toList());
     }
 
@@ -101,8 +125,18 @@ class TenantPortalMenuServiceImplTest {
                 nodes.get(0).children().get(0).children().stream().map(TenantPortalMenuNode::title).toList());
         assertEquals(List.of("有线电话"),
                 nodes.get(0).children().get(1).children().stream().map(TenantPortalMenuNode::title).toList());
-        assertEquals(List.of("视频监控", "告警记录"),
+        assertEquals(List.of("视频监控"),
                 nodes.get(0).children().get(2).children().stream().map(TenantPortalMenuNode::title).toList());
+        List<TenantPortalMenuNode> alarm = TenantPortalMenuServiceImpl.generate(List.of(
+                group("alarm-management", "告警管理",
+                        page("security-alarm", "告警记录"),
+                        page("security-alarm-rule", "告警规则"),
+                        page("alarm-strategy", "告警策略"),
+                        page("alarm-linkage", "告警联动"))
+        ));
+        assertEquals("告警管理", alarm.get(0).title());
+        assertEquals(List.of("告警记录", "告警规则", "告警策略", "告警联动"),
+                alarm.get(0).children().stream().map(TenantPortalMenuNode::title).toList());
         assertEquals("security-patrol", nodes.get(0).children().get(3).pageCode());
     }
 

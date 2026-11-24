@@ -17,6 +17,7 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -905,7 +906,10 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
             if (id == null || !values.containsKey(id)) {
                 continue;
             }
-            if (dedicatedValueMatches(values.get(id), op, rawValue, isTextLikeType(fieldType))) {
+            boolean hit = isDateLikeType(fieldType) && isDateBoundOp(op)
+                    ? dateTimeInFilterRange(values.get(id), op, rawValue)
+                    : dedicatedValueMatches(values.get(id), op, rawValue, isTextLikeType(fieldType));
+            if (hit) {
                 matched.add(id);
             }
         }
@@ -956,6 +960,113 @@ public class PostgresEntityFieldQueryEngine implements EntityFieldQueryEngine {
     /**
      * 固定列原始值收成筛选 token。JSON 数组、集合、标量都能拆。
      */
+    private static boolean isDateLikeType(String fieldType) {
+        return "DATE".equals(fieldType) || "DATETIME".equals(fieldType) || "TIMESTAMP".equals(fieldType);
+    }
+
+    private static boolean isDateBoundOp(String op) {
+        return "GTE".equals(op) || "GT".equals(op) || "LTE".equals(op) || "LT".equals(op) || "BETWEEN".equals(op);
+    }
+
+    /**
+     * 列表上方一个日期控件选出的一段时间，收窄实体表上的日期时间列。
+     * 开始、结束可以只填一头。两头都有时，记录时间落在这一段里才留下。
+     */
+    static boolean dateTimeInFilterRange(Object cell, String op, Object rawValue) {
+        LocalDateTime actual = parseFilterDateTime(cell, false);
+        if (actual == null || op == null) {
+            return false;
+        }
+        String normalized = op.trim().toUpperCase(Locale.ROOT);
+        if ("GTE".equals(normalized) || "GT".equals(normalized)) {
+            LocalDateTime bound = parseFilterDateTime(rawValue, false);
+            if (bound == null) {
+                return false;
+            }
+            return "GT".equals(normalized) ? actual.isAfter(bound) : !actual.isBefore(bound);
+        }
+        if ("LTE".equals(normalized) || "LT".equals(normalized)) {
+            LocalDateTime bound = parseFilterDateTime(rawValue, true);
+            if (bound == null) {
+                return false;
+            }
+            return "LT".equals(normalized) ? actual.isBefore(bound) : !actual.isAfter(bound);
+        }
+        if (!"BETWEEN".equals(normalized)) {
+            return false;
+        }
+        LocalDateTime[] bounds = betweenBounds(rawValue);
+        if (bounds == null) {
+            return false;
+        }
+        if (bounds[0] != null && actual.isBefore(bounds[0])) {
+            return false;
+        }
+        if (bounds[1] != null && actual.isAfter(bounds[1])) {
+            return false;
+        }
+        return bounds[0] != null || bounds[1] != null;
+    }
+
+    private static LocalDateTime[] betweenBounds(Object rawValue) {
+        if (rawValue instanceof List<?> list && list.size() >= 2) {
+            return new LocalDateTime[] {
+                    parseFilterDateTime(list.get(0), false),
+                    parseFilterDateTime(list.get(1), true)
+            };
+        }
+        if (rawValue instanceof Map<?, ?> map) {
+            Object start = firstPresent(map, "start", "startDate", "begin");
+            Object end = firstPresent(map, "end", "endDate", "finish");
+            return new LocalDateTime[] {
+                    parseFilterDateTime(start, false),
+                    parseFilterDateTime(end, true)
+            };
+        }
+        return null;
+    }
+
+    private static Object firstPresent(Map<?, ?> map, String... keys) {
+        for (String key : keys) {
+            if (map.containsKey(key) && map.get(key) != null) {
+                return map.get(key);
+            }
+        }
+        return null;
+    }
+
+    /** 日期时间筛选边界。只有日期时，结束边界用这一天的最后一秒。 */
+    private static LocalDateTime parseFilterDateTime(Object raw, boolean endOfDayIfDateOnly) {
+        if (raw == null) {
+            return null;
+        }
+        if (raw instanceof LocalDateTime dateTime) {
+            return dateTime;
+        }
+        if (raw instanceof java.sql.Timestamp timestamp) {
+            return timestamp.toLocalDateTime();
+        }
+        String text = String.valueOf(raw).trim();
+        if (text.isEmpty() || "null".equals(text)) {
+            return null;
+        }
+        try {
+            if (text.length() >= 19 && text.charAt(10) == ' ') {
+                return LocalDateTime.parse(text.substring(0, 19), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            }
+            if (text.length() >= 19 && text.charAt(10) == 'T') {
+                return LocalDateTime.parse(text.substring(0, 19));
+            }
+            if (text.length() >= 10) {
+                LocalDate day = LocalDate.parse(text.substring(0, 10));
+                return endOfDayIfDateOnly ? day.atTime(23, 59, 59) : day.atStartOfDay();
+            }
+        } catch (DateTimeParseException ignored) {
+            return null;
+        }
+        return null;
+    }
+
     static Set<String> tokensFromDedicatedValue(Object raw) {
         if (raw == null) {
             return Collections.emptySet();

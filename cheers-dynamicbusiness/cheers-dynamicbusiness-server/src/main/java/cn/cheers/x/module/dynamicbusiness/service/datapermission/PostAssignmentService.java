@@ -15,7 +15,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -29,7 +28,8 @@ import java.util.Set;
  *   <li>角色页「绑定职务」整份保存 → {@link #replaceRoleDutyPosts}</li>
  * </ul>
  *
- * <p>任职直接生效：功能和范围计算时直接读任职、职务绑定角色和可管目录，不生成别的记录，所以改绑定后不用重算。</p>
+ * <p>任职直接生效：功能计算时读任职和职务上的人员，换成职务绑定的角色。
+ * 能看哪些单元读人员数据范围，不读任职所在单元。</p>
  *
  * 不负责：读取（见 {@link PostAssignmentQueryService}）；所属部门（只表示审批归哪里）。
  * 禁止：往系统角色关系里写角色；任职换人、换单元、换职务（撤销后重新加）。
@@ -53,8 +53,8 @@ public class PostAssignmentService {
     @Resource
     private AdminUserApi adminUserApi;
 
-    /** 一批任职的输入：同一个单元、同一个职务、同一段日期，多个人。截止日期含当天。 */
-    public record Batch(Long managementUnitId, Long dutyPostId, List<Long> userIds,
+    /** 一批任职的输入。registryCode 是管理单元所在目录，空则按组织目录。 */
+    public record Batch(Long managementUnitId, String registryCode, Long dutyPostId, List<Long> userIds,
                         LocalDate validFrom, LocalDate validTo) {
     }
 
@@ -69,7 +69,7 @@ public class PostAssignmentService {
         if (input == null) {
             throw new ServiceException(400, "请填写任职");
         }
-        requireManagementUnit(input.managementUnitId());
+        String registry = requireManagementUnit(input.registryCode(), input.managementUnitId());
         requireDutyPost(input.dutyPostId());
         validateDates(input.validFrom(), input.validTo());
         Set<Long> userIds = new LinkedHashSet<>(input.userIds() == null ? List.of() : input.userIds());
@@ -82,11 +82,12 @@ public class PostAssignmentService {
         }
         List<Long> ids = new ArrayList<>();
         for (Long userId : userIds) {
-            if (postAssignmentMapper.existsSame(userId, input.managementUnitId(), input.dutyPostId())) {
+            if (postAssignmentMapper.existsSame(userId, registry, input.managementUnitId(), input.dutyPostId())) {
                 throw new ServiceException(400, "人员 #" + userId + " 已在这个单元任这个职务");
             }
             PostAssignmentDO row = new PostAssignmentDO();
             row.setUserId(userId);
+            row.setManagementUnitRegistry(registry);
             row.setManagementUnitId(input.managementUnitId());
             row.setDutyPostId(input.dutyPostId());
             row.setValidFrom(input.validFrom());
@@ -98,10 +99,10 @@ public class PostAssignmentService {
     }
 
     /**
-     * 数据资源管理「人员的数据范围」加任职：先点一个组织，再勾几个职务。
-     * 例如在漳州作业区同时任站长和作业区负责人。
+     * 数据资源管理给一个人加职务：先点一个管理单元，再勾这个单元上的职务。
+     * 只写任职。数据范围另存。
      */
-    public record UnitPostsBatch(Long userId, Long managementUnitId, List<Long> dutyPostIds,
+    public record UnitPostsBatch(Long userId, Long managementUnitId, String registryCode, List<Long> dutyPostIds,
                                  LocalDate validFrom, LocalDate validTo) {
     }
 
@@ -126,8 +127,8 @@ public class PostAssignmentService {
         }
         List<Long> ids = new ArrayList<>();
         for (Long dutyPostId : dutyPostIds) {
-            ids.addAll(createBatch(new Batch(input.managementUnitId(), dutyPostId, List.of(input.userId()),
-                    input.validFrom(), input.validTo())));
+            ids.addAll(createBatch(new Batch(input.managementUnitId(), input.registryCode(), dutyPostId,
+                    List.of(input.userId()), input.validFrom(), input.validTo())));
         }
         return ids;
     }
@@ -196,22 +197,35 @@ public class PostAssignmentService {
      * 单元必须是管理单元目录里的记录，而且它的类型已经登记。
      * 只有数据资源管理「按人员」加任职时调用。职务管理分配人员不走这里。
      */
-    private void requireManagementUnit(Long managementUnitId) {
+    /**
+     * 管理单元必须是已添加目录里的一条记录。
+     * 组织目录还要求这条记录的型号已登记为管理单元类型。场站、管线整本目录都是管理单元，不再逐个型号登记。
+     *
+     * @return 实际使用的目录编码
+     */
+    private String requireManagementUnit(String registryCode, Long managementUnitId) {
         if (managementUnitId == null) {
             throw new ServiceException(400, "请选择管理单元");
         }
-        String unitCatalog = managementUnitCatalogQueryService.findManagementUnitRegistryCode();
-        if (unitCatalog == null) {
+        String registry = org.springframework.util.StringUtils.hasText(registryCode)
+                ? registryCode.trim()
+                : managementUnitCatalogQueryService.findManagementUnitRegistryCode();
+        if (!org.springframework.util.StringUtils.hasText(registry)) {
             throw new ServiceException(400, "还没有管理单元，不能添加任职");
         }
-        Map<Long, Long> models = conditionResolver.selectModelIds(unitCatalog, List.of(managementUnitId));
-        Long modelId = models.get(managementUnitId);
-        if (modelId == null) {
-            throw new ServiceException(400, "管理单元不存在：#" + managementUnitId);
+        if (!managementUnitCatalogQueryService.isRegistryAdded(registry)) {
+            throw new ServiceException(400, "这本目录还没有加为管理单元：" + registry);
         }
-        if (!managementUnitCatalogQueryService.loadCatalogsByModelId().containsKey(modelId)) {
-            throw new ServiceException(400, "这个单元的类型没有登记为管理单元类型，不能在这里任职");
+        if (!conditionResolver.recordExists(registry, managementUnitId)) {
+            throw new ServiceException(400, "管理单元不存在：" + registry + " #" + managementUnitId);
         }
+        if ("organization".equals(registry)) {
+            Long modelId = conditionResolver.selectModelIds(registry, List.of(managementUnitId)).get(managementUnitId);
+            if (!managementUnitCatalogQueryService.isModelRegistered(modelId)) {
+                throw new ServiceException(400, "这个单元的类型没有登记为管理单元类型，不能在这里任职");
+            }
+        }
+        return registry;
     }
 
     /**

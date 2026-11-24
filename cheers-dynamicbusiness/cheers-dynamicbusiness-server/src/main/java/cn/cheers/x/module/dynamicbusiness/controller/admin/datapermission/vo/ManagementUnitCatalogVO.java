@@ -39,12 +39,43 @@ public final class ManagementUnitCatalogVO {
         private List<TypeItem> types;
     }
 
-    @Schema(description = "整份保存可管目录")
+    @Schema(description = "整份保存已登记的管理单元类型")
     @Data
     public static class SaveReq {
 
         @Schema(description = "登记的管理单元类型；空列表表示撤掉全部登记")
         @NotNull(message = "登记不能为空，没有就传空列表")
         private List<@Valid TypeItem> types;
+    }
+
+    @Schema(description = "已添加为管理单元的数据目录")
+    @Data
+    public static class RegistryResp {
+
+        @NotNull
+        private List<String> registryCodes;
+    }
+
+    @Schema(description = "整份保存已添加的管理单元目录")
+    @Data
+    public static class RegistrySaveReq {
+
+        @Schema(description = "数据目录注册编码，顺序即标签顺序；空列表表示全部撤下")
+        @NotNull(message = "目录列表不能为空，没有就传空列表")
+        private List<String> registryCodes;
+    }
+
+    @Schema(description = "按管理点保存可管目录")
+    @Data
+    public static class PointSaveReq {
+
+        @NotNull(message = "缺少管理单元目录")
+        private String managementUnitRegistryCode;
+
+        @NotNull(message = "请选择管理点")
+        private Long managementUnitId;
+
+        @NotNull(message = "能管的目录不能为空，没有就传空列表")
+        private List<String> registryCodes;
     }
 }

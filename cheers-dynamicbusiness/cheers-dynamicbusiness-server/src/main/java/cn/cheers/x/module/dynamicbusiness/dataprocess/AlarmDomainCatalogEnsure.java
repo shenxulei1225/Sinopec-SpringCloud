@@ -215,12 +215,9 @@ public class AlarmDomainCatalogEnsure {
     /** 告警规则已经在判断的点。这些点用「还开着」，不再当成策略里的 0 或 1。 */
     private java.util.Set<String> ruledPointCodes() {
         java.util.Set<String> codes = new java.util.LinkedHashSet<>();
-        ModelDO threshold = modelMapper.selectByNameAndEntityTypeCode("阈值告警", AlarmRuleCatalogEnsure.DIRECTORY);
-        if (threshold == null || threshold.getId() == null) {
-            return codes;
-        }
         String pointField = alarmRuleCatalogEnsure.fieldCode(AlarmRuleCatalogEnsure.FIELD_POINT);
-        for (EntityDO rule : entityRepository.findByModelId(threshold.getId(), AlarmRuleCatalogEnsure.DIRECTORY)) {
+        for (Long modelId : alarmRuleCatalogEnsure.judgedModelIds()) {
+        for (EntityDO rule : entityRepository.findByModelId(modelId, AlarmRuleCatalogEnsure.DIRECTORY)) {
             if (rule.getCustomFields() == null || !Integer.valueOf(1).equals(rule.getStatus())) {
                 continue;
             }
@@ -228,6 +225,7 @@ public class AlarmDomainCatalogEnsure {
             if (value != null && !String.valueOf(value).isBlank()) {
                 codes.add(String.valueOf(value));
             }
+        }
         }
         return codes;
     }
@@ -522,11 +520,8 @@ public class AlarmDomainCatalogEnsure {
     }
 
     private void appendOpenOptions(JSONArray options) {
-        ModelDO threshold = modelMapper.selectByNameAndEntityTypeCode("阈值告警", AlarmRuleCatalogEnsure.DIRECTORY);
-        if (threshold == null || threshold.getId() == null) {
-            return;
-        }
-        List<EntityDO> rules = entityRepository.findByModelId(threshold.getId(), AlarmRuleCatalogEnsure.DIRECTORY);
+        for (Long modelId : alarmRuleCatalogEnsure.judgedModelIds()) {
+        List<EntityDO> rules = entityRepository.findByModelId(modelId, AlarmRuleCatalogEnsure.DIRECTORY);
         for (EntityDO rule : rules) {
             if (rule.getId() == null || !Integer.valueOf(1).equals(rule.getStatus())) {
                 continue;
@@ -544,6 +539,7 @@ public class AlarmDomainCatalogEnsure {
                 }
             }
             option(options, label, label, "open:" + rule.getId(), models);
+        }
         }
     }
 

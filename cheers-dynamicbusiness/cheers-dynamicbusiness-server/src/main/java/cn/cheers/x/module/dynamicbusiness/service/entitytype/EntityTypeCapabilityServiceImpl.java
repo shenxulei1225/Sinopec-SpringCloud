@@ -4,6 +4,7 @@ import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.tenant.core.context.TenantContextHolder;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeCapabilityItemRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.entitytype.vo.EntityTypeCapabilityRespVO;
+import cn.cheers.x.module.dynamicbusiness.service.capability.form.ModelCrudFormCacheEvictor;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
@@ -103,6 +104,12 @@ public class EntityTypeCapabilityServiceImpl implements EntityTypeCapabilityServ
                 "启用后按用途补字段说明、指令 JSON（样例折叠在指令 JSON 下）。",
                 enabled.contains(CAPABILITY_PROTOCOL_PARSER)
         ));
+        items.add(new EntityTypeCapabilityItemRespVO(
+                CAPABILITY_PIPELINE_ROUTE,
+                "管线走向",
+                "打开后，这个目录的型号上能看到走向这一列。详情画出地图，并列出指向这条记录的全部场站。关掉只卸地图，不删列。",
+                enabled.contains(CAPABILITY_PIPELINE_ROUTE)
+        ));
         return items;
     }
 
@@ -145,6 +152,11 @@ public class EntityTypeCapabilityServiceImpl implements EntityTypeCapabilityServ
         if (normalizedEnabled.contains(CAPABILITY_PROTOCOL_PARSER)) {
             entityTypeProtocolParserProvisionService.ensureProvisioned(normalizedCode);
         }
+        if (normalizedEnabled.contains(CAPABILITY_PIPELINE_ROUTE)) {
+            applyPipelineRoute(tenantId, normalizedCode, true);
+        } else if (pipelineRouteAssigned(tenantId, normalizedCode)) {
+            applyPipelineRoute(tenantId, normalizedCode, false);
+        }
     }
 
     @Override
@@ -175,7 +187,76 @@ public class EntityTypeCapabilityServiceImpl implements EntityTypeCapabilityServ
         }
         if (CAPABILITY_PROTOCOL_PARSER.equals(capabilityCode)) {
             entityTypeProtocolParserProvisionService.ensureProvisioned(entityTypeCode);
+            return;
         }
+        if (CAPABILITY_PIPELINE_ROUTE.equals(capabilityCode)) {
+            applyPipelineRoute(getRequiredTenantId(), entityTypeCode, true);
+        }
+    }
+
+    /**
+     * 管线走向开关只改已有「走向」列的用途和型号上的显示。
+     * 打开：型号里能看到这一列，详情交给控件。
+     * 关掉：卸下用途，型号上这一列不再出现在创建、编辑、详情。不删列、不删线路。
+     */
+    private boolean pipelineRouteAssigned(Long tenantId, String entityTypeCode) {
+        Integer count = jdbcTemplate.queryForObject(
+                """
+                SELECT COUNT(1)
+                FROM dynamic_model_field_assignment a
+                JOIN dynamic_model m ON m.id = a.model_id AND m.tenant_id = a.tenant_id
+                JOIN dynamic_field f ON f.id = a.field_id AND f.tenant_id = a.tenant_id
+                WHERE a.tenant_id = ? AND a.deleted = false
+                  AND m.deleted = false AND m.entity_type_code = ?
+                  AND f.deleted = false AND f.code = 'route_geojson'
+                """,
+                Integer.class,
+                tenantId, entityTypeCode
+        );
+        return count != null && count > 0;
+    }
+
+    private void applyPipelineRoute(Long tenantId, String entityTypeCode, boolean enabled) {
+        boolean keepSemantic = enabled || otherCatalogKeepsPipelineRoute(tenantId, entityTypeCode);
+        jdbcTemplate.update(
+                """
+                UPDATE dynamic_field
+                SET semantic_type = ?, update_time = CURRENT_TIMESTAMP
+                WHERE tenant_id = ? AND deleted = false AND code = 'route_geojson'
+                """,
+                keepSemantic ? "PIPELINE_ROUTE" : null,
+                tenantId
+        );
+        jdbcTemplate.update(
+                """
+                UPDATE dynamic_model_field_assignment a
+                SET create_visible = ?, edit_visible = ?, detail_visible = ?,
+                    update_time = CURRENT_TIMESTAMP
+                FROM dynamic_model m, dynamic_field f
+                WHERE a.tenant_id = ? AND a.deleted = false
+                  AND m.id = a.model_id AND m.tenant_id = a.tenant_id AND m.deleted = false
+                  AND m.entity_type_code = ?
+                  AND f.id = a.field_id AND f.tenant_id = a.tenant_id AND f.deleted = false
+                  AND f.code = 'route_geojson'
+                """,
+                enabled, enabled, enabled,
+                tenantId, entityTypeCode
+        );
+        ModelCrudFormCacheEvictor.evictRegistryAndDomainCatalogs(jdbcTemplate, entityTypeCode);
+    }
+
+    /** 别的目录还开着管线走向时，用途留在字段上。当前目录只改自己型号的显示。 */
+    private boolean otherCatalogKeepsPipelineRoute(Long tenantId, String entityTypeCode) {
+        Integer count = jdbcTemplate.queryForObject(
+                """
+                SELECT COUNT(1) FROM dynamic_entity_type_capability
+                WHERE tenant_id = ? AND deleted = false AND enabled = true
+                  AND capability_code = ? AND entity_type_code <> ?
+                """,
+                Integer.class,
+                tenantId, CAPABILITY_PIPELINE_ROUTE, entityTypeCode
+        );
+        return count != null && count > 0;
     }
 
     private List<EnabledBinding> loadEnabledBindings(Long tenantId) {
@@ -286,7 +367,8 @@ public class EntityTypeCapabilityServiceImpl implements EntityTypeCapabilityServ
                 || Objects.equals(CAPABILITY_ACTUAL_PARAM, capabilityCode)
                 || Objects.equals(CAPABILITY_PARAM_SCHEMA, capabilityCode)
                 || Objects.equals(CAPABILITY_FLOW_GRAPH, capabilityCode)
-                || Objects.equals(CAPABILITY_PROTOCOL_PARSER, capabilityCode);
+                || Objects.equals(CAPABILITY_PROTOCOL_PARSER, capabilityCode)
+                || Objects.equals(CAPABILITY_PIPELINE_ROUTE, capabilityCode);
     }
 
     private void ensureEntityTypeExists(Long tenantId, String entityTypeCode) {

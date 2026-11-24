@@ -12,6 +12,9 @@ public class DutyPostRoleBindingRespVO {
 
     private Long roleId;
 
+    @Schema(description = "角色名称。角色记录已删除时为空")
+    private String roleName;
+
     @Schema(description = "绑定这个角色的全部职务（含当前职务）。多于一个时，改这个角色会同时改它们的权限")
     private List<DutyPost> dutyPosts;
 
@@ -25,6 +28,7 @@ public class DutyPostRoleBindingRespVO {
     public static DutyPostRoleBindingRespVO from(DutyPostRoleBinding binding) {
         DutyPostRoleBindingRespVO vo = new DutyPostRoleBindingRespVO();
         vo.setRoleId(binding.roleId());
+        vo.setRoleName(binding.roleName());
         vo.setDutyPosts(binding.dutyPosts().stream().map(ref -> {
             DutyPost post = new DutyPost();
             post.setId(ref.id());

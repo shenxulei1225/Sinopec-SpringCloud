@@ -3,6 +3,7 @@ package cn.cheers.x.module.dynamicbusiness.service.model.governance;
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.framework.security.core.util.SecurityFrameworkUtils;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.datapermission.ManagementUnitTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeResolver;
@@ -22,7 +23,8 @@ import java.util.Objects;
  * <p>治理身份只在创建和后续专用治理命令中写入。本实现不从角色码、默认站场或其它字段
  * 猜测身份；缺少当前用户或有效站场时直接拒绝本地型号写入。</p>
  *
- * <p>删除权威：软删型号本体并清字段分配/分类关联；有实体占用则拒绝。
+ * <p>删除权威：软删型号本体，并同一次撤掉它的管理单元类型登记、字段分配、分类关联。有实体占用则拒绝。
+ * 登记留着已删除的型号时，组织树整页报错，部门管理和职务管理都打不开。
  * 禁止把删除落成 {@code status=0} 停用。启用和停用走型号状态。
  * 超级管理员可以改公司规格和场站本地型号的状态，也可以删除这两种型号。
  * 普通用户仍按原规则：公司规格不能在普通保存里改状态，场站本地型号只能由创建人在发起站场删除。</p>
@@ -40,6 +42,7 @@ public class ModelGovernanceCommandServiceImpl implements ModelGovernanceCommand
     private final ModelFieldAssignmentMapper modelFieldAssignmentMapper;
     private final ModelCategoryRelationService modelCategoryRelationService;
     private final MasterDataCapabilityChecker capabilityChecker;
+    private final ManagementUnitTypeMapper managementUnitTypeMapper;
 
     @Override
     public void prepareForCreate(ModelDO model, String requestedGovernanceStatus,
@@ -94,6 +97,8 @@ public class ModelGovernanceCommandServiceImpl implements ModelGovernanceCommand
         }
 
         assertNotOccupied(model);
+        // 这个型号若还登记为管理单元类型，同一次撤掉。不在打开组织树时再猜。
+        managementUnitTypeMapper.deleteByModelId(modelId);
         modelFieldAssignmentMapper.deleteByModelId(modelId);
         modelCategoryRelationService.deleteAllByModelId(modelId);
         modelCoreService.delete(modelId);

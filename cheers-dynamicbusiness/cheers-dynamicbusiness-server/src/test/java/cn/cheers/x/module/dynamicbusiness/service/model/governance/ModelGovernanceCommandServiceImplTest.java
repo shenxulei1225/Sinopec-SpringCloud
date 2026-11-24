@@ -2,6 +2,7 @@ package cn.cheers.x.module.dynamicbusiness.service.model.governance;
 
 import cn.cheers.x.framework.common.exception.ServiceException;
 import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
+import cn.cheers.x.module.dynamicbusiness.dal.mysql.datapermission.ManagementUnitTypeMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelFieldAssignmentMapper;
 import cn.cheers.x.module.dynamicbusiness.dal.repository.entity.EntityRepository;
 import cn.cheers.x.module.dynamicbusiness.framework.entitytype.EntityTypeScopeResolver;
@@ -26,6 +27,7 @@ class ModelGovernanceCommandServiceImplTest {
     private final ModelFieldAssignmentMapper modelFieldAssignmentMapper = mock(ModelFieldAssignmentMapper.class);
     private final ModelCategoryRelationService modelCategoryRelationService = mock(ModelCategoryRelationService.class);
     private final MasterDataCapabilityChecker capabilityChecker = mock(MasterDataCapabilityChecker.class);
+    private final ManagementUnitTypeMapper managementUnitTypeMapper = mock(ManagementUnitTypeMapper.class);
 
     private ModelGovernanceCommandService service;
 
@@ -37,7 +39,8 @@ class ModelGovernanceCommandServiceImplTest {
                 entityRepository,
                 modelFieldAssignmentMapper,
                 modelCategoryRelationService,
-                capabilityChecker);
+                capabilityChecker,
+                managementUnitTypeMapper);
     }
 
     @Test
@@ -117,6 +120,7 @@ class ModelGovernanceCommandServiceImplTest {
 
         service.deleteModel(10L, null, 100L);
 
+        verify(managementUnitTypeMapper).deleteByModelId(10L);
         verify(modelFieldAssignmentMapper).deleteByModelId(10L);
         verify(modelCategoryRelationService).deleteAllByModelId(10L);
         verify(modelCoreService).delete(10L);
@@ -135,6 +139,7 @@ class ModelGovernanceCommandServiceImplTest {
                 () -> service.deleteModel(11L, null, 100L));
 
         assertEquals("仍有实体使用该型号，禁止删除", error.getMessage());
+        verify(managementUnitTypeMapper, never()).deleteByModelId(11L);
         verify(modelCoreService, never()).delete(11L);
     }
 
@@ -181,6 +186,7 @@ class ModelGovernanceCommandServiceImplTest {
 
         service.deleteModel(5L, 10L, 100L);
 
+        verify(managementUnitTypeMapper).deleteByModelId(5L);
         verify(modelFieldAssignmentMapper).deleteByModelId(5L);
         verify(modelCategoryRelationService).deleteAllByModelId(5L);
         verify(modelCoreService).delete(5L);

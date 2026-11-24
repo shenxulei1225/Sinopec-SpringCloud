@@ -275,9 +275,13 @@ CANONICAL_BASE_FIELDS: dict[str, list[dict[str, Any]]] = {
     ],
     # ent_billing — 业务字段在 attrs
     "billing": [
-        _f("shi_fou_han_shui", "是否含税", "ENUM", required=True, sort_order=1),
-        _f("shou_fei_zhuang_tai", "收费状态", "ENUM", required=True, sort_order=2),
-        _f("shou_fei_shi_jian", "收费时间", "DATETIME", sort_order=3),
+        _f("tax_included", "是否含税", "ENUM", required=True, sort_order=1),
+        _f("billing_status", "收费状态", "ENUM", required=True, sort_order=2),
+        _f("billing_time", "收费时间", "DATETIME", sort_order=3),
+        _f("customer_id", "入廊客户", "REF", required=True, sort_order=6),
+        _f("amount", "金额", "NUMBER", required=True, sort_order=7),
+        _f("billing_year", "计费年度", "INTEGER", required=True, sort_order=8),
+        _f("facility_id", "所属场站", "REF", required=True, sort_order=5),
     ],
     # ent_emergency_resource
     "emergency_resource": [

@@ -25,7 +25,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 从告警规则目录里读阈值告警模型上已启用的规则。
+ * 从告警规则目录里读高限、低限、开关量上已启用的规则。
+ * 还没挪走的旧阈值告警也读。写了高于或低于就按那一侧判断。
  * 判断按规则上的型号。同一种型号的设备共用这些规则。
  * 策略不再决定用哪几条规则。运行状态和抑制另读。
  * 缺限值、型号对不上的规则不参加判断。
@@ -54,15 +55,12 @@ public class AlarmStrategyRuleSource {
     private FieldMapper fieldMapper;
 
     public List<PointProcessingRule> load() {
-        ModelDO threshold = modelMapper.selectByNameAndEntityTypeCode(
-                AlarmRuleCatalogEnsure.MODEL_THRESHOLD, AlarmRuleCatalogEnsure.DIRECTORY);
-        if (threshold == null || threshold.getId() == null) {
-            return List.of();
-        }
         List<Long> ids = new ArrayList<>();
-        for (EntityDO listed : entityRepository.findByModelId(threshold.getId(), AlarmRuleCatalogEnsure.DIRECTORY)) {
-            if (listed.getId() != null && Integer.valueOf(1).equals(listed.getStatus())) {
-                ids.add(listed.getId());
+        for (Long modelId : ruleCatalog.judgedModelIds()) {
+            for (EntityDO listed : entityRepository.findByModelId(modelId, AlarmRuleCatalogEnsure.DIRECTORY)) {
+                if (listed.getId() != null && Integer.valueOf(1).equals(listed.getStatus())) {
+                    ids.add(listed.getId());
+                }
             }
         }
         if (ids.isEmpty()) {
@@ -83,7 +81,7 @@ public class AlarmStrategyRuleSource {
             if (rule.getId() == null || !Integer.valueOf(1).equals(rule.getStatus())) {
                 continue;
             }
-            if (!AlarmRuleCatalogEnsure.MODEL_THRESHOLD.equals(modelName(rule.getModelId()))) {
+            if (!isJudgedModel(rule.getModelId())) {
                 continue;
             }
             rules.addAll(toRules(rule, pointCode, opCode, valueCode, typeCode, levelCode, ruleDeviceType,
@@ -92,12 +90,20 @@ public class AlarmStrategyRuleSource {
         return rules;
     }
 
-    private String modelName(Long modelId) {
+    /** 高限、低限、开关量，以及还没挪走的旧阈值告警。 */
+    private boolean isJudgedModel(Long modelId) {
         if (modelId == null) {
-            return "";
+            return false;
         }
         ModelDO model = modelMapper.selectById(modelId);
-        return model == null || model.getName() == null ? "" : model.getName();
+        if (model == null || model.getName() == null) {
+            return false;
+        }
+        String name = model.getName();
+        return AlarmRuleCatalogEnsure.MODEL_HIGH.equals(name)
+                || AlarmRuleCatalogEnsure.MODEL_LOW.equals(name)
+                || AlarmRuleCatalogEnsure.MODEL_SWITCH.equals(name)
+                || AlarmRuleCatalogEnsure.MODEL_THRESHOLD.equals(name);
     }
 
     public Map<Long, Set<Long>> boundDevices() {
