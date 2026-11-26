@@ -15,7 +15,7 @@ import java.util.Set;
 /**
  * 刚复制维抢修目录时，把模板上的标准字段、标准型号和分类一起写上。
  *
- * 管什么：管道、管线构筑物、人员资质、抢修方案、作业许可、现场作业记录第一次插入后的字段、型号、专用表和分类。管线段是管线目录里的型号，不在这里另建目录。
+ * 管什么：管道、管线构筑物、人员资质、外部施工人员、抢修方案、作业许可、现场作业记录第一次插入后的字段、型号、专用表和分类。管线段是管线目录里的型号，不在这里另建目录。作业许可、人员资质、外部施工人员和现场作业记录归作业管理，抢修方案归抢修，这里只在目录刚插入时抄模板。
  * 不管什么：目录已经在之后的再次开通。缺的栏不再补。应急事件、预案、资源、场站上的字段由迁移写入，不在这里补。
  * 禁止：启动、查询、打开数据管理页时调用。
  */
@@ -26,6 +26,7 @@ public class RepairBaseCatalogWriter {
             "pipeline_pipe",
             "pipeline_structure",
             "person_certificate",
+            "external_worker",
             "repair_scheme",
             "work_permit",
             "repair_field_record");
@@ -119,15 +120,16 @@ public class RepairBaseCatalogWriter {
                               WHERE own.tenant_id = ? AND own.code = src.code AND own.deleted = false)
                         """,
                 tenantId, TEMPLATE_TENANT_ID, catalogCode, tenantId);
+        // 证书类型的准许作业写在字段默认值上。开通时把这份默认值一起抄过来。
         jdbcTemplate.update(
                 """
                         INSERT INTO dynamicbusiness.dynamic_model_field_assignment (
                             model_id, field_id, required, is_searchable, is_filterable, is_sortable, sort,
                             creator, updater, deleted, tenant_id, model_code, field_code, collection_point,
-                            create_visible, edit_visible, detail_visible, field_source)
+                            create_visible, edit_visible, detail_visible, field_source, default_value)
                         SELECT own_model.id, lib.id, src.required, src.is_searchable, src.is_filterable, src.is_sortable, src.sort,
                                'pack-open', 'pack-open', false, ?, own_model.code, src.field_code, false,
-                               src.create_visible, src.edit_visible, src.detail_visible, src.field_source
+                               src.create_visible, src.edit_visible, src.detail_visible, src.field_source, src.default_value
                         FROM dynamicbusiness.dynamic_model_field_assignment src
                         JOIN dynamicbusiness.dynamic_model src_model
                           ON src_model.id = src.model_id AND src_model.tenant_id = ? AND src_model.deleted = false

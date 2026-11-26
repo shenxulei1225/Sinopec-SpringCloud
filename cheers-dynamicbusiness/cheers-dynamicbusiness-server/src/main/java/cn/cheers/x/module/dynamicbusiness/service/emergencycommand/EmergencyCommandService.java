@@ -13,6 +13,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.E
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandLocateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandPlanRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandRenameReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandReviseIntakeReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyOwnershipFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandStartReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandSubmitReportReqVO;
@@ -46,6 +47,9 @@ public interface EmergencyCommandService {
 
     /** 补上或改正事件中心点。已结案的事件拒绝。 */
     void locate(EmergencyCommandLocateReqVO reqVO);
+
+    /** 待研判时改正事故经过和照片。研判之后拒绝。不改名称、位置和发生时间。 */
+    void reviseIntake(EmergencyCommandReviseIntakeReqVO reqVO);
 
     /** 只改这一条事件的名称。已结案的事件拒绝。不改预案，不改脉络。 */
     void rename(EmergencyCommandRenameReqVO reqVO);

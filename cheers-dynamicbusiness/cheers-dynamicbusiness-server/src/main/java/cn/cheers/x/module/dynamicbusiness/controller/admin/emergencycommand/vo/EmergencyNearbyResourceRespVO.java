@@ -33,4 +33,10 @@ public class EmergencyNearbyResourceRespVO {
 
     @Schema(description = "离事件中心的直线距离（公里）。资源没有位置时为空")
     private Double distanceKm;
+
+    @Schema(description = "存放点。场站或仓库。看不出放在哪时为空")
+    private String place;
+
+    @Schema(description = "这份预案写了需要的资源种类，并且这一条对得上")
+    private Boolean needed;
 }

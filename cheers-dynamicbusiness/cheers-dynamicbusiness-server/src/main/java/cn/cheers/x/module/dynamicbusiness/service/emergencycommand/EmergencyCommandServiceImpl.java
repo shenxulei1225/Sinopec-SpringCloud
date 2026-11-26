@@ -14,6 +14,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.E
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandLevelRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandLocateReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandRenameReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandReviseIntakeReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyOwnershipFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandPlanLevelRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandPlanRespVO;
@@ -88,6 +89,8 @@ public class EmergencyCommandServiceImpl implements EmergencyCommandService {
     private EntityTypeStepStructureProvisionService stepStructureProvisionService;
     @Resource
     private DataScopeQueryService dataScopeQueryService;
+    @Resource
+    private EmergencyCommandOrgService emergencyCommandOrgService;
 
     @Override
     public PageResult<EmergencyCommandEventRespVO> pageEvents(
@@ -158,7 +161,7 @@ public class EmergencyCommandServiceImpl implements EmergencyCommandService {
                 EmergencyCommandRecords.KIND_INTAKE,
                 EmergencyCommandRecords.fields("source", "manual", "summary", reqVO.getName().trim())));
         if (StringUtils.hasText(reqVO.getIntakeNote())) {
-            custom.put(EmergencyCommandFields.INTAKE_NOTE, reqVO.getIntakeNote().trim());
+            custom.put(EmergencyCommandFields.INTAKE_NOTE, intakeNote(reqVO.getIntakeNote()));
         }
         List<String> photos = photoUrls(reqVO.getPhotoUrls());
         if (!photos.isEmpty()) {
@@ -208,6 +211,34 @@ public class EmergencyCommandServiceImpl implements EmergencyCommandService {
         Map<String, Object> center = new LinkedHashMap<>();
         putCenter(center, reqVO.getLongitude(), reqVO.getLatitude(), reqVO.getLocationText());
         save(event, EmergencyCommandFields.EVENT_CATALOG, copyCustom(event), center);
+    }
+
+    /**
+     * 待研判时改正事故经过和照片。
+     * 名称、位置、发生时间不在这里改。研判之后拒绝，避免把后来的说法写回接报。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void reviseIntake(EmergencyCommandReviseIntakeReqVO reqVO) {
+        EntityRespVO event = requireEvent(reqVO.getEventId());
+        assertOpen(event);
+        if (!EmergencyCommandFields.STATUS_PENDING.equals(text(field(event, EmergencyCommandFields.EVENT_STATUS)))) {
+            throw new ServiceException(400, "只有待研判的事件可以改正接报内容");
+        }
+        Map<String, Object> custom = copyCustom(event);
+        String note = text(reqVO.getIntakeNote());
+        if (StringUtils.hasText(note)) {
+            custom.put(EmergencyCommandFields.INTAKE_NOTE, intakeNote(note));
+        } else {
+            custom.remove(EmergencyCommandFields.INTAKE_NOTE);
+        }
+        List<String> photos = photoUrls(reqVO.getPhotoUrls());
+        if (photos.isEmpty()) {
+            custom.remove(EmergencyCommandFields.INTAKE_PHOTOS);
+        } else {
+            custom.put(EmergencyCommandFields.INTAKE_PHOTOS, new JSONArray(photos));
+        }
+        save(event, EmergencyCommandFields.EVENT_CATALOG, custom);
     }
 
     /** 只改这一条事件的名称。已结案拒绝。不改预案，不追加脉络。 */
@@ -466,6 +497,7 @@ public class EmergencyCommandServiceImpl implements EmergencyCommandService {
         custom.put(EmergencyCommandFields.EVENT_TIMELINE, timeline);
         custom.put(EmergencyCommandFields.CURRENT_PLAN_STATE, EmergencyCommandRecords.currentState(planId, level));
         custom.put(EmergencyCommandFields.EVENT_STATUS, EmergencyCommandFields.STATUS_RESPONDING);
+        custom.put(EmergencyCommandFields.COMMAND_ORG, emergencyCommandOrgService.snapshot(plan, event));
         save(event, EmergencyCommandFields.EVENT_CATALOG, custom);
         return String.valueOf(event.getId());
     }
@@ -511,6 +543,7 @@ public class EmergencyCommandServiceImpl implements EmergencyCommandService {
             }
         }
         fillPlans(detail, plan);
+        fillCommandOrg(detail, event);
         return detail;
     }
 
@@ -1063,8 +1096,20 @@ public class EmergencyCommandServiceImpl implements EmergencyCommandService {
         row.setLongitude(number(field(entity, EmergencyCommandFields.LONGITUDE)));
         row.setLatitude(number(field(entity, EmergencyCommandFields.LATITUDE)));
         row.setLocationText(text(field(entity, EmergencyCommandFields.LOCATION_TEXT)));
+        row.setOccurredAt(text(field(entity, EmergencyCommandFields.OCCURRED_AT)));
+        row.setIntakeNote(text(field(entity, EmergencyCommandFields.INTAKE_NOTE)));
+        row.setIntakePhotos(readPhotos(field(entity, EmergencyCommandFields.INTAKE_PHOTOS)));
         row.setCaseStatus(text(field(entity, EmergencyCommandFields.CASE_STATUS)));
         return row;
+    }
+
+    /** 指挥机构只读启动时写下的那一份。缺了用一句话说明，不临时去预案上现组。 */
+    private void fillCommandOrg(EmergencyCommandDetailRespVO detail, EntityRespVO event) {
+        EmergencyCommandOrg.Shown shown = EmergencyCommandOrg.show(
+                field(event, EmergencyCommandFields.COMMAND_ORG),
+                text(field(event, EmergencyCommandFields.RESPONSE_LEVEL)));
+        detail.setCommandOrg(shown.groups());
+        detail.setCommandOrgGap(shown.gap());
     }
 
     private static JSONObject asPack(Object raw) {
@@ -1194,6 +1239,37 @@ public class EmergencyCommandServiceImpl implements EmergencyCommandService {
         if (StringUtils.hasText(raw)) {
             base.put(fieldCode, parseId(raw, message));
         }
+    }
+
+    /** 事故经过。过长就拒绝，不截断。 */
+    private static String intakeNote(String raw) {
+        String note = raw.trim();
+        if (note.length() > 4000) {
+            throw new ServiceException(400, "事故经过不能超过 4000 字");
+        }
+        return note;
+    }
+
+    private static List<String> readPhotos(Object raw) {
+        List<String> photos = new ArrayList<>();
+        if (raw instanceof JSONArray array) {
+            for (int i = 0; i < array.size(); i++) {
+                String url = text(array.get(i));
+                if (StringUtils.hasText(url)) {
+                    photos.add(url);
+                }
+            }
+            return photos;
+        }
+        if (raw instanceof List<?> list) {
+            for (Object item : list) {
+                String url = text(item);
+                if (StringUtils.hasText(url)) {
+                    photos.add(url);
+                }
+            }
+        }
+        return photos;
     }
 
     /** 接报填写的发生时间。空着就用接报这一刻。格式不对就拒绝，不另编一个时间。 */

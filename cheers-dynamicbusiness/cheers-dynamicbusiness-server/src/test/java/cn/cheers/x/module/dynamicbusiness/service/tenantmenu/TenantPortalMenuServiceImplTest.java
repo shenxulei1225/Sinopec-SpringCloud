@@ -117,7 +117,8 @@ class TenantPortalMenuServiceImplTest {
                         page("security-video", "视频监控"),
                         page("security-alarm", "告警记录"))
         ));
-        assertEquals(1, nodes.size());
+        assertEquals(List.of("安防", "告警管理"),
+                nodes.stream().map(TenantPortalMenuNode::title).toList());
         assertEquals("安防", nodes.get(0).title());
         assertEquals(List.of("人防", "通信", "技防", "巡检"),
                 nodes.get(0).children().stream().map(TenantPortalMenuNode::title).toList());
@@ -138,6 +139,22 @@ class TenantPortalMenuServiceImplTest {
         assertEquals(List.of("告警记录", "告警规则", "告警策略", "告警联动"),
                 alarm.get(0).children().stream().map(TenantPortalMenuNode::title).toList());
         assertEquals("security-patrol", nodes.get(0).children().get(3).pageCode());
+    }
+
+    @Test
+    void workManagementIsItsOwnGroup() {
+        List<TenantPortalMenuNode> nodes = TenantPortalMenuServiceImpl.generate(List.of(
+                group("work-management", "作业管理",
+                        page("work-person-certificate", "人员资质"),
+                        page("work-external-worker", "外部施工人员"),
+                        page("work-permit", "作业许可"),
+                        page("work-field-record", "现场作业记录"))
+        ));
+        assertEquals(1, nodes.size());
+        assertEquals("作业管理", nodes.get(0).title());
+        assertNull(nodes.get(0).pageCode());
+        assertEquals(List.of("人员资质", "外部施工人员", "作业许可", "现场作业记录"),
+                nodes.get(0).children().stream().map(TenantPortalMenuNode::title).toList());
     }
 
     private static TenantPortalMenuPageGroup group(String code, String name, TenantPortalMenuPage... pages) {

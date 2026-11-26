@@ -15,6 +15,7 @@ import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.E
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyNearbyResourceRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandPlanRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandRenameReqVO;
+import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandReviseIntakeReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyOwnershipFieldRespVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandStartReqVO;
 import cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo.EmergencyCommandSubmitReportReqVO;
@@ -100,6 +101,14 @@ public class EmergencyCommandController {
     @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.EVENT_CATALOG + "', 'update')")
     public CommonResult<Boolean> rename(@Valid @RequestBody EmergencyCommandRenameReqVO reqVO) {
         emergencyCommandService.rename(reqVO);
+        return success(true);
+    }
+
+    @PostMapping("/revise-intake")
+    @Operation(summary = "改正接报经过和照片", description = "只在待研判时改。不改名称、位置和发生时间")
+    @PreAuthorize("@catalogAccess.allow('" + EmergencyCommandFields.EVENT_CATALOG + "', 'update')")
+    public CommonResult<Boolean> reviseIntake(@Valid @RequestBody EmergencyCommandReviseIntakeReqVO reqVO) {
+        emergencyCommandService.reviseIntake(reqVO);
         return success(true);
     }
 

@@ -34,8 +34,17 @@ public final class EmergencyCommandFields {
     public static final String OCCURRED_AT = "occurred_at";
     /** 接报时上传的照片地址。只存上传后的地址，不存文件本身。 */
     public static final String INTAKE_PHOTOS = "intake_photos";
-    /** 选定预案之前的接报经过。 */
+    /** 接报时写下的事故经过。照片在 intake_photos。这是这一起事件的事故情景。 */
     public static final String INTAKE_NOTE = "intake_note";
+    /** 预案上的指挥班子。启动时抄到事件的 command_org，之后不再跟预案改。 */
+    public static final String COMMAND_ORG_TEMPLATE = "command_org_template";
+    /** 这一起事件启动时写下的指挥机构和当时的人。 */
+    public static final String COMMAND_ORG = "command_org";
+    /** 这份预案通常要哪些资源种类。指挥名单据此标出周边已有的，不另建资源账。 */
+    public static final String RESOURCE_KINDS = "resource_kinds";
+    /** 资源放在场站还是作业区仓库。仓库必须自带坐标，不用场站坐标顶上。 */
+    public static final String STORAGE_PLACE = "storage_place";
+    public static final String STORAGE_WAREHOUSE = "warehouse";
     public static final String EVENT_STATUS = "event_status";
     public static final String JUDGED_REAL = "judged_real";
     public static final String EVENT_TYPE = "event_type";

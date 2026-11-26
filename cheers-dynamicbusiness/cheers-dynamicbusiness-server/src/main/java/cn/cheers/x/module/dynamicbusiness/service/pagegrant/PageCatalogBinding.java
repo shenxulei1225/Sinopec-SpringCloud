@@ -144,12 +144,17 @@ public final class PageCatalogBinding {
         one(pages, "gallery-facility", "facility");
         one(pages, "gallery-region", "region");
         one(pages, "gallery-zone", "zone");
+        one(pages, "gallery-corridor", "zone");
         one(pages, "gallery-structure", "Constructure");
         one(pages, "gallery-point", "point");
         one(pages, "gallery-pipeline", "pipeline");
         one(pages, "gallery-point-binding", "point_binding");
         one(pages, "gallery-customer", "customer");
         one(pages, "gallery-billing", "billing");
+        one(pages, "work-person-certificate", "person_certificate");
+        one(pages, "work-external-worker", "external_worker");
+        one(pages, "work-permit", "work_permit");
+        one(pages, "work-field-record", "repair_field_record");
         one(pages, "station-vehicle-register", "vehicle_list");
         one(pages, "facility-gis", "facility");
         // 组织架构：查看能看组织、部门、人员。维护部门只写部门。维护人员只写人员。

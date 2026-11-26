@@ -30,7 +30,11 @@ public final class BusinessCapabilityPackRegistry {
             "alarm-strategy", "strategy_alarm",
             "alarm-linkage", "linkage_alarm",
             "gallery-customer", "customer",
-            "gallery-billing", "billing");
+            "gallery-billing", "billing",
+            "work-person-certificate", "person_certificate",
+            "work-external-worker", "external_worker",
+            "work-permit", "work_permit",
+            "work-field-record", "repair_field_record");
 
     static {
         register(new BusinessCapabilityPackDefinition(
@@ -127,16 +131,20 @@ public final class BusinessCapabilityPackRegistry {
         register(new BusinessCapabilityPackDefinition(
                 "rush-repair",
                 "抢修",
-                "抢修方案和抢修作业记录。具体功能页随后再做",
+                "这一次事故的抢修方案。作业许可和现场记录不在本包",
                 List.of(),
-                List.of("repair_scheme", "repair_field_record"),
+                List.of("repair_scheme"),
                 List.of("organization", "facility")));
         register(new BusinessCapabilityPackDefinition(
                 "work-management",
                 "作业管理",
-                "人员资质和作业许可",
-                List.of(),
-                List.of("person_certificate", "work_permit"),
+                "人员资质、外部施工人员、作业许可和现场作业记录。场站作业、管线作业和抢修都走这里",
+                List.of(
+                        "work-person-certificate",
+                        "work-external-worker",
+                        "work-permit",
+                        "work-field-record"),
+                List.of("person_certificate", "external_worker", "work_permit", "repair_field_record"),
                 List.of("organization", "facility")));
         register(new BusinessCapabilityPackDefinition(
                 "equipment",
@@ -230,6 +238,7 @@ public final class BusinessCapabilityPackRegistry {
                         "gallery-facility",
                         "gallery-region",
                         "gallery-zone",
+                        "gallery-corridor",
                         "gallery-structure",
                         "gallery-point",
                         "gallery-pipeline",

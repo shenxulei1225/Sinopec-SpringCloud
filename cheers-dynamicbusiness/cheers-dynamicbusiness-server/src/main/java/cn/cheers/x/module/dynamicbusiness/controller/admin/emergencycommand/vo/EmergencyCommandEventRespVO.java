@@ -3,6 +3,8 @@ package cn.cheers.x.module.dynamicbusiness.controller.admin.emergencycommand.vo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * 应急事件列表和详情。编号用字符串，避免长整型在页面上丢精度。
  */
@@ -56,6 +58,15 @@ public class EmergencyCommandEventRespVO {
 
     @Schema(description = "地点描述")
     private String locationText;
+
+    @Schema(description = "事件发生时间")
+    private String occurredAt;
+
+    @Schema(description = "接报时写下的事故经过")
+    private String intakeNote;
+
+    @Schema(description = "接报照片地址")
+    private List<String> intakePhotos;
 
     @Schema(description = "结案状态。处置中或已结案。空着表示还没结案")
     private String caseStatus;

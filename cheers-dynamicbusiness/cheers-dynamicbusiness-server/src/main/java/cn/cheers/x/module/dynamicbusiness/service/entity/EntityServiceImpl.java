@@ -56,6 +56,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import cn.cheers.x.module.dynamicbusiness.service.action.ActionDeletedChildQueryFilter;
 import cn.cheers.x.module.dynamicbusiness.service.action.ActionCreationValidator;
+import cn.cheers.x.module.dynamicbusiness.service.work.CertificateWriteGuard;
 import cn.cheers.x.module.dynamicbusiness.service.action.ActionFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.action.CheckItemDeletedActionRemover;
 import cn.cheers.x.module.dynamicbusiness.service.entity.scene.EntitySceneQueryService;
@@ -145,6 +146,8 @@ public class EntityServiceImpl implements EntityService {
     private ActionDeletedChildQueryFilter actionDeletedChildQueryFilter;
     @Resource
     private ActionCreationValidator actionCreationValidator;
+    @Resource
+    private CertificateWriteGuard certificateWriteGuard;
 
     @Resource
     private CheckItemDeletedActionRemover checkItemDeletedActionRemover;
@@ -275,6 +278,8 @@ public class EntityServiceImpl implements EntityService {
                 data.getEntityTypeCode(), data.getCustomFields());
         // 动作模型是创建权威。保存前由模型生成执行投影，页面不得另传第二份动作类型。
         actionCreationValidator.validate(data.getEntityTypeCode(), data.getModelId(), physicalColumns);
+        // 人员资质、外部施工人员和焊接记录在保存时核对。其它目录这里直接返回。
+        certificateWriteGuard.checkOnSave(data.getEntityTypeCode(), data.getModelId(), null, physicalColumns);
         Long entityId;
         try {
             // 固定列与核心列同 INSERT，避免专用表 NOT NULL 列在「先插后更」时失败
@@ -437,6 +442,9 @@ public class EntityServiceImpl implements EntityService {
             // 动作模型变更必须同步重算执行投影。禁止只换 model_id，留下旧 action_domain。
             actionCreationValidator.validate(effectiveEntityTypeCode, requestedModelId, physicalColumns);
         }
+        // 更新也核对证书和焊工。不只在更换型号时核对。
+        Long certificateModelId = data.getModelId() != null ? data.getModelId() : oldEntity.getModelId();
+        certificateWriteGuard.checkOnSave(effectiveEntityTypeCode, certificateModelId, reqVO.getId(), physicalColumns);
         try {
             entityCoreService.update(data);
             if (data.getId() == null) {

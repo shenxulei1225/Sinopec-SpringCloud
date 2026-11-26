@@ -9,9 +9,12 @@ import cn.cheers.x.module.dynamicbusiness.dal.dataobject.model.ModelDO;
 import cn.cheers.x.module.dynamicbusiness.dal.mysql.model.ModelMapper;
 import cn.cheers.x.module.dynamicbusiness.service.category.CategoryService;
 import cn.cheers.x.module.dynamicbusiness.service.datapermission.DataScopeQueryService;
+import cn.cheers.x.module.dynamicbusiness.framework.facility.FacilityOwningFieldCodes;
 import cn.cheers.x.module.dynamicbusiness.service.entity.EntityService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.core.EntityCoreService;
 import cn.cheers.x.module.dynamicbusiness.service.entity.relation.EntityCategoryRelationService;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -31,8 +34,10 @@ import java.util.Map;
  * - 能看到这起事件的人，就能看到它周边全部记录。不按所属场站或登录人的数据范围收窄。
  * - 半径为空表示不限：有位置的按距离排在前面，没填位置的排在最后，距离为空。
  *   给了半径时只留半径内有位置的资源。
+ * - 挂在场站、自己没写坐标的资源，用这座场站的坐标算距离。标明放在仓库的，只用自己的坐标。
+ * - 预案写了资源种类时，名称或分类对得上的标成需要。没写种类时不标。
  *
- * 不管什么：不写任何数据。事件没有中心点时直接拒绝，不拿所属场站的坐标代替。
+ * 不管什么：不写任何数据。事件没有中心点时直接拒绝。仓库没有坐标时不拿场站坐标顶上。
  */
 @Service
 public class EmergencyNearbyResourceQueryService {
@@ -63,7 +68,8 @@ public class EmergencyNearbyResourceQueryService {
             throw new ServiceException(400, "半径必须大于 0");
         }
         String catalogCode = requireNearbyCatalog(catalog);
-        double[] center = requireEventCenter(eventId);
+        EventAnchor anchor = requireEventAnchor(eventId);
+        Map<Long, double[]> facilityPoints = new HashMap<>();
         Map<Long, String> kindById = kindByResourceId(catalogCode);
         Map<Long, String> modelNames = EmergencyCommandFields.EXTERNAL_CATALOG.equals(catalogCode)
                 ? modelNames(catalogCode) : Map.of();
@@ -76,7 +82,7 @@ public class EmergencyNearbyResourceQueryService {
             if (EmergencyCommandFields.EXTERNAL_CATALOG.equals(catalogCode)) {
                 kind = externalGroup(kind, modelNames.get(resource.getModelId()));
             }
-            EmergencyNearbyResourceRespVO row = toRow(resource, kind, center);
+            EmergencyNearbyResourceRespVO row = toRow(resource, kind, anchor, facilityPoints);
             if (radiusKm == null || (row.getDistanceKm() != null && row.getDistanceKm() <= radiusKm)) {
                 rows.add(row);
             }
@@ -87,7 +93,10 @@ public class EmergencyNearbyResourceQueryService {
         return rows;
     }
 
-    private double[] requireEventCenter(String eventId) {
+    private record EventAnchor(double[] point, List<String> kinds) {
+    }
+
+    private EventAnchor requireEventAnchor(String eventId) {
         Long id = parseEventId(eventId);
         dataScopeQueryService.assertVisible(EmergencyCommandFields.EVENT_CATALOG, id);
         EntityRespVO event = entityService.get(id, EmergencyCommandFields.EVENT_CATALOG);
@@ -100,7 +109,53 @@ public class EmergencyNearbyResourceQueryService {
         if (longitude == null || latitude == null) {
             throw new ServiceException(400, "这起事件还没有位置，请先补上事件中心点");
         }
-        return new double[]{longitude, latitude};
+        return new EventAnchor(new double[]{longitude, latitude}, kindsOf(event));
+    }
+
+    /** 事件已经选定的预案上写下的资源种类。还没选预案、或预案没写种类时为空。 */
+    private List<String> kindsOf(EntityRespVO event) {
+        Map<String, Object> custom = event.getCustomFields() == null ? Map.of() : event.getCustomFields();
+        Map<String, Object> base = event.getBaseFields() == null ? Map.of() : event.getBaseFields();
+        Object planRaw = custom.get(EmergencyCommandFields.PLAN_ID);
+        if (planRaw == null) {
+            planRaw = base.get(EmergencyCommandFields.PLAN_ID);
+        }
+        if (planRaw == null || String.valueOf(planRaw).isBlank()) {
+            return List.of();
+        }
+        long planId;
+        try {
+            planId = Long.parseLong(String.valueOf(planRaw).trim());
+        } catch (NumberFormatException ex) {
+            return List.of();
+        }
+        EntityRespVO plan = entityService.get(planId, EmergencyCommandFields.PLAN_CATALOG);
+        if (plan == null) {
+            return List.of();
+        }
+        Object raw = plan.getCustomFields() == null ? null : plan.getCustomFields().get(EmergencyCommandFields.RESOURCE_KINDS);
+        if (raw == null && plan.getBaseFields() != null) {
+            raw = plan.getBaseFields().get(EmergencyCommandFields.RESOURCE_KINDS);
+        }
+        if (raw instanceof String text && !text.isBlank()) {
+            raw = JSON.parse(text);
+        }
+        List<String> kinds = new ArrayList<>();
+        if (raw instanceof JSONArray array) {
+            for (int i = 0; i < array.size(); i++) {
+                Object item = array.get(i);
+                if (item != null && !String.valueOf(item).isBlank()) {
+                    kinds.add(String.valueOf(item).trim());
+                }
+            }
+        } else if (raw instanceof List<?> list) {
+            for (Object item : list) {
+                if (item != null && !String.valueOf(item).isBlank()) {
+                    kinds.add(String.valueOf(item).trim());
+                }
+            }
+        }
+        return kinds;
     }
 
     /** 只允许右上角工具栏里的三本目录。 */
@@ -175,7 +230,8 @@ public class EmergencyNearbyResourceQueryService {
         }
     }
 
-    private static EmergencyNearbyResourceRespVO toRow(EntityDO resource, String kind, double[] center) {
+    private EmergencyNearbyResourceRespVO toRow(EntityDO resource, String kind, EventAnchor anchor,
+                                                Map<Long, double[]> facilityPoints) {
         Map<String, Object> base = resource.getDedicatedBaseFieldValues() == null
                 ? Map.of() : resource.getDedicatedBaseFieldValues();
         Map<String, Object> custom = resource.getCustomFields() == null ? Map.of() : resource.getCustomFields();
@@ -185,8 +241,70 @@ public class EmergencyNearbyResourceQueryService {
         row.setKind(kind);
         row.setAvailableQuantity(number(base.get(EmergencyCommandFields.RESOURCE_AVAILABLE)));
         row.setTotalQuantity(number(base.get(EmergencyCommandFields.RESOURCE_TOTAL)));
-        fillLocation(row, base, custom, center);
+        boolean warehouse = EmergencyCommandFields.STORAGE_WAREHOUSE.equals(text(custom.get(EmergencyCommandFields.STORAGE_PLACE)));
+        fillLocation(row, base, custom, anchor.point());
+        if (warehouse) {
+            row.setPlace("仓库");
+        } else {
+            Long facilityId = FacilityOwningFieldCodes.extractId(
+                    base.get(FacilityOwningFieldCodes.FIELD_CODE) != null
+                            ? base.get(FacilityOwningFieldCodes.FIELD_CODE)
+                            : custom.get(FacilityOwningFieldCodes.FIELD_CODE));
+            if (facilityId != null) {
+                row.setPlace("场站");
+                if (row.getDistanceKm() == null) {
+                    double[] point = facilityPoint(facilityId, facilityPoints);
+                    if (point != null) {
+                        row.setLongitude(point[0]);
+                        row.setLatitude(point[1]);
+                        row.setDistanceKm(straightLineKm(anchor.point()[0], anchor.point()[1], point[0], point[1]));
+                    }
+                }
+            }
+        }
+        row.setNeeded(matchesKind(row.getName(), kind, anchor.kinds()));
         return row;
+    }
+
+    /** 场站自己的坐标。这场站没有坐标时记空，后面的资源不再查一次。 */
+    private double[] facilityPoint(Long facilityId, Map<Long, double[]> cache) {
+        if (cache.containsKey(facilityId)) {
+            return cache.get(facilityId);
+        }
+        EntityRespVO facility = entityService.get(facilityId, FacilityOwningFieldCodes.TARGET_ENTITY_TYPE);
+        double[] point = null;
+        if (facility != null && facility.getBaseFields() != null) {
+            Double longitude = number(facility.getBaseFields().get(EmergencyCommandFields.LONGITUDE));
+            Double latitude = number(facility.getBaseFields().get(EmergencyCommandFields.LATITUDE));
+            if (longitude != null && latitude != null) {
+                point = new double[]{longitude, latitude};
+            }
+        }
+        cache.put(facilityId, point);
+        return point;
+    }
+
+    /** 预案没写种类时不标。名称或分类里出现这个种类才标。 */
+    private static boolean matchesKind(String name, String kind, List<String> kinds) {
+        if (kinds == null || kinds.isEmpty()) {
+            return false;
+        }
+        for (String item : kinds) {
+            if (item.isEmpty()) {
+                continue;
+            }
+            if (kind != null && kind.contains(item)) {
+                return true;
+            }
+            if (name != null && name.contains(item)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String text(Object raw) {
+        return raw == null ? "" : String.valueOf(raw).trim();
     }
 
     /** 先认坐标点，没有再认经度纬度。两处都空着就不算距离。 */

@@ -39,4 +39,10 @@ public class EmergencyCommandDetailRespVO {
 
     @Schema(description = "这起事件已经记下的启动、变级、完成和上报。换级后原级别的记录仍在")
     private List<EmergencyCommandTimelineRespVO> timeline;
+
+    @Schema(description = "启动时写下的、并且当前等级要成立的指挥组")
+    private List<EmergencyCommandOrgGroupRespVO> commandOrg;
+
+    @Schema(description = "指挥机构为什么还列不出来。能列出来时为空")
+    private String commandOrgGap;
 }
